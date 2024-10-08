@@ -1182,6 +1182,9 @@ class TestPortfolioInvitations(TestCase):
 
     def tearDown(self):
         super().tearDown()
+        DomainInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
@@ -1269,6 +1272,44 @@ class TestPortfolioInvitations(TestCase):
         updated_invitation2, _ = PortfolioInvitation.objects.get_or_create(email=self.email, portfolio=portfolio2)
         self.assertEqual(updated_invitation2.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
+    @less_console_noise_decorator
+    def test_get_managed_domains_count(self):
+        """Test that the correct number of domains, which are associated with the portfolio and
+        have invited the email of the portfolio invitation, are returned."""
+        # Add three domains, one which is in the portfolio and email is invited to,
+        # one which is in the portfolio and email is not invited to,
+        # and one which is email is invited to and not in the portfolio.
+        # Arrange
+        # domain_in_portfolio should not be included in the count
+        domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=self.portfolio)
+        # domain_in_portfolio_and_invited should be included in the count
+        domain_in_portfolio_and_invited, _ = Domain.objects.get_or_create(name="domain_in_portfolio_and_invited.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio_and_invited, portfolio=self.portfolio)
+        DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_and_invited)
+        # domain_invited should not be included in the count
+        domain_invited, _ = Domain.objects.get_or_create(name="domain_invited.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_invited)
+        DomainInvitation.objects.get_or_create(email=self.email, domain=domain_invited)
+
+        # Assert
+        self.assertEqual(self.invitation.get_managed_domains_count(), 1)
+
+    @less_console_noise_decorator
+    def test_get_portfolio_permissions(self):
+        """Test that get_portfolio_permissions returns the expected list of permissions,
+        based on the roles and permissions assigned to the invitation."""
+        # Arrange
+        test_permission_list = set()
+        # add the arrays that are defined in UserPortfolioPermission for member and admin
+        test_permission_list.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, []))
+        test_permission_list.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(UserPortfolioRoleChoices.ORGANIZATION_ADMIN, []))
+        # add the permissions that are added to the invitation as additional_permissions
+        test_permission_list.update([self.portfolio_permission_1, self.portfolio_permission_2])
+        perm_list = list(test_permission_list)
+        # Verify
+        self.assertEquals(self.invitation.get_portfolio_permissions(), perm_list)
+
 
 class TestUserPortfolioPermission(TestCase):
     @less_console_noise_decorator
@@ -1334,6 +1375,34 @@ class TestUserPortfolioPermission(TestCase):
             cm.exception.message,
             "Only one portfolio permission is allowed per user when multiple portfolios are disabled.",
         )
+
+    @less_console_noise_decorator
+    def test_get_managed_domains_count(self):
+        """Test that the correct number of managed domains associated with the portfolio
+        are returned."""
+        # Add three domains, one which is in the portfolio and managed by the user,
+        # one which is in the portfolio and not managed by the user,
+        # and one which is managed by the user and not in the portfolio.
+        # Arrange
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        test_user = create_test_user()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=test_user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # domain_in_portfolio should not be included in the count
+        domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=portfolio)
+        # domain_in_portfolio_and_managed should be included in the count
+        domain_in_portfolio_and_managed, _ = Domain.objects.get_or_create(name="domain_in_portfolio_and_managed.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio_and_managed, portfolio=portfolio)
+        UserDomainRole.objects.get_or_create(user=test_user, domain=domain_in_portfolio_and_managed, role=UserDomainRole.Roles.MANAGER)
+        # domain_managed should not be included in the count
+        domain_managed, _ = Domain.objects.get_or_create(name="domain_managed.gov", state=Domain.State.READY)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_managed)
+        UserDomainRole.objects.get_or_create(user=test_user, domain=domain_managed, role=UserDomainRole.Roles.MANAGER)
+
+        # Assert
+        self.assertEqual(portfolio_permission.get_managed_domains_count(), 1)
 
 
 class TestUser(TestCase):
