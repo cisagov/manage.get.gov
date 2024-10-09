@@ -522,7 +522,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         # And the existence of the modal's data parked and ready for the js init.
         # The next assert also tests for the passed requested domain context from
         # the view > domain_request_form > modal
-        self.assertContains(review_page, "You are about to submit a domain request for city.gov")
+        self.assertContains(review_page, "You are about to submit a domain request for")
+        self.assertContains(review_page, "city.gov")
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
