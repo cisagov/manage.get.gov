@@ -34,6 +34,7 @@ from waffle.testutils import override_flag
 
 from api.tests.common import less_console_noise_decorator
 
+
 class TestDomainInformation(TestCase):
     """Test the DomainInformation model, when approved or otherwise"""
 
@@ -282,7 +283,7 @@ class TestUserPortfolioPermission(TestCase):
             portfolio_permission_2.clean()
         except ValidationError as error:
             self.fail(f"Raised ValidationError unexpectedly: {error}")
-    
+
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=False)
     def test_clean_on_creates_multiple_portfolios(self):
@@ -310,7 +311,7 @@ class TestUserPortfolioPermission(TestCase):
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             ),
         )
-    
+
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=False)
     def test_multiple_portfolio_reassignment(self):
@@ -328,7 +329,9 @@ class TestUserPortfolioPermission(TestCase):
         # This should work as intended
         portfolio_permission.clean()
         portfolio_permission_2.clean()
-        
+
+        # Reassign the portfolio of "user2" to "user" (this should throw an error
+        # preventing "user" from having multiple portfolios)
         with self.assertRaises(ValidationError) as cm:
             portfolio_permission_2.user = self.user
             portfolio_permission_2.clean()
