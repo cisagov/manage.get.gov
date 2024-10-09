@@ -6,8 +6,8 @@ from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.utility.admin_helpers import (
-    get_action_needed_reason_default_email, 
-    get_rejection_reason_default_email, 
+    get_action_needed_reason_default_email,
+    get_rejection_reason_default_email,
     get_field_links_as_list,
 )
 from django.conf import settings
