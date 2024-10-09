@@ -443,7 +443,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             requested_domain_name = self.domain_request.requested_domain.name
 
         context_stuff = {}
-        if DomainRequest._form_complete(self.domain_request, self.request):
+
+        # Note: we will want to consolidate the non_org_steps_complete check into the same check that
+        # org_steps_complete is using at some point.
+        non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
+        org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
+        if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context_stuff = {
                 "not_form": False,
