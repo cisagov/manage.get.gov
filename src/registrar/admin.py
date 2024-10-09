@@ -1976,18 +1976,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             # If the status is not mapped properly, saving could cause
             # weird issues down the line. Instead, we should block this.
+            # NEEDS A UNIT TEST
             should_proceed = False
-            return should_proceed
+            return (obj, should_proceed)
 
-        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-        if request_is_not_approved and not obj.domain_is_not_active():
-            # If an admin tried to set an approved domain request to
-            # another status and the related domain is already
-            # active, shortcut the action and throw a friendly
-            # error message. This action would still not go through
-            # shortcut or not as the rules are duplicated on the model,
-            # but the error would be an ugly Django error screen.
+        obj_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if obj_is_not_approved and not obj.domain_is_not_active():
+            # REDUNDANT CHECK / ERROR SCREEN AVOIDANCE:
+            # This action (moving a request from approved to
+            # another status) when the domain is already active (READY),
+            # would still not go through even without this check as the rules are
+            # duplicated in the model and the error is raised from the model.
+            # This avoids an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
+        elif (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
+            and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+        ):
+            # REDUNDANT CHECK:
+            # This action (approving a request when the domain exists)
+            # would still not go through even without this check as the rules are
+            # duplicated in the model and the error is raised from the model.
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
         elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)

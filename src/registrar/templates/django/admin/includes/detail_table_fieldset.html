@@ -254,7 +254,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     <table>
                         <thead>
                             <tr>
-                                <th colspan="4">Other contact information</th>
+                                <th colspan="5">Other contact information</th>
                             <tr>
                         </thead>
                         <tbody>
@@ -267,18 +267,31 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
                                 <td class="padding-left-1 text-size-small">
-                                    <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
-                                    <button 
-                                    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
-                                    type="button"
-                                    >
-                                        <svg 
-                                        class="usa-icon" 
+                                    {% if contact.email %}
+                                        <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
+                                        <button 
+                                        class="
+                                            usa-button--dja 
+                                            usa-button 
+                                            usa-button__small-text 
+                                            usa-button--unstyled 
+                                            padding-right-1 
+                                            padding-top-0
+                                            padding-bottom-0
+                                            usa-button--icon 
+                                            copy-to-clipboard 
+                                            text-no-underline" 
+                                        type="button"
                                         >
-                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                                        </svg>
-                                        <span>Copy email</span>
-                                    </button>
+                                            <svg 
+                                            class="usa-icon" 
+                                            >
+                                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                            </svg>
+                                            <!-- the span is targeted in JS, do not remove -->
+                                            <span>Copy email</span>
+                                        </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
