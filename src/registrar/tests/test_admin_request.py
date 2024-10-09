@@ -1511,7 +1511,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "button--clipboard", count=4)
+        self.assertContains(response, "copy-to-clipboard", count=4)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")
@@ -1845,6 +1845,58 @@ class TestDomainRequestAdmin(MockEppLib):
 
     def test_side_effects_when_saving_approved_to_ineligible(self):
         self.trigger_saving_approved_to_another_state(False, DomainRequest.DomainRequestStatus.INELIGIBLE)
+
+    @less_console_noise
+    def test_error_when_saving_to_approved_and_domain_exists(self):
+        """Redundant admin check on model transition not allowed."""
+        Domain.objects.create(name="wabbitseason.gov")
+
+        new_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, name="wabbitseason.gov"
+        )
+
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(new_request.pk))
+        request.user = self.superuser
+
+        request.session = {}
+
+        # Use ExitStack to combine patch contexts
+        with ExitStack() as stack:
+            # Patch django.contrib.messages.error
+            stack.enter_context(patch.object(messages, "error"))
+
+            new_request.status = DomainRequest.DomainRequestStatus.APPROVED
+
+            self.admin.save_model(request, new_request, None, True)
+
+            messages.error.assert_called_once_with(
+                request,
+                "Cannot approve. Requested domain is already in use.",
+            )
+
+    @less_console_noise
+    def test_no_error_when_saving_to_approved_and_domain_exists(self):
+        """The negative of the redundant admin check on model transition not allowed."""
+        new_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED)
+
+        # Create a request object with a superuser
+        request = self.factory.post("/admin/registrar/domainrequest/{}/change/".format(new_request.pk))
+        request.user = self.superuser
+
+        request.session = {}
+
+        # Use ExitStack to combine patch contexts
+        with ExitStack() as stack:
+            # Patch Domain.is_active and django.contrib.messages.error simultaneously
+            stack.enter_context(patch.object(messages, "error"))
+
+            new_request.status = DomainRequest.DomainRequestStatus.APPROVED
+
+            self.admin.save_model(request, new_request, None, True)
+
+            # Assert that the error message was never called
+            messages.error.assert_not_called()
 
     def test_has_correct_filters(self):
         """

@@ -1498,12 +1498,23 @@ class DomainsTable extends LoadTableBase {
   }
 }
 
-
 class DomainRequestsTable extends LoadTableBase {
 
   constructor() {
     super('.domain-requests__table', '.domain-requests__table-wrapper', '#domain-requests__search-field', '#domain-requests__search-field-submit', '.domain-requests__reset-search', '.domain-requests__reset-filters', '.domain-requests__no-data', '.domain-requests__no-search-results');
   }
+  
+  toggleExportButton(requests) {
+    const exportButton = document.getElementById('export-csv'); 
+    if (exportButton) {
+        if (requests.length > 0) {
+            showElement(exportButton);
+        } else {
+            hideElement(exportButton);
+        }
+    }
+}
+
   /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
      * based on the supplied attributes.
@@ -1517,6 +1528,7 @@ class DomainRequestsTable extends LoadTableBase {
      */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm = this.currentSearchTerm, portfolio = this.portfolioValue) {
     let baseUrl = document.getElementById("get_domain_requests_json_url");
+    
     if (!baseUrl) {
       return;
     }
@@ -1547,6 +1559,9 @@ class DomainRequestsTable extends LoadTableBase {
           console.error('Error in AJAX call: ' + data.error);
           return;
         }
+
+        // Manage "export as CSV" visibility for domain requests
+        this.toggleExportButton(data.domain_requests);
 
         // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
         this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
