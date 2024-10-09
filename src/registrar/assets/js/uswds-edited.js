@@ -25,6 +25,8 @@
 /**
  * Edits made for dotgov project:
  *  - tooltip exposed to window to be accessible in other js files
+ *  - tooltip postiioning logic updated to allow position:fixed
+ *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
  */
@@ -5938,6 +5940,21 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     return offset;
   };
 
+  /*
+   DOTGOV: Tooltip postiioning logic updated to allow position:fixed
+   */
+  const tooltipStyle = window.getComputedStyle(tooltipBody);
+  const tooltipIsFixedPositioned = tooltipStyle.position === 'fixed';
+  const triggerRect = tooltipTrigger.getBoundingClientRect(); //detect if tooltip is set to "fixed" position
+  const targetLeft = tooltipIsFixedPositioned ? triggerRect.left + triggerRect.width/2 + 'px': `50%`
+  const targetTop = tooltipIsFixedPositioned ? triggerRect.top + triggerRect.height/2 + 'px': `50%`
+  if (tooltipIsFixedPositioned) {
+    // DOTGOV: Add listener to handle scrolling if tooltip position = 'fixed'
+    // (so that the tooltip doesn't appear to stick to the screen)
+    window.addEventListener('scroll', function() {
+      findBestPosition(tooltipBody)
+    });
+  }
   /**
    * Positions tooltip at the top
    * @param {HTMLElement} e - this is the tooltip body
@@ -5949,8 +5966,10 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("top");
-    e.style.left = `50%`; // center the element
-    e.style.top = `-${TRIANGLE_SIZE}px`; // consider the pseudo element
+
+    // DOTGOV: updated logic for position:fixed
+    e.style.left = targetLeft; // center the element
+    e.style.top = tooltipIsFixedPositioned ?`${triggerRect.top-TRIANGLE_SIZE}px`:`-${TRIANGLE_SIZE}px`; // consider the pseudo element 
     // apply our margins based on the offset
     e.style.margin = `-${topMargin}px 0 0 -${leftMargin / 2}px`;
   };
@@ -5963,7 +5982,12 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const leftMargin = calculateMarginOffset("left", e.offsetWidth, tooltipTrigger);
     setPositionClass("bottom");
-    e.style.left = `50%`;
+
+    // DOTGOV: updated logic for position:fixed
+    if (tooltipIsFixedPositioned){
+      e.style.top = triggerRect.bottom+'px';
+    }
+    e.style.left = targetLeft;
     e.style.margin = `${TRIANGLE_SIZE}px 0 0 -${leftMargin / 2}px`;
   };
 
@@ -5975,8 +5999,11 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     resetPositionStyles(e);
     const topMargin = calculateMarginOffset("top", e.offsetHeight, tooltipTrigger);
     setPositionClass("right");
-    e.style.top = `50%`;
-    e.style.left = `${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
+
+    // DOTGOV: updated logic for position:fixed
+    e.style.top = targetTop;
+    e.style.left = tooltipIsFixedPositioned ? `${triggerRect.right + TRIANGLE_SIZE}px`:`${tooltipTrigger.offsetLeft + tooltipTrigger.offsetWidth + TRIANGLE_SIZE}px`;
+;
     e.style.margin = `-${topMargin / 2}px 0 0 0`;
   };
 
@@ -5991,8 +6018,10 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
     // we have to check for some utility margins
     const leftMargin = calculateMarginOffset("left", tooltipTrigger.offsetLeft > e.offsetWidth ? tooltipTrigger.offsetLeft - e.offsetWidth : e.offsetWidth, tooltipTrigger);
     setPositionClass("left");
-    e.style.top = `50%`;
-    e.style.left = `-${TRIANGLE_SIZE}px`;
+
+    // DOTGOV: updated logic for position:fixed
+    e.style.top = targetTop;
+    e.style.left = tooltipIsFixedPositioned ? `${triggerRect.left-TRIANGLE_SIZE}px` : `-${TRIANGLE_SIZE}px`;
     e.style.margin = `-${topMargin / 2}px 0 0 ${tooltipTrigger.offsetLeft > e.offsetWidth ? leftMargin : -leftMargin}px`; // adjust the margin
   };
 
@@ -6017,6 +6046,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
       if (i < positions.length) {
         const pos = positions[i];
         pos(element);
+
         if (!isElementInViewport(element)) {
           // eslint-disable-next-line no-param-reassign
           tryPositions(i += 1);
@@ -6128,7 +6158,13 @@ const setUpAttributes = tooltipTrigger => {
   tooltipBody.setAttribute("aria-hidden", "true");
 
   // place the text in the tooltip
-  tooltipBody.textContent = tooltipContent;
+  // DOTGOV: nest the text element to allow us creater control over width and wrapping behavior
+   tooltipBody.innerHTML = `
+    <div class="usa-tooltip__content">
+      ${tooltipContent}
+    </div>`
+  // tooltipBody.textContent = tooltipContent;
+
   return {
     tooltipBody,
     position,
