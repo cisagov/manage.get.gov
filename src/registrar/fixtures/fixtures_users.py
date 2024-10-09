@@ -6,6 +6,7 @@ from registrar.models import (
     User,
     UserGroup,
 )
+from registrar.models.allowed_email import AllowedEmail
 
 
 fake = Faker()
@@ -23,124 +24,127 @@ class UserFixture:
 
     ADMINS = [
         {
-            "username": "43a7fa8d-0550-4494-a6fe-81500324d590",
-            "first_name": "Jyoti",
-            "last_name": "Bock",
-            "email": "jyotibock@truss.works",
-        },
-        {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
+            "email": "aditidevelops+01@gmail.com",
+            "title": "Positive vibes",
         },
         {
             "username": "be17c826-e200-4999-9389-2ded48c43691",
             "first_name": "Matthew",
             "last_name": "Spence",
+            "title": "Hollywood hair",
         },
         {
             "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
             "first_name": "Rachid",
             "last_name": "Mrad",
+            "email": "rachid.mrad@associates.cisa.dhs.gov",
+            "title": "Common pirate",
         },
         {
             "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
             "first_name": "Alysia",
             "last_name": "Broddrick",
+            "email": "abroddrick@truss.works",
+            "title": "I drink coffee and know things",
         },
         {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
             "first_name": "Katherine",
             "last_name": "Osos",
+            "email": "kosos@truss.works",
+            "title": "Grove keeper",
         },
         {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
             "first_name": "Gaby",
             "last_name": "DiSarli",
             "email": "gaby@truss.works",
+            "title": "De Stijl",
         },
         {
             "username": "83c2b6dd-20a2-4cac-bb40-e22a72d2955c",
             "first_name": "Cameron",
             "last_name": "Dixon",
-        },
-        {
-            "username": "0353607a-cbba-47d2-98d7-e83dcd5b90ea",
-            "first_name": "Ryan",
-            "last_name": "Brooks",
+            "email": "cameron.dixon@cisa.dhs.gov",
+            "title": "Product owner",
         },
         {
             "username": "30001ee7-0467-4df2-8db2-786e79606060",
             "first_name": "Zander",
             "last_name": "Adkinson",
+            "title": "ACME specialist",
         },
         {
             "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
+            "title": "Dr. Silvertongue",
         },
         {
             "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
             "first_name": "Rebecca",
             "last_name": "Hsieh",
+            "email": "rebecca.hsieh@truss.works",
+            "title": "Catlady",
         },
         {
             "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
             "first_name": "David",
             "last_name": "Kennedy",
+            "email": "david.kennedy@ecstech.com",
+            "title": "Mean lean coding machine",
         },
         {
             "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
             "first_name": "Nicolle",
             "last_name": "LeClair",
+            "email": "nicolle.leclair@ecstech.com",
+            "title": "Nightowl",
         },
         {
             "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
             "first_name": "Erin",
             "last_name": "Song",
+            "title": "Catlady 2",
         },
         {
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
+            "title": "Hufflepuff prefect",
         },
         {
             "username": "ac49d7c1-368a-4e6b-8f1d-60250e20a16f",
             "first_name": "Vicky",
             "last_name": "Chin",
             "email": "szu.chin@associates.cisa.dhs.gov",
+            "title": "Ze whip",
         },
         {
             "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
             "first_name": "Christina",
             "last_name": "Burnett",
             "email": "christina.burnett@cisa.dhs.gov",
-        },
-        {
-            "username": "012f844d-8a0f-4225-9d82-cbf87bff1d3e",
-            "first_name": "Riley",
-            "last_name": "Orr",
-            "email": "riley+320@truss.works",
+            "title": "Groovy",
         },
         {
             "username": "76612d84-66b0-4ae9-9870-81e98b9858b6",
             "first_name": "Anna",
             "last_name": "Gingle",
             "email": "annagingle@truss.works",
+            "title": "Sweetwater sailor",
         },
     ]
 
     STAFF = [
         {
-            "username": "a5906815-dd80-4c64-aebe-2da6a4c9d7a4",
-            "first_name": "Jyoti-Analyst",
-            "last_name": "Bock-Analyst",
-            "email": "jyotibock+1@truss.works",
-        },
-        {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
             "last_name": "Green-Analyst",
+            "email": "aditidevelops+02@gmail.com",
         },
         {
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
@@ -162,7 +166,7 @@ class UserFixture:
             "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
             "first_name": "Katherine-Analyst",
             "last_name": "Osos-Analyst",
-            "email": "kosos@truss.works",
+            "email": "kosos+1@truss.works",
         },
         {
             "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
@@ -183,6 +187,7 @@ class UserFixture:
             "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
             "first_name": "David-Analyst",
             "last_name": "Kennedy-Analyst",
+            "email": "david.kennedy@associates.cisa.dhs.gov",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
@@ -194,7 +199,7 @@ class UserFixture:
             "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair@ecstech.com",
+            "email": "nicolle.leclair@gmail.com",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
@@ -221,18 +226,6 @@ class UserFixture:
             "email": "christina.burnett@gwe.cisa.dhs.gov",
         },
         {
-            "username": "d9839768-0c17-4fa2-9c8e-36291eef5c11",
-            "first_name": "Alex-Analyst",
-            "last_name": "Mcelya-Analyst",
-            "email": "ALEXANDER.MCELYA@cisa.dhs.gov",
-        },
-        {
-            "username": "082a066f-e0a4-45f6-8672-4343a1208a36",
-            "first_name": "Riley-Analyst",
-            "last_name": "Orr-Analyst",
-            "email": "riley+321@truss.works",
-        },
-        {
             "username": "e1e350b1-cfc1-4753-a6cb-3ae6d912f99c",
             "first_name": "Anna-Analyst",
             "last_name": "Gingle-Analyst",
@@ -240,38 +233,99 @@ class UserFixture:
         },
     ]
 
+    # Additional emails to add to the AllowedEmail whitelist.
+    ADDITIONAL_ALLOWED_EMAILS: list[str] = ["davekenn4242@gmail.com", "rachid_mrad@hotmail.com"]
+
+    @classmethod
     def load_users(cls, users, group_name, are_superusers=False):
-        logger.info(f"Going to load {len(users)} users in group {group_name}")
-        for user_data in users:
+        """Loads the users into the database and assigns them to the specified group."""
+        logger.info(f"Going to load {len(users)} users for group {group_name}")
+
+        group = UserGroup.objects.get(name=group_name)
+
+        # Prepare sets of existing usernames and IDs in one query
+        user_identifiers = [(user.get("username"), user.get("id")) for user in users]
+        existing_users = User.objects.filter(
+            username__in=[user[0] for user in user_identifiers] + [user[1] for user in user_identifiers]
+        ).values_list("username", "id")
+
+        existing_usernames = set(user[0] for user in existing_users)
+        existing_user_ids = set(user[1] for user in existing_users)
+
+        # Filter out users with existing IDs or usernames
+        new_users = [
+            User(
+                id=user_data.get("id"),
+                first_name=user_data.get("first_name"),
+                last_name=user_data.get("last_name"),
+                username=user_data.get("username"),
+                email=user_data.get("email", ""),
+                title=user_data.get("title", "Peon"),
+                phone=user_data.get("phone", "2022222222"),
+                is_active=user_data.get("is_active", True),
+                is_staff=True,
+                is_superuser=are_superusers,
+            )
+            for user_data in users
+            if user_data.get("username") not in existing_usernames and user_data.get("id") not in existing_user_ids
+        ]
+
+        # Perform bulk creation for new users
+        if new_users:
             try:
-                user, _ = User.objects.get_or_create(username=user_data["username"])
-                user.is_superuser = are_superusers
-                user.first_name = user_data["first_name"]
-                user.last_name = user_data["last_name"]
-                if "email" in user_data:
-                    user.email = user_data["email"]
-                user.is_staff = True
-                user.is_active = True
-                # This verification type will get reverted to "regular" (or whichever is applicables)
-                # once the user logs in for the first time (as they then got verified through different means).
-                # In the meantime, we can still describe how the user got here in the first place.
-                user.verification_type = User.VerificationTypeChoices.FIXTURE_USER
-                group = UserGroup.objects.get(name=group_name)
-                user.groups.add(group)
-                user.save()
-                logger.debug(f"User object created for {user_data['first_name']}")
+                User.objects.bulk_create(new_users)
+                logger.info(f"Created {len(new_users)} new users.")
             except Exception as e:
-                logger.warning(e)
-        logger.info(f"All users in group {group_name} loaded.")
+                logger.error(f"Unexpected error during user bulk creation: {e}")
+        else:
+            logger.info("No new users to create.")
+
+        # Get all users to be updated (both new and existing)
+        created_or_existing_users = User.objects.filter(username__in=[user.get("username") for user in users])
+
+        # Filter out users who are already in the group
+        users_not_in_group = created_or_existing_users.exclude(groups__id=group.id)
+
+        # Add only users who are not already in the group
+        if users_not_in_group.exists():
+            group.user_set.add(*users_not_in_group)
+
+        logger.info(f"Users loaded for group {group_name}.")
+
+    def load_allowed_emails(cls, users, additional_emails):
+        """Populates a whitelist of allowed emails (as defined in this list)"""
+        logger.info(f"Going to load allowed emails for {len(users)} users")
+        if additional_emails:
+            logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
+
+        existing_emails = set(AllowedEmail.objects.values_list("email", flat=True))
+        new_allowed_emails = []
+
+        for user_data in users:
+            user_email = user_data.get("email")
+            if user_email and user_email not in existing_emails:
+                new_allowed_emails.append(AllowedEmail(email=user_email))
+
+        # Load additional emails, only if they don't exist already
+        for email in additional_emails:
+            if email not in existing_emails:
+                new_allowed_emails.append(AllowedEmail(email=email))
+
+        if new_allowed_emails:
+            try:
+                AllowedEmail.objects.bulk_create(new_allowed_emails)
+                logger.info(f"Loaded {len(new_allowed_emails)} allowed emails")
+            except Exception as e:
+                logger.error(f"Unexpected error during allowed emails bulk creation: {e}")
+        else:
+            logger.info("No allowed emails to load")
 
     @classmethod
     def load(cls):
-        # Lumped under .atomic to ensure we don't make redundant DB calls.
-        # This bundles them all together, and then saves it in a single call.
-        # This is slightly different then bulk_create or bulk_update, in that
-        # you still get the same behaviour of .save(), but those incremental
-        # steps now do not need to close/reopen a db connection,
-        # instead they share one.
         with transaction.atomic():
-            cls.load_users(cls, cls.ADMINS, "full_access_group", are_superusers=True)
-            cls.load_users(cls, cls.STAFF, "cisa_analysts_group")
+            cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
+            cls.load_users(cls.STAFF, "cisa_analysts_group")
+
+            # Combine ADMINS and STAFF lists
+            all_users = cls.ADMINS + cls.STAFF
+            cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)

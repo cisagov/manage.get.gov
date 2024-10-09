@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -27,6 +27,7 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainInvitation,
+    AllowedEmail,
     Contact,
     PublicContact,
     Host,
@@ -36,6 +37,7 @@ from registrar.models import (
     FederalAgency,
     Portfolio,
     Suborganization,
+    UserPortfolioPermission,
 )
 from datetime import date, datetime, timedelta
 from django.utils import timezone
@@ -159,7 +161,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
@@ -179,7 +180,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-nameservers",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
@@ -200,7 +200,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
             "domain-senior-official",
-            "domain-your-contact-information",
             "domain-security-email",
         ]:
             for domain in [
@@ -316,6 +315,7 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "Domain missing domain information")
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
@@ -328,11 +328,14 @@ class TestDomainDetail(TestDomainOverview):
             email="bogus@example.gov",
             phone="8003111234",
             title="test title",
-            portfolio=portfolio,
-            portfolio_roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
         # Check that alert message displays properly
@@ -344,6 +347,22 @@ class TestDomainDetail(TestDomainOverview):
 
 
 class TestDomainManagers(TestDomainOverview):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        allowed_emails = [
+            AllowedEmail(email=""),
+            AllowedEmail(email="testy@town.com"),
+            AllowedEmail(email="mayor@igorville.gov"),
+            AllowedEmail(email="testy2@town.com"),
+        ]
+        AllowedEmail.objects.bulk_create(allowed_emails)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        AllowedEmail.objects.all().delete()
+
     def tearDown(self):
         """Ensure that the user has its original permissions"""
         super().tearDown()
@@ -460,6 +479,7 @@ class TestDomainManagers(TestDomainOverview):
         """Inviting a non-existent user sends them an email."""
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
+        allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.filter(email=email_address).delete()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
@@ -479,6 +499,7 @@ class TestDomainManagers(TestDomainOverview):
             Destination={"ToAddresses": [email_address]},
             Content=ANY,
         )
+        allowed_email.delete()
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -564,6 +585,7 @@ class TestDomainManagers(TestDomainOverview):
         """Inviting a user sends them an email, with email as the name."""
         # Create a fake user object
         email_address = "mayor@igorville.gov"
+        AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
         # Make sure the user is staff
@@ -701,7 +723,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
-        other_user = User()
+        other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
@@ -715,6 +737,12 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_flow(self):
         """Send an invitation to a new user, log in and load the dashboard."""
         email_address = "mayor@igorville.gov"
+        username = "mayor"
+        first_name = "First"
+        last_name = "Last"
+        title = "title"
+        phone = "8080102431"
+        title = "title"
         User.objects.filter(email=email_address).delete()
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
@@ -730,7 +758,9 @@ class TestDomainManagers(TestDomainOverview):
             add_page.form.submit()
 
         # user was invited, create them
-        new_user = User.objects.create(username=email_address, email=email_address)
+        new_user = User.objects.create(
+            username=username, email=email_address, first_name=first_name, last_name=last_name, title=title, phone=phone
+        )
         # log them in to `self.app`
         self.app.set_user(new_user.username)
         # and manually call the on each login callback
@@ -1128,7 +1158,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=3)
+        self.assertContains(page, "Senior official", count=4)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
@@ -1276,7 +1306,9 @@ class TestDomainOrganization(TestDomainOverview):
         """Can load domain's org name and mailing address page."""
         page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
-        self.assertContains(page, "Organization name and mailing address", count=4)
+        self.assertContains(page, "/org-name-address")
+        self.assertContains(page, "Organization name and mailing address")
+        self.assertContains(page, "Organization</h1>")
 
     @less_console_noise_decorator
     def test_domain_org_name_address_content(self):
@@ -1477,10 +1509,9 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # Add portfolio perms to the user object
-        self.user.portfolio = portfolio
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        self.user.save()
-        self.user.refresh_from_db()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
         self.assertEqual(self.domain_information.sub_organization, suborg)
 
@@ -1536,10 +1567,9 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # Add portfolio perms to the user object
-        self.user.portfolio = portfolio
-        self.user.portfolio_roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY]
-        self.user.save()
-        self.user.refresh_from_db()
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
 
         self.assertEqual(self.domain_information.sub_organization, suborg)
 
@@ -1577,9 +1607,9 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
 
         # Add portfolio perms to the user object
-        self.user.portfolio = portfolio
-        self.user.portfolio_additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
-        self.user.save()
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
         self.user.refresh_from_db()
 
         # Navigate to the domain overview page
@@ -1587,7 +1617,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization name")
+        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
@@ -1599,22 +1629,6 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.delete()
         suborg.delete()
         portfolio.delete()
-
-
-class TestDomainContactInformation(TestDomainOverview):
-    @less_console_noise_decorator
-    def test_domain_your_contact_information(self):
-        """Can load domain's your contact information page."""
-        page = self.client.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Your contact information")
-
-    @less_console_noise_decorator
-    def test_domain_your_contact_information_content(self):
-        """Logged-in user's contact information appears on the page."""
-        self.user.first_name = "Testy"
-        self.user.save()
-        page = self.app.get(reverse("domain-your-contact-information", kwargs={"pk": self.domain.id}))
-        self.assertContains(page, "Testy")
 
 
 class TestDomainSecurityEmail(TestDomainOverview):

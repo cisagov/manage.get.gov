@@ -20,15 +20,23 @@ from registrar.views.report_views import (
     AnalyticsView,
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
+    ExportDataTypeRequests,
+)
+
+# --jsons
+from registrar.views.domain_requests_json import get_domain_requests_json
+from registrar.views.domains_json import get_domains_json
+from registrar.views.portfolio_members_json import get_portfolio_members_json
+from registrar.views.utility.api_views import (
+    get_senior_official_from_federal_agency_json,
+    get_federal_and_portfolio_types_from_federal_agency_json,
+    get_action_needed_email_for_user_json,
 )
 
 from registrar.views.domain_request import Step
-from registrar.views.domain_requests_json import get_domain_requests_json
-from registrar.views.utility.api_views import get_senior_official_from_federal_agency_json
-from registrar.views.domains_json import get_domains_json
+from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
-from api.views import available, get_current_federal, get_current_full
-
+from api.views import available, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 domain_request_urls = [
@@ -49,7 +57,6 @@ for step, view in [
     (Step.CURRENT_SITES, views.CurrentSites),
     (Step.DOTGOV_DOMAIN, views.DotgovDomain),
     (Step.PURPOSE, views.Purpose),
-    (Step.YOUR_CONTACT, views.YourContact),
     (Step.OTHER_CONTACTS, views.OtherContacts),
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
@@ -66,9 +73,29 @@ urlpatterns = [
         name="domains",
     ),
     path(
+        "no-organization-domains/",
+        views.PortfolioNoDomainsView.as_view(),
+        name="no-portfolio-domains",
+    ),
+    path(
+        "members/",
+        views.PortfolioMembersView.as_view(),
+        name="members",
+    ),
+    # path(
+    #     "no-organization-members/",
+    #     views.PortfolioNoMembersView.as_view(),
+    #     name="no-portfolio-members",
+    # ),
+    path(
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
         name="domain-requests",
+    ),
+    path(
+        "no-organization-requests/",
+        views.PortfolioNoDomainRequestsView.as_view(),
+        name="no-portfolio-requests",
     ),
     path(
         "organization/",
@@ -129,16 +156,32 @@ urlpatterns = [
         AnalyticsView.as_view(),
         name="analytics",
     ),
+    path("admin/registrar/user/<int:user_id>/transfer/", TransferUserView.as_view(), name="transfer_user"),
     path(
         "admin/api/get-senior-official-from-federal-agency-json/",
         get_senior_official_from_federal_agency_json,
         name="get-senior-official-from-federal-agency-json",
+    ),
+    path(
+        "admin/api/get-federal-and-portfolio-types-from-federal-agency-json/",
+        get_federal_and_portfolio_types_from_federal_agency_json,
+        name="get-federal-and-portfolio-types-from-federal-agency-json",
+    ),
+    path(
+        "admin/api/get-action-needed-email-for-user-json/",
+        get_action_needed_email_for_user_json,
+        name="get-action-needed-email-for-user-json",
     ),
     path("admin/", admin.site.urls),
     path(
         "reports/export_data_type_user/",
         ExportDataTypeUser.as_view(),
         name="export_data_type_user",
+    ),
+    path(
+        "reports/export_data_type_requests/",
+        ExportDataTypeRequests.as_view(),
+        name="export_data_type_requests",
     ),
     path(
         "domain-request/<id>/edit/",
@@ -149,6 +192,11 @@ urlpatterns = [
         "domain-request/<int:pk>",
         views.DomainRequestStatus.as_view(),
         name="domain-request-status",
+    ),
+    path(
+        "domain-request/viewonly/<int:pk>",
+        views.PortfolioDomainRequestStatusViewOnly.as_view(),
+        name="domain-request-status-viewonly",
     ),
     path(
         "domain-request/<int:pk>/withdraw",
@@ -164,6 +212,7 @@ urlpatterns = [
     path("openid/", include("djangooidc.urls")),
     path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
+    path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
     path(
@@ -192,11 +241,6 @@ urlpatterns = [
         "domain/<int:pk>/dns/dnssec/dsdata",
         views.DomainDsDataView.as_view(),
         name="domain-dns-dnssec-dsdata",
-    ),
-    path(
-        "domain/<int:pk>/your-contact-information",
-        views.DomainYourContactInformationView.as_view(),
-        name="domain-your-contact-information",
     ),
     path(
         "domain/<int:pk>/org-name-address",
@@ -250,6 +294,7 @@ urlpatterns = [
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
+    path("get-portfolio-members-json/", get_portfolio_members_json, name="get_portfolio_members_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

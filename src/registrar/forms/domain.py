@@ -417,7 +417,7 @@ class SeniorOfficialContactForm(ContactForm):
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            raise ValueError("Senior Official cannot be modified for federal or tribal domains.")
+            raise ValueError("Senior official cannot be modified for federal or tribal domains.")
         elif db_so.has_more_than_one_join("information_senior_official"):
             # Handle the case where the domain information object is available and the SO Contact
             # has more than one joined object.

@@ -14,6 +14,7 @@ on:
         options:
           - ab
           - backup
+          - el
           - cb
           - dk
           - es
@@ -30,6 +31,7 @@ on:
           - litterbox
           - ms
           - ad
+          - ag
       # GitHub Actions has no "good" way yet to dynamically input branches
       branch:
         description: 'Branch to deploy'

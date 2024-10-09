@@ -583,6 +583,105 @@ class DomainDataTypeUser(DomainDataType):
             return Q(domain__id__in=request.user.get_user_domain_ids(request))
 
 
+class DomainRequestsDataType:
+    """
+    The DomainRequestsDataType report, but filtered based on the current request user
+    """
+
+    @classmethod
+    def get_filter_conditions(cls, request=None):
+        if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
+            return Q(id__in=[])
+
+        request_ids = request.user.get_user_domain_request_ids(request)
+        return Q(id__in=request_ids)
+
+    @classmethod
+    def get_queryset(cls, request):
+        return DomainRequest.objects.filter(cls.get_filter_conditions(request))
+
+    def safe_get(attribute, default="N/A"):
+        # Return the attribute value or default if not present
+        return attribute if attribute is not None else default
+
+    @classmethod
+    def exporting_dr_data_to_csv(cls, response, request=None):
+        import csv
+
+        writer = csv.writer(response)
+
+        # CSV headers
+        writer.writerow(
+            [
+                "Domain request",
+                "Region",
+                "Status",
+                "Election office",
+                "Federal type",
+                "Domain type",
+                "Request additional details",
+                "Creator approved domains count",
+                "Creator active requests count",
+                "Alternative domains",
+                "Other contacts",
+                "Current websites",
+                "Federal agency",
+                "SO first name",
+                "SO last name",
+                "SO email",
+                "SO title/role",
+                "Creator first name",
+                "Creator last name",
+                "Creator email",
+                "Organization name",
+                "City",
+                "State/territory",
+                "Request purpose",
+                "CISA regional representative",
+                "Last submitted date",
+                "First submitted date",
+                "Last status update",
+            ]
+        )
+
+        queryset = cls.get_queryset(request)
+        for request in queryset:
+            writer.writerow(
+                [
+                    request.requested_domain,
+                    cls.safe_get(getattr(request, "region_field", None)),
+                    request.status,
+                    cls.safe_get(getattr(request, "election_office", None)),
+                    request.federal_type,
+                    cls.safe_get(getattr(request, "domain_type", None)),
+                    cls.safe_get(getattr(request, "additional_details", None)),
+                    cls.safe_get(getattr(request, "creator_approved_domains_count", None)),
+                    cls.safe_get(getattr(request, "creator_active_requests_count", None)),
+                    cls.safe_get(getattr(request, "all_alternative_domains", None)),
+                    cls.safe_get(getattr(request, "all_other_contacts", None)),
+                    cls.safe_get(getattr(request, "all_current_websites", None)),
+                    cls.safe_get(getattr(request, "federal_agency", None)),
+                    cls.safe_get(getattr(request.senior_official, "first_name", None)),
+                    cls.safe_get(getattr(request.senior_official, "last_name", None)),
+                    cls.safe_get(getattr(request.senior_official, "email", None)),
+                    cls.safe_get(getattr(request.senior_official, "title", None)),
+                    cls.safe_get(getattr(request.creator, "first_name", None)),
+                    cls.safe_get(getattr(request.creator, "last_name", None)),
+                    cls.safe_get(getattr(request.creator, "email", None)),
+                    cls.safe_get(getattr(request, "organization_name", None)),
+                    cls.safe_get(getattr(request, "city", None)),
+                    cls.safe_get(getattr(request, "state_territory", None)),
+                    cls.safe_get(getattr(request, "purpose", None)),
+                    cls.safe_get(getattr(request, "cisa_representative_email", None)),
+                    cls.safe_get(getattr(request, "last_submitted_date", None)),
+                    cls.safe_get(getattr(request, "first_submitted_date", None)),
+                    cls.safe_get(getattr(request, "last_status_update", None)),
+                ]
+            )
+
+        return response
+
+
 class DomainDataFull(DomainExport):
     """
     Shows security contacts, filtered by state
@@ -1235,7 +1334,9 @@ class DomainRequestExport(BaseExport):
             "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
             "CISA regional representative": model.get("cisa_representative_email"),
-            "Submitted at": model.get("submission_date"),
+            "Last submitted date": model.get("last_submitted_date"),
+            "First submitted date": model.get("first_submitted_date"),
+            "Last status update": model.get("last_status_update"),
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -1279,8 +1380,8 @@ class DomainRequestGrowth(DomainRequestExport):
         end_date_formatted = format_end_date(end_date)
         return Q(
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
-            submission_date__lte=end_date_formatted,
-            submission_date__gte=start_date_formatted,
+            last_submitted_date__lte=end_date_formatted,
+            last_submitted_date__gte=start_date_formatted,
         )
 
     @classmethod
@@ -1304,7 +1405,9 @@ class DomainRequestDataFull(DomainRequestExport):
         """
         return [
             "Domain request",
-            "Submitted at",
+            "Last submitted date",
+            "First submitted date",
+            "Last status update",
             "Status",
             "Domain type",
             "Federal type",

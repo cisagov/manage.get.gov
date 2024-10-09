@@ -8,6 +8,8 @@
     {# Store the current object id so we can access it easier #}
     <input id="domain_request_id" class="display-none" value="{{original.id}}" />
     <input id="has_audit_logs" class="display-none" value="{%if filtered_audit_log_entries %}true{% else %}false{% endif %}"/>
+    {% url 'get-action-needed-email-for-user-json' as url %}
+    <input id="get-action-needed-email-for-user-json" class="display-none" value="{{ url }}" />
     {% for fieldset in adminform %}
         {% comment %}
         TODO: this will eventually need to be changed to something like this
@@ -120,7 +122,7 @@
         </button>
     </span>
 
-    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 requested-domain-sticky float-right visible-768">
+    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 submit-row-sticky float-right visible-768">
         Requested domain: <strong>{{ original.requested_domain.name }}</strong>
     </p>
     {{ block.super }}

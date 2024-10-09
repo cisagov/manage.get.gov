@@ -1,5 +1,6 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
+@use "base" as *;
 
 // Define some styles for the .gov header/logo
 .usa-logo button {
@@ -89,15 +90,23 @@
         .usa-nav__primary {
             .usa-nav-link,
             .usa-nav-link:hover,
-            .usa-nav-link:active  {
+            .usa-nav-link:active,
+            button  {
                 color: color('primary');
                 font-weight: font-weight('normal');
                 font-size: 16px;
             }
             .usa-current,
             .usa-current:hover,
-            .usa-current:active  {
+            .usa-current:active,
+            button.usa-current {
                 font-weight: font-weight('bold');
+            }
+            button[aria-expanded="true"] {
+                color: color('white');
+            }
+            button:not(.usa-current):hover::after  {
+                display: none!important;
             }
         }
         .usa-nav__secondary {
@@ -118,4 +127,10 @@
             overflow: visible;
         }
     }
+}
+
+.usa-nav__inner--widescreen,
+.usa-navbar--widescreen,
+.usa-nav-container--widescreen  {
+    max-width: $widescreen-max-width !important;
 }

@@ -4,7 +4,17 @@
 
 {% block title %} Domains | {% endblock %}
 
+{% block wrapper_class %}
+  {{ block.super }} dashboard--grey-1
+{% endblock %}
+
 {% block portfolio_content %}
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock %}
+
+<div id="main-content">
     <h1 id="domains-header">Domains</h1>
     {% include "includes/domains_table.html" with portfolio=portfolio user_domain_count=user_domain_count %}
+</div>
 {% endblock %}

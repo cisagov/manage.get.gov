@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% load static url_helpers %}
+
+{% block title %}Domain request status | {{ DomainRequest.requested_domain.name }} | {% endblock %}
+
+{% block content %}
+  {% include "includes/portfolio_request_status_view.html" %}
+{% endblock %}

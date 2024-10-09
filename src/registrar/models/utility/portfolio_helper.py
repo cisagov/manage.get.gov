@@ -7,8 +7,11 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_ADMIN_READ_ONLY = "organization_admin_read_only", "Admin read only"
     ORGANIZATION_MEMBER = "organization_member", "Member"
+
+    @classmethod
+    def get_user_portfolio_role_label(cls, user_portfolio_role):
+        return cls(user_portfolio_role).label if user_portfolio_role else None
 
 
 class UserPortfolioPermissionChoices(models.TextChoices):
@@ -17,11 +20,10 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
     VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
 
-    VIEW_MEMBER = "view_member", "View members"
-    EDIT_MEMBER = "edit_member", "Create and edit members"
+    VIEW_MEMBERS = "view_members", "View members"
+    EDIT_MEMBERS = "edit_members", "Create and edit members"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-    VIEW_CREATED_REQUESTS = "view_created_requests", "View created requests"
     EDIT_REQUESTS = "edit_requests", "Create and edit requests"
 
     VIEW_PORTFOLIO = "view_portfolio", "View organization"
@@ -30,3 +32,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     # Domain: field specific permissions
     VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
     EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"
+
+    @classmethod
+    def get_user_portfolio_permission_label(cls, user_portfolio_permission):
+        return cls(user_portfolio_permission).label if user_portfolio_permission else None

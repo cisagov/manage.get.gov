@@ -3,6 +3,7 @@
 import time
 import logging
 from urllib.parse import urlparse, urlunparse, urlencode
+from django.urls import resolve, Resolver404
 
 logger = logging.getLogger(__name__)
 
@@ -315,3 +316,30 @@ def convert_queryset_to_dict(queryset, is_model=True, key="id"):
         request_dict = {value[key]: value for value in queryset}
 
     return request_dict
+
+
+def get_url_name(path):
+    """
+    Given a URL path, returns the corresponding URL name defined in urls.py.
+
+    Args:
+        path (str): The URL path to resolve.
+
+    Returns:
+        str or None: The URL name if it exists, otherwise None.
+    """
+    try:
+        match = resolve(path)
+        return match.url_name
+    except Resolver404:
+        logger.error(f"No matching URL name found for path: {path}")
+        return None
+
+
+def value_of_attribute(obj, attribute_name: str):
+    """Returns the value of getattr if the attribute isn't callable.
+    If it is, execute the underlying function and return that result instead."""
+    value = getattr(obj, attribute_name)
+    if callable(value):
+        value = value()
+    return value

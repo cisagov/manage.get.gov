@@ -18,6 +18,8 @@ from .mixins import (
     UserDeleteDomainRolePermission,
     UserProfilePermission,
     PortfolioBasePermission,
+    PortfolioMembersPermission,
+    DomainRequestPortfolioViewonlyPermission,
 )
 import logging
 
@@ -81,6 +83,25 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
 
 class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
+    """Abstract base view for domain requests that enforces permissions
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+    # DetailView property for what model this is viewing
+    model = DomainRequest
+    # variable name in template context for the model object
+    context_object_name = "DomainRequest"
+
+    # Abstract property enforces NotImplementedError on an attribute.
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        raise NotImplementedError
+
+
+class DomainRequestPortfolioViewonlyView(DomainRequestPortfolioViewonlyPermission, DetailView, abc.ABC):
     """Abstract base view for domain requests that enforces permissions
 
     This abstract view cannot be instantiated. Actual views must specify
@@ -214,7 +235,24 @@ class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePe
     """
 
 
+class NoPortfolioDomainsPermissionView(PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for a user without access to the
+    portfolio domains views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
 class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
+    """Abstract base view for portfolio domain request views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
+class PortfolioMembersPermissionView(PortfolioMembersPermission, PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for portfolio domain request views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify

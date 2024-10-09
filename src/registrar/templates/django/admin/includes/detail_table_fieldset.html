@@ -66,24 +66,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             No changelog to display.
         </div>
         {% endif %}
-    {% elif field.field.name == "action_needed_reason_email" %}
-    <div class="readonly textarea-wrapper">
-        <div id="action_needed_reason_email_readonly" class="dja-readonly-textarea-container padding-1 margin-top-0 padding-top-0 margin-bottom-1 thin-border collapse--dgsimple collapsed">
-            <label class="max-full" for="action_needed_reason_email_view_more">
-                <strong>Sent to {% if has_profile_feature_flag %}creator{%else%}submitter{%endif%}</strong>
-            </label>
-            <textarea id="action_needed_reason_email_view_more" cols="40" rows="20" class="{% if not original_object.action_needed_reason %}display-none{% endif %}" readonly>
-                {{ original_object.action_needed_reason_email }}
-            </textarea>
-            <p id="no-email-message" class="{% if original_object.action_needed_reason %}display-none{% endif %}">No email will be sent.</p>
-        </div>
-        <button type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0 margin-bottom-1 margin-left-1">
-            <span>Show details</span>
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-            </svg>
-        </button>
-    </div>
     {% elif field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
@@ -107,7 +89,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% endif %}
     {% elif field.field.name == "requested_domain" %}
         {% with current_path=request.get_full_path %}
-        <a class="margin-top-05 padding-top-05" href="{% url 'admin:registrar_draftdomain_change' original.requested_domain.id %}?{{ 'return_path='|add:current_path }}">{{ original.requested_domain }}</a>
+        <a class="margin-top-05 padding-top-05" id="id_requested_domain" href="{% url 'admin:registrar_draftdomain_change' original.requested_domain.id %}?{{ 'return_path='|add:current_path }}">{{ original.requested_domain }}</a>
         {% endwith%}
     {% elif field.field.name == "current_websites" %}
         {% comment %}
@@ -137,6 +119,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% endfor %}
             {% endwith %}
         </div>
+    {% elif field.field.name == "domain_managers" or field.field.name == "invited_domain_managers" %}
+        <div class="readonly">{{ field.contents|safe }}</div>
+    {% elif field.field.name == "display_members" %}
+        <div class="readonly">
+            {% if display_members_summary %}
+                {{ display_members_summary }}
+            {% else %}
+                <p>No additional members found.</p>
+            {% endif %}
+        </div>
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}
@@ -145,41 +137,102 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_other %}
     {% if field.field.name == "action_needed_reason_email" %}
-    <div id="action-needed-reason-email-readonly" class="readonly margin-top-0 padding-top-0 display-none">
-        <div class="margin-top-05 collapse--dgsimple collapsed">
-        {{ field.field.value|linebreaks }}
+
+        <div class="margin-top-05 text-faded field-action_needed_reason_email__placeholder">
+            &ndash;
         </div>
-        <button id="action_needed_reason_email__show_details" type="button" class="collapse-toggle--dgsimple usa-button usa-button--unstyled margin-top-0 margin-bottom-1 margin-left-1">
-            <span>Show details</span>
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-            </svg>
-        </button>
-    </div>
-    <div>
+
         {{ field.field }}
-        <input id="action-needed-email-sent" class="display-none" value="{{action_needed_email_sent}}">
-    </div>
+
+        <button
+            aria-label="Edit email in textarea"
+            type="button"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline field-action_needed_reason_email__edit flex-align-self-start"
+            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</button
+        >
+        <a
+            href="#email-already-sent-modal"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 field-action_needed_reason_email__modal-trigger flex-align-self-start"
+            aria-controls="email-already-sent-modal"
+            data-open-modal
+            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</a
+        >
+        <div
+            class="usa-modal"
+            id="email-already-sent-modal"
+            aria-labelledby="Are you sure you want to edit this email?"
+            aria-describedby="The creator of this request already received an email"
+            >
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading">
+                        Are you sure you want to edit this email?
+                    </h2>
+                    <div class="usa-prose">
+                        <p>
+                            The creator of this request already received an email for this status/reason: 
+                        </p>
+                        <ul>
+                            <li class="font-body-sm">Status: <b>Action needed</b></li>
+                            <li class="font-body-sm">Reason: <b>{{ original_object.get_action_needed_reason_display }}</b></li>
+                        </ul>
+                        <p>
+                            If you edit this email's text, <b>the system will send another email</b> to
+                            the creator after you “save” your changes.  If you do not want to send another email, click “cancel” below.
+                        </p>
+                    </div>
+
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                type="submit" 
+                                class="usa-button" 
+                                id="confirm-edit-email"
+                                data-close-modal
+                                >
+                                    Yes, continue editing
+                                </button>
+                            </li>
+                            <li class="usa-button-group__item">
+                                <button
+                                type="button"
+                                class="usa-button usa-button--unstyled padding-105 text-center"
+                                name="_cancel_edit_email"
+                                data-close-modal
+                                >
+                                    Cancel
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <button
+                type="button"
+                class="usa-button usa-modal__close"
+                aria-label="Close this window"
+                data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        {% if original_object.action_needed_reason_email %}
+        <input id="last-sent-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
+        {% else %}
+        <input id="last-sent-email-content" class="display-none" value="None">
+        {% endif %}
+
     {% else %}
         {{ field.field }}
     {% endif %}
 {% endblock field_other %}
 
 {% block after_help_text %}
-    {% if field.field.name == "action_needed_reason_email" %}
-        {% comment %}
-        Store the action needed reason emails in a json-based dictionary.
-        This allows us to change the action_needed_reason_email field dynamically, depending on value.
-        The alternative to this is an API endpoint.
-
-        Given that we have a limited number of emails, doing it this way makes sense.
-        {% endcomment %}
-        {% if action_needed_reason_emails %}
-        <script id="action-needed-emails-data" type="application/json">
-            {{ action_needed_reason_emails|safe }}
-        </script>
-        {% endif %}
-    {% elif field.field.name == "creator" %}
+    {% if field.field.name == "creator" %}
         <div class="flex-container tablet:margin-top-2">
         <label aria-label="Creator contact details"></label>
             {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
@@ -187,11 +240,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% if not skip_additional_contact_info %}
             {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
         {% endif%}
-    {% elif field.field.name == "submitter" %}
-        <div class="flex-container tablet:margin-top-2">
-        <label aria-label="Submitter contact details"></label>
-        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.submitter no_title_top_padding=field.is_readonly %}
-        </div>
     {% elif field.field.name == "senior_official" %}
         <div class="flex-container">
         <label aria-label="Senior official contact details"></label>
@@ -206,7 +254,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     <table>
                         <thead>
                             <tr>
-                                <th colspan="4">Other contact information</th>
+                                <th colspan="5">Other contact information</th>
                             <tr>
                         </thead>
                         <tbody>
@@ -219,18 +267,31 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 </td>
                                 <td class="padding-left-1">{{ contact.phone }}</td>
                                 <td class="padding-left-1 text-size-small">
-                                    <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
-                                    <button 
-                                    class="usa-button usa-button--unstyled padding-right-1 usa-button--icon button--clipboard copy-to-clipboard usa-button__small-text text-no-underline" 
-                                    type="button"
-                                    >
-                                        <svg 
-                                        class="usa-icon" 
+                                    {% if contact.email %}
+                                        <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
+                                        <button 
+                                        class="
+                                            usa-button--dja 
+                                            usa-button 
+                                            usa-button__small-text 
+                                            usa-button--unstyled 
+                                            padding-right-1 
+                                            padding-top-0
+                                            padding-bottom-0
+                                            usa-button--icon 
+                                            copy-to-clipboard 
+                                            text-no-underline" 
+                                        type="button"
                                         >
-                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
-                                        </svg>
-                                        <span>Copy email</span>
-                                    </button>
+                                            <svg 
+                                            class="usa-icon" 
+                                            >
+                                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                            </svg>
+                                            <!-- the span is targeted in JS, do not remove -->
+                                            <span>Copy email</span>
+                                        </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -240,7 +301,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
-    {% elif field.field.name == "state_territory" %}
+    {% elif field.field.name == "state_territory" and original_object|model_name_lowercase != 'portfolio' %}
         <div class="flex-container margin-top-2">
             <span>
                 CISA region:

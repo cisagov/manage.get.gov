@@ -4,11 +4,15 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
 from registrar.forms.portfolio import PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
-from registrar.models.portfolio import Portfolio
+from registrar.models import Portfolio, User
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
+    NoPortfolioDomainsPermissionView,
+    PortfolioMembersPermissionView,
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
@@ -38,6 +42,73 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
         return render(request, "portfolio_requests.html")
 
 
+class PortfolioMembersView(PortfolioMembersPermissionView, View):
+
+    template_name = "portfolio_members.html"
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_members.html")
+
+
+class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
+    """Some users have access to the underlying portfolio, but not any domains.
+    This is a custom view which explains that to the user - and denotes who to contact.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_no_domains.html"
+
+    def get(self, request):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            admin_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                roles__overlap=[
+                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                ],
+            ).values_list("user__id", flat=True)
+
+            admin_users = User.objects.filter(id__in=admin_ids)
+            context["portfolio_administrators"] = admin_users
+        return context
+
+
+class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
+    """Some users have access to the underlying portfolio, but not any domain requests.
+    This is a custom view which explains that to the user - and denotes who to contact.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_no_requests.html"
+
+    def get(self, request):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            admin_ids = UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                roles__overlap=[
+                    UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                ],
+            ).values_list("user__id", flat=True)
+
+            admin_users = User.objects.filter(id__in=admin_ids)
+            context["portfolio_administrators"] = admin_users
+        return context
+
+
 class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
@@ -51,12 +122,13 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission()
+        portfolio = self.request.session.get("portfolio")
+        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission(portfolio)
         return context
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.portfolio
+        """Get the portfolio object based on the session."""
+        portfolio = self.request.session.get("portfolio")
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio
@@ -111,8 +183,8 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
     context_object_name = "portfolio"
 
     def get_object(self, queryset=None):
-        """Get the portfolio object based on the request user."""
-        portfolio = self.request.user.portfolio
+        """Get the portfolio object based on the session."""
+        portfolio = self.request.session.get("portfolio")
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio

@@ -1,23 +1,39 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
+{% load custom_filters %}
 {% load i18n static %}
 
 {% block content %}
     {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-senior-official-from-federal-agency-json' as url %}
     <input id="senior_official_from_agency_json_url" class="display-none" value="{{url}}" />
+    {% url 'get-federal-and-portfolio-types-from-federal-agency-json' as url %}
+    <input id="federal_and_portfolio_types_from_agency_json_url" class="display-none" value="{{url}}" />
+    {% url "admin:registrar_seniorofficial_add" as url %}
+    <input id="senior-official-add-url" class="display-none" value="{{url}}" />
     {{ block.super }}
 {% endblock content %}
 
 {% block field_sets %}
     {% for fieldset in adminform %}
-        {% comment %}
-        This is a placeholder for now.
-
-        Disclaimer:
-        When extending the fieldset view - *make a new one* that extends from detail_table_fieldset.
-        For instance, "portfolio_fieldset.html".
-        detail_table_fieldset is used on multiple admin pages, so a change there can have unintended consequences.
-        {% endcomment %}
-        {% include "django/admin/includes/detail_table_fieldset.html" with original_object=original %}
+        {% include "django/admin/includes/portfolio/portfolio_fieldset.html" with original_object=original %}
     {% endfor %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row-wrapper">
+    <span class="submit-row-toggle padding-1 padding-right-2 visible-desktop">
+        <button type="button" class="usa-button usa-button--unstyled" id="submitRowToggle">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#expand_more"></use>
+            </svg>
+            <span>Hide</span>
+        </button>
+    </span>
+
+    <p class="padding-top-05 text-right margin-top-2 padding-right-2 margin-bottom-0 submit-row-sticky float-right visible-768">
+        Organization Name: <strong>{{ original.organization_name }}</strong>
+    </p>
+    {{ block.super }}
+</div>
+    <span class="scroll-indicator"></span>
 {% endblock %}

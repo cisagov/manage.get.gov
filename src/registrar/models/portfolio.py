@@ -2,7 +2,6 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
-from registrar.utility.constants import BranchChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -34,7 +33,6 @@ class Portfolio(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Portfolio organization",
     )
 
     organization_type = models.CharField(
@@ -42,7 +40,6 @@ class Portfolio(TimeStampedModel):
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text="Type of organization",
     )
 
     notes = models.TextField(
@@ -53,7 +50,6 @@ class Portfolio(TimeStampedModel):
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
-        help_text="Associated federal agency",
         unique=False,
         default=FederalAgency.get_non_federal_agency,
     )
@@ -64,6 +60,7 @@ class Portfolio(TimeStampedModel):
         unique=False,
         null=True,
         blank=True,
+        related_name="portfolios",
     )
 
     address_line1 = models.CharField(
@@ -89,7 +86,7 @@ class Portfolio(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
-        verbose_name="state / territory",
+        verbose_name="state, territory, or military post",
     )
 
     zipcode = models.CharField(
@@ -126,31 +123,28 @@ class Portfolio(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @property
-    def portfolio_type(self):
-        """
-        Returns a combination of organization_type / federal_type, seperated by ' - '.
-        If no federal_type is found, we just return the org type.
-        """
-        org_type_label = self.OrganizationChoices.get_org_label(self.organization_type)
-        agency_type_label = BranchChoices.get_branch_label(self.federal_type)
-        if self.organization_type == self.OrganizationChoices.FEDERAL and agency_type_label:
-            return " - ".join([org_type_label, agency_type_label])
-        else:
-            return org_type_label
-
-    @property
     def federal_type(self):
         """Returns the federal_type value on the underlying federal_agency field"""
-        return self.federal_agency.federal_type if self.federal_agency else None
+        return self.get_federal_type(self.federal_agency)
+
+    @classmethod
+    def get_federal_type(cls, federal_agency):
+        return federal_agency.federal_type if federal_agency else None
 
     # == Getters for domains == #
-    def get_domains(self):
+    def get_domains(self, order_by=None):
         """Returns all DomainInformations associated with this portfolio"""
-        return self.information_portfolio.all()
+        if not order_by:
+            return self.information_portfolio.all()
+        else:
+            return self.information_portfolio.all().order_by(*order_by)
 
-    def get_domain_requests(self):
+    def get_domain_requests(self, order_by=None):
         """Returns all DomainRequests associated with this portfolio"""
-        return self.DomainRequest_portfolio.all()
+        if not order_by:
+            return self.DomainRequest_portfolio.all()
+        else:
+            return self.DomainRequest_portfolio.all().order_by(*order_by)
 
     # == Getters for suborganization == #
     def get_suborganizations(self):

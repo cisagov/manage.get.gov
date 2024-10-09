@@ -23,6 +23,9 @@ from cfenv import AppEnv  # type: ignore
 from pathlib import Path
 from typing import Final
 from botocore.config import Config
+import json
+import logging
+from django.utils.log import ServerFormatter
 
 # # #                          ###
 #      Setup code goes here      #
@@ -57,7 +60,7 @@ env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
-env_base_url = env.str("DJANGO_BASE_URL")
+env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
@@ -192,7 +195,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
 ]
 
-# application object used by Django’s built-in servers (e.g. `runserver`)
+# application object used by Django's built-in servers (e.g. `runserver`)
 WSGI_APPLICATION = "registrar.config.wsgi.application"
 
 # endregion
@@ -242,8 +245,8 @@ TEMPLATES = [
                 "registrar.context_processors.is_production",
                 "registrar.context_processors.org_user_status",
                 "registrar.context_processors.add_path_to_context",
-                "registrar.context_processors.add_has_profile_feature_flag_to_context",
                 "registrar.context_processors.portfolio_permissions",
+                "registrar.context_processors.is_widescreen_mode",
             ],
         },
     },
@@ -356,9 +359,23 @@ CSP_FORM_ACTION = allowed_sources
 # strict CSP by allowing scripts to run from their domain
 # and inline with a nonce, as well as allowing connections back to their domain.
 # Note: If needed, we can embed chart.js instead of using the CDN
-CSP_SCRIPT_SRC_ELEM = ["'self'", "https://www.googletagmanager.com/", "https://cdn.jsdelivr.net/npm/chart.js"]
-CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/"]
-CSP_INCLUDE_NONCE_IN = ["script-src-elem"]
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = [
+    "'self'",
+    "https://www.ssa.gov/accessibility/andi/andi.css",
+    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css",
+]
+CSP_SCRIPT_SRC_ELEM = [
+    "'self'",
+    "https://www.googletagmanager.com/",
+    "https://cdn.jsdelivr.net/npm/chart.js",
+    "https://www.ssa.gov",
+    "https://ajax.googleapis.com",
+    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js",
+]
+CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
+CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
+CSP_IMG_SRC = ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"]
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
@@ -401,7 +418,7 @@ LANGUAGE_COOKIE_SECURE = True
 # and to interpret datetimes entered in forms
 TIME_ZONE = "UTC"
 
-# enable Django’s translation system
+# enable Django's translation system
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
@@ -436,6 +453,42 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.error("Can't do this important task. Something is very wrong.")
 #   logger.critical("Going to crash now.")
 
+
+class JsonFormatter(logging.Formatter):
+    """Formats logs into JSON for better parsing"""
+
+    def __init__(self):
+        super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
+
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "name": record.name,
+            "lineno": record.lineno,
+            "message": record.getMessage(),
+        }
+        return json.dumps(log_record)
+
+
+class JsonServerFormatter(ServerFormatter):
+    """Formats server logs into JSON for better parsing"""
+
+    def format(self, record):
+        formatted_record = super().format(record)
+        if not hasattr(record, "server_time"):
+            record.server_time = self.formatTime(record, self.datefmt)
+        log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
+        return json.dumps(log_entry)
+
+
+# default to json formatted logs
+server_formatter, console_formatter = "json.server", "json"
+
+# don't use json format locally, it makes logs hard to read in console
+if "localhost" in env_base_url:
+    server_formatter, console_formatter = "django.server", "verbose"
+
 LOGGING = {
     "version": 1,
     # Don't import Django's existing loggers
@@ -455,6 +508,12 @@ LOGGING = {
             "format": "[{server_time}] {message}",
             "style": "{",
         },
+        "json.server": {
+            "()": JsonServerFormatter,
+        },
+        "json": {
+            "()": JsonFormatter,
+        },
     },
     # define where log messages will be sent;
     # each logger can have one or more handlers
@@ -462,12 +521,12 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": console_formatter,
         },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "django.server",
+            "formatter": server_formatter,
         },
         # No file logger is configured,
         # because containerized apps
@@ -664,6 +723,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
     "getgov-ms.app.cloud.gov",
     "getgov-ag.app.cloud.gov",

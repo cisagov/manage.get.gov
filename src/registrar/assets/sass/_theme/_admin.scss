@@ -66,6 +66,9 @@ html[data-theme="light"] {
     // --object-tools-fg: var(--button-fg);
     // --object-tools-bg: var(--close-button-bg);
     // --object-tools-hover-bg: var(--close-button-hover-bg);
+
+    --summary-box-bg: #f1f1f1;
+    --summary-box-border: #d1d2d2;
 }
 
 // Fold dark theme settings into our main CSS
@@ -104,6 +107,9 @@ html[data-theme="light"] {
   
       --close-button-bg: #333333;
       --close-button-hover-bg: #666666;
+
+      --summary-box-bg:  #121212;
+      --summary-box-border: #666666;
     }
 
     // Dark mode django (bug due to scss cascade) and USWDS tables
@@ -120,7 +126,8 @@ html[data-theme="light"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -149,7 +156,8 @@ html[data-theme="dark"] {
     body.dashboard,
     body.change-list,
     body.change-form,
-    .analytics {
+    .custom-admin-template,
+    .dl-dja dt {
         color: var(--body-fg);
     }
     .usa-table td {
@@ -160,7 +168,7 @@ html[data-theme="dark"] {
     // Remove when dark mode successfully applies to Django delete page.
     .delete-confirmation .content a:not(.button)  {
         color: color('primary');
-    }
+    } 
 }
 
 
@@ -364,14 +372,87 @@ input.admin-confirm-button {
         list-style-type: none;
         line-height: normal;
     }
-    .button {
-        display: inline-block;
-        padding: 10px 8px;
-        line-height: normal;
+}
+
+// This block resolves some of the issues we're seeing on buttons due to css
+// conflicts between DJ and USWDS
+a.button,
+.usa-button--dja {
+    display: inline-block;
+    padding: 10px 15px;
+    font-size: 14px;
+    line-height: 16.1px;
+    font-kerning: auto;
+    font-family: inherit;
+    font-weight: normal;
+    text-decoration: none !important;
+}
+.button svg,
+.button span,
+.usa-button--dja svg,
+.usa-button--dja span {
+    vertical-align: middle;
+}
+.usa-button--dja.usa-button--unstyled {
+    color: var(--link-fg);
+}
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
+    background: var(--button-bg);
+}
+.usa-button--dja span {
+    font-size: 14px;
+}
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
+    background: var(--button-hover-bg);
+}
+a.button:active, a.button:focus {
+    text-decoration: none;
+}
+.usa-modal {
+    font-family: inherit;
+}
+input[type=submit].button--dja-toolbar {
+    border: 1px solid var(--border-color);
+    font-size: 0.8125rem;
+    padding: 4px 8px;
+    margin: 0;
+    vertical-align: middle;
+    background: var(--body-bg);
+    box-shadow: 0 -15px 20px -10px rgba(0, 0, 0, 0.15) inset;
+    cursor: pointer;
+    color: var(--body-fg);
+}
+input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-toolbar:hover {
+    border-color: var(--body-quiet-color);
+}
+.admin-icon-group {
+    position: relative;
+    display: inline;
+    align-items: center;
+
+    input {
+        // Allow for padding around the copy button
+        padding-right: 35px !important;
     }
-    a.button:active, a.button:focus {
-        text-decoration: none;
+
+    button {
+        width: max-content;
     }
+
+    @media (max-width: 1000px) {
+        button {
+            display: block;
+        }
+    }
+
+    span {
+        padding-left: 0.05rem;
+    }
+
+}
+.usa-button__small-text,
+.usa-button__small-text span {
+    font-size: 13px;
 }
 
 .module--custom {
@@ -401,7 +482,8 @@ details.dja-detail-table {
     background-color: var(--body-bg);
     .dja-details-summary {
         cursor: pointer;
-        color: var(--body-quiet-color);
+        color: var(--link-fg);
+        text-decoration: underline;
     }
 
     @media (max-width: 1024px){
@@ -463,13 +545,6 @@ address.dja-address-contact-list {
 // Targets the unstyled buttons in the form
 .button--clipboard {
     color: var(--link-fg);
-}
-
-// Targets the DJA buttom with a nested icon
-button .usa-icon,
-.button .usa-icon,
-.button--clipboard .usa-icon {
-    vertical-align: middle;      
 }
 
 .errors span.select2-selection {
@@ -540,7 +615,7 @@ button .usa-icon,
     #submitRowToggle {
         color: var(--body-fg);
     }
-    .requested-domain-sticky {
+    .submit-row-sticky {
         max-width: 325px;
         overflow: hidden;
         white-space: nowrap;
@@ -625,69 +700,8 @@ button .usa-icon,
     }
 }
 
-// Make the clipboard button "float" inside of the input box
-.admin-icon-group {
-    position: relative;
-    display: inline;
-    align-items: center;
-
-    input {
-        // Allow for padding around the copy button
-        padding-right: 35px !important;
-        // Match the height of other inputs
-        min-height: 2.25rem !important;
-    }
-
-    button {
-        line-height: 14px;
-        width: max-content;
-        font-size: unset;
-        text-decoration: none !important;
-    }
-
-    @media (max-width: 1000px) {
-        button {
-            display: block;
-            padding-top: 8px;
-        }
-    }
-
-    span {
-        padding-left: 0.1rem;
-    }
-
-}
-
-.admin-icon-group.admin-icon-group__clipboard-link {
-    position: relative;
-    display: inline;
-    align-items: center;
-    
-
-    .usa-button--icon {
-        position: absolute;
-        right: auto;
-        left: 4px;
-        height: 100%;
-        top: -1px;
-    }
-    button {
-        font-size: unset !important;
-        display: inline-flex;
-        padding-top: 4px;
-        line-height: 14px;
-        width: max-content;
-        font-size: unset;
-        text-decoration: none !important;
-    }
-}
-
 .no-outline-on-click:focus {
     outline: none !important;
-}
-
-.usa-button__small-text {
-    font-size: small;
 }
 
 // Get rid of padding on all help texts
@@ -732,7 +746,7 @@ div.dja__model-description{
 
     li {
         list-style-type: disc;
-        font-family: Source Sans Pro Web,Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;
+        font-family: family('sans');
     }
 
     a, a:link, a:visited {
@@ -839,6 +853,9 @@ div.dja__model-description{
     padding-top: 0 !important;
 }
 
+.padding-bottom-0 {
+    padding-bottom: 0 !important;
+}
 
 .flex-container {
     @media screen and (min-width: 700px) and (max-width: 1150px) {
@@ -848,7 +865,36 @@ div.dja__model-description{
     }
 }
 
+.text-faded {
+    color: #{$dhs-gray-60};
+}
 ul.add-list-reset {
     padding: 0 !important;
     margin: 0 !important;
+}
+
+// Fix the combobox when deployed outside admin (eg user transfer)
+.submit-row .select2,
+.submit-row .select2 span {
+    margin-top: 0;
+}
+.transfer-user-selector .select2-selection__placeholder {
+    color: #3d4551!important;
+}
+
+.dl-dja dt {
+    font-size: 14px;
+}
+
+.domain-name-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: visible; 
+    word-break: break-all;
+    max-width: 100%; 
+}
+
+.organization-admin-label {
+    font-weight: 600;
+    font-size: .8125rem;
 }

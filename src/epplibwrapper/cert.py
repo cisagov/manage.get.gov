@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from django.conf import settings
+from django.conf import settings  # type: ignore
 
 
 class Cert:
@@ -12,7 +12,7 @@ class Cert:
     variable but Python's ssl library requires a file.
     """
 
-    def __init__(self, data=settings.SECRET_REGISTRY_CERT) -> None:
+    def __init__(self, data=settings.SECRET_REGISTRY_CERT) -> None:  # type: ignore
         self.filename = self._write(data)
 
     def __del__(self):
@@ -31,4 +31,4 @@ class Key(Cert):
     """Location of private key as written to disk."""
 
     def __init__(self) -> None:
-        super().__init__(data=settings.SECRET_REGISTRY_KEY)
+        super().__init__(data=settings.SECRET_REGISTRY_KEY)  # type: ignore

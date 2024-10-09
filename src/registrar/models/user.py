@@ -3,11 +3,9 @@ import logging
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
-from django.forms import ValidationError
 
-from registrar.models.domain_information import DomainInformation
-from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models import DomainInformation, UserDomainRole
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 
 from .domain_invitation import DomainInvitation
 from .portfolio_invitation import PortfolioInvitation
@@ -15,7 +13,7 @@ from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
-from django.contrib.postgres.fields import ArrayField
+from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
@@ -66,32 +64,6 @@ class User(AbstractUser):
         # after they login.
         FIXTURE_USER = "fixture_user", "Created by fixtures"
 
-    PORTFOLIO_ROLE_PERMISSIONS = {
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.EDIT_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN_READ_ONLY: [
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
-            UserPortfolioPermissionChoices.VIEW_MEMBER,
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            # Domain: field specific permissions
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-        ],
-        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-        ],
-    }
-
     # #### Constants for choice fields ####
     RESTRICTED = "restricted"
     STATUS_CHOICES = ((RESTRICTED, RESTRICTED),)
@@ -110,34 +82,6 @@ class User(AbstractUser):
         "registrar.Domain",
         through="registrar.UserDomainRole",
         related_name="users",
-    )
-
-    portfolio = models.ForeignKey(
-        "registrar.Portfolio",
-        null=True,
-        blank=True,
-        related_name="user",
-        on_delete=models.SET_NULL,
-    )
-
-    portfolio_roles = ArrayField(
-        models.CharField(
-            max_length=50,
-            choices=UserPortfolioRoleChoices.choices,
-        ),
-        null=True,
-        blank=True,
-        help_text="Select one or more roles.",
-    )
-
-    portfolio_additional_permissions = ArrayField(
-        models.CharField(
-            max_length=50,
-            choices=UserPortfolioPermissionChoices.choices,
-        ),
-        null=True,
-        blank=True,
-        help_text="Select one or more additional permissions.",
     )
 
     phone = PhoneNumberField(
@@ -187,6 +131,12 @@ class User(AbstractUser):
         else:
             return self.username
 
+    @classmethod
+    def get_default_user(cls):
+        """Returns the default "system" user"""
+        default_creator, _ = User.objects.get_or_create(username="System")
+        return default_creator
+
     def restrict_user(self):
         self.status = self.RESTRICTED
         self.save()
@@ -230,68 +180,134 @@ class User(AbstractUser):
     def has_contact_info(self):
         return bool(self.title or self.email or self.phone)
 
-    def clean(self):
-        """Extends clean method to perform additional validation, which can raise errors in django admin."""
-        super().clean()
-
-        if self.portfolio is None and self._get_portfolio_permissions():
-            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
-
-        if self.portfolio is not None and not self._get_portfolio_permissions():
-            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
-
-    def _get_portfolio_permissions(self):
-        """
-        Retrieve the permissions for the user's portfolio roles.
-        """
-        portfolio_permissions = set()  # Use a set to avoid duplicate permissions
-
-        if self.portfolio_roles:
-            for role in self.portfolio_roles:
-                if role in self.PORTFOLIO_ROLE_PERMISSIONS:
-                    portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS[role])
-        if self.portfolio_additional_permissions:
-            portfolio_permissions.update(self.portfolio_additional_permissions)
-        return list(portfolio_permissions)  # Convert back to list if necessary
-
-    def _has_portfolio_permission(self, portfolio_permission):
+    def _has_portfolio_permission(self, portfolio, portfolio_permission):
         """The views should only call this function when testing for perms and not rely on roles."""
 
-        if not self.portfolio:
+        if not portfolio:
             return False
 
-        portfolio_permissions = self._get_portfolio_permissions()
+        user_portfolio_perms = self.portfolio_permissions.filter(portfolio=portfolio, user=self).first()
+        if not user_portfolio_perms:
+            return False
 
-        return portfolio_permission in portfolio_permissions
+        return portfolio_permission in user_portfolio_perms._get_portfolio_permissions()
 
-    # the methods below are checks for individual portfolio permissions. They are defined here
-    # to make them easier to call elsewhere throughout the application
-    def has_base_portfolio_permission(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
+    def has_base_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
-    def has_edit_org_portfolio_permission(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
+    def has_edit_org_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
-    def has_domains_portfolio_permission(self):
+    def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
-        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
+        ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
-    def has_domain_requests_portfolio_permission(self):
-        return self._has_portfolio_permission(
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
-        ) or self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_CREATED_REQUESTS)
+    def has_organization_requests_flag(self):
+        return flag_is_active_for_user(self, "organization_requests")
 
-    def has_view_all_domains_permission(self):
+    def has_organization_members_flag(self):
+        return flag_is_active_for_user(self, "organization_members")
+
+    def has_view_members_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        if not self.has_organization_members_flag():
+            return False
+        # END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
+
+    def has_edit_members_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        if not self.has_organization_members_flag():
+            return False
+        # END
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_MEMBERS)
+
+    def has_view_all_domains_portfolio_permission(self, portfolio):
         """Determines if the current user can view all available domains in a given portfolio"""
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
+
+    def has_view_all_domain_requests_portfolio_permission(self, portfolio):
+        """Determines if the current user can view all available domains in a given portfolio"""
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    def has_any_requests_portfolio_permission(self, portfolio):
+        # BEGIN
+        # Note code below is to add organization_request feature
+        if not self.has_organization_requests_flag():
+            return False
+        # END
+        return self._has_portfolio_permission(
+            portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+        ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
+
+    def has_view_all_requests_portfolio_permission(self, portfolio):
+        """Determines if the current user can view all available domain requests in a given portfolio"""
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+    def has_edit_request_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
     # Field specific permission checks
-    def has_view_suborganization(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
+    def has_view_suborganization_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
 
-    def has_edit_suborganization(self):
-        return self._has_portfolio_permission(UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+    def has_edit_suborganization_portfolio_permission(self, portfolio):
+        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+
+    def get_first_portfolio(self):
+        permission = self.portfolio_permissions.first()
+        if permission:
+            return permission.portfolio
+        return None
+
+    def portfolio_role_summary(self, portfolio):
+        """Returns a list of roles based on the user's permissions."""
+        roles = []
+
+        # Define the conditions and their corresponding roles
+        conditions_roles = [
+            (self.has_edit_suborganization_portfolio_permission(portfolio), ["Admin"]),
+            (
+                self.has_view_all_domains_portfolio_permission(portfolio)
+                and self.has_any_requests_portfolio_permission(portfolio)
+                and self.has_edit_request_portfolio_permission(portfolio),
+                ["View-only admin", "Domain requestor"],
+            ),
+            (
+                self.has_view_all_domains_portfolio_permission(portfolio)
+                and self.has_any_requests_portfolio_permission(portfolio),
+                ["View-only admin"],
+            ),
+            (
+                self.has_base_portfolio_permission(portfolio)
+                and self.has_edit_request_portfolio_permission(portfolio)
+                and self.has_any_domains_portfolio_permission(portfolio),
+                ["Domain requestor", "Domain manager"],
+            ),
+            (
+                self.has_base_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio),
+                ["Domain requestor"],
+            ),
+            (
+                self.has_base_portfolio_permission(portfolio) and self.has_any_domains_portfolio_permission(portfolio),
+                ["Domain manager"],
+            ),
+            (self.has_base_portfolio_permission(portfolio), ["Member"]),
+        ]
+
+        # Evaluate conditions and add roles
+        for condition, role_list in conditions_roles:
+            if condition:
+                roles.extend(role_list)
+                break
+
+        return roles
+
+    def get_portfolios(self):
+        return self.portfolio_permissions.all()
 
     @classmethod
     def needs_identity_verification(cls, email, uuid):
@@ -406,7 +422,10 @@ class User(AbstractUser):
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
-            if self.portfolio is None:
+            only_single_portfolio = (
+                not flag_is_active_for_user(self, "multiple_portfolios") and self.get_first_portfolio() is None
+            )
+            if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
                     invitation.retrieve()
                     invitation.save()
@@ -433,11 +452,22 @@ class User(AbstractUser):
 
     def is_org_user(self, request):
         has_organization_feature_flag = flag_is_active(request, "organization_feature")
-        return has_organization_feature_flag and self.has_base_portfolio_permission()
+        portfolio = request.session.get("portfolio")
+        return has_organization_feature_flag and self.has_base_portfolio_permission(portfolio)
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
-        if self.is_org_user(request) and self.has_view_all_domains_permission():
-            return DomainInformation.objects.filter(portfolio=self.portfolio).values_list("domain_id", flat=True)
+        portfolio = request.session.get("portfolio")
+        if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
+            return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)
+
+    def get_user_domain_request_ids(self, request):
+        """Returns either the domain request ids associated with this user on UserDomainRole or Portfolio"""
+        portfolio = request.session.get("portfolio")
+
+        if self.is_org_user(request) and self.has_view_all_domain_requests_portfolio_permission(portfolio):
+            return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
+        else:
+            return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)

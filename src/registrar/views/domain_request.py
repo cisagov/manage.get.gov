@@ -7,49 +7,23 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
-
 from registrar.forms import domain_request_wizard as forms
+from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.utility import StrEnum
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
+from registrar.utility.enums import Step, PortfolioDomainRequestStep
 
 from .utility import (
     DomainRequestPermissionView,
     DomainRequestPermissionWithdrawView,
     DomainRequestWizardPermissionView,
+    DomainRequestPortfolioViewonlyView,
 )
 
-from waffle.decorators import flag_is_active, waffle_flag
-
 logger = logging.getLogger(__name__)
-
-
-class Step(StrEnum):
-    """
-    Names for each page of the domain request wizard.
-
-    As with Django's own `TextChoices` class, steps will
-    appear in the order they are defined. (Order matters.)
-    """
-
-    ORGANIZATION_TYPE = "generic_org_type"
-    TRIBAL_GOVERNMENT = "tribal_government"
-    ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
-    ORGANIZATION_CONTACT = "organization_contact"
-    ABOUT_YOUR_ORGANIZATION = "about_your_organization"
-    SENIOR_OFFICIAL = "senior_official"
-    CURRENT_SITES = "current_sites"
-    DOTGOV_DOMAIN = "dotgov_domain"
-    PURPOSE = "purpose"
-    YOUR_CONTACT = "your_contact"
-    OTHER_CONTACTS = "other_contacts"
-    ADDITIONAL_DETAILS = "additional_details"
-    REQUIREMENTS = "requirements"
-    REVIEW = "review"
 
 
 class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
@@ -69,6 +43,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     although not without consulting the base implementation, first.
     """
 
+    StepEnum: Step = Step  # type: ignore
     template_name = ""
 
     # uniquely namespace the wizard in urls.py
@@ -81,30 +56,29 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     NEW_URL_NAME = "/request/"
     # We need to pass our human-readable step titles as context to the templates.
     TITLES = {
-        Step.ORGANIZATION_TYPE: _("Type of organization"),
-        Step.TRIBAL_GOVERNMENT: _("Tribal government"),
-        Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
-        Step.ORGANIZATION_ELECTION: _("Election office"),
-        Step.ORGANIZATION_CONTACT: _("Organization name and mailing address"),
-        Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
-        Step.SENIOR_OFFICIAL: _("Senior official"),
-        Step.CURRENT_SITES: _("Current websites"),
-        Step.DOTGOV_DOMAIN: _(".gov domain"),
-        Step.PURPOSE: _("Purpose of your domain"),
-        Step.YOUR_CONTACT: _("Your contact information"),
-        Step.OTHER_CONTACTS: _("Other employees from your organization"),
-        Step.ADDITIONAL_DETAILS: _("Additional details"),
-        Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-        Step.REVIEW: _("Review and submit your domain request"),
+        StepEnum.ORGANIZATION_TYPE: _("Type of organization"),
+        StepEnum.TRIBAL_GOVERNMENT: _("Tribal government"),
+        StepEnum.ORGANIZATION_FEDERAL: _("Federal government branch"),
+        StepEnum.ORGANIZATION_ELECTION: _("Election office"),
+        StepEnum.ORGANIZATION_CONTACT: _("Organization"),
+        StepEnum.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
+        StepEnum.SENIOR_OFFICIAL: _("Senior official"),
+        StepEnum.CURRENT_SITES: _("Current websites"),
+        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
+        StepEnum.PURPOSE: _("Purpose of your domain"),
+        StepEnum.OTHER_CONTACTS: _("Other employees from your organization"),
+        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
+        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        StepEnum.REVIEW: _("Review and submit your domain request"),
     }
 
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
     WIZARD_CONDITIONS = {
-        Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
-        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
-        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
+        StepEnum.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
+        StepEnum.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
+        StepEnum.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
+        StepEnum.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
     def __init__(self):
@@ -152,7 +126,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             except DomainRequest.DoesNotExist:
                 logger.debug("DomainRequest id %s did not have a DomainRequest" % id)
 
-        self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+        # If a user is creating a request, we assume that perms are handled upstream
+        if self.request.user.is_org_user(self.request):
+            self._domain_request = DomainRequest.objects.create(
+                creator=self.request.user,
+                portfolio=self.request.session.get("portfolio"),
+            )
+        else:
+            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
         self.storage["domain_request_id"] = self._domain_request.id
         return self._domain_request
@@ -375,7 +356,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             ),
             "dotgov_domain": self.domain_request.requested_domain is not None,
             "purpose": self.domain_request.purpose is not None,
-            "your_contact": self.domain_request.submitter is not None,
             "other_contacts": (
                 self.domain_request.other_contacts.exists()
                 or self.domain_request.no_other_contacts_rationale is not None
@@ -395,6 +375,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get_context_data(self):
         """Define context for access on all wizard pages."""
 
+        requested_domain_name = None
+        if self.domain_request.requested_domain is not None:
+            requested_domain_name = self.domain_request.requested_domain.name
+
         context_stuff = {}
         if DomainRequest._form_complete(self.domain_request, self.request):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
@@ -411,6 +395,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
                 "user": self.request.user,
+                "requested_domain__name": requested_domain_name,
             }
         else:  # form is not complete
             modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
@@ -426,23 +411,13 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
                 "user": self.request.user,
+                "requested_domain__name": requested_domain_name,
             }
         return context_stuff
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
-        step_list = []
-        for step in Step:
-            condition = self.WIZARD_CONDITIONS.get(step, True)
-            if callable(condition):
-                condition = condition(self)
-            if condition:
-                step_list.append(step)
-
-        if flag_is_active(self.request, "profile_feature"):
-            step_list.remove(Step.YOUR_CONTACT)
-
-        return step_list
+        return request_step_list(self)
 
     def goto(self, step):
         if step == "generic_org_type":
@@ -505,7 +480,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            return HttpResponseRedirect(reverse("home"))
+            if request.user.is_org_user(request):
+                return HttpResponseRedirect(reverse("domain-requests"))
+            else:
+                return HttpResponseRedirect(reverse("home"))
+
         # otherwise, proceed as normal
         return self.goto_next_step()
 
@@ -518,6 +497,26 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         for form in forms:
             if form is not None and hasattr(form, "to_database"):
                 form.to_database(self.domain_request)
+
+
+# TODO - this is a WIP until the domain request experience for portfolios is complete
+class PortfolioDomainRequestWizard(DomainRequestWizard):
+    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
+
+    TITLES = {
+        StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
+        StepEnum.CURRENT_SITES: _("Current websites"),
+        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
+        StepEnum.PURPOSE: _("Purpose of your domain"),
+        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
+        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        # Step.REVIEW: _("Review and submit your domain request"),
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.steps = StepsHelper(self)
+        self._domain_request = None  # for caching
 
 
 class OrganizationType(DomainRequestWizard):
@@ -580,15 +579,6 @@ class DotgovDomain(DomainRequestWizard):
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
     forms = [forms.PurposeForm]
-
-
-class YourContact(DomainRequestWizard):
-    template_name = "domain_request_your_contact.html"
-    forms = [forms.YourContactForm]
-
-    @waffle_flag("!profile_feature")  # type: ignore
-    def dispatch(self, request, *args, **kwargs):  # type: ignore
-        return super().dispatch(request, *args, **kwargs)
 
 
 class OtherContacts(DomainRequestWizard):
@@ -750,6 +740,21 @@ class Finished(DomainRequestWizard):
 class DomainRequestStatus(DomainRequestPermissionView):
     template_name = "domain_request_status.html"
 
+    def has_permission(self):
+        """
+        Override of the base has_permission class to account for portfolio permissions
+        """
+        has_base_perms = super().has_permission()
+        if not has_base_perms:
+            return False
+
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
+
+        return True
+
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
@@ -774,7 +779,10 @@ class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
         domain_request = DomainRequest.objects.get(id=self.kwargs["pk"])
         domain_request.withdraw()
         domain_request.save()
-        return HttpResponseRedirect(reverse("home"))
+        if self.request.user.is_org_user(self.request):
+            return HttpResponseRedirect(reverse("domain-requests"))
+        else:
+            return HttpResponseRedirect(reverse("home"))
 
 
 class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
@@ -792,6 +800,12 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         valid_statuses = [DomainRequest.DomainRequestStatus.WITHDRAWN, DomainRequest.DomainRequestStatus.STARTED]
         if status not in valid_statuses:
             return False
+
+        # Portfolio users cannot delete their requests if they aren't permissioned to do so
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
 
         return True
 
@@ -813,7 +827,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an SO, and a submitter, for example.
+        # the edge case where the same user may be an SO, and a creator, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete).delete()
@@ -826,7 +840,7 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the senior official, the submitter,
+        but not with any other domain_request. This includes the senior official, the creator,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -842,18 +856,16 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         # Get each contact object on the DomainRequest object
         so = domain_request.senior_official
-        submitter = domain_request.submitter
         other_contacts = list(domain_request.other_contacts.all())
         other_contact_ids = domain_request.other_contacts.all().values_list("id", flat=True)
 
         # Check if the desired item still exists in the DB
         if check_db:
             so = self._get_contacts_by_id([so.id]).first() if so is not None else None
-            submitter = self._get_contacts_by_id([submitter.id]).first() if submitter is not None else None
             other_contacts = self._get_contacts_by_id(other_contact_ids)
 
         # Pair each contact with its db related name for use in checking if it has joins
-        checked_contacts = [(so, "senior_official"), (submitter, "submitted_domain_requests")]
+        checked_contacts = [(so, "senior_official")]
         checked_contacts.extend((contact, "contact_domain_requests") for contact in other_contacts)
 
         for contact, related_name in checked_contacts:
@@ -876,3 +888,21 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
         duplicates = [item for item, count in object_dict.items() if count > 1]
         return duplicates
+
+
+# region Portfolio views
+class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
+    template_name = "portfolio_domain_request_status_viewonly.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        wizard = PortfolioDomainRequestWizard()
+        wizard.request = self.request
+        context["Step"] = wizard.StepEnum.__members__
+        context["steps"] = request_step_list(wizard)
+        context["form_titles"] = wizard.TITLES
+        return context
+
+
+# endregion

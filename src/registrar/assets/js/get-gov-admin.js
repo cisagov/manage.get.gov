@@ -172,40 +172,39 @@ function addOrRemoveSessionBoolean(name, add){
 ** To perform data operations on this - we need to use jQuery rather than vanilla js. 
 */
 (function (){
-    let selector = django.jQuery("#id_investigator")
-    let assignSelfButton = document.querySelector("#investigator__assign_self");
-    if (!selector || !assignSelfButton) {
-        return;
-    }
-
-    let currentUserId = assignSelfButton.getAttribute("data-user-id");
-    let currentUserName = assignSelfButton.getAttribute("data-user-name");
-    if (!currentUserId || !currentUserName){
-        console.error("Could not assign current user: no values found.")
-        return;
-    }
-
-    // Hook a click listener to the "Assign to me" button.
-    // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
-    assignSelfButton.addEventListener("click", function() {
-        if (selector.find(`option[value='${currentUserId}']`).length) {
-            // Select the value that is associated with the current user.
-            selector.val(currentUserId).trigger("change");
-        } else { 
-            // Create a DOM Option that matches the desired user. Then append it and select it.
-            let userOption = new Option(currentUserName, currentUserId, true, true);
-            selector.append(userOption).trigger("change");
+    if (document.getElementById("id_investigator") && django && django.jQuery) {
+        let selector = django.jQuery("#id_investigator")
+        let assignSelfButton = document.querySelector("#investigator__assign_self");
+        if (!selector || !assignSelfButton) {
+            return;
         }
-    });
 
-    // Listen to any change events, and hide the parent container if investigator has a value.
-    selector.on('change', function() {
-        // The parent container has display type flex.
-        assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
-    });
-    
-    
+        let currentUserId = assignSelfButton.getAttribute("data-user-id");
+        let currentUserName = assignSelfButton.getAttribute("data-user-name");
+        if (!currentUserId || !currentUserName){
+            console.error("Could not assign current user: no values found.")
+            return;
+        }
 
+        // Hook a click listener to the "Assign to me" button.
+        // Logic borrowed from here: https://select2.org/programmatic-control/add-select-clear-items#create-if-not-exists
+        assignSelfButton.addEventListener("click", function() {
+            if (selector.find(`option[value='${currentUserId}']`).length) {
+                // Select the value that is associated with the current user.
+                selector.val(currentUserId).trigger("change");
+            } else { 
+                // Create a DOM Option that matches the desired user. Then append it and select it.
+                let userOption = new Option(currentUserName, currentUserId, true, true);
+                selector.append(userOption).trigger("change");
+            }
+        });
+
+        // Listen to any change events, and hide the parent container if investigator has a value.
+        selector.on('change', function() {
+            // The parent container has display type flex.
+            assignSelfButton.parentElement.style.display = this.value === currentUserId ? "none" : "flex";
+        });
+    }
 })();
 
 /** An IIFE for pages in DjangoAdmin that use a clipboard button
@@ -215,7 +214,6 @@ function addOrRemoveSessionBoolean(name, add){
     function copyToClipboardAndChangeIcon(button) {
         // Assuming the input is the previous sibling of the button
         let input = button.previousElementSibling;
-        let userId = input.getAttribute("user-id")
         // Copy input value to clipboard
         if (input) {
             navigator.clipboard.writeText(input.value).then(function() {
@@ -353,7 +351,7 @@ function initializeWidgetOnList(list, parentId) {
     let rejectionReasonFormGroup = document.querySelector('.field-rejection_reason')
     // This is the "action needed reason" field
     let actionNeededReasonFormGroup = document.querySelector('.field-action_needed_reason');
-    // This is the "auto-generated email" field
+    // This is the "Email" field
     let actionNeededReasonEmailFormGroup = document.querySelector('.field-action_needed_reason_email')
 
     if (rejectionReasonFormGroup && actionNeededReasonFormGroup && actionNeededReasonEmailFormGroup) {
@@ -506,93 +504,115 @@ function initializeWidgetOnList(list, parentId) {
 /** An IIFE that hooks to the show/hide button underneath action needed reason.
  * This shows the auto generated email on action needed reason.
 */
-(function () {
-    // Since this is an iife, these vars will be removed from memory afterwards
-    var actionNeededReasonDropdown = document.querySelector("#id_action_needed_reason");
-    var actionNeededEmail = document.querySelector("#id_action_needed_reason_email");
-    var readonlyView = document.querySelector("#action-needed-reason-email-readonly");
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.getElementById("id_action_needed_reason");
+    const textarea = document.getElementById("id_action_needed_reason_email")
+    const domainRequestId = dropdown ? document.getElementById("domain_request_id").value : null
+    const textareaPlaceholder = document.querySelector(".field-action_needed_reason_email__placeholder");
+    const directEditButton = document.querySelector('.field-action_needed_reason_email__edit');
+    const modalTrigger = document.querySelector('.field-action_needed_reason_email__modal-trigger');
+    const modalConfirm = document.getElementById('confirm-edit-email');
+    const formLabel = document.querySelector('label[for="id_action_needed_reason_email"]');
+    let lastSentEmailContent = document.getElementById("last-sent-email-content");
+    const initialDropdownValue = dropdown ? dropdown.value : null;
+    let initialEmailValue;
+    if (textarea)
+        initialEmailValue = textarea.value
 
-    let emailWasSent = document.getElementById("action-needed-email-sent");
-
-    let emailData = document.getElementById('action-needed-emails-data');
-    if (!emailData) {
-        return;
+    // We will use the const to control the modal
+    let isEmailAlreadySentConst;
+    if (lastSentEmailContent)
+        isEmailAlreadySentConst = lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
+    // We will use the function to control the label and help
+    function isEmailAlreadySent() {
+        return lastSentEmailContent.value.replace(/\s+/g, '') === textarea.value.replace(/\s+/g, '');
     }
 
-    let actionNeededEmailData = emailData.textContent;
-    if(!actionNeededEmailData) {
-        return;
-    }
+    if (!dropdown || !textarea || !domainRequestId || !formLabel || !modalConfirm) return;
+    const apiUrl = document.getElementById("get-action-needed-email-for-user-json").value;
 
-    let actionNeededEmailsJson = JSON.parse(actionNeededEmailData);
-    const domainRequestId = actionNeededReasonDropdown ? document.querySelector("#domain_request_id").value : null
-    const emailSentSessionVariableName = `actionNeededEmailSent-${domainRequestId}`;
-    const oldDropdownValue = actionNeededReasonDropdown ? actionNeededReasonDropdown.value : null;
-    const oldEmailValue = actionNeededEmailData ? actionNeededEmailData.value : null;
-
-    if(actionNeededReasonDropdown && actionNeededEmail && domainRequestId) {
-        // Add a change listener to dom load
-        document.addEventListener('DOMContentLoaded', function() {
-            let reason = actionNeededReasonDropdown.value;
-
-            // Handle the session boolean (to enable/disable editing)
-            if (emailWasSent && emailWasSent.value === "True") {
-                // An email was sent out - store that information in a session variable
-                addOrRemoveSessionBoolean(emailSentSessionVariableName, add=true);
-            }
-
-            // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason)
-        });
-
-        // Add a change listener to the action needed reason dropdown
-        actionNeededReasonDropdown.addEventListener("change", function() {
-            let reason = actionNeededReasonDropdown.value;
-            let emailBody = reason in actionNeededEmailsJson ? actionNeededEmailsJson[reason] : null;
-            if (reason && emailBody) {
-                // Replace the email content
-                actionNeededEmail.value = emailBody;
-
-                // Reset the session object on change since change refreshes the email content.
-                if (oldDropdownValue !== actionNeededReasonDropdown.value || oldEmailValue !== actionNeededEmail.value) {
-                    let emailSent = sessionStorage.getItem(emailSentSessionVariableName)
-                    if (emailSent !== null){
-                        addOrRemoveSessionBoolean(emailSentSessionVariableName, add=false)
-                    }
-                }
-            }
-
-            // Show an editable email field or a readonly one
-            updateActionNeededEmailDisplay(reason)
-        });
-    }
-
-    // Shows an editable email field or a readonly one.
-    // If the email doesn't exist or if we're of reason "other", display that no email was sent.
-    // Likewise, if we've sent this email before, we should just display the content.
-    function updateActionNeededEmailDisplay(reason) {
-        let emailHasBeenSentBefore = sessionStorage.getItem(emailSentSessionVariableName) !== null;
-        let collapseableDiv = readonlyView.querySelector(".collapse--dgsimple");
-        let showMoreButton = document.querySelector("#action_needed_reason_email__show_details");
-        if ((reason && reason != "other") && !emailHasBeenSentBefore) {
-            showElement(actionNeededEmail.parentElement)
-            hideElement(readonlyView)
-            hideElement(showMoreButton)
+    function updateUserInterface(reason) {
+        if (!reason) {
+            // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
+            formLabel.innerHTML = "Email:";
+            textareaPlaceholder.innerHTML = "Select an action needed reason to see email";
+            showElement(textareaPlaceholder);
+            hideElement(directEditButton);
+            hideElement(modalTrigger);
+            hideElement(textarea);
+        } else if (reason === 'other') {
+            // 'Other' selected, we will set the label to "Email", show the "No email will be sent" placeholder, hide the trigger, textarea, hide the help text
+            formLabel.innerHTML = "Email:";
+            textareaPlaceholder.innerHTML = "No email will be sent";
+            showElement(textareaPlaceholder);
+            hideElement(directEditButton);
+            hideElement(modalTrigger);
+            hideElement(textarea);
         } else {
-            if (!reason || reason === "other") {
-                collapseableDiv.innerHTML = reason ? "No email will be sent." : "-";
-                hideElement(showMoreButton)
-                if (collapseableDiv.classList.contains("collapsed")) {
-                    showMoreButton.click()
-                }
-            }else {
-                showElement(showMoreButton)
+            // A triggering selection is selected, all hands on board:
+            textarea.setAttribute('readonly', true);
+            showElement(textarea);
+            hideElement(textareaPlaceholder);
+
+            if (isEmailAlreadySentConst) {
+                hideElement(directEditButton);
+                showElement(modalTrigger);
+            } else {
+                showElement(directEditButton);
+                hideElement(modalTrigger);
             }
-            hideElement(actionNeededEmail.parentElement)
-            showElement(readonlyView)
+            if (isEmailAlreadySent()) {
+                formLabel.innerHTML = "Email sent to creator:";
+            } else {
+                formLabel.innerHTML = "Email:";
+            }
         }
     }
-})();
+
+    // Initialize UI
+    updateUserInterface(dropdown.value);
+
+    dropdown.addEventListener("change", function() {
+        const reason = dropdown.value;
+        // Update the UI
+        updateUserInterface(reason);
+        if (reason && reason !== "other") {
+            // If it's not the initial value
+            if (initialDropdownValue !== dropdown.value || initialEmailValue !== textarea.value) {
+                // Replace the email content
+                fetch(`${apiUrl}?reason=${reason}&domain_request_id=${domainRequestId}`)
+                .then(response => {
+                    return response.json().then(data => data);
+                })
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error in AJAX call: " + data.error);
+                    }else {
+                        textarea.value = data.action_needed_email;
+                    }
+                    updateUserInterface(reason);
+                })
+                .catch(error => {
+                    console.error("Error action needed email: ", error)
+                });
+            }
+        }
+
+    });
+
+    modalConfirm.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        textarea.focus();
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
+    directEditButton.addEventListener("click", () => {
+        textarea.removeAttribute('readonly');
+        textarea.focus();
+        hideElement(directEditButton);
+        hideElement(modalTrigger);  
+    });
+});
 
 
 /** An IIFE for copy summary button (appears in DomainRegistry models)
@@ -676,7 +696,10 @@ function initializeWidgetOnList(list, parentId) {
 
             //------ Requested Domains
             const requestedDomainElement = document.getElementById('id_requested_domain');
-            const requestedDomain = requestedDomainElement.options[requestedDomainElement.selectedIndex].text;
+            // We have to account for different superuser and analyst markups
+            const requestedDomain = requestedDomainElement.options 
+                ? requestedDomainElement.options[requestedDomainElement.selectedIndex].text 
+                : requestedDomainElement.text;
 
             //------ Submitter
             // Function to extract text by ID and handle missing elements
@@ -687,15 +710,6 @@ function initializeWidgetOnList(list, parentId) {
                 }
                 return '';
             }
-            // Extract the submitter name, title, email, and phone number
-            const submitterDiv = document.querySelector('.form-row.field-submitter');
-            const submitterNameElement = document.getElementById('id_submitter');
-            const submitterName = submitterNameElement.options[submitterNameElement.selectedIndex].text;
-            const submitterTitle = extractTextById('contact_info_title', submitterDiv);
-            const submitterEmail = extractTextById('contact_info_email', submitterDiv);
-            const submitterPhone = extractTextById('contact_info_phone', submitterDiv);
-            let submitterInfo = `${submitterName}${submitterTitle}${submitterEmail}${submitterPhone}`;
-
 
             //------ Senior Official
             const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
@@ -712,7 +726,6 @@ function initializeWidgetOnList(list, parentId) {
                             `<strong>Current Websites:</strong> ${existingWebsites.join(', ')}</br>` +
                             `<strong>Rationale:</strong></br>` +
                             `<strong>Alternative Domains:</strong> ${alternativeDomains.join(', ')}</br>` +
-                            `<strong>Submitter:</strong> ${submitterInfo}</br>` +
                             `<strong>Senior Official:</strong> ${seniorOfficialInfo}</br>` +
                             `<strong>Other Employees:</strong> ${otherContactsSummary}</br>`;
             
@@ -780,10 +793,15 @@ function initializeWidgetOnList(list, parentId) {
         // $ symbolically denotes that this is using jQuery
         let $federalAgency = django.jQuery("#id_federal_agency");
         let organizationType = document.getElementById("id_organization_type");
-        if ($federalAgency && organizationType) {
+        let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
+
+        let organizationNameContainer = document.querySelector(".field-organization_name");
+        let federalType = document.querySelector(".field-federal_type");
+
+        if ($federalAgency && (organizationType || readonlyOrganizationType)) {
             // Attach the change event listener
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType);
+                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType);
             });
         }
         
@@ -799,9 +817,33 @@ function initializeWidgetOnList(list, parentId) {
                 handleStateTerritoryChange(stateTerritory, urbanizationField);
             });
         }
+
+        // Handle hiding the organization name field when the organization_type is federal.
+        // Run this first one page load, then secondly on a change event.
+        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
+        organizationType.addEventListener("change", function() {
+            handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
+        });
     });
 
-    function handleFederalAgencyChange(federalAgency, organizationType) {
+    function handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType) {
+        if (organizationType && organizationNameContainer) {
+            let selectedValue = organizationType.value;
+            if (selectedValue === "federal") {
+                hideElement(organizationNameContainer);
+                if (federalType) {
+                    showElement(federalType);
+                }
+            } else {
+                showElement(organizationNameContainer);
+                if (federalType) {
+                    hideElement(federalType);
+                }
+            }
+        }
+    }
+
+    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType) {
         // Don't do anything on page load
         if (isInitialPageLoad) {
             isInitialPageLoad = false;
@@ -816,27 +858,51 @@ function initializeWidgetOnList(list, parentId) {
             return;
         }
 
+        let organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
         if (selectedText !== "Non-Federal Agency") {
-            if (organizationType.value !== "federal") {
-                organizationType.value = "federal";
+            if (organizationTypeValue !== "federal") {
+                if (organizationType){
+                    organizationType.value = "federal";
+                }else {
+                    readonlyOrganizationType.innerText = "Federal"
+                }
             }
         }else {
-            if (organizationType.value === "federal") {
-                organizationType.value = "";
+            if (organizationTypeValue === "federal") {
+                if (organizationType){
+                    organizationType.value =  "";
+                }else {
+                    readonlyOrganizationType.innerText =  "-"
+                }
             }
         }
 
-        // Get the associated senior official with this federal agency
-        let $seniorOfficial = django.jQuery("#id_senior_official");
-        if (!$seniorOfficial) {
-            console.log("Could not find the senior official field");
-            return;
-        }
+        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
+
+        // Determine if any changes are necessary to the display of portfolio type or federal type
+        // based on changes to the Federal Agency
+        let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
+        fetch(`${federalPortfolioApi}?&agency_name=${selectedText}`)
+        .then(response => {
+            const statusCode = response.status;
+            return response.json().then(data => ({ statusCode, data }));
+        })
+        .then(({ statusCode, data }) => {
+            if (data.error) {
+                console.error("Error in AJAX call: " + data.error);
+                return;
+            }
+            updateReadOnly(data.federal_type, '.field-federal_type');
+        })
+        .catch(error => console.error("Error fetching federal and portfolio types: ", error));
 
         // Hide the contactList initially. 
         // If we can update the contact information, it'll be shown again.
         hideElement(contactList.parentElement);
-
+        
+        let seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
+        let $seniorOfficial = django.jQuery("#id_senior_official");
+        let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
         let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
         fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
         .then(response => {
@@ -847,7 +913,12 @@ function initializeWidgetOnList(list, parentId) {
             if (data.error) {
                 // Clear the field if the SO doesn't exist.
                 if (statusCode === 404) {
-                    $seniorOfficial.val("").trigger("change");
+                    if ($seniorOfficial && $seniorOfficial.length > 0) {
+                        $seniorOfficial.val("").trigger("change");
+                    }else {
+                        // Show the "create one now" text if this field is none in readonly mode.
+                        readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
+                    }
                     console.warn("Record not found: " + data.error);
                 }else {
                     console.error("Error in AJAX call: " + data.error);
@@ -858,27 +929,41 @@ function initializeWidgetOnList(list, parentId) {
             // Update the "contact details" blurb beneath senior official
             updateContactInfo(data);
             showElement(contactList.parentElement);
-
+            
+            // Get the associated senior official with this federal agency
             let seniorOfficialId = data.id;
             let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-            if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
-                // Clear the field if the SO doesn't exist
-                $seniorOfficial.val("").trigger("change");
-                return;
-            }
-
-            // Add the senior official to the dropdown.
-            // This format supports select2 - if we decide to convert this field in the future.
-            if ($seniorOfficial.find(`option[value='${seniorOfficialId}']`).length) {
-                // Select the value that is associated with the current Senior Official.
-                $seniorOfficial.val(seniorOfficialId).trigger("change");
-            } else { 
-                // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
-                let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
-                $seniorOfficial.append(userOption).trigger("change");
+            if ($seniorOfficial && $seniorOfficial.length > 0) {
+                // If the senior official is a dropdown field, edit that
+                updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
+            }else {
+                if (readonlySeniorOfficial) {
+                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
+                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+                }
             }
         })
         .catch(error => console.error("Error fetching senior official: ", error));
+
+    }
+
+    function updateSeniorOfficialDropdown(dropdown, seniorOfficialId, seniorOfficialName) {
+        if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
+            // Clear the field if the SO doesn't exist
+            dropdown.val("").trigger("change");
+            return;
+        }
+
+        // Add the senior official to the dropdown.
+        // This format supports select2 - if we decide to convert this field in the future.
+        if (dropdown.find(`option[value='${seniorOfficialId}']`).length) {
+            // Select the value that is associated with the current Senior Official.
+            dropdown.val(seniorOfficialId).trigger("change");
+        } else { 
+            // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
+            let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
+            dropdown.append(userOption).trigger("change");
+        }
     }
 
     function handleStateTerritoryChange(stateTerritory, urbanizationField) {
@@ -887,6 +972,26 @@ function initializeWidgetOnList(list, parentId) {
             showElement(urbanizationField)
         } else {
             hideElement(urbanizationField)
+        }
+    }
+
+    /**
+     * Utility that selects a div from the DOM using selectorString,
+     * and updates a div within that div which has class of 'readonly'
+     * so that the text of the div is updated to updateText
+     * @param {*} updateText 
+     * @param {*} selectorString 
+     */
+    function updateReadOnly(updateText, selectorString) {
+        // find the div by selectorString
+        const selectedDiv = document.querySelector(selectorString);
+        if (selectedDiv) {
+            // find the nested div with class 'readonly' inside the selectorString div
+            const readonlyDiv = selectedDiv.querySelector('.readonly');
+            if (readonlyDiv) {
+                // Update the text content of the readonly div
+                readonlyDiv.textContent = updateText !== null ? updateText : '-';
+            }
         }
     }
 

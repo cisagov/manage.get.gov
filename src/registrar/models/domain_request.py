@@ -6,12 +6,12 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
-from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from auditlog.models import LogEntry
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -327,7 +327,6 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         related_name="DomainRequest_portfolio",
-        help_text="Portfolio associated with this domain request",
     )
 
     sub_organization = models.ForeignKey(
@@ -336,16 +335,16 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
         related_name="request_sub_organization",
-        help_text="The suborganization that this domain request is included under",
+        help_text="If blank, request is associated with the overarching organization for this portfolio.",
+        verbose_name="Suborganization",
     )
 
-    # This is the domain request user who created this domain request. The contact
-    # information that they gave is in the `submitter` field
+    # This is the domain request user who created this domain request.
     creator = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
-        help_text="Person who submitted the domain request; will not receive email updates",
+        help_text="Person who submitted the domain request. Will receive email updates.",
     )
 
     investigator = models.ForeignKey(
@@ -424,7 +423,7 @@ class DomainRequest(TimeStampedModel):
         choices=StateTerritoryChoices.choices,
         null=True,
         blank=True,
-        verbose_name="state / territory",
+        verbose_name="state, territory, or military post",
     )
     zipcode = models.CharField(
         max_length=10,
@@ -481,17 +480,6 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         related_name="alternatives+",
         help_text="Other domain names the creator provided for consideration",
-    )
-
-    # This is the contact information provided by the domain requestor. The
-    # user who created the domain request is in the `creator` field.
-    submitter = models.ForeignKey(
-        "registrar.Contact",
-        null=True,
-        blank=True,
-        related_name="submitted_domain_requests",
-        on_delete=models.PROTECT,
-        help_text='Person listed under "your contact information" in the request form; will receive email updates',
     )
 
     purpose = models.TextField(
@@ -563,19 +551,60 @@ class DomainRequest(TimeStampedModel):
         help_text="Acknowledged .gov acceptable use policy",
     )
 
-    # submission date records when domain request is submitted
-    submission_date = models.DateField(
+    # Records when the domain request was first submitted
+    first_submitted_date = models.DateField(
         null=True,
         blank=True,
         default=None,
-        verbose_name="submitted at",
-        help_text="Date submitted",
+        verbose_name="first submitted on",
+        help_text="Date initially submitted",
+    )
+
+    # Records when domain request was last submitted
+    last_submitted_date = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="last submitted on",
+        help_text="Date last submitted",
+    )
+
+    # Records when domain request status was last updated by an admin or analyst
+    last_status_update = models.DateField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="last updated on",
+        help_text="Date of the last status update",
     )
 
     notes = models.TextField(
         null=True,
         blank=True,
     )
+
+    def is_awaiting_review(self) -> bool:
+        """Checks if the current status is in submitted or in_review"""
+        return self.status in [self.DomainRequestStatus.SUBMITTED, self.DomainRequestStatus.IN_REVIEW]
+
+    def get_first_status_set_date(self, status):
+        """Returns the date when the domain request was first set to the given status."""
+        log_entry = (
+            LogEntry.objects.filter(content_type__model="domainrequest", object_pk=self.pk, changes__status__1=status)
+            .order_by("-timestamp")
+            .first()
+        )
+        return log_entry.timestamp.date() if log_entry else None
+
+    def get_first_status_started_date(self):
+        """Returns the date when the domain request was put into the status "started" for the first time"""
+        return self.get_first_status_set_date(DomainRequest.DomainRequestStatus.STARTED)
+
+    @classmethod
+    def get_statuses_that_send_emails(cls):
+        """Returns a list of statuses that send an email to the user"""
+        excluded_statuses = [cls.DomainRequestStatus.INELIGIBLE, cls.DomainRequestStatus.IN_REVIEW]
+        return [status for status in cls.DomainRequestStatus if status not in excluded_statuses]
 
     def sync_organization_type(self):
         """
@@ -620,6 +649,9 @@ class DomainRequest(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+
+        if self._cached_status != self.status:
+            self.last_status_update = timezone.now().date()
 
         super().save(*args, **kwargs)
 
@@ -715,9 +747,6 @@ class DomainRequest(TimeStampedModel):
         contact information. If there is not creator information, then do
         nothing.
 
-        If the waffle flag "profile_feature" is active, then this email will be sent to the
-        domain request creator rather than the submitter
-
         Optional args:
         bcc_address: str -> the address to bcc to
 
@@ -732,7 +761,7 @@ class DomainRequest(TimeStampedModel):
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        recipient = self.creator if flag_is_active(None, "profile_feature") else self.submitter
+        recipient = self.creator
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
@@ -803,8 +832,12 @@ class DomainRequest(TimeStampedModel):
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
 
-        # Update submission_date to today
-        self.submission_date = timezone.now().date()
+        # if the domain has not been submitted before this  must be the first time
+        if not self.first_submitted_date:
+            self.first_submitted_date = timezone.now().date()
+
+        # Update last_submitted_date to today
+        self.last_submitted_date = timezone.now().date()
         self.save()
 
         # Limit email notifications to transitions from Started and Withdrawn
@@ -972,6 +1005,17 @@ class DomainRequest(TimeStampedModel):
             send_email=send_email,
         )
 
+    def is_withdrawable(self):
+        """Helper function that determines if the request can be withdrawn in its current status"""
+        # This list is equivalent to the source field on withdraw. We need a better way to
+        # consolidate these two lists - i.e. some sort of method that keeps these two lists in sync.
+        # django fsm is very picky with what we can define in that field.
+        return self.status in [
+            self.DomainRequestStatus.SUBMITTED,
+            self.DomainRequestStatus.IN_REVIEW,
+            self.DomainRequestStatus.ACTION_NEEDED,
+        ]
+
     @transition(
         field="status",
         source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
@@ -1124,6 +1168,11 @@ class DomainRequest(TimeStampedModel):
             data[field.name] = field.value_from_object(self)
         return data
 
+    def get_formatted_cisa_rep_name(self):
+        """Returns the cisa representatives name in Western order."""
+        names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
+        return " ".join(names) if names else "Unknown"
+
     def _is_federal_complete(self):
         # Federal -> "Federal government branch" page can't be empty + Federal Agency selection can't be None
         return not (self.federal_type is None or self.federal_agency is None)
@@ -1152,6 +1201,10 @@ class DomainRequest(TimeStampedModel):
         # Special District -> "Election office" and "About your organization" page can't be empty
         return self.is_election_board is not None and self.about_your_organization is not None
 
+    # Do we still want to test this after creator is autogenerated? Currently it went back to being selectable
+    def _is_creator_complete(self):
+        return self.creator is not None
+
     def _is_organization_name_and_address_complete(self):
         return not (
             self.organization_name is None
@@ -1169,9 +1222,6 @@ class DomainRequest(TimeStampedModel):
 
     def _is_purpose_complete(self):
         return self.purpose is not None
-
-    def _is_submitter_complete(self):
-        return self.submitter is not None
 
     def _has_other_contacts_and_filled(self):
         # Other Contacts Radio button is Yes and if all required fields are filled
@@ -1221,14 +1271,12 @@ class DomainRequest(TimeStampedModel):
         return self.is_policy_acknowledged is not None
 
     def _is_general_form_complete(self, request):
-        has_profile_feature_flag = flag_is_active(request, "profile_feature")
         return (
-            self._is_organization_name_and_address_complete()
+            self._is_creator_complete()
+            and self._is_organization_name_and_address_complete()
             and self._is_senior_official_complete()
             and self._is_requested_domain_complete()
             and self._is_purpose_complete()
-            # NOTE: This flag leaves submitter as empty (request wont submit) hence set to True
-            and (self._is_submitter_complete() if not has_profile_feature_flag else True)
             and self._is_other_contacts_complete()
             and self._is_additional_details_complete()
             and self._is_policy_acknowledgement_complete()

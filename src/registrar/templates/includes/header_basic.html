@@ -1,7 +1,7 @@
 {% load static %}
 
 <header class="usa-header usa-header--basic">
-  <div class="usa-nav-container">
+  <div class="usa-nav-container {% if is_widescreen_mode %} usa-nav-container--widescreen {% endif %}">
     <div class="usa-navbar">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
       <button type="button" class="usa-menu-btn">Menu</button>
@@ -16,7 +16,6 @@
           {% if user.is_authenticated %}
           <span class="usa-nav__username ellipsis">{{ user.email }}</span>
         </li>
-        {% if has_profile_feature_flag %}
         <li class="usa-nav__primary-item">
           {% url 'user-profile' as user_profile_url %}
           {% url 'finish-user-profile-setup' as finish_setup_url %}
@@ -24,7 +23,6 @@
               <span class="text-primary">Your profile</span>
           </a>
         </li>
-        {% endif %}
         <li class="usa-nav__primary-item">
           <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
           {% else %}

@@ -26,7 +26,7 @@ class AnalyticsView(View):
             created_at__gt=thirty_days_ago, status=models.DomainRequest.DomainRequestStatus.APPROVED
         )
         avg_approval_time = last_30_days_approved_applications.annotate(
-            approval_time=F("approved_domain__created_at") - F("submission_date")
+            approval_time=F("approved_domain__created_at") - F("last_submitted_date")
         ).aggregate(Avg("approval_time"))["approval_time__avg"]
         # Format the timedelta to display only days
         if avg_approval_time is not None:
@@ -104,11 +104,11 @@ class AnalyticsView(View):
 
         filter_submitted_requests_start_date = {
             "status": models.DomainRequest.DomainRequestStatus.SUBMITTED,
-            "submission_date__lte": start_date_formatted,
+            "last_submitted_date__lte": start_date_formatted,
         }
         filter_submitted_requests_end_date = {
             "status": models.DomainRequest.DomainRequestStatus.SUBMITTED,
-            "submission_date__lte": end_date_formatted,
+            "last_submitted_date__lte": end_date_formatted,
         }
         submitted_requests_sliced_at_start_date = csv_export.DomainRequestExport.get_sliced_requests(
             filter_submitted_requests_start_date
@@ -166,6 +166,17 @@ class ExportDataTypeUser(View):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="your-domains.csv"'
         csv_export.DomainDataTypeUser.export_data_to_csv(response, request=request)
+        return response
+
+
+class ExportDataTypeRequests(View):
+    """Returns a domain requests report for a given user on the request"""
+
+    def get(self, request, *args, **kwargs):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="domain-requests.csv"'
+        csv_export.DomainRequestsDataType.exporting_dr_data_to_csv(response, request=request)
+
         return response
 
 

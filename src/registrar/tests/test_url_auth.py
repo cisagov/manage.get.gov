@@ -25,6 +25,7 @@ SAMPLE_KWARGS = {
     "domain": "whitehouse.gov",
     "user_pk": "1",
     "portfolio_id": "1",
+    "user_id": "1",
 }
 
 # Our test suite will ignore some namespaces.
@@ -115,6 +116,7 @@ class TestURLAuth(TestCase):
         "/api/v1/available/",
         "/api/v1/get-report/current-federal",
         "/api/v1/get-report/current-full",
+        "/api/v1/rdap/",
         "/health",
     ]
 
