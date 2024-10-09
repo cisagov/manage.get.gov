@@ -3146,7 +3146,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
 
             # Assert that we're on the organization page
             self.assertContains(detail_page, portfolio.organization_name)
-            print(f"what is the page? {detail_page}")
 
             # We should only see one unlocked step
             self.assertContains(detail_page, "#check_circle", count=4)
