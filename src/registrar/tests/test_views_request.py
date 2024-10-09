@@ -82,6 +82,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         response = self.app.get(f"/domain-request/{domain_request.id}")
         # Ensure that the date is still set to None
         self.assertIsNone(domain_request.last_status_update)
+        print(response)
         # We should still grab a date for this field in this event - but it should come from the audit log instead
         self.assertContains(response, "Started on:")
         self.assertContains(response, fixed_date.strftime("%B %-d, %Y"))

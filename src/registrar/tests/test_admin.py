@@ -654,7 +654,7 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "copy-to-clipboard", count=3)
+        self.assertContains(response, "button--clipboard", count=3)
 
         # cleanup this test
         domain_info.delete()
