@@ -881,13 +881,12 @@ class DomainAddUserView(DomainFormBaseView):
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
-        email_success = False
+        email_success = True
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
-            email_success = True
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
@@ -895,7 +894,6 @@ class DomainAddUserView(DomainFormBaseView):
                 self._send_domain_invitation_email(
                     requested_email, requestor, requested_user=requested_user, add_success=False
                 )
-                email_success = True
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -904,6 +902,7 @@ class DomainAddUserView(DomainFormBaseView):
                 )
                 messages.warning(self.request, "Could not send email invitation.")
             except OutsideOrgMemberError:
+                email_send = False
                 logger.warn(
                     "Could not send email. Can not invite member of a .gov organization to a different organization.",
                     self.object,
