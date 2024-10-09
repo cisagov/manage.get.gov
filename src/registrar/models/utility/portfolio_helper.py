@@ -7,7 +7,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_MEMBER = "organization_member", "Members"
+    ORGANIZATION_MEMBER = "organization_member", "Member"
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
