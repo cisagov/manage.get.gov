@@ -1,7 +1,5 @@
 from django.forms import ValidationError
 from django.test import TestCase
-from django.db.utils import IntegrityError
-from django.db import transaction
 from unittest.mock import patch
 
 from django.test import RequestFactory
@@ -20,23 +18,18 @@ from registrar.models import (
     UserPortfolioPermission,
     AllowedEmail,
 )
-
 import boto3_mocking
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
-from registrar.utility.constants import BranchChoices
 
 from .common import (
     MockSESClient,
-    less_console_noise,
     completed_domain_request,
-    set_domain_request_investigators,
     create_test_user,
 )
-from django_fsm import TransitionNotAllowed
 from waffle.testutils import override_flag
 
 import logging
