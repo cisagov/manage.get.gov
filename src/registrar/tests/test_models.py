@@ -31,6 +31,7 @@ from .common import (
     create_test_user,
 )
 from waffle.testutils import override_flag
+
 from api.tests.common import less_console_noise_decorator
 
 
