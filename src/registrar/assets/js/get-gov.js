@@ -1625,8 +1625,14 @@ class DomainRequestsTable extends LoadTableBase {
             `
           }
 
-          // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
-          if (request.is_deletable) {
+          if (!request.is_deletable) {
+            // If the request is not deletable, insert a message
+            // for the screenreader to pickup explaining the empty table cell
+            modalTrigger = `
+            <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`
+          }
+          else {
+            // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
             let modalHeading = '';
             let modalDescription = '';
 
