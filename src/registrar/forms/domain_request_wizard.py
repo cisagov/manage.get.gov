@@ -21,6 +21,13 @@ from registrar.utility.constants import BranchChoices
 logger = logging.getLogger(__name__)
 
 
+class RequestingEntityForm(RegistrarForm):
+    organization_name = forms.CharField(
+        label="Organization name",
+        error_messages={"required": "Enter the name of your organization."},
+    )
+
+
 class OrganizationTypeForm(RegistrarForm):
     generic_org_type = forms.ChoiceField(
         # use the long names in the domain request form
