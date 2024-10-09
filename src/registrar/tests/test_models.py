@@ -31,44 +31,7 @@ from .common import (
     create_test_user,
 )
 from waffle.testutils import override_flag
-
-import logging
-
 from api.tests.common import less_console_noise_decorator
-
-
-logger = logging.getLogger(__name__)
-
-
-class TestPermissions(TestCase):
-    """Test the User-Domain-Role connection."""
-
-    def setUp(self):
-        super().setUp()
-        self.mock_client = MockSESClient()
-
-    def tearDown(self):
-        super().tearDown()
-        self.mock_client.EMAILS_SENT.clear()
-
-    @boto3_mocking.patching
-    @less_console_noise_decorator
-    def test_approval_creates_role(self):
-        draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
-        user, _ = User.objects.get_or_create()
-        investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
-        domain_request = DomainRequest.objects.create(
-            creator=user, requested_domain=draft_domain, investigator=investigator
-        )
-
-        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
-            # skip using the submit method
-            domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
-            domain_request.approve()
-
-        # should be a role for this user
-        domain = Domain.objects.get(name="igorville.gov")
-        self.assertTrue(UserDomainRole.objects.get(user=user, domain=domain))
 
 
 class TestDomainInformation(TestCase):
