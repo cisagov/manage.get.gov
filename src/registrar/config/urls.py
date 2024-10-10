@@ -31,6 +31,7 @@ from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
+    get_rejection_email_for_user_json,
 )
 
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
@@ -174,6 +175,11 @@ urlpatterns = [
         "admin/api/get-action-needed-email-for-user-json/",
         get_action_needed_email_for_user_json,
         name="get-action-needed-email-for-user-json",
+    ),
+    path(
+        "admin/api/get-rejection-email-for-user-json/",
+        get_rejection_email_for_user_json,
+        name="get-rejection-email-for-user-json",
     ),
     path("admin/", admin.site.urls),
     path(

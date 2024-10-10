@@ -137,29 +137,28 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
 {% block field_other %}
     {% if field.field.name == "action_needed_reason_email" %}
+        {{ field.field }}
 
-        <div class="margin-top-05 text-faded field-action_needed_reason_email__placeholder">
+        <div class="margin-top-05 text-faded custom-email-placeholder">
             &ndash;
         </div>
-
-        {{ field.field }}
 
         <button
             aria-label="Edit email in textarea"
             type="button"
-            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline field-action_needed_reason_email__edit flex-align-self-start"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline flex-align-self-start edit-email-button"
             ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</button
         >
         <a
-            href="#email-already-sent-modal"
-            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 field-action_needed_reason_email__modal-trigger flex-align-self-start"
-            aria-controls="email-already-sent-modal"
+            href="#action-needed-email-already-sent-modal"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 edit-button-modal-trigger flex-align-self-start"
+            aria-controls="action-needed-email-already-sent-modal"
             data-open-modal
             ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</a
         >
         <div
             class="usa-modal"
-            id="email-already-sent-modal"
+            id="action-needed-email-already-sent-modal"
             aria-labelledby="Are you sure you want to edit this email?"
             aria-describedby="The creator of this request already received an email"
             >
@@ -187,8 +186,8 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                             <li class="usa-button-group__item">
                                 <button
                                 type="submit" 
+                                id="action-needed-reason__confirm-edit-email"
                                 class="usa-button" 
-                                id="confirm-edit-email"
                                 data-close-modal
                                 >
                                     Yes, continue editing
@@ -221,11 +220,99 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
         
         {% if original_object.action_needed_reason_email %}
-        <input id="last-sent-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
+            <input id="last-sent-action-needed-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
         {% else %}
-        <input id="last-sent-email-content" class="display-none" value="None">
+            <input id="last-sent-action-needed-email-content" class="display-none" value="None">
         {% endif %}
 
+    {% elif field.field.name == "rejection_reason_email" %}
+        {{ field.field }}
+
+        <div class="margin-top-05 text-faded custom-email-placeholder">
+            &ndash;
+        </div>
+
+        <button
+            aria-label="Edit email in textarea"
+            type="button"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text margin-left-1 text-no-underline flex-align-self-start edit-email-button"
+            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</button
+        >
+        <a
+            href="#rejection-reason-email-already-sent-modal"
+            class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-left-1 edit-button-modal-trigger flex-align-self-start"
+            aria-controls="rejection-reason-email-already-sent-modal"
+            data-open-modal
+            ><img src="/public/admin/img/icon-changelink.svg" alt="Change"> Edit email</a
+        >
+        <div
+            class="usa-modal"
+            id="rejection-reason-email-already-sent-modal"
+            aria-labelledby="Are you sure you want to edit this email?"
+            aria-describedby="The creator of this request already received an email"
+            >
+            <div class="usa-modal__content">
+                <div class="usa-modal__main">
+                    <h2 class="usa-modal__heading">
+                        Are you sure you want to edit this email?
+                    </h2>
+                    <div class="usa-prose">
+                        <p>
+                            The creator of this request already received an email for this status/reason: 
+                        </p>
+                        <ul>
+                            <li class="font-body-sm">Status: <b>Rejected</b></li>
+                            <li class="font-body-sm">Reason: <b>{{ original_object.get_rejection_reason_display }}</b></li>
+                        </ul>
+                        <p>
+                            If you edit this email's text, <b>the system will send another email</b> to
+                            the creator after you “save” your changes.  If you do not want to send another email, click “cancel” below.
+                        </p>
+                    </div>
+
+                    <div class="usa-modal__footer">
+                        <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                                <button
+                                type="submit" 
+                                id="rejection-reason__confirm-edit-email"
+                                class="usa-button" 
+                                data-close-modal
+                                >
+                                    Yes, continue editing
+                                </button>
+                            </li>
+                            <li class="usa-button-group__item">
+                                <button
+                                type="button"
+                                class="usa-button usa-button--unstyled padding-105 text-center"
+                                name="_cancel_edit_email"
+                                data-close-modal
+                                >
+                                    Cancel
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <button
+                type="button"
+                class="usa-button usa-modal__close"
+                aria-label="Close this window"
+                data-close-modal
+                >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        {% if original_object.rejection_reason_email %}
+            <input id="last-sent-rejection-email-content" class="display-none" value="{{original_object.rejection_reason_email}}">
+        {% else %}
+            <input id="last-sent-rejection-email-content" class="display-none" value="None">
+        {% endif %}
     {% else %}
         {{ field.field }}
     {% endif %}

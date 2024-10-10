@@ -267,7 +267,6 @@ class TestDomainRequest(TestCase):
                 domain_request.submit()
         self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
-    @less_console_noise_decorator
     def check_email_sent(
         self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
     ):
@@ -278,6 +277,7 @@ class TestDomainRequest(TestCase):
                 # Perform the specified action
                 action_method = getattr(domain_request, action)
                 action_method()
+                domain_request.save()
 
             # Check if an email was sent
             sent_emails = [
@@ -337,12 +337,30 @@ class TestDomainRequest(TestCase):
             domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
         )
 
-    @less_console_noise_decorator
     def test_reject_sends_email(self):
-        msg = "Create a domain request and reject it and see if email was sent."
+        "Create a domain request and reject it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
-        self.check_email_sent(domain_request, msg, "reject", 1, expected_content="Hi", expected_email=user.email)
+        expected_email = user.email
+        email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            domain_request.reject()
+            domain_request.rejection_reason = domain_request.RejectionReasons.CONTACTS_NOT_VERIFIED
+            domain_request.rejection_reason_email = "test"
+            domain_request.save()
+
+        # Check if an email was sent
+        sent_emails = [
+            email
+            for email in MockSESClient.EMAILS_SENT
+            if expected_email in email["kwargs"]["Destination"]["ToAddresses"]
+        ]
+        self.assertEqual(len(sent_emails), 1)
+
+        email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertIn("test", email_content)
+
+        email_allowed.delete()
 
     @less_console_noise_decorator
     def test_reject_with_prejudice_does_not_send_email(self):
