@@ -7,7 +7,7 @@ from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User
 from registrar.models.portfolio import Portfolio
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class UserPortfolioPermissionFixture:
                                 user=user,
                                 portfolio=portfolio,
                                 roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                                additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
                             )
                             user_portfolio_permissions_to_create.append(user_portfolio_permission)
                         else:

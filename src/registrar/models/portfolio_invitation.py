@@ -4,6 +4,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db import models
 from django_fsm import FSMField, transition
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
@@ -38,7 +39,7 @@ class PortfolioInvitation(TimeStampedModel):
         related_name="portfolios",
     )
 
-    portfolio_roles = ArrayField(
+    roles = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioRoleChoices.choices,
@@ -48,7 +49,7 @@ class PortfolioInvitation(TimeStampedModel):
         help_text="Select one or more roles.",
     )
 
-    portfolio_additional_permissions = ArrayField(
+    additional_permissions = ArrayField(
         models.CharField(
             max_length=50,
             choices=UserPortfolioPermissionChoices.choices,
@@ -66,6 +67,31 @@ class PortfolioInvitation(TimeStampedModel):
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
+
+    def get_managed_domains_count(self):
+        """Return the count of domain invitations managed by the invited user for this portfolio."""
+        # Filter the UserDomainRole model to get domains where the user has a manager role
+        managed_domains = DomainInvitation.objects.filter(
+            email=self.email, domain__domain_info__portfolio=self.portfolio
+        ).count()
+        return managed_domains
+
+    def get_portfolio_permissions(self):
+        """
+        Retrieve the permissions for the user's portfolio roles from the invite.
+        This is similar logic to _get_portfolio_permissions in user_portfolio_permission
+        """
+        # Use a set to avoid duplicate permissions
+        portfolio_permissions = set()
+
+        if self.roles:
+            for role in self.roles:
+                portfolio_permissions.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+
+        if self.additional_permissions:
+            portfolio_permissions.update(self.additional_permissions)
+
+        return list(portfolio_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
@@ -88,8 +114,8 @@ class PortfolioInvitation(TimeStampedModel):
         user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=self.portfolio, user=user
         )
-        if self.portfolio_roles and len(self.portfolio_roles) > 0:
-            user_portfolio_permission.roles = self.portfolio_roles
-        if self.portfolio_additional_permissions and len(self.portfolio_additional_permissions) > 0:
-            user_portfolio_permission.additional_permissions = self.portfolio_additional_permissions
+        if self.roles and len(self.roles) > 0:
+            user_portfolio_permission.roles = self.roles
+        if self.additional_permissions and len(self.additional_permissions) > 0:
+            user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()

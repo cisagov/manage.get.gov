@@ -190,11 +190,11 @@ class PortfolioInvitationAdminForm(UserChangeForm):
         model = models.PortfolioInvitation
         fields = "__all__"
         widgets = {
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            "roles": FilteredSelectMultipleArrayWidget(
+                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
             ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
+            "additional_permissions": FilteredSelectMultipleArrayWidget(
+                "additional_permissions",
                 is_stacked=False,
                 choices=UserPortfolioPermissionChoices.choices,
             ),
@@ -1409,8 +1409,8 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
     list_display = [
         "email",
         "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
+        "roles",
+        "additional_permissions",
         "status",
     ]
 

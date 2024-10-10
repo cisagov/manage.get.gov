@@ -3,20 +3,30 @@ from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
-from registrar.forms.portfolio import PortfolioOrgAddressForm, PortfolioSeniorOfficialForm
+from registrar.forms.portfolio import (
+    PortfolioInvitedMemberForm,
+    PortfolioMemberForm,
+    PortfolioOrgAddressForm,
+    PortfolioSeniorOfficialForm,
+)
 from registrar.models import Portfolio, User
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
+    PortfolioInvitedMemberEditPermissionView,
+    PortfolioInvitedMemberPermissionView,
+    PortfolioMemberEditPermissionView,
+    PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
-
+from django.shortcuts import get_object_or_404, redirect
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +59,155 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
     def get(self, request):
         """Add additional context data to the template."""
         return render(request, "portfolio_members.html")
+
+
+class PortfolioMemberView(PortfolioMemberPermissionView, View):
+
+    template_name = "portfolio_member.html"
+
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
+        member_has_view_all_requests_portfolio_permission = member.has_view_all_requests_portfolio_permission(
+            portfolio_permission.portfolio
+        )
+        member_has_edit_request_portfolio_permission = member.has_edit_request_portfolio_permission(
+            portfolio_permission.portfolio
+        )
+        member_has_view_members_portfolio_permission = member.has_view_members_portfolio_permission(
+            portfolio_permission.portfolio
+        )
+        member_has_edit_members_portfolio_permission = member.has_edit_members_portfolio_permission(
+            portfolio_permission.portfolio
+        )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "edit_url": reverse("member-permissions", args=[pk]),
+                "portfolio_permission": portfolio_permission,
+                "member": member,
+                "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
+                "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
+                "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
+                "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+            },
+        )
+
+
+class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
+
+    template_name = "portfolio_member_permissions.html"
+    form_class = PortfolioMemberForm
+
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user = portfolio_permission.user
+
+        form = self.form_class(instance=portfolio_permission)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "member": user,
+            },
+        )
+
+    def post(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user = portfolio_permission.user
+
+        form = self.form_class(request.POST, instance=portfolio_permission)
+
+        if form.is_valid():
+            form.save()
+            return redirect("member", pk=pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "member": user,  # Pass the user object again to the template
+            },
+        )
+
+
+class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
+
+    template_name = "portfolio_member.html"
+    # form_class = PortfolioInvitedMemberForm
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        # form = self.form_class(instance=portfolio_invitation)
+
+        # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
+        member_has_view_all_requests_portfolio_permission = (
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in portfolio_invitation.get_portfolio_permissions()
+        )
+        member_has_edit_request_portfolio_permission = (
+            UserPortfolioPermissionChoices.EDIT_REQUESTS in portfolio_invitation.get_portfolio_permissions()
+        )
+        member_has_view_members_portfolio_permission = (
+            UserPortfolioPermissionChoices.VIEW_MEMBERS in portfolio_invitation.get_portfolio_permissions()
+        )
+        member_has_edit_members_portfolio_permission = (
+            UserPortfolioPermissionChoices.EDIT_MEMBERS in portfolio_invitation.get_portfolio_permissions()
+        )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "edit_url": reverse("invitedmember-permissions", args=[pk]),
+                "portfolio_invitation": portfolio_invitation,
+                "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
+                "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
+                "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
+                "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+            },
+        )
+
+
+class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):
+
+    template_name = "portfolio_member_permissions.html"
+    form_class = PortfolioInvitedMemberForm
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        form = self.form_class(instance=portfolio_invitation)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "invitation": portfolio_invitation,
+            },
+        )
+
+    def post(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        form = self.form_class(request.POST, instance=portfolio_invitation)
+        if form.is_valid():
+            form.save()
+            return redirect("invitedmember", pk=pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "invitation": portfolio_invitation,  # Pass the user object again to the template
+            },
+        )
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):

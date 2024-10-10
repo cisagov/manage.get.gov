@@ -37,6 +37,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         UserDomainRole.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
         Portfolio.objects.all().delete()
         super().tearDown()
 
