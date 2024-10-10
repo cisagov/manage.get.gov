@@ -23,6 +23,15 @@ class InvalidDomainError(ValueError):
     pass
 
 
+class OutsideOrgMemberError(ValueError):
+    """
+    Error raised when an org member tries adding a user from a different .gov org.
+    To be deleted when users can be members of multiple orgs.
+    """
+
+    pass
+
+
 class ActionNotAllowed(Exception):
     """User accessed an action that is not
     allowed by the current state"""
