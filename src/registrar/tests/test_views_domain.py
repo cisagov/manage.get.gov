@@ -2066,6 +2066,39 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    def test_no_notification_on_change_by_analyst(self):
+        """Test that an email is not sent on org name change when the domain is in a portfolio"""
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+
+        self.domain_information.organization_name = "Town of Igorville"
+        self.domain_information.address_line1 = "123 Main St"
+        self.domain_information.city = "Igorville"
+        self.domain_information.state_territory = "IL"
+        self.domain_information.zipcode = "62052"
+        self.domain_information.portfolio = portfolio
+        self.domain_information.save()
+
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        session = self.app.session
+        session["analyst_action"] = "foo"
+        session["analyst_action_location"] = self.domain.id
+        session.save()
+
+        org_name_page.form["organization_name"] = "Not igorville"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            org_name_page.form.submit()
+
+        # Check that an email was not sent
+        self.assertFalse(self.mock_client.send_email.called)
+
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
     def test_notification_on_security_email_change(self):
         """Test that an email is sent when the security email is changed."""
 

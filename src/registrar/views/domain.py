@@ -173,22 +173,21 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             SeniorOfficialContactForm,
         }
 
-        if form.__class__ in form_label_dict:
+        is_analyst_action = ("analyst_action" in self.session and "analyst_action_location" in self.session)
+
+        if form.__class__ in form_label_dict and not is_analyst_action:
             # these types of forms can cause notifications
             should_notify = True
             if form.__class__ in check_for_portfolio:
                 # some forms shouldn't cause notifications if they are in a portfolio
                 info = self.get_domain_info_from_domain()
                 if not info or info.portfolio:
+                    logger.debug("No notification sent: Domain is part of a portfolio")
                     should_notify = False
-        elif "analyst_action" in self.session and "analyst_action_location" in self.session:
-            # action is being made by an analyst
-            should_notify = False
         else:
             # don't notify for any other types of forms
             should_notify = False
-            logger.info(f"Not notifying for {form.__class__}")
-        if (should_notify and form.has_changed()) or force_send:
+        if should_notify and (form.has_changed() or force_send):
             context = {
                 "domain": self.object.name,
                 "user": self.request.user,
