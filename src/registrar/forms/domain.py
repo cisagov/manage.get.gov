@@ -35,7 +35,10 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(
         label="Email",
         max_length=None,
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
@@ -285,7 +288,7 @@ class UserForm(forms.ModelForm):
             "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
         }
         self.fields["email"].error_messages = {
-            "required": "Enter your email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None
@@ -342,7 +345,7 @@ class ContactForm(forms.ModelForm):
             "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
         }
         self.fields["email"].error_messages = {
-            "required": "Enter your email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None
@@ -458,9 +461,12 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
+        error_messages={
+            "required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
+        },
     )
 
     class Meta:
