@@ -226,7 +226,10 @@ class SeniorOfficialForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         max_length=None,
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com.")
+        },
         validators=[
             MaxLengthValidator(
                 320,
@@ -604,6 +607,7 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
         required=False,
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com.")
         },
         validators=[
             MaxLengthValidator(

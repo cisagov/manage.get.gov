@@ -20,6 +20,9 @@ class PortfolioOrgAddressForm(forms.ModelForm):
                 message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
+        error_messages={
+            'required': "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
+        }
     )
 
     class Meta:
