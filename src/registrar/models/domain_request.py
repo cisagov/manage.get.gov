@@ -704,6 +704,7 @@ class DomainRequest(TimeStampedModel):
         # We should never send an email if no reason was specified.
         # Additionally, Don't send out emails for reasons that shouldn't send them.
         if status_info.get("reason") is None or status_info.get("reason") in status_info.get("excluded_reasons"):
+            logger.warning("send_custom_status_update_email() => Tried sending a status email without a reason.")
             return
 
         # Only send out an email if the underlying reason itself changed or if no email was sent previously.
@@ -1064,8 +1065,15 @@ class DomainRequest(TimeStampedModel):
     def reject(self):
         """Reject an domain request that has been submitted.
 
+        This action is logged.
+
+        This action cleans up the action needed status if moving away from action needed.
+
         As side effects this will delete the domain and domain_information
-        (will cascade), and send an email notification using send_custom_status_update_email.
+        (will cascade) when they exist.
+
+        Afterwards, we send out an email for reject in def save().
+        See the function send_custom_status_update_email.
         """
 
         if self.status == self.DomainRequestStatus.APPROVED:

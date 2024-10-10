@@ -637,7 +637,6 @@ class TestDomainRequestAdmin(MockEppLib):
         with less_console_noise():
             # Access the arguments passed to send_email
             call_args = self.mock_client.EMAILS_SENT
-            logger.info(f"what are the call args? {call_args}")
             kwargs = call_args[email_index]["kwargs"]
 
             # Retrieve the email details from the arguments
