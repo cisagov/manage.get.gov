@@ -444,30 +444,23 @@ class CustomizableEmailBase {
      * @param {Object} config - must contain the following:
      * @property {HTMLElement} dropdown - The dropdown element.
      * @property {HTMLElement} textarea - The textarea element.
-     * @property {HTMLElement} textareaPlaceholder - The placeholder for the textarea.
-     * @property {HTMLElement} directEditButton - The button to directly edit the email.
-     * @property {HTMLElement} modalTrigger - The trigger for the modal.
-     * @property {HTMLElement} modalConfirm - The confirm button in the modal.
-     * @property {HTMLElement} formLabel - The label for the form.
      * @property {HTMLElement} lastSentEmailContent - The last sent email content element.
      * @property {HTMLElement} textAreaFormGroup - The form group for the textarea.
      * @property {HTMLElement} dropdownFormGroup - The form group for the dropdown.
+     * @property {HTMLElement} modalConfirm - The confirm button in the modal.
      * @property {string} apiUrl - The API URL for fetching email content.
      * @property {string} statusToCheck - The status to check against. Used for show/hide on textAreaFormGroup/dropdownFormGroup.
      * @property {string} sessionVariableName - The session variable name. Used for show/hide on textAreaFormGroup/dropdownFormGroup.
      * @property {string} apiErrorMessage - The error message that the ajax call returns.
      */
-    constructor(config) {        
+    constructor(config) {
+        this.config = config;        
         this.dropdown = config.dropdown;
         this.textarea = config.textarea;
-        this.textareaPlaceholder = config.textareaPlaceholder;
-        this.directEditButton = config.directEditButton;
-        this.modalTrigger = config.modalTrigger;
-        this.modalConfirm = config.modalConfirm;
-        this.formLabel = config.formLabel;
         this.lastSentEmailContent = config.lastSentEmailContent;
         this.apiUrl = config.apiUrl;
         this.apiErrorMessage = config.apiErrorMessage;
+        this.modalConfirm = config.modalConfirm;
 
         // These fields are hidden/shown on pageload depending on the current status
         this.textAreaFormGroup = config.textAreaFormGroup;
@@ -480,6 +473,14 @@ class CustomizableEmailBase {
         this.domainRequestId = this.dropdown ? document.getElementById("domain_request_id").value : null
         this.initialDropdownValue = this.dropdown ? this.dropdown.value : null;
         this.initialEmailValue = this.textarea ? this.textarea.value : null;
+
+        // Find other fields near the textarea 
+        const parentDiv = this.textarea ? this.textarea.closest(".flex-container") : null;
+        this.directEditButton = parentDiv ? parentDiv.querySelector(".edit-email-button") : null;
+        this.modalTrigger = parentDiv ? parentDiv.querySelector(".edit-button-modal-trigger") : null;
+
+        this.textareaPlaceholder = parentDiv ? parentDiv.querySelector(".custom-email-placeholder") : null;
+        this.formLabel = this.textarea ? document.querySelector(`label[for="${this.textarea.id}"]`) : null;
 
         this.isEmailAlreadySentConst;
         if (this.lastSentEmailContent && this.textarea) {
@@ -642,12 +643,8 @@ class customActionNeededEmail extends CustomizableEmailBase {
         const emailConfig = {
             dropdown: document.getElementById("id_action_needed_reason"),
             textarea: document.getElementById("id_action_needed_reason_email"),
-            textareaPlaceholder: document.querySelector(".field-action_needed_reason_email__placeholder"),
-            directEditButton: document.querySelector('.field-action_needed_reason_email__edit'),
-            modalTrigger: document.querySelector('.field-action_needed_reason_email__modal-trigger'),
-            modalConfirm: document.getElementById('confirm-edit-email'),
-            formLabel: document.querySelector('label[for="id_action_needed_reason_email"]'),
             lastSentEmailContent: document.getElementById("last-sent-action-needed-email-content"),
+            modalConfirm: document.getElementById("action-needed-reason__confirm-edit-email"),
             apiUrl: document.getElementById("get-action-needed-email-for-user-json")?.value || null,
             textAreaFormGroup: document.querySelector('.field-action_needed_reason'),
             dropdownFormGroup: document.querySelector('.field-action_needed_reason_email'),
@@ -690,6 +687,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize UI
     const customEmail = new customActionNeededEmail();
+
+    // Check that every variable was setup correctly
+    const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
+    if (nullItems.length > 0) {
+        console.error(`Failed to load customActionNeededEmail(). Some variables were null: ${nullItems.join(", ")}`)
+        return;
+    }
     customEmail.loadActionNeededEmail()
 });
 
@@ -699,12 +703,8 @@ class customRejectedEmail extends CustomizableEmailBase {
         const emailConfig = {
             dropdown: document.getElementById("id_rejection_reason"),
             textarea: document.getElementById("id_rejection_reason_email"),
-            textareaPlaceholder: document.querySelector(".field-rejection_reason_email__placeholder"),
-            directEditButton: document.querySelector('.field-rejection_reason_email__edit'),
-            modalTrigger: document.querySelector('.field-rejection_reason_email__modal-trigger'),
-            modalConfirm: document.getElementById('confirm-edit-email'),
-            formLabel: document.querySelector('label[for="id_rejection_reason_email"]'),
             lastSentEmailContent: document.getElementById("last-sent-rejection-email-content"),
+            modalConfirm: document.getElementById("rejection-reason__confirm-edit-email"),
             apiUrl: document.getElementById("get-rejection-email-for-user-json")?.value || null,
             textAreaFormGroup: document.querySelector('.field-rejection_reason'),
             dropdownFormGroup: document.querySelector('.field-rejection_reason_email'),
@@ -749,6 +749,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize UI
     const customEmail = new customRejectedEmail();
+    // Check that every variable was setup correctly
+    const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
+    if (nullItems.length > 0) {
+        console.error(`Failed to load customRejectedEmail(). Some variables were null: ${nullItems.join(", ")}`)
+        return;
+    }
     customEmail.loadRejectedEmail()
 });
 
