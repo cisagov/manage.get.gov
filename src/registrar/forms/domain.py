@@ -37,7 +37,7 @@ class DomainAddUserForm(forms.Form):
         max_length=None,
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
-            "required": ("Enter an email address in the required format, like name@example.com.")
+            "required": ("Enter an email address in the required format, like name@example.com."),
         },
         validators=[
             MaxLengthValidator(
@@ -465,8 +465,8 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             )
         ],
         error_messages={
-            'required': "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
-        }
+            "required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
+        },
     )
 
     class Meta:
