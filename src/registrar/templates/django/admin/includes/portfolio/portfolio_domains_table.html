@@ -5,8 +5,12 @@
 <table>
     <thead>
         <tr>
-            <th>Name</th>
-            <th>State</th>
+            <th data-sortable="domain__name">
+                <a href="?sort=name&order={% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}">Name</a>
+            </th>
+            <th data-sortable="domain__state">
+                <a href="?sort=state&order={% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}">State</a>
+            </th>
         </tr>
     </thead>
     <tbody>

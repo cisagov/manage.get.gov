@@ -5,11 +5,19 @@
 <table>
     <thead>
         <tr>
-            <th>Name</th>
-            <th>Status</th>
+            <th data-sortable="requested_domain__name">
+                <a href="#" onclick="sortTable('requested_domain__name', '{% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}'); return false;">
+                    Name
+                </a>
+            </th>
+            <th data-sortable="requested_domain__status">
+                <a href="#" onclick="sortTable('status', '{% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}'); return false;">
+                    Status
+                </a>
+            </th>
         </tr>
     </thead>
-    <tbody>
+    <tbody id="table-content">
         {% for domain_request in domain_requests %}
         {% url 'admin:registrar_domainrequest_change' domain_request.pk as url %}
         <tr>
