@@ -19,5 +19,9 @@
 {% endblock %}
 
 {% block form_fields %}
-  {% include "includes/request_review_steps.html" with is_editable=True %}
+  {% if portfolio %}
+    {% include "includes/portfolio_request_review_steps.html" with is_editable=True %}
+  {% else %}
+    {% include "includes/request_review_steps.html" with is_editable=True %}
+  {% endif %}
 {% endblock %}
