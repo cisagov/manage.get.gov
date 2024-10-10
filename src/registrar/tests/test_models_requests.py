@@ -341,7 +341,7 @@ class TestDomainRequest(TestCase):
         "Create a domain request and reject it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED, user=user)
-        expected_email=user.email
+        expected_email = user.email
         email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             domain_request.reject()
