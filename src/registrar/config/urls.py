@@ -31,9 +31,10 @@ from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
+    get_rejection_email_for_user_json,
 )
 
-from registrar.views.domain_request import Step
+from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
@@ -61,6 +62,9 @@ for step, view in [
     (Step.ADDITIONAL_DETAILS, views.AdditionalDetails),
     (Step.REQUIREMENTS, views.Requirements),
     (Step.REVIEW, views.Review),
+    # Portfolio steps
+    (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
+    (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
     domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
 
@@ -192,6 +196,11 @@ urlpatterns = [
         get_action_needed_email_for_user_json,
         name="get-action-needed-email-for-user-json",
     ),
+    path(
+        "admin/api/get-rejection-email-for-user-json/",
+        get_rejection_email_for_user_json,
+        name="get-rejection-email-for-user-json",
+    ),
     path("admin/", admin.site.urls),
     path(
         "reports/export_data_type_user/",
@@ -204,7 +213,12 @@ urlpatterns = [
         name="export_data_type_requests",
     ),
     path(
-        "domain-request/<id>/edit/",
+        "reports/export_data_type_requests/",
+        ExportDataTypeRequests.as_view(),
+        name="export_data_type_requests",
+    ),
+    path(
+        "domain-request/<int:id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
     ),

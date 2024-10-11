@@ -5,6 +5,11 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.utility.admin_helpers import (
+    get_action_needed_reason_default_email,
+    get_rejection_reason_default_email,
+    get_field_links_as_list,
+)
 from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
@@ -20,11 +25,6 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.utility.admin_helpers import (
-    get_all_action_needed_reason_emails,
-    get_action_needed_reason_default_email,
-    get_field_links_as_list,
-)
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
@@ -237,6 +237,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         }
         labels = {
             "action_needed_reason_email": "Email",
+            "rejection_reason_email": "Email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -1750,6 +1751,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "status_history",
                     "status",
                     "rejection_reason",
+                    "rejection_reason_email",
                     "action_needed_reason",
                     "action_needed_reason_email",
                     "investigator",
@@ -1905,25 +1907,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
-        # == Handle action_needed_reason == #
+        # == Handle action needed and rejected emails == #
+        # Edge case: this logic is handled by javascript, so contexts outside that must be handled
+        obj = self._handle_custom_emails(obj)
 
-        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-        if reason_changed:
-            # Track the fact that we sent out an email
-            request.session["action_needed_email_sent"] = True
-
-            # Set the action_needed_reason_email to the default if nothing exists.
-            # Since this check occurs after save, if the user enters a value then we won't update.
-
-            default_email = get_action_needed_reason_default_email(request, obj, obj.action_needed_reason)
-            if obj.action_needed_reason_email:
-                emails = get_all_action_needed_reason_emails(request, obj)
-                is_custom_email = obj.action_needed_reason_email not in emails.values()
-                if not is_custom_email:
-                    obj.action_needed_reason_email = default_email
-            else:
-                obj.action_needed_reason_email = default_email
-
+        # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
             self._check_for_valid_email(request, obj)
 
@@ -1938,6 +1926,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _handle_custom_emails(self, obj):
+        if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            if obj.action_needed_reason and not obj.action_needed_reason_email:
+                obj.action_needed_reason_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+        elif obj.status == DomainRequest.DomainRequestStatus.REJECTED:
+            if obj.rejection_reason and not obj.rejection_reason_email:
+                obj.rejection_reason_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
+        return obj
 
     def _check_for_valid_email(self, request, obj):
         """Certain emails are whitelisted in non-production environments,
@@ -1976,18 +1973,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
             # If the status is not mapped properly, saving could cause
             # weird issues down the line. Instead, we should block this.
+            # NEEDS A UNIT TEST
             should_proceed = False
-            return should_proceed
+            return (obj, should_proceed)
 
-        request_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-        if request_is_not_approved and not obj.domain_is_not_active():
-            # If an admin tried to set an approved domain request to
-            # another status and the related domain is already
-            # active, shortcut the action and throw a friendly
-            # error message. This action would still not go through
-            # shortcut or not as the rules are duplicated on the model,
-            # but the error would be an ugly Django error screen.
+        obj_is_not_approved = obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        if obj_is_not_approved and not obj.domain_is_not_active():
+            # REDUNDANT CHECK / ERROR SCREEN AVOIDANCE:
+            # This action (moving a request from approved to
+            # another status) when the domain is already active (READY),
+            # would still not go through even without this check as the rules are
+            # duplicated in the model and the error is raised from the model.
+            # This avoids an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
+        elif (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
+            and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+        ):
+            # REDUNDANT CHECK:
+            # This action (approving a request when the domain exists)
+            # would still not go through even without this check as the rules are
+            # duplicated in the model and the error is raised from the model.
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
         elif obj.status == models.DomainRequest.DomainRequestStatus.REJECTED and not obj.rejection_reason:
             # This condition should never be triggered.
             # The opposite of this condition is acceptable (rejected -> other status and rejection_reason)
