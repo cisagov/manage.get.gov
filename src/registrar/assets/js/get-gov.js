@@ -1932,9 +1932,21 @@ class MembersTable extends LoadTableBase {
             const member_name = member.name;
             const member_email = member.email;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const last_active = member.last_active ? member.last_active != 'Invited' ? new Date(member.last_active) : 'Invited' : null;
-            const last_active_formatted = last_active ? last_active != 'Invited' ? last_active.toLocaleDateString('en-Us', options) : 'Invited' : '';
-            const last_active_sort_value = last_active ? last_active != 'Invited' ? last_active.getTime() : 'Invited' : '';
+            // set last_active values
+            // default values
+            let last_active = null;
+            let last_active_formatted = '';
+            let last_active_sort_value = '';
+            // member.last_active could be null, Invited, or a date; below sets values for all scenarios
+            if (member.last_active && member.last_active != 'Invited') {
+              last_active = new Date(member.last_active);
+              last_active_formatted = last_active.toLocaleDateString('en-Us', options);
+              last_active_sort_value = last_active.getTime();  
+            } else {
+              last_active = 'Invited';
+              last_active_formatted = 'Invited';
+              last_active_sort_value = 'Invited';
+            }
             const action_url = member.action_url;
             const action_label = member.action_label;
             const svg_icon = member.svg_icon;
