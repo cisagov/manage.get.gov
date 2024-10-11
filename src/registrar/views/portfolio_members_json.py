@@ -89,9 +89,9 @@ def apply_search(data_list, request):
         data_list = [
             item
             for item in data_list
-            if search_term in (item.get("first_name", "") or "").lower()
-            or search_term in (item.get("last_name", "") or "").lower()
-            or search_term in (item.get("email", "") or "").lower()
+            if search_term in item.get("first_name", "").lower()
+            or search_term in item.get("last_name", "").lower()
+            or search_term in item.get("email", "").lower()
         ]
 
     return data_list
@@ -153,11 +153,11 @@ def serialize_members(request, portfolio, item, user):
 
     # ------- SERIALIZE
     member_json = {
-        "id": item["id"],
-        "name": (item["first_name"] or "") + " " + (item["last_name"] or ""),
-        "email": item["email"],
+        "id": item.get("id",""),
+        "name": item.get("first_name", "") + " " + item.get("last_name", ""),
+        "email": item.get("email",""),
         "is_admin": is_admin,
-        "last_active": item["last_active"],
+        "last_active": item.get("last_active", None),
         "action_url": action_url,
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
