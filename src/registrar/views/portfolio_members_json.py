@@ -153,9 +153,9 @@ def serialize_members(request, portfolio, item, user):
 
     # ------- SERIALIZE
     member_json = {
-        "id": item.get("id",""),
-        "name": item.get("first_name", "") + " " + item.get("last_name", ""),
-        "email": item.get("email",""),
+        "id": item.get("id", ""),
+        "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
+        "email": item.get("email", ""),
         "is_admin": is_admin,
         "last_active": item.get("last_active", None),
         "action_url": action_url,
