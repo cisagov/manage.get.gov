@@ -174,6 +174,17 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         }
 
         is_analyst_action = ("analyst_action" in self.session and "analyst_action_location" in self.session)
+        
+        if "analyst_action" in self.session:
+            logger.info(f"analyst action: %s", self.session["analyst_action"])
+        else:
+            logger.info("Analyst_action not found in session")
+
+        if "analyst_action_location" in self.session:
+            logger.info(f"analyst action location: %s", self.session["analyst_action_location"])
+        else:
+            logger.info("Analyst_action_location not found in session")
+        
         should_notify=False
 
         if form.__class__ in form_label_dict:
