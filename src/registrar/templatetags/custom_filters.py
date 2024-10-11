@@ -248,6 +248,10 @@ def is_members_subpage(path):
     # Since our pages aren't unified under a common path, we need this approach for now.
     url_names = [
         "members",
+        "member",
+        "member-permissions",
+        "invitedmember",
+        "invitedmember-permissions"
     ]
     return get_url_name(path) in url_names
 
