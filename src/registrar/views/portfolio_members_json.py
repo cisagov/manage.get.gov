@@ -89,9 +89,12 @@ def apply_search(data_list, request):
         data_list = [
             item
             for item in data_list
-            if item.get("first_name", "") and search_term in item.get("first_name", "").lower()
-            or item.get("last_name", "") and search_term in item.get("last_name", "").lower()
-            or item.get("email", "") and search_term in item.get("email", "").lower()
+            if item.get("first_name", "")
+            and search_term in item.get("first_name", "").lower()
+            or item.get("last_name", "")
+            and search_term in item.get("last_name", "").lower()
+            or item.get("email", "")
+            and search_term in item.get("email", "").lower()
         ]
 
     return data_list

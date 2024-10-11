@@ -7,7 +7,6 @@ from django.core.validators import RegexValidator
 from registrar.models import (
     PortfolioInvitation,
     UserPortfolioPermission,
-    UserPortfolioPermission,
     DomainInformation,
     Portfolio,
     SeniorOfficial,
