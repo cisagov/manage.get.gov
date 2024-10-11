@@ -27,7 +27,7 @@ class OrganizationTypeForm(RegistrarForm):
         choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
         error_messages={"required": "Select the type of organization you represent."},
-        label="What kind of U.S.-based government organization do you represent?"
+        label="What kind of U.S.-based government organization do you represent?",
     )
 
 
@@ -71,7 +71,7 @@ class OrganizationFederalForm(RegistrarForm):
     federal_type = forms.ChoiceField(
         choices=BranchChoices.choices,
         widget=forms.RadioSelect,
-        label = "Which federal branch is your organization in?",
+        label="Which federal branch is your organization in?",
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
 
@@ -84,7 +84,7 @@ class OrganizationElectionForm(RegistrarForm):
                 (False, "No"),
             ],
         ),
-        label="Is your organization an election office?"
+        label="Is your organization an election office?",
     )
 
     def clean_is_election_board(self):
@@ -229,8 +229,10 @@ class SeniorOfficialForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         max_length=None,
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com."),
-                        "required": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
@@ -444,7 +446,7 @@ class OtherContactsForm(RegistrarForm):
                 message="Response must be less than 320 characters.",
             )
         ],
-        help_text="Enter an email address in the required format, like name@example.com."
+        help_text="Enter an email address in the required format, like name@example.com.",
     )
     phone = PhoneNumberField(
         label="Phone",
