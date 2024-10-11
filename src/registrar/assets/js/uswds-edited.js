@@ -25,7 +25,7 @@
 /**
  * Edits made for dotgov project:
  *  - tooltip exposed to window to be accessible in other js files
- *  - tooltip postiioning logic updated to allow position:fixed
+ *  - tooltip positioning logic updated to allow position:fixed
  *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
