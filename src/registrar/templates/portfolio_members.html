@@ -18,6 +18,7 @@
           <div class="mobile:grid-col-12 tablet:grid-col-6">
               <h1 id="members-header">Members</h1>
           </div>
+          {% if has_edit_members_portfolio_permission %}
           <div class="mobile:grid-col-12 tablet:grid-col-6">
               <p class="float-right-tablet tablet:margin-y-0">
                   <a href="#" class="usa-button"
@@ -26,6 +27,7 @@
                   </a>
               </p>
           </div>
+          {% endif %}
   </div>
   
     {% include "includes/members_table.html" with portfolio=portfolio %}
