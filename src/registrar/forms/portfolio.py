@@ -4,11 +4,11 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import (
+    PortfolioInvitation, UserPortfolioPermission,
+    UserPortfolioPermission, DomainInformation, Portfolio, SeniorOfficial
+)
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-
-from ..models import DomainInformation, Portfolio, SeniorOfficial
 
 logger = logging.getLogger(__name__)
 
