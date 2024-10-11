@@ -5941,7 +5941,7 @@ const showToolTip = (tooltipBody, tooltipTrigger, position) => {
   };
 
   /*
-   DOTGOV: Tooltip postiioning logic updated to allow position:fixed
+   DOTGOV: Tooltip positioning logic updated to allow position:fixed
    */
   const tooltipStyle = window.getComputedStyle(tooltipBody);
   const tooltipIsFixedPositioned = tooltipStyle.position === 'fixed';
