@@ -6158,7 +6158,7 @@ const setUpAttributes = tooltipTrigger => {
   tooltipBody.setAttribute("aria-hidden", "true");
 
   // place the text in the tooltip
-  // DOTGOV: nest the text element to allow us creater control over width and wrapping behavior
+  // DOTGOV: nest the text element to allow us greater control over width and wrapping behavior
    tooltipBody.innerHTML = `
     <div class="usa-tooltip__content">
       ${tooltipContent}
