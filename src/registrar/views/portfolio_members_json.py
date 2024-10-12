@@ -155,7 +155,7 @@ def serialize_members(request, portfolio, item, user):
 
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
-    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in item.get("roles_display", [])
+    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles_display", []))
     action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
 
     # Serialize member data
