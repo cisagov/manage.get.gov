@@ -1929,6 +1929,7 @@ class MembersTable extends LoadTableBase {
           data.members.forEach(member => {
             const member_name = member.name;
             const member_email = member.email;
+            const member_sort_value = member.member_sort_value;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
             // Handle last_active values
@@ -1970,7 +1971,7 @@ class MembersTable extends LoadTableBase {
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_email ? member_email : member_name} ${admin_tagHTML}
+                ${member_sort_value} ${admin_tagHTML}
               </th>
               <td data-sort-value="${last_active_sort_value}" data-label="last_active">
                 ${last_active_formatted}
