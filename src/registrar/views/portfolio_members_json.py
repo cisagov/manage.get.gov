@@ -14,7 +14,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 @login_required
 def get_portfolio_members_json(request):
     """Fetch members (permissions and invitations) for the given portfolio."""
-    
+
     portfolio = request.GET.get("portfolio")
 
     # Two initial querysets which will be combined
@@ -23,7 +23,7 @@ def get_portfolio_members_json(request):
 
     # Get total across both querysets before applying filters
     unfiltered_total = permissions.count() + invitations.count()
-    
+
     permissions = apply_search_term(permissions, request)
     invitations = apply_search_term(permissions, request)
 
@@ -49,6 +49,7 @@ def get_portfolio_members_json(request):
         }
     )
 
+
 def initial_permissions_search(portfolio):
     """Perform initial search for permissions before applying any filters."""
     permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
@@ -65,17 +66,18 @@ def initial_permissions_search(portfolio):
                 # If email is present and not blank, use email
                 When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
                 # If first name or last name is present, use concatenation of first_name + " " + last_name
-                When(Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False), 
-                 then=Concat(
-                     Coalesce(F("user__first_name"), Value("")),
-                     Value(" "),
-                     Coalesce(F("user__last_name"), Value(""))
-                 )
+                When(
+                    Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
+                    then=Concat(
+                        Coalesce(F("user__first_name"), Value("")),
+                        Value(" "),
+                        Coalesce(F("user__last_name"), Value("")),
+                    ),
+                ),
+                # If neither, use an empty string
+                default=Value(""),
+                output_field=CharField(),
             ),
-            # If neither, use an empty string
-            default=Value(""),
-            output_field=CharField()
-        ),
             source=Value("permission", output_field=CharField()),
         )
         .values(
@@ -91,6 +93,7 @@ def initial_permissions_search(portfolio):
         )
     )
     return permissions
+
 
 def initial_invitations_search(portfolio):
     """Perform initial invitations search before applying any filters."""
@@ -116,7 +119,7 @@ def initial_invitations_search(portfolio):
         "source",
     )
     return invitations
-    
+
 
 def apply_search_term(queryset, request):
     """Apply search term to the queryset."""
@@ -128,6 +131,7 @@ def apply_search_term(queryset, request):
             | Q(email_display__icontains=search_term)
         )
     return queryset
+
 
 def apply_sorting(queryset, request):
     """Apply sorting to the queryset."""
@@ -141,6 +145,7 @@ def apply_sorting(queryset, request):
     else:
         queryset = queryset.order_by(sort_by)
     return queryset
+
 
 def serialize_members(request, portfolio, item, user):
     # Check if the user can edit other users
