@@ -25,7 +25,7 @@ def get_portfolio_members_json(request):
     unfiltered_total = permissions.count() + invitations.count()
 
     permissions = apply_search_term(permissions, request)
-    invitations = apply_search_term(permissions, request)
+    invitations = apply_search_term(invitations, request)
 
     # Union the two querysets
     objects = permissions.union(invitations)
