@@ -58,7 +58,7 @@ class UserProfileForm(forms.ModelForm):
             "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
         }
         self.fields["email"].error_messages = {
-            "required": "Enter your email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
