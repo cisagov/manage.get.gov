@@ -535,7 +535,7 @@ class TestDomainAdminWithClient(TestCase):
         self.assertContains(response, "Testy Tester")
 
         # Test for the copy link
-        self.assertContains(response, "button--clipboard")
+        self.assertContains(response, "copy-to-clipboard")
 
         # cleanup from this test
         domain.delete()

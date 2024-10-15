@@ -43,8 +43,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     although not without consulting the base implementation, first.
     """
 
-    StepEnum: Step = Step  # type: ignore
     template_name = ""
+    is_portfolio = False
 
     # uniquely namespace the wizard in urls.py
     # (this is not seen _in_ urls, only for Django's internal naming)
@@ -54,41 +54,139 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
     NEW_URL_NAME = "/request/"
+
+    # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
-    TITLES = {
-        StepEnum.ORGANIZATION_TYPE: _("Type of organization"),
-        StepEnum.TRIBAL_GOVERNMENT: _("Tribal government"),
-        StepEnum.ORGANIZATION_FEDERAL: _("Federal government branch"),
-        StepEnum.ORGANIZATION_ELECTION: _("Election office"),
-        StepEnum.ORGANIZATION_CONTACT: _("Organization"),
-        StepEnum.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
-        StepEnum.SENIOR_OFFICIAL: _("Senior official"),
-        StepEnum.CURRENT_SITES: _("Current websites"),
-        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
-        StepEnum.PURPOSE: _("Purpose of your domain"),
-        StepEnum.OTHER_CONTACTS: _("Other employees from your organization"),
-        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
-        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-        StepEnum.REVIEW: _("Review and submit your domain request"),
+    REGULAR_TITLES = {
+        Step.ORGANIZATION_TYPE: _("Type of organization"),
+        Step.TRIBAL_GOVERNMENT: _("Tribal government"),
+        Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
+        Step.ORGANIZATION_ELECTION: _("Election office"),
+        Step.ORGANIZATION_CONTACT: _("Organization"),
+        Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
+        Step.SENIOR_OFFICIAL: _("Senior official"),
+        Step.CURRENT_SITES: _("Current websites"),
+        Step.DOTGOV_DOMAIN: _(".gov domain"),
+        Step.PURPOSE: _("Purpose of your domain"),
+        Step.OTHER_CONTACTS: _("Other employees from your organization"),
+        Step.ADDITIONAL_DETAILS: _("Additional details"),
+        Step.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        Step.REVIEW: _("Review and submit your domain request"),
     }
 
+    # Titles for the portfolio context
+    PORTFOLIO_TITLES = {
+        PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
+        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
+        PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
+        PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
+        PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
+        PortfolioDomainRequestStep.REQUIREMENTS: _("Requirements for operating a .gov domain"),
+        PortfolioDomainRequestStep.REVIEW: _("Review and submit your domain request"),
+    }
+    # endregion
+
+    # region: Wizard conditions
     # We can use a dictionary with step names and callables that return booleans
     # to show or hide particular steps based on the state of the process.
-    WIZARD_CONDITIONS = {
-        StepEnum.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
-        StepEnum.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        StepEnum.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
-        StepEnum.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
+    REGULAR_WIZARD_CONDITIONS = {
+        Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
+        Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
+        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
+
+    PORTFOLIO_WIZARD_CONDITIONS = {}  # type: ignore
+    # endregion
+
+    # region: Unlocking steps
+    # The conditions by which each step is "unlocked" or "locked"
+    REGULAR_UNLOCKING_STEPS = {
+        Step.ORGANIZATION_TYPE: lambda self: self.domain_request.generic_org_type is not None,
+        Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
+        Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
+        Step.ORGANIZATION_ELECTION: lambda self: self.domain_request.is_election_board is not None,
+        Step.ORGANIZATION_CONTACT: lambda self: (
+            self.domain_request.federal_agency is not None
+            or self.domain_request.organization_name is not None
+            or self.domain_request.address_line1 is not None
+            or self.domain_request.city is not None
+            or self.domain_request.state_territory is not None
+            or self.domain_request.zipcode is not None
+            or self.domain_request.urbanization is not None
+        ),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
+        Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
+        Step.CURRENT_SITES: lambda self: (
+            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
+        ),
+        Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
+        Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
+        Step.OTHER_CONTACTS: lambda self: (
+            self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
+        ),
+        Step.ADDITIONAL_DETAILS: lambda self: (
+            # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
+            (
+                self.domain_request.has_anything_else_text is not None
+                and self.domain_request.has_cisa_representative is not None
+            )
+        ),
+        Step.REQUIREMENTS: lambda self: self.domain_request.is_policy_acknowledged is not None,
+        Step.REVIEW: lambda self: self.domain_request.is_policy_acknowledged is not None,
+    }
+
+    PORTFOLIO_UNLOCKING_STEPS = {
+        PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda self: self.domain_request.organization_name is not None,
+        PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
+            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
+        ),
+        PortfolioDomainRequestStep.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
+        PortfolioDomainRequestStep.PURPOSE: lambda self: self.domain_request.purpose is not None,
+        PortfolioDomainRequestStep.ADDITIONAL_DETAILS: lambda self: self.domain_request.anything_else is not None,
+        PortfolioDomainRequestStep.REQUIREMENTS: lambda self: self.domain_request.is_policy_acknowledged is not None,
+        PortfolioDomainRequestStep.REVIEW: lambda self: self.domain_request.is_policy_acknowledged is not None,
+    }
+    # endregion
 
     def __init__(self):
         super().__init__()
-        self.steps = StepsHelper(self)
+        self.titles = {}
+        self.wizard_conditions = {}
+        self.unlocking_steps = {}
+        self.steps = None
+        # Configure titles, wizard_conditions, unlocking_steps, and steps
+        self.configure_step_options()
         self._domain_request = None  # for caching
+
+    def configure_step_options(self):
+        """Changes which steps are available to the user based on self.is_portfolio.
+        This may change on the fly, so we need to evaluate it on the fly.
+
+        Using this information, we then set three configuration variables.
+        - self.titles => Returns the page titles for each step
+        - self.wizard_conditions => Conditionally shows / hides certain steps
+        - self.unlocking_steps => Determines what steps are locked/unlocked
+
+        Then, we create self.steps.
+        """
+        if self.is_portfolio:
+            self.titles = self.PORTFOLIO_TITLES
+            self.wizard_conditions = self.PORTFOLIO_WIZARD_CONDITIONS
+            self.unlocking_steps = self.PORTFOLIO_UNLOCKING_STEPS
+        else:
+            self.titles = self.REGULAR_TITLES
+            self.wizard_conditions = self.REGULAR_WIZARD_CONDITIONS
+            self.unlocking_steps = self.REGULAR_UNLOCKING_STEPS
+        self.steps = StepsHelper(self)
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
         return "domain_request_id" in self.storage
+
+    def get_step_enum(self):
+        """Determines which step enum we should use for the wizard"""
+        return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     @property
     def prefix(self):
@@ -128,10 +226,16 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
                 creator=self.request.user,
-                portfolio=self.request.session.get("portfolio"),
+                portfolio=portfolio,
             )
+
+            # Question for reviewers: we should probably be doing this right?
+            if portfolio and not self._domain_request.generic_org_type:
+                self._domain_request.generic_org_type = portfolio.organization_type
+                self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
@@ -190,6 +294,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def get(self, request, *args, **kwargs):
         """This method handles GET requests."""
+
+        if not self.is_portfolio and self.request.user.is_org_user(request):
+            self.is_portfolio = True
+            # Configure titles, wizard_conditions, unlocking_steps, and steps
+            self.configure_step_options()
+
         current_url = resolve(request.path_info).url_name
 
         # if user visited via an "edit" url, associate the id of the
@@ -209,7 +319,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(request, "domain_request_intro.html", {})
+                return render(request, "domain_request_intro.html", {"hide_requests": True, "hide_domains": True})
             else:
                 return self.goto(self.steps.first)
 
@@ -321,56 +431,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
-        """Helper for get_context_data
-
+        """Helper for get_context_data.
         Queries the DB for a domain request and returns a list of unlocked steps."""
-
-        # The way this works is as follows:
-        # Each step is assigned a true/false value to determine if it is
-        # "unlocked" or not.  This dictionary of values is looped through
-        # at the end of this function and any step with a "true" value is
-        # added to a simple array that is returned at the end of this function.
-        # This array is eventually passed to the frontend context (eg. domain_request_sidebar.html),
-        # and is used to determine how steps appear in the side nav.
-        # It is worth noting that any step assigned "false" here will be EXCLUDED
-        # from the list of "unlocked" steps.
-
-        history_dict = {
-            "generic_org_type": self.domain_request.generic_org_type is not None,
-            "tribal_government": self.domain_request.tribe_name is not None,
-            "organization_federal": self.domain_request.federal_type is not None,
-            "organization_election": self.domain_request.is_election_board is not None,
-            "organization_contact": (
-                self.domain_request.federal_agency is not None
-                or self.domain_request.organization_name is not None
-                or self.domain_request.address_line1 is not None
-                or self.domain_request.city is not None
-                or self.domain_request.state_territory is not None
-                or self.domain_request.zipcode is not None
-                or self.domain_request.urbanization is not None
-            ),
-            "about_your_organization": self.domain_request.about_your_organization is not None,
-            "senior_official": self.domain_request.senior_official is not None,
-            "current_sites": (
-                self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
-            ),
-            "dotgov_domain": self.domain_request.requested_domain is not None,
-            "purpose": self.domain_request.purpose is not None,
-            "other_contacts": (
-                self.domain_request.other_contacts.exists()
-                or self.domain_request.no_other_contacts_rationale is not None
-            ),
-            "additional_details": (
-                # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
-                (
-                    self.domain_request.has_anything_else_text is not None
-                    and self.domain_request.has_cisa_representative is not None
-                )
-            ),
-            "requirements": self.domain_request.is_policy_acknowledged is not None,
-            "review": self.domain_request.is_policy_acknowledged is not None,
-        }
-        return [key for key, value in history_dict.items() if value]
+        return [key for key, is_unlocked_checker in self.unlocking_steps.items() if is_unlocked_checker(self)]
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
@@ -380,17 +443,22 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             requested_domain_name = self.domain_request.requested_domain.name
 
         context_stuff = {}
-        if DomainRequest._form_complete(self.domain_request, self.request):
+
+        # Note: we will want to consolidate the non_org_steps_complete check into the same check that
+        # org_steps_complete is using at some point.
+        non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
+        org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
+        if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context_stuff = {
                 "not_form": False,
-                "form_titles": self.TITLES,
+                "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
                 "modal_button": modal_button,
-                "modal_heading": "You are about to submit a domain request for "
-                + str(self.domain_request.requested_domain),
+                "modal_heading": "You are about to submit a domain request for ",
+                "domain_name_modal": str(self.domain_request.requested_domain),
                 "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
                 You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
@@ -401,7 +469,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
             context_stuff = {
                 "not_form": True,
-                "form_titles": self.TITLES,
+                "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
@@ -413,14 +481,19 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
+
+        # Hides the requests and domains buttons in the navbar
+        context_stuff["hide_requests"] = self.is_portfolio
+        context_stuff["hide_domains"] = self.is_portfolio
+
         return context_stuff
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
-        return request_step_list(self)
+        return request_step_list(self, self.get_step_enum())
 
     def goto(self, step):
-        if step == "generic_org_type":
+        if step == "generic_org_type" or step == "portfolio_requesting_entity":
             # We need to avoid creating a new domain request if the user
             # clicks the back button
             self.request.session["new_request"] = False
@@ -443,21 +516,21 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
+        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
+            self.is_portfolio = True
+            # Configure titles, wizard_conditions, unlocking_steps, and steps
+            self.configure_step_options()
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-        # If a user hits the new request url directly
+
         if "new_request" not in request.session:
             request.session["new_request"] = True
+
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
-            if request.path_info == self.NEW_URL_NAME:
-
-                if self.request.session["new_request"] is True:
-                    # This will trigger the domain_request getter into creating a new DomainRequest
-                    del self.storage
-
-            return self.goto(self.steps.first)
+            # Split into a function: C901 'DomainRequestWizard.post' is too complex (11)
+            self.handle_intro_acknowledge(request)
 
         # if accessing this class directly, redirect to the first step
         if self.__class__ == DomainRequestWizard:
@@ -488,6 +561,14 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # otherwise, proceed as normal
         return self.goto_next_step()
 
+    def handle_intro_acknowledge(self, request):
+        """If we are starting a new request, clear storage
+        and redirect to the first step"""
+        if request.path_info == self.NEW_URL_NAME:
+            if self.request.session["new_request"] is True:
+                del self.storage
+        return self.goto(self.steps.first)
+
     def save(self, forms: list):
         """
         Unpack the form responses onto the model object properties.
@@ -501,24 +582,22 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
 class PortfolioDomainRequestWizard(DomainRequestWizard):
-    StepEnum: PortfolioDomainRequestStep = PortfolioDomainRequestStep  # type: ignore
-
-    TITLES = {
-        StepEnum.REQUESTING_ENTITY: _("Requesting entity"),
-        StepEnum.CURRENT_SITES: _("Current websites"),
-        StepEnum.DOTGOV_DOMAIN: _(".gov domain"),
-        StepEnum.PURPOSE: _("Purpose of your domain"),
-        StepEnum.ADDITIONAL_DETAILS: _("Additional details"),
-        StepEnum.REQUIREMENTS: _("Requirements for operating a .gov domain"),
-        # Step.REVIEW: _("Review and submit your domain request"),
-    }
-
-    def __init__(self):
-        super().__init__()
-        self.steps = StepsHelper(self)
-        self._domain_request = None  # for caching
+    is_portfolio = True
 
 
+# Portfolio pages
+class RequestingEntity(DomainRequestWizard):
+    template_name = "domain_request_requesting_entity.html"
+    forms = [forms.RequestingEntityForm]
+
+
+class PortfolioAdditionalDetails(DomainRequestWizard):
+    template_name = "portfolio_domain_request_additional_details.html"
+
+    forms = [forms.AnythingElseForm]
+
+
+# Non-portfolio pages
 class OrganizationType(DomainRequestWizard):
     template_name = "domain_request_org_type.html"
     forms = [forms.OrganizationTypeForm]
@@ -698,7 +777,7 @@ class Review(DomainRequestWizard):
         if DomainRequest._form_complete(self.domain_request, self.request) is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
-        context["Step"] = Step.__members__
+        context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
         return context
 
@@ -899,9 +978,9 @@ class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
         # Create a temp wizard object to grab the step list
         wizard = PortfolioDomainRequestWizard()
         wizard.request = self.request
-        context["Step"] = wizard.StepEnum.__members__
-        context["steps"] = request_step_list(wizard)
-        context["form_titles"] = wizard.TITLES
+        context["Step"] = PortfolioDomainRequestStep.__members__
+        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+        context["form_titles"] = wizard.titles
         return context
 
 

@@ -21,6 +21,13 @@ from registrar.utility.constants import BranchChoices
 logger = logging.getLogger(__name__)
 
 
+class RequestingEntityForm(RegistrarForm):
+    organization_name = forms.CharField(
+        label="Organization name",
+        error_messages={"required": "Enter the name of your organization."},
+    )
+
+
 class OrganizationTypeForm(RegistrarForm):
     generic_org_type = forms.ChoiceField(
         # use the long names in the domain request form
@@ -137,10 +144,10 @@ class OrganizationContactForm(RegistrarForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the form of 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
-        error_messages={"required": ("Enter a zip code in the form of 12345 or 12345-6789.")},
+        error_messages={"required": ("Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.")},
     )
     urbanization = forms.CharField(
         required=False,
@@ -226,7 +233,10 @@ class SeniorOfficialForm(RegistrarForm):
     email = forms.EmailField(
         label="Email",
         max_length=None,
-        error_messages={"invalid": ("Enter an email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
@@ -603,7 +613,8 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
         max_length=None,
         required=False,
         error_messages={
-            "invalid": ("Enter your representative’s email address in the required format, like name@example.com."),
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
         },
         validators=[
             MaxLengthValidator(
