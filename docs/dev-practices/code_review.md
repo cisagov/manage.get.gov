@@ -12,12 +12,12 @@ After creating a pull request, pull request submitters should:
 Code changes on user-facing features (excluding content updates) require approval from at least one developer and one designer.
 All other changes require a single approving review.
 
-The submitter is responsible for merging their PR unless the approver is given explcit permission. Similarly, do not commit to another person's branch unless given explicit permission.
+The submitter is responsible for merging their PR unless the approver is given explicit permission. Similarly, do not commit to another person's branch unless given explicit permission.
 
 Bias towards approving i.e. "good to merge once X is fixed" rather than blocking until X is fixed, requiring an additional review.
 
 ## Pull Requests for User-facing changes
-When making user-facing changes, test that your changes work on multiple browsers including Chrome, Microsoft Edge, Firefox, and Safari.
+When making or reviewing user-facing changes, test that your changes work on multiple browsers including Chrome, Microsoft Edge, Firefox, and Safari.
 
 Add new pages to the .pa11yci file so they are included in our automated accessibility testing.
 
@@ -30,5 +30,3 @@ Add new pages to the .pa11yci file so they are included in our automated accessi
 
 ### Plain language
 All functions and methods should use plain language.
-
-TODO: Plain language description and examples in code standards ticket.

@@ -44,14 +44,14 @@ Resolves #00
 - [ ] Update documentation in READMEs and/or onboarding guide
 
 #### Ensured code standards are met (Original Developer)
-<!-- Write N/A if the below code standards are not applicable to your PR -->
+<!-- Mark "- N/A" and check at the end of each check that is not applicable to your PR -->
 - [ ] If any updated dependencies on Pipfile, also update dependencies in requirements.txt.
 - [ ] Interactions with external systems are wrapped in try/except
 - [ ] Error handling exists for unusual or missing values
 
 #### Validated user-facing changes (if applicable)
 
-- [ ] Tag @dotgov-designers for design review. If code is not user-facing, delete design reviewer checklist
+- [ ] Tag @dotgov-designers in this PR's Reviewers for design review. If code is not user-facing, delete design reviewer checklist
 - [ ] Verify new pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
@@ -61,13 +61,13 @@ Resolves #00
 #### Reviewed, tested, and left feedback about the changes
 
 - [ ] Pulled this branch locally and tested it
-- [ ] Verified code meets above code standards and user-facing checklist. Address any checks that are not satisfied
+- [ ] Verified code meets all checks above. Address any checks that are not satisfied
 - [ ] Reviewed this code and left comments. Indicate if comments must be addressed before code is merged
 - [ ] Checked that all code is adequately covered by tests
 - [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
-**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist
+**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
@@ -81,6 +81,7 @@ Resolves #00
 
 - [ ] Checked that the design translated visually
 - [ ] Checked behavior. Comment any found issues or broken flows.
+- [ ] Checked keyboard navigability
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Checked for landmarks, page heading structure, and links
 
