@@ -60,9 +60,8 @@ def initial_permissions_search(portfolio):
             last_name=F("user__last_name"),
             email_display=F("user__email"),
             last_active=Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
-            roles_display=F("roles"),
             additional_permissions_display=F("additional_permissions"),
-            member_sort_value=Case(
+            member_display=Case(
                 # If email is present and not blank, use email
                 When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
                 # If first name or last name is present, use concatenation of first_name + " " + last_name
@@ -86,9 +85,9 @@ def initial_permissions_search(portfolio):
             "last_name",
             "email_display",
             "last_active",
-            "roles_display",
+            "roles",
             "additional_permissions_display",
-            "member_sort_value",
+            "member_display",
             "source",
         )
     )
@@ -103,9 +102,8 @@ def initial_invitations_search(portfolio):
         last_name=Value(None, output_field=CharField()),
         email_display=F("email"),
         last_active=Value("Invited", output_field=TextField()),
-        roles_display=F("roles"),
         additional_permissions_display=F("additional_permissions"),
-        member_sort_value=F("email"),
+        member_display=F("email"),
         source=Value("invitation", output_field=CharField()),
     ).values(
         "id",
@@ -113,9 +111,9 @@ def initial_invitations_search(portfolio):
         "last_name",
         "email_display",
         "last_active",
-        "roles_display",
+        "roles",
         "additional_permissions_display",
-        "member_sort_value",
+        "member_display",
         "source",
     )
     return invitations
@@ -139,7 +137,7 @@ def apply_sorting(queryset, request):
     order = request.GET.get("order", "asc")  # Default to 'asc'
     # Adjust sort_by to match the annotated fields in the unioned queryset
     if sort_by == "member":
-        sort_by = "member_sort_value"
+        sort_by = "member_display"
     if order == "desc":
         queryset = queryset.order_by(F(sort_by).desc())
     else:
@@ -155,7 +153,7 @@ def serialize_members(request, portfolio, item, user):
 
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
-    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles_display") or [])
+    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
     action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
 
     # Serialize member data
@@ -163,7 +161,7 @@ def serialize_members(request, portfolio, item, user):
         "id": item.get("id", ""),
         "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
         "email": item.get("email_display", ""),
-        "member_sort_value": item.get("member_sort_value", ""),
+        "member_display": item.get("member_display", ""),
         "is_admin": is_admin,
         "last_active": item.get("last_active", ""),
         "action_url": action_url,
