@@ -3225,7 +3225,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             extra_context["members"] = self.get_user_portfolio_permission_non_admins(obj)
             extra_context["admins"] = self.get_user_portfolio_permission_admins(obj)
             extra_context["domains"] = obj.get_domains(order_by=["domain__name"])
-            extra_context["domain_requests"] = obj.get_domain_requests(order_by=domain_requests_order_by)
+            extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
