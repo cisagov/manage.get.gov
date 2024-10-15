@@ -3208,10 +3208,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         obj: Portfolio = self.get_object(request, object_id)
         extra_context = extra_context or {}
         extra_context["skip_additional_contact_info"] = True
-        sort_by = request.GET.get('sort', 'requested_domain__name')
-        order = request.GET.get('order', 'asc')
+        sort_by = request.GET.get("sort", "requested_domain__name")
+        order = request.GET.get("order", "asc")
 
-        order_prefix = '-' if order == 'desc' else ''
+        order_prefix = "-" if order == "desc" else ""
         domain_requests_order_by = [f"{order_prefix}{sort_by}"]
 
         if obj:
