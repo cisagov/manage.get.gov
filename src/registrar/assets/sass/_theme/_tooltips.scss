@@ -69,5 +69,6 @@
     @include at-media('desktop') {
       width: 70vw;
     }
+    display: block;
   }
 }

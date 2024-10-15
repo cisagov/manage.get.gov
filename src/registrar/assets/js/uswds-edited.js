@@ -6187,9 +6187,9 @@ const setUpAttributes = tooltipTrigger => {
 
   // DOTGOV: nest the text element to allow us greater control over width and wrapping behavior
    tooltipBody.innerHTML = `
-    <div class="usa-tooltip__content">
+    <span class="usa-tooltip__content">
       ${tooltipContent}
-    </div>`
+    </span>`
   // -- END DOTGOV EDIT
 
   return {
