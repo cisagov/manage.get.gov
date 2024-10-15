@@ -18,10 +18,17 @@
     </nav>
   {% endblock breadcrumb %}
   <h1>Add a domain manager</h1>
-
-  <p>You can add another user to help manage your domain. If they aren't an organization member they will 
-    need to sign in to the .gov registrar with their Login.gov account.
+{% if has_organization_feature %}
+  <p>
+    You can add another user to help manage your domain. Users can only be a member of one .gov organization, 
+    and they'll need to sign in with their Login.gov account.
   </p>
+{% else %}
+ <p>
+    You can add another user to help manage your domain. If they aren't an organization member they will 
+    need to sign in to the .gov registrar with their Login.gov account.
+ </p>
+{% endif %}
 
   <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}
