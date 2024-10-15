@@ -1170,19 +1170,3 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 })();
-
-(function sortTable(sortBy, order,event) {
-    event.preventDefault()
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', `?sort=${sortBy}&order=${order}`, true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            // Parse the response and update only the table body or container
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(xhr.responseText, 'text/html');
-            const sortedContent = doc.querySelector('#table-content').innerHTML;
-            document.querySelector('#table-content').innerHTML = sortedContent;
-        }
-    };
-    xhr.send();
-})();
