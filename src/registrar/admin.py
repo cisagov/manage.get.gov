@@ -2473,7 +2473,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
-        return obj.domain_info.federal_agency if obj.domain_info else None
+        if obj.domain_info:
+            return obj.domain_info.federal_agency
+        else:
+            return None
 
     federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
 
