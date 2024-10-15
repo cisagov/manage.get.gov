@@ -2,31 +2,21 @@
 {% load static url_helpers %}
 
 {% block detail_content %}
-<table>
+<table class="usa-table domain-request-table">
     <thead>
-        <tr>
-            <th data-sortable="requested_domain__name">
-                <a href="#" onclick="sortTable('requested_domain__name', '{% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}'); return false;">
-                    Name
-                </a>
-            </th>
-            <th data-sortable="requested_domain__status">
-                <a href="#" onclick="sortTable('status', '{% if request.GET.order == 'asc' %}desc{% else %}asc{% endif %}'); return false;">
-                    Status
-                </a>
+        <tr> 
+            <th data-sortable scope="col" role="columnheader">Name</th>
+            <th data-sortable scope="col" role="columnheader">
+                Status
             </th>
         </tr>
     </thead>
-    <tbody id="table-content">
+    <tbody>
         {% for domain_request in domain_requests %}
         {% url 'admin:registrar_domainrequest_change' domain_request.pk as url %}
         <tr>
-            <td><a href={{url}}>{{ domain_request }}</a></td>
-            {% if domain_request.get_status_display %}
-                <td>{{ domain_request.get_status_display }}</td>
-            {% else %}
-                <td>None</td>
-            {% endif %}
+            <td data-sort-value="{{ domain_request }}"> <a href={{url}}>{{ domain_request }}</a></td>
+            <td data-sort-value="{{ domain_request.get_status_display}}"> {{ domain_request.get_status_display|default:"None" }} </td>
         </tr>
         {% endfor %}
     </tbody>

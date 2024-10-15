@@ -929,3 +929,11 @@ ul.add-list-reset {
     font-weight: 600;
     font-size: .8125rem;
 }
+
+.domain-request-table {
+    td,
+    th {
+    color: inherit !important; 
+    background-color: transparent !important; 
+    }
+}
