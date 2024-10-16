@@ -1880,11 +1880,10 @@ class MembersTable extends LoadTableBase {
      * @param {*} sortBy - the sort column option
      * @param {*} order - the sort order {asc, desc}
      * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} status - control for the status filter
      * @param {*} searchTerm - the search term
      * @param {*} portfolio - the portfolio id
      */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
       // --------- SEARCH
       let searchParams = new URLSearchParams(
@@ -1892,7 +1891,6 @@ class MembersTable extends LoadTableBase {
           "page": page,
           "sort_by": sortBy,
           "order": order,
-          "status": status,
           "search_term": searchTerm
         }
       );
@@ -1928,11 +1926,40 @@ class MembersTable extends LoadTableBase {
           const memberList = document.querySelector('.members__table tbody');
           memberList.innerHTML = '';
 
+          const invited = 'Invited';
+
           data.members.forEach(member => {
-            // const actionUrl = domain.action_url;
             const member_name = member.name;
-            const member_email = member.email;
-            const last_active = member.last_active;
+            const member_display = member.member_display;
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            
+            // Handle last_active values
+            let last_active = member.last_active;
+            let last_active_formatted = '';
+            let last_active_sort_value = '';
+
+            // Handle 'Invited' or null/empty values differently from valid dates
+            if (last_active && last_active !== invited) {
+              try {
+                // Try to parse the last_active as a valid date
+                last_active = new Date(last_active);
+                if (!isNaN(last_active)) {
+                  last_active_formatted = last_active.toLocaleDateString('en-US', options);
+                  last_active_sort_value = last_active.getTime();  // For sorting purposes
+                } else {
+                  last_active_formatted='Invalid date'                  
+                }
+              } catch (e) {
+                console.error(`Error parsing date: ${last_active}. Error: ${e}`);
+                last_active_formatted='Invalid date'
+              }
+            } else {
+              // Handle 'Invited' or null
+              last_active = invited;
+              last_active_formatted = invited;
+              last_active_sort_value = invited; // Keep 'Invited' as a sortable string
+            }
+
             const action_url = member.action_url;
             const action_label = member.action_label;
             const svg_icon = member.svg_icon;
@@ -1945,10 +1972,10 @@ class MembersTable extends LoadTableBase {
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_email ? member_email : member_name} ${admin_tagHTML}
+                ${member_display} ${admin_tagHTML}
               </th>
-              <td data-sort-value="${last_active}" data-label="last_active">
-                ${last_active}
+              <td data-sort-value="${last_active_sort_value}" data-label="last_active">
+                ${last_active_formatted}
               </td>
               <td>
                 <a href="${action_url}">
