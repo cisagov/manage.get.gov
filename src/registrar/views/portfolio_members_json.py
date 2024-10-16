@@ -3,10 +3,13 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Value, F, CharField, TextField, Q, Case, When
 from django.db.models.functions import Concat, Coalesce
+from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.db.models.functions import Cast
 
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
@@ -77,6 +80,17 @@ def initial_permissions_search(portfolio):
                 default=Value(""),
                 output_field=CharField(),
             ),
+            domain_info=ArrayAgg(
+                # an array of domains, with id and name, colon separated
+                Concat(
+                    F("user__permissions__domain_id"),
+                    Value(":"),
+                    F("user__permissions__domain__name"),
+                    # specify the output_field to ensure union has same column types
+                    output_field=CharField()
+                ),
+                distinct=True
+            ),
             source=Value("permission", output_field=CharField()),
         )
         .values(
@@ -88,6 +102,7 @@ def initial_permissions_search(portfolio):
             "roles",
             "additional_permissions_display",
             "member_display",
+            "domain_info",
             "source",
         )
     )
@@ -104,6 +119,7 @@ def initial_invitations_search(portfolio):
         last_active=Value("Invited", output_field=TextField()),
         additional_permissions_display=F("additional_permissions"),
         member_display=F("email"),
+        domain_info=Value([], output_field=ArrayField(TextField())),
         source=Value("invitation", output_field=CharField()),
     ).values(
         "id",
@@ -114,6 +130,7 @@ def initial_invitations_search(portfolio):
         "roles",
         "additional_permissions_display",
         "member_display",
+        "domain_info",
         "source",
     )
     return invitations
@@ -162,6 +179,11 @@ def serialize_members(request, portfolio, item, user):
         "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
         "email": item.get("email_display", ""),
         "member_display": item.get("member_display", ""),
+        "roles": (item.get("roles") or []),
+        "additional_permissions": (item.get("additional_permissions_display") or []),
+        # split domain_info array values into ids to form urls, and names
+        "domain_urls": [reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in item.get("domain_info")],
+        "domain_names": [domain_info.split(":")[1] for domain_info in item.get("domain_info")],
         "is_admin": is_admin,
         "last_active": item.get("last_active", ""),
         "action_url": action_url,
