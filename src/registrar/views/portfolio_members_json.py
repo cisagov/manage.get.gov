@@ -63,7 +63,6 @@ def initial_permissions_search(portfolio):
             last_name=F("user__last_name"),
             email_display=F("user__email"),
             last_active=Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
-            additional_permissions_display=F("additional_permissions"),
             member_display=Case(
                 # If email is present and not blank, use email
                 When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
@@ -100,7 +99,7 @@ def initial_permissions_search(portfolio):
             "email_display",
             "last_active",
             "roles",
-            "additional_permissions_display",
+            "additional_permissions",
             "member_display",
             "domain_info",
             "source",
@@ -117,7 +116,6 @@ def initial_invitations_search(portfolio):
         last_name=Value(None, output_field=CharField()),
         email_display=F("email"),
         last_active=Value("Invited", output_field=TextField()),
-        additional_permissions_display=F("additional_permissions"),
         member_display=F("email"),
         domain_info=Value([], output_field=ArrayField(TextField())),
         source=Value("invitation", output_field=CharField()),
@@ -128,7 +126,7 @@ def initial_invitations_search(portfolio):
         "email_display",
         "last_active",
         "roles",
-        "additional_permissions_display",
+        "additional_permissions",
         "member_display",
         "domain_info",
         "source",
@@ -180,7 +178,7 @@ def serialize_members(request, portfolio, item, user):
         "email": item.get("email_display", ""),
         "member_display": item.get("member_display", ""),
         "roles": (item.get("roles") or []),
-        "additional_permissions": (item.get("additional_permissions_display") or []),
+        "permissions": UserPortfolioPermission.get_portfolio_permissions(item.get("roles"), item.get("additional_permissions")),
         # split domain_info array values into ids to form urls, and names
         "domain_urls": [reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in item.get("domain_info")],
         "domain_names": [domain_info.split(":")[1] for domain_info in item.get("domain_info")],
