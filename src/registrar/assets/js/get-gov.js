@@ -1927,6 +1927,7 @@ class MembersTable extends LoadTableBase {
           memberList.innerHTML = '';
 
           const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
+          const invited = 'Invited';
 
           data.members.forEach(member => {
             const member_name = member.name;
@@ -1943,7 +1944,7 @@ class MembersTable extends LoadTableBase {
             let last_active_sort_value = '';
 
             // Handle 'Invited' or null/empty values differently from valid dates
-            if (last_active && last_active !== 'Invited') {
+            if (last_active && last_active !== invited) {
               try {
                 // Try to parse the last_active as a valid date
                 last_active = new Date(last_active);
@@ -1959,9 +1960,9 @@ class MembersTable extends LoadTableBase {
               }
             } else {
               // Handle 'Invited' or null
-              last_active = 'Invited';
-              last_active_formatted = 'Invited';
-              last_active_sort_value = 'Invited'; // Keep 'Invited' as a sortable string
+              last_active = invited;
+              last_active_formatted = invited;
+              last_active_sort_value = invited; // Keep 'Invited' as a sortable string
             }
 
             const action_url = member.action_url;
