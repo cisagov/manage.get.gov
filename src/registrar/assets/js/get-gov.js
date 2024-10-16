@@ -1929,6 +1929,7 @@ class MembersTable extends LoadTableBase {
           data.members.forEach(member => {
             const member_name = member.name;
             const member_display = member.member_display;
+            const member_permissions = member.permissions;
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -1970,7 +1971,8 @@ class MembersTable extends LoadTableBase {
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
-            // domainsHTML block needs to be wrapped with hide/show toggle, Expand
+            // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
+
             let domainsHTML = '';
             if (domain_urls.length > 0 && domain_names.length > 0) {
               domainsHTML = "<ul>";
@@ -1980,9 +1982,32 @@ class MembersTable extends LoadTableBase {
               domainsHTML += "</ul>";
             }
 
+            // NOTE: need to replace strings below with constants from UserPortfolioPermission
+            // or return entire html block in json
+            console.log(member_permissions);
+            let permissionsHTML = '';
+            // only display domains permissions if domains assigned
+            if (domainsHTML) {
+              if (member_permissions.includes('view_all_domains')) {
+                permissionsHTML += "<p><b>Domains:</b> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
+              } else if (member_permissions.includes('view_managed_domains')) {
+                permissionsHTML += "<p><b>Domains:</b> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
+              }
+            }
+            if (member_permissions.includes('edit_requests')) {
+              permissionsHTML += "<p><b>Domain requests:</b> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>";
+            } else if (member_permissions.includes('view_all_requests')) {
+              permissionsHTML += "<p><b>Domain requests (view-only):</b> Can view all organization domain requests. Can't create or modify any domain requests.</p>";
+            }
+            if (member_permissions.includes('edit_members')) {
+              permissionsHTML += "<p><b>Members:</b> Can manage members including inviting new members, removing current members, and assigning domains to members.";
+            } else if (member_permissions.includes('view_members')) {
+              permissionsHTML += "<p><b>Members (view-only):</b> Can view all organizational members. Can't manage any members.";
+            }
+
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_display} ${admin_tagHTML} ${domainsHTML}
+                ${member_display} ${admin_tagHTML} ${domainsHTML} ${permissionsHTML}
               </th>
               <td data-sort-value="${last_active_sort_value}" data-label="last_active">
                 ${last_active_formatted}
