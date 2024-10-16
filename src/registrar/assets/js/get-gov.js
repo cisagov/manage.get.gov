@@ -1873,6 +1873,41 @@ class MembersTable extends LoadTableBase {
   constructor() {
     super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
   }
+  
+  initShowMoreButtons() {
+    function toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow) {
+      const spanElement = toggleButton.querySelector('span');
+      const useElement = toggleButton.querySelector('use');
+      if (contentDiv.classList.contains('display-none')) {
+        showElement(contentDiv);
+        spanElement.textContent = 'Close';
+        useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
+        buttonParentRow.classList.add('hide-td-borders');
+      } else {    
+        hideElement(contentDiv);
+        spanElement.textContent = 'Expand';
+        useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
+        buttonParentRow.classList.remove('hide-td-borders');
+      }
+    }
+  
+    let toggleButtons = document.querySelectorAll('.usa-button--show-more-button');
+    toggleButtons.forEach((toggleButton) => {
+      
+      let dataFor = toggleButton.dataset.for;
+      let contentDiv = document.getElementById(dataFor);
+      let buttonParentRow = toggleButton.parentElement.parentElement;
+      if (contentDiv && contentDiv.tagName.toLowerCase() === 'tr' && contentDiv.classList.contains('show-more-content') && buttonParentRow && buttonParentRow.tagName.toLowerCase() === 'tr') {
+        toggleButton.addEventListener('click', function() {
+          toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow);
+        });
+      } else {
+        console.warn('Found a toggle button with no associated toggleable content or parent row');
+      }
+
+    });
+  }
+
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -1930,6 +1965,7 @@ class MembersTable extends LoadTableBase {
           const invited = 'Invited';
 
           data.members.forEach(member => {
+            const member_id = member.source + member.id;
             const member_name = member.name;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
@@ -1979,9 +2015,10 @@ class MembersTable extends LoadTableBase {
 
             let domainsHTML = '';
             if (num_domains > 0) {
-              domainsHTML += "<h3>Domains assigned</h3>";
-              domainsHTML += "<p>This member is assigned to " + num_domains + " domains:";
-              domainsHTML += "<ul>";
+              domainsHTML += "<div class='desktop:grid-col-5 margin-bottom-2 desktop:margin-bottom-0'>";
+              domainsHTML += "<h4 class='margin-y-0 text-primary'>Domains assigned</h4>";
+              domainsHTML += "<p class='margin-y-0'>This member is assigned to " + num_domains + " domains:";
+              domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
               for (let i = 0; i < num_domains && i < 6; i++) {
                   domainsHTML += `<li><a href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
               }
@@ -1989,42 +2026,62 @@ class MembersTable extends LoadTableBase {
               if (num_domains >= 6) {
                 domainsHTML += "<p><a href='#'>View assigned domains</a></p>";
               }
+              domainsHTML += "</div>";
             }
 
             let permissionsHTML = '';
-            // only display domains permissions if domains assigned
-            if (domainsHTML) {
-              if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
-                permissionsHTML += "<p><b>Domains:</b> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
-              } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
-                permissionsHTML += "<p><b>Domains:</b> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
-              }
+            if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domains:</strong> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domains:</strong> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
             }
             if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
-              permissionsHTML += "<p><b>Domain requests:</b> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>";
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domain requests:</strong> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>";
             } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
-              permissionsHTML += "<p><b>Domain requests (view-only):</b> Can view all organization domain requests. Can't create or modify any domain requests.</p>";
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domain requests (view-only):</strong> Can view all organization domain requests. Can't create or modify any domain requests.</p>";
             }
             if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
-              permissionsHTML += "<p><b>Members:</b> Can manage members including inviting new members, removing current members, and assigning domains to members.";
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members:</strong> Can manage members including inviting new members, removing current members, and assigning domains to members.";
             } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
-              permissionsHTML += "<p><b>Members (view-only):</b> Can view all organizational members. Can't manage any members.";
+              permissionsHTML += "<p> class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members (view-only):</strong> Can view all organizational members. Can't manage any members.";
             }
             // if there are no additional permissions, display a no additional permissions message
             if (!permissionsHTML) {
               permissionsHTML += "<p><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
             }
             // add permissions header in all cases
-            permissionsHTML = "<h3>Additional permissions for this member</h3>" + permissionsHTML;
+            permissionsHTML = "<div class='desktop:grid-col-7'><h4 class='margin-y-0 text-primary'>Additional permissions for this member</h4>" + permissionsHTML + "</div>";
+
+            let showMoreButton = '';
+            const showMoreRow = document.createElement('tr');
+            if (domainsHTML || permissionsHTML) {
+              showMoreButton = `
+                <button 
+                  type="button" 
+                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-2" 
+                  data-for=${member_id} 
+                >
+                  <span>Expand</span>
+                  <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+                  </svg>
+                </button>
+              `;
+
+              showMoreRow.innerHTML = `<td colspan='3' headers="header-member" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+              showMoreRow.classList.add('show-more-content');
+              showMoreRow.classList.add('display-none');
+              showMoreRow.id = member_id;
+            }
 
             row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="member email">
-                ${member_display} ${admin_tagHTML} ${domainsHTML} ${permissionsHTML}
+              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
+                ${member_display} ${admin_tagHTML} ${showMoreButton}
               </th>
-              <td data-sort-value="${last_active_sort_value}" data-label="last_active">
+              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active_sort_value}" data-label="last_active">
                 ${last_active_formatted}
               </td>
-              <td>
+              <td headers="header-action row-header-${member_id}">
                 <a href="${action_url}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
@@ -2034,7 +2091,12 @@ class MembersTable extends LoadTableBase {
               </td>
             `;
             memberList.appendChild(row);
+            if (domainsHTML || permissionsHTML) {
+              memberList.appendChild(showMoreRow);
+            }
           });
+
+          this.initShowMoreButtons();
 
           // Do not scroll on first page load
           if (scroll)

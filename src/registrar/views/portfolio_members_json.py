@@ -175,6 +175,7 @@ def serialize_members(request, portfolio, item, user):
     # Serialize member data
     member_json = {
         "id": item.get("id", ""),
+        "source": item.get("source", ""),
         "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
         "email": item.get("email_display", ""),
         "member_display": item.get("member_display", ""),
