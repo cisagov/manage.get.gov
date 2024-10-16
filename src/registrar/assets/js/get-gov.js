@@ -2004,6 +2004,10 @@ class MembersTable extends LoadTableBase {
             } else if (member_permissions.includes('view_members')) {
               permissionsHTML += "<p><b>Members (view-only):</b> Can view all organizational members. Can't manage any members.";
             }
+            // if there are no additional permissions, display a no additional permissions message
+            if (!permissionsHTML) {
+              permissionsHTML += "<p><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
+            }
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
