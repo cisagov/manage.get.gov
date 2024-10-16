@@ -1926,6 +1926,8 @@ class MembersTable extends LoadTableBase {
           const memberList = document.querySelector('.members__table tbody');
           memberList.innerHTML = '';
 
+          const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
+
           data.members.forEach(member => {
             const member_name = member.name;
             const member_display = member.member_display;
@@ -1988,26 +1990,23 @@ class MembersTable extends LoadTableBase {
               }
             }
 
-            // NOTE: need to replace strings below with constants from UserPortfolioPermission
-            // or return entire html block in json
-            console.log(member_permissions);
             let permissionsHTML = '';
             // only display domains permissions if domains assigned
             if (domainsHTML) {
-              if (member_permissions.includes('view_all_domains')) {
+              if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
                 permissionsHTML += "<p><b>Domains:</b> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
-              } else if (member_permissions.includes('view_managed_domains')) {
+              } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
                 permissionsHTML += "<p><b>Domains:</b> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
               }
             }
-            if (member_permissions.includes('edit_requests')) {
+            if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
               permissionsHTML += "<p><b>Domain requests:</b> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>";
-            } else if (member_permissions.includes('view_all_requests')) {
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
               permissionsHTML += "<p><b>Domain requests (view-only):</b> Can view all organization domain requests. Can't create or modify any domain requests.</p>";
             }
-            if (member_permissions.includes('edit_members')) {
+            if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
               permissionsHTML += "<p><b>Members:</b> Can manage members including inviting new members, removing current members, and assigning domains to members.";
-            } else if (member_permissions.includes('view_members')) {
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
               permissionsHTML += "<p><b>Members (view-only):</b> Can view all organizational members. Can't manage any members.";
             }
             // if there are no additional permissions, display a no additional permissions message

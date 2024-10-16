@@ -11,7 +11,7 @@ from django.db.models.functions import Cast
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 
 @login_required
@@ -43,6 +43,7 @@ def get_portfolio_members_json(request):
     return JsonResponse(
         {
             "members": members,
+            "UserPortfolioPermissionChoices": UserPortfolioPermissionChoices.to_dict(),
             "page": page_obj.number,
             "num_pages": paginator.num_pages,
             "has_previous": page_obj.has_previous(),
