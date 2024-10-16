@@ -1932,6 +1932,7 @@ class MembersTable extends LoadTableBase {
             const member_permissions = member.permissions;
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
+            const num_domains = domain_urls.length;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
             // Handle last_active values
@@ -1974,12 +1975,17 @@ class MembersTable extends LoadTableBase {
             // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
 
             let domainsHTML = '';
-            if (domain_urls.length > 0 && domain_names.length > 0) {
-              domainsHTML = "<ul>";
-              for (let i = 0; i < domain_urls.length; i++) {
+            if (num_domains > 0) {
+              domainsHTML += "<h3>Domains assigned</h3>";
+              domainsHTML += "<p>This member is assigned to " + num_domains + " domains:";
+              domainsHTML += "<ul>";
+              for (let i = 0; i < num_domains && i < 6; i++) {
                   domainsHTML += `<li><a href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
               }
               domainsHTML += "</ul>";
+              if (num_domains >= 6) {
+                domainsHTML += "<p><a href='#'>View assigned domains</a></p>";
+              }
             }
 
             // NOTE: need to replace strings below with constants from UserPortfolioPermission
@@ -2008,6 +2014,8 @@ class MembersTable extends LoadTableBase {
             if (!permissionsHTML) {
               permissionsHTML += "<p><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
             }
+            // add permissions header in all cases
+            permissionsHTML = "<h3>Additional permissions for this member</h3>" + permissionsHTML;
 
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
