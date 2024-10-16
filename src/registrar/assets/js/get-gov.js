@@ -1929,6 +1929,8 @@ class MembersTable extends LoadTableBase {
           data.members.forEach(member => {
             const member_name = member.name;
             const member_display = member.member_display;
+            const domain_urls = member.domain_urls;
+            const domain_names = member.domain_names;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
             // Handle last_active values
@@ -1968,9 +1970,19 @@ class MembersTable extends LoadTableBase {
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
+            // domainsHTML block needs to be wrapped with hide/show toggle, Expand
+            let domainsHTML = '';
+            if (domain_urls.length > 0 && domain_names.length > 0) {
+              domainsHTML = "<ul>";
+              for (let i = 0; i < domain_urls.length; i++) {
+                  domainsHTML += `<li><a href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
+              }
+              domainsHTML += "</ul>";
+            }
+
             row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
-                ${member_display} ${admin_tagHTML}
+                ${member_display} ${admin_tagHTML} ${domainsHTML}
               </th>
               <td data-sort-value="${last_active_sort_value}" data-label="last_active">
                 ${last_active_formatted}
