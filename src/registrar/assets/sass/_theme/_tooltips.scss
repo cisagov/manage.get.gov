@@ -28,3 +28,47 @@
 #extended-logo .usa-tooltip__body {
   font-weight: 400 !important;
 }
+
+.domains__table {
+  /*
+  Trick tooltips in the domains table to do 2 things...
+  1 - Shrink itself to a padded viewport window
+  (override width and wrapping properties in key areas to constrain tooltip size)
+  2 - NOT be clipped by the table's scrollable view
+  (Set tooltip position to "fixed", which prevents tooltip from being clipped by parent
+  containers. Fixed-position detection was added to uswds positioning logic to update positioning
+  calculations accordingly.)
+  */
+  .usa-tooltip__body {
+    white-space: inherit;
+    max-width: fit-content; // prevent adjusted widths from being larger than content
+    position: fixed; // prevents clipping by parent containers
+  }
+  /*
+  Override width adustments in this dynamically added class
+  (this is original to the javascript handler as a way to shrink tooltip contents within the viewport,
+  but is insufficient for our needs.  We cannot simply override its properties
+  because the logic surrounding its dynamic appearance in the DOM does not account
+  for parent containers (basically, this class isn't in the DOM when we need it).
+  Intercept .usa-tooltip__content instead and nullify the effects of
+  .usa-tooltip__body--wrap to prevent conflicts)
+  */
+  .usa-tooltip__body--wrap {
+    min-width: inherit;
+    width: inherit;
+  }
+  /*
+  Add width and wrapping to tooltip content in order to confine it to a smaller viewport window.
+  */
+  .usa-tooltip__content {
+    width: 50vw;
+    text-wrap: wrap;
+    text-align: center;
+    font-size: inherit; //inherit tooltip fontsize of .93rem
+    max-width: fit-content;
+    @include at-media('desktop') {
+      width: 70vw;
+    }
+    display: block;
+  }
+}
