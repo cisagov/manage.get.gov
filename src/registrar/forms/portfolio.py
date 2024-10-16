@@ -4,7 +4,14 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 
-from ..models import DomainInformation, Portfolio, SeniorOfficial
+from registrar.models import (
+    PortfolioInvitation,
+    UserPortfolioPermission,
+    DomainInformation,
+    Portfolio,
+    SeniorOfficial,
+)
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +24,12 @@ class PortfolioOrgAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
+        error_messages={
+            "required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
+        },
     )
 
     class Meta:
@@ -38,6 +48,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             "state_territory": {
                 "required": "Select the state, territory, or military post where your organization is located."
             },
+            "zipcode": {"required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789."},
         }
         widgets = {
             # We need to set the required attributed for State/territory
@@ -95,3 +106,57 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data = super().clean()
         cleaned_data.pop("full_name", None)
         return cleaned_data
+
+
+class PortfolioMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio member.
+    """
+
+    roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Roles",
+    )
+
+    additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Additional Permissions",
+    )
+
+    class Meta:
+        model = UserPortfolioPermission
+        fields = [
+            "roles",
+            "additional_permissions",
+        ]
+
+
+class PortfolioInvitedMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio invited member.
+    """
+
+    roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Roles",
+    )
+
+    additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Additional Permissions",
+    )
+
+    class Meta:
+        model = PortfolioInvitation
+        fields = [
+            "roles",
+            "additional_permissions",
+        ]

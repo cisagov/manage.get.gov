@@ -254,6 +254,7 @@ a .usa-icon,
 // Note: Can be simplified by adding text-secondary to delete anchors in tables
 button.text-secondary,
 button.text-secondary:hover,
-.dotgov-table a.text-secondary {
+a.text-secondary,
+a.text-secondary:hover {
   color: $theme-color-error;
 }

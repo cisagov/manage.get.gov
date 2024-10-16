@@ -1,5 +1,6 @@
 from django.db import models
 from django.forms import ValidationError
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .utility.time_stamped_model import TimeStampedModel
@@ -78,6 +79,14 @@ class UserPortfolioPermission(TimeStampedModel):
                 [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
             )
         return readable_roles
+
+    def get_managed_domains_count(self):
+        """Return the count of domains managed by the user for this portfolio."""
+        # Filter the UserDomainRole model to get domains where the user has a manager role
+        managed_domains = UserDomainRole.objects.filter(
+            user=self.user, role=UserDomainRole.Roles.MANAGER, domain__domain_info__portfolio=self.portfolio
+        ).count()
+        return managed_domains
 
     def _get_portfolio_permissions(self):
         """
