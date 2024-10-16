@@ -912,7 +912,7 @@ class DomainAddUserView(DomainFormBaseView):
                 )
                 messages.error(
                     self.request,
-                    "That email is already a member of another .gov organization.",
+                    f"{requested_email} is already a member of another .gov organization.",
                 )
             except Exception:
                 logger.warn(
