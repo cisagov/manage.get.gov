@@ -160,7 +160,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
         # send notification email for changes to any of these forms
         form_label_dict = {
             DomainSecurityEmailForm: "Security email",
-            DomainDnssecForm: "DNSSec",
+            DomainDnssecForm: "DNSSEC / DS Data",
             DomainDsdataFormset: "DNSSEC / DS Data",
             DomainOrgNameAddressForm: "Organization details",
             SeniorOfficialContactForm: "Senior official",
