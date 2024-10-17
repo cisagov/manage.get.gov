@@ -81,12 +81,10 @@ Resolves #00
 
 - [ ] Checked that the design translated visually
 - [ ] Checked behavior. Comment any found issues or broken flows.
-- [ ] Checked keyboard navigability
-- [ ] Checked different states (empty, one, some, error)
-- [ ] Checked for landmarks, page heading structure, and links
 
 #### Validated user-facing changes as a designer
 
+- [ ] Checked keyboard navigability
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 - [ ] Tested with multiple browsers (check off which ones were used)
