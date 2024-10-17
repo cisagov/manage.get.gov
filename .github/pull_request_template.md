@@ -94,9 +94,6 @@ Resolves #00
   - [ ] Safari
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
-### References
-- [Code review best practices](../docs/dev-practices/code_review.md)
-
 ## Screenshots
 
 <!-- If this PR makes visible interface changes, an image of the finished interface can help reviewers
