@@ -25,7 +25,6 @@ Add new pages to the .pa11yci file so they are included in our automated accessi
 - Keep pull requests as small as possible. This makes them easier to review and track changes.
 - Write descriptive pull requests. This is not only something that makes it easier to review, but is a great source of documentation. 
 
-[comment]: The Coding standards section will be moved to a new code standards file in #2898. For now we're simply moving PR template content into the code review document for consolidation
 ## Coding standards
 
 ### Plain language
