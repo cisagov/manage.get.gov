@@ -43,7 +43,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         super().setUp()
         self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
-        self.TITLES = DomainRequestWizard.TITLES
+        self.TITLES = DomainRequestWizard.REGULAR_TITLES
 
     def tearDown(self):
         super().tearDown()
@@ -521,7 +521,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         # And the existence of the modal's data parked and ready for the js init.
         # The next assert also tests for the passed requested domain context from
         # the view > domain_request_form > modal
-        self.assertContains(review_page, "You are about to submit a domain request for city.gov")
+        self.assertContains(review_page, "You are about to submit a domain request for")
+        self.assertContains(review_page, "city.gov")
 
         # final submission results in a redirect to the "finished" URL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2741,6 +2742,66 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_portfolio_user_missing_edit_permissions(self):
+        """Tests that a portfolio user without edit request permissions cannot edit or add new requests"""
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        # This user should be forbidden from creating new domain requests
+        intro_page = self.app.get(reverse("domain-request:"), expect_errors=True)
+        self.assertEqual(intro_page.status_code, 403)
+
+        # This user should also be forbidden from editing existing ones
+        domain_request = completed_domain_request(user=self.user)
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
+        self.assertEqual(edit_page.status_code, 403)
+
+        # Cleanup
+        portfolio_perm.delete()
+        portfolio.delete()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_portfolio_user_with_edit_permissions(self):
+        """Tests that a portfolio user with edit request permissions can edit and add new requests"""
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # This user should be allowed to create new domain requests
+        intro_page = self.app.get(reverse("domain-request:"))
+        self.assertEqual(intro_page.status_code, 200)
+
+        # This user should also be allowed to edit existing ones
+        domain_request = completed_domain_request(user=self.user)
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        self.assertEqual(edit_page.status_code, 200)
+
+        # Cleanup
+        DomainRequest.objects.all().delete()
+        portfolio_perm.delete()
+        portfolio.delete()
+
+    def test_non_creator_access(self):
+        """Tests that a user cannot edit a domain request they didn't create"""
+        p = "password"
+        other_user = User.objects.create_user(username="other_user", password=p)
+        domain_request = completed_domain_request(user=other_user)
+
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
+        self.assertEqual(edit_page.status_code, 403)
+
+    def test_creator_access(self):
+        """Tests that a user can edit a domain request they created"""
+        domain_request = completed_domain_request(user=self.user)
+
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        self.assertEqual(edit_page.status_code, 200)
+
 
 class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
     def setUp(self):
@@ -2903,7 +2964,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertNotContains(home_page, "city.gov")
 
 
-class TestWizardUnlockingSteps(TestWithUser, WebTest):
+class TestDomainRequestWizard(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
@@ -3025,6 +3086,94 @@ class TestWizardUnlockingSteps(TestWithUser, WebTest):
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_wizard_steps_portfolio(self):
+        """
+        Tests the behavior of the domain request wizard for portfolios.
+        Ensures that:
+        - The user can access the organization page.
+        - The expected number of steps are locked/unlocked (implicit test for expected steps).
+        - The user lands on the "Requesting entity" page
+        - The user does not see the Domain and Domain requests buttons
+        """
+
+        # This should unlock 4 steps by default.
+        # Purpose, .gov domain, current websites, and requirements for operating
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            user=self.user,
+        )
+        domain_request.anything_else = None
+        domain_request.save()
+
+        federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
+        # Add a portfolio
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="test portfolio",
+            federal_agency=federal_agency,
+        )
+
+        user_portfolio_permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Check if the response is a redirect
+        if response.status_code == 302:
+            # Follow the redirect manually
+            try:
+                detail_page = response.follow()
+
+                self.wizard.get_context_data()
+            except Exception as err:
+                # Handle any potential errors while following the redirect
+                self.fail(f"Error following the redirect {err}")
+
+            # Now 'detail_page' contains the response after following the redirect
+            self.assertEqual(detail_page.status_code, 200)
+
+            # Assert that we're on the organization page
+            self.assertContains(detail_page, portfolio.organization_name)
+
+            # We should only see one unlocked step
+            self.assertContains(detail_page, "#check_circle", count=4)
+
+            # One pages should still be locked (additional details)
+            self.assertContains(detail_page, "#lock", 1)
+
+            # The current option should be selected
+            self.assertContains(detail_page, "usa-current", count=1)
+
+            # We default to the requesting entity page
+            expected_url = reverse("domain-request:portfolio_requesting_entity")
+            # This returns the entire url, thus "in"
+            self.assertIn(expected_url, detail_page.request.url)
+
+            # We shouldn't show the "domains" and "domain requests" buttons
+            # on this page.
+            self.assertNotContains(detail_page, "Domains")
+            self.assertNotContains(detail_page, "Domain requests")
+        else:
+            self.fail(f"Expected a redirect, but got a different response: {response}")
+
+        # Data cleanup
+        user_portfolio_permission.delete()
+        portfolio.delete()
+        federal_agency.delete()
+        domain_request.delete()
+
 
 class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
 
@@ -3036,7 +3185,7 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         super().setUp()
         self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
         self.app.set_user(self.user.username)
-        self.TITLES = DomainRequestWizard.TITLES
+        self.TITLES = DomainRequestWizard.REGULAR_TITLES
 
     def tearDown(self):
         super().tearDown()

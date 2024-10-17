@@ -5,6 +5,11 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.utility.admin_helpers import (
+    get_action_needed_reason_default_email,
+    get_rejection_reason_default_email,
+    get_field_links_as_list,
+)
 from django.conf import settings
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
@@ -20,11 +25,6 @@ from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
-from registrar.utility.admin_helpers import (
-    get_all_action_needed_reason_emails,
-    get_action_needed_reason_default_email,
-    get_field_links_as_list,
-)
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
@@ -190,11 +190,11 @@ class PortfolioInvitationAdminForm(UserChangeForm):
         model = models.PortfolioInvitation
         fields = "__all__"
         widgets = {
-            "portfolio_roles": FilteredSelectMultipleArrayWidget(
-                "portfolio_roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
+            "roles": FilteredSelectMultipleArrayWidget(
+                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
             ),
-            "portfolio_additional_permissions": FilteredSelectMultipleArrayWidget(
-                "portfolio_additional_permissions",
+            "additional_permissions": FilteredSelectMultipleArrayWidget(
+                "additional_permissions",
                 is_stacked=False,
                 choices=UserPortfolioPermissionChoices.choices,
             ),
@@ -237,6 +237,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         }
         labels = {
             "action_needed_reason_email": "Email",
+            "rejection_reason_email": "Email",
         }
 
     def __init__(self, *args, **kwargs):
@@ -1408,8 +1409,8 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
     list_display = [
         "email",
         "portfolio",
-        "portfolio_roles",
-        "portfolio_additional_permissions",
+        "roles",
+        "additional_permissions",
         "status",
     ]
 
@@ -1750,6 +1751,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "status_history",
                     "status",
                     "rejection_reason",
+                    "rejection_reason_email",
                     "action_needed_reason",
                     "action_needed_reason_email",
                     "investigator",
@@ -1905,25 +1907,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Get the original domain request from the database.
         original_obj = models.DomainRequest.objects.get(pk=obj.pk)
 
-        # == Handle action_needed_reason == #
+        # == Handle action needed and rejected emails == #
+        # Edge case: this logic is handled by javascript, so contexts outside that must be handled
+        obj = self._handle_custom_emails(obj)
 
-        reason_changed = obj.action_needed_reason != original_obj.action_needed_reason
-        if reason_changed:
-            # Track the fact that we sent out an email
-            request.session["action_needed_email_sent"] = True
-
-            # Set the action_needed_reason_email to the default if nothing exists.
-            # Since this check occurs after save, if the user enters a value then we won't update.
-
-            default_email = get_action_needed_reason_default_email(request, obj, obj.action_needed_reason)
-            if obj.action_needed_reason_email:
-                emails = get_all_action_needed_reason_emails(request, obj)
-                is_custom_email = obj.action_needed_reason_email not in emails.values()
-                if not is_custom_email:
-                    obj.action_needed_reason_email = default_email
-            else:
-                obj.action_needed_reason_email = default_email
-
+        # == Handle allowed emails == #
         if obj.status in DomainRequest.get_statuses_that_send_emails() and not settings.IS_PRODUCTION:
             self._check_for_valid_email(request, obj)
 
@@ -1938,6 +1926,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def _handle_custom_emails(self, obj):
+        if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            if obj.action_needed_reason and not obj.action_needed_reason_email:
+                obj.action_needed_reason_email = get_action_needed_reason_default_email(obj, obj.action_needed_reason)
+        elif obj.status == DomainRequest.DomainRequestStatus.REJECTED:
+            if obj.rejection_reason and not obj.rejection_reason_email:
+                obj.rejection_reason_email = get_rejection_reason_default_email(obj, obj.rejection_reason)
+        return obj
 
     def _check_for_valid_email(self, request, obj):
         """Certain emails are whitelisted in non-production environments,
@@ -2476,7 +2473,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     def federal_agency(self, obj):
-        return obj.domain_info.federal_agency if obj.domain_info else None
+        if obj.domain_info:
+            return obj.domain_info.federal_agency
+        else:
+            return None
 
     federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
 

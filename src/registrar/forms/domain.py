@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
-from registrar.models import DomainRequest
+from registrar.models import DomainRequest, FederalAgency
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -35,7 +35,10 @@ class DomainAddUserForm(forms.Form):
     email = forms.EmailField(
         label="Email",
         max_length=None,
-        error_messages={"invalid": ("Enter your email address in the required format, like name@example.com.")},
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
         validators=[
             MaxLengthValidator(
                 320,
@@ -285,7 +288,7 @@ class UserForm(forms.ModelForm):
             "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
         }
         self.fields["email"].error_messages = {
-            "required": "Enter your email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None
@@ -342,7 +345,7 @@ class ContactForm(forms.ModelForm):
             "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
         }
         self.fields["email"].error_messages = {
-            "required": "Enter your email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
         self.domainInfo = None
@@ -458,9 +461,12 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         validators=[
             RegexValidator(
                 "^[0-9]{5}(?:-[0-9]{4})?$|^$",
-                message="Enter a zip code in the required format, like 12345 or 12345-6789.",
+                message="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
             )
         ],
+        error_messages={
+            "required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789.",
+        },
     )
 
     class Meta:
@@ -529,17 +535,25 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 
     def save(self, commit=True):
         """Override the save() method of the BaseModelForm."""
+
         if self.has_changed():
 
             # This action should be blocked by the UI, as the text fields are readonly.
             # If they get past this point, we forbid it this way.
             # This could be malicious, so lets reserve information for the backend only.
-            if self.is_federal and not self._field_unchanged("federal_agency"):
-                raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+
+            if self.is_federal:
+                if not self._field_unchanged("federal_agency"):
+                    raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+
             elif self.is_tribal and not self._field_unchanged("organization_name"):
                 raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
 
-        super().save()
+            else:  # If this error that means Non-Federal Agency is missing
+                non_federal_agency_instance = FederalAgency.get_non_federal_agency()
+                self.instance.federal_agency = non_federal_agency_instance
+
+        return super().save(commit=commit)
 
     def _field_unchanged(self, field_name) -> bool:
         """
