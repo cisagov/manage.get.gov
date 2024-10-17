@@ -1975,20 +1975,23 @@ class MembersTable extends LoadTableBase {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
             // Handle last_active values
-            let last_active = member.last_active;
+            let last_active = NaN
+            last_active = member.last_active;
             let last_active_formatted = '';
             let last_active_sort_value = '';
 
             // Handle 'Invited' or null/empty values differently from valid dates
-            if (last_active && last_active !== invited) {
+            if (last_active !== invited) {
               try {
                 // Try to parse the last_active as a valid date
-                last_active = new Date(last_active);
+                // Try to parse the last_active as a valid date
+                const parsedDate = new Date(last_active);
                 if (!isNaN(last_active)) {
-                  last_active_formatted = last_active.toLocaleDateString('en-US', options);
-                  last_active_sort_value = last_active.getTime();  // For sorting purposes
+                  last_active_formatted = parsedDate.toLocaleDateString('en-US', options);
+                  last_active_sort_value = parsedDate.getTime();  // For sorting purposes
                 } else {
-                  last_active_formatted='Invalid date'                  
+                  last_active_formatted='Invalid date';
+                  last_active_sort_value = 'Invalid date';           
                 }
               } catch (e) {
                 console.error(`Error parsing date: ${last_active}. Error: ${e}`);
