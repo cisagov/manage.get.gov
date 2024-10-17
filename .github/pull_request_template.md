@@ -67,7 +67,7 @@ Resolves #00
 - [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
-**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
+**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
