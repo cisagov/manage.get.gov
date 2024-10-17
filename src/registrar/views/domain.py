@@ -21,8 +21,10 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
     DomainInvitation,
+    PortfolioInvitation,
     User,
     UserDomainRole,
+    UserPortfolioPermission,
     PublicContact,
 )
 from registrar.utility.enums import DefaultEmail
@@ -35,9 +37,11 @@ from registrar.utility.errors import (
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
+    OutsideOrgMemberError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
+from registrar.utility.waffle import flag_is_active_for_user
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -778,7 +782,18 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _send_domain_invitation_email(self, email: str, requestor: User, add_success=True):
+    def _is_member_of_different_org(self, email, requestor, requested_user):
+        """Verifies if an email belongs to a different organization as a member or invited member."""
+        # Check if user is a already member of a different organization than the requestor's org
+        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
+        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+        existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+
+        return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio != requestor_org
+        )
+
+    def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
         email: string- email to send to
@@ -802,6 +817,13 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             return None
+
+        # Check is user is a member or invited member of a different org from this domain's org
+        if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
+            email, requestor, requested_user
+        ):
+            add_success = False
+            raise OutsideOrgMemberError
 
         # Check to see if an invite has already been sent
         try:
@@ -859,16 +881,21 @@ class DomainAddUserView(DomainFormBaseView):
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+        email_success = False
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
+            email_success = True
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
             try:
-                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+                self._send_domain_invitation_email(
+                    requested_email, requestor, requested_user=requested_user, add_success=False
+                )
+                email_success = True
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -876,6 +903,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+                email_success = True
+            except OutsideOrgMemberError:
+                logger.warn(
+                    "Could not send email. Can not invite member of a .gov organization to a different organization.",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.error(
+                    self.request,
+                    f"{requested_email} is already a member of another .gov organization.",
+                )
             except Exception:
                 logger.warn(
                     "Could not send email invitation (Other Exception)",
@@ -883,17 +921,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+        if email_success:
+            try:
+                UserDomainRole.objects.create(
+                    user=requested_user,
+                    domain=self.object,
+                    role=UserDomainRole.Roles.MANAGER,
+                )
+                messages.success(self.request, f"Added user {requested_email}.")
+            except IntegrityError:
+                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
 
-        try:
-            UserDomainRole.objects.create(
-                user=requested_user,
-                domain=self.object,
-                role=UserDomainRole.Roles.MANAGER,
-            )
-        except IntegrityError:
-            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-        else:
-            messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 
