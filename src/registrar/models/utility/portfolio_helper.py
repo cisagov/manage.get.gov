@@ -36,7 +36,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
         return cls(user_portfolio_permission).label if user_portfolio_permission else None
-    
+
     @classmethod
     def to_dict(cls):
         return {key: value.value for key, value in cls.__members__.items()}

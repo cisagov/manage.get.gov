@@ -137,12 +137,14 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         # Convert each member's roles list to a frozenset
         actual_roles = {role for member in data["members"] for role in member["roles"]}
         self.assertEqual(expected_roles, actual_roles)
-        
+
         expected_additional_permissions = {
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
         }
-        actual_additional_permissions = {permission for member in data["members"]  for permission in member["permissions"]}
+        actual_additional_permissions = {
+            permission for member in data["members"] for permission in member["permissions"]
+        }
         self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
 
     def test_get_portfolio_invited_json_authenticated(self):
@@ -172,9 +174,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertEqual(len(data["members"]), 1)
 
         # Check member fields
-        expected_emails = {
-            self.email6
-        }
+        expected_emails = {self.email6}
         actual_emails = {member["email"] for member in data["members"]}
         self.assertEqual(expected_emails, actual_emails)
 
@@ -184,12 +184,14 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         # Convert each member's roles list to a frozenset
         actual_roles = {role for member in data["members"] for role in member["roles"]}
         self.assertEqual(expected_roles, actual_roles)
-        
+
         expected_additional_permissions = {
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
         }
-        actual_additional_permissions = {permission for member in data["members"]  for permission in member["permissions"]}
+        actual_additional_permissions = {
+            permission for member in data["members"] for permission in member["permissions"]
+        }
         self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
 
     def test_get_portfolio_members_json_with_domains(self):
@@ -241,11 +243,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         data = response.json
 
         # Check if the domain appears in the response JSON
-        domain_names = [
-            domain_name
-            for member in data["members"]
-            for domain_name in member.get("domain_names", [])
-        ]
+        domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
 
     def test_get_portfolio_invited_json_with_domains(self):
@@ -281,11 +279,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         data = response.json
 
         # Check if the domain appears in the response JSON
-        domain_names = [
-            domain_name
-            for member in data["members"]
-            for domain_name in member.get("domain_names", [])
-        ]
+        domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
 
     def test_pagination(self):
