@@ -62,7 +62,10 @@ def initial_permissions_search(portfolio):
             first_name=F("user__first_name"),
             last_name=F("user__last_name"),
             email_display=F("user__email"),
-            last_active=Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
+            last_active=Coalesce(
+                Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
+                Value("Invalid date"), output_field=TextField()
+            ),
             member_display=Case(
                 # If email is present and not blank, use email
                 When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
@@ -206,7 +209,7 @@ def serialize_members(request, portfolio, item, user):
         ],
         "domain_names": [domain_info.split(":")[1] for domain_info in item.get("domain_info")],
         "is_admin": is_admin,
-        "last_active": item.get("last_active", ""),
+        "last_active": item.get("last_active"),
         "action_url": action_url,
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
