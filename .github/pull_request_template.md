@@ -67,7 +67,7 @@ Resolves #00
 - [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
-**Note:** Multiple code reviewers can share the checklists above, a second reviewers should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
+**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
@@ -81,13 +81,12 @@ Resolves #00
 
 - [ ] Checked that the design translated visually
 - [ ] Checked behavior. Comment any found issues or broken flows.
-- [ ] Checked keyboard navigability
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Checked for landmarks, page heading structure, and links
 
 #### Validated user-facing changes as a designer
 
-- [ ] Checked different states (empty, one, some, error)
+- [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
 - [ ] Tested with multiple browsers (check off which ones were used)
   - [ ] Chrome
