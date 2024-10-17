@@ -588,7 +588,7 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 # Portfolio pages
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
-    forms = [forms.RequestingEntityForm]
+    forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
 
 
 class PortfolioAdditionalDetails(DomainRequestWizard):

@@ -13,7 +13,7 @@ from registrar.forms.utility.wizard_form_helper import (
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency, Suborganization
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
@@ -22,11 +22,81 @@ logger = logging.getLogger(__name__)
 
 
 class RequestingEntityForm(RegistrarForm):
+    sub_organization = forms.ModelChoiceField(
+        label="Suborganization name",
+        # not required because this field won't be filled out unless
+        # it is a federal agency. Use clean to check programatically
+        # if it has been filled in when required.
+        required=False,
+        queryset=Suborganization.objects.all(),
+        empty_label="--Select--",
+    )
     organization_name = forms.CharField(
-        label="Organization name",
+        label="Requested suborganization",
+        required=False,
         error_messages={"required": "Enter the name of your organization."},
     )
+    city = forms.CharField(
+        label="City",
+        required=False,
+        error_messages={"required": "Enter the city where your organization is located."},
+    )
+    state_territory = forms.ChoiceField(
+        label="State, territory, or military post",
+        required=False,
+        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        error_messages={
+            "required": ("Select the state, territory, or military post where your organization is located.")
+        },
+    )
+    is_suborganization = forms.NullBooleanField(
+        widget=forms.RadioSelect(
+            choices=[
+                (True, "Yes"),
+                (False, "No"),
+            ],
+        )
+    )
+    def clean_sub_organization(self):
+        """Require something to be selected when this is a federal agency."""
+        sub_organization = self.cleaned_data.get("sub_organization", None)
+        if self.cleaned_data.get("is_suborganization", None):
+            # TODO - logic for if other is selected, display other stuff
+            if not sub_organization:
+                # no answer was selected
+                raise forms.ValidationError(
+                    "Select a suborganization.",
+                    code="required",
+                )
+            # Maybe we just represent this with none?
+            elif sub_organization == "other":
+                org_name = self.cleaned_data.get("organization_name", None)
+                city = self.cleaned_data.get("city", None)
+                state = self.cleaned_data.get("state_territory", None)
+                if not org_name or not city or not state:
+                    raise forms.ValidationError(
+                        "Enter details for your suborganization.",
+                        code="required",
+                    )
+        return sub_organization
 
+class RequestingEntityYesNoForm(BaseYesNoForm):
+    """The yes/no field for the RequestingEntity form."""
+
+    form_choices = ((False, "Dynamic portfolio field"), (True, "A suborganization. (choose from list)"))
+    field_name = "is_suborganization"
+
+    @property
+    def form_is_checked(self):
+        """
+        Determines the initial checked state of the form based on the domain_request's attributes.
+        """
+
+        if self.domain_request.portfolio and (self.domain_request.sub_organization or self.domain_request.organization_name):
+            return self.domain_request.organization_name != self.domain_request.portfolio.organization_name
+        else:
+            # No pre-selection for new domain requests
+            return None
 
 class OrganizationTypeForm(RegistrarForm):
     generic_org_type = forms.ChoiceField(

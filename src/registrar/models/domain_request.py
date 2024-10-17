@@ -1173,6 +1173,16 @@ class DomainRequest(TimeStampedModel):
             return True
         return False
 
+    def is_suborganization(self) -> bool:
+        if self.portfolio:
+            if self.sub_organization:
+                return True
+
+            if self.organization_name != self.portfolio.organization_name:
+                return True
+
+        return False
+
     def to_dict(self):
         """This is to process to_dict for Domain Information, making it friendly
         to "copy" it

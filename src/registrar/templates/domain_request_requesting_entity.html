@@ -2,15 +2,22 @@
 {% load field_helpers url_helpers %}
 
 {% block form_instructions %}
-    <p>🛸🛸🛸🛸 Placeholder content 🛸🛸🛸🛸</p>
+    <p>To help with our review, we need to understand whether the domain you're requesting will be used by the Department of Energy or by one of its suborganizations.</p>
+    <p>We define a suborganization as any entity (agency, bureau, office) that falls under the overarching organization.</p>
 {% endblock %}
 
 {% block form_fields %}
     <fieldset class="usa-fieldset">
         <legend>
-        <h2>What is the name of your space vessel?</h2>
+        <h2>Who will use the domain you’re requesting?</h2>
         </legend>
-
-        {% input_with_errors forms.0.organization_name %}
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.0.is_suborganization %}
+        {% endwith %}
+        {# forms.0 is a small yes/no form that toggles the visibility of "requesting entity" formset #}
+        {% input_with_errors forms.1.sub_organization %}
+        {% input_with_errors forms.1.organization_name %}
+        {% input_with_errors forms.1.city %}
+        {% input_with_errors forms.1.state_territory %}
     </fieldset>
 {% endblock %}
