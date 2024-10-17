@@ -64,7 +64,8 @@ def initial_permissions_search(portfolio):
             email_display=F("user__email"),
             last_active=Coalesce(
                 Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
-                Value("Invalid date"), output_field=TextField()
+                Value("Invalid date"),
+                output_field=TextField(),
             ),
             member_display=Case(
                 # If email is present and not blank, use email
