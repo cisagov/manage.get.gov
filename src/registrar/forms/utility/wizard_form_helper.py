@@ -261,6 +261,7 @@ class BaseYesNoForm(RegistrarForm):
                 "required": self.required_error_message,
             },
         )
+        print(f"here are the form choices: {self.form_choices}, here is the initial: {self.get_initial_value()}")
 
         return choice_field
 

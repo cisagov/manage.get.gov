@@ -83,8 +83,16 @@ class RequestingEntityForm(RegistrarForm):
 class RequestingEntityYesNoForm(BaseYesNoForm):
     """The yes/no field for the RequestingEntity form."""
 
-    form_choices = ((False, "Dynamic portfolio field"), (True, "A suborganization. (choose from list)"))
+    # This first option will change dynamically
+    form_choices = ((False, "Current Organization"), (True, "A suborganization. (choose from list)"))
     field_name = "is_suborganization"
+
+    def __init__(self, *args, **kwargs):
+        """Extend the initialization of the form from RegistrarForm __init__"""
+        super().__init__(*args, **kwargs)
+        if self.domain_request.portfolio:
+            self.form_choices = ((False, self.domain_request.portfolio), (True, "A suborganization. (choose from list)"))
+        self.fields[self.field_name] = self.get_typed_choice_field()
 
     @property
     def form_is_checked(self):
