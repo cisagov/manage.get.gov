@@ -5508,6 +5508,8 @@ const SORT_BUTTON = `.${SORT_BUTTON_CLASS}`;
 const SORTABLE_HEADER = `th[data-sortable]`;
 const ANNOUNCEMENT_REGION = `.${PREFIX}-table__announcement-region[aria-live="polite"]`;
 
+// ---- DOTGOV EDIT
+
 /** Gets the data-sort-value attribute value, if provided — otherwise, gets
  * the innerText or textContent — of the child element (HTMLTableCellElement)
  * at the specified index of the given table row
@@ -5516,7 +5518,19 @@ const ANNOUNCEMENT_REGION = `.${PREFIX}-table__announcement-region[aria-live="po
  * @param {array<HTMLTableRowElement>} tr
  * @return {boolean}
  */
-const getCellValue = (tr, index) => tr.children[index].getAttribute(SORT_OVERRIDE) || tr.children[index].innerText || tr.children[index].textContent;
+const getCellValue = (tr, index) => {
+  if (tr.children[index])
+    return tr.children[index].getAttribute(SORT_OVERRIDE) || tr.children[index].innerText || tr.children[index].textContent;
+  return "";
+}
+
+// const getCellValue = (tr, index) => tr.children[index].getAttribute(SORT_OVERRIDE) || tr.children[index].innerText || tr.children[index].textContent;
+// DOTGOV: added check for tr.children[index] to protect from absent cells
+
+// ---- END DOTGOV EDIT
+
+
+
 
 /**
  * Compares the values of two row array items at the given index, then sorts by the given direction
@@ -5528,7 +5542,6 @@ const compareFunction = (index, isAscending) => (thisRow, nextRow) => {
   // get values to compare from data attribute or cell content
   const value1 = getCellValue(isAscending ? thisRow : nextRow, index);
   const value2 = getCellValue(isAscending ? nextRow : thisRow, index);
-
   // if neither value is empty, and if both values are already numbers, compare numerically
   if (value1 && value2 && !Number.isNaN(Number(value1)) && !Number.isNaN(Number(value2))) {
     return value1 - value2;
@@ -5603,7 +5616,16 @@ const sortRows = (header, isAscending) => {
   const thisHeaderIndex = allHeaders.indexOf(header);
   allRows.sort(compareFunction(thisHeaderIndex, !isAscending)).forEach(tr => {
     [].slice.call(tr.children).forEach(td => td.removeAttribute("data-sort-active"));
-    tr.children[thisHeaderIndex].setAttribute("data-sort-active", true);
+
+    // ---- DOTGOV EDIT
+
+    // tr.children[thisHeaderIndex].setAttribute("data-sort-active", true);
+    if (tr.children[thisHeaderIndex])
+      tr.children[thisHeaderIndex].setAttribute("data-sort-active", true);
+    // DOTGOV added conditional to protect from tr.children[thisHeaderIndex] being absent
+
+    // ---- END DOTGOV EDIT
+
     tbody.appendChild(tr);
   });
   return true;

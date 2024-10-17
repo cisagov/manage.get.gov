@@ -28,3 +28,8 @@ h2 {
 .usa-form fieldset {
   font-size: 1rem;
 }
+
+.p--blockquote {
+  padding-left: units(1);
+  border-left: 2px solid color('base-lighter');
+}

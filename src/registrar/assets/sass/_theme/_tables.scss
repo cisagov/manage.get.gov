@@ -56,8 +56,10 @@ th {
       border: none;
     }
 
-    td, th {
-      border-bottom: 1px solid color('base-lighter');
+    tr:not(.hide-td-borders) {
+      td, th {
+        border-bottom: 1px solid color('base-lighter');
+      }
     }
 
     thead th {
