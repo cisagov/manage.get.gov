@@ -1,45 +1,41 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Value, F, CharField, TextField, Q, Case, When
+from django.db.models.functions import Concat, Coalesce
+from django.urls import reverse
+from django.db.models.functions import Cast
 
 from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 
 @login_required
 def get_portfolio_members_json(request):
-    """Given the current request,
-    get all members that are associated with the given portfolio"""
+    """Fetch members (permissions and invitations) for the given portfolio."""
+
     portfolio = request.GET.get("portfolio")
-    member_ids = get_member_ids_from_request(request, portfolio)
-    objects = User.objects.filter(id__in=member_ids)
 
-    admin_ids = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio,
-        roles__overlap=[
-            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-        ],
-    ).values_list("user__id", flat=True)
-    portfolio_invitation_emails = PortfolioInvitation.objects.filter(portfolio=portfolio).values_list(
-        "email", flat=True
-    )
+    # Two initial querysets which will be combined
+    permissions = initial_permissions_search(portfolio)
+    invitations = initial_invitations_search(portfolio)
 
-    unfiltered_total = objects.count()
+    # Get total across both querysets before applying filters
+    unfiltered_total = permissions.count() + invitations.count()
 
-    objects = apply_search(objects, request)
-    # objects = apply_status_filter(objects, request)
+    permissions = apply_search_term(permissions, request)
+    invitations = apply_search_term(invitations, request)
+
+    # Union the two querysets
+    objects = permissions.union(invitations)
     objects = apply_sorting(objects, request)
 
     paginator = Paginator(objects, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-    members = [
-        serialize_members(request, portfolio, member, request.user, admin_ids, portfolio_invitation_emails)
-        for member in page_obj.object_list
-    ]
+
+    members = [serialize_members(request, portfolio, item, request.user) for item in page_obj.object_list]
 
     return JsonResponse(
         {
@@ -54,71 +50,121 @@ def get_portfolio_members_json(request):
     )
 
 
-def get_member_ids_from_request(request, portfolio):
-    """Given the current request,
-    get all members that are associated with the given portfolio"""
-    member_ids = []
-    if portfolio:
-        member_ids = UserPortfolioPermission.objects.filter(portfolio=portfolio).values_list("user__id", flat=True)
-    return member_ids
+def initial_permissions_search(portfolio):
+    """Perform initial search for permissions before applying any filters."""
+    permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
+    permissions = (
+        permissions.select_related("user")
+        .annotate(
+            first_name=F("user__first_name"),
+            last_name=F("user__last_name"),
+            email_display=F("user__email"),
+            last_active=Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
+            additional_permissions_display=F("additional_permissions"),
+            member_display=Case(
+                # If email is present and not blank, use email
+                When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
+                # If first name or last name is present, use concatenation of first_name + " " + last_name
+                When(
+                    Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
+                    then=Concat(
+                        Coalesce(F("user__first_name"), Value("")),
+                        Value(" "),
+                        Coalesce(F("user__last_name"), Value("")),
+                    ),
+                ),
+                # If neither, use an empty string
+                default=Value(""),
+                output_field=CharField(),
+            ),
+            source=Value("permission", output_field=CharField()),
+        )
+        .values(
+            "id",
+            "first_name",
+            "last_name",
+            "email_display",
+            "last_active",
+            "roles",
+            "additional_permissions_display",
+            "member_display",
+            "source",
+        )
+    )
+    return permissions
 
 
-def apply_search(queryset, request):
-    search_term = request.GET.get("search_term")
+def initial_invitations_search(portfolio):
+    """Perform initial invitations search before applying any filters."""
+    invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
+    invitations = invitations.annotate(
+        first_name=Value(None, output_field=CharField()),
+        last_name=Value(None, output_field=CharField()),
+        email_display=F("email"),
+        last_active=Value("Invited", output_field=TextField()),
+        additional_permissions_display=F("additional_permissions"),
+        member_display=F("email"),
+        source=Value("invitation", output_field=CharField()),
+    ).values(
+        "id",
+        "first_name",
+        "last_name",
+        "email_display",
+        "last_active",
+        "roles",
+        "additional_permissions_display",
+        "member_display",
+        "source",
+    )
+    return invitations
 
+
+def apply_search_term(queryset, request):
+    """Apply search term to the queryset."""
+    search_term = request.GET.get("search_term", "").lower()
     if search_term:
         queryset = queryset.filter(
-            Q(username__icontains=search_term)
-            | Q(first_name__icontains=search_term)
+            Q(first_name__icontains=search_term)
             | Q(last_name__icontains=search_term)
-            | Q(email__icontains=search_term)
+            | Q(email_display__icontains=search_term)
         )
     return queryset
 
 
 def apply_sorting(queryset, request):
+    """Apply sorting to the queryset."""
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
-
+    # Adjust sort_by to match the annotated fields in the unioned queryset
     if sort_by == "member":
-        sort_by = ["email", "first_name", "middle_name", "last_name"]
-    else:
-        sort_by = [sort_by]
-
+        sort_by = "member_display"
     if order == "desc":
-        sort_by = [f"-{field}" for field in sort_by]
+        queryset = queryset.order_by(F(sort_by).desc())
+    else:
+        queryset = queryset.order_by(sort_by)
+    return queryset
 
-    return queryset.order_by(*sort_by)
 
-
-def serialize_members(request, portfolio, member, user, admin_ids, portfolio_invitation_emails):
-    # ------- VIEW ONLY
-    # If not view_only (the user has permissions to edit/manage users), show the gear icon with "Manage" link.
-    # If view_only (the user only has view user permissions), show the "View" link (no gear icon).
-    # We check on user_group_permision to account for the upcoming "Manage portfolio" button on admin.
-    user_can_edit_other_users = False
-    for user_group_permission in ["registrar.full_access_permission", "registrar.change_user"]:
-        if user.has_perm(user_group_permission):
-            user_can_edit_other_users = True
-            break
+def serialize_members(request, portfolio, item, user):
+    # Check if the user can edit other users
+    user_can_edit_other_users = any(
+        user.has_perm(perm) for perm in ["registrar.full_access_permission", "registrar.change_user"]
+    )
 
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
-    # ------- USER STATUSES
-    is_invited = member.email in portfolio_invitation_emails
-    last_active = "Invited" if is_invited else "Unknown"
-    if member.last_login:
-        last_active = member.last_login.strftime("%b. %d, %Y")
-    is_admin = member.id in admin_ids
+    is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
+    action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
 
-    # ------- SERIALIZE
+    # Serialize member data
     member_json = {
-        "id": member.id,
-        "name": member.get_formatted_name(),
-        "email": member.email,
+        "id": item.get("id", ""),
+        "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
+        "email": item.get("email_display", ""),
+        "member_display": item.get("member_display", ""),
         "is_admin": is_admin,
-        "last_active": last_active,
-        "action_url": "#",  # reverse("members", kwargs={"pk": member.id}), # TODO: Future ticket?
+        "last_active": item.get("last_active", ""),
+        "action_url": action_url,
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
     }
