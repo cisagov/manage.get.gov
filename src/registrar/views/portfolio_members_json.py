@@ -2,11 +2,10 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
-from django.db.models.functions import Concat, Coalesce
-from django.contrib.postgres.fields import ArrayField
+from django.db.models.expressions import Func
+from django.db.models.functions import Cast, Coalesce, Concat
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
-from django.db.models.functions import Cast
 
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -90,7 +89,7 @@ def initial_permissions_search(portfolio):
                     output_field=CharField(),
                 ),
                 distinct=True,
-                filter=Q(user__permissions__domain__isnull=False),
+                filter=Q(user__permissions__domain__isnull=False),  # filter out null values
             ),
             source=Value("permission", output_field=CharField()),
         )
@@ -110,12 +109,19 @@ def initial_permissions_search(portfolio):
     return permissions
 
 
+# Custom Func to use array_remove to remove null values
+class ArrayRemove(Func):
+    function = "array_remove"
+    template = "%(function)s(%(expressions)s, NULL)"
+
+
 def initial_invitations_search(portfolio):
     """Perform initial invitations search and get related DomainInvitation data based on the email."""
     # Get DomainInvitation query for matching email
-    domain_invitations = DomainInvitation.objects.filter(email=OuterRef("email"), domain__isnull=False).annotate(
+    domain_invitations = DomainInvitation.objects.filter(email=OuterRef("email")).annotate(
         domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
     )
+    # PortfolioInvitation query
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
     invitations = invitations.annotate(
         first_name=Value(None, output_field=CharField()),
@@ -123,13 +129,12 @@ def initial_invitations_search(portfolio):
         email_display=F("email"),
         last_active=Value("Invited", output_field=TextField()),
         member_display=F("email"),
-        # ArrayAgg for multiple domain_invitations matched by email, filtered to exclude nulls
-        domain_info=Coalesce(  # Use Coalesce to return an empty list if no domain invitations exist
+        # Use ArrayRemove to return an empty list when no domain invitations are found
+        domain_info=ArrayRemove(
             ArrayAgg(
                 Subquery(domain_invitations.values("domain_info")),
                 distinct=True,
-            ),
-            Value([], output_field=ArrayField(CharField())),  # Ensure we return an empty list
+            )
         ),
         source=Value("invitation", output_field=CharField()),
     ).values(
@@ -195,16 +200,11 @@ def serialize_members(request, portfolio, item, user):
         "permissions": UserPortfolioPermission.get_portfolio_permissions(
             item.get("roles"), item.get("additional_permissions")
         ),
-        "domain_names": [
-            domain_info.split(":")[1]
-            for domain_info in (item.get("domain_info") or [])
-            if domain_info is not None  # Prevent splitting None
-        ],
+        # split domain_info array values into ids to form urls, and names
         "domain_urls": [
-            reverse("domain", kwargs={"pk": domain_info.split(":")[0]})
-            for domain_info in (item.get("domain_info") or [])
-            if domain_info is not None  # Prevent splitting None
+            reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in item.get("domain_info")
         ],
+        "domain_names": [domain_info.split(":")[1] for domain_info in item.get("domain_info")],
         "is_admin": is_admin,
         "last_active": item.get("last_active", ""),
         "action_url": action_url,
