@@ -1963,6 +1963,7 @@ class MembersTable extends LoadTableBase {
 
           const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
           const invited = 'Invited';
+          const invalid_date = 'Invalid date';
 
           data.members.forEach(member => {
             const member_id = member.source + member.id;
@@ -1981,9 +1982,9 @@ class MembersTable extends LoadTableBase {
 
             // Check if last_active is valid before proceeding
             if (last_active) {
-              if (last_active === invited) {
-                last_active_formatted = invited;
-                last_active_sort_value = invited; // Keep 'Invited' as a sortable value
+              if (last_active === invited || last_active === invalid_date) {
+                last_active_formatted = last_active;
+                last_active_sort_value = last_active;
               } else {
                 const parsedDate = new Date(last_active);
                 
@@ -1992,17 +1993,17 @@ class MembersTable extends LoadTableBase {
                     last_active_formatted = parsedDate.toLocaleDateString('en-US', options);
                     last_active_sort_value = parsedDate.getTime();  // For sorting purposes
                   } else {
-                    throw new Error('Invalid date'); // Throw an error to catch in catch block
+                    throw new Error(invalid_date); // Throw an error to catch in catch block
                   }
                 } catch (e) {
                   console.error(`Error parsing date: ${last_active}. Error: ${e}`);
-                  last_active_formatted = 'Invalid date';
-                  last_active_sort_value = 'Invalid date';
+                  last_active_formatted = invalid_date;
+                  last_active_sort_value = invalid_date;
                 }
               }
             } else { // last_active is null or undefined
-              last_active_formatted = 'Invalid date';
-              last_active_sort_value = 'Invalid date'; // Default value for invalid or missing last_active
+              last_active_formatted = invalid_date;
+              last_active_sort_value = invalid_date; // Default value for invalid or missing last_active
             }
 
             const action_url = member.action_url;
