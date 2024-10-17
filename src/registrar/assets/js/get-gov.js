@@ -2072,7 +2072,7 @@ class MembersTable extends LoadTableBase {
                 </button>
               `;
 
-              showMoreRow.innerHTML = `<td colspan='3' headers="header-member" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
               showMoreRow.classList.add('show-more-content');
               showMoreRow.classList.add('display-none');
               showMoreRow.id = member_id;
