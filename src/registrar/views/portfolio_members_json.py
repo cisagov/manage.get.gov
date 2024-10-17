@@ -113,8 +113,6 @@ def initial_permissions_search(portfolio):
 
 def initial_invitations_search(portfolio):
     """Perform initial invitations search and get related DomainInvitation data based on the email."""
-
-
     # Get DomainInvitation query for matching email
     domain_invitations = DomainInvitation.objects.filter(
         email=OuterRef('email'),
@@ -127,7 +125,6 @@ def initial_invitations_search(portfolio):
             output_field=CharField()
         )
     )
-
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
     invitations = invitations.annotate(
         first_name=Value(None, output_field=CharField()),

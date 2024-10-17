@@ -1975,33 +1975,34 @@ class MembersTable extends LoadTableBase {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
             // Handle last_active values
-            let last_active = NaN
-            last_active = member.last_active;
+            let last_active = member.last_active; // Changed to let to allow for potential modification
             let last_active_formatted = '';
-            let last_active_sort_value = '';
+            let last_active_sort_value = NaN;
 
-            // Handle 'Invited' or null/empty values differently from valid dates
-            if (last_active !== invited) {
-              try {
-                // Try to parse the last_active as a valid date
-                // Try to parse the last_active as a valid date
+            // Check if last_active is valid before proceeding
+            if (last_active) {
+              if (last_active === invited) {
+                last_active_formatted = invited;
+                last_active_sort_value = invited; // Keep 'Invited' as a sortable value
+              } else {
                 const parsedDate = new Date(last_active);
-                if (!isNaN(last_active)) {
-                  last_active_formatted = parsedDate.toLocaleDateString('en-US', options);
-                  last_active_sort_value = parsedDate.getTime();  // For sorting purposes
-                } else {
-                  last_active_formatted='Invalid date';
-                  last_active_sort_value = 'Invalid date';           
+                
+                try {
+                  if (!isNaN(parsedDate.getTime())) { // Check if the date is valid
+                    last_active_formatted = parsedDate.toLocaleDateString('en-US', options);
+                    last_active_sort_value = parsedDate.getTime();  // For sorting purposes
+                  } else {
+                    throw new Error('Invalid date'); // Throw an error to catch in catch block
+                  }
+                } catch (e) {
+                  console.error(`Error parsing date: ${last_active}. Error: ${e}`);
+                  last_active_formatted = 'Invalid date';
+                  last_active_sort_value = 'Invalid date';
                 }
-              } catch (e) {
-                console.error(`Error parsing date: ${last_active}. Error: ${e}`);
-                last_active_formatted='Invalid date'
               }
-            } else {
-              // Handle 'Invited' or null
-              last_active = invited;
-              last_active_formatted = invited;
-              last_active_sort_value = invited; // Keep 'Invited' as a sortable string
+            } else { // last_active is null or undefined
+              last_active_formatted = 'Invalid date';
+              last_active_sort_value = 'Invalid date'; // Default value for invalid or missing last_active
             }
 
             const action_url = member.action_url;
