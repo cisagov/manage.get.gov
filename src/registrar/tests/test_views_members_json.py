@@ -1,21 +1,25 @@
 from django.urls import reverse
 
+from registrar.models.domain import Domain
+from registrar.models.domain_information import DomainInformation
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .test_views import TestWithUser
+from registrar.tests.common import MockEppLib, create_test_user
 from django_webtest import WebTest  # type: ignore
 
 
-class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
+    def setUp(self):
+        super().setUp()
+        self.user = create_test_user()
 
         # Create additional users
-        cls.user2 = User.objects.create(
+        self.user2 = User.objects.create(
             username="test_user2",
             first_name="Second",
             last_name="User",
@@ -23,7 +27,7 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             phone="8003112345",
             title="Member",
         )
-        cls.user3 = User.objects.create(
+        self.user3 = User.objects.create(
             username="test_user3",
             first_name="Third",
             last_name="User",
@@ -31,7 +35,7 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             phone="8003113456",
             title="Member",
         )
-        cls.user4 = User.objects.create(
+        self.user4 = User.objects.create(
             username="test_user4",
             first_name="Fourth",
             last_name="User",
@@ -39,60 +43,66 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             phone="8003114567",
             title="Admin",
         )
-        cls.email5 = "fifth@example.com"
+        self.user5 = User.objects.create(
+            username="test_user5",
+            first_name="Fifth",
+            last_name="User",
+            email="fifth@example.com",
+            phone="8003114568",
+            title="Admin",
+        )
+        self.email6 = "fifth@example.com"
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
 
         # Assign permissions
-        UserPortfolioPermission.objects.create(
-            user=cls.user,
-            portfolio=cls.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
-        )
-        UserPortfolioPermission.objects.create(
-            user=cls.user2,
-            portfolio=cls.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-        )
-        UserPortfolioPermission.objects.create(
-            user=cls.user3,
-            portfolio=cls.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-        )
-        UserPortfolioPermission.objects.create(
-            user=cls.user4,
-            portfolio=cls.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-        PortfolioInvitation.objects.create(
-            email=cls.email5,
-            portfolio=cls.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
-        )
 
-    @classmethod
-    def tearDownClass(cls):
+        self.app.set_user(self.user.username)
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
-        super().tearDownClass()
-
-    def setUp(self):
-        super().setUp()
-        self.app.set_user(self.user.username)
+        super().tearDown()
 
     def test_get_portfolio_members_json_authenticated(self):
         """Test that portfolio members are returned properly for an authenticated user."""
+        """Also tests that reposnse is 200 when no domains"""
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user3,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user4,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user5,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -115,15 +125,207 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
             self.user3.email,
             self.user4.email,
             self.user4.email,
-            self.email5,
+            self.user5.email,
         }
         actual_emails = {member["email"] for member in data["members"]}
         self.assertEqual(expected_emails, actual_emails)
 
+        expected_roles = {
+            UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+        }
+        # Convert each member's roles list to a frozenset
+        actual_roles = {role for member in data["members"] for role in member["roles"]}
+        self.assertEqual(expected_roles, actual_roles)
+        
+        expected_additional_permissions = {
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+        }
+        actual_additional_permissions = {permission for member in data["members"]  for permission in member["permissions"]}
+        self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
+
+    def test_get_portfolio_invited_json_authenticated(self):
+        """Test that portfolio invitees are returned properly for an authenticated user."""
+        """Also tests that reposnse is 200 when no domains"""
+        PortfolioInvitation.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["unfiltered_total"], 1)
+
+        # Check the number of members
+        self.assertEqual(len(data["members"]), 1)
+
+        # Check member fields
+        expected_emails = {
+            self.email6
+        }
+        actual_emails = {member["email"] for member in data["members"]}
+        self.assertEqual(expected_emails, actual_emails)
+
+        expected_roles = {
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+        }
+        # Convert each member's roles list to a frozenset
+        actual_roles = {role for member in data["members"] for role in member["roles"]}
+        self.assertEqual(expected_roles, actual_roles)
+        
+        expected_additional_permissions = {
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+        }
+        actual_additional_permissions = {permission for member in data["members"]  for permission in member["permissions"]}
+        self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
+
+    def test_get_portfolio_members_json_with_domains(self):
+        """Test that portfolio members are returned properly for an authenticated user and the response includes
+        the domains that the member manages.."""
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user3,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user4,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        domain = Domain.objects.create(
+            name="somedomain1.com",
+        )
+
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain,
+            portfolio=self.portfolio,
+        )
+
+        UserDomainRole.objects.create(
+            user=self.user,
+            domain=domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check if the domain appears in the response JSON
+        domain_names = [
+            domain_name
+            for member in data["members"]
+            for domain_name in member.get("domain_names", [])
+        ]
+        self.assertIn("somedomain1.com", domain_names)
+
+    def test_get_portfolio_invited_json_with_domains(self):
+        """Test that portfolio invited members are returned properly for an authenticated user and the response includes
+        the domains that the member manages.."""
+        PortfolioInvitation.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        domain = Domain.objects.create(
+            name="somedomain1.com",
+        )
+
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain,
+            portfolio=self.portfolio,
+        )
+
+        DomainInvitation.objects.create(
+            email=self.email6,
+            domain=domain,
+        )
+
+        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check if the domain appears in the response JSON
+        domain_names = [
+            domain_name
+            for member in data["members"]
+            for domain_name in member.get("domain_names", [])
+        ]
+        self.assertIn("somedomain1.com", domain_names)
+
     def test_pagination(self):
         """Test that pagination works properly when there are more members than page size."""
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user3,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user4,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        PortfolioInvitation.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
         # Create additional members to exceed page size of 10
-        for i in range(5, 15):
+        for i in range(6, 16):
             user, _ = User.objects.get_or_create(
                 username=f"test_user{i}",
                 first_name=f"User{i}",
@@ -172,6 +374,40 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
 
     def test_search(self):
         """Test search functionality for portfolio members."""
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user3,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user4,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        PortfolioInvitation.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
         # Search by name
         response = self.app.get(
             reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id, "search_term": "Second"}

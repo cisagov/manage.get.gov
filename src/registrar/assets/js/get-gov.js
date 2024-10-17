@@ -2043,11 +2043,11 @@ class MembersTable extends LoadTableBase {
             if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
               permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members:</strong> Can manage members including inviting new members, removing current members, and assigning domains to members.";
             } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
-              permissionsHTML += "<p> class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members (view-only):</strong> Can view all organizational members. Can't manage any members.";
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members (view-only):</strong> Can view all organizational members. Can't manage any members.";
             }
             // if there are no additional permissions, display a no additional permissions message
             if (!permissionsHTML) {
-              permissionsHTML += "<p><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
             }
             // add permissions header in all cases
             permissionsHTML = "<div class='desktop:grid-col-7'><h4 class='margin-y-0 text-primary'>Additional permissions for this member</h4>" + permissionsHTML + "</div>";
@@ -2058,7 +2058,7 @@ class MembersTable extends LoadTableBase {
               showMoreButton = `
                 <button 
                   type="button" 
-                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-2" 
+                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
                   data-for=${member_id} 
                 >
                   <span>Expand</span>
