@@ -831,7 +831,6 @@ class DomainRequest(TimeStampedModel):
 
             if custom_email_content:
                 context["custom_email_content"] = custom_email_content
-
             send_templated_email(
                 email_template,
                 email_template_subject,
@@ -877,7 +876,6 @@ class DomainRequest(TimeStampedModel):
         DraftDomain = apps.get_model("registrar.DraftDomain")
         if not DraftDomain.string_could_be_domain(self.requested_domain.name):
             raise ValueError("Requested domain is not a valid domain name.")
-
         # if the domain has not been submitted before this  must be the first time
         if not self.first_submitted_date:
             self.first_submitted_date = timezone.now().date()
