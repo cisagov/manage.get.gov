@@ -80,9 +80,9 @@ Resolves #00
 #### Verified that the changes match the design intention
 
 - [ ] Checked that the design translated visually
+- [ ] Checked behavior. Comment any found issues or broken flows.
 - [ ] Checked different states (empty, one, some, error)
 - [ ] Checked for landmarks, page heading structure, and links
-- [ ] Checked behavior. Comment any found issues or broken flows.
 
 #### Validated user-facing changes as a designer
 
