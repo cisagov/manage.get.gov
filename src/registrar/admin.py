@@ -1694,14 +1694,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "generic_org_type",
         "federal_type",
         "federal_agency",
-        "organization_name",
         "custom_election_board",
         "city",
         "state_territory",
         "investigator",
+        "get_generic_org_type",
+        "get_organization_name",
+        "organization_name"
     ]
 
     orderable_fk_fields = [

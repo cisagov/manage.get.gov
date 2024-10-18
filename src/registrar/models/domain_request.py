@@ -1334,3 +1334,19 @@ class DomainRequest(TimeStampedModel):
         if not is_complete or not self._is_general_form_complete(request):
             return False
         return True
+    
+    @property
+    def get_organization_name(self):
+        """"returns the organization field if the domain request is in a portfolio
+        otherwise it returns the organization name from the domain request object itself"""
+        if self.portfolio:
+            return self.portfolio.organization_name
+        return self.organization_name
+    
+    @property
+    def get_generic_org_type(self):
+        """"returns the organization type if the domain request is in a portfolio
+        otherwise it returns the organization type from the domain request object itself"""
+        if self.portfolio:
+            return self.portfolio.organization_type
+        return self.generic_org_type
