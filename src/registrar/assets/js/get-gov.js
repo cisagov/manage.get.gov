@@ -1883,11 +1883,13 @@ class MembersTable extends LoadTableBase {
         spanElement.textContent = 'Close';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
         buttonParentRow.classList.add('hide-td-borders');
+        toggleButton.setAttribute('aria-label', 'Close additional information');
       } else {    
         hideElement(contentDiv);
         spanElement.textContent = 'Expand';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
         buttonParentRow.classList.remove('hide-td-borders');
+        toggleButton.setAttribute('aria-label', 'Expand for additional information');
       }
     }
   
@@ -2079,7 +2081,8 @@ class MembersTable extends LoadTableBase {
                 <button 
                   type="button" 
                   class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
-                  data-for=${member_id} 
+                  data-for=${member_id}
+                  aria-label="Expand for additional information"
                 >
                   <span>Expand</span>
                   <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
