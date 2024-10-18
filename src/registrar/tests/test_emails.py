@@ -62,10 +62,57 @@ class TestEmails(TestCase):
         self.assertFalse(self.mock_client.send_email.called)
 
     @boto3_mocking.patching
+    def test_email_with_cc(self):
+        """Test sending email with cc works"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            send_templated_email(
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                "doesnotexist@igorville.com",
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
+                bcc_address=None,
+                cc_addresses=["testy2@town.com", "mayor@igorville.gov"],
+            )
+
+        # check that an email was sent
+        self.assertTrue(self.mock_client.send_email.called)
+
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
+    @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=True)
+    def test_email_with_cc_in_prod(self):
+        """Test sending email with cc works in prod"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            send_templated_email(
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                "doesnotexist@igorville.com",
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
+                bcc_address=None,
+                cc_addresses=["testy2@town.com", "mayor@igorville.gov"],
+            )
+
+        # check that an email was sent
+        self.assertTrue(self.mock_client.send_email.called)
+
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
+    @boto3_mocking.patching
     @less_console_noise_decorator
     def test_submission_confirmation(self):
         """Submission confirmation email works."""
-        domain_request = completed_domain_request()
+        domain_request = completed_domain_request(user=User.objects.create(username="test", email="testy@town.com"))
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
@@ -102,7 +149,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_no_current_website_spacing(self):
         """Test line spacing without current_website."""
-        domain_request = completed_domain_request(has_current_website=False)
+        domain_request = completed_domain_request(
+            has_current_website=False, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -115,7 +164,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_current_website_spacing(self):
         """Test line spacing with current_website."""
-        domain_request = completed_domain_request(has_current_website=True)
+        domain_request = completed_domain_request(
+            has_current_website=True, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -132,7 +183,11 @@ class TestEmails(TestCase):
 
         # Create fake creator
         _creator = User.objects.create(
-            username="MrMeoward", first_name="Meoward", last_name="Jones", phone="(888) 888 8888"
+            username="MrMeoward",
+            first_name="Meoward",
+            last_name="Jones",
+            phone="(888) 888 8888",
+            email="testy@town.com",
         )
 
         # Create a fake domain request
@@ -149,7 +204,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_no_other_contacts_spacing(self):
         """Test line spacing without other contacts."""
-        domain_request = completed_domain_request(has_other_contacts=False)
+        domain_request = completed_domain_request(
+            has_other_contacts=False, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -161,7 +218,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_alternative_govdomain_spacing(self):
         """Test line spacing with alternative .gov domain."""
-        domain_request = completed_domain_request(has_alternative_gov_domain=True)
+        domain_request = completed_domain_request(
+            has_alternative_gov_domain=True, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -174,7 +233,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_no_alternative_govdomain_spacing(self):
         """Test line spacing without alternative .gov domain."""
-        domain_request = completed_domain_request(has_alternative_gov_domain=False)
+        domain_request = completed_domain_request(
+            has_alternative_gov_domain=False, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -187,7 +248,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_about_your_organization_spacing(self):
         """Test line spacing with about your organization."""
-        domain_request = completed_domain_request(has_about_your_organization=True)
+        domain_request = completed_domain_request(
+            has_about_your_organization=True, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -200,7 +263,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_no_about_your_organization_spacing(self):
         """Test line spacing without about your organization."""
-        domain_request = completed_domain_request(has_about_your_organization=False)
+        domain_request = completed_domain_request(
+            has_about_your_organization=False, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -213,7 +278,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_anything_else_spacing(self):
         """Test line spacing with anything else."""
-        domain_request = completed_domain_request(has_anything_else=True)
+        domain_request = completed_domain_request(
+            has_anything_else=True, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -225,7 +292,9 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_no_anything_else_spacing(self):
         """Test line spacing without anything else."""
-        domain_request = completed_domain_request(has_anything_else=False)
+        domain_request = completed_domain_request(
+            has_anything_else=False, user=User.objects.create(username="test", email="testy@town.com")
+        )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args

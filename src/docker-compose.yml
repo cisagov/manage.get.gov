@@ -25,7 +25,7 @@ services:
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
       # Set DJANGO_LOG_LEVEL in env
-      - DJANGO_LOG_LEVEL
+      - DJANGO_LOG_LEVEL=DEBUG
       # Run Django without production flags
       - IS_PRODUCTION=False
       # Tell Django where it is being hosted
