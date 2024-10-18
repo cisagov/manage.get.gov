@@ -1,0 +1,78 @@
+{% load static %}
+
+<section class="section-outlined margin-top-0 section-outlined--border-base-light">
+    <h2>
+        Domains assigned to {{ email }}
+    </h2>
+
+  <div class="section-outlined__header margin-bottom-3 grid-row">
+      <!-- ---------- SEARCH ---------- -->
+      <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-6">
+        <section aria-label="Members search component" class="margin-top-2">
+          <form class="usa-search usa-search--show-label" method="POST" role="search">
+            {% csrf_token %}
+            {% if has_edit_members_portfolio_permission %}
+                <label class="usa-label display-block" for="member-domains__search-field">Search all domains</label>
+            {% else %}
+                <label class="usa-label display-block" for="member-domains__search-field">Search domains assigned to ovietta.evans@gsa.gov</label>
+            {% endif %}
+            <div class="usa-search--show-label__input-wrapper">
+                <button class="usa-button usa-button--unstyled margin-right-3 member-domains__reset-search display-none" type="button">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                    Reset
+                </button>
+                <input
+                class="usa-input"
+                id="members__search-field"
+                type="search"
+                name="search"
+                />
+                <button class="usa-button" type="submit" id="member-domains__search-field-submit">
+                    <span class="usa-search__submit-text">Search </span>
+                    <img
+                        src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                        class="usa-search__submit-icon"
+                        alt="Search"
+                    />
+                </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <!-- ---------- MAIN TABLE ---------- -->
+    <div class="member-domains__table-wrapper display-none margin-top-0">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked member-domains__table">
+        <caption class="sr-only">member domains</caption>
+        <thead>
+          <tr>
+            <th data-sortable="domain" scope="col" role="columnheader">Domains</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- AJAX will populate this tbody -->
+        </tbody>
+      </table>
+      <div
+        class="usa-sr-only usa-table__announcement-region"
+        aria-live="polite"
+      ></div>
+    </div>
+    <div class="member-domains__no-data display-none">
+      <p>This member does not manage any domains.  Click the Edit domain assignments buttons to assign domains.</p>
+    </div>
+    <div class="member-domains__no-search-results display-none">
+      <p>No results found</p>
+    </div>
+  </section>
+  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="member-domains-pagination">
+    <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
+      <!-- Count will be dynamically populated by JS -->
+    </span>
+    <ul class="usa-pagination__list">
+      <!-- Pagination links will be dynamically populated by JS -->
+    </ul>
+  </nav>

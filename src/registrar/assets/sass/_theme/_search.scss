@@ -1,0 +1,11 @@
+@use "base" as *;
+
+.usa-search--show-label {
+    flex-wrap: wrap;
+    label {
+        width: 100%;
+    }
+    .usa-search--show-label__input-wrapper {
+        flex: 1;
+    }
+}

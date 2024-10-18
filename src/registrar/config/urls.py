@@ -97,6 +97,11 @@ urlpatterns = [
         name="member-permissions",
     ),
     path(
+        "member/<int:pk>/domains",
+        views.PortfolioMemberDomainsView.as_view(),
+        name="member-domains",
+    ),
+    path(
         "invitedmember/<int:pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
@@ -105,6 +110,11 @@ urlpatterns = [
         "invitedmember/<int:pk>/permissions",
         views.PortfolioInvitedMemberEditView.as_view(),
         name="invitedmember-permissions",
+    ),
+    path(
+        "invitedmember/<int:pk>/domains",
+        views.PortfolioInvitedMemberDomainsView.as_view(),
+        name="invitedmember-domains",
     ),
     # path(
     #     "no-organization-members/",

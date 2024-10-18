@@ -1,0 +1,64 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Organization member domains {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div id="main-content">
+
+    {% url 'members' as url %}
+    {% if portfolio_permission %}
+        {% url 'member' pk=portfolio_permission.id as url2 %}
+    {% else %}
+        {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
+    {% endif %}
+    <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
+    <ol class="usa-breadcrumb__list">
+        <li class="usa-breadcrumb__list-item">
+        <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item">
+            <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Manage member</span>
+        </li>
+    </ol>
+    </nav>
+
+    <div class="grid-row grid-gap">
+        <div class="mobile:grid-col-12 tablet:grid-col-7">
+            <h1 class="margin-bottom-3">Domain assignments</h1>
+        </div>
+        {% if has_edit_members_portfolio_permission %}
+            <div class="mobile:grid-col-12 tablet:grid-col-5">
+                <p class="float-right-tablet tablet:margin-y-0">
+                    <a href="#" class="usa-button"
+                    >
+                        Edit domain assignments
+                    </a>
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <p>
+        A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
+    </p>
+
+    {% if member %}
+        {% with member.email as email %}
+            {% include "includes/member_domains_table.html" with email=email %}
+        {% endwith %}
+    {% else %}
+        {% with portfolio_invitation.email as email %}
+            {% include "includes/member_domains_table.html" with email=email %}
+        {% endwith %}
+    {% endif %}
+
+
+        
+</div>
+{% endblock %}
