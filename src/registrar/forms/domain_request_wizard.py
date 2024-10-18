@@ -28,7 +28,7 @@ class RequestingEntityForm(RegistrarForm):
         # it is a federal agency. Use clean to check programatically
         # if it has been filled in when required.
         required=False,
-        queryset=Suborganization.objects.all(),
+        queryset=Suborganization.objects.none(),
         empty_label="--Select--",
     )
     organization_name = forms.CharField(
@@ -57,6 +57,13 @@ class RequestingEntityForm(RegistrarForm):
             ],
         )
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.domain_request.portfolio:
+            self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=self.domain_request.portfolio)
+
     def clean_sub_organization(self):
         """Require something to be selected when this is a federal agency."""
         sub_organization = self.cleaned_data.get("sub_organization", None)

@@ -2379,3 +2379,87 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 })();
+
+(function handleRequestingEntityFieldset() {
+  // Check if the requesting-entity-fieldset exists. 
+  // This determines if we are on the requesting entity page or not.
+  const fieldset = document.getElementById("requesting-entity-fieldset");
+  if (!fieldset) return;
+  console.log("past here")
+  // Get the is_suborganization radio buttons
+  // Sadly, these ugly ids are the auto generated
+  const formPrefix = "portfolio_requesting_entity"
+  const isSuborgRadios = document.querySelectorAll(`input[name="${formPrefix}-is_suborganization"]`);
+  var selectedRequestingEntityValue = document.querySelector(`input[name="${formPrefix}-is_suborganization"]:checked`)?.value;
+  const subOrgSelect = document.querySelector(`#id_${formPrefix}-sub_organization`);
+  const orgName = document.querySelector(`#id_${formPrefix}-organization_name`);
+  const city = document.querySelector(`#id_${formPrefix}-city`);
+  const stateTerritory = document.querySelector(`#id_${formPrefix}-state_territory`);
+
+  console.log(isSuborgRadios)
+  console.log(subOrgSelect)
+  console.log(orgName)
+  console.log(city)
+  console.log(stateTerritory)
+  console.log(selectedRequestingEntityValue)
+  // Don't do anything if we are missing crucial page elements
+  if (!isSuborgRadios || !subOrgSelect || !orgName || !city || !stateTerritory) return;
+  console.log("past here x2")
+
+  // Add fake "other" option to sub_organization select
+  if (subOrgSelect && !Array.from(subOrgSelect.options).some(option => option.value === "other")) {
+      const fakeOption = document.createElement("option");
+      fakeOption.value = "other";
+      fakeOption.text = "Other (enter your organization manually)";
+      subOrgSelect.add(fakeOption);
+  }
+
+  // Hide organization_name, city, state_territory by default
+  hideElement(orgName.parentElement);
+  hideElement(city.parentElement);
+  hideElement(stateTerritory.parentElement);
+
+  // Function to toggle forms based on is_suborganization selection
+  function toggleSubOrganizationFields () {
+      selectedRequestingEntityValue = document.querySelector(`input[name="${formPrefix}-is_suborganization"]:checked`)?.value;
+      if (selectedRequestingEntityValue === "True") {
+          showElement(subOrgSelect.parentElement);
+          toggleOrganizationDetails();
+      } else {
+          hideElement(subOrgSelect.parentElement);
+          hideElement(orgName.parentElement);
+          hideElement(city.parentElement);
+          hideElement(stateTerritory.parentElement);
+      }
+  };
+
+  // Function to toggle organization details based on sub_organization selection
+  function toggleOrganizationDetails () {
+      // We should hide the org name fields when we select the special other value
+      if (subOrgSelect.value === "other") {
+          showElement(orgName.parentElement);
+          showElement(city.parentElement);
+          showElement(stateTerritory.parentElement);
+      } else {
+          hideElement(orgName.parentElement);
+          hideElement(city.parentElement);
+          hideElement(stateTerritory.parentElement);
+      }
+  };
+
+  // Initialize visibility
+  toggleSubOrganizationFields();
+
+  // Add event listeners to is_suborganization radio buttons
+  isSuborgRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+          toggleSubOrganizationFields();
+      });
+  });
+
+  subOrgSelect.addEventListener("change", () => {
+    if (selectedRequestingEntityValue === "True") {
+      toggleOrganizationDetails();
+    }
+  });
+})();
