@@ -258,3 +258,11 @@ a.text-secondary,
 a.text-secondary:hover {
   color: $theme-color-error;
 }
+
+.usa-button--show-more-button {
+  font-size: size('ui', 'xs');
+  text-decoration: none;
+  .usa-icon {
+    top: 6px;
+  }
+}
