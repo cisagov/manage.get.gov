@@ -1909,6 +1909,51 @@ class MembersTable extends LoadTableBase {
   }
 
   /**
+   * Helper function which takes last_active and returns display value and sort value
+   * @param {*} last_active 
+   * @returns 
+   */
+  handleLastActive(last_active) {
+    let last_active_display = '';
+    let last_active_sort_value = -1;
+  
+    const invited = 'Invited';           // Assuming "invited" is a constant string
+    const invalid_date = 'Invalid date'; // Assuming "invalid_date" is a constant string
+    const options = { year: 'numeric', month: 'long', day: 'numeric' }; // Format options for date
+  
+    // Check if last_active is valid before proceeding
+    if (last_active) {
+      if (last_active === invited) {
+        last_active_display = invited;
+        last_active_sort_value = 0;
+      } else if (last_active === invalid_date) {
+        last_active_display = invalid_date;
+      } else {
+        const parsedDate = new Date(last_active);
+        
+        try {
+          if (!isNaN(parsedDate.getTime())) { // Check if the date is valid
+            last_active_display = parsedDate.toLocaleDateString('en-US', options);
+            last_active_sort_value = parsedDate.getTime(); // For sorting purposes
+          } else {
+            throw new Error(invalid_date); // Throw an error to catch in catch block
+          }
+        } catch (e) {
+          console.error(`Error parsing date: ${last_active}. Error: ${e}`);
+          last_active_display = invalid_date;
+        }
+      }
+    } else { // last_active is null or undefined
+      last_active_display = invalid_date;
+    }
+  
+    return {
+      display_value: last_active_display,
+      sort_value: last_active_sort_value
+    };
+  }
+  
+  /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
      * @param {*} page - the page number of the results (starts with 1)
@@ -1973,38 +2018,8 @@ class MembersTable extends LoadTableBase {
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
-            // Handle last_active values
-            let last_active = member.last_active; // Changed to let to allow for potential modification
-            let last_active_formatted = '';
-            let last_active_sort_value = NaN;
-
-            // Check if last_active is valid before proceeding
-            if (last_active) {
-              if (last_active === invited || last_active === invalid_date) {
-                last_active_formatted = last_active;
-                last_active_sort_value = last_active;
-              } else {
-                const parsedDate = new Date(last_active);
-                
-                try {
-                  if (!isNaN(parsedDate.getTime())) { // Check if the date is valid
-                    last_active_formatted = parsedDate.toLocaleDateString('en-US', options);
-                    last_active_sort_value = parsedDate.getTime();  // For sorting purposes
-                  } else {
-                    throw new Error(invalid_date); // Throw an error to catch in catch block
-                  }
-                } catch (e) {
-                  console.error(`Error parsing date: ${last_active}. Error: ${e}`);
-                  last_active_formatted = invalid_date;
-                  last_active_sort_value = invalid_date;
-                }
-              }
-            } else { // last_active is null or undefined
-              last_active_formatted = invalid_date;
-              last_active_sort_value = invalid_date; // Default value for invalid or missing last_active
-            }
+            const last_active = this.handleLastActive(member.last_active);
 
             const action_url = member.action_url;
             const action_label = member.action_label;
@@ -2083,8 +2098,8 @@ class MembersTable extends LoadTableBase {
               <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
                 ${member_display} ${admin_tagHTML} ${showMoreButton}
               </th>
-              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active_sort_value}" data-label="last_active">
-                ${last_active_formatted}
+              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+                ${last_active.display_value}
               </td>
               <td headers="header-action row-header-${member_id}">
                 <a href="${action_url}">
