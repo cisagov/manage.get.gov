@@ -173,9 +173,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             SeniorOfficialContactForm,
         }
 
-        is_analyst_action = ("analyst_action" in self.session and "analyst_action_location" in self.session)
-        
-        should_notify=False
+        is_analyst_action = "analyst_action" in self.session and "analyst_action_location" in self.session
+
+        should_notify = False
 
         if form.__class__ in form_label_dict:
             if is_analyst_action:
@@ -206,9 +206,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 context,
             )
         else:
-            logger.info(
-                f"No notification sent for {form.__class__}. form changes: {form.has_changed()}, force_send: {force_send}"
-            )
+            logger.info(f"No notification sent for {form.__class__}.")
 
     def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
         """Send a single email built from a template to all managers for a given domain.

@@ -2099,7 +2099,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
 
-
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_notification_on_security_email_change(self):
@@ -2154,7 +2153,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
-        self.assertIn("INFORMATION UPDATED: DNSSec", body)
+        self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
