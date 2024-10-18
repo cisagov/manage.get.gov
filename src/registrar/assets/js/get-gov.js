@@ -1910,22 +1910,22 @@ class MembersTable extends LoadTableBase {
 
   /**
    * Helper function which takes last_active and returns display value and sort value
-   * @param {*} last_active 
+   * @param {*} last_active - UTC date, or strings "Invited" or "Invalid date"
    * @returns 
    */
   handleLastActive(last_active) {
     let last_active_display = '';
-    let last_active_sort_value = -1;
+    let last_active_sort_value = -1; // sort by default as numeric value to sort with dates
   
-    const invited = 'Invited';           // Assuming "invited" is a constant string
-    const invalid_date = 'Invalid date'; // Assuming "invalid_date" is a constant string
+    const invited = 'Invited';
+    const invalid_date = 'Invalid date';
     const options = { year: 'numeric', month: 'long', day: 'numeric' }; // Format options for date
   
-    // Check if last_active is valid before proceeding
+    // Check if last_active is not null
     if (last_active) {
       if (last_active === invited) {
         last_active_display = invited;
-        last_active_sort_value = 0;
+        last_active_sort_value = 0; // sort as numeric value 
       } else if (last_active === invalid_date) {
         last_active_display = invalid_date;
       } else {
@@ -1934,11 +1934,11 @@ class MembersTable extends LoadTableBase {
         try {
           if (!isNaN(parsedDate.getTime())) { // Check if the date is valid
             last_active_display = parsedDate.toLocaleDateString('en-US', options);
-            last_active_sort_value = parsedDate.getTime(); // For sorting purposes
+            last_active_sort_value = parsedDate.getTime(); // sort as numeric value, seconds since 1970
           } else {
             throw new Error(invalid_date); // Throw an error to catch in catch block
           }
-        } catch (e) {
+        } catch (e) { // catch invalid values and treat as 'Invalid date'
           console.error(`Error parsing date: ${last_active}. Error: ${e}`);
           last_active_display = invalid_date;
         }
