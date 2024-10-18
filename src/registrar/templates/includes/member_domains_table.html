@@ -1,8 +1,37 @@
 {% load static %}
 
-<section class="section-outlined margin-top-0 section-outlined--border-base-light">
+{% if member %}
+  <span 
+    id="portfolio-js-value" 
+    class="display-none" 
+    data-portfolio="{{ portfolio.id }}"
+    data-email=""
+    data-member-id="{{ member.id }}"
+    data-member-only="true"
+  ></span>
+{% else %}
+  <span 
+      id="portfolio-js-value" 
+      class="display-none" 
+      data-portfolio="{{ portfolio.id }}"
+      data-email="{{  portfolio_invitation.email }}"
+      data-member-id=""
+      data-member-only="true"
+    ></span>
+{% endif %}
+
+{% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+{% url 'get_member_domains_json' as url %}
+<span id="get_member_domains_json_url" class="display-none">{{url}}</span>
+<section class="section-outlined member-domains margin-top-0 section-outlined--border-base-light" id="member-domains">
+    
     <h2>
-        Domains assigned to {{ email }}
+      Domains assigned to 
+      {% if member %}
+        {{ member.email }}
+      {% else %}
+        {{ portfolio_invitation.email }}
+      {% endif %}
     </h2>
 
   <div class="section-outlined__header margin-bottom-3 grid-row">
@@ -25,7 +54,7 @@
                 </button>
                 <input
                 class="usa-input"
-                id="members__search-field"
+                id="member-domains__search-field"
                 type="search"
                 name="search"
                 />
@@ -49,7 +78,7 @@
         <caption class="sr-only">member domains</caption>
         <thead>
           <tr>
-            <th data-sortable="domain" scope="col" role="columnheader">Domains</th>
+            <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
           </tr>
         </thead>
         <tbody>

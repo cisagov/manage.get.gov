@@ -27,7 +27,6 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         unfiltered_total = objects.count()
 
         objects = self.apply_search(objects, request)
-        objects = self.apply_state_filter(objects, request)
         objects = self.apply_sorting(objects, request)
 
         paginator = Paginator(objects, 10)
@@ -53,14 +52,14 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         """Get domain ids from request.
 
         request.get.email - email address of invited member
-        request.get.member - member id of member
+        request.get.member_id - member id of member
         request.get.portfolio - portfolio id of portfolio
         request.get.member_only - whether to return only domains associated with member
         or to return all domains in the portfolio
         """
         portfolio = request.GET.get("portfolio")
         email = request.GET.get("email")
-        member_id = request.GET.get("member")
+        member_id = request.GET.get("member_id")
         member_only = request.GET.get("member_only", "false").lower() in ["true", "1"]
         if member_only:
             if member_id:
@@ -86,48 +85,12 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         return queryset
 
 
-    def apply_state_filter(self, queryset, request):
-        status_param = request.GET.get("status")
-        if status_param:
-            status_list = status_param.split(",")
-            # if unknown is in status_list, append 'dns needed' since both
-            # unknown and dns needed display as DNS Needed, and both are
-            # searchable via state parameter of 'unknown'
-            if "unknown" in status_list:
-                status_list.append("dns needed")
-            # Split the status list into normal states and custom states
-            normal_states = [state for state in status_list if state in Domain.State.values]
-            custom_states = [state for state in status_list if state == "expired"]
-            # Construct Q objects for normal states that can be queried through ORM
-            state_query = Q()
-            if normal_states:
-                state_query |= Q(state__in=normal_states)
-            # Handle custom states in Python, as expired can not be queried through ORM
-            if "expired" in custom_states:
-                expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
-                state_query |= Q(id__in=expired_domain_ids)
-            # Apply the combined query
-            queryset = queryset.filter(state_query)
-            # If there are filtered states, and expired is not one of them, domains with
-            # state_display of 'Expired' must be removed
-            if "expired" not in custom_states:
-                expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
-                queryset = queryset.exclude(id__in=expired_domain_ids)
-
-        return queryset
-
-
     def apply_sorting(self, queryset, request):
-        sort_by = request.GET.get("sort_by", "id")
+        sort_by = request.GET.get("sort_by", "name")
         order = request.GET.get("order", "asc")
-        if sort_by == "state_display":
-            objects = list(queryset)
-            objects.sort(key=lambda domain: domain.state_display(), reverse=(order == "desc"))
-            return objects
-        else:
-            if order == "desc":
-                sort_by = f"-{sort_by}"
-            return queryset.order_by(sort_by)
+        if order == "desc":
+            sort_by = f"-{sort_by}"
+        return queryset.order_by(sort_by)
 
 
     def serialize_domain(self, domain, user):

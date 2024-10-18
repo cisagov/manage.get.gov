@@ -48,17 +48,7 @@
         A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
     </p>
 
-    {% if member %}
-        {% with member.email as email %}
-            {% include "includes/member_domains_table.html" with email=email %}
-        {% endwith %}
-    {% else %}
-        {% with portfolio_invitation.email as email %}
-            {% include "includes/member_domains_table.html" with email=email %}
-        {% endwith %}
-    {% endif %}
+    {% include "includes/member_domains_table.html" %}
 
-
-        
 </div>
 {% endblock %}
