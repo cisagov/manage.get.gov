@@ -1612,8 +1612,9 @@ class DomainRequestsTable extends LoadTableBase {
           const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
           
           // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
-          // Even if the request is not deletable, we may need these empty strings for the td if the deletable column is displayed
-          let modalTrigger = '';
+          // If the request is not deletable, use the following (hidden) span for ANDI screenreaders to indicate this state to the end user
+          let modalTrigger =  `
+          <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
 
           let markupCreatorRow = '';
 
@@ -1625,13 +1626,7 @@ class DomainRequestsTable extends LoadTableBase {
             `
           }
 
-          if (!request.is_deletable) {
-            // If the request is not deletable, insert a message
-            // for the screenreader to pickup explaining the empty table cell
-            modalTrigger = `
-            <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`
-          }
-          else {
+          if (request.is_deletable) {
             // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
             let modalHeading = '';
             let modalDescription = '';
