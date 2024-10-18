@@ -1,0 +1,42 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Organization member {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div class="grid-row grid-gap">
+    <div class="tablet:grid-col-9" id="main-content">
+
+        {% block messages %}
+            {% include "includes/form_messages.html" %}
+        {% endblock %}
+
+        <h1>Manage member</h1>
+        
+        <p>
+          {% if member %}
+            {{ member.email }}
+          {% elif invitation %}
+            {{ invitation.email }}
+          {% endif %}
+        </p>
+
+        <hr>
+
+        <form class="usa-form usa-form--large" method="post" novalidate>
+            {% csrf_token %}
+            {% input_with_errors form.roles %}
+            {% input_with_errors form.additional_permissions %}
+            <button
+              type="submit"
+              class="usa-button"
+            >Submit</button>
+          </form>
+
+        
+
+    </div>
+</div>
+{% endblock %}
