@@ -1336,7 +1336,7 @@ class DomainRequest(TimeStampedModel):
         return True
     
     @property
-    def get_organization_name(self):
+    def converted_organization_name(self):
         """"returns the organization field if the domain request is in a portfolio
         otherwise it returns the organization name from the domain request object itself"""
         if self.portfolio:
@@ -1344,9 +1344,63 @@ class DomainRequest(TimeStampedModel):
         return self.organization_name
     
     @property
-    def get_generic_org_type(self):
+    def converted_generic_org_type(self):
         """"returns the organization type if the domain request is in a portfolio
         otherwise it returns the organization type from the domain request object itself"""
         if self.portfolio:
             return self.portfolio.organization_type
         return self.generic_org_type
+    
+    @property
+    def converted_federal_agency(self):
+        if self.portfolio:
+            return self.portfolio.federal_agency
+        return self.federal_agency
+    
+    @property
+    def converted_federal_type(self):
+        if self.portfolio:
+            return self.portfolio.federal_type
+        return self.federal_type
+    
+    @property
+    def converted_senior_official(self):
+        if self.portfolio:
+            return self.portfolio.senior_official
+        return self.senior_official
+    
+    @property
+    def converted_address_line1(self):
+        if self.portfolio:
+            return self.portfolio.address_line_1
+        return self.address_line1
+    
+    @property
+    def converted_address_line2(self):
+        if self.portfolio:
+            return self.portfolio.address_line_2
+        return self.address_line2
+    
+    @property
+    def converted_city(self):
+        if self.portfolio:
+            return self.portfolio.city
+        return self.city
+    
+    @property
+    def converted_state_terrority(self):
+        if self.portfolio:
+            return self.portfolio.state_territory
+        return self.state_territory
+    
+    @property
+    def converted_zipcode(self):
+        if self.portfolio:
+            return self.portfolio.zipcode
+        return self.zipcode
+    
+    @property
+    def converted_urbanization(self):
+        if self.portfolio:
+            return self.portfolio.urbanization
+        return self.urbanization
