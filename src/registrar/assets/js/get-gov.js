@@ -1874,6 +1874,88 @@ class MembersTable extends LoadTableBase {
   constructor() {
     super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
   }
+  
+  initShowMoreButtons() {
+    function toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow) {
+      const spanElement = toggleButton.querySelector('span');
+      const useElement = toggleButton.querySelector('use');
+      if (contentDiv.classList.contains('display-none')) {
+        showElement(contentDiv);
+        spanElement.textContent = 'Close';
+        useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
+        buttonParentRow.classList.add('hide-td-borders');
+        toggleButton.setAttribute('aria-label', 'Close additional information');
+      } else {    
+        hideElement(contentDiv);
+        spanElement.textContent = 'Expand';
+        useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
+        buttonParentRow.classList.remove('hide-td-borders');
+        toggleButton.setAttribute('aria-label', 'Expand for additional information');
+      }
+    }
+  
+    let toggleButtons = document.querySelectorAll('.usa-button--show-more-button');
+    toggleButtons.forEach((toggleButton) => {
+      
+      let dataFor = toggleButton.dataset.for;
+      let contentDiv = document.getElementById(dataFor);
+      let buttonParentRow = toggleButton.parentElement.parentElement;
+      if (contentDiv && contentDiv.tagName.toLowerCase() === 'tr' && contentDiv.classList.contains('show-more-content') && buttonParentRow && buttonParentRow.tagName.toLowerCase() === 'tr') {
+        toggleButton.addEventListener('click', function() {
+          toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow);
+        });
+      } else {
+        console.warn('Found a toggle button with no associated toggleable content or parent row');
+      }
+
+    });
+  }
+
+  /**
+   * Helper function which takes last_active and returns display value and sort value
+   * @param {*} last_active - UTC date, or strings "Invited" or "Invalid date"
+   * @returns 
+   */
+  handleLastActive(last_active) {
+    let last_active_display = '';
+    let last_active_sort_value = -1; // sort by default as numeric value to sort with dates
+  
+    const invited = 'Invited';
+    const invalid_date = 'Invalid date';
+    const options = { year: 'numeric', month: 'long', day: 'numeric' }; // Format options for date
+  
+    // Check if last_active is not null
+    if (last_active) {
+      if (last_active === invited) {
+        last_active_display = invited;
+        last_active_sort_value = 0; // sort as numeric value 
+      } else if (last_active === invalid_date) {
+        last_active_display = invalid_date;
+      } else {
+        const parsedDate = new Date(last_active);
+        
+        try {
+          if (!isNaN(parsedDate.getTime())) { // Check if the date is valid
+            last_active_display = parsedDate.toLocaleDateString('en-US', options);
+            last_active_sort_value = parsedDate.getTime(); // sort as numeric value, seconds since 1970
+          } else {
+            throw new Error(invalid_date); // Throw an error to catch in catch block
+          }
+        } catch (e) { // catch invalid values and treat as 'Invalid date'
+          console.error(`Error parsing date: ${last_active}. Error: ${e}`);
+          last_active_display = invalid_date;
+        }
+      }
+    } else { // last_active is null or undefined
+      last_active_display = invalid_date;
+    }
+  
+    return {
+      display_value: last_active_display,
+      sort_value: last_active_sort_value
+    };
+  }
+  
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -1927,39 +2009,20 @@ class MembersTable extends LoadTableBase {
           const memberList = document.querySelector('.members__table tbody');
           memberList.innerHTML = '';
 
+          const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
           const invited = 'Invited';
+          const invalid_date = 'Invalid date';
 
           data.members.forEach(member => {
+            const member_id = member.source + member.id;
             const member_name = member.name;
             const member_display = member.member_display;
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const member_permissions = member.permissions;
+            const domain_urls = member.domain_urls;
+            const domain_names = member.domain_names;
+            const num_domains = domain_urls.length;
             
-            // Handle last_active values
-            let last_active = member.last_active;
-            let last_active_formatted = '';
-            let last_active_sort_value = '';
-
-            // Handle 'Invited' or null/empty values differently from valid dates
-            if (last_active && last_active !== invited) {
-              try {
-                // Try to parse the last_active as a valid date
-                last_active = new Date(last_active);
-                if (!isNaN(last_active)) {
-                  last_active_formatted = last_active.toLocaleDateString('en-US', options);
-                  last_active_sort_value = last_active.getTime();  // For sorting purposes
-                } else {
-                  last_active_formatted='Invalid date'                  
-                }
-              } catch (e) {
-                console.error(`Error parsing date: ${last_active}. Error: ${e}`);
-                last_active_formatted='Invalid date'
-              }
-            } else {
-              // Handle 'Invited' or null
-              last_active = invited;
-              last_active_formatted = invited;
-              last_active_sort_value = invited; // Keep 'Invited' as a sortable string
-            }
+            const last_active = this.handleLastActive(member.last_active);
 
             const action_url = member.action_url;
             const action_label = member.action_label;
@@ -1971,14 +2034,78 @@ class MembersTable extends LoadTableBase {
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
+            // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
+
+            let domainsHTML = '';
+            if (num_domains > 0) {
+              domainsHTML += "<div class='desktop:grid-col-5 margin-bottom-2 desktop:margin-bottom-0'>";
+              domainsHTML += "<h4 class='margin-y-0 text-primary'>Domains assigned</h4>";
+              domainsHTML += "<p class='margin-y-0'>This member is assigned to " + num_domains + " domains:";
+              domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
+              for (let i = 0; i < num_domains && i < 6; i++) {
+                  domainsHTML += `<li><a href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
+              }
+              domainsHTML += "</ul>";
+              if (num_domains >= 6) {
+                domainsHTML += "<p><a href='#'>View assigned domains</a></p>";
+              }
+              domainsHTML += "</div>";
+            }
+
+            let permissionsHTML = '';
+            if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domains:</strong> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domains:</strong> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>";
+            }
+            if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domain requests:</strong> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>";
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Domain requests (view-only):</strong> Can view all organization domain requests. Can't create or modify any domain requests.</p>";
+            }
+            if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members:</strong> Can manage members including inviting new members, removing current members, and assigning domains to members.";
+            } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><strong class='text-base-dark'>Members (view-only):</strong> Can view all organizational members. Can't manage any members.";
+            }
+            // if there are no additional permissions, display a no additional permissions message
+            if (!permissionsHTML) {
+              permissionsHTML += "<p class='margin-top-1 p--blockquote'><b>No additional permissions:</b> There are no additional permissions for this member.</p>";
+            }
+            // add permissions header in all cases
+            permissionsHTML = "<div class='desktop:grid-col-7'><h4 class='margin-y-0 text-primary'>Additional permissions for this member</h4>" + permissionsHTML + "</div>";
+
+            let showMoreButton = '';
+            const showMoreRow = document.createElement('tr');
+            if (domainsHTML || permissionsHTML) {
+              showMoreButton = `
+                <button 
+                  type="button" 
+                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
+                  data-for=${member_id}
+                  aria-label="Expand for additional information"
+                >
+                  <span>Expand</span>
+                  <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+                  </svg>
+                </button>
+              `;
+
+              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+              showMoreRow.classList.add('show-more-content');
+              showMoreRow.classList.add('display-none');
+              showMoreRow.id = member_id;
+            }
+
             row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="member email">
-                ${member_display} ${admin_tagHTML}
+              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
+                ${member_display} ${admin_tagHTML} ${showMoreButton}
               </th>
-              <td data-sort-value="${last_active_sort_value}" data-label="last_active">
-                ${last_active_formatted}
+              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+                ${last_active.display_value}
               </td>
-              <td>
+              <td headers="header-action row-header-${member_id}">
                 <a href="${action_url}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
@@ -1988,7 +2115,12 @@ class MembersTable extends LoadTableBase {
               </td>
             `;
             memberList.appendChild(row);
+            if (domainsHTML || permissionsHTML) {
+              memberList.appendChild(showMoreRow);
+            }
           });
+
+          this.initShowMoreButtons();
 
           // Do not scroll on first page load
           if (scroll)
