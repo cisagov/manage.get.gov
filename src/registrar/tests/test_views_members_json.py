@@ -1,10 +1,12 @@
 from django.urls import reverse
 
+from api.tests.common import less_console_noise_decorator
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from waffle.testutils import override_flag
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 
@@ -91,6 +93,9 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
     def test_get_portfolio_members_json_authenticated(self):
         """Test that portfolio members are returned properly for an authenticated user."""
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
@@ -120,6 +125,24 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         actual_emails = {member["email"] for member in data["members"]}
         self.assertEqual(expected_emails, actual_emails)
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_get_portfolio_members_json_unauthenticated(self):
+        """Test that an unauthenticated user is redirected or denied access."""
+        # Log out the user by setting the user to None
+        self.app.set_user(None)
+        
+        # Try to access the portfolio members without being authenticated
+        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id}, expect_errors=True)
+        
+        # Assert that the response is a redirect to the login page
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.location)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
     def test_pagination(self):
         """Test that pagination works properly when there are more members than page size."""
         # Create additional members to exceed page size of 10
@@ -170,6 +193,9 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         # Check the number of members on page 2
         self.assertEqual(len(data["members"]), 5)
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
     def test_search(self):
         """Test search functionality for portfolio members."""
         # Search by name
