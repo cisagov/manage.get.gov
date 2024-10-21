@@ -4,7 +4,6 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.views import View
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
@@ -47,7 +46,6 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             }
         )
 
-
     def get_domain_ids_from_request(self, request):
         """Get domain ids from request.
 
@@ -64,19 +62,22 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         if member_only:
             if member_id:
                 member = get_object_or_404(User, pk=member_id)
-                domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+                domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list(
+                    "domain_id", flat=True
+                )
                 user_domain_roles = UserDomainRole.objects.filter(user=member).values_list("domain_id", flat=True)
                 return domain_info_ids.intersection(user_domain_roles)
             elif email:
-                domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+                domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list(
+                    "domain_id", flat=True
+                )
                 domain_invitations = DomainInvitation.objects.filter(email=email).values_list("domain_id", flat=True)
                 return domain_info_ids.intersection(domain_invitations)
         else:
             domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
             return domain_infos.values_list("domain_id", flat=True)
-        logger.warning("Invalid search criteria, returning empty results list")         
+        logger.warning("Invalid search criteria, returning empty results list")
         return []
-
 
     def apply_search(self, queryset, request):
         search_term = request.GET.get("search_term")
@@ -84,14 +85,12 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             queryset = queryset.filter(Q(name__icontains=search_term))
         return queryset
 
-
     def apply_sorting(self, queryset, request):
         sort_by = request.GET.get("sort_by", "name")
         order = request.GET.get("order", "asc")
         if order == "desc":
             sort_by = f"-{sort_by}"
         return queryset.order_by(sort_by)
-
 
     def serialize_domain(self, domain, user):
         suborganization_name = None

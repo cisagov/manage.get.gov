@@ -53,7 +53,7 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
-        
+
         # Assign some domains
         cls.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-03-01", state="ready")
         cls.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-03-01", state="ready")
@@ -83,8 +83,12 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
-        DomainInvitation.objects.create(email=cls.invited_member_email, domain=cls.domain1, status=DomainInvitation.DomainInvitationStatus.INVITED)
-        DomainInvitation.objects.create(email=cls.invited_member_email, domain=cls.domain2, status=DomainInvitation.DomainInvitationStatus.INVITED)
+        DomainInvitation.objects.create(
+            email=cls.invited_member_email, domain=cls.domain1, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        DomainInvitation.objects.create(
+            email=cls.invited_member_email, domain=cls.domain2, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -107,7 +111,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated(self):
         """Test that portfolio member's domains are returned properly for an authenticated user."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -127,7 +134,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated(self):
         """Test that portfolio invitedmember's domains are returned properly for an authenticated user."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "true"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "true"},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -147,7 +157,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_include_all_domains(self):
         """Test that all portfolio domains are returned properly for an authenticated user."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "false"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "false"},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -167,7 +180,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_include_all_domains(self):
         """Test that all portfolio domains are returned properly for an authenticated user."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "false"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "false"},
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -187,7 +203,15 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_search(self):
         """Test that search_term yields correct domain."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "false", "search_term": "example1"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "member_id": self.user_member.id,
+                "member_only": "false",
+                "search_term": "example1",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -207,7 +231,15 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_search(self):
         """Test that search_term yields correct domain."""
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "false", "search_term": "example1"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.invited_member_email,
+                "member_only": "false",
+                "search_term": "example1",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -228,7 +260,16 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     def test_get_portfolio_member_domains_json_authenticated_sort(self):
         """Test that sort returns results in correct order."""
         # Test by name in ascending order
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "false", "sort_by": "name", "order":"asc"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "member_id": self.user_member.id,
+                "member_only": "false",
+                "sort_by": "name",
+                "order": "asc",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -247,7 +288,16 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][0]["name"], "example1.com")
 
         # Test by name in descending order
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "false", "sort_by": "name", "order":"desc"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "member_id": self.user_member.id,
+                "member_only": "false",
+                "sort_by": "name",
+                "order": "desc",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -271,7 +321,16 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     def test_get_portfolio_invitedmember_domains_json_authenticated_sort(self):
         """Test that sort returns results in correct order."""
         # Test by name in ascending order
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "false", "sort_by": "name", "order":"asc"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.invited_member_email,
+                "member_only": "false",
+                "sort_by": "name",
+                "order": "asc",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -290,7 +349,16 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][0]["name"], "example1.com")
 
         # Test by name in descending order
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "false", "sort_by": "name", "order":"desc"})
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.invited_member_email,
+                "member_only": "false",
+                "sort_by": "name",
+                "order": "desc",
+            },
+        )
         self.assertEqual(response.status_code, 200)
         data = response.json
 
@@ -315,10 +383,14 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         """Test that an restricted user is denied access."""
         # set user to a user with no permissions
         self.app.set_user(self.user_no_perms)
-        
+
         # Try to access the portfolio members without being authenticated
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"}, expect_errors=True)
-        
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"},
+            expect_errors=True,
+        )
+
         # Assert that the response is a 403
         self.assertEqual(response.status_code, 403)
 
@@ -329,10 +401,14 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         """Test that an unauthenticated user is redirected to login."""
         # set app to unauthenticated
         self.app.set_user(None)
-        
+
         # Try to access the portfolio members without being authenticated
-        response = self.app.get(reverse("get_member_domains_json"), params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"}, expect_errors=True)
-        
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={"portfolio": self.portfolio.id, "member_id": self.user_member.id, "member_only": "true"},
+            expect_errors=True,
+        )
+
         # Assert that the response is a redirect to openid login
         self.assertEqual(response.status_code, 302)
         self.assertIn("/openid/login", response.location)

@@ -132,10 +132,12 @@ class GetPortfolioMembersJsonTest(TestWithUser, WebTest):
         """Test that an unauthenticated user is redirected or denied access."""
         # Log out the user by setting the user to None
         self.app.set_user(None)
-        
+
         # Try to access the portfolio members without being authenticated
-        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id}, expect_errors=True)
-        
+        response = self.app.get(
+            reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id}, expect_errors=True
+        )
+
         # Assert that the response is a redirect to the login page
         self.assertEqual(response.status_code, 302)  # Redirect to openid login
         self.assertIn("/openid/login", response.location)

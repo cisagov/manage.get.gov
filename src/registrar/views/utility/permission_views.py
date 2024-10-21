@@ -278,6 +278,7 @@ class PortfolioMemberEditPermissionView(PortfolioMemberEditPermission, Portfolio
     `template_name`.
     """
 
+
 class PortfolioMemberDomainsPermissionView(PortfolioMemberDomainsPermission, PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for portfolio member domains views that enforces permissions.
 

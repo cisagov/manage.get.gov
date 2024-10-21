@@ -1437,7 +1437,7 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
-        
+
     @classmethod
     def tearDownClass(cls):
         UserPortfolioPermission.objects.all().delete()
@@ -1453,7 +1453,6 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("member-domains", kwargs={"pk": self.permission.id}))
-
 
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
@@ -1493,10 +1492,9 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
         response = self.client.get(reverse("member-domains", kwargs={"pk": "0"}))
 
-
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
-    
+
 
 class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
     @classmethod
@@ -1536,7 +1534,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
-        
+
     @classmethod
     def tearDownClass(cls):
         PortfolioInvitation.objects.all().delete()
@@ -1553,7 +1551,6 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": self.invitation.id}))
-
 
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
@@ -1593,7 +1590,5 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
 
         response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": "0"}))
 
-
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
-    

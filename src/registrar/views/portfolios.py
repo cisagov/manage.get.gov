@@ -136,7 +136,8 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
                 "member": user,  # Pass the user object again to the template
             },
         )
-    
+
+
 class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
 
     template_name = "portfolio_member_domains.html"
@@ -153,7 +154,6 @@ class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
                 "member": member,
             },
         )
-
 
 
 class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
@@ -227,7 +227,8 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
                 "invitation": portfolio_invitation,  # Pass the user object again to the template
             },
         )
-    
+
+
 class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
 
     template_name = "portfolio_member_domains.html"

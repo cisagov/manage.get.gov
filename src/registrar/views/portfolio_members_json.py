@@ -1,6 +1,5 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
 from django.db.models import Value, F, CharField, TextField, Q, Case, When
 from django.db.models.functions import Concat, Coalesce
 from django.urls import reverse
@@ -14,7 +13,7 @@ from registrar.views.utility.mixins import PortfolioMembersPermission
 
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
-    
+
     def get(self, request):
         """Fetch members (permissions and invitations) for the given portfolio."""
 
@@ -51,7 +50,6 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
                 "unfiltered_total": unfiltered_total,
             }
         )
-
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
@@ -96,7 +94,6 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         )
         return permissions
 
-
     def initial_invitations_search(self, portfolio):
         """Perform initial invitations search before applying any filters."""
         invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
@@ -121,7 +118,6 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         )
         return invitations
 
-
     def apply_search_term(self, queryset, request):
         """Apply search term to the queryset."""
         search_term = request.GET.get("search_term", "").lower()
@@ -132,7 +128,6 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
                 | Q(email_display__icontains=search_term)
             )
         return queryset
-
 
     def apply_sorting(self, queryset, request):
         """Apply sorting to the queryset."""
@@ -146,7 +141,6 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         else:
             queryset = queryset.order_by(sort_by)
         return queryset
-
 
     def serialize_members(self, request, portfolio, item, user):
         # Check if the user can edit other users
