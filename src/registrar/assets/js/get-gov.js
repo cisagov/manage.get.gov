@@ -1898,7 +1898,6 @@ class MembersTable extends LoadTableBase {
       if (portfolio)
         searchParams.append("portfolio", portfolio)
 
-
       // --------- FETCH DATA
       // fetch json of page of domais, given params
       let baseUrl = document.getElementById("get_members_json_url");
@@ -1910,6 +1909,12 @@ class MembersTable extends LoadTableBase {
       if (!baseUrlValue) {
         return;
       }
+
+      // Get whether the logged in user has edit members permission
+      const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
+
+      console.log(this.portfolioElement.getAttribute('data-has-edit-permission'))
+      console.log(hasEditPermission)
   
       let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
       fetch(url)
@@ -1929,6 +1934,20 @@ class MembersTable extends LoadTableBase {
 
           const invited = 'Invited';
 
+
+          let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
+
+          if (hasEditPermission && !existingExtraActionsHeader) {
+            const extraActionsHeader = document.createElement('th');
+            extraActionsHeader.setAttribute('id', 'extra-actions');
+            extraActionsHeader.setAttribute('role', 'columnheader');
+            extraActionsHeader.setAttribute('class', 'extra-actions-header');
+            extraActionsHeader.innerHTML = `
+              <span class="usa-sr-only">Cancel invitation</span>`;
+            let tableHeaderRow = document.querySelector('#members thead tr');
+            tableHeaderRow.appendChild(extraActionsHeader);
+          }
+
           data.members.forEach(member => {
             const member_name = member.name;
             const member_display = member.member_display;
@@ -1938,6 +1957,119 @@ class MembersTable extends LoadTableBase {
             let last_active = member.last_active;
             let last_active_formatted = '';
             let last_active_sort_value = '';
+            let kebob = '';
+
+            if (hasEditPermission) {
+              const member_id = member.id;
+              let isMemberInvited = !last_active || last_active === 'Invited';
+              let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
+
+              let modalHeading = 'asdasdasd';
+              let modalDescription = 'asdasdasdasdasd';
+
+              const modalSubmit = `
+                <button type="button"
+                class="usa-button usa-button--secondary usa-modal__submit"
+                data-pk = ${member_id}
+                name="">Proceed</button>
+              `
+
+                const modal = document.createElement('div');
+                modal.setAttribute('class', 'usa-modal');
+                modal.setAttribute('id', `toggle-remove-member-${member_id}`);
+                modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+                modal.setAttribute('aria-describedby', 'Member will be removed');
+                modal.setAttribute('data-force-action', '');
+
+                modal.innerHTML = `
+                  <div class="usa-modal__content">
+                    <div class="usa-modal__main">
+                      <h2 class="usa-modal__heading" id="modal-1-heading">
+                        ${modalHeading}
+                      </h2>
+                      <div class="usa-prose">
+                        <p id="modal-1-description">
+                          ${modalDescription}
+                        </p>
+                      </div>
+                      <div class="usa-modal__footer">
+                          <ul class="usa-button-group">
+                            <li class="usa-button-group__item">
+                              ${modalSubmit}
+                            </li>      
+                            <li class="usa-button-group__item">
+                                <button
+                                    type="button"
+                                    class="usa-button usa-button--unstyled padding-105 text-center"
+                                    data-close-modal
+                                >
+                                    Cancel
+                                </button>
+                            </li>
+                          </ul>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="usa-button usa-modal__close"
+                      aria-label="Close this window"
+                      data-close-modal
+                    >
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                        <use xlink:href="/public/img/sprite.svg#close"></use>
+                      </svg>
+                    </button>
+                  </div>
+                  `
+                  this.tableWrapper.appendChild(modal);
+
+
+              kebob = `
+                <a 
+                  role="button" 
+                  id="button-trigger-remove-member-${member_id}"
+                  class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
+                  aria-controls="toggle-remove-member-${member_id}"
+                  data-open-modal
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#delete"></use>
+                  </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
+                </a>
+
+                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                  <div class="usa-accordion__heading">
+                    <button
+                      type="button"
+                      id="button-toggle-more-actions-${member_id}"
+                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                      aria-expanded="false"
+                      aria-controls="more-actions-${member_id}"
+                    >
+                      <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                      </svg>
+                    </button>
+                  </div>
+                  <div id="more-actions-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+                    <h2>More options</h2>
+                    <a 
+                      role="button" 
+                      id="button-trigger-remove-member-${member_id}"
+                      href="#toggle-remove-member-${member_id}"
+                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+                      aria-controls="toggle-remove-member-${member_id}"
+                      data-open-modal
+                    >
+                      ${cancelInvitationButton}
+                      <span class="usa-sr-only">for ${member_name}</span>
+                    </a>
+                  </div>
+                </div>
+              `
+            }
+
+            
 
             // Handle 'Invited' or null/empty values differently from valid dates
             if (last_active && last_active !== invited) {
@@ -1986,8 +2118,35 @@ class MembersTable extends LoadTableBase {
                   ${action_label} <span class="usa-sr-only">${member_name}</span>
                 </a>
               </td>
+              ${hasEditPermission ? '<td>'+kebob+'</td>' : ''}
             `;
             memberList.appendChild(row);
+          });
+
+          // initialize modals immediately after the DOM content is updated
+          initializeModals();
+
+          // Now the DOM and modals are ready, add listeners to the submit buttons
+          const modals = document.querySelectorAll('.usa-modal__content');
+
+          modals.forEach(modal => {
+            const submitButton = modal.querySelector('.usa-modal__submit');
+            const closeButton = modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+              let pk = submitButton.getAttribute('data-pk');
+              // Close the modal to remove the USWDS UI local classes
+              closeButton.click();
+              // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+              let pageToDisplay = data.page;
+              if (data.total == 1 && data.unfiltered_total > 1) {
+                pageToDisplay--;
+              }
+              
+              // Use the PK 
+              // and call a separate function that triggers a new backend AJAX call to remove or delete
+              alert('modal submit')
+
+            });
           });
 
           // Do not scroll on first page load
