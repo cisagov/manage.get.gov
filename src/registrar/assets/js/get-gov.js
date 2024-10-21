@@ -1970,7 +1970,7 @@ class MembersTable extends LoadTableBase {
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
-            row.innerHTML = `
+              row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
                 ${member_display} ${admin_tagHTML}
               </th>
@@ -1978,12 +1978,20 @@ class MembersTable extends LoadTableBase {
                 ${last_active_formatted}
               </td>
               <td>
-                <a href="${action_url}">
+                <a href="${action_url}" class="usa-button usa-button--unstyled text-no-underline margin-right-1">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
                   </svg>
                   ${action_label} <span class="usa-sr-only">${member_name}</span>
                 </a>
+              </td>
+              <td>
+                <button class="usa-button usa-button--unstyled usa-button--with-icon">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                    <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                  </svg>
+                  <span class="usa-sr-only">More options for ${member_name}</span>
+                </button>
               </td>
             `;
             memberList.appendChild(row);
