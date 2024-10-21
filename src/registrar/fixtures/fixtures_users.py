@@ -252,7 +252,7 @@ class UserFixture:
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",
         },
         {
-            "username": "ee1e68da-41a5-47f7949b-d8a4e9e2b9d2",
+            "username": "ee1e68da-41a5-47f7-949b-d8a4e9e2b9d2",
             "first_name": "Samiyah-Analyst",
             "last_name": "Key-Analyst",
             "email": "skey+1@truss.works",
