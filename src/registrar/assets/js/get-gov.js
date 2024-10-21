@@ -1930,6 +1930,7 @@ class MembersTable extends LoadTableBase {
 
           data.members.forEach(member => {
             const member_name = member.name;
+            const member_id = member.id;
             const member_display = member.member_display;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
@@ -1937,6 +1938,8 @@ class MembersTable extends LoadTableBase {
             let last_active = member.last_active;
             let last_active_formatted = '';
             let last_active_sort_value = '';
+            // Check if the member is invited
+            let isMemberInvited = last_active === invited;
 
             // Handle 'Invited' or null/empty values differently from valid dates
             if (last_active && last_active !== invited) {
@@ -1967,10 +1970,12 @@ class MembersTable extends LoadTableBase {
             const row = document.createElement('tr');
 
             let admin_tagHTML = ``;
+            let buttonText = isMemberInvited ? "Cancel invitation" : "Remove member";
+
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
-
-              row.innerHTML = `
+          
+            row.innerHTML = `
               <th scope="row" role="rowheader" data-label="member email">
                 ${member_display} ${admin_tagHTML}
               </th>
@@ -1986,12 +1991,33 @@ class MembersTable extends LoadTableBase {
                 </a>
               </td>
               <td>
-                <button class="usa-button usa-button--unstyled usa-button--with-icon">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                    <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                  </svg>
-                  <span class="usa-sr-only">More options for ${member_name}</span>
-                </button>
+                <div class="usa-accordion usa-accordion--more-actions">
+                  <div class="usa-accordion__heading">
+                    <button
+                      type="button"
+                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                      aria-expanded="false"
+                      aria-controls="more-options-${member_id}"
+                    >
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                      </svg>
+                    </button>
+                  </div>
+                  <div id="more-options-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0 padding-2" hidden>
+                    <h2>More options</h2>
+                    <a 
+                      role="button" 
+                      id="button-toggle-delete-member-alert-${member_id}"
+                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
+                      aria-controls="toggle-delete-member-alert-${member_id}"
+                      data-open-modal
+                    >
+                      <span class="text-error">${buttonText}</span> 
+                      <span class="usa-sr-only"> for ${member_name}</span>
+                    </a>
+                  </div>
+                </div>
               </td>
             `;
             memberList.appendChild(row);
