@@ -40,13 +40,15 @@
         <section aria-label="Members search component" class="margin-top-2">
           <form class="usa-search usa-search--show-label" method="POST" role="search">
             {% csrf_token %}
-            {% if has_edit_members_portfolio_permission %}
-                <label class="usa-label display-block" for="member-domains__search-field">Search all domains</label>
-            {% else %}
-                <label class="usa-label display-block" for="member-domains__search-field">Search domains assigned to ovietta.evans@gsa.gov</label>
-            {% endif %}
+            <label class="usa-label display-block margin-bottom-05" for="member-domains__search-field">
+              {% if has_edit_members_portfolio_permission %}
+                Search all domains
+              {% else %}
+                Search domains assigned to ovietta.evans@gsa.gov
+              {% endif %}
+            </label>            
             <div class="usa-search--show-label__input-wrapper">
-                <button class="usa-button usa-button--unstyled margin-right-3 member-domains__reset-search display-none" type="button">
+                <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="member-domains__reset-search" type="button">
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                       <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
                     </svg>
@@ -56,7 +58,7 @@
                 class="usa-input"
                 id="member-domains__search-field"
                 type="search"
-                name="search"
+                name="member-domains-search"
                 />
                 <button class="usa-button" type="submit" id="member-domains__search-field-submit">
                     <span class="usa-search__submit-text">Search </span>
@@ -73,11 +75,12 @@
     </div>
 
     <!-- ---------- MAIN TABLE ---------- -->
-    <div class="member-domains__table-wrapper display-none margin-top-0">
-      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked member-domains__table">
+    <div class="display-none margin-top-0" id="member-domains__table-wrapper">
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
         <caption class="sr-only">member domains</caption>
         <thead>
           <tr>
+            <!-- We override default sort to be name/ascending in the JSON endpoint. We add the correct aria-sort attribute here to reflect that in the UI -->
             <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
           </tr>
         </thead>
@@ -86,14 +89,14 @@
         </tbody>
       </table>
       <div
-        class="usa-sr-only usa-table__announcement-region"
+        class="usa-sr-only usa-table__announcement-region" id="member-domains__usa-table__announcement-region"
         aria-live="polite"
       ></div>
     </div>
-    <div class="member-domains__no-data display-none">
+    <div class="display-none" id="member-domains__no-data">
       <p>This member does not manage any domains.  Click the Edit domain assignments buttons to assign domains.</p>
     </div>
-    <div class="member-domains__no-search-results display-none">
+    <div class="display-none" id="member-domains__no-search-results">
       <p>No results found</p>
     </div>
   </section>

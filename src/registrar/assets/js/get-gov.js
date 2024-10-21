@@ -1003,25 +1003,24 @@ function unloadModals() {
 }
 
 class LoadTableBase {
-  constructor(tableSelector, tableWrapperSelector, searchFieldId, searchSubmitId, resetSearchBtn, resetFiltersBtn, noDataDisplay, noSearchresultsDisplay) {
-    this.tableWrapper = document.querySelector(tableWrapperSelector);
-    this.tableHeaders = document.querySelectorAll(`${tableSelector} th[data-sortable]`);
+  constructor(sectionSelector) {
+    this.tableWrapper = document.getElementById(`${sectionSelector}__table-wrapper`);
+    this.tableHeaders = document.querySelectorAll(`#${sectionSelector} th[data-sortable]`);
     this.currentSortBy = 'id';
     this.currentOrder = 'asc';
     this.currentStatus = [];
     this.currentSearchTerm = '';
     this.scrollToTable = false;
-    this.searchInput = document.querySelector(searchFieldId);
-    this.searchSubmit = document.querySelector(searchSubmitId);
-    this.tableAnnouncementRegion = document.querySelector(`${tableWrapperSelector} .usa-table__announcement-region`);
-    this.resetSearchButton = document.querySelector(resetSearchBtn);
-    this.resetFiltersButton = document.querySelector(resetFiltersBtn);
-    // NOTE: these 3 can't be used if filters are active on a page with more than 1 table
-    this.statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
-    this.statusIndicator = document.querySelector('.filter-indicator');
-    this.statusToggle = document.querySelector('.usa-button--filter');
-    this.noTableWrapper = document.querySelector(noDataDisplay);
-    this.noSearchResultsWrapper = document.querySelector(noSearchresultsDisplay);
+    this.searchInput = document.getElementById(`${sectionSelector}__search-field`);
+    this.searchSubmit = document.getElementById(`${sectionSelector}__search-field-submit`);
+    this.tableAnnouncementRegion = document.getElementById(`${sectionSelector}__usa-table__announcement-region`);
+    this.resetSearchButton = document.getElementById(`${sectionSelector}__reset-search`);
+    this.resetFiltersButton = document.getElementById(`${sectionSelector}__reset-filters`);
+    this.statusCheckboxes = document.querySelectorAll(`.${sectionSelector} input[name="filter-status"]`);
+    this.statusIndicator = document.getElementById(`${sectionSelector}__filter-indicator`);
+    this.statusToggle = document.getElementById(`${sectionSelector}__usa-button--filter`);
+    this.noTableWrapper = document.getElementById(`${sectionSelector}__no-data`);
+    this.noSearchResultsWrapper = document.getElementById(`${sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
     this.initializeTableHeaders();
@@ -1363,7 +1362,7 @@ class LoadTableBase {
 class DomainsTable extends LoadTableBase {
 
   constructor() {
-    super('.domains__table', '.domains__table-wrapper', '#domains__search-field', '#domains__search-field-submit', '.domains__reset-search', '.domains__reset-filters', '.domains__no-data', '.domains__no-search-results');
+    super('domains');
   }
   /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1415,7 +1414,7 @@ class DomainsTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('.domains__table tbody');
+          const domainList = document.querySelector('#domains tbody');
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
@@ -1501,7 +1500,7 @@ class DomainsTable extends LoadTableBase {
 class DomainRequestsTable extends LoadTableBase {
 
   constructor() {
-    super('.domain-requests__table', '.domain-requests__table-wrapper', '#domain-requests__search-field', '#domain-requests__search-field-submit', '.domain-requests__reset-search', '.domain-requests__reset-filters', '.domain-requests__no-data', '.domain-requests__no-search-results');
+    super('domain-requests');
   }
   
   toggleExportButton(requests) {
@@ -1567,7 +1566,7 @@ class DomainRequestsTable extends LoadTableBase {
         this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
         // identify the DOM element where the domain request list will be inserted into the DOM
-        const tbody = document.querySelector('.domain-requests__table tbody');
+        const tbody = document.querySelector('#domain-requests tbody');
         tbody.innerHTML = '';
 
         // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
@@ -1599,7 +1598,7 @@ class DomainRequestsTable extends LoadTableBase {
             delheader.setAttribute('class', 'delete-header');
             delheader.innerHTML = `
               <span class="usa-sr-only">Delete Action</span>`;
-            let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
+            let tableHeaderRow = document.querySelector('#domain-requests thead tr');
             tableHeaderRow.appendChild(delheader);
           }
         }
@@ -1871,7 +1870,7 @@ class DomainRequestsTable extends LoadTableBase {
 class MembersTable extends LoadTableBase {
 
   constructor() {
-    super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
+    super('members');
   }
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
@@ -1923,7 +1922,7 @@ class MembersTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const memberList = document.querySelector('.members__table tbody');
+          const memberList = document.querySelector('#members tbody');
           memberList.innerHTML = '';
 
           const invited = 'Invited';
@@ -2017,7 +2016,8 @@ class MembersTable extends LoadTableBase {
 class MemberDomainsTable extends LoadTableBase {
 
   constructor() {
-    super('.member-domains__table', '.member-domains__table-wrapper', '#member-domains__search-field', '#member-domains__search-field-submit', '.member-domains__reset-search', '.member-domains__reset-filters', '.member-domains__no-data', '.member-domains__no-search-results');
+    super('member-domains');
+    this.currentSortBy = 'name';
   }
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
@@ -2029,7 +2029,7 @@ class MemberDomainsTable extends LoadTableBase {
      * @param {*} searchTerm - the search term
      * @param {*} portfolio - the portfolio id
      */
-  loadTable(page, sortBy = 'name', order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
       // --------- SEARCH
       let searchParams = new URLSearchParams(
@@ -2080,7 +2080,7 @@ class MemberDomainsTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const memberDomainsList = document.querySelector('.member-domains__table tbody');
+          const memberDomainsList = document.querySelector('#member-domains tbody');
           memberDomainsList.innerHTML = '';
 
 
