@@ -476,8 +476,10 @@ class JsonServerFormatter(ServerFormatter):
 
     def format(self, record):
         formatted_record = super().format(record)
+
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
+
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
 
