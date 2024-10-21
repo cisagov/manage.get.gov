@@ -1869,184 +1869,293 @@ class DomainRequestsTable extends LoadTableBase {
 }
 
 class MembersTable extends LoadTableBase {
-
+  
   constructor() {
     super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
   }
+
   /**
-     * Loads rows in the members list, as well as updates pagination around the members list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+   * Loads rows in the members list, as well as updates pagination around the members list
+   * based on the supplied attributes.
+   * @param {*} page - the page number of the results (starts with 1)
+   * @param {*} sortBy - the sort column option
+   * @param {*} order - the sort order {asc, desc}
+   * @param {*} scroll - control for the scrollToElement functionality
+   * @param {*} searchTerm - the search term
+   * @param {*} portfolio - the portfolio id
+   */
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm = this.currentSearchTerm, portfolio = this.portfolioValue) {
 
-      // --------- SEARCH
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "search_term": searchTerm
-        }
-      );
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
-
-
-      // --------- FETCH DATA
-      // fetch json of page of domais, given params
-      let baseUrl = document.getElementById("get_members_json_url");
-      if (!baseUrl) {
-        return;
-      }
-
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
+    // --------- SEARCH
+    let searchParams = new URLSearchParams({
+      "page": page,
+      "sort_by": sortBy,
+      "order": order,
+      "search_term": searchTerm
+    });
   
-      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
+    if (portfolio) {
+      searchParams.append("portfolio", portfolio);
+    }
+  
+    // --------- FETCH DATA
+    let baseUrl = document.getElementById("get_members_json_url");
+    if (!baseUrl) {
+      return;
+    }
+  
+    let baseUrlValue = baseUrl.innerHTML;
+    if (!baseUrlValue) {
+      return;
+    }
+  
+    let url = `${baseUrlValue}?${searchParams.toString()}`;
+    
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error in AJAX call: ' + data.error);
+          return;
+        }
+  
+        // Handle the display of proper messaging in the event that no members exist in the list or search returns no results
+        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+  
+        // Identify the DOM element where the domain list will be inserted into the DOM
+        const memberList = document.querySelector('.members__table tbody');
+        memberList.innerHTML = '';
+  
+        const invited = 'Invited';
+  
+        data.members.forEach(member => {
+          const member_name = member.name;
+          const member_id = member.id;
+          const member_display = member.member_display;
+          const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  
+          // Handle last_active values
+          let last_active = member.last_active;
+          let last_active_formatted = '';
+          let last_active_sort_value = '';
+
+          let isMemberInvited = !last_active || last_active === 'Invited';
+
+          if (last_active && last_active !== invited) {
+            try {
+              last_active = new Date(last_active);
+              if (!isNaN(last_active)) {
+                last_active_formatted = last_active.toLocaleDateString('en-US', options);
+                last_active_sort_value = last_active.getTime();
+              } else {
+                last_active_formatted = 'Invalid date';
+              }
+            } catch (e) {
+              console.error(`Error parsing date: ${last_active}. Error: ${e}`);
+              last_active_formatted = 'Invalid date';
+            }
+          } else {
+            last_active = invited;
+            last_active_formatted = invited;
+            last_active_sort_value = invited;
+          }
+  
+          const action_url = member.action_url;
+          const action_label = member.action_label;
+          const svg_icon = member.svg_icon;
+  
+          const row = document.createElement('tr');
+  
+          let admin_tagHTML = ``;
+          let buttonText = isMemberInvited ? "Cancel invitation" : "Remove member";
+  
+          if (member.is_admin) {
+            admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`;
+          }
+  
+          row.innerHTML = `
+            <th scope="row" role="rowheader" data-label="member email">
+              ${member_display} ${admin_tagHTML}
+            </th>
+            <td data-sort-value="${last_active_sort_value}" data-label="last_active">
+              ${last_active_formatted}
+            </td>
+            <td>
+              <a href="${action_url}" class="usa-button usa-button--unstyled text-no-underline margin-right-1">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                  <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
+                </svg>
+                ${action_label} <span class="usa-sr-only">${member_name}</span>
+              </a>
+            </td>
+            <td>
+            <div class="usa-accordion usa-accordion--more-actions">
+              <div class="usa-accordion__heading">
+                <button
+                  type="button"
+                  id="button-toggle-more-options-${member_id}"
+                  class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                  aria-expanded="false"
+                  aria-controls="more-options-${member_id}"
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                  </svg>
+                </button>
+              </div>
+              <div id="more-options-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0 padding-2" hidden>
+                <h2>More options</h2>
+                <a 
+                  role="button" 
+                  id="button-trigger-delete-member-alert-${member_id}"
+                  class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
+                  aria-controls="toggle-delete-member-alert-${member_id}"
+                  data-open-modal
+                >
+                  <span class="text-error">${buttonText}</span> 
+                  <span class="usa-sr-only"> for ${member_name}</span>
+                </a>
+              </div>
+            </div>
+          </td>   
+          `;
+          memberList.appendChild(row);
+        }); // End of forEach
+
+        // Attach click event listener to the button to trigger the modal
+        memberList.addEventListener('click', (event) => {
+          console.log("Event target:", event.target); // Log the event target
+
+          let modalTriggerButton;
+
+          // Check if the clicked element is the modal trigger link
+          if (event.target.tagName === 'A' && event.target.id.startsWith('button-trigger-delete-member-alert-')) {
+            modalTriggerButton = event.target; 
+          } else {
+            // Check if the clicked element is the toggle button
+            if (event.target.tagName === 'BUTTON') {
+              // Find the corresponding modal trigger button within the same accordion
+              const accordionContent = event.target.closest('.usa-accordion');
+              if (accordionContent) {
+                modalTriggerButton = accordionContent.querySelector('a[data-open-modal]');
+              }
+            }
           }
 
-          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+          console.log("Modal Trigger Button:", modalTriggerButton);
 
-          // identify the DOM element where the domain list will be inserted into the DOM
-          const memberList = document.querySelector('.members__table tbody');
-          memberList.innerHTML = '';
+          // If a button is found, check its ID and log it
+          if (modalTriggerButton) {
+            console.log("Button ID:", modalTriggerButton.id);
 
-          const invited = 'Invited';
+            // Check if the ID matches the expected pattern
+            if (modalTriggerButton.id.startsWith('button-trigger-delete-member-alert-')) {
+              event.preventDefault(); // Prevent default anchor behavior
 
-          data.members.forEach(member => {
-            const member_name = member.name;
-            const member_id = member.id;
-            const member_display = member.member_display;
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            
-            // Handle last_active values
-            let last_active = member.last_active;
-            let last_active_formatted = '';
-            let last_active_sort_value = '';
-            // Check if the member is invited
-            let isMemberInvited = last_active === invited;
+              const member_id = modalTriggerButton.id.split('-').pop(); 
+              const buttonText = modalTriggerButton.querySelector('span.text-error').innerText;
+              const member_name = modalTriggerButton.querySelector('span.usa-sr-only').innerText; 
+              console.log(`Modal Triggered: ID=${member_id}, Button Text=${buttonText}, Member Name=${member_name}`);
 
-            // Handle 'Invited' or null/empty values differently from valid dates
-            if (last_active && last_active !== invited) {
-              try {
-                // Try to parse the last_active as a valid date
-                last_active = new Date(last_active);
-                if (!isNaN(last_active)) {
-                  last_active_formatted = last_active.toLocaleDateString('en-US', options);
-                  last_active_sort_value = last_active.getTime();  // For sorting purposes
-                } else {
-                  last_active_formatted='Invalid date'                  
-                }
-              } catch (e) {
-                console.error(`Error parsing date: ${last_active}. Error: ${e}`);
-                last_active_formatted='Invalid date'
-              }
+              this.createModal(member_id, buttonText, member_name);
             } else {
-              // Handle 'Invited' or null
-              last_active = invited;
-              last_active_formatted = invited;
-              last_active_sort_value = invited; // Keep 'Invited' as a sortable string
+              console.warn("Modal trigger button found, but ID does not match.");
             }
-
-            const action_url = member.action_url;
-            const action_label = member.action_label;
-            const svg_icon = member.svg_icon;
-      
-            const row = document.createElement('tr');
-
-            let admin_tagHTML = ``;
-            let buttonText = isMemberInvited ? "Cancel invitation" : "Remove member";
-
-            if (member.is_admin)
-              admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
-          
-            row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="member email">
-                ${member_display} ${admin_tagHTML}
-              </th>
-              <td data-sort-value="${last_active_sort_value}" data-label="last_active">
-                ${last_active_formatted}
-              </td>
-              <td>
-                <a href="${action_url}" class="usa-button usa-button--unstyled text-no-underline margin-right-1">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
-                  </svg>
-                  ${action_label} <span class="usa-sr-only">${member_name}</span>
-                </a>
-              </td>
-              <td>
-                <div class="usa-accordion usa-accordion--more-actions">
-                  <div class="usa-accordion__heading">
-                    <button
-                      type="button"
-                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-                      aria-expanded="false"
-                      aria-controls="more-options-${member_id}"
-                    >
-                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                      </svg>
-                    </button>
-                  </div>
-                  <div id="more-options-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0 padding-2" hidden>
-                    <h2>More options</h2>
-                    <a 
-                      role="button" 
-                      id="button-toggle-delete-member-alert-${member_id}"
-                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
-                      aria-controls="toggle-delete-member-alert-${member_id}"
-                      data-open-modal
-                    >
-                      <span class="text-error">${buttonText}</span> 
-                      <span class="usa-sr-only"> for ${member_name}</span>
-                    </a>
-                  </div>
-                </div>
-              </td>
-            `;
-            memberList.appendChild(row);
-          });
-
-          // Do not scroll on first page load
-          if (scroll)
-            ScrollToElement('class', 'members');
-          this.scrollToTable = true;
-
-          // update pagination
-          this.updatePagination(
-            'member',
-            '#members-pagination',
-            '#members-pagination .usa-pagination__counter',
-            '#members',
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-          );
-          this.currentSortBy = sortBy;
-          this.currentOrder = order;
-          this.currentSearchTerm = searchTerm;
-      })
+          } else {
+            console.warn("Modal trigger button not found."); 
+          }
+        });
+  
+        // Do not scroll on first page load
+        if (scroll) {
+          ScrollToElement('class', 'members');
+        }
+        this.scrollToTable = true;
+  
+        // Update pagination
+        this.updatePagination(
+          'member',
+          '#members-pagination',
+          '#members-pagination .usa-pagination__counter',
+          '#members',
+          data.page,
+          data.num_pages,
+          data.has_previous,
+          data.has_next,
+          data.total,
+        );
+        this.currentSortBy = sortBy;
+        this.currentOrder = order;
+        this.currentSearchTerm = searchTerm;
+      }) // End of fetch .then
       .catch(error => console.error('Error fetching members:', error));
+  
+  } // End of loadTable
+
+  createModal(member_id, buttonText, member_name) {
+    console.log(`Creating modal for ID: ${member_id}, Text: ${buttonText}, Name: ${member_name}`);
+
+    // Create the modal container
+    const modal = document.createElement('div');
+    modal.setAttribute('class', 'usa-modal');
+    modal.setAttribute('id', `modal-${member_id}`);
+    modal.setAttribute('aria-labelledby', `Are you sure you want to ${buttonText.toLowerCase()}?`);
+    modal.setAttribute('aria-describedby', `This action will affect ${member_name}.`);
+    modal.setAttribute('style', 'display: block;'); // Ensure modal is displayed
+
+    // Create the modal content
+    const modalContent = document.createElement('div');
+    modalContent.setAttribute('class', 'modal-content');
+
+    // Create close button
+    const closeButton = document.createElement('span');
+    closeButton.setAttribute('class', 'close-button');
+    closeButton.setAttribute('id', `close-modal-${member_id}`);
+    closeButton.innerText = 'close button inner text'; 
+
+    // Create header
+    const header = document.createElement('h2');
+    header.innerText = buttonText;
+
+    // Create message
+    const message = document.createElement('p');
+    message.innerText = `Are you sure you want to proceed with the action for ${member_name}?`;
+
+    // Create confirm button
+    const confirmButton = document.createElement('button');
+    confirmButton.setAttribute('id', `confirm-${member_id}`);
+    confirmButton.setAttribute('class', 'confirm-button');
+    confirmButton.innerText = 'Confirm';
+
+    // Append elements to modalContent
+    modalContent.appendChild(closeButton);
+    modalContent.appendChild(header);
+    modalContent.appendChild(message);
+    modalContent.appendChild(confirmButton);
+
+    // Append modalContent to modal
+    modal.appendChild(modalContent);
+
+    // Append the modal to the body
+    document.body.appendChild(modal);
+    console.log(`Modal appended to body:`, modal.outerHTML); 
+
+    // Event listener for closing the modal
+    closeButton.addEventListener('click', () => {
+        console.log(`Closing modal for member ID: ${member_id}`);
+        modal.style.display = 'none'; // Hides modal
+        modal.remove(); 
+    });
+
+    // Event listener for confirming action
+    confirmButton.addEventListener('click', () => {
+        console.log(`Confirmed action for member ID: ${member_id}`);
+        // Add logic here
+        modal.remove(); 
+    });
+
   }
-}
+} // End of MembersTable class
 
 
 /**
