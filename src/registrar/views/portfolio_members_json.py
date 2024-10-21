@@ -9,6 +9,8 @@ from django.db.models.functions import Cast
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models import DomainInformation, UserDomainRole
+from .models import User
 
 
 @login_required
@@ -169,3 +171,21 @@ def serialize_members(request, portfolio, item, user):
         "svg_icon": ("visibility" if view_only else "settings"),
     }
     return member_json
+
+
+def get_user_domain_count(request, user_id):
+    """Returns the count of domains associated with the specified user on UserDomainRole or Portfolio"""
+    # Fetch the target user based on the user_id provided
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found."}, status=404)
+
+    portfolio = request.session.get("portfolio")
+
+    if target_user.is_org_user(request) and target_user.has_view_all_domains_portfolio_permission(portfolio):
+        domain_count = DomainInformation.objects.filter(portfolio=portfolio).count()
+    else:
+        domain_count = UserDomainRole.objects.filter(user=target_user).count()
+
+    return JsonResponse({"domain_count": domain_count})

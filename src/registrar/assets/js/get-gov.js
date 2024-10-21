@@ -1943,13 +1943,14 @@ class MembersTable extends LoadTableBase {
             extraActionsHeader.setAttribute('role', 'columnheader');
             extraActionsHeader.setAttribute('class', 'extra-actions-header');
             extraActionsHeader.innerHTML = `
-              <span class="usa-sr-only">Cancel invitation</span>`;
+              <span class="usa-sr-only">Extra Actions</span>`;
             let tableHeaderRow = document.querySelector('#members thead tr');
             tableHeaderRow.appendChild(extraActionsHeader);
           }
 
           data.members.forEach(member => {
             const member_name = member.name;
+            const member_email = member.email;
             const member_display = member.member_display;
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             
@@ -1963,15 +1964,26 @@ class MembersTable extends LoadTableBase {
               const member_id = member.id;
               let isMemberInvited = !last_active || last_active === 'Invited';
               let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
-
-              let modalHeading = 'asdasdasd';
-              let modalDescription = 'asdasdasdasdasd';
+              
+              // TODO: Create a function to fetch how many domains the member MANAGES
+              // Created get_user_domain_count figure out how to call here and maybe view?
+              // let modalHeading = '';
+              // let modalDescription = '';
+              // If member manages 1 or more domains:
+              let modalHeading = `Are you sure you want to delete ${member_email}?`;
+              let modalDescription = `${member_email} current manages COUNTHERE domains in the organization \n
+              Removing them from the organization will remove all of their domains. They will no longer be able to \n
+              access this organization. This action cannot be undone.`;
+              // If member manages no domains:
+              // modalHeading = `Are you sure you want to delete ${member_email}?`;
+              // modalDescription = `They will no longer be able to access this organization. \n
+              // This action cannot be undone.`;
 
               const modalSubmit = `
                 <button type="button"
                 class="usa-button usa-button--secondary usa-modal__submit"
                 data-pk = ${member_id}
-                name="">Proceed</button>
+                name="">Yes, remove from organizaion</button>
               `
 
                 const modal = document.createElement('div');
@@ -1979,7 +1991,7 @@ class MembersTable extends LoadTableBase {
                 modal.setAttribute('id', `toggle-remove-member-${member_id}`);
                 modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
                 modal.setAttribute('aria-describedby', 'Member will be removed');
-                modal.setAttribute('data-force-action', '');
+                modal.setAttribute('data-force-action', ''); 
 
                 modal.innerHTML = `
                   <div class="usa-modal__content">
@@ -2022,7 +2034,6 @@ class MembersTable extends LoadTableBase {
                   </div>
                   `
                   this.tableWrapper.appendChild(modal);
-
 
               kebob = `
                 <a 
@@ -2069,8 +2080,6 @@ class MembersTable extends LoadTableBase {
               `
             }
 
-            
-
             // Handle 'Invited' or null/empty values differently from valid dates
             if (last_active && last_active !== invited) {
               try {
@@ -2098,7 +2107,7 @@ class MembersTable extends LoadTableBase {
             const svg_icon = member.svg_icon;
       
             const row = document.createElement('tr');
-
+            
             let admin_tagHTML = ``;
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
@@ -2142,8 +2151,8 @@ class MembersTable extends LoadTableBase {
                 pageToDisplay--;
               }
               
-              // Use the PK 
-              // and call a separate function that triggers a new backend AJAX call to remove or delete
+              // TODO: Use the PK to call a separate function that triggers a new backend AJAX call 
+              // to delete their UserDomainRoles only for this portfolio + remove their UserPortfolioPermissions
               alert('modal submit')
 
             });

@@ -471,3 +471,11 @@ class User(AbstractUser):
             return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)
+
+    # def get_user_domain_count(self, request):
+    #     """Returns the count of domains associated with this user on UserDomainRole or Portfolio"""
+    #     portfolio = request.session.get("portfolio")
+    #     if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
+    #         return DomainInformation.objects.filter(portfolio=portfolio).count()
+    #     else:
+    #         return UserDomainRole.objects.filter(user=self).count()
