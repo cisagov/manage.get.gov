@@ -1,4 +1,5 @@
 import logging
+import random
 from faker import Faker
 from django.db import transaction
 
@@ -51,23 +52,24 @@ class UserPortfolioPermissionFixture:
 
             user_portfolio_permissions_to_create = []
             for user in users:
-                for portfolio in portfolios:
-                    try:
-                        if not UserPortfolioPermission.objects.filter(user=user, portfolio=portfolio).exists():
-                            user_portfolio_permission = UserPortfolioPermission(
-                                user=user,
-                                portfolio=portfolio,
-                                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                                additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
-                            )
-                            user_portfolio_permissions_to_create.append(user_portfolio_permission)
-                        else:
-                            logger.info(
-                                f"Permission exists for user '{user.username}' "
-                                f"on portfolio '{portfolio.organization_name}'."
-                            )
-                    except Exception as e:
-                        logger.warning(e)
+                # Assign a random portfolio to a user
+                portfolio = random.choice(portfolios)  # nosec
+                try:
+                    if not UserPortfolioPermission.objects.filter(user=user, portfolio=portfolio).exists():
+                        user_portfolio_permission = UserPortfolioPermission(
+                            user=user,
+                            portfolio=portfolio,
+                            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+                        )
+                        user_portfolio_permissions_to_create.append(user_portfolio_permission)
+                    else:
+                        logger.info(
+                            f"Permission exists for user '{user.username}' "
+                            f"on portfolio '{portfolio.organization_name}'."
+                        )
+                except Exception as e:
+                    logger.warning(e)
 
             # Bulk create permissions
             cls._bulk_create_permissions(user_portfolio_permissions_to_create)
