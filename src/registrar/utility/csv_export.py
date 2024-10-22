@@ -1267,11 +1267,11 @@ class DomainRequestExport(BaseExport):
         """
 
         # Handle the federal_type field. Defaults to the wrong format.
-        federal_type = model.get("converted_federal_type")
+        federal_type = model.get("federal_type")
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.get("converted_generic_org_type") or model.get("converted_organization_type")
+        org_type = model.get("generic_org_type") or model.get("organization_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
@@ -1279,7 +1279,7 @@ class DomainRequestExport(BaseExport):
         status_display = DomainRequest.DomainRequestStatus.get_status_label(status) if status else None
 
         # Handle the region field.
-        state_territory = model.get("converted_state_territory")
+        state_territory = model.get("state_territory")
         region = get_region(state_territory) if state_territory else None
 
         # Handle the requested_domain field (add a default if None)
@@ -1319,7 +1319,7 @@ class DomainRequestExport(BaseExport):
             "Other contacts": model.get("all_other_contacts"),
             "Current websites": model.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
-            "Federal agency": model.get("converted_federal_agency__agency"),
+            "Federal agency": model.get("federal_agency__agency"),
             "SO first name": model.get("senior_official__first_name"),
             "SO last name": model.get("senior_official__last_name"),
             "SO email": model.get("senior_official__email"),
@@ -1329,9 +1329,9 @@ class DomainRequestExport(BaseExport):
             "Creator email": model.get("creator__email"),
             "Investigator": model.get("investigator__email"),
             # Untouched fields
-            "Organization name": model.get("converted_organization_name"),
-            "City": model.get("converted_city"),
-            "State/territory": model.get("converted_state_territory"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
             "CISA regional representative": model.get("cisa_representative_email"),
             "Last submitted date": model.get("last_submitted_date"),
