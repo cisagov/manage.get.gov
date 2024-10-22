@@ -1386,7 +1386,7 @@ class DomainRequest(TimeStampedModel):
         return self.city
 
     @property
-    def converted_state_terrority(self):
+    def converted_state_territory(self):
         if self.portfolio:
             return self.portfolio.state_territory
         return self.state_territory

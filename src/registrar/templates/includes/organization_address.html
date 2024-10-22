@@ -12,7 +12,7 @@
         <br />{{ organization.converted_address_line2  }}
     {% endif %}
     {% if  organization.converted_city %}
-        <br />{{ organization.converted_city}}{% if organization.state_territory %},&nbsp;
+        <br />{{ organization.converted_city}}{% if organization.converted_state_territory %},&nbsp;
         {% else %}<br />
         {% endif %}
     {% endif %}
