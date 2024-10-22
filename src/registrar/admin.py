@@ -1701,7 +1701,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "converted_federal_agency",
         "converted_federal_type",
         "converted_city",
-         "converted_state_territory"
+        "converted_state_territory",
     ]
 
     orderable_fk_fields = [

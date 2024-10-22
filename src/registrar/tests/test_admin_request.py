@@ -459,6 +459,7 @@ class TestDomainRequestAdmin(MockEppLib):
         )
 
         # Assert that sorting in reverse works correctly
+        print("working there is a thingy")
         self.test_helper.assert_table_sorted(
             "-13",
             (

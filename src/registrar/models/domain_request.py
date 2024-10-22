@@ -673,7 +673,7 @@ class DomainRequest(TimeStampedModel):
     def send_custom_status_update_email(self, status):
         """Helper function to send out a second status email when the status remains the same,
         but the reason has changed."""
-        
+
         # Currently, we store all this information in three variables.
         # When adding new reasons, this can be a lot to manage so we store it here
         # in a centralized location. However, this may need to change if this scales.

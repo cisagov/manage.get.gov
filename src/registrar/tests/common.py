@@ -193,7 +193,7 @@ class GenericTestHelper(TestCase):
         response = self.admin.changelist_view(dummy_request)
         response.render()  # Render the response before accessing its content
         returned_sort_order = list(response.context_data["cl"].result_list)
-        
+
         self.assertEqual(expected_sort_order, returned_sort_order)
 
     def _mock_user_request_for_factory(self, request):
