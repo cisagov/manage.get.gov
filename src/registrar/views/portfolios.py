@@ -357,10 +357,8 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 
 class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
-    model = UserPortfolioPermission
     template_name = "portfolio_members_add_new.html"
     form_class = portfolioForms.NewMemberForm
-    context_object_name = "userPortfolioPermission"
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""

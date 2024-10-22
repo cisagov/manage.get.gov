@@ -11,6 +11,7 @@
 {% block portfolio_content %}
 
 <!-- Form mesages -->
+{% include "includes/form_errors.html" with form=form %}
 {% block messages %}
   {% include "includes/form_messages.html" %}
 {% endblock messages%}
