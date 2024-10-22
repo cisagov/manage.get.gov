@@ -26,7 +26,7 @@ from registrar.views.report_views import (
 # --jsons
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
-from registrar.views.portfolio_members_json import get_portfolio_members_json
+from registrar.views.portfolio_members_json import get_portfolio_members_json, get_user_domain_count
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
@@ -329,6 +329,7 @@ urlpatterns = [
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
     path("get-portfolio-members-json/", get_portfolio_members_json, name="get_portfolio_members_json"),
+    # path("user/<int:user_id>/domain-count/", get_user_domain_count, name='get_user_domain_count'),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

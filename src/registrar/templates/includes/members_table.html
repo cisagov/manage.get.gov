@@ -4,6 +4,7 @@
 <span id="portfolio-js-value" class="display-none" data-portfolio="{{ portfolio.id }}" data-has-edit-permission="{{ has_edit_members_portfolio_permission }}"></span>
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_portfolio_members_json' as url %}
+<!-- {% url 'get_user_domain_count' as url %} -->
 <span id="get_members_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined members margin-top-0 section-outlined--border-base-light" id="members">
   <div class="section-outlined__header margin-bottom-3 grid-row">
