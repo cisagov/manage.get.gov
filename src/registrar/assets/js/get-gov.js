@@ -1966,7 +1966,7 @@ class MembersTable extends LoadTableBase {
               let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
               
               // TODO: Create a function to fetch how many domains the member MANAGES
-              // Created get_user_domain_count figure out how to call here and maybe view?
+              // Created get_user_domain_count figure out how to call here and maybe
               // let modalHeading = '';
               // let modalDescription = '';
               // If member manages 1 or more domains:
@@ -1979,11 +1979,11 @@ class MembersTable extends LoadTableBase {
               // modalDescription = `They will no longer be able to access this organization. \n
               // This action cannot be undone.`;
 
-              const modalSubmit = `
+              const modalSubmit = g`
                 <button type="button"
                 class="usa-button usa-button--secondary usa-modal__submit"
                 data-pk = ${member_id}
-                name="">Yes, remove from organizaion</button>
+                name="delete-member">Yes, remove from organizaion</button>
               `
 
                 const modal = document.createElement('div');
@@ -2180,7 +2180,7 @@ class MembersTable extends LoadTableBase {
           this.currentSearchTerm = searchTerm;
       })
       .catch(error => console.error('Error fetching members:', error));
-  }
+    }
 }
 
 

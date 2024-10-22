@@ -9,8 +9,9 @@ from django.db.models.functions import Cast
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.models import DomainInformation, UserDomainRole
-from .models import User
+
+# from registrar.models import DomainInformation, UserDomainRole
+# from .models import User
 
 
 @login_required
@@ -154,6 +155,15 @@ def serialize_members(request, portfolio, item, user):
     )
 
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
+
+    # We only need to call user_portfolio_permissions.get_managed_domains_count()
+    # What does it do: counts of domain by a specific user for the organization it's in
+
+    # For in progress requests: user.get_active_requests_count()
+    # If they're is_admin AND user_portfolio_permissions.get_managed_domains_count() == 1
+    # Portfolio == Organization
+    # Question: Can a ORGANIZATION_ADMIN also be a SUBORGANIZATION_ADMIN?
+    # Question: Does SUBORGANIZATION_ADMIN exist?
 
     is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
     action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
