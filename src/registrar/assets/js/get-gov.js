@@ -912,6 +912,15 @@ function setupUrbanizationToggle(stateTerritoryField) {
   HookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null)
 })();
 
+
+/**
+ * An IIFE that listens to the yes/no radio buttons on the anything else form and toggles form field visibility accordingly
+ *
+ */
+(function newMemberFormListener() {
+  HookupYesNoListener("new_member-permission_level",'new-member-admin-permissions', 'new-member-basic-permissions')
+})();
+
 /**
  * An IIFE that disables the delete buttons on nameserver forms on page load if < 3 forms
  *

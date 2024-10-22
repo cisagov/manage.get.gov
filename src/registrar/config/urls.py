@@ -86,11 +86,11 @@ urlpatterns = [
         views.PortfolioMembersView.as_view(),
         name="members",
     ),
-    # path(
-    #     "no-organization-members/",
-    #     views.PortfolioNoMembersView.as_view(),
-    #     name="no-portfolio-members",
-    # ),
+    path(
+        "members/new-member/",
+        views.NewMemberView.as_view(),
+        name="new-member",
+    ),
     path(
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
