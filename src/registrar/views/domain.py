@@ -5,6 +5,7 @@ authorized users can see information on a domain, every view here should
 inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
 """
 
+from datetime import date
 import logging
 
 from django.contrib import messages
@@ -21,8 +22,10 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
     DomainInvitation,
+    PortfolioInvitation,
     User,
     UserDomainRole,
+    UserPortfolioPermission,
     PublicContact,
 )
 from registrar.utility.enums import DefaultEmail
@@ -35,9 +38,11 @@ from registrar.utility.errors import (
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
+    OutsideOrgMemberError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
+from registrar.utility.waffle import flag_is_active_for_user
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -148,6 +153,103 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         return current_domain_info
 
+    def send_update_notification(self, form, force_send=False):
+        """Send a notification to all domain managers that an update has occured
+        for a single domain. Uses update_to_approved_domain.txt template.
+
+        If there are no changes to the form, emails will NOT be sent unless force_send
+        is set to True.
+        """
+
+        # send notification email for changes to any of these forms
+        form_label_dict = {
+            DomainSecurityEmailForm: "Security email",
+            DomainDnssecForm: "DNSSEC / DS Data",
+            DomainDsdataFormset: "DNSSEC / DS Data",
+            DomainOrgNameAddressForm: "Organization details",
+            SeniorOfficialContactForm: "Senior official",
+            NameserverFormset: "Name servers",
+        }
+
+        # forms of these types should not send notifications if they're part of a portfolio/Organization
+        check_for_portfolio = {
+            DomainOrgNameAddressForm,
+            SeniorOfficialContactForm,
+        }
+
+        is_analyst_action = "analyst_action" in self.session and "analyst_action_location" in self.session
+
+        should_notify = False
+
+        if form.__class__ in form_label_dict:
+            if is_analyst_action:
+                logger.debug("No notification sent: Action was conducted by an analyst")
+            else:
+                # these types of forms can cause notifications
+                should_notify = True
+                if form.__class__ in check_for_portfolio:
+                    # some forms shouldn't cause notifications if they are in a portfolio
+                    info = self.get_domain_info_from_domain()
+                    if not info or info.portfolio:
+                        logger.debug("No notification sent: Domain is part of a portfolio")
+                        should_notify = False
+        else:
+            # don't notify for any other types of forms
+            should_notify = False
+        if should_notify and (form.has_changed() or force_send):
+            context = {
+                "domain": self.object.name,
+                "user": self.request.user,
+                "date": date.today(),
+                "changes": form_label_dict[form.__class__],
+            }
+            self.email_domain_managers(
+                self.object,
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                context,
+            )
+        else:
+            logger.info(f"No notification sent for {form.__class__}.")
+
+    def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
+        """Send a single email built from a template to all managers for a given domain.
+
+        template_name and subject_template_name are relative to the same template
+        context as Django's HTML templates. context gives additional information
+        that the template may use.
+
+        context is a dictionary containing any information needed to fill in values
+        in the provided template, exactly the same as with send_templated_email.
+
+        Will log a warning if the email fails to send for any reason, but will not raise an error.
+        """
+        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
+            "user", flat=True
+        )
+        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
+        try:
+            # Remove the current user so they aren't CC'ed, since they will be the "to_address"
+            emails.remove(self.request.user.email)  # type: ignore
+        except ValueError:
+            pass
+
+        try:
+            send_templated_email(
+                template,
+                subject_template,
+                to_address=self.request.user.email,  # type: ignore
+                context=context,
+                cc_addresses=emails,
+            )
+        except EmailSendingError:
+            logger.warning(
+                "Could not sent notification email to %s for domain %s",
+                emails,
+                domain.name,
+                exc_info=True,
+            )
+
 
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
@@ -223,6 +325,8 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
+        self.send_update_notification(form)
+
         form.save()
 
         messages.success(self.request, "The organization information for this domain has been updated.")
@@ -326,6 +430,8 @@ class DomainSeniorOfficialView(DomainFormBaseView):
         form.set_domain_info(self.object.domain_info)
         form.save()
 
+        self.send_update_notification(form)
+
         messages.success(self.request, "The senior official for this domain has been updated.")
 
         # superclass has the redirect
@@ -404,19 +510,25 @@ class DomainNameserversView(DomainFormBaseView):
         self._get_domain(request)
         formset = self.get_form()
 
+        logger.debug("got formet")
+
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
             return HttpResponseRedirect(url)
 
         if formset.is_valid():
+            logger.debug("formset is valid")
             return self.form_valid(formset)
         else:
+            logger.debug("formset is invalid")
+            logger.debug(formset.errors)
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
         self.request.session["nameservers_form_domain"] = self.object
+        initial_state = self.object.state
 
         # Set the nameservers from the formset
         nameservers = []
@@ -438,7 +550,6 @@ class DomainNameserversView(DomainFormBaseView):
             except KeyError:
                 # no server information in this field, skip it
                 pass
-
         try:
             self.object.nameservers = nameservers
         except NameserverError as Err:
@@ -458,6 +569,8 @@ class DomainNameserversView(DomainFormBaseView):
                 messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
                 logger.error(f"Registry error: {Err}")
         else:
+            if initial_state == Domain.State.READY:
+                self.send_update_notification(formset)
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
@@ -510,7 +623,8 @@ class DomainDNSSECView(DomainFormBaseView):
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
                     messages.error(self.request, errmsg)
-
+                else:
+                    self.send_update_notification(form, force_send=True)
         return self.form_valid(form)
 
 
@@ -634,6 +748,8 @@ class DomainDsDataView(DomainFormBaseView):
                 logger.error(f"Registry error: {err}")
             return self.form_invalid(formset)
         else:
+            self.send_update_notification(formset)
+
             messages.success(self.request, "The DS data records for this domain have been updated.")
             # superclass has the redirect
             return super().form_valid(formset)
@@ -700,7 +816,11 @@ class DomainSecurityEmailView(DomainFormBaseView):
             messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
+            self.send_update_notification(form)
             messages.success(self.request, "The security email for this domain has been updated.")
+
+            # superclass has the redirect
+            return super().form_valid(form)
 
         # superclass has the redirect
         return redirect(self.get_success_url())
@@ -778,7 +898,18 @@ class DomainAddUserView(DomainFormBaseView):
         """Get an absolute URL for this domain."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
-    def _send_domain_invitation_email(self, email: str, requestor: User, add_success=True):
+    def _is_member_of_different_org(self, email, requestor, requested_user):
+        """Verifies if an email belongs to a different organization as a member or invited member."""
+        # Check if user is a already member of a different organization than the requestor's org
+        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
+        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+        existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+
+        return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio != requestor_org
+        )
+
+    def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
         email: string- email to send to
@@ -802,6 +933,13 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
             return None
+
+        # Check is user is a member or invited member of a different org from this domain's org
+        if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
+            email, requestor, requested_user
+        ):
+            add_success = False
+            raise OutsideOrgMemberError
 
         # Check to see if an invite has already been sent
         try:
@@ -859,16 +997,21 @@ class DomainAddUserView(DomainFormBaseView):
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+        email_success = False
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
+            email_success = True
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
             try:
-                self._send_domain_invitation_email(requested_email, requestor, add_success=False)
+                self._send_domain_invitation_email(
+                    requested_email, requestor, requested_user=requested_user, add_success=False
+                )
+                email_success = True
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -876,6 +1019,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+                email_success = True
+            except OutsideOrgMemberError:
+                logger.warn(
+                    "Could not send email. Can not invite member of a .gov organization to a different organization.",
+                    self.object,
+                    exc_info=True,
+                )
+                messages.error(
+                    self.request,
+                    f"{requested_email} is already a member of another .gov organization.",
+                )
             except Exception:
                 logger.warn(
                     "Could not send email invitation (Other Exception)",
@@ -883,17 +1037,17 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
+        if email_success:
+            try:
+                UserDomainRole.objects.create(
+                    user=requested_user,
+                    domain=self.object,
+                    role=UserDomainRole.Roles.MANAGER,
+                )
+                messages.success(self.request, f"Added user {requested_email}.")
+            except IntegrityError:
+                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
 
-        try:
-            UserDomainRole.objects.create(
-                user=requested_user,
-                domain=self.object,
-                role=UserDomainRole.Roles.MANAGER,
-            )
-        except IntegrityError:
-            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-        else:
-            messages.success(self.request, f"Added user {requested_email}.")
         return redirect(self.get_success_url())
 
 

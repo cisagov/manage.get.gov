@@ -4,11 +4,31 @@
 {% block title %}Add a domain manager | {% endblock %}
 
 {% block domain_content %}
+  {% block breadcrumb %}
+    {% url 'domain-users' pk=domain.id as url %}
+    <nav class="usa-breadcrumb padding-top-0" aria-label="Domain manager breadcrumb">
+      <ol class="usa-breadcrumb__list">
+        <li class="usa-breadcrumb__list-item">
+          <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain managers</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+          <span>Add a domain manager</span>
+        </li>
+      </ol>
+    </nav>
+  {% endblock breadcrumb %}
   <h1>Add a domain manager</h1>
-
-  <p>You can add another user to help manage your domain. They will need to sign
-  in to the .gov registrar with their Login.gov account.
+{% if has_organization_feature_flag %}
+  <p>
+    You can add another user to help manage your domain. Users can only be a member of one .gov organization, 
+    and they'll need to sign in with their Login.gov account.
   </p>
+{% else %}
+ <p>
+    You can add another user to help manage your domain. They will need to sign in to the .gov registrar with 
+    their Login.gov account.
+ </p>
+{% endif %}
 
   <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}

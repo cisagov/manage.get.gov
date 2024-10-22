@@ -5,9 +5,15 @@ from django import forms
 from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
 
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-
-from ..models import DomainInformation, Portfolio, SeniorOfficial, User
+from registrar.models import (
+    PortfolioInvitation,
+    UserPortfolioPermission,
+    DomainInformation,
+    Portfolio,
+    SeniorOfficial,
+    User,
+)
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 logger = logging.getLogger(__name__)
 
@@ -102,19 +108,86 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data = super().clean()
         cleaned_data.pop("full_name", None)
         return cleaned_data
-    
+
+
+class PortfolioMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio member.
+    """
+
+    roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Roles",
+    )
+
+    additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Additional Permissions",
+    )
+
+    class Meta:
+        model = UserPortfolioPermission
+        fields = [
+            "roles",
+            "additional_permissions",
+        ]
+
+
+class PortfolioInvitedMemberForm(forms.ModelForm):
+    """
+    Form for updating a portfolio invited member.
+    """
+
+    roles = forms.MultipleChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Roles",
+    )
+
+    additional_permissions = forms.MultipleChoiceField(
+        choices=UserPortfolioPermissionChoices.choices,
+        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
+        required=False,
+        label="Additional Permissions",
+    )
+
+    class Meta:
+        model = PortfolioInvitation
+        fields = [
+            "roles",
+            "additional_permissions",
+        ]
+
 
 class NewMemberForm(forms.ModelForm):
     admin_org_domain_request_permissions = forms.ChoiceField(
         label="Select permission",
-        choices=[('view_only', 'View all requests'), ('view_and_create', 'View all requests plus create requests')], 
-        widget=forms.RadioSelect, 
-        required=True)
+        choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
+        widget=forms.RadioSelect,
+        required=True,
+    )
     admin_org_members_permissions = forms.ChoiceField(
-        label="Select permission", choices=[('view_only', 'View all members'), ('view_and_create', 'View all members plus manage members')], widget=forms.RadioSelect, required=True)
+        label="Select permission",
+        choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
+        widget=forms.RadioSelect,
+        required=True,
+    )
     basic_org_domain_request_permissions = forms.ChoiceField(
-        label="Select permission", choices=[('view_only', 'View all requests'), ('view_and_create', 'View all requests plus create requests'),('no_access', 'No access')], widget=forms.RadioSelect, required=True)
-    
+        label="Select permission",
+        choices=[
+            ("view_only", "View all requests"),
+            ("view_and_create", "View all requests plus create requests"),
+            ("no_access", "No access"),
+        ],
+        widget=forms.RadioSelect,
+        required=True,
+    )
+
     email = forms.EmailField(
         label="Enter the email of the member you'd like to invite",
         max_length=None,
@@ -128,12 +201,12 @@ class NewMemberForm(forms.ModelForm):
                 message="Response must be less than 320 characters.",
             )
         ],
-        required=True
+        required=True,
     )
 
     class Meta:
         model = User
-        fields = ['email'] #, 'grade', 'sport']
+        fields = ["email"]
 
     def clean(self):
         cleaned_data = super().clean()
@@ -144,23 +217,10 @@ class NewMemberForm(forms.ModelForm):
             cleaned_data["email"] = email_value.lower()
 
         # Check for an existing user (if there isn't any, send an invite)
-        if email_value:
-            try:
-                existingUser = User.objects.get(email=email_value)
-            except existingUser.DoesNotExist:
-                raise forms.ValidationError("User with this email does not exist.")
-            
-        # grade = cleaned_data.get('grade')
-        # sport = cleaned_data.get('sport')
-
-        # # Handle sport options based on grade
-        # if grade == 'Junior':
-        #     self.fields['sport'].choices = [('Basketball', 'Basketball'), ('Football', 'Football')]
-        # elif grade == 'Varsity':
-        #     self.fields['sport'].choices = [('Swimming', 'Swimming'), ('Tennis', 'Tennis')]
-
-        # # Ensure both sport and grade are selected and valid
-        # if not grade or not sport:
-        #     raise forms.ValidationError("Both grade and sport must be selected.")
+        # if email_value:
+        #     try:
+        #         existingUser = User.objects.get(email=email_value)
+        #     except User.DoesNotExist:
+        #         raise forms.ValidationError("User with this email does not exist.")
 
         return cleaned_data

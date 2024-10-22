@@ -137,6 +137,20 @@ class UserFixture:
             "email": "annagingle@truss.works",
             "title": "Sweetwater sailor",
         },
+        {
+            "username": "cce058bc-9e52-456b-99ff-f5775c481c8f",
+            "first_name": "Elizabeth",
+            "last_name": "Liao",
+            "email": "elizabeth.liao@cisa.dhs.gov",
+            "title": "Software Engineer",
+        },
+        {
+            "username": "c9c64cd5-bc76-45ef-85cd-4f6eefa9e998",
+            "first_name": "Samiyah",
+            "last_name": "Key",
+            "email": "skey@truss.works",
+            "title": "Designer",
+        },
     ]
 
     STAFF = [
@@ -230,6 +244,18 @@ class UserFixture:
             "first_name": "Anna-Analyst",
             "last_name": "Gingle-Analyst",
             "email": "annagingle+analyst@truss.works",
+        },
+        {
+            "username": "373f7073-f90b-49d8-8da2-459246fa33bd",
+            "first_name": "Elizabeth-Analyst",
+            "last_name": "Liao-Analyst",
+            "email": "elizabeth.liao@gwe.cisa.dhs.gov",
+        },
+        {
+            "username": "ee1e68da-41a5-47f7-949b-d8a4e9e2b9d2",
+            "first_name": "Samiyah-Analyst",
+            "last_name": "Key-Analyst",
+            "email": "skey+1@truss.works",
         },
     ]
 

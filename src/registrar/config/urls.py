@@ -87,6 +87,26 @@ urlpatterns = [
         name="members",
     ),
     path(
+        "member/<int:pk>",
+        views.PortfolioMemberView.as_view(),
+        name="member",
+    ),
+    path(
+        "member/<int:pk>/permissions",
+        views.PortfolioMemberEditView.as_view(),
+        name="member-permissions",
+    ),
+    path(
+        "invitedmember/<int:pk>",
+        views.PortfolioInvitedMemberView.as_view(),
+        name="invitedmember",
+    ),
+    path(
+        "invitedmember/<int:pk>/permissions",
+        views.PortfolioInvitedMemberEditView.as_view(),
+        name="invitedmember-permissions",
+    ),
+    path(
         "members/new-member/",
         views.NewMemberView.as_view(),
         name="new-member",
