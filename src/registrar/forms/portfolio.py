@@ -135,10 +135,6 @@ class NewMemberForm(forms.ModelForm):
         model = User
         fields = ['email'] #, 'grade', 'sport']
 
-    def __init__(self, *args, **kwargs):
-        super(NewMemberForm, self).__init__(*args, **kwargs)
-        # self.fields['sport'].choices = []
-
     def clean(self):
         cleaned_data = super().clean()
 

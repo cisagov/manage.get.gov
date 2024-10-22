@@ -9,10 +9,13 @@
 {% endblock %}
 
 {% block portfolio_content %}
+
+<!-- Form mesages -->
 {% block messages %}
   {% include "includes/form_messages.html" %}
 {% endblock messages%}
 
+<!-- Navigation breadcrumbs -->
 <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
   <ol class="usa-breadcrumb__list">
     <li class="usa-breadcrumb__list-item">
@@ -24,14 +27,14 @@
   </ol>
 </nav>
 
+<!-- Page header -->
 {% block new_member_header %}
 <h1>Add a new member</h1>
 {% endblock new_member_header %}
 
 {% include "includes/required_fields.html" %}
 
-{% block form_fields %}
-<form class="usa-form usa-form--large" method="post" id="form-container" novalidate="">
+<form class="usa-form usa-form--large" method="post" novalidate>
 <fieldset class="usa-fieldset margin-top-2">
   <legend>
     <h2>Email</h2>
@@ -45,12 +48,12 @@
     <!-- {{ form.as_p }} -->
 </fieldset>
 
+<!-- Member access radio buttons (Toggles other sections) -->
 <fieldset class="usa-fieldset margin-top-2">
   <legend>
     <h2>Member Access</h2>
   </legend>
 
-  <!-- Member Access Radio Form (Toggles other sections) -->
   <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
   <div class="usa-radio">
     <input type="radio" name="new_member-permission_level" class="usa-radio__input  usa-radio__input--tile" value="True" id="id_new_member-permission_level_0" required="" checked="">
@@ -70,8 +73,7 @@
   </div>
 </fieldset>
 
-
-<!-- Admin Access form -->
+<!-- Admin access form -->
 <div id="new-member-admin-permissions" class="margin-top-2">
   <legend>
     <h2>Admin access permissions</h2>
@@ -89,7 +91,7 @@
   {% endwith %}
 </div>
 
-<!-- TODO: Basic Access form -->
+<!-- Basic access form -->
 <div id="new-member-basic-permissions" class="margin-top-2">
   <legend>
     <h2>Basic member permissions</h2>
@@ -99,6 +101,7 @@
   
 </div>
 
+<!-- Submit/cancel buttons -->
 <div class="margin-top-3">
   <button
   href="/members/"
@@ -109,9 +112,8 @@
 </button>
   <button type="submit" class="usa-button">Invite Member</button>
 </div>
-
 </form>
-{% endblock form_fields%}
+
 {% endblock portfolio_content%}
 
 

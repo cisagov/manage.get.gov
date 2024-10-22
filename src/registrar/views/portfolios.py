@@ -233,6 +233,32 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
+
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests to process form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Handle the case when the form is valid."""
+        # self.object = form.save(commit=False)
+        # self.object.creator = self.request.user
+        # self.object.save()
+        # messages.success(self.request, "The organization information for this portfolio has been updated.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle the case when the form is invalid."""
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        """Redirect to the overview page for the portfolio."""
+        return reverse("members")
+
     
     ##########################################
     # TODO: future ticket 
