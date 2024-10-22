@@ -1370,13 +1370,13 @@ class DomainRequest(TimeStampedModel):
     @property
     def converted_address_line1(self):
         if self.portfolio:
-            return self.portfolio.address_line_1
+            return self.portfolio.address_line1
         return self.address_line1
 
     @property
     def converted_address_line2(self):
         if self.portfolio:
-            return self.portfolio.address_line_2
+            return self.portfolio.address_line2
         return self.address_line2
 
     @property
