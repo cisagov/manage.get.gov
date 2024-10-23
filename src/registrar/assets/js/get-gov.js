@@ -2077,6 +2077,7 @@ class MembersTable extends LoadTableBase {
      */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
+    console.log("in loadTable");
       // --------- SEARCH
       let searchParams = new URLSearchParams(
         {
@@ -2124,9 +2125,6 @@ class MembersTable extends LoadTableBase {
           memberList.innerHTML = '';
 
           const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
-          const invited = 'Invited';
-          const invalid_date = 'Invalid date';
-
 
           let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
 
@@ -2150,7 +2148,8 @@ class MembersTable extends LoadTableBase {
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
-            
+            const last_active = this.handleLastActive(member.last_active);
+
             let kebob = '';
 
             if (hasEditPermission) {
@@ -2172,7 +2171,7 @@ class MembersTable extends LoadTableBase {
               // modalDescription = `They will no longer be able to access this organization. \n
               // This action cannot be undone.`;
 
-              const modalSubmit = g`
+              const modalSubmit = `
                 <button type="button"
                 class="usa-button usa-button--secondary usa-modal__submit"
                 data-pk = ${member_id}
@@ -2273,7 +2272,6 @@ class MembersTable extends LoadTableBase {
               `
             }
 
-            const last_active = this.handleLastActive(member.last_active);
 
             const action_url = member.action_url;
             const action_label = member.action_label;
