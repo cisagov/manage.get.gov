@@ -246,9 +246,7 @@ def is_members_subpage(path):
     """Checks if the given page is a subpage of members.
     Takes a path name, like '/organization/'."""
     # Since our pages aren't unified under a common path, we need this approach for now.
-    url_names = [
-        "members",
-    ]
+    url_names = ["members", "member", "member-permissions", "invitedmember", "invitedmember-permissions"]
     return get_url_name(path) in url_names
 
 
