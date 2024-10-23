@@ -1695,13 +1695,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "last_status_update",
         "status",
         "custom_election_board",
-        "investigator",
         "converted_generic_org_type",
         "converted_organization_name",
         "converted_federal_agency",
         "converted_federal_type",
         "converted_city",
         "converted_state_territory",
+        "investigator",
     ]
 
     orderable_fk_fields = [

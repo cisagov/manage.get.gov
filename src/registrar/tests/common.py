@@ -178,6 +178,7 @@ class GenericTestHelper(TestCase):
         """
         # 'o' is a search param defined by the current index position in the
         # table, plus one.
+        print(" we are in table sorted right now")
         dummy_request = self.factory.get(
             self.url,
             {"o": o_index},
@@ -186,14 +187,30 @@ class GenericTestHelper(TestCase):
 
         # Mock a user request
         dummy_request = self._mock_user_request_for_factory(dummy_request)
-
+        print("sort fields", sort_fields)
         expected_sort_order = list(self.model.objects.order_by(*sort_fields))
-
+        print("this is the expected sort order", expected_sort_order)
         # Use changelist_view to get the sorted queryset
         response = self.admin.changelist_view(dummy_request)
+        print("Response from get request from changelist", response)
+        print("rendering content", response.render())
         response.render()  # Render the response before accessing its content
         returned_sort_order = list(response.context_data["cl"].result_list)
+        print("returned sort order", returned_sort_order)
+        print("expected sort order", expected_sort_order)
+        print("length of expected", len(expected_sort_order))
+        print("lenght of returned", len(returned_sort_order))
 
+        print("expected sort order dict")
+        for obj in expected_sort_order:
+            print(obj.__dict__)
+            print(dir(obj))
+
+        print("returned sort order dict")
+        for obj in returned_sort_order:
+            print(obj.__dict__)
+            print(dir(obj))
+        
         self.assertEqual(expected_sort_order, returned_sort_order)
 
     def _mock_user_request_for_factory(self, request):
@@ -201,6 +218,7 @@ class GenericTestHelper(TestCase):
         middleware = SessionMiddleware(lambda req: req)
         middleware.process_request(request)
         request.session.save()
+        print(" we are in mock user request for factory, here is the returned requset", request)
         return request
 
     def get_table_delete_confirmation_page(self, selected_across: str, index: str):
