@@ -1748,6 +1748,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
+                    "requested_suborganization", 
+                    "suborganization_city", 
+                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
