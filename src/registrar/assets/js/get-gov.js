@@ -2065,6 +2065,130 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
+  generateKebob(member, hasEditPermission, member_name, last_active) {
+    if (!hasEditPermission) return '';
+
+    const member_email = member.email;
+
+    const member_id = member.id;
+    let isMemberInvited = !last_active || last_active === 'Invited';
+    let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
+    
+    // TODO: Create a function to fetch how many domains the member MANAGES
+    // Created get_user_domain_count figure out how to call here and maybe
+    // let modalHeading = '';
+    // let modalDescription = '';
+    // If member manages 1 or more domains:
+    let modalHeading = `Are you sure you want to delete ${member_email}?`;
+    let modalDescription = `${member_email} current manages COUNTHERE domains in the organization \n
+    Removing them from the organization will remove all of their domains. They will no longer be able to \n
+    access this organization. This action cannot be undone.`;
+    // If member manages no domains:
+    // modalHeading = `Are you sure you want to delete ${member_email}?`;
+    // modalDescription = `They will no longer be able to access this organization. \n
+    // This action cannot be undone.`;
+
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${member_id}
+      name="delete-member">Yes, remove from organizaion</button>
+    `
+
+      const modal = document.createElement('div');
+      modal.setAttribute('class', 'usa-modal');
+      modal.setAttribute('id', `toggle-remove-member-${member_id}`);
+      modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+      modal.setAttribute('aria-describedby', 'Member will be removed');
+      modal.setAttribute('data-force-action', ''); 
+
+      modal.innerHTML = `
+        <div class="usa-modal__content">
+          <div class="usa-modal__main">
+            <h2 class="usa-modal__heading" id="modal-1-heading">
+              ${modalHeading}
+            </h2>
+            <div class="usa-prose">
+              <p id="modal-1-description">
+                ${modalDescription}
+              </p>
+            </div>
+            <div class="usa-modal__footer">
+                <ul class="usa-button-group">
+                  <li class="usa-button-group__item">
+                    ${modalSubmit}
+                  </li>      
+                  <li class="usa-button-group__item">
+                      <button
+                          type="button"
+                          class="usa-button usa-button--unstyled padding-105 text-center"
+                          data-close-modal
+                      >
+                          Cancel
+                      </button>
+                  </li>
+                </ul>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+          >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+              <use xlink:href="/public/img/sprite.svg#close"></use>
+            </svg>
+          </button>
+        </div>
+        `
+        this.tableWrapper.appendChild(modal);
+
+    return `
+      <a 
+        role="button" 
+        id="button-trigger-remove-member-${member_id}"
+        class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
+        aria-controls="toggle-remove-member-${member_id}"
+        data-open-modal
+      >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="/public/img/sprite.svg#delete"></use>
+        </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
+      </a>
+
+      <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+        <div class="usa-accordion__heading">
+          <button
+            type="button"
+            id="button-toggle-more-actions-${member_id}"
+            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+            aria-expanded="false"
+            aria-controls="more-actions-${member_id}"
+          >
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="more-actions-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+          <h2>More options</h2>
+          <a 
+            role="button" 
+            id="button-trigger-remove-member-${member_id}"
+            href="#toggle-remove-member-${member_id}"
+            class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+            aria-controls="toggle-remove-member-${member_id}"
+            data-open-modal
+          >
+            ${cancelInvitationButton}
+            <span class="usa-sr-only">for ${member_name}</span>
+          </a>
+        </div>
+      </div>
+    `      
+  }
+
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -2142,7 +2266,6 @@ class MembersTable extends LoadTableBase {
           data.members.forEach(member => {
             const member_id = member.source + member.id;
             const member_name = member.name;
-            const member_email = member.email;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
             const domain_urls = member.domain_urls;
@@ -2150,128 +2273,9 @@ class MembersTable extends LoadTableBase {
             const num_domains = domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
 
-            let kebob = '';
+            const kebob = this.generateKebob(member, hasEditPermission, member_name, last_active);
 
-            if (hasEditPermission) {
-              const member_id = member.id;
-              let isMemberInvited = !last_active || last_active === 'Invited';
-              let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
-              
-              // TODO: Create a function to fetch how many domains the member MANAGES
-              // Created get_user_domain_count figure out how to call here and maybe
-              // let modalHeading = '';
-              // let modalDescription = '';
-              // If member manages 1 or more domains:
-              let modalHeading = `Are you sure you want to delete ${member_email}?`;
-              let modalDescription = `${member_email} current manages COUNTHERE domains in the organization \n
-              Removing them from the organization will remove all of their domains. They will no longer be able to \n
-              access this organization. This action cannot be undone.`;
-              // If member manages no domains:
-              // modalHeading = `Are you sure you want to delete ${member_email}?`;
-              // modalDescription = `They will no longer be able to access this organization. \n
-              // This action cannot be undone.`;
-
-              const modalSubmit = `
-                <button type="button"
-                class="usa-button usa-button--secondary usa-modal__submit"
-                data-pk = ${member_id}
-                name="delete-member">Yes, remove from organizaion</button>
-              `
-
-                const modal = document.createElement('div');
-                modal.setAttribute('class', 'usa-modal');
-                modal.setAttribute('id', `toggle-remove-member-${member_id}`);
-                modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-                modal.setAttribute('aria-describedby', 'Member will be removed');
-                modal.setAttribute('data-force-action', ''); 
-
-                modal.innerHTML = `
-                  <div class="usa-modal__content">
-                    <div class="usa-modal__main">
-                      <h2 class="usa-modal__heading" id="modal-1-heading">
-                        ${modalHeading}
-                      </h2>
-                      <div class="usa-prose">
-                        <p id="modal-1-description">
-                          ${modalDescription}
-                        </p>
-                      </div>
-                      <div class="usa-modal__footer">
-                          <ul class="usa-button-group">
-                            <li class="usa-button-group__item">
-                              ${modalSubmit}
-                            </li>      
-                            <li class="usa-button-group__item">
-                                <button
-                                    type="button"
-                                    class="usa-button usa-button--unstyled padding-105 text-center"
-                                    data-close-modal
-                                >
-                                    Cancel
-                                </button>
-                            </li>
-                          </ul>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="usa-button usa-modal__close"
-                      aria-label="Close this window"
-                      data-close-modal
-                    >
-                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                        <use xlink:href="/public/img/sprite.svg#close"></use>
-                      </svg>
-                    </button>
-                  </div>
-                  `
-                  this.tableWrapper.appendChild(modal);
-
-              kebob = `
-                <a 
-                  role="button" 
-                  id="button-trigger-remove-member-${member_id}"
-                  class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
-                  aria-controls="toggle-remove-member-${member_id}"
-                  data-open-modal
-                >
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#delete"></use>
-                  </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
-                </a>
-
-                <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                  <div class="usa-accordion__heading">
-                    <button
-                      type="button"
-                      id="button-toggle-more-actions-${member_id}"
-                      class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-                      aria-expanded="false"
-                      aria-controls="more-actions-${member_id}"
-                    >
-                      <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                        <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                      </svg>
-                    </button>
-                  </div>
-                  <div id="more-actions-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
-                    <h2>More options</h2>
-                    <a 
-                      role="button" 
-                      id="button-trigger-remove-member-${member_id}"
-                      href="#toggle-remove-member-${member_id}"
-                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-                      aria-controls="toggle-remove-member-${member_id}"
-                      data-open-modal
-                    >
-                      ${cancelInvitationButton}
-                      <span class="usa-sr-only">for ${member_name}</span>
-                    </a>
-                  </div>
-                </div>
-              `
-            }
-
+            // console.log("kebob", kebob)
 
             const action_url = member.action_url;
             const action_label = member.action_label;
