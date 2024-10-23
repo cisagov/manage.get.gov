@@ -138,14 +138,14 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         actual_roles = {role for member in data["members"] for role in member["roles"]}
         self.assertEqual(expected_roles, actual_roles)
 
+        # Assert that the expected additional permissions are in the actual entire permissions list
         expected_additional_permissions = {
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
         }
-        actual_additional_permissions = {
-            permission for member in data["members"] for permission in member["permissions"]
-        }
-        self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
+        # actual_permissions includes additional permissions as well as permissions from roles
+        actual_permissions = {permission for member in data["members"] for permission in member["permissions"]}
+        self.assertTrue(expected_additional_permissions.issubset(actual_permissions))
 
     def test_get_portfolio_invited_json_authenticated(self):
         """Test that portfolio invitees are returned properly for an authenticated user."""
