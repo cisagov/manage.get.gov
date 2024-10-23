@@ -857,6 +857,16 @@ class DomainRequestStatus(DomainRequestPermissionView):
 
         return True
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        wizard = PortfolioDomainRequestWizard()
+        wizard.request = self.request
+        context["Step"] = PortfolioDomainRequestStep.__members__
+        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+        context["form_titles"] = wizard.titles
+        return context
+
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
     """This page will ask user to confirm if they want to withdraw
