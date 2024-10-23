@@ -79,19 +79,8 @@ class PortfolioInvitation(TimeStampedModel):
     def get_portfolio_permissions(self):
         """
         Retrieve the permissions for the user's portfolio roles from the invite.
-        This is similar logic to _get_portfolio_permissions in user_portfolio_permission
         """
-        # Use a set to avoid duplicate permissions
-        portfolio_permissions = set()
-
-        if self.roles:
-            for role in self.roles:
-                portfolio_permissions.update(UserPortfolioPermission.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
-
-        if self.additional_permissions:
-            portfolio_permissions.update(self.additional_permissions)
-
-        return list(portfolio_permissions)
+        return UserPortfolioPermission.get_portfolio_permissions(self.roles, self.additional_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
