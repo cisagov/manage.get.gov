@@ -83,7 +83,6 @@ class RequestingEntityForm(RegistrarForm):
         # Remove the custom other field before cleaning
         data = self.data.copy() if self.data else None
         suborganization = self.data.get('portfolio_requesting_entity-sub_organization')
-        is_suborganization = self.data.get("portfolio_requesting_entity-is_suborganization")
         if suborganization:
             if "other" in data['portfolio_requesting_entity-sub_organization']:
                 # Remove the 'other' value
