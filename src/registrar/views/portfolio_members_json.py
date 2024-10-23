@@ -93,7 +93,8 @@ def initial_permissions_search(portfolio):
                     output_field=CharField(),
                 ),
                 distinct=True,
-                filter=Q(user__permissions__domain__isnull=False),  # filter out null values
+                filter=Q(user__permissions__domain__isnull=False)  # filter out null values
+                & Q(user__permissions__domain__domain_info__portfolio=portfolio),  # only include domains in portfolio
             ),
             source=Value("permission", output_field=CharField()),
         )
@@ -121,10 +122,11 @@ class ArrayRemove(Func):
 
 def initial_invitations_search(portfolio):
     """Perform initial invitations search and get related DomainInvitation data based on the email."""
-    # Get DomainInvitation query for matching email
-    domain_invitations = DomainInvitation.objects.filter(email=OuterRef("email")).annotate(
-        domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
-    )
+    # Get DomainInvitation query for matching email and for the portfolio
+    domain_invitations = DomainInvitation.objects.filter(
+        email=OuterRef("email"),  # Check if email matches the OuterRef("email")
+        domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
+    ).annotate(domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()))
     # PortfolioInvitation query
     invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
     invitations = invitations.annotate(

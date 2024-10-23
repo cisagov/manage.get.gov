@@ -222,19 +222,32 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
+        # create domain for which user is manager and domain in portfolio
         domain = Domain.objects.create(
             name="somedomain1.com",
         )
-
         DomainInformation.objects.create(
             creator=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
-
         UserDomainRole.objects.create(
             user=self.user,
             domain=domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        # create domain for which user is manager and domain not in portfolio
+        domain2 = Domain.objects.create(
+            name="somedomain2.com",
+        )
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain2,
+        )
+        UserDomainRole.objects.create(
+            user=self.user,
+            domain=domain2,
             role=UserDomainRole.Roles.MANAGER,
         )
 
@@ -242,9 +255,10 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 200)
         data = response.json
 
-        # Check if the domain appears in the response JSON
+        # Check if the domain appears in the response JSON and that domain2 does not
         domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
+        self.assertNotIn("somedomain2.com", domain_names)
 
     def test_get_portfolio_invited_json_with_domains(self):
         """Test that portfolio invited members are returned properly for an authenticated user and the response includes
@@ -259,28 +273,41 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             ],
         )
 
+        # create a domain in the portfolio
         domain = Domain.objects.create(
             name="somedomain1.com",
         )
-
         DomainInformation.objects.create(
             creator=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
-
         DomainInvitation.objects.create(
             email=self.email6,
             domain=domain,
+        )
+
+        # create a domain not in the portfolio
+        domain2 = Domain.objects.create(
+            name="somedomain2.com",
+        )
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain2,
+        )
+        DomainInvitation.objects.create(
+            email=self.email6,
+            domain=domain2,
         )
 
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
         data = response.json
 
-        # Check if the domain appears in the response JSON
+        # Check if the domain appears in the response JSON and domain2 does not
         domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
+        self.assertNotIn("somedomain2.com", domain_names)
 
     def test_pagination(self):
         """Test that pagination works properly when there are more members than page size."""
