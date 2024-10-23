@@ -2400,6 +2400,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory
   const suborganizationDetailsFieldset = document.querySelector("#requesting-entity-fieldset__suborganization__details");
 
+  var isCustomSuborganization = document.querySelector("#id_portfolio_requesting_entity-is_custom_suborganization")
+
   // Use a variable to determine which option has been selected on the yes/no form.
 
   // Don't do anything if we are missing crucial page elements
@@ -2421,8 +2423,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // We should hide the org name fields when we select the special other value
     if (subOrgSelect.value === "other") {
       showElement(suborganizationDetailsFieldset);
+      isCustomSuborganization.value = "True";
     } else {
       hideElement(suborganizationDetailsFieldset);
+      isCustomSuborganization.value = "False";
     }
   };
 
@@ -2432,6 +2436,10 @@ document.addEventListener('DOMContentLoaded', function() {
     fakeOption.value = "other";
     fakeOption.text = "Other (enter your organization manually)";
     subOrgSelect.add(fakeOption);
+  }
+
+  if (isCustomSuborganization.value === "True") {
+    subOrgSelect.value = "other"
   }
 
   // Add event listener to is_suborganization radio buttons

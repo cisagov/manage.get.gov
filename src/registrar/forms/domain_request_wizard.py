@@ -61,6 +61,9 @@ class RequestingEntityForm(RegistrarForm):
         )
     )
 
+    # Add a hidden field to store that we are adding a custom suborg
+    is_custom_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -68,52 +71,52 @@ class RequestingEntityForm(RegistrarForm):
             self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=self.domain_request.portfolio)
 
     def clean_sub_organization(self):
-        """Require something to be selected when this is a federal agency."""
-        is_suborganization = self.cleaned_data.get("is_suborganization", None)
-        sub_organization = self.cleaned_data.get("sub_organization", None)
-        print(f"sub org is: {sub_organization} vs is_suborg: {is_suborganization}")
-        if is_suborganization and not sub_organization:
-            raise forms.ValidationError(
-                "Select a suborganization.",
-                code="required",
-            )
+        sub_organization = self.cleaned_data.get("sub_organization")
+        is_custom = self.cleaned_data.get("is_custom_suborganization")
+        print(f"in clean: {sub_organization}")
+        if is_custom:
+            # If it's a custom suborganization, return None (equivalent to selecting nothing)
+            return None
         return sub_organization
 
-    def clean_requested_suborganization(self):
-        field = self.cleaned_data.get("requested_suborganization")
-        if self.is_custom_suborg() and not field:
-            raise forms.ValidationError(
-                "Enter details for your organization name.",
-                code="required",
-            )
-        return field
+    def full_clean(self):
+        # Remove the custom other field before cleaning
+        data = self.data.copy() if self.data else None
+        suborganization = self.data.get('portfolio_requesting_entity-sub_organization')
+        is_suborganization = self.data.get("portfolio_requesting_entity-is_suborganization")
+        if suborganization:
+            if "other" in data['portfolio_requesting_entity-sub_organization']:
+                # Remove the 'other' value
+                data['portfolio_requesting_entity-sub_organization'] = ""
+        
+        # Set the modified data back to the form
+        self.data = data
+        
+        # Call the parent's full_clean method
+        super().full_clean()
 
-    def clean_suborganization_city(self):
-        field = self.cleaned_data.get("suborganization_city")
-        if self.is_custom_suborg():
-            if not field:
-                raise forms.ValidationError(
-                    "Enter details for your city.",
-                    code="required",
-                )
-        return field
+    def clean(self):
+        """Custom clean implementation to handle our desired logic flow for suborganization.
+        Given that these fields often corely on eachother, we need to do this in the parent function."""
+        cleaned_data = super().clean()
 
-    def clean_suborganization_state_territory(self):
-        field = self.cleaned_data.get("suborganization_state_territory")
-        if self.is_custom_suborg():
-            if not field:
-                raise forms.ValidationError(
-                    "Enter details for your state or territory.",
-                    code="required",
-                )
-        return field
-    
-    def is_custom_suborg(self):
-        """Checks that the select suborg is 'other', which is a custom field indicating
-        that we should create a new suborganization."""
+        suborganization = self.cleaned_data.get("sub_organization")
         is_suborganization = self.cleaned_data.get("is_suborganization")
-        sub_organization = self.cleaned_data.get("sub_organization")
-        return is_suborganization and sub_organization == "other"
+        is_custom_suborganization = self.cleaned_data.get("is_custom_suborganization")
+        if is_suborganization:
+            if is_custom_suborganization:
+                # Validate custom suborganization fields
+                if not cleaned_data.get("requested_suborganization"):
+                    self.add_error("requested_suborganization", "Enter details for your organization name.")
+                if not cleaned_data.get("suborganization_city"):
+                    self.add_error("suborganization_city", "Enter details for your city.")
+                if not cleaned_data.get("suborganization_state_territory"):
+                    self.add_error("suborganization_state_territory", "Enter details for your state or territory.")
+            elif not suborganization:
+                self.add_error("sub_organization", "Select a suborganization.")
+
+        cleaned_data = super().clean()
+        return cleaned_data
 
 
 class RequestingEntityYesNoForm(BaseYesNoForm):

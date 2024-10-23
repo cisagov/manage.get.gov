@@ -602,15 +602,6 @@ class RequestingEntity(DomainRequestWizard):
         if is_suborganization and (sub_organization or requested_suborganization):
             # Cleanup the organization name field, as this isn't for suborganizations.
             self.domain_request.organization_name = None
-
-            # Create or get the Suborganization.
-            # Then update the domain_request with the new or existing suborganization
-            if not sub_organization:
-                sub_organization, created = Suborganization.objects.get_or_create(
-                    name=cleaned_data.get("requested_suborganization"),
-                    portfolio=self.domain_request.portfolio,
-                )
-
             self.domain_request.sub_organization = sub_organization
         else:
             # If the user doesn't intend to create a suborg, simply don't make one and do some data cleanup

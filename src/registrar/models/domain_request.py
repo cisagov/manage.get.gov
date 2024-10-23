@@ -1210,6 +1210,12 @@ class DomainRequest(TimeStampedModel):
                 return True
         return False
     
+    def is_custom_suborganization(self) -> bool:
+        if self.is_suborganization():
+            return not self.sub_organization and self.has_information_required_to_make_suborganization()
+        else:
+            return False
+    
     def has_information_required_to_make_suborganization(self):
         """Checks if we have all the information we need to create a new suborganization object.
         Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory"""

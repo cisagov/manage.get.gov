@@ -12,13 +12,17 @@
         <h2>Who will use the domain you’re requesting?</h2>
         </legend>
 
+        <p class="margin-bottom-0 margin-top-1">
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+        </p>
+
         {# forms.0 is a small yes/no form that toggles the visibility of "requesting entity" formset #}
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
             {% with attr_required=True %}
                 {% input_with_errors forms.0.is_suborganization %}
             {% endwith %}
         {% endwith %}
-
+        {% input_with_errors forms.1.is_custom_suborganization %}
         <div id="requesting-entity-fieldset__suborganization" class="margin-top-4">
             <h2>Add suborganization information</h2>
             <p>
