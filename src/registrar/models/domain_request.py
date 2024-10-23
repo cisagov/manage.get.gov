@@ -6,12 +6,15 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
+
+from registrar.utility.waffle import flag_is_active_for_user
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -841,10 +844,13 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
+                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
+                is_org_user = has_organization_feature_flag and recipient.has_base_portfolio_permission(self.portfolio)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
+                    "is_org_user": is_org_user,
                 }
 
             if custom_email_content:

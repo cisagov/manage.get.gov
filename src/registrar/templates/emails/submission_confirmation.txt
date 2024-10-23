@@ -30,7 +30,7 @@ THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
 
 ----------------------------------------------------------------
-{% if portfolio %}
+{% if is_org_user %}
     {% include 'emails/includes/portfolio_domain_request_summary.txt' %}
 {% else %}
     {% include 'emails/includes/domain_request_summary.txt' %}
