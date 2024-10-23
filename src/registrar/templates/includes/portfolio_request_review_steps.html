@@ -8,9 +8,10 @@
     {% endif %}
 
     {% if step == Step.REQUESTING_ENTITY %}
-        {% if domain_request.organization_name %}
-            {% with title=form_titles|get_item:step value=domain_request %}
-                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url address='true' %}
+        {% if domain_request.requested_suborganization and domain_request.suborganization_city and domain_request.suborganization_state_territory %}
+            {% with title=form_titles|get_item:step value=domain_request.requested_suborganization %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+                <p class="margin-top-0 margin-bottom-0">{{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}</p>
             {% endwith %}
         {% else %}
             {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}

@@ -22,7 +22,14 @@
                 {% input_with_errors forms.0.is_suborganization %}
             {% endwith %}
         {% endwith %}
-        {% input_with_errors forms.1.is_custom_suborganization %}
+
+        {% comment %} Add an invisible form element to track whether the custom value "other" 
+        was selected or not. This allows for persistence across page reloads without using session variables.
+        {% endcomment %}
+        {% with add_group_class="display-none" %}
+            {% input_with_errors forms.1.is_custom_suborganization %}
+        {% endwith %}
+
         <div id="requesting-entity-fieldset__suborganization" class="margin-top-4">
             <h2>Add suborganization information</h2>
             <p>
