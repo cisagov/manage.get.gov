@@ -344,6 +344,24 @@ class DomainRequest(TimeStampedModel):
         verbose_name="Suborganization",
     )
 
+    requested_suborganization = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_city = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_state_territory = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,
+        null=True,
+        blank=True,
+        verbose_name="state, territory, or military post",
+    )
+
     # This is the domain request user who created this domain request.
     creator = models.ForeignKey(
         "registrar.User",
@@ -1104,6 +1122,15 @@ class DomainRequest(TimeStampedModel):
 
         self.creator.restrict_user()
 
+    # Form unlocking steps
+    # These methods control the conditions in which we should unlock certain domain wizard steps.
+    def unlock_requesting_entity(self) -> bool:
+        """Unlocks the requesting entity step """
+        if self.portfolio and self.organization_name == self.portfolio.organization_name:
+            return True
+        else:
+            return self.is_suborganization()
+
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants
@@ -1174,14 +1201,23 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def is_suborganization(self) -> bool:
+        """Determines if this record is a suborganization or not"""
         if self.portfolio:
             if self.sub_organization:
                 return True
 
-            if self.organization_name != self.portfolio.organization_name:
+            if self.has_information_required_to_make_suborganization():
                 return True
-
         return False
+    
+    def has_information_required_to_make_suborganization(self):
+        """Checks if we have all the information we need to create a new suborganization object.
+        Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory"""
+        return (
+            self.requested_domain and 
+            self.suborganization_city and 
+            self.suborganization_state_territory
+        )
 
     def to_dict(self):
         """This is to process to_dict for Domain Information, making it friendly

@@ -31,17 +31,20 @@ class RequestingEntityForm(RegistrarForm):
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
     )
-    organization_name = forms.CharField(
+
+    # We are using the current sub_organization naming convention here.
+    # We may want to refactor this to suborganization eventually.
+    requested_suborganization = forms.CharField(
         label="Requested suborganization",
         required=False,
         error_messages={"required": "Enter the name of your organization."},
     )
-    city = forms.CharField(
+    suborganization_city = forms.CharField(
         label="City",
         required=False,
         error_messages={"required": "Enter the city where your organization is located."},
     )
-    state_territory = forms.ChoiceField(
+    suborganization_state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=False,
         choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
@@ -66,26 +69,52 @@ class RequestingEntityForm(RegistrarForm):
 
     def clean_sub_organization(self):
         """Require something to be selected when this is a federal agency."""
+        is_suborganization = self.cleaned_data.get("is_suborganization", None)
         sub_organization = self.cleaned_data.get("sub_organization", None)
-        if self.cleaned_data.get("is_suborganization", None):
-            # TODO - logic for if other is selected, display other stuff
-            if not sub_organization:
-                # no answer was selected
+        print(f"sub org is: {sub_organization} vs is_suborg: {is_suborganization}")
+        if is_suborganization and not sub_organization:
+            raise forms.ValidationError(
+                "Select a suborganization.",
+                code="required",
+            )
+        return sub_organization
+
+    def clean_requested_suborganization(self):
+        field = self.cleaned_data.get("requested_suborganization")
+        if self.is_custom_suborg() and not field:
+            raise forms.ValidationError(
+                "Enter details for your organization name.",
+                code="required",
+            )
+        return field
+
+    def clean_suborganization_city(self):
+        field = self.cleaned_data.get("suborganization_city")
+        if self.is_custom_suborg():
+            if not field:
                 raise forms.ValidationError(
-                    "Select a suborganization.",
+                    "Enter details for your city.",
                     code="required",
                 )
-            # Maybe we just represent this with none?
-            elif sub_organization == "other":
-                org_name = self.cleaned_data.get("organization_name", None)
-                city = self.cleaned_data.get("city", None)
-                state = self.cleaned_data.get("state_territory", None)
-                if not org_name or not city or not state:
-                    raise forms.ValidationError(
-                        "Enter details for your suborganization.",
-                        code="required",
-                    )
-        return sub_organization
+        return field
+
+    def clean_suborganization_state_territory(self):
+        field = self.cleaned_data.get("suborganization_state_territory")
+        if self.is_custom_suborg():
+            if not field:
+                raise forms.ValidationError(
+                    "Enter details for your state or territory.",
+                    code="required",
+                )
+        return field
+    
+    def is_custom_suborg(self):
+        """Checks that the select suborg is 'other', which is a custom field indicating
+        that we should create a new suborganization."""
+        is_suborganization = self.cleaned_data.get("is_suborganization")
+        sub_organization = self.cleaned_data.get("sub_organization")
+        return is_suborganization and sub_organization == "other"
+
 
 class RequestingEntityYesNoForm(BaseYesNoForm):
     """The yes/no field for the RequestingEntity form."""
@@ -107,10 +136,11 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         Determines the initial checked state of the form based on the domain_request's attributes.
         """
 
-        if self.domain_request.portfolio and (self.domain_request.sub_organization or self.domain_request.organization_name):
-            return self.domain_request.organization_name != self.domain_request.portfolio.organization_name
+        if self.domain_request.portfolio and self.domain_request.organization_name == self.domain_request.portfolio.organization_name:
+            return False
+        elif self.domain_request.is_suborganization():
+            return True
         else:
-            # No pre-selection for new domain requests
             return None
 
 class OrganizationTypeForm(RegistrarForm):

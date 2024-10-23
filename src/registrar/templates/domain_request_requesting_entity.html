@@ -11,13 +11,38 @@
         <legend>
         <h2>Who will use the domain you’re requesting?</h2>
         </legend>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-            {% input_with_errors forms.0.is_suborganization %}
-        {% endwith %}
+
         {# forms.0 is a small yes/no form that toggles the visibility of "requesting entity" formset #}
-        {% input_with_errors forms.1.sub_organization %}
-        {% input_with_errors forms.1.organization_name %}
-        {% input_with_errors forms.1.city %}
-        {% input_with_errors forms.1.state_territory %}
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% with attr_required=True %}
+                {% input_with_errors forms.0.is_suborganization %}
+            {% endwith %}
+        {% endwith %}
+
+        <div id="requesting-entity-fieldset__suborganization" class="margin-top-4">
+            <h2>Add suborganization information</h2>
+            <p>
+                This information will be published in <a class="usa-link usa-link--always-blue" href="{% public_site_url 'about/data' %}">.gov’s public data</a>. If you don’t see your suborganization in the list, 
+                select “other” and enter the name or your suborganization.
+            </p>
+            {% with attr_required=True %}
+                {% input_with_errors forms.1.sub_organization %}
+            {% endwith %}
+
+            {% comment %} This will be toggled if a special value, "other", is selected.
+            Otherwise this field is invisible. 
+            {% endcomment %}
+            <div id="requesting-entity-fieldset__suborganization__details">
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.requested_suborganization %}
+                {% endwith %}
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.suborganization_city %}
+                {% endwith %}
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.suborganization_state_territory %}
+                {% endwith %}
+            </div>
+        </div>
     </fieldset>
 {% endblock %}

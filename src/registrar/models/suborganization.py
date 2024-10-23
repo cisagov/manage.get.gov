@@ -1,4 +1,5 @@
 from django.db import models
+from registrar.models import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
 
 
