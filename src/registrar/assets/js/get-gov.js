@@ -2065,7 +2065,7 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
-  generateKebob(member, hasEditPermission, member_name, last_active) {
+  generateKebob(member, hasEditPermission, member_name, last_active, num_domains) {
     if (!hasEditPermission) return '';
 
     const member_email = member.email;
@@ -2074,19 +2074,20 @@ class MembersTable extends LoadTableBase {
     let isMemberInvited = !last_active || last_active === 'Invited';
     let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
     
-    // TODO: Create a function to fetch how many domains the member MANAGES
-    // Created get_user_domain_count figure out how to call here and maybe
-    // let modalHeading = '';
-    // let modalDescription = '';
-    // If member manages 1 or more domains:
-    let modalHeading = `Are you sure you want to delete ${member_email}?`;
-    let modalDescription = `${member_email} current manages COUNTHERE domains in the organization \n
-    Removing them from the organization will remove all of their domains. They will no longer be able to \n
-    access this organization. This action cannot be undone.`;
-    // If member manages no domains:
-    // modalHeading = `Are you sure you want to delete ${member_email}?`;
-    // modalDescription = `They will no longer be able to access this organization. \n
-    // This action cannot be undone.`;
+
+    let modalHeading = '';
+    let modalDescription = '';
+
+    if (num_domains === 0){
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `They will no longer be able to access this organization. \n   
+      This action cannot be undone.`;
+    } else if (num_domains >= 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `${member_email} current manages ${num_domains} domains in the organization \n
+      Removing them from the organization will remove all of their domains. They will no longer be able to \n
+      access this organization. This action cannot be undone.`;
+    }
 
     const modalSubmit = `
       <button type="button"
@@ -2268,12 +2269,13 @@ class MembersTable extends LoadTableBase {
             const member_name = member.name;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
+            // The url, names, and num_domains relates specifically to the domain info that the member manages
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
 
-            const kebob = this.generateKebob(member, hasEditPermission, member_name, last_active);
+            const kebob = this.generateKebob(member, hasEditPermission, member_name, last_active, num_domains);
 
             // console.log("kebob", kebob)
 
