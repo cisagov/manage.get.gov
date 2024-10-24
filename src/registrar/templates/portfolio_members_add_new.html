@@ -56,22 +56,25 @@
   </legend>
 
   <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+
+  {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
   <div class="usa-radio">
-    <input type="radio" name="new_member-permission_level" class="usa-radio__input  usa-radio__input--tile" value="True" id="id_new_member-permission_level_0" required="" checked="">
-    <label class="usa-radio__label usa-legend" for="id_new_member-permission_level_0">
-      Admin access
-      <p class="margin-0 margin-top-2">
-        Grants this member access to the organization-wide information on domains, domain requests, and members.  Domain management can be assigned separately.
-      </p>
-    </label>
-    <input type="radio" name="new_member-permission_level" class="usa-radio__input  usa-radio__input--tile" value="False" id="id_new_member-permission_level_1" required="">
-    <label class="usa-radio__label usa-legend" for="id_new_member-permission_level_1">
-      Basic Access
-      <p class="margin-0 margin-top-2">
-      Grants this member access to the organization.  They can be given extra permissions to view all organization domain requests and submit domain requests on behald of the organization.  Basica access members can't view all members of an organization or manage them.  Domain management can be assigned separacterly.  
-      </p>
-    </label>
+    {% for radio in form.member_access_level %}
+        {{ radio.tag }}
+        <label class="usa-radio__label usa-legend" for="{{ radio.id_for_label }}">
+          {{ radio.choice_label }}
+          <p class="margin-0 margin-top-2">
+          {% if radio.choice_label == "Admin Access" %}
+              Grants this member access to the organization-wide information on domains, domain requests, and members.  Domain management can be assigned separately.
+          {% else %}
+            Grants this member access to the organization.  They can be given extra permissions to view all organization domain requests and submit domain requests on behald of the organization.  Basica access members can't view all members of an organization or manage them.  Domain management can be assigned separacterly.
+          {% endif %}
+        </p>
+      </label>
+    {% endfor %}
   </div>
+  {% endwith %}
+
 </fieldset>
 
 <!-- Admin access form -->
@@ -86,7 +89,7 @@
     {% input_with_errors form.admin_org_domain_request_permissions %}
   {% endwith %}
 
-  <h3 class="margin-bottom-0 margin-top-3">Organization Members</h3>
+  <h3 class="margin-bottom-0 margin-top-3">Organization members</h3>
   {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
     {% input_with_errors form.admin_org_members_permissions %}
   {% endwith %}

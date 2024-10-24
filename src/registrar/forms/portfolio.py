@@ -165,17 +165,32 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
 
 
 class NewMemberForm(forms.ModelForm):
+    member_access_level = forms.ChoiceField(
+        label="Select permission",
+        choices=[("True", "Admin Access"), ("False", "Basic Access")],
+        widget=forms.RadioSelect(attrs={'class': 'usa-radio__input  usa-radio__input--tile'}),
+        required=True,
+        error_messages={
+            "required": "Member access level is required",
+        },
+    )
     admin_org_domain_request_permissions = forms.ChoiceField(
         label="Select permission",
         choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
         widget=forms.RadioSelect,
         required=True,
+        error_messages={
+            "required": "Domain request permission is required",
+        },
     )
     admin_org_members_permissions = forms.ChoiceField(
         label="Select permission",
         choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
         widget=forms.RadioSelect,
         required=True,
+        error_messages={
+            "required": "Member permission is required",
+        },
     )
     basic_org_domain_request_permissions = forms.ChoiceField(
         label="Select permission",
@@ -186,6 +201,9 @@ class NewMemberForm(forms.ModelForm):
         ],
         widget=forms.RadioSelect,
         required=True,
+        error_messages={
+            "required": "Member permission is required",
+        },
     )
 
     email = forms.EmailField(
@@ -223,4 +241,21 @@ class NewMemberForm(forms.ModelForm):
         #     except User.DoesNotExist:
         #         raise forms.ValidationError("User with this email does not exist.")
 
+        # Get the grade and sport from POST data
+        permission_level = cleaned_data.get("member_access_level")
+        # permission_level = self.data.get('new_member-permission_level')
+        if not permission_level:
+            for field in self.fields:
+                if field in self.errors and field != "email" and field != "member_access_level":
+                    del self.errors[field]
+            return cleaned_data
+
+        # Validate the sport based on the selected grade
+        if permission_level == "True":
+            #remove the error messages pertaining to basic permission inputs
+            del self.errors["basic_org_domain_request_permissions"]
+        else:
+            #remove the error messages pertaining to admin permission inputs
+            del self.errors["admin_org_domain_request_permissions"]
+            del self.errors["admin_org_members_permissions"]
         return cleaned_data

@@ -918,7 +918,8 @@ function setupUrbanizationToggle(stateTerritoryField) {
  *
  */
 (function newMemberFormListener() {
-  HookupYesNoListener("new_member-permission_level",'new-member-admin-permissions', 'new-member-basic-permissions')
+  // HookupYesNoListener("new_member-permission_level",'new-member-admin-permissions', 'new-member-basic-permissions')
+  HookupYesNoListener("member_access_level",'new-member-admin-permissions', 'new-member-basic-permissions')
 })();
 
 /**
