@@ -257,3 +257,27 @@ def portfolio_role_summary(user, portfolio):
         return user.portfolio_role_summary(portfolio)
     else:
         return []
+
+@register.filter(name="display_requesting_entity")
+def display_requesting_entity(domain_request):
+    """Workaround for a newline issue in .txt files (our emails) as if statements
+    count as a newline to the file.
+    Will output something that looks like:
+    MyOrganizationName
+    Boise, ID
+    """
+    display = ""
+    if domain_request.portfolio and domain_request.organization_name == domain_request.portfolio.organization_name:
+        display = (
+            f"{domain_request.portfolio.organization_name}\n"
+            f"{domain_request.portfolio.city}, {domain_request.portfolio.state_territory}"
+        )
+    elif domain_request.sub_organization:
+        display = domain_request.sub_organization
+    elif domain_request.has_information_required_to_make_suborganization():
+        display = (
+            f"{domain_request.requested_suborganization}\n"
+            f"{domain_request.suborganization_city}, {domain_request.suborganization_state_territory}"
+        )
+
+    return display

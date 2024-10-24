@@ -1,16 +1,7 @@
-SUMMARY OF YOUR DOMAIN REQUEST
+{% load custom_filters %}SUMMARY OF YOUR DOMAIN REQUEST
 
-Requesting entity:
-{% if domain_request.portfolio and domain_request.organization_name == domain_request.portfolio.organization_name %}
-    {{domain_request.portfolio.organization_name}}
-    {{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}
-{% elif domain_request.sub_organization %}
-    {{domain_request.sub_organization}}
-    {% comment %} We don't have city or state_territory for suborganizations yet, so no data should display {% endcomment %}
-{% elif domain_request.requested_suborganization and domain_request.suborganization_city and domain_request.suborganization_state_territory %}
-    {{domain_request.requested_suborganization}}
-    {{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}
-{% endif %}
+Requesting entity: {# if blockmakes a newline #}
+{{ domain_request|display_requesting_entity }}
 {% if domain_request.current_websites.exists %}
 Current websites: {% for site in domain_request.current_websites.all %}
 {% spaceless %}{{ site.website }}{% endspaceless %}
@@ -23,19 +14,16 @@ Alternative domains:
 {% endfor %}{% endif %}
 Purpose of your domain:
 {{ domain_request.purpose }}
-{% if domain_request.additional_details%}
+{% if domain_request.anything_else %}
 Additional details:
-{{ domain_request.additional_details }}
-{% endif %}
-
-Your contact information:
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
-
-Other employees from your organization:{% for other in domain_request.other_contacts.all %}
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
-{% empty %}
-{{ domain_request.no_other_contacts_rationale }}
-{% endfor %}{% if domain_request.anything_else %}
-Anything else?
 {{ domain_request.anything_else }}
 {% endif %}
+{% if recipient %}
+Your contact information:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
+{% endif %}
+
+Administrators from your organization:{% for admin in domain_request.portfolio.portfolio_admin_users %}
+{% spaceless %}{% if admin != recipient %}{% include "emails/includes/contact.txt" with contact=admin %}{% endif %}{% endspaceless %}
+{% endfor %}
+

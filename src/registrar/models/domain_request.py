@@ -1205,7 +1205,8 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def is_suborganization(self) -> bool:
-        """Determines if this record is a suborganization or not"""
+        """Determines if this record is a suborganization or not by checking if a suborganization exists,
+        and if it doesn't, determining if properties like requested_suborganization exist."""
         if self.portfolio:
             if self.sub_organization:
                 return True
@@ -1216,12 +1217,18 @@ class DomainRequest(TimeStampedModel):
         return False
     
     def is_custom_suborganization(self) -> bool:
+        """Used on the requesting entity form to determine if a user is trying to request
+        a new suborganization using the domain request form.
+        
+        This only occurs when no suborganization is selected, but they've filled out
+        the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
+        """
         if self.is_suborganization():
             return not self.sub_organization and self.has_information_required_to_make_suborganization()
         else:
             return False
     
-    def has_information_required_to_make_suborganization(self):
+    def has_information_required_to_make_suborganization(self) -> bool:
         """Checks if we have all the information we need to create a new suborganization object.
         Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory"""
         if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
