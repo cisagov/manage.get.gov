@@ -2,11 +2,11 @@
 {% load static url_helpers %}
 
 {% block detail_content %}
-<table>
+<table class="usa-table">
     <thead>
         <tr>
-            <th>Name</th>
-            <th>State</th>
+            <th data-sortable scope="col" role="columnheader">Name</th>
+            <th data-sortable scope="col" role="columnheader">State</th>
         </tr>
     </thead>
     <tbody>
@@ -15,11 +15,11 @@
             {% with domain=domain_info.domain %}
             {% url 'admin:registrar_domain_change' domain.pk as url %}
             <tr>
-                <td><a href={{url}}>{{ domain }}</a></td>
+                <td data-sort-value="{{ domain }}"> <a href={{url}}>{{ domain }}</a></td>
                 {% if domain and domain.get_state_display %}
-                    <td>{{ domain.get_state_display }}</td>
+                <td data-sort-value="{{ domain.get_state_display }}"> {{ domain.get_state_display }} </td>
                 {% else %}
-                    <td>None</td>
+                <td data-sort-value="None"> None</td>
                 {% endif %}
             </tr>
             {% endwith %}

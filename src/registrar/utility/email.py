@@ -22,29 +22,46 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def send_templated_email(
+def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_address: str,
-    bcc_address="",
+    to_address: str = "",
+    bcc_address: str = "",
     context={},
     attachment_file=None,
     wrap_email=False,
+    cc_addresses: list[str] = [],
 ):
-    """Send an email built from a template to one email address.
+    """Send an email built from a template.
+
+    to_address and bcc_address currently only support single addresses.
+
+    cc_address is a list and can contain many addresses. Emails not in the
+    whitelist (if applicable) will be filtered out before sending.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
     that the template may use.
 
-    Raises EmailSendingError if SES client could not be accessed
+    Raises EmailSendingError if:
+        SES client could not be accessed
+        No valid recipient addresses are provided
     """
+
+    # by default assume we can send to all addresses (prod has no whitelist)
+    sendable_cc_addresses = cc_addresses
 
     if not settings.IS_PRODUCTION:  # type: ignore
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
         _can_send_email(to_address, bcc_address)
+
+        # if we're not in prod, we need to check the whitelist for CC'ed addresses
+        sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
+
+        if blocked_cc_addresses:
+            logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -64,14 +81,23 @@ def send_templated_email(
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
-        logger.info(f"An email was sent! Template name: {template_name} to {to_address}")
+        logger.info(f"Connected to SES client! Template name: {template_name} to {to_address}")
     except Exception as exc:
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
-    destination = {"ToAddresses": [to_address]}
+    destination = {}
+    if to_address:
+        destination["ToAddresses"] = [to_address]
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
+    if cc_addresses:
+        destination["CcAddresses"] = sendable_cc_addresses
+
+    # make sure we don't try and send an email to nowhere
+    if not destination:
+        message = "Email unable to send, no valid recipients provided."
+        raise EmailSendingError(message)
 
     try:
         if not attachment_file:
@@ -90,6 +116,7 @@ def send_templated_email(
                     },
                 },
             )
+            logger.info("Email sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
@@ -101,6 +128,10 @@ def send_templated_email(
             send_email_with_attachment(
                 settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
             )
+            logger.info(
+                "Email with attachment sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses
+            )
+
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
@@ -123,6 +154,33 @@ def _can_send_email(to_address, bcc_address):
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
+
+
+def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
+    """Checks whether a list of addresses can be sent to.
+
+    Returns: a lists of all provided addresses that are ok to send to and a list of addresses that were blocked.
+
+    Paramaters:
+
+    addresses: a list of strings representing all addresses to be checked.
+    """
+
+    if flag_is_active(None, "disable_email_sending"):  # type: ignore
+        message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
+        logger.warning(message)
+        return ([], [])
+    else:
+        AllowedEmail = apps.get_model("registrar", "AllowedEmail")
+        allowed_emails = []
+        blocked_emails = []
+        for address in addresses:
+            if AllowedEmail.is_allowed_email(address):
+                allowed_emails.append(address)
+            else:
+                blocked_emails.append(address)
+
+        return allowed_emails, blocked_emails
 
 
 def wrap_text_and_preserve_paragraphs(text, width):

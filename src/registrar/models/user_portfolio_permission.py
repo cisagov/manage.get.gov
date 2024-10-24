@@ -92,31 +92,23 @@ class UserPortfolioPermission(TimeStampedModel):
         """
         Retrieve the permissions for the user's portfolio roles.
         """
+        return self.get_portfolio_permissions(self.roles, self.additional_permissions)
+
+    @classmethod
+    def get_portfolio_permissions(cls, roles, additional_permissions):
+        """Class method to return a list of permissions based on roles and addtl permissions"""
         # Use a set to avoid duplicate permissions
         portfolio_permissions = set()
-
-        if self.roles:
-            for role in self.roles:
-                portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
-
-        if self.additional_permissions:
-            portfolio_permissions.update(self.additional_permissions)
-
+        if roles:
+            for role in roles:
+                portfolio_permissions.update(cls.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+        if additional_permissions:
+            portfolio_permissions.update(additional_permissions)
         return list(portfolio_permissions)
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
-
-        # Check if a user is set without accessing the related object.
-        has_user = bool(self.user_id)
-        if self.pk is None and has_user:
-            existing_permissions = UserPortfolioPermission.objects.filter(user=self.user)
-            if not flag_is_active_for_user(self.user, "multiple_portfolios") and existing_permissions.exists():
-                raise ValidationError(
-                    "This user is already assigned to a portfolio. "
-                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
-                )
 
         # Check if portfolio is set without accessing the related object.
         has_portfolio = bool(self.portfolio_id)
@@ -125,3 +117,19 @@ class UserPortfolioPermission(TimeStampedModel):
 
         if has_portfolio and not self._get_portfolio_permissions():
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
+
+        # Check if a user is set without accessing the related object.
+        has_user = bool(self.user_id)
+        if has_user:
+            existing_permission_pks = UserPortfolioPermission.objects.filter(user=self.user).values_list(
+                "pk", flat=True
+            )
+            if (
+                not flag_is_active_for_user(self.user, "multiple_portfolios")
+                and existing_permission_pks.exists()
+                and self.pk not in existing_permission_pks
+            ):
+                raise ValidationError(
+                    "This user is already assigned to a portfolio. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                )
