@@ -2074,9 +2074,14 @@ class MembersTable extends LoadTableBase {
       modalHeading = `Are you sure you want to delete ${member_email}?`;
       modalDescription = `They will no longer be able to access this organization. \n   
       This action cannot be undone.`;
+    } else if (num_domains === 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
+      Removing them from the organization will remove all of their domains. They will no longer be able to \n
+      access this organization. This action cannot be undone.`;
     } else if (num_domains >= 1) {
       modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `${member_email} current manages ${num_domains} domains in the organization \n
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization. \n
       Removing them from the organization will remove all of their domains. They will no longer be able to \n
       access this organization. This action cannot be undone.`;
     }
@@ -2136,7 +2141,6 @@ class MembersTable extends LoadTableBase {
         </div>
         `
         this.tableWrapper.appendChild(modal);
-        console.log("modal", modal)
   }
 
   generateKebabHTML(member_id, member_name, last_active) {
@@ -2195,10 +2199,45 @@ class MembersTable extends LoadTableBase {
    * @param {*} domainRequestPk - the identifier for the request that we're deleting
    * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
   */
-  deleteMember(member_delete_url, pageToDisplay) {
-    // Use to debug uswds modal issues
-    console.log(member_delete_url)
+  // This is what we originally have
+  // deleteMember(member_delete_url, pageToDisplay) {
+  //   // Use to debug uswds modal issues
+  //   console.log(member_delete_url)
     
+  //   // Get csrf token
+  //   const csrfToken = getCsrfToken();
+  //   // Create FormData object and append the CSRF token
+  //   const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+
+  //   fetch(`${member_delete_url}`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/x-www-form-urlencoded',
+  //       'X-CSRFToken': csrfToken,
+  //     },
+  //     body: formData
+
+  //   })
+  //   .then(response => {
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+  //     // Update data and UI
+  //     this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+  //   })
+  //   .catch(error => console.error('Error fetching domain requests:', error));
+  // }
+
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Debugging
+    console.log(member_delete_url);
+
+    const inProgressResponse = "This member has an active domain request and can't \n"
+    "be removed from this organization. <Contact the .gov team link> to remove them."
+    const onlyAdminResponse = "There must be at least one admin in your organization. \n"
+    "Give another member admin permissions, make sure they log into the registrar, \n"
+    "and then remove this member."
+
     // Get csrf token
     const csrfToken = getCsrfToken();
     // Create FormData object and append the CSRF token
@@ -2211,44 +2250,40 @@ class MembersTable extends LoadTableBase {
         'X-CSRFToken': csrfToken,
       },
       body: formData
-
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 204) {
+        // TODO: Add success alert with "You've removed member.email from the organization." text
+        console.log('Member successfully deleted');
+        // Update data and UI
+        this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+      } else {
+        // If the response isn't 204, handle the error response
+        return response.json().then(data => {
+          console.log("Member response not 204");
+          if (data.error) {
+            // TODO: We maybe don't need the consts above and have those
+            // responses in the portfolios.py JSON response. Formatting though?
+
+            // This should display the error given from backend for
+            // either only admin OR in progress requests
+            this.displayErrorMessage(data.error); 
+          } else {
+            throw new Error(`Unexpected status: ${response.status}`);
+          }
+        });
       }
-      // Update data and UI
-      this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
     })
-    .catch(error => console.error('Error fetching domain requests:', error));
-  }
+    .catch(error => {
+      console.error('Error deleting member:', error);
+      this.displayErrorMessage(error.message);
+    });
+}
 
-  // deleteDomainRequest(domainRequestPk, pageToDisplay) {
-  //   // Use to debug uswds modal issues
-  //   //console.log('deleteDomainRequest')
-    
-  //   // Get csrf token
-  //   const csrfToken = getCsrfToken();
-  //   // Create FormData object and append the CSRF token
-  //   const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
+displayErrorMessage(errorMessage) {
+  alert(errorMessage); // Just debugging for now
+}
 
-  //   fetch(`/domain-request/${domainRequestPk}/delete`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/x-www-form-urlencoded',
-  //       'X-CSRFToken': csrfToken,
-  //     },
-  //     body: formData
-  //   })
-  //   .then(response => {
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-  //     // Update data and UI
-  //     this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
-  //   })
-  //   .catch(error => console.error('Error fetching domain requests:', error));
-  // }
 
   /**
      * Loads rows in the members list, as well as updates pagination around the members list

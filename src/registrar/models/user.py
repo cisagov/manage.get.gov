@@ -1,5 +1,6 @@
 import logging
 
+from django.apps import apps
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
@@ -472,10 +473,41 @@ class User(AbstractUser):
         else:
             return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)
 
-    # def get_user_domain_count(self, request):
-    #     """Returns the count of domains associated with this user on UserDomainRole or Portfolio"""
-    #     portfolio = request.session.get("portfolio")
-    #     if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
-    #         return DomainInformation.objects.filter(portfolio=portfolio).count()
-    #     else:
-    #         return UserDomainRole.objects.filter(user=self).count()
+    def get_active_requests_count_in_portfolio(self, request):
+        """Return count of active requests for the portfolio associated with the request."""
+        portfolio_id = request.session.get(
+            "portfolio_id"
+        )  # Adjust based on how you store the portfolio ID in the session
+        if not portfolio_id:
+            return 0  # No portfolio ID found
+
+        allowed_states = [
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        ]
+
+        # Assuming you have a way to filter domain requests by portfolio
+        active_requests_count = self.domain_requests_created.filter(
+            status__in=allowed_states, portfolio__id=portfolio_id  # Ensure this field exists on the DomainRequest model
+        ).count()
+
+        return active_requests_count
+
+    def is_only_admin_of_portfolio(self, portfolio):
+        """Check if the user is the only admin of the given portfolio."""
+
+        UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
+
+        # Grab admin permission ability we want
+        admin_permission = UserPortfolioPermissionChoices.EDIT_PORTFOLIO
+
+        # Get all users with admin permission for this portfolio
+        admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
+
+        # Check if there is more than one admin
+        if admins.count() == 1 and admins.first().user == self:
+            # The user is the only admin
+            return True
+        # There are other admins OR the user is not the only one
+        return False
