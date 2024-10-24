@@ -14,6 +14,7 @@ from registrar.models import (
     DraftDomain,
     FederalAgency,
     AllowedEmail,
+    Portfolio,
 )
 
 import boto3_mocking
@@ -95,6 +96,7 @@ class TestDomainRequest(TestCase):
         DomainRequest.objects.all().delete()
         DraftDomain.objects.all().delete()
         Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
         User.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
@@ -1045,3 +1047,25 @@ class TestDomainRequest(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
         )
         self.assertEquals(domain_request.has_other_contacts(), False)
+
+    @less_console_noise_decorator
+    def test_converted_type(self):
+        """test that new property fields works as expected to pull domain req info such as fed agency, generic org type, and others from portfolio"""
+        fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Portfolio",
+            creator=self.dummy_user_2,
+            federal_agency=fed_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+
+        domain_request = completed_domain_request(name="domainre1.gov", portfolio=portfolio)
+
+        self.assertEqual(portfolio.organization_type, domain_request.converted_generic_org_type)
+        self.assertEqual(portfolio.federal_agency, domain_request.converted_federal_agency)
+
+        domain_request2 = completed_domain_request(
+            name="domainreq2.gov", federal_agency=fed_agency, generic_org_type=DomainRequest.OrganizationChoices.TRIBAL
+        )
+        self.assertEqual(domain_request2.generic_org_type, domain_request2.converted_generic_org_type)
+        self.assertEqual(domain_request2.federal_agency, domain_request2.converted_federal_agency)

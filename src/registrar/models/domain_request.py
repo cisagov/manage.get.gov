@@ -1333,18 +1333,16 @@ class DomainRequest(TimeStampedModel):
             return False
         return True
 
+    """the following converted_ property methods get their respective field names from portfolio, if the domain request has a portfolio. if it does not, it will get the info from the model itself."""
+
     @property
     def converted_organization_name(self):
-        """ "returns the organization field if the domain request is in a portfolio
-        otherwise it returns the organization name from the domain request object itself"""
         if self.portfolio:
             return self.portfolio.organization_name
         return self.organization_name
 
     @property
     def converted_generic_org_type(self):
-        """ "returns the organization type if the domain request is in a portfolio
-        otherwise it returns the organization type from the domain request object itself"""
         if self.portfolio:
             return self.portfolio.organization_type
         return self.generic_org_type
