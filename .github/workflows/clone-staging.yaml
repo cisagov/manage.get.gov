@@ -1,4 +1,4 @@
-name: Clone Sandbox Database
+name: Clone Staging Database
 
 on:
   # these will be uncommented after testing
@@ -7,10 +7,7 @@ on:
   #   # Run daily at 2:00 PM EST
   #   - cron: '0 * * * *'
   # Allow manual triggering
-  # workflow_dispatch:
-  # ----
-  # run on PR for testing before merge.
-  # pull_request:
+  workflow_dispatch:
 
 env:
   DESTINATION_ENVIRONMENT: ms
