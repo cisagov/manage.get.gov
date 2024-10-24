@@ -2197,21 +2197,21 @@ class MembersTable extends LoadTableBase {
   */
   deleteMember(member_delete_url, pageToDisplay) {
     // Use to debug uswds modal issues
-    //console.log('deleteDomainRequest')
+    console.log(member_delete_url)
     
     // Get csrf token
     const csrfToken = getCsrfToken();
     // Create FormData object and append the CSRF token
-    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-member=`;
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
 
     fetch(`${member_delete_url}`, {
-      method: 'DELETE',
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'X-CSRFToken': csrfToken,
       },
-      credentials: 'same-origin'
-      // body: formData
+      body: formData
+
     })
     .then(response => {
       if (!response.ok) {
@@ -2325,10 +2325,8 @@ class MembersTable extends LoadTableBase {
           }
 
           data.members.forEach(member => {
-            const member_source = member.source === "permissions" ? "member" : "invitedmember";
-            const member_id = member_source + member.id;
-            // member_id is actually the permission_id
-            const submit_delete_url = `/${member_source}/${member.id}`
+            const member_id = member.source + member.id;
+            const submit_delete_url = member.action_url + "/delete";
             const member_name = member.name;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
@@ -2429,7 +2427,7 @@ class MembersTable extends LoadTableBase {
               // Pass member_delete_url in to delete
               // TODO: Use the PK to call a separate function that triggers a new backend AJAX call 
               // to delete their UserDomainRoles only for this portfolio + remove their UserPortfolioPermissions
-              alert('modal submit')
+              //alert('modal submit')
 
             });
           });

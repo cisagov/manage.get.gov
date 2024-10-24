@@ -15,6 +15,7 @@ from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.utility.mixins import PortfolioInvitedMemberPermission, PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
@@ -99,8 +100,9 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
             },
         )
 
-    @csrf_exempt
-    def delete(self, request, pk):
+class PortfolioMemberDeleteView(PortfolioMemberPermission, View):    
+    
+    def post(self, request, pk):
         """
         Find and delete the portfolio member using the provided primary key (pk).
         Redirect to a success page after deletion (or any other appropriate page).
@@ -188,10 +190,12 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
             },
         )
 
-    @csrf_exempt
-    def delete(self, request, pk):
+
+class PortfolioInvitedMemberDeleteView(PortfolioInvitedMemberPermission, View):    
+    
+    def post(self, request, pk):
         """
-        Find and delete the portfolio invitation using the provided primary key (pk).
+        Find and delete the portfolio invited member using the provided primary key (pk).
         Redirect to a success page after deletion (or any other appropriate page).
         """
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
