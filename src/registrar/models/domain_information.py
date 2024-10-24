@@ -75,6 +75,24 @@ class DomainInformation(TimeStampedModel):
         verbose_name="Suborganization",
     )
 
+    requested_suborganization = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_city = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_state_territory = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,
+        null=True,
+        blank=True,
+        verbose_name="state, territory, or military post",
+    )
+
     domain_request = models.OneToOneField(
         "registrar.DomainRequest",
         on_delete=models.PROTECT,

@@ -68,7 +68,9 @@ class RequestingEntityForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         if self.domain_request.portfolio:
-            self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=self.domain_request.portfolio)
+            self.fields["sub_organization"].queryset = Suborganization.objects.filter(
+                portfolio=self.domain_request.portfolio
+            )
 
     def clean_sub_organization(self):
         sub_organization = self.cleaned_data.get("sub_organization")
@@ -82,15 +84,15 @@ class RequestingEntityForm(RegistrarForm):
     def full_clean(self):
         # Remove the custom other field before cleaning
         data = self.data.copy() if self.data else None
-        suborganization = self.data.get('portfolio_requesting_entity-sub_organization')
+        suborganization = self.data.get("portfolio_requesting_entity-sub_organization")
         if suborganization:
-            if "other" in data['portfolio_requesting_entity-sub_organization']:
+            if "other" in data["portfolio_requesting_entity-sub_organization"]:
                 # Remove the 'other' value
-                data['portfolio_requesting_entity-sub_organization'] = ""
-        
+                data["portfolio_requesting_entity-sub_organization"] = ""
+
         # Set the modified data back to the form
         self.data = data
-        
+
         # Call the parent's full_clean method
         super().full_clean()
 
@@ -129,7 +131,10 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
         if self.domain_request.portfolio:
-            self.form_choices = ((False, self.domain_request.portfolio), (True, "A suborganization. (choose from list)"))
+            self.form_choices = (
+                (False, self.domain_request.portfolio),
+                (True, "A suborganization. (choose from list)"),
+            )
         self.fields[self.field_name] = self.get_typed_choice_field()
 
     @property
@@ -138,12 +143,16 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         Determines the initial checked state of the form based on the domain_request's attributes.
         """
 
-        if self.domain_request.portfolio and self.domain_request.organization_name == self.domain_request.portfolio.organization_name:
+        if (
+            self.domain_request.portfolio
+            and self.domain_request.organization_name == self.domain_request.portfolio.organization_name
+        ):
             return False
         elif self.domain_request.is_suborganization():
             return True
         else:
             return None
+
 
 class OrganizationTypeForm(RegistrarForm):
     generic_org_type = forms.ChoiceField(

@@ -614,6 +614,7 @@ class RequestingEntity(DomainRequestWizard):
 
         super().save(forms)
 
+
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 

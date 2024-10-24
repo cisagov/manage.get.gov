@@ -1129,7 +1129,7 @@ class DomainRequest(TimeStampedModel):
     # Form unlocking steps
     # These methods control the conditions in which we should unlock certain domain wizard steps.
     def unlock_requesting_entity(self) -> bool:
-        """Unlocks the requesting entity step """
+        """Unlocks the requesting entity step"""
         if self.portfolio and self.organization_name == self.portfolio.organization_name:
             return True
         else:
@@ -1215,11 +1215,11 @@ class DomainRequest(TimeStampedModel):
                 return True
 
         return False
-    
+
     def is_custom_suborganization(self) -> bool:
         """Used on the requesting entity form to determine if a user is trying to request
         a new suborganization using the domain request form.
-        
+
         This only occurs when no suborganization is selected, but they've filled out
         the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
         """
@@ -1227,10 +1227,11 @@ class DomainRequest(TimeStampedModel):
             return not self.sub_organization and self.has_information_required_to_make_suborganization()
         else:
             return False
-    
+
     def has_information_required_to_make_suborganization(self) -> bool:
         """Checks if we have all the information we need to create a new suborganization object.
-        Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory"""
+        Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory
+        """
         if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
             return True
         else:

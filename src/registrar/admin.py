@@ -1478,7 +1478,21 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
+                    "creator",
+                    "domain_request",
+                    "notes",
+                ]
+            },
+        ),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1748,8 +1762,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
-                    "requested_suborganization", 
-                    "suborganization_city", 
+                    "requested_suborganization",
+                    "suborganization_city",
                     "suborganization_state_territory",
                     "status_history",
                     "status",
