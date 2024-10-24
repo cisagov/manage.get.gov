@@ -11,6 +11,7 @@ from registrar.forms import domain_request_wizard as forms
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
+from registrar.models.suborganization import Suborganization
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
@@ -137,7 +138,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     }
 
     PORTFOLIO_UNLOCKING_STEPS = {
-        PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda self: self.domain_request.organization_name is not None,
+        PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
         PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
             self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
         ),
@@ -588,7 +589,33 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 # Portfolio pages
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
-    forms = [forms.RequestingEntityForm]
+    forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
+
+    def save(self, forms: list):
+        """Override of save to clear or associate certain suborganization data
+        depending on what the user wishes to do. For instance, we want to add a suborganization
+        if the user selects one."""
+        requesting_entity_form = forms[1]
+        cleaned_data = requesting_entity_form.cleaned_data
+        is_suborganization = cleaned_data.get("is_suborganization")
+        sub_organization = cleaned_data.get("sub_organization")
+        requested_suborganization = cleaned_data.get("requested_suborganization")
+
+        # If no suborganization presently exists but the user filled out org information then create a suborg automatically.
+        if is_suborganization and (sub_organization or requested_suborganization):
+            # Cleanup the organization name field, as this isn't for suborganizations.
+            self.domain_request.organization_name = None
+            self.domain_request.sub_organization = sub_organization
+        else:
+            # If the user doesn't intend to create a suborg, simply don't make one and do some data cleanup
+            self.domain_request.organization_name = self.domain_request.portfolio.organization_name
+
+            self.domain_request.sub_organization = None
+            self.domain_request.requested_suborganization = None
+            self.domain_request.suborganization_city = None
+            self.domain_request.suborganization_state_territory = None
+
+        super().save(forms)
 
 
 class PortfolioAdditionalDetails(DomainRequestWizard):
@@ -833,6 +860,18 @@ class DomainRequestStatus(DomainRequestPermissionView):
                 return False
 
         return True
+
+    def get_context_data(self, **kwargs):
+        """Context override to add a step list to the context"""
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        if self.request.user.is_org_user(self.request):
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
+        return context
 
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):

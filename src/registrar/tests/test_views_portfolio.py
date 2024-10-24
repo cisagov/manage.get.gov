@@ -1387,3 +1387,91 @@ class TestPortfolio(WebTest):
         # Check that the domain request still exists
         self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
         domain_request.delete()
+
+
+class TestRequestingEntity(WebTest):
+    """The requesting entity page is a domain request form that only exists
+    within the context of a portfolio."""
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.user = create_test_user()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        # Login the current user
+        self.app.set_user(self.user.username)
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+    
+    # need a test that starts a new domain request
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_page(self):
+        """Tests that the requesting entity page loads correctly"""
+        pass
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_page_submission(self):
+        """Tests that you can submit a form on this page"""
+        pass
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_page_errors(self):
+        """Tests that we get the expected form errors on requesting entity"""
+        domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)
+        UserPortfolioPermission.objects.create(portfolio=self.portfolio, user=self.user, roles=[
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+        ])
+        response = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        form = response.forms[0]
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test missing suborganization selection
+        form['portfolio_requesting_entity-is_suborganization'] = True
+        form['portfolio_requesting_entity-sub_organization'] = ""
+
+        response = form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        self.assertContains(response, "Select a suborganization.", status_code=200)
+
+        # Test missing custom suborganization details
+        form['portfolio_requesting_entity-is_custom_suborganization'] = True
+        response = form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        self.assertContains(response, "Enter details for your organization name.", status_code=200)
+        self.assertContains(response, "Enter details for your city.", status_code=200)
+        self.assertContains(response, "Enter details for your state or territory.", status_code=200)
+
+        domain_request.delete()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_submission_email_sent(self, mock_send_email):
+        """Tests that an email is sent out on form submission"""
+        pass
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_viewonly(self):
+        """Tests the review steps page on under our viewonly context"""
+        pass
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_requesting_entity_manage(self):
+        """Tests the review steps page on under our manage context"""
+        pass

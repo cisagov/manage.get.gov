@@ -22,15 +22,17 @@ var SUCCESS = "success";
  *
 */
 const hideElement = (element) => {
-  element.classList.add('display-none');
+  if (element && !element.classList.contains("display-none"))
+      element.classList.add('display-none');
 };
 
 /**
- * Show element
- *
+* Show element
+*
 */
 const showElement = (element) => {
-  element.classList.remove('display-none');
+  if (element && element.classList.contains("display-none"))
+      element.classList.remove('display-none');
 };
 
 /**
@@ -2611,4 +2613,84 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
   }
+})();
+
+/** An IIFE that intializes the requesting entity page.
+ * This page has a radio button that dynamically toggles some fields
+ * Within that, the dropdown also toggles some additional form elements.
+*/
+(function handleRequestingEntityFieldset() {
+  // Check if the requesting-entity-fieldset exists. 
+  // This determines if we are on the requesting entity page or not.
+  const fieldset = document.getElementById("requesting-entity-fieldset");
+  if (!fieldset) return;
+
+  // Get the is_suborganization radio buttons
+  // Sadly, these ugly ids are the auto generated
+  const formPrefix = "portfolio_requesting_entity"
+  const isSuborgRadios = document.querySelectorAll(`input[name="${formPrefix}-is_suborganization"]`);
+  const subOrgSelect = document.querySelector(`#id_${formPrefix}-sub_organization`);
+
+  // The suborganization section is its own div
+  // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory.
+  const suborganizationFieldset = document.querySelector("#requesting-entity-fieldset__suborganization");
+  const suborganizationDetailsFieldset = document.querySelector("#requesting-entity-fieldset__suborganization__details");
+
+  // This variable determines if the user is trying to request a new suborganization or not
+  var isCustomSuborganization = document.querySelector("#id_portfolio_requesting_entity-is_custom_suborganization")
+
+  // Don't do anything if we are missing crucial page elements
+  if (!isSuborgRadios || !subOrgSelect || !suborganizationFieldset || !suborganizationDetailsFieldset) return;
+
+  // Function to toggle suborganization based on is_suborganization selection
+  function toggleSuborganization(radio) {
+    if (radio && radio.checked && radio.value === "True") {
+      showElement(suborganizationFieldset);
+      toggleSuborganizationDetails();
+    } else {
+      hideElement(suborganizationFieldset);
+      hideElement(suborganizationDetailsFieldset);
+    }
+  };
+
+  // Function to toggle organization details based on sub_organization selection
+  function toggleSuborganizationDetails () {
+    // We should hide the org name fields when we select the special other value
+    if (subOrgSelect.value === "other") {
+      showElement(suborganizationDetailsFieldset);
+      isCustomSuborganization.value = "True";
+    } else {
+      hideElement(suborganizationDetailsFieldset);
+      isCustomSuborganization.value = "False";
+    }
+  };
+
+    // Add fake "other" option to sub_organization select
+  if (subOrgSelect && !Array.from(subOrgSelect.options).some(option => option.value === "other")) {
+    const fakeOption = document.createElement("option");
+    fakeOption.value = "other";
+    fakeOption.text = "Other (enter your organization manually)";
+    subOrgSelect.add(fakeOption);
+  }
+
+  if (isCustomSuborganization.value === "True") {
+    subOrgSelect.value = "other"
+  }
+
+  // Add event listener to is_suborganization radio buttons
+  isSuborgRadios.forEach(radio => {
+    // Run this here for initial display.
+    // Since there are only two radio buttons and since this has (practically speaking) no performance impact, this is fine to do.
+    toggleSuborganization(radio);
+
+    // Add an event listener to each to show/hide the relevant fields
+    radio.addEventListener("click", () => {
+      toggleSuborganization(radio);
+    });
+  });
+
+  // Add event listener to the suborg dropdown to show/hide the suborg details section
+  subOrgSelect.addEventListener("change", () => {
+    toggleSuborganizationDetails();
+  });
 })();

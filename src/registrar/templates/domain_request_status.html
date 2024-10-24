@@ -6,5 +6,9 @@
 
 
 {% block content %}
-  {% include "includes/request_status_manage.html" %}
+  {% if not portfolio %}
+    {% include "includes/request_status_manage.html" %}
+  {% else %}
+    {% include "includes/portfolio_status_manage.html" %}
+  {% endif %}
 {% endblock %}

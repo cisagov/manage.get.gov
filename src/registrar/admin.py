@@ -1478,7 +1478,21 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
+                    "creator",
+                    "domain_request",
+                    "notes",
+                ]
+            },
+        ),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1748,6 +1762,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
@@ -1867,6 +1884,27 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
+
+    # While the organization feature is under development, we can gate some fields
+    # from analysts for now. Remove this array and the get_fieldset overrides once this is done.
+    # Not my code initially, credit to Nicolle. This was once removed and like a phoenix it has been reborn.
+    superuser_only_fields = [
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
+    ]
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+
+        # Create a modified version of fieldsets to exclude certain fields
+        if not request.user.has_perm("registrar.full_access_permission"):
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
+                modified_fieldsets.append((name, {**data, "fields": fields}))
+            return modified_fieldsets
+        return fieldsets
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):

@@ -13,7 +13,7 @@ from registrar.forms.utility.wizard_form_helper import (
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency
+from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency, Suborganization
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
@@ -22,10 +22,144 @@ logger = logging.getLogger(__name__)
 
 
 class RequestingEntityForm(RegistrarForm):
-    organization_name = forms.CharField(
-        label="Organization name",
+    """The requesting entity form contains a dropdown for suborganizations,
+    and some (hidden by default) input fields that allow the user to request for a suborganization.
+    All of these fields are not required by default, but as we use javascript to conditionally show
+    and hide some of these, they then become required in certain circumstances."""
+    sub_organization = forms.ModelChoiceField(
+        label="Suborganization name",
+        # not required because this field won't be filled out unless
+        # it is a federal agency. Use clean to check programatically
+        # if it has been filled in when required.
+        required=False,
+        queryset=Suborganization.objects.none(),
+        empty_label="--Select--",
+    )
+
+    # We are using the current sub_organization naming convention here.
+    # We may want to refactor this to suborganization eventually.
+    requested_suborganization = forms.CharField(
+        label="Requested suborganization",
+        required=False,
         error_messages={"required": "Enter the name of your organization."},
     )
+    suborganization_city = forms.CharField(
+        label="City",
+        required=False,
+        error_messages={"required": "Enter the city where your organization is located."},
+    )
+    suborganization_state_territory = forms.ChoiceField(
+        label="State, territory, or military post",
+        required=False,
+        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        error_messages={
+            "required": ("Select the state, territory, or military post where your organization is located.")
+        },
+    )
+    is_suborganization = forms.NullBooleanField(
+        widget=forms.RadioSelect(
+            choices=[
+                (True, "Yes"),
+                (False, "No"),
+            ],
+        )
+    )
+
+    # Add a hidden field to store that we are adding a custom suborg
+    is_custom_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        """Override of init to add the suborganization queryset"""
+        super().__init__(*args, **kwargs)
+
+        if self.domain_request.portfolio:
+            self.fields["sub_organization"].queryset = Suborganization.objects.filter(
+                portfolio=self.domain_request.portfolio
+            )
+
+    def clean_sub_organization(self):
+        """On suborganization clean, set the suborganization value to None if the user is requesting
+        a custom suborganization (as it doesn't exist yet)"""
+        sub_organization = self.cleaned_data.get("sub_organization")
+        is_custom = self.cleaned_data.get("is_custom_suborganization")
+        if is_custom:
+            # If it's a custom suborganization, return None (equivalent to selecting nothing)
+            return None
+        return sub_organization
+
+    def full_clean(self):
+        """Validation logic to remove the custom suborganization value before clean is triggered.
+        Without this override, the form will throw an 'invalid option' error."""
+        # Remove the custom other field before cleaning
+        data = self.data.copy() if self.data else None
+        suborganization = self.data.get("portfolio_requesting_entity-sub_organization")
+        if suborganization:
+            if "other" in data["portfolio_requesting_entity-sub_organization"]:
+                # Remove the 'other' value
+                data["portfolio_requesting_entity-sub_organization"] = ""
+
+        # Set the modified data back to the form
+        self.data = data
+
+        # Call the parent's full_clean method
+        super().full_clean()
+
+    def clean(self):
+        """Custom clean implementation to handle our desired logic flow for suborganization.
+        Given that these fields often corely on eachother, we need to do this in the parent function."""
+        cleaned_data = super().clean()
+
+        suborganization = self.cleaned_data.get("sub_organization")
+        is_suborganization = self.cleaned_data.get("is_suborganization")
+        is_custom_suborganization = self.cleaned_data.get("is_custom_suborganization")
+        if is_suborganization:
+            if is_custom_suborganization:
+                # Validate custom suborganization fields
+                if not cleaned_data.get("requested_suborganization"):
+                    self.add_error("requested_suborganization", "Enter details for your organization name.")
+                if not cleaned_data.get("suborganization_city"):
+                    self.add_error("suborganization_city", "Enter details for your city.")
+                if not cleaned_data.get("suborganization_state_territory"):
+                    self.add_error("suborganization_state_territory", "Enter details for your state or territory.")
+            elif not suborganization:
+                self.add_error("sub_organization", "Select a suborganization.")
+
+        cleaned_data = super().clean()
+        return cleaned_data
+
+
+class RequestingEntityYesNoForm(BaseYesNoForm):
+    """The yes/no field for the RequestingEntity form."""
+
+    # This first option will change dynamically
+    form_choices = ((False, "Current Organization"), (True, "A suborganization. (choose from list)"))
+    field_name = "is_suborganization"
+
+    def __init__(self, *args, **kwargs):
+        """Extend the initialization of the form from RegistrarForm __init__"""
+        super().__init__(*args, **kwargs)
+        if self.domain_request.portfolio:
+            self.form_choices = (
+                (False, self.domain_request.portfolio),
+                (True, "A suborganization. (choose from list)"),
+            )
+        self.fields[self.field_name] = self.get_typed_choice_field()
+
+    @property
+    def form_is_checked(self):
+        """
+        Determines the initial checked state of the form based on the domain_request's attributes.
+        """
+
+        if (
+            self.domain_request.portfolio
+            and self.domain_request.organization_name == self.domain_request.portfolio.organization_name
+        ):
+            return False
+        elif self.domain_request.is_suborganization():
+            return True
+        else:
+            return None
 
 
 class OrganizationTypeForm(RegistrarForm):

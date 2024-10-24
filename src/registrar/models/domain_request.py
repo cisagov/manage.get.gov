@@ -6,12 +6,15 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from waffle import flag_is_active
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
+
+from registrar.utility.waffle import flag_is_active_for_user
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -342,6 +345,24 @@ class DomainRequest(TimeStampedModel):
         related_name="request_sub_organization",
         help_text="If blank, request is associated with the overarching organization for this portfolio.",
         verbose_name="Suborganization",
+    )
+
+    requested_suborganization = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_city = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_state_territory = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,
+        null=True,
+        blank=True,
+        verbose_name="state, territory, or military post",
     )
 
     # This is the domain request user who created this domain request.
@@ -823,10 +844,13 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
+                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
+                is_org_user = has_organization_feature_flag and recipient.has_base_portfolio_permission(self.portfolio)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
+                    "is_org_user": is_org_user,
                 }
 
             if custom_email_content:
@@ -1102,6 +1126,15 @@ class DomainRequest(TimeStampedModel):
 
         self.creator.restrict_user()
 
+    # Form unlocking steps
+    # These methods control the conditions in which we should unlock certain domain wizard steps.
+    def unlock_requesting_entity(self) -> bool:
+        """Unlocks the requesting entity step"""
+        if self.portfolio and self.organization_name == self.portfolio.organization_name:
+            return True
+        else:
+            return self.is_suborganization()
+
     # ## Form policies ###
     #
     # These methods control what questions need to be answered by applicants
@@ -1170,6 +1203,39 @@ class DomainRequest(TimeStampedModel):
         if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
+
+    def is_suborganization(self) -> bool:
+        """Determines if this record is a suborganization or not by checking if a suborganization exists,
+        and if it doesn't, determining if properties like requested_suborganization exist."""
+        if self.portfolio:
+            if self.sub_organization:
+                return True
+
+            if self.has_information_required_to_make_suborganization():
+                return True
+
+        return False
+
+    def is_custom_suborganization(self) -> bool:
+        """Used on the requesting entity form to determine if a user is trying to request
+        a new suborganization using the domain request form.
+
+        This only occurs when no suborganization is selected, but they've filled out
+        the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
+        """
+        if self.is_suborganization():
+            return not self.sub_organization and self.has_information_required_to_make_suborganization()
+        else:
+            return False
+
+    def has_information_required_to_make_suborganization(self) -> bool:
+        """Checks if we have all the information we need to create a new suborganization object.
+        Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory
+        """
+        if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
+            return True
+        else:
+            return False
 
     def to_dict(self):
         """This is to process to_dict for Domain Information, making it friendly
