@@ -7,195 +7,197 @@
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
-      {% if not portfolio %}
-        <h2 id="domains-header" class="display-inline-block">Domains</h2>
-      {% else %}
-        <!-- Embedding the portfolio value in a data attribute -->
-        <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
-      {% endif %}
-      <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %} section-outlined__search--widescreen {% endif %}">
-        <section aria-label="Domains search component" class="margin-top-2">
-          <form class="usa-search usa-search--small" method="POST" role="search">
-            {% csrf_token %}
-            <button class="usa-button usa-button--unstyled margin-right-3 domains__reset-search display-none" type="button">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-              </svg>
-              Reset
-            </button>
-            <label class="usa-sr-only" for="domains__search-field">Search by domain name</label>
-            <input
-              class="usa-input"
-              id="domains__search-field"
-              type="search"
-              name="search"
-              placeholder="Search by domain name"
-            />
-            <button class="usa-button" type="submit" id="domains__search-field-submit">
-              <img
-                src="{% static 'img/usa-icons-bg/search--white.svg' %}"
-                class="usa-search__submit-icon"
-                alt="Search"
-              />
-            </button>
-          </form>
-        </section>
-      </div>
-      {% if user_domain_count and user_domain_count > 0 %}
-      <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-        <section aria-label="Domains report component" class="margin-top-205">
-          <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
-            <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-            </svg>Export as CSV
-          </a>
-        </section>
-      </div>
-      {% endif %}
-    </div>
-    {% if portfolio %}
-    <div class="display-flex flex-align-center"> 
-      <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
-      <div class="usa-accordion usa-accordion--select margin-right-2">
-        <div class="usa-accordion__heading">
-          <button
-            type="button"
-            class="usa-button usa-button--small padding--8-8-9 usa-button--outline usa-button--filter usa-accordion__button"
-            aria-expanded="false"
-            aria-controls="filter-status"
-          >
-            <span class="filter-indicator text-bold display-none"></span> Status
-            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+    {% if not portfolio %}
+      <h2 id="domains-header" class="display-inline-block">Domains</h2>
+    {% else %}
+      <!-- Embedding the portfolio value in a data attribute -->
+      <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
+    {% endif %}
+    <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %} section-outlined__search--widescreen {% endif %}">
+      <section aria-label="Domains search component" class="margin-top-2">
+        <form class="usa-search usa-search--small" method="POST" role="search">
+          {% csrf_token %}
+          <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="domains__reset-search" type="button">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
             </svg>
+            Reset
           </button>
-        </div>
-        <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
-          <h2>Status</h2>
-          <fieldset class="usa-fieldset margin-top-0">
-            <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-dns-needed"
-                type="checkbox"
-                name="filter-status"
-                value="unknown"
-              />
-              <label class="usa-checkbox__label" for="filter-status-dns-needed"
-                >DNS Needed</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-ready"
-                type="checkbox"
-                name="filter-status"
-                value="ready"
-              />
-              <label class="usa-checkbox__label" for="filter-status-ready"
-                >Ready</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-on-hold"
-                type="checkbox"
-                name="filter-status"
-                value="on hold"
-              />
-              <label class="usa-checkbox__label" for="filter-status-on-hold"
-                >On hold</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-expired"
-                type="checkbox"
-                name="filter-status"
-                value="expired"
-              />
-              <label class="usa-checkbox__label" for="filter-status-expired"
-                >Expired</label
-              >
-            </div>
-            <div class="usa-checkbox">
-              <input
-                class="usa-checkbox__input"
-                id="filter-status-deleted"
-                type="checkbox"
-                name="filter-status"
-                value="deleted"
-              />
-              <label class="usa-checkbox__label" for="filter-status-deleted"
-                >Deleted</label
-              >
-            </div>
-          </fieldset>
-        </div>
-      </div>
-      <button
-        type="button"
-        class="usa-button usa-button--small padding--8-12-9-12 usa-button--outline usa-button--filter domains__reset-filters display-none"
-      >
-        Clear filters
-        <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="/public/img/sprite.svg#close"></use>
-        </svg>
-      </button>
+          <label class="usa-sr-only" for="domains__search-field">Search by domain name</label>
+          <input
+            class="usa-input"
+            id="domains__search-field"
+            type="search"
+            name="domains-search"
+            placeholder="Search by domain name"
+          />
+          <button class="usa-button" type="submit" id="domains__search-field-submit">
+            <img
+              src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+              class="usa-search__submit-icon"
+              alt="Search"
+            />
+          </button>
+        </form>
+      </section>
+    </div>
+    {% if user_domain_count and user_domain_count > 0 %}
+    <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
+      <section aria-label="Domains report component" class="margin-top-205">
+        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
+          <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+          </svg>Export as CSV
+        </a>
+      </section>
     </div>
     {% endif %}
-    <div class="domains__table-wrapper display-none usa-table-container--scrollable margin-top-0" tabindex="0">
-      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked domains__table">
-        <caption class="sr-only">Your registered domains</caption>
-        <thead>
-          <tr>
-            <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
-            <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
-            <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-            {% if portfolio and has_view_suborganization_portfolio_permission %}
-              <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
-            {% endif %}
-            <th 
-              scope="col" 
-              role="columnheader" 
-            >
-              <span class="usa-sr-only">Action</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- AJAX will populate this tbody -->
-        </tbody>
-      </table>
-      <div
-        class="usa-sr-only usa-table__announcement-region"
-        aria-live="polite"
-      ></div>
-    </div>
-    <div class="domains__no-data display-none">
-      <p>You don't have any registered domains.</p>
-      <p class="maxw-none clearfix">
-        <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet usa-link usa-link--icon" target="_blank">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
+  </div>
+  {% if portfolio %}
+  <div class="display-flex flex-align-center"> 
+    <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
+    <div class="usa-accordion usa-accordion--select margin-right-2">
+      <div class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-button usa-button--small padding--8-8-9 usa-button--outline usa-button--filter usa-accordion__button"
+          id="domains__usa-button--filter"
+          aria-expanded="false"
+          aria-controls="filter-status"
+        >
+          <span class="text-bold display-none" id="domains__filter-indicator"></span> Status
+          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
           </svg>
-          Why don't I see my domain when I sign in to the registrar?
-        </a>
-      </p>
+        </button>
+      </div>
+      <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
+        <h2>Status</h2>
+        <fieldset class="usa-fieldset margin-top-0">
+          <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-dns-needed"
+              type="checkbox"
+              name="filter-status"
+              value="unknown"
+            />
+            <label class="usa-checkbox__label" for="filter-status-dns-needed"
+              >DNS Needed</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-ready"
+              type="checkbox"
+              name="filter-status"
+              value="ready"
+            />
+            <label class="usa-checkbox__label" for="filter-status-ready"
+              >Ready</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-on-hold"
+              type="checkbox"
+              name="filter-status"
+              value="on hold"
+            />
+            <label class="usa-checkbox__label" for="filter-status-on-hold"
+              >On hold</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-expired"
+              type="checkbox"
+              name="filter-status"
+              value="expired"
+            />
+            <label class="usa-checkbox__label" for="filter-status-expired"
+              >Expired</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-deleted"
+              type="checkbox"
+              name="filter-status"
+              value="deleted"
+            />
+            <label class="usa-checkbox__label" for="filter-status-deleted"
+              >Deleted</label
+            >
+          </div>
+        </fieldset>
+      </div>
     </div>
-    <div class="domains__no-search-results display-none">
-      <p>No results found</p>
-    </div>
-  </section>
-  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
-    <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
-      <!-- Count will be dynamically populated by JS -->
-    </span>
-    <ul class="usa-pagination__list">
-      <!-- Pagination links will be dynamically populated by JS -->
-    </ul>
-  </nav>
+    <button
+      type="button"
+      class="usa-button usa-button--small padding--8-12-9-12 usa-button--outline usa-button--filter display-none"
+      id="domains__reset-filters"
+    >
+      Clear filters
+      <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
+        <use xlink:href="/public/img/sprite.svg#close"></use>
+      </svg>
+    </button>
+  </div>
+  {% endif %}
+  <div class="display-none usa-table-container--scrollable margin-top-0" tabindex="0" id="domains__table-wrapper">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+      <caption class="sr-only">Your registered domains</caption>
+      <thead>
+        <tr>
+          <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
+          <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
+          <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
+          {% if portfolio and has_view_suborganization_portfolio_permission %}
+            <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
+          {% endif %}
+          <th 
+            scope="col" 
+            role="columnheader" 
+          >
+            <span class="usa-sr-only">Action</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- AJAX will populate this tbody -->
+      </tbody>
+    </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region" id="domains__usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
+  </div>
+  <div class="display-none" id="domains__no-data">
+    <p>You don't have any registered domains.</p>
+    <p class="maxw-none clearfix">
+      <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet usa-link usa-link--icon" target="_blank">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
+        </svg>
+        Why don't I see my domain when I sign in to the registrar?
+      </a>
+    </p>
+  </div>
+  <div class="display-none" id="domains__no-search-results">
+    <p>No results found</p>
+  </div>
+</section>
+<nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
+  <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
+    <!-- Count will be dynamically populated by JS -->
+  </span>
+  <ul class="usa-pagination__list">
+    <!-- Pagination links will be dynamically populated by JS -->
+  </ul>
+</nav>
