@@ -75,7 +75,6 @@ class RequestingEntityForm(RegistrarForm):
     def clean_sub_organization(self):
         sub_organization = self.cleaned_data.get("sub_organization")
         is_custom = self.cleaned_data.get("is_custom_suborganization")
-        print(f"in clean: {sub_organization}")
         if is_custom:
             # If it's a custom suborganization, return None (equivalent to selecting nothing)
             return None
