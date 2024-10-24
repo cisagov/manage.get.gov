@@ -178,7 +178,6 @@ class GenericTestHelper(TestCase):
         """
         # 'o' is a search param defined by the current index position in the
         # table, plus one.
-        print(" we are in table sorted right now")
         dummy_request = self.factory.get(
             self.url,
             {"o": o_index},
@@ -203,7 +202,6 @@ class GenericTestHelper(TestCase):
         middleware = SessionMiddleware(lambda req: req)
         middleware.process_request(request)
         request.session.save()
-        print(" we are in mock user request for factory, here is the returned requset", request)
         return request
 
     def get_table_delete_confirmation_page(self, selected_across: str, index: str):
