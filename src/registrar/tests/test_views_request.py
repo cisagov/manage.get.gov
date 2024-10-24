@@ -249,6 +249,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_result = type_form.submit()
         # should see results in db
         domain_request = DomainRequest.objects.get()  # there's only one
+        print(domain_request.generic_org_type)
         self.assertEqual(domain_request.generic_org_type, "federal")
         # the post request should return a redirect to the next form in
         # the domain request page
@@ -487,7 +488,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         review_page = requirements_result.follow()
         review_form = review_page.forms[0]
-
+        print(review_page)
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
         self.assertContains(review_page, "Federal")

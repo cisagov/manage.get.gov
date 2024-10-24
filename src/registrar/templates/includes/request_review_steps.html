@@ -8,8 +8,8 @@
     {% endif %}
 
     {% if step == Step.ORGANIZATION_TYPE %}
-        {% if domain_request.converted_generic_org_type is not None %}
-            {% with title=form_titles|get_item:step value=domain_request.converted_generic_org_type_display|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+        {% if domain_request.generic_org_type is not None %}
+            {% with title=form_titles|get_item:step value=domain_request.generic_org_type_display|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
                 {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
             {% endwith %}
         {% else %}
@@ -29,7 +29,7 @@
 
 
     {% if step == Step.ORGANIZATION_FEDERAL %}
-        {% with title=form_titles|get_item:step value=domain_request.converted_federal_type|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+        {% with title=form_titles|get_item:step value=domain_request.federal_type|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
     {% endif %}
@@ -41,7 +41,7 @@
     {% endif %}
 
     {% if step == Step.ORGANIZATION_CONTACT %}
-        {% if domain_request.converted_organization_name %}
+        {% if domain_request.organization_name %}
             {% with title=form_titles|get_item:step value=domain_request %}
                 {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url address='true' %}
             {% endwith %}
