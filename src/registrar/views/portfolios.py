@@ -1,8 +1,10 @@
 import logging
-from django.http import Http404
+from django.http import HttpResponse, Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
+
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,
     PortfolioMemberForm,
@@ -97,12 +99,17 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
             },
         )
 
-    # TODO: Define Delete here
+    @csrf_exempt
+    def delete(self, request, pk):
+        """
+        Find and delete the portfolio member using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
 
-    """
-    Find and delete the portfolio member using the provided primary key (pk).
-    Redirect to a success page after deletion (or any other appropriate page).
-    """
+        portfolio_member_permission.delete()
+
+        return HttpResponse(status=204)
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
@@ -181,7 +188,17 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
             },
         )
 
-    # TODO: Create delete here
+    @csrf_exempt
+    def delete(self, request, pk):
+        """
+        Find and delete the portfolio invitation using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+
+        portfolio_invitation.delete()
+
+        return HttpResponse(status=204)
 
 
 class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):

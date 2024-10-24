@@ -2207,10 +2207,11 @@ class MembersTable extends LoadTableBase {
     fetch(`${member_delete_url}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'X-CSRFToken': csrfToken,
       },
-      body: formData
+      credentials: 'same-origin'
+      // body: formData
     })
     .then(response => {
       if (!response.ok) {
@@ -2221,6 +2222,33 @@ class MembersTable extends LoadTableBase {
     })
     .catch(error => console.error('Error fetching domain requests:', error));
   }
+
+  // deleteDomainRequest(domainRequestPk, pageToDisplay) {
+  //   // Use to debug uswds modal issues
+  //   //console.log('deleteDomainRequest')
+    
+  //   // Get csrf token
+  //   const csrfToken = getCsrfToken();
+  //   // Create FormData object and append the CSRF token
+  //   const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-domain-request=`;
+
+  //   fetch(`/domain-request/${domainRequestPk}/delete`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/x-www-form-urlencoded',
+  //       'X-CSRFToken': csrfToken,
+  //     },
+  //     body: formData
+  //   })
+  //   .then(response => {
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+  //     // Update data and UI
+  //     this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+  //   })
+  //   .catch(error => console.error('Error fetching domain requests:', error));
+  // }
 
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
