@@ -475,11 +475,13 @@ class User(AbstractUser):
 
     def get_active_requests_count_in_portfolio(self, request):
         """Return count of active requests for the portfolio associated with the request."""
-        portfolio_id = request.session.get(
-            "portfolio_id"
-        )  # Adjust based on how you store the portfolio ID in the session
-        if not portfolio_id:
-            return 0  # No portfolio ID found
+        # Get the portfolio from the session using the existing method
+
+        portfolio = request.session.get("portfolio")
+        print(f"Portfolio from session: {portfolio}")
+
+        if not portfolio:
+            return 0  # No portfolio found
 
         allowed_states = [
             DomainRequest.DomainRequestStatus.SUBMITTED,
@@ -487,9 +489,9 @@ class User(AbstractUser):
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         ]
 
-        # Assuming you have a way to filter domain requests by portfolio
+        # Now filter based on the portfolio retrieved
         active_requests_count = self.domain_requests_created.filter(
-            status__in=allowed_states, portfolio__id=portfolio_id  # Ensure this field exists on the DomainRequest model
+            status__in=allowed_states, portfolio=portfolio
         ).count()
 
         return active_requests_count
