@@ -167,7 +167,7 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
 class NewMemberForm(forms.ModelForm):
     member_access_level = forms.ChoiceField(
         label="Select permission",
-        choices=[("True", "Admin Access"), ("False", "Basic Access")],
+        choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
         widget=forms.RadioSelect(attrs={'class': 'usa-radio__input  usa-radio__input--tile'}),
         required=True,
         error_messages={

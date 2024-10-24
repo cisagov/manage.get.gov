@@ -297,28 +297,56 @@ function clearValidators(el) {
  * radio button is false (hides this element if true)
  * **/
 function HookupYesNoListener(radioButtonName, elementIdToShowIfYes, elementIdToShowIfNo) {
+  HookupRadioTogglerListener(radioButtonName, {
+    'True': elementIdToShowIfYes,
+    'False': elementIdToShowIfNo
+  });
+}
+
+/** 
+ * Hookup listeners for radio togglers in form fields.
+ * 
+ * Parameters:
+ *  - radioButtonName: The "name=" value for the radio buttons being used as togglers
+ *  - valueToElementMap: An object where keys are the values of the radio buttons, 
+ *    and values are the corresponding DOM element IDs to show. All other elements will be hidden.
+ * 
+ * Usage Example:
+ * Assuming you have radio buttons with values 'option1', 'option2', and 'option3',
+ * and corresponding DOM IDs 'section1', 'section2', 'section3'.
+ * 
+ * HookupValueBasedListener('exampleRadioGroup', {
+ *      'option1': 'section1',
+ *      'option2': 'section2',
+ *      'option3': 'section3'
+ *    });
+ **/
+function HookupRadioTogglerListener(radioButtonName, valueToElementMap) {
   // Get the radio buttons
   let radioButtons = document.querySelectorAll('input[name="'+radioButtonName+'"]');
+  
+  // Extract the list of all element IDs from the valueToElementMap
+  let allElementIds = Object.values(valueToElementMap);
 
   function handleRadioButtonChange() {
-    // Check the value of the selected radio button
-    // Attempt to find the radio button element that is checked
+    // Find the checked radio button
     let radioButtonChecked = document.querySelector('input[name="'+radioButtonName+'"]:checked');
-
-    // Check if the element exists before accessing its value
     let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
 
-    switch (selectedValue) {
-      case 'True':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 1);
-        break;
+    // Hide all elements by default
+    allElementIds.forEach(function (elementId) {
+      let element = document.getElementById(elementId);
+      if (element) {
+        element.style.display = 'none';
+      }
+    });
 
-      case 'False':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 2);
-        break;
-
-      default:
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 0);
+    // Show the relevant element for the selected value
+    if (selectedValue && valueToElementMap[selectedValue]) {
+      let elementToShow = document.getElementById(valueToElementMap[selectedValue]);
+      if (elementToShow) {
+        elementToShow.style.display = 'block';
+      }
     }
   }
 
@@ -328,10 +356,11 @@ function HookupYesNoListener(radioButtonName, elementIdToShowIfYes, elementIdToS
       radioButton.addEventListener('change', handleRadioButtonChange);
     });
 
-    // initialize
+    // Initialize by checking the current state
     handleRadioButtonChange();
   }
 }
+
 
 // A generic display none/block toggle function that takes an integer param to indicate how the elements toggle
 function toggleTwoDomElements(ele1, ele2, index) {
@@ -918,8 +947,10 @@ function setupUrbanizationToggle(stateTerritoryField) {
  *
  */
 (function newMemberFormListener() {
-  // HookupYesNoListener("new_member-permission_level",'new-member-admin-permissions', 'new-member-basic-permissions')
-  HookupYesNoListener("member_access_level",'new-member-admin-permissions', 'new-member-basic-permissions')
+  HookupRadioTogglerListener('member_access_level', {
+          'admin': 'new-member-admin-permissions',
+          'basic': 'new-member-basic-permissions'
+        });
 })();
 
 /**
