@@ -168,7 +168,7 @@ class NewMemberForm(forms.ModelForm):
     member_access_level = forms.ChoiceField(
         label="Select permission",
         choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
-        widget=forms.RadioSelect(attrs={'class': 'usa-radio__input  usa-radio__input--tile'}),
+        widget=forms.RadioSelect(attrs={"class": "usa-radio__input  usa-radio__input--tile"}),
         required=True,
         error_messages={
             "required": "Member access level is required",
@@ -252,10 +252,10 @@ class NewMemberForm(forms.ModelForm):
 
         # Validate the sport based on the selected grade
         if permission_level == "True":
-            #remove the error messages pertaining to basic permission inputs
+            # remove the error messages pertaining to basic permission inputs
             del self.errors["basic_org_domain_request_permissions"]
         else:
-            #remove the error messages pertaining to admin permission inputs
+            # remove the error messages pertaining to admin permission inputs
             del self.errors["admin_org_domain_request_permissions"]
             del self.errors["admin_org_members_permissions"]
         return cleaned_data
