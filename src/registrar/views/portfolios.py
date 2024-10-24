@@ -97,6 +97,13 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
             },
         )
 
+    # TODO: Define Delete here
+
+    """
+    Find and delete the portfolio member using the provided primary key (pk).
+    Redirect to a success page after deletion (or any other appropriate page).
+    """
+
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
@@ -173,6 +180,8 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
             },
         )
+
+    # TODO: Create delete here
 
 
 class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):

@@ -2065,16 +2065,8 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
-  generateKebob(member, hasEditPermission, member_name, last_active, num_domains) {
-    if (!hasEditPermission) return '';
-
+  addModal(member, member_id, num_domains, submit_delete_url) {
     const member_email = member.email;
-
-    const member_id = member.id;
-    let isMemberInvited = !last_active || last_active === 'Invited';
-    let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
-    
-
     let modalHeading = '';
     let modalDescription = '';
 
@@ -2092,7 +2084,7 @@ class MembersTable extends LoadTableBase {
     const modalSubmit = `
       <button type="button"
       class="usa-button usa-button--secondary usa-modal__submit"
-      data-pk = ${member_id}
+      data-pk = ${submit_delete_url}
       name="delete-member">Yes, remove from organizaion</button>
     `
 
@@ -2144,11 +2136,18 @@ class MembersTable extends LoadTableBase {
         </div>
         `
         this.tableWrapper.appendChild(modal);
+        console.log("modal", modal)
+  }
 
-    return `
+  generateKebabHTML(member_id, member_name, last_active) {
+    let isMemberInvited = !last_active || last_active === 'Invited';
+    let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
+
+    const kebab =  `
       <a 
         role="button" 
         id="button-trigger-remove-member-${member_id}"
+        href="#toggle-remove-member-${member_id}"
         class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
         aria-controls="toggle-remove-member-${member_id}"
         data-open-modal
@@ -2187,7 +2186,40 @@ class MembersTable extends LoadTableBase {
           </a>
         </div>
       </div>
-    `      
+    `
+    return kebab      
+  }
+
+  /**
+   * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
+   * @param {*} domainRequestPk - the identifier for the request that we're deleting
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+  */
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Use to debug uswds modal issues
+    //console.log('deleteDomainRequest')
+    
+    // Get csrf token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&delete-member=`;
+
+    fetch(`${member_delete_url}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // Update data and UI
+      this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+    })
+    .catch(error => console.error('Error fetching domain requests:', error));
   }
 
   /**
@@ -2265,7 +2297,10 @@ class MembersTable extends LoadTableBase {
           }
 
           data.members.forEach(member => {
-            const member_id = member.source + member.id;
+            const member_source = member.source === "permissions" ? "member" : "invitedmember";
+            const member_id = member_source + member.id;
+            // member_id is actually the permission_id
+            const submit_delete_url = `/${member_source}/${member.id}`
             const member_name = member.name;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
@@ -2274,10 +2309,10 @@ class MembersTable extends LoadTableBase {
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
+            const kebabHTML = hasEditPermission ? this.generateKebabHTML(member_id, member_name, last_active): ''; 
+            
+            if (hasEditPermission) this.addModal(member, member_id, num_domains, submit_delete_url);
 
-            const kebob = this.generateKebob(member, hasEditPermission, member_name, last_active, num_domains);
-
-            // console.log("kebob", kebob)
 
             const action_url = member.action_url;
             const action_label = member.action_label;
@@ -2332,7 +2367,7 @@ class MembersTable extends LoadTableBase {
                   ${action_label} <span class="usa-sr-only">${member_name}</span>
                 </a>
               </td>
-              ${hasEditPermission ? '<td>'+kebob+'</td>' : ''}
+              ${hasEditPermission ? '<td>'+kebabHTML+'</td>' : ''}
             `;
             memberList.appendChild(row);
             if (domainsHTML || permissionsHTML) {
@@ -2360,7 +2395,10 @@ class MembersTable extends LoadTableBase {
               if (data.total == 1 && data.unfiltered_total > 1) {
                 pageToDisplay--;
               }
+
+              this.deleteMember(pk, pageToDisplay);
               
+              // Pass member_delete_url in to delete
               // TODO: Use the PK to call a separate function that triggers a new backend AJAX call 
               // to delete their UserDomainRoles only for this portfolio + remove their UserPortfolioPermissions
               alert('modal submit')
