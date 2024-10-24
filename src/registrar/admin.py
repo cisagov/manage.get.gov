@@ -2318,15 +2318,6 @@ class DomainInformationInline(admin.StackedInline):
     analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
     autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
 
-    # While the organization feature is under development, we can gate some fields
-    # from analysts for now. Remove this array and the get_fieldset overrides once this is done.
-    # Not my code initially, credit to Nicolle. This was once removed and like a phoenix it has been reborn.
-    superuser_only_fields = [
-        "requested_suborganization",
-        "suborganization_city",
-        "suborganization_state_territory",
-    ]
-
     def get_domain_managers(self, obj):
         user_domain_roles = UserDomainRole.objects.filter(domain=obj.domain)
         user_ids = user_domain_roles.values_list("user_id", flat=True)
@@ -2426,14 +2417,6 @@ class DomainInformationInline(admin.StackedInline):
         # Grab fieldsets from DomainInformationAdmin so that it handles all logic
         # for permission-based field visibility.
         modified_fieldsets = copy.deepcopy(DomainInformationAdmin.get_fieldsets(self, request, obj=None))
-
-        # Create a modified version of fieldsets to exclude certain fields
-        if not request.user.has_perm("registrar.full_access_permission"):
-            for name, data in modified_fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
 
         # Modify fieldset sections in place
         for index, (title, options) in enumerate(modified_fieldsets):

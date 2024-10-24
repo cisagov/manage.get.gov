@@ -2410,6 +2410,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 })();
 
+/** An IIFE that intializes the requesting entity page.
+ * This page has a radio button that dynamically toggles some fields
+ * Within that, the dropdown also toggles some additional form elements.
+*/
 (function handleRequestingEntityFieldset() {
   // Check if the requesting-entity-fieldset exists. 
   // This determines if we are on the requesting entity page or not.
@@ -2423,14 +2427,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const subOrgSelect = document.querySelector(`#id_${formPrefix}-sub_organization`);
 
   // The suborganization section is its own div
+  // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory.
   const suborganizationFieldset = document.querySelector("#requesting-entity-fieldset__suborganization");
-
-  // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory
   const suborganizationDetailsFieldset = document.querySelector("#requesting-entity-fieldset__suborganization__details");
 
+  // This variable determines if the user is trying to request a new suborganization or not
   var isCustomSuborganization = document.querySelector("#id_portfolio_requesting_entity-is_custom_suborganization")
-
-  // Use a variable to determine which option has been selected on the yes/no form.
 
   // Don't do anything if we are missing crucial page elements
   if (!isSuborgRadios || !subOrgSelect || !suborganizationFieldset || !suborganizationDetailsFieldset) return;
@@ -2486,5 +2488,4 @@ document.addEventListener('DOMContentLoaded', function() {
   subOrgSelect.addEventListener("change", () => {
     toggleSuborganizationDetails();
   });
-
 })();

@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class RequestingEntityForm(RegistrarForm):
+    """The requesting entity form contains a dropdown for suborganizations,
+    and some (hidden by default) input fields that allow the user to request for a suborganization.
+    All of these fields are not required by default, but as we use javascript to conditionally show
+    and hide some of these, they then become required in certain circumstances."""
     sub_organization = forms.ModelChoiceField(
         label="Suborganization name",
         # not required because this field won't be filled out unless
@@ -65,6 +69,7 @@ class RequestingEntityForm(RegistrarForm):
     is_custom_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
+        """Override of init to add the suborganization queryset"""
         super().__init__(*args, **kwargs)
 
         if self.domain_request.portfolio:
@@ -73,6 +78,8 @@ class RequestingEntityForm(RegistrarForm):
             )
 
     def clean_sub_organization(self):
+        """On suborganization clean, set the suborganization value to None if the user is requesting
+        a custom suborganization (as it doesn't exist yet)"""
         sub_organization = self.cleaned_data.get("sub_organization")
         is_custom = self.cleaned_data.get("is_custom_suborganization")
         if is_custom:
@@ -81,6 +88,8 @@ class RequestingEntityForm(RegistrarForm):
         return sub_organization
 
     def full_clean(self):
+        """Validation logic to remove the custom suborganization value before clean is triggered.
+        Without this override, the form will throw an 'invalid option' error."""
         # Remove the custom other field before cleaning
         data = self.data.copy() if self.data else None
         suborganization = self.data.get("portfolio_requesting_entity-sub_organization")

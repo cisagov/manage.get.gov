@@ -592,6 +592,9 @@ class RequestingEntity(DomainRequestWizard):
     forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
 
     def save(self, forms: list):
+        """Override of save to clear or associate certain suborganization data
+        depending on what the user wishes to do. For instance, we want to add a suborganization
+        if the user selects one."""
         requesting_entity_form = forms[1]
         cleaned_data = requesting_entity_form.cleaned_data
         is_suborganization = cleaned_data.get("is_suborganization")
@@ -859,13 +862,15 @@ class DomainRequestStatus(DomainRequestPermissionView):
         return True
 
     def get_context_data(self, **kwargs):
+        """Context override to add a step list to the context"""
         context = super().get_context_data(**kwargs)
         # Create a temp wizard object to grab the step list
-        wizard = PortfolioDomainRequestWizard()
-        wizard.request = self.request
-        context["Step"] = PortfolioDomainRequestStep.__members__
-        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
-        context["form_titles"] = wizard.titles
+        if self.request.user.is_org_user(self.request):
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
         return context
 
 
