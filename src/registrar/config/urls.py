@@ -106,11 +106,11 @@ urlpatterns = [
         views.PortfolioInvitedMemberEditView.as_view(),
         name="invitedmember-permissions",
     ),
-    # path(
-    #     "no-organization-members/",
-    #     views.PortfolioNoMembersView.as_view(),
-    #     name="no-portfolio-members",
-    # ),
+    path(
+        "members/new-member/",
+        views.NewMemberView.as_view(),
+        name="new-member",
+    ),
     path(
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),

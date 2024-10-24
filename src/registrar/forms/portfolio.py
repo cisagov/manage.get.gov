@@ -3,6 +3,7 @@
 import logging
 from django import forms
 from django.core.validators import RegexValidator
+from django.core.validators import MaxLengthValidator
 
 from registrar.models import (
     PortfolioInvitation,
@@ -10,6 +11,7 @@ from registrar.models import (
     DomainInformation,
     Portfolio,
     SeniorOfficial,
+    User,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -160,3 +162,100 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
             "roles",
             "additional_permissions",
         ]
+
+
+class NewMemberForm(forms.ModelForm):
+    member_access_level = forms.ChoiceField(
+        label="Select permission",
+        choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
+        widget=forms.RadioSelect(attrs={"class": "usa-radio__input  usa-radio__input--tile"}),
+        required=True,
+        error_messages={
+            "required": "Member access level is required",
+        },
+    )
+    admin_org_domain_request_permissions = forms.ChoiceField(
+        label="Select permission",
+        choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
+        widget=forms.RadioSelect,
+        required=True,
+        error_messages={
+            "required": "Domain request permission is required",
+        },
+    )
+    admin_org_members_permissions = forms.ChoiceField(
+        label="Select permission",
+        choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
+        widget=forms.RadioSelect,
+        required=True,
+        error_messages={
+            "required": "Member permission is required",
+        },
+    )
+    basic_org_domain_request_permissions = forms.ChoiceField(
+        label="Select permission",
+        choices=[
+            ("view_only", "View all requests"),
+            ("view_and_create", "View all requests plus create requests"),
+            ("no_access", "No access"),
+        ],
+        widget=forms.RadioSelect,
+        required=True,
+        error_messages={
+            "required": "Member permission is required",
+        },
+    )
+
+    email = forms.EmailField(
+        label="Enter the email of the member you'd like to invite",
+        max_length=None,
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+        required=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ["email"]
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Lowercase the value of the 'email' field
+        email_value = cleaned_data.get("email")
+        if email_value:
+            cleaned_data["email"] = email_value.lower()
+
+        # Check for an existing user (if there isn't any, send an invite)
+        # if email_value:
+        #     try:
+        #         existingUser = User.objects.get(email=email_value)
+        #     except User.DoesNotExist:
+        #         raise forms.ValidationError("User with this email does not exist.")
+
+        # Get the grade and sport from POST data
+        permission_level = cleaned_data.get("member_access_level")
+        # permission_level = self.data.get('new_member-permission_level')
+        if not permission_level:
+            for field in self.fields:
+                if field in self.errors and field != "email" and field != "member_access_level":
+                    del self.errors[field]
+            return cleaned_data
+
+        # Validate the sport based on the selected grade
+        if permission_level == "True":
+            # remove the error messages pertaining to basic permission inputs
+            del self.errors["basic_org_domain_request_permissions"]
+        else:
+            # remove the error messages pertaining to admin permission inputs
+            del self.errors["admin_org_domain_request_permissions"]
+            del self.errors["admin_org_members_permissions"]
+        return cleaned_data
