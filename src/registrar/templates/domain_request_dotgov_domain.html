@@ -6,7 +6,11 @@
     <ul class="usa-list">
       <li>Be available </li>
       <li>Relate to your organization’s name, location, and/or services </li>
+      {% if has_organization_feature_flag %}
       <li>Be clear to the general public. Your domain name must not be easily confused with other organizations.</li>
+      {% else %}
+      <li>Be unlikely to mislead or confuse the general public (even if your domain is only intended for a specific audience) </li>
+      {% end %}
     </ul>
   </p>
 
@@ -19,6 +23,12 @@
 
   <p>Note that <strong>only federal agencies can request generic terms</strong> like
   vote.gov.</p>
+  {% if not has_organization_feature_flag%}
+  <h2 class="margin-top-3">Domain examples for your type of organization</h2>
+  <div class="domain_example">
+    {% include "includes/domain_example.html" %}
+  </div>
+  {% endif %}
 {% endblock %}
 
 
