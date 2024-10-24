@@ -7,14 +7,13 @@
 
 {% block form_fields %}
 
-    <fieldset class="usa-fieldset margin-top-2">
-        <legend>
+    <fieldset class="usa-fieldset margin-top-2">          
             <h2>Is there anything else you’d like us to know about your domain request?</h2> 
         </legend>
     </fieldset>
 
     <div class="margin-top-3" id="anything-else">
-        <p>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+        <p><em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em></p>
         {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.0.anything_else %}
         {% endwith %}
