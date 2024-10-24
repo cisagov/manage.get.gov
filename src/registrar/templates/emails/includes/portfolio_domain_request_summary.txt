@@ -11,9 +11,7 @@ Requesting entity:
     {{domain_request.requested_suborganization}}
     {{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}
 {% endif %}
-Alternative domains:
-{% for site in domain_request.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
-{% endfor %}{% endif %}
+{% if domain_request.current_websites.exists %}
 Current websites: {% for site in domain_request.current_websites.all %}
 {% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
@@ -25,8 +23,10 @@ Alternative domains:
 {% endfor %}{% endif %}
 Purpose of your domain:
 {{ domain_request.purpose }}
+{% if domain_request.additional_details%}
 Additional details:
 {{ domain_request.additional_details }}
+{% endif %}
 
 Your contact information:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
