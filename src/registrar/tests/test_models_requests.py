@@ -1050,7 +1050,8 @@ class TestDomainRequest(TestCase):
 
     @less_console_noise_decorator
     def test_converted_type(self):
-        """test that new property fields works as expected to pull domain req info such as fed agency, generic org type, and others from portfolio"""
+        """test that new property fields works as expected to pull domain req info such as fed agency,
+          generic org type, and others from portfolio"""
         fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
         portfolio = Portfolio.objects.create(
             organization_name="Test Portfolio",
