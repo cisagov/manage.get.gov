@@ -86,17 +86,21 @@ class DomainFixture(DomainRequestFixture):
             domain_request = domain_requests[0] if domain_requests else None
             # Second-to-last domain request (expired)
             domain_request_expired = domain_requests[1] if len(domain_requests) > 1 else None
-
+            try:
             # Approve the current domain request
-            if domain_request:
-                cls._approve_request(domain_request, users)
-                domain_requests_to_update.append(domain_request)
+                if domain_request:
+                    cls._approve_request(domain_request, users)
+                    domain_requests_to_update.append(domain_request)
 
-            # Approve the expired domain request
-            if domain_request_expired:
-                cls._approve_request(domain_request_expired, users)
-                domain_requests_to_update.append(domain_request_expired)
-                expired_requests.append(domain_request_expired)
+                # Approve the expired domain request
+                if domain_request_expired:
+                    cls._approve_request(domain_request_expired, users)
+                    domain_requests_to_update.append(domain_request_expired)
+                    expired_requests.append(domain_request_expired)
+            except:
+                logging.error("An error occurred while processing domain requests", exc_info=True)
+
+
 
         # Perform bulk update for the domain requests
         cls._bulk_update_requests(domain_requests_to_update)
