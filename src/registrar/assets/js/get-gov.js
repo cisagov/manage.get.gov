@@ -1992,7 +1992,7 @@ class MembersTable extends LoadTableBase {
 
       // If there are more than 6 domains, display a "View assigned domains" link
       if (num_domains >= 6) {
-        domainsHTML += `<p><a href="/member/${member_id}/domains">View assigned domains</a></p>`;
+        domainsHTML += `<p><a href="/member/${member.id}/domains">View assigned domains</a></p>`;
       }
 
       domainsHTML += "</div>";
