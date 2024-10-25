@@ -26,4 +26,3 @@ Your contact information:
 Administrators from your organization:{% for admin in domain_request.portfolio.portfolio_admin_users %}
 {% spaceless %}{% if admin != recipient %}{% include "emails/includes/contact.txt" with contact=admin %}{% endif %}{% endspaceless %}
 {% endfor %}
-
