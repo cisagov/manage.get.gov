@@ -191,7 +191,6 @@ class GenericTestHelper(TestCase):
 
         # Use changelist_view to get the sorted queryset
         response = self.admin.changelist_view(dummy_request)
-
         response.render()  # Render the response before accessing its content
         returned_sort_order = list(response.context_data["cl"].result_list)
 

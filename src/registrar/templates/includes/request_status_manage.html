@@ -146,7 +146,7 @@
 
         {% block request_summary %}
         {% with heading_level='h3' %}
-        {% with org_type=DomainRequest.generic_org_type_display %}
+        {% with org_type=DomainRequest.get_generic_org_type_display %}
         {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
         {% endwith %}
 
