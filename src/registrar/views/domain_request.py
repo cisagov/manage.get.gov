@@ -11,7 +11,6 @@ from registrar.forms import domain_request_wizard as forms
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
-from registrar.models.suborganization import Suborganization
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
@@ -601,14 +600,16 @@ class RequestingEntity(DomainRequestWizard):
         sub_organization = cleaned_data.get("sub_organization")
         requested_suborganization = cleaned_data.get("requested_suborganization")
 
-        # If no suborganization presently exists but the user filled out org information then create a suborg automatically.
+        # If no suborganization presently exists but the user filled out 
+        # org information then create a suborg automatically.
         if is_suborganization and (sub_organization or requested_suborganization):
             # Cleanup the organization name field, as this isn't for suborganizations.
             self.domain_request.organization_name = None
             self.domain_request.sub_organization = sub_organization
         else:
             # If the user doesn't intend to create a suborg, simply don't make one and do some data cleanup
-            self.domain_request.organization_name = self.domain_request.portfolio.organization_name
+            if self.domain_request.portfolio:
+                self.domain_request.organization_name = self.domain_request.portfolio.organization_name
 
             self.domain_request.sub_organization = None
             self.domain_request.requested_suborganization = None

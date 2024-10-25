@@ -1893,6 +1893,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "suborganization_city",
         "suborganization_state_territory",
     ]
+
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 

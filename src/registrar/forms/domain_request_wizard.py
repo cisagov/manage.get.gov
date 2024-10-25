@@ -26,6 +26,7 @@ class RequestingEntityForm(RegistrarForm):
     and some (hidden by default) input fields that allow the user to request for a suborganization.
     All of these fields are not required by default, but as we use javascript to conditionally show
     and hide some of these, they then become required in certain circumstances."""
+
     sub_organization = forms.ModelChoiceField(
         label="Suborganization name",
         # not required because this field won't be filled out unless

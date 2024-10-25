@@ -31,11 +31,7 @@ THANK YOU
 
 ----------------------------------------------------------------
 
-{% if is_org_user %}
-    {% include 'emails/includes/portfolio_domain_request_summary.txt' %}
-{% else %}
-    {% include 'emails/includes/domain_request_summary.txt' %}
-{% endif %}
+{% if is_org_user %}{% include 'emails/includes/portfolio_domain_request_summary.txt' %}{% else %}{% include 'emails/includes/domain_request_summary.txt' %}{% endif %}
 ----------------------------------------------------------------
 
 The .gov team
