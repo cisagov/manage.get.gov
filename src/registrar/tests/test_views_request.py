@@ -491,7 +491,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
         self.assertContains(review_page, "Federal")
-        self.assertContains(review_page, "Executive")
+        self.assertContains(review_page, "executive")
         self.assertContains(review_page, "Testorg")
         self.assertContains(review_page, "address 1")
         self.assertContains(review_page, "address 2")
