@@ -1333,7 +1333,7 @@ class DomainRequest(TimeStampedModel):
             return False
         return True
 
-    """the following converted_ property methods get their respective field names from portfolio, 
+    """the following converted_ property methods get their respective field names from portfolio,
     if the domain request has a portfolio. if it does not, it will get the info from the model itself."""
 
     @property
