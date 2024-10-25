@@ -1972,7 +1972,7 @@ class MembersTable extends LoadTableBase {
    * @param {Array} domain_urls - An array of corresponding domain URLs.
    * @returns {string} - A string of HTML displaying the domains assigned to the member.
    */
-  generateDomainsHTML(num_domains, domain_names, domain_urls, id) {
+  generateDomainsHTML(num_domains, domain_names, domain_urls, action_url) {
     // Initialize an empty string for the HTML
     let domainsHTML = '';
 
@@ -1992,7 +1992,7 @@ class MembersTable extends LoadTableBase {
 
       // If there are more than 6 domains, display a "View assigned domains" link
       if (num_domains >= 6) {
-        domainsHTML += `<p><a href="/member/${id}/domains">View assigned domains</a></p>`;
+        domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
       }
 
       domainsHTML += "</div>";
@@ -2143,7 +2143,7 @@ class MembersTable extends LoadTableBase {
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
             // generate html blocks for domains and permissions for the member
-            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, member.id);
+            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, action_url);
             let permissionsHTML = this.generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices);
             
             // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
