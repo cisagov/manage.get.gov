@@ -89,12 +89,18 @@ class DomainFixture(DomainRequestFixture):
 
             # Approve the current domain request
             if domain_request:
-                cls._approve_request(domain_request, users)
+                try:
+                    cls._approve_request(domain_request, users)
+                except Exception as err:
+                    logger.warning(f'Cannot approve domain request in fixtures: {err}')
                 domain_requests_to_update.append(domain_request)
 
             # Approve the expired domain request
             if domain_request_expired:
-                cls._approve_request(domain_request_expired, users)
+                try:
+                    cls._approve_request(domain_request_expired, users)
+                except Exception as err:
+                    logger.warning(f'Cannot approve domain request (expired) in fixtures: {err}')
                 domain_requests_to_update.append(domain_request_expired)
                 expired_requests.append(domain_request_expired)
 
