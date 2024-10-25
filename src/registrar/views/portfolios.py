@@ -3,7 +3,6 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
 
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,
