@@ -44,7 +44,12 @@
               {% if has_edit_members_portfolio_permission %}
                 Search all domains
               {% else %}
-                Search domains assigned to ovietta.evans@gsa.gov
+                Search domains assigned to
+                {% if member %}
+                  {{ member.email }}
+                {% else %}
+                  {{ portfolio_invitation.email }}
+                {% endif %}
               {% endif %}
             </label>            
             <div class="usa-search--show-label__input-wrapper">
