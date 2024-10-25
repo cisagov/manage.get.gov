@@ -496,24 +496,6 @@ class User(AbstractUser):
 
         return active_requests_count
 
-    # def is_only_admin_of_portfolio(self, portfolio):
-    #     """Check if the user is the only admin of the given portfolio."""
-
-    #     UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
-
-    #     # Grab admin permission ability we want
-    #     admin_permission = UserPortfolioPermissionChoices.EDIT_PORTFOLIO
-
-    #     # Get all users with admin permission for this portfolio
-    #     admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
-
-    #     # Check if there is more than one admin
-    #     if admins.count() == 1 and admins.first().user == self:
-    #         # The user is the only admin
-    #         return True
-    #     # There are other admins OR the user is not the only one
-    #     return False
-
     def is_only_admin_of_portfolio(self, portfolio):
         """Check if the user is the only admin of the given portfolio."""
 
