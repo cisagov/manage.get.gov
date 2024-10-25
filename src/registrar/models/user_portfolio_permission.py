@@ -92,16 +92,18 @@ class UserPortfolioPermission(TimeStampedModel):
         """
         Retrieve the permissions for the user's portfolio roles.
         """
+        return self.get_portfolio_permissions(self.roles, self.additional_permissions)
+
+    @classmethod
+    def get_portfolio_permissions(cls, roles, additional_permissions):
+        """Class method to return a list of permissions based on roles and addtl permissions"""
         # Use a set to avoid duplicate permissions
         portfolio_permissions = set()
-
-        if self.roles:
-            for role in self.roles:
-                portfolio_permissions.update(self.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
-
-        if self.additional_permissions:
-            portfolio_permissions.update(self.additional_permissions)
-
+        if roles:
+            for role in roles:
+                portfolio_permissions.update(cls.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+        if additional_permissions:
+            portfolio_permissions.update(additional_permissions)
         return list(portfolio_permissions)
 
     def clean(self):
