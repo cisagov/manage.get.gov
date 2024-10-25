@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Cloud Foundry CLI
+      - name: Clone
         uses: cloud-gov/cg-cli-tools@main
 
       - name: Clone
