@@ -1573,9 +1573,6 @@ class TestRequestingEntity(WebTest):
     def test_requesting_entity_page_errors(self):
         """Tests that we get the expected form errors on requesting entity"""
         domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)
-        UserPortfolioPermission.objects.create(
-            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
         response = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
         form = response.forms[0]
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
