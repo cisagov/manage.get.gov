@@ -249,7 +249,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_result = type_form.submit()
         # should see results in db
         domain_request = DomainRequest.objects.get()  # there's only one
-        print(domain_request.generic_org_type)
         self.assertEqual(domain_request.generic_org_type, "federal")
         # the post request should return a redirect to the next form in
         # the domain request page

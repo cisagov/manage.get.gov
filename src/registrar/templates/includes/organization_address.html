@@ -2,7 +2,7 @@
     {% if  organization.federal_agency  %}
         {{ organization.federal_agency }}<br />
     {% endif %}
-    {% if  organization.organization_name %}
+    {% if  organization.organization_name  %}
         {{ organization.organization_name }}
     {% endif %}
     {% if  organization.address_line1  %}
@@ -11,7 +11,7 @@
     {% if  organization.address_line2  %}
         <br />{{ organization.address_line2 }}
     {% endif %}
-    {% if organization.city %}
+    {% if  organization.city  %}
         <br />{{ organization.city }}{% if organization.state_territory %},&nbsp;
         {% else %}<br />
         {% endif %}
