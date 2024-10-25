@@ -2252,22 +2252,22 @@ class MembersTable extends LoadTableBase {
       body: formData
     })
     .then(response => {
-      if (response.status === 204) {
+      if (response.status === 200) {
         // TODO: Add success alert with "You've removed member.email from the organization." text
-        console.log('Member successfully deleted');
-        // Update data and UI
-        this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+        response.json().then(data => {
+          if (data.success) {
+            this.addAlert("success", data.success);
+          }
+          this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+        });
       } else {
         // If the response isn't 204, handle the error response
-        return response.json().then(data => {
-          console.log("Member response not 204");
+        response.json().then(data => {
+          console.log("Member response not 200");
           if (data.error) {
-            // TODO: We maybe don't need the consts above and have those
-            // responses in the portfolios.py JSON response. Formatting though?
-
             // This should display the error given from backend for
             // either only admin OR in progress requests
-            this.displayErrorMessage(data.error); 
+            this.addAlert("error", data.error); 
           } else {
             throw new Error(`Unexpected status: ${response.status}`);
           }
@@ -2276,13 +2276,36 @@ class MembersTable extends LoadTableBase {
     })
     .catch(error => {
       console.error('Error deleting member:', error);
-      this.displayErrorMessage(error.message);
     });
-}
+  }
 
-displayErrorMessage(errorMessage) {
-  alert(errorMessage); // Just debugging for now
-}
+
+  /**
+   * Adds an alert message to the page with an alert class.
+   *
+   * @param {string} alertClass - {error, warning, info, success}
+   * @param {string} alertMessage - The text that will be displayed
+   *
+   */
+  addAlert(alertClass, alertMessage) {
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    this.resetAlert();
+    toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
+    let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
+    alertParagraph.innerHTML = alertMessage
+    showElement(toggleableAlertDiv);
+  }
+
+  /**
+   * Resets the reusable alert message
+   *
+   */
+  resetAlert() {
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    toggleableAlertDiv.classList.remove('usa-alert--error');
+    toggleableAlertDiv.classList.remove('usa-alert--success');
+    hideElement(toggleableAlertDiv);
+  }
 
 
   /**

@@ -122,7 +122,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 
         portfolio_member_permission.delete()
 
-        return HttpResponse(status=204)
+        return JsonResponse({"success": f"You've removed {member.email} from the organization."}, status=200)
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
