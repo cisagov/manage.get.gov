@@ -39,16 +39,16 @@
     </div>
 
     <!-- ---------- MAIN TABLE ---------- -->
-    <div class="members__table-wrapper display-none usa-table-container--scrollable margin-top-0" tabindex="0">
+    <div class="members__table-wrapper display-none margin-top-0">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked members__table">
         <caption class="sr-only">Your registered members</caption>
         <thead>
           <tr>
-            <th data-sortable="member" scope="col" role="columnheader">Member</th>
-            <th data-sortable="last_active" scope="col" role="columnheader">Last Active</th>
+            <th data-sortable="member" role="columnheader" id="header-member">Member</th>
+            <th data-sortable="last_active" role="columnheader" id="header-last-active">Last Active</th>
             <th 
-              scope="col" 
-              role="columnheader" 
+              role="columnheader"
+              id="header-action"
             >
               <span class="usa-sr-only">Action</span>
             </th>

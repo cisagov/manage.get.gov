@@ -1,0 +1,52 @@
+name: Clone Staging Database
+
+on:
+  # these will be uncommented after testing
+  # ----
+  # schedule:
+  #   # Run daily at 2:00 PM EST
+  #   - cron: '0 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+
+env:
+  DESTINATION_ENVIRONMENT: ms
+  SOURCE_ENVIRONMENT: staging
+
+jobs:
+  clone-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Cloud Foundry CLI
+        uses: cloud-gov/cg-cli-tools@main
+
+      - name: Clone
+        env:
+          CF_USERNAME: CF_${{ env.DESTINATION_ENVIRONMENT }}_USERNAME
+          CF_PASSWORD: CF_${{ env.DESTINATION_ENVIRONMENT }}_PASSWORD
+        run: |
+          # login to cf cli
+          cf login -a api.fr.cloud.gov -u $CF_USERNAME -p $CF_PASSWORD -o cisa-dotgov -s ${{ env.DESTINATION_ENVIRONMENT }}
+          
+          # install cg-manage-rds tool
+          pip install git+https://github.com/cloud-gov/cg-manage-rds.git
+
+          # share the sandbox db with the Staging space
+          cf share-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+
+          # target the Staging space
+          cf target -s ${{ env.SOURCE_ENVIRONMENT }}
+
+          # clone from staging to the sandbox
+          cg-manage-rds clone getgov-${{ env.SOURCE_ENVIRONMENT }}-database getgov-${{ env.DESTINATION_ENVIRONMENT }}-database
+
+          rm db_backup.sql
+
+          # switch to the target sandbox space
+          cf target -s ${{ env.DESTINATION_ENVIRONMENT }}
+
+          # un-share the sandbox from Staging
+          cf unshare-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
