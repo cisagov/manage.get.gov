@@ -14,6 +14,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.tests.test_views import TestWithUser
 from .common import MockSESClient, completed_domain_request, create_test_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -1387,3 +1388,207 @@ class TestPortfolio(WebTest):
         # Check that the domain request still exists
         self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
         domain_request.delete()
+
+
+class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Create test member
+        cls.user_member = User.objects.create(
+            username="test_member",
+            first_name="Second",
+            last_name="User",
+            email="second@example.com",
+            phone="8003112345",
+            title="Member",
+        )
+
+        # Create test user with no perms
+        cls.user_no_perms = User.objects.create(
+            username="test_user_no_perms",
+            first_name="No",
+            last_name="Permissions",
+            email="user_no_perms@example.com",
+            phone="8003112345",
+            title="No Permissions",
+        )
+
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=cls.user,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        cls.permission = UserPortfolioPermission.objects.create(
+            user=cls.user_member,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_authenticated(self):
+        """Tests that the portfolio member domains view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains", kwargs={"pk": self.permission.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user_member.email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_no_perms(self):
+        """Tests that the portfolio member domains view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("member-domains", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_unauthenticated(self):
+        """Tests that the portfolio member domains view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("member-domains", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_not_found(self):
+        """Tests that the portfolio member domains view returns not found if user portfolio permission not found."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
+
+
+class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.user_no_perms = User.objects.create(
+            username="test_user_no_perms",
+            first_name="No",
+            last_name="Permissions",
+            email="user_no_perms@example.com",
+            phone="8003112345",
+            title="No Permissions",
+        )
+
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+
+        # Add an invited member who has been invited to manage domains
+        cls.invited_member_email = "invited@example.com"
+        cls.invitation = PortfolioInvitation.objects.create(
+            email=cls.invited_member_email,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=cls.user,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_authenticated(self):
+        """Tests that the portfolio invited member domains view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.invited_member_email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_no_perms(self):
+        """Tests that the portfolio invited member domains view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_unauthenticated(self):
+        """Tests that the portfolio invited member domains view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_not_found(self):
+        """Tests that the portfolio invited member domains view returns not found if user is not a member."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
