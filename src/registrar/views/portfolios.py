@@ -1,8 +1,9 @@
 import logging
-from django.http import Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib import messages
+
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,
     PortfolioMemberForm,
@@ -13,6 +14,7 @@ from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.utility.mixins import PortfolioInvitedMemberPermission, PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
@@ -98,6 +100,31 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         )
 
 
+class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
+
+    def post(self, request, pk):
+        """
+        Find and delete the portfolio member using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_member_permission.user
+
+        active_requests_count = member.get_active_requests_count_in_portfolio(request)
+        print(f"Active requests count for member {member.id}: {active_requests_count}")
+
+        if active_requests_count > 0:
+            return JsonResponse({"error": "ERROR: Member has in-progress requests and cannot be removed."}, status=400)
+
+        # If they are the last manager of a domain
+        if member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
+            return JsonResponse({"error": "ERROR: Member is the only admin."}, status=400)
+
+        portfolio_member_permission.delete()
+
+        return HttpResponse(status=204)
+
+
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
@@ -173,6 +200,20 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
             },
         )
+
+
+class PortfolioInvitedMemberDeleteView(PortfolioInvitedMemberPermission, View):
+
+    def post(self, request, pk):
+        """
+        Find and delete the portfolio invited member using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+
+        portfolio_invitation.delete()
+
+        return HttpResponse(status=204)
 
 
 class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):

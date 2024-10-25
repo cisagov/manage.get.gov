@@ -12,6 +12,9 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
+# from registrar.models import DomainInformation, UserDomainRole
+# from .models import User
+
 
 @login_required
 def get_portfolio_members_json(request):
@@ -192,6 +195,15 @@ def serialize_members(request, portfolio, item, user):
 
     view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
+    # We only need to call user_portfolio_permissions.get_managed_domains_count()
+    # What does it do: counts of domain by a specific user for the organization it's in
+
+    # For in progress requests: user.get_active_requests_count()
+    # If they're is_admin AND user_portfolio_permissions.get_managed_domains_count() == 1
+    # Portfolio == Organization
+    # Question: Can a ORGANIZATION_ADMIN also be a SUBORGANIZATION_ADMIN?
+    # Question: Does SUBORGANIZATION_ADMIN exist?
+
     is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
     action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
 
@@ -218,3 +230,28 @@ def serialize_members(request, portfolio, item, user):
         "svg_icon": ("visibility" if view_only else "settings"),
     }
     return member_json
+
+
+# def get_user_domain_count(request):
+#     """Fetch the domain count for a specified user and portfolio."""
+
+#     user_id = request.GET.get("user_id")
+#     portfolio = request.GET.get("portfolio")
+
+#     # Fetch the target user based on the user_id provided
+#     try:
+#         target_user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return JsonResponse({"error": "User not found."}, status=404)
+
+#     # Check permissions and count domains
+#     if target_user.is_org_user(request) and target_user.has_view_all_domains_portfolio_permission(portfolio):
+#         domain_count = DomainInformation.objects.filter(portfolio=portfolio).count()
+#     else:
+#         domain_count = UserDomainRole.objects.filter(user=target_user).count()
+
+#     return JsonResponse({
+#         "user_id": user_id,
+#         "portfolio": portfolio,
+#         "domain_count": domain_count,
+#     })

@@ -2065,6 +2065,226 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
+  addModal(member, member_id, num_domains, submit_delete_url) {
+    const member_email = member.email;
+    let modalHeading = '';
+    let modalDescription = '';
+
+    if (num_domains === 0){
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `They will no longer be able to access this organization. \n   
+      This action cannot be undone.`;
+    } else if (num_domains === 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
+      Removing them from the organization will remove all of their domains. They will no longer be able to \n
+      access this organization. This action cannot be undone.`;
+    } else if (num_domains >= 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization. \n
+      Removing them from the organization will remove all of their domains. They will no longer be able to \n
+      access this organization. This action cannot be undone.`;
+    }
+
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${submit_delete_url}
+      name="delete-member">Yes, remove from organizaion</button>
+    `
+
+      const modal = document.createElement('div');
+      modal.setAttribute('class', 'usa-modal');
+      modal.setAttribute('id', `toggle-remove-member-${member_id}`);
+      modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+      modal.setAttribute('aria-describedby', 'Member will be removed');
+      modal.setAttribute('data-force-action', ''); 
+
+      modal.innerHTML = `
+        <div class="usa-modal__content">
+          <div class="usa-modal__main">
+            <h2 class="usa-modal__heading" id="modal-1-heading">
+              ${modalHeading}
+            </h2>
+            <div class="usa-prose">
+              <p id="modal-1-description">
+                ${modalDescription}
+              </p>
+            </div>
+            <div class="usa-modal__footer">
+                <ul class="usa-button-group">
+                  <li class="usa-button-group__item">
+                    ${modalSubmit}
+                  </li>      
+                  <li class="usa-button-group__item">
+                      <button
+                          type="button"
+                          class="usa-button usa-button--unstyled padding-105 text-center"
+                          data-close-modal
+                      >
+                          Cancel
+                      </button>
+                  </li>
+                </ul>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+          >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+              <use xlink:href="/public/img/sprite.svg#close"></use>
+            </svg>
+          </button>
+        </div>
+        `
+        this.tableWrapper.appendChild(modal);
+  }
+
+  generateKebabHTML(member_id, member_name, last_active) {
+    let isMemberInvited = !last_active || last_active === 'Invited';
+    let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
+
+    const kebab =  `
+      <a 
+        role="button" 
+        id="button-trigger-remove-member-${member_id}"
+        href="#toggle-remove-member-${member_id}"
+        class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
+        aria-controls="toggle-remove-member-${member_id}"
+        data-open-modal
+      >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="/public/img/sprite.svg#delete"></use>
+        </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
+      </a>
+
+      <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+        <div class="usa-accordion__heading">
+          <button
+            type="button"
+            id="button-toggle-more-actions-${member_id}"
+            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+            aria-expanded="false"
+            aria-controls="more-actions-${member_id}"
+          >
+            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+            </svg>
+          </button>
+        </div>
+        <div id="more-actions-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+          <h2>More options</h2>
+          <a 
+            role="button" 
+            id="button-trigger-remove-member-${member_id}"
+            href="#toggle-remove-member-${member_id}"
+            class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+            aria-controls="toggle-remove-member-${member_id}"
+            data-open-modal
+          >
+            ${cancelInvitationButton}
+            <span class="usa-sr-only">for ${member_name}</span>
+          </a>
+        </div>
+      </div>
+    `
+    return kebab      
+  }
+
+  /**
+   * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
+   * @param {*} domainRequestPk - the identifier for the request that we're deleting
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+  */
+  // This is what we originally have
+  // deleteMember(member_delete_url, pageToDisplay) {
+  //   // Use to debug uswds modal issues
+  //   console.log(member_delete_url)
+    
+  //   // Get csrf token
+  //   const csrfToken = getCsrfToken();
+  //   // Create FormData object and append the CSRF token
+  //   const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+
+  //   fetch(`${member_delete_url}`, {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/x-www-form-urlencoded',
+  //       'X-CSRFToken': csrfToken,
+  //     },
+  //     body: formData
+
+  //   })
+  //   .then(response => {
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+  //     // Update data and UI
+  //     this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+  //   })
+  //   .catch(error => console.error('Error fetching domain requests:', error));
+  // }
+
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Debugging
+    console.log(member_delete_url);
+
+    const inProgressResponse = "This member has an active domain request and can't \n"
+    "be removed from this organization. <Contact the .gov team link> to remove them."
+    const onlyAdminResponse = "There must be at least one admin in your organization. \n"
+    "Give another member admin permissions, make sure they log into the registrar, \n"
+    "and then remove this member."
+
+    // Get csrf token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+
+    fetch(`${member_delete_url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (response.status === 204) {
+        // TODO: Add success alert with "You've removed member.email from the organization." text
+        console.log('Member successfully deleted');
+        // Update data and UI
+        this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+      } else {
+        // If the response isn't 204, handle the error response
+        return response.json().then(data => {
+          console.log("Member response not 204");
+          if (data.error) {
+            // TODO: We maybe don't need the consts above and have those
+            // responses in the portfolios.py JSON response. Formatting though?
+
+            // This should display the error given from backend for
+            // either only admin OR in progress requests
+            this.displayErrorMessage(data.error); 
+          } else {
+            throw new Error(`Unexpected status: ${response.status}`);
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting member:', error);
+      this.displayErrorMessage(error.message);
+    });
+}
+
+displayErrorMessage(errorMessage) {
+  alert(errorMessage); // Just debugging for now
+}
+
+
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -2077,6 +2297,7 @@ class MembersTable extends LoadTableBase {
      */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
 
+    console.log("in loadTable");
       // --------- SEARCH
       let searchParams = new URLSearchParams(
         {
@@ -2089,7 +2310,6 @@ class MembersTable extends LoadTableBase {
       if (portfolio)
         searchParams.append("portfolio", portfolio)
 
-
       // --------- FETCH DATA
       // fetch json of page of domais, given params
       let baseUrl = document.getElementById("get_members_json_url");
@@ -2101,6 +2321,12 @@ class MembersTable extends LoadTableBase {
       if (!baseUrlValue) {
         return;
       }
+
+      // Get whether the logged in user has edit members permission
+      const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
+
+      console.log(this.portfolioElement.getAttribute('data-has-edit-permission'))
+      console.log(hasEditPermission)
   
       let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
       fetch(url)
@@ -2119,26 +2345,42 @@ class MembersTable extends LoadTableBase {
           memberList.innerHTML = '';
 
           const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
-          const invited = 'Invited';
-          const invalid_date = 'Invalid date';
+
+          let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
+
+          if (hasEditPermission && !existingExtraActionsHeader) {
+            const extraActionsHeader = document.createElement('th');
+            extraActionsHeader.setAttribute('id', 'extra-actions');
+            extraActionsHeader.setAttribute('role', 'columnheader');
+            extraActionsHeader.setAttribute('class', 'extra-actions-header');
+            extraActionsHeader.innerHTML = `
+              <span class="usa-sr-only">Extra Actions</span>`;
+            let tableHeaderRow = document.querySelector('#members thead tr');
+            tableHeaderRow.appendChild(extraActionsHeader);
+          }
 
           data.members.forEach(member => {
             const member_id = member.source + member.id;
+            const submit_delete_url = member.action_url + "/delete";
             const member_name = member.name;
             const member_display = member.member_display;
             const member_permissions = member.permissions;
+            // The url, names, and num_domains relates specifically to the domain info that the member manages
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
-            
             const last_active = this.handleLastActive(member.last_active);
+            const kebabHTML = hasEditPermission ? this.generateKebabHTML(member_id, member_name, last_active): ''; 
+            
+            if (hasEditPermission) this.addModal(member, member_id, num_domains, submit_delete_url);
+
 
             const action_url = member.action_url;
             const action_label = member.action_label;
             const svg_icon = member.svg_icon;
       
             const row = document.createElement('tr');
-
+            
             let admin_tagHTML = ``;
             if (member.is_admin)
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
@@ -2186,6 +2428,7 @@ class MembersTable extends LoadTableBase {
                   ${action_label} <span class="usa-sr-only">${member_name}</span>
                 </a>
               </td>
+              ${hasEditPermission ? '<td>'+kebabHTML+'</td>' : ''}
             `;
             memberList.appendChild(row);
             if (domainsHTML || permissionsHTML) {
@@ -2194,6 +2437,35 @@ class MembersTable extends LoadTableBase {
           });
 
           this.initShowMoreButtons();
+
+          // initialize modals immediately after the DOM content is updated
+          initializeModals();
+
+          // Now the DOM and modals are ready, add listeners to the submit buttons
+          const modals = document.querySelectorAll('.usa-modal__content');
+
+          modals.forEach(modal => {
+            const submitButton = modal.querySelector('.usa-modal__submit');
+            const closeButton = modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+              let pk = submitButton.getAttribute('data-pk');
+              // Close the modal to remove the USWDS UI local classes
+              closeButton.click();
+              // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+              let pageToDisplay = data.page;
+              if (data.total == 1 && data.unfiltered_total > 1) {
+                pageToDisplay--;
+              }
+
+              this.deleteMember(pk, pageToDisplay);
+              
+              // Pass member_delete_url in to delete
+              // TODO: Use the PK to call a separate function that triggers a new backend AJAX call 
+              // to delete their UserDomainRoles only for this portfolio + remove their UserPortfolioPermissions
+              //alert('modal submit')
+
+            });
+          });
 
           // Do not scroll on first page load
           if (scroll)
@@ -2217,7 +2489,7 @@ class MembersTable extends LoadTableBase {
           this.currentSearchTerm = searchTerm;
       })
       .catch(error => console.error('Error fetching members:', error));
-  }
+    }
 }
 
 
