@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 
 from registrar.models import DomainInformation, UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
 from .portfolio_invitation import PortfolioInvitation
@@ -496,20 +496,38 @@ class User(AbstractUser):
 
         return active_requests_count
 
+    # def is_only_admin_of_portfolio(self, portfolio):
+    #     """Check if the user is the only admin of the given portfolio."""
+
+    #     UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
+
+    #     # Grab admin permission ability we want
+    #     admin_permission = UserPortfolioPermissionChoices.EDIT_PORTFOLIO
+
+    #     # Get all users with admin permission for this portfolio
+    #     admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
+
+    #     # Check if there is more than one admin
+    #     if admins.count() == 1 and admins.first().user == self:
+    #         # The user is the only admin
+    #         return True
+    #     # There are other admins OR the user is not the only one
+    #     return False
+
     def is_only_admin_of_portfolio(self, portfolio):
         """Check if the user is the only admin of the given portfolio."""
 
         UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
 
-        # Grab admin permission ability we want
-        admin_permission = UserPortfolioPermissionChoices.EDIT_PORTFOLIO
+        admin_permission = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
 
-        # Get all users with admin permission for this portfolio
         admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
+        admin_count = admins.count()
 
-        # Check if there is more than one admin
-        if admins.count() == 1 and admins.first().user == self:
-            # The user is the only admin
-            return True
-        # There are other admins OR the user is not the only one
+        # Check if the current user is in the list of admins
+        if admin_count == 1 and admins.first().user == self:
+            return True  # The user is the only admin
+
+        # If there are other admins or the user is not the only one
+        print(f"{self} is NOT the only admin for portfolio {portfolio}.")
         return False
