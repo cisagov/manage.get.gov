@@ -1003,25 +1003,24 @@ function unloadModals() {
 }
 
 class LoadTableBase {
-  constructor(tableSelector, tableWrapperSelector, searchFieldId, searchSubmitId, resetSearchBtn, resetFiltersBtn, noDataDisplay, noSearchresultsDisplay) {
-    this.tableWrapper = document.querySelector(tableWrapperSelector);
-    this.tableHeaders = document.querySelectorAll(`${tableSelector} th[data-sortable]`);
+  constructor(sectionSelector) {
+    this.tableWrapper = document.getElementById(`${sectionSelector}__table-wrapper`);
+    this.tableHeaders = document.querySelectorAll(`#${sectionSelector} th[data-sortable]`);
     this.currentSortBy = 'id';
     this.currentOrder = 'asc';
     this.currentStatus = [];
     this.currentSearchTerm = '';
     this.scrollToTable = false;
-    this.searchInput = document.querySelector(searchFieldId);
-    this.searchSubmit = document.querySelector(searchSubmitId);
-    this.tableAnnouncementRegion = document.querySelector(`${tableWrapperSelector} .usa-table__announcement-region`);
-    this.resetSearchButton = document.querySelector(resetSearchBtn);
-    this.resetFiltersButton = document.querySelector(resetFiltersBtn);
-    // NOTE: these 3 can't be used if filters are active on a page with more than 1 table
-    this.statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
-    this.statusIndicator = document.querySelector('.filter-indicator');
-    this.statusToggle = document.querySelector('.usa-button--filter');
-    this.noTableWrapper = document.querySelector(noDataDisplay);
-    this.noSearchResultsWrapper = document.querySelector(noSearchresultsDisplay);
+    this.searchInput = document.getElementById(`${sectionSelector}__search-field`);
+    this.searchSubmit = document.getElementById(`${sectionSelector}__search-field-submit`);
+    this.tableAnnouncementRegion = document.getElementById(`${sectionSelector}__usa-table__announcement-region`);
+    this.resetSearchButton = document.getElementById(`${sectionSelector}__reset-search`);
+    this.resetFiltersButton = document.getElementById(`${sectionSelector}__reset-filters`);
+    this.statusCheckboxes = document.querySelectorAll(`.${sectionSelector} input[name="filter-status"]`);
+    this.statusIndicator = document.getElementById(`${sectionSelector}__filter-indicator`);
+    this.statusToggle = document.getElementById(`${sectionSelector}__usa-button--filter`);
+    this.noTableWrapper = document.getElementById(`${sectionSelector}__no-data`);
+    this.noSearchResultsWrapper = document.getElementById(`${sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
     this.initializeTableHeaders();
@@ -1363,7 +1362,7 @@ class LoadTableBase {
 class DomainsTable extends LoadTableBase {
 
   constructor() {
-    super('.domains__table', '.domains__table-wrapper', '#domains__search-field', '#domains__search-field-submit', '.domains__reset-search', '.domains__reset-filters', '.domains__no-data', '.domains__no-search-results');
+    super('domains');
   }
   /**
      * Loads rows in the domains list, as well as updates pagination around the domains list
@@ -1415,7 +1414,7 @@ class DomainsTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('.domains__table tbody');
+          const domainList = document.querySelector('#domains tbody');
           domainList.innerHTML = '';
 
           data.domains.forEach(domain => {
@@ -1501,7 +1500,7 @@ class DomainsTable extends LoadTableBase {
 class DomainRequestsTable extends LoadTableBase {
 
   constructor() {
-    super('.domain-requests__table', '.domain-requests__table-wrapper', '#domain-requests__search-field', '#domain-requests__search-field-submit', '.domain-requests__reset-search', '.domain-requests__reset-filters', '.domain-requests__no-data', '.domain-requests__no-search-results');
+    super('domain-requests');
   }
   
   toggleExportButton(requests) {
@@ -1567,7 +1566,7 @@ class DomainRequestsTable extends LoadTableBase {
         this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
         // identify the DOM element where the domain request list will be inserted into the DOM
-        const tbody = document.querySelector('.domain-requests__table tbody');
+        const tbody = document.querySelector('#domain-requests tbody');
         tbody.innerHTML = '';
 
         // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
@@ -1599,7 +1598,7 @@ class DomainRequestsTable extends LoadTableBase {
             delheader.setAttribute('class', 'delete-header');
             delheader.innerHTML = `
               <span class="usa-sr-only">Delete Action</span>`;
-            let tableHeaderRow = document.querySelector('.domain-requests__table thead tr');
+            let tableHeaderRow = document.querySelector('#domain-requests thead tr');
             tableHeaderRow.appendChild(delheader);
           }
         }
@@ -1872,7 +1871,7 @@ class DomainRequestsTable extends LoadTableBase {
 class MembersTable extends LoadTableBase {
 
   constructor() {
-    super('.members__table', '.members__table-wrapper', '#members__search-field', '#members__search-field-submit', '.members__reset-search', '.members__reset-filters', '.members__no-data', '.members__no-search-results');
+    super('members');
   }
   
   /**
@@ -1973,7 +1972,7 @@ class MembersTable extends LoadTableBase {
    * @param {Array} domain_urls - An array of corresponding domain URLs.
    * @returns {string} - A string of HTML displaying the domains assigned to the member.
    */
-  generateDomainsHTML(num_domains, domain_names, domain_urls) {
+  generateDomainsHTML(num_domains, domain_names, domain_urls, action_url) {
     // Initialize an empty string for the HTML
     let domainsHTML = '';
 
@@ -1993,7 +1992,7 @@ class MembersTable extends LoadTableBase {
 
       // If there are more than 6 domains, display a "View assigned domains" link
       if (num_domains >= 6) {
-        domainsHTML += "<p><a href='#'>View assigned domains</a></p>";
+        domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
       }
 
       domainsHTML += "</div>";
@@ -2091,7 +2090,7 @@ class MembersTable extends LoadTableBase {
 
 
       // --------- FETCH DATA
-      // fetch json of page of domais, given params
+      // fetch json of page of domains, given params
       let baseUrl = document.getElementById("get_members_json_url");
       if (!baseUrl) {
         return;
@@ -2115,7 +2114,7 @@ class MembersTable extends LoadTableBase {
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
 
           // identify the DOM element where the domain list will be inserted into the DOM
-          const memberList = document.querySelector('.members__table tbody');
+          const memberList = document.querySelector('#members tbody');
           memberList.innerHTML = '';
 
           const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
@@ -2144,7 +2143,7 @@ class MembersTable extends LoadTableBase {
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
             // generate html blocks for domains and permissions for the member
-            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls);
+            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, action_url);
             let permissionsHTML = this.generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices);
             
             // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
@@ -2220,14 +2219,121 @@ class MembersTable extends LoadTableBase {
   }
 }
 
+class MemberDomainsTable extends LoadTableBase {
+
+  constructor() {
+    super('member-domains');
+    this.currentSortBy = 'name';
+  }
+  /**
+     * Loads rows in the members list, as well as updates pagination around the members list
+     * based on the supplied attributes.
+     * @param {*} page - the page number of the results (starts with 1)
+     * @param {*} sortBy - the sort column option
+     * @param {*} order - the sort order {asc, desc}
+     * @param {*} scroll - control for the scrollToElement functionality
+     * @param {*} searchTerm - the search term
+     * @param {*} portfolio - the portfolio id
+     */
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+
+      // --------- SEARCH
+      let searchParams = new URLSearchParams(
+        {
+          "page": page,
+          "sort_by": sortBy,
+          "order": order,
+          "search_term": searchTerm,
+        }
+      );
+
+      let emailValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-email') : null;
+      let memberIdValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-id') : null;
+      let memberOnly = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-only') : null;
+
+      if (portfolio)
+        searchParams.append("portfolio", portfolio)
+      if (emailValue)
+        searchParams.append("email", emailValue)
+      if (memberIdValue)
+        searchParams.append("member_id", memberIdValue)
+      if (memberOnly)
+        searchParams.append("member_only", memberOnly)
+
+
+      // --------- FETCH DATA
+      // fetch json of page of domais, given params
+      let baseUrl = document.getElementById("get_member_domains_json_url");
+      if (!baseUrl) {
+        return;
+      }
+
+      let baseUrlValue = baseUrl.innerHTML;
+      if (!baseUrlValue) {
+        return;
+      }
+  
+      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            console.error('Error in AJAX call: ' + data.error);
+            return;
+          }
+
+          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
+          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+
+          // identify the DOM element where the domain list will be inserted into the DOM
+          const memberDomainsList = document.querySelector('#member-domains tbody');
+          memberDomainsList.innerHTML = '';
+
+
+          data.domains.forEach(domain => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+              <td scope="row" data-label="Domain name">
+                ${domain.name}
+              </td>
+            `;
+            memberDomainsList.appendChild(row);
+          });
+
+          // Do not scroll on first page load
+          if (scroll)
+            ScrollToElement('class', 'member-domains');
+          this.scrollToTable = true;
+
+          // update pagination
+          this.updatePagination(
+            'member domain',
+            '#member-domains-pagination',
+            '#member-domains-pagination .usa-pagination__counter',
+            '#member-domains',
+            data.page,
+            data.num_pages,
+            data.has_previous,
+            data.has_next,
+            data.total,
+          );
+          this.currentSortBy = sortBy;
+          this.currentOrder = order;
+          this.currentSearchTerm = searchTerm;
+      })
+      .catch(error => console.error('Error fetching domains:', error));
+  }
+}
+
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
- * initializes the domains list and associated functionality on the home page of the app.
+ * initializes the domains list and associated functionality.
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  const isDomainsPage = document.querySelector("#domains") 
+  const isDomainsPage = document.getElementById("domains") 
   if (isDomainsPage){
     const domainsTable = new DomainsTable();
     if (domainsTable.tableWrapper) {
@@ -2239,11 +2345,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes. This function
- * initializes the domain requests list and associated functionality on the home page of the app.
+ * initializes the domain requests list and associated functionality.
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  const domainRequestsSectionWrapper = document.querySelector('.domain-requests');
+  const domainRequestsSectionWrapper = document.getElementById('domain-requests');
   if (domainRequestsSectionWrapper) {
     const domainRequestsTable = new DomainRequestsTable();
     if (domainRequestsTable.tableWrapper) {
@@ -2296,16 +2402,32 @@ const utcDateString = (dateString) => {
 
 /**
  * An IIFE that listens for DOM Content to be loaded, then executes.  This function
- * initializes the domains list and associated functionality on the home page of the app.
+ * initializes the members list and associated functionality.
  *
  */
 document.addEventListener('DOMContentLoaded', function() {
-  const isMembersPage = document.querySelector("#members") 
+  const isMembersPage = document.getElementById("members") 
   if (isMembersPage){
     const membersTable = new MembersTable();
     if (membersTable.tableWrapper) {
       // Initial load
       membersTable.loadTable(1);
+    }
+  }
+});
+
+/**
+ * An IIFE that listens for DOM Content to be loaded, then executes.  This function
+ * initializes the member domains list and associated functionality.
+ *
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  const isMemberDomainsPage = document.getElementById("member-domains") 
+  if (isMemberDomainsPage){
+    const memberDomainsTable = new MemberDomainsTable();
+    if (memberDomainsTable.tableWrapper) {
+      // Initial load
+      memberDomainsTable.loadTable(1);
     }
   }
 });
