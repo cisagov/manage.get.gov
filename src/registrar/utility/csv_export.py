@@ -746,7 +746,6 @@ class DomainDataFull(DomainExport):
         return Q(
             domain__state__in=[
                 Domain.State.READY,
-                Domain.State.DNS_NEEDED,
                 Domain.State.ON_HOLD,
             ],
         )
@@ -842,7 +841,6 @@ class DomainDataFederal(DomainExport):
             organization_type__icontains="federal",
             domain__state__in=[
                 Domain.State.READY,
-                Domain.State.DNS_NEEDED,
                 Domain.State.ON_HOLD,
             ],
         )
