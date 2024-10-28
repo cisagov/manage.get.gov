@@ -107,7 +107,7 @@ class RequestingEntityForm(RegistrarForm):
 
     def clean(self):
         """Custom clean implementation to handle our desired logic flow for suborganization.
-        Given that these fields often corely on eachother, we need to do this in the parent function."""
+        Given that these fields often rely on eachother, we need to do this in the parent function."""
         cleaned_data = super().clean()
 
         suborganization = self.cleaned_data.get("sub_organization")
