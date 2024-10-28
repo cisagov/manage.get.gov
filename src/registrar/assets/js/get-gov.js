@@ -2142,17 +2142,17 @@ class MembersTable extends LoadTableBase {
         this.tableWrapper.appendChild(modal);
   }
 
-  generateKebabHTML(member_id, member_name, last_active) {
+  generateKebabHTML(member_dom_id, member_name, last_active) {
     let isMemberInvited = !last_active || last_active === 'Invited';
     let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
 
     const kebab =  `
       <a 
         role="button" 
-        id="button-trigger-remove-member-${member_id}"
-        href="#toggle-remove-member-${member_id}"
+        id="button-trigger-remove-member-${member_dom_id}"
+        href="#toggle-remove-member-${member_dom_id}"
         class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
-        aria-controls="toggle-remove-member-${member_id}"
+        aria-controls="toggle-remove-member-${member_dom_id}"
         data-open-modal
       >
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -2164,24 +2164,24 @@ class MembersTable extends LoadTableBase {
         <div class="usa-accordion__heading">
           <button
             type="button"
-            id="button-toggle-more-actions-${member_id}"
+            id="button-toggle-more-actions-${member_dom_id}"
             class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
             aria-expanded="false"
-            aria-controls="more-actions-${member_id}"
+            aria-controls="more-actions-${member_dom_id}"
           >
             <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#more_vert"></use>
             </svg>
           </button>
         </div>
-        <div id="more-actions-${member_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+        <div id="more-actions-${member_dom_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
           <h2>More options</h2>
           <a 
             role="button" 
-            id="button-trigger-remove-member-${member_id}"
-            href="#toggle-remove-member-${member_id}"
+            id="button-trigger-remove-member-${member_dom_id}"
+            href="#toggle-remove-member-${member_dom_id}"
             class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-            aria-controls="toggle-remove-member-${member_id}"
+            aria-controls="toggle-remove-member-${member_dom_id}"
             data-open-modal
           >
             ${cancelInvitationButton}
@@ -2382,20 +2382,23 @@ class MembersTable extends LoadTableBase {
           }
 
           data.members.forEach(member => {
-            const member_id = member.source + member.id;
-            const submit_delete_url = member.action_url + "/delete";
-            const member_name = member.name;
-            const member_display = member.member_display;
+            // org_member is based on either a UserPortfolioPermission or a PortfolioInvitation
+            // and also includes information from related domains; the 'id' of the org_member
+            // is the id of the UserPorfolioPermission or PortfolioInvitation, it is not a user id
+            const member_dom_id = org_member.type + org_member.id; // unique string for use in dom, this is
+            // not the id of the associated user
+            const member_delete_url = org_member.action_url + "/delete";
+            const member_name = org_member.name; // name of the associated user
+            const member_display = member.member_display; // display value (email/name) of the associated user
             const member_permissions = member.permissions;
             // The url, names, and num_domains relates specifically to the domain info that the member manages
             const domain_urls = member.domain_urls;
             const domain_names = member.domain_names;
             const num_domains = domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
-            const kebabHTML = hasEditPermission ? this.generateKebabHTML(member_id, member_name, last_active): ''; 
+            const kebabHTML = hasEditPermission ? this.generateKebabHTML(member_dom_id, member_name, last_active): ''; 
             
-            if (hasEditPermission) this.addModal(member, member_id, num_domains, submit_delete_url);
-
+            if (hasEditPermission) this.addModal(member, member_dom_id, num_domains, member_delete_url);
 
             const action_url = member.action_url;
             const action_label = member.action_label;
@@ -2419,7 +2422,7 @@ class MembersTable extends LoadTableBase {
                 <button 
                   type="button" 
                   class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
-                  data-for=${member_id}
+                  data-for=${member_dom_id}
                   aria-label="Expand for additional information"
                 >
                   <span>Expand</span>
@@ -2429,20 +2432,20 @@ class MembersTable extends LoadTableBase {
                 </button>
               `;
 
-              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_dom_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
               showMoreRow.classList.add('show-more-content');
               showMoreRow.classList.add('display-none');
-              showMoreRow.id = member_id;
+              showMoreRow.id = member_dom_id;
             }
 
             row.innerHTML = `
-              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
+              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_dom_id}'>
                 ${member_display} ${admin_tagHTML} ${showMoreButton}
               </th>
-              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+              <td headers="header-last-active row-header-${member_dom_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
                 ${last_active.display_value}
               </td>
-              <td headers="header-action row-header-${member_id}">
+              <td headers="header-action row-header-${member_dom_id}">
                 <a href="${action_url}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
