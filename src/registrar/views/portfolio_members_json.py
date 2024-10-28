@@ -13,9 +13,6 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.mixins import PortfolioMembersPermission
 
-# from registrar.models import DomainInformation, UserDomainRole
-# from .models import User
-
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
 

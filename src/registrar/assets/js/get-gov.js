@@ -2193,49 +2193,9 @@ class MembersTable extends LoadTableBase {
     return kebab      
   }
 
-  /**
-   * Delete is actually a POST API that requires a csrf token. The token will be waiting for us in the template as a hidden input.
-   * @param {*} domainRequestPk - the identifier for the request that we're deleting
-   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
-  */
-  // This is what we originally have
-  // deleteMember(member_delete_url, pageToDisplay) {
-  //   // Use to debug uswds modal issues
-  //   console.log(member_delete_url)
-    
-  //   // Get csrf token
-  //   const csrfToken = getCsrfToken();
-  //   // Create FormData object and append the CSRF token
-  //   const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
-
-  //   fetch(`${member_delete_url}`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/x-www-form-urlencoded',
-  //       'X-CSRFToken': csrfToken,
-  //     },
-  //     body: formData
-
-  //   })
-  //   .then(response => {
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-  //     // Update data and UI
-  //     this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
-  //   })
-  //   .catch(error => console.error('Error fetching domain requests:', error));
-  // }
-
   deleteMember(member_delete_url, pageToDisplay) {
     // Debugging
     console.log(member_delete_url);
-
-    const inProgressResponse = "This member has an active domain request and can't \n"
-    "be removed from this organization. <Contact the .gov team link> to remove them."
-    const onlyAdminResponse = "There must be at least one admin in your organization. \n"
-    "Give another member admin permissions, make sure they log into the registrar, \n"
-    "and then remove this member."
 
     // Get csrf token
     const csrfToken = getCsrfToken();
@@ -2252,7 +2212,6 @@ class MembersTable extends LoadTableBase {
     })
     .then(response => {
       if (response.status === 200) {
-        // TODO: Add success alert with "You've removed member.email from the organization." text
         response.json().then(data => {
           if (data.success) {
             this.addAlert("success", data.success);

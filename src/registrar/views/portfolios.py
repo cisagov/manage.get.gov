@@ -111,14 +111,28 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         member = portfolio_member_permission.user
 
         active_requests_count = member.get_active_requests_count_in_portfolio(request)
-        print(f"Active requests count for member {member.id}: {active_requests_count}")
 
+        support_url = "https://get.gov/contact/"
+
+        # If they have any in progress requests
         if active_requests_count > 0:
-            return JsonResponse({"error": "ERROR: Member has in-progress requests and cannot be removed."}, status=400)
+            return JsonResponse(
+                {
+                    "error": f"This member has an active domain request and can't be removed from the organization. "
+                    f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                },
+                status=400,
+            )
 
         # If they are the last manager of a domain
         if member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
-            return JsonResponse({"error": "ERROR: Member is the only admin."}, status=400)
+            return JsonResponse(
+                {
+                    "error": "There must be at least one admin in your organization. Give another member admin persmissions, \n"
+                    "make sure they log into the registrar, and then remove this member."
+                },
+                status=400,
+            )
 
         portfolio_member_permission.delete()
 
