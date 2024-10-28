@@ -128,8 +128,8 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         if member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
             return JsonResponse(
                 {
-                    "error": "There must be at least one admin in your organization. Give another member admin persmissions, \n"
-                    "make sure they log into the registrar, and then remove this member."
+                    "error": "There must be at least one admin in your organization. Give another member admin \n"
+                    "persmissions, make sure they log into the registrar, and then remove this member."
                 },
                 status=400,
             )
