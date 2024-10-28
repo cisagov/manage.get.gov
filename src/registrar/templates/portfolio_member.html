@@ -126,11 +126,9 @@
 
   {% comment %}view_button is passed below as true in all cases. This is because manage_button logic will trump view_button logic; ie. if manage_button is true, view_button will never be looked at{% endcomment %}
   {% if portfolio_permission %}
-    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_permission.get_managed_domains_count edit_link='#' editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
+    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_permission.get_managed_domains_count edit_link=domains_url editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
   {% elif portfolio_invitation %}
-    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_invitation.get_managed_domains_count edit_link='#' editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
-  {% else %}
-    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=0 edit_link='#' editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
+    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_invitation.get_managed_domains_count edit_link=domains_url editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
   {% endif %}
         
 </div>
