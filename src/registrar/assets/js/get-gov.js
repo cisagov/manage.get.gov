@@ -86,6 +86,218 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
+// TODO: Write caption here
+function addModal(member_email, member_id, num_domains, submit_delete_url, wrapper_element) {
+  console.log("We are in addModal")
+  let modalHeading = '';
+  let modalDescription = '';
+
+  console.log("member_id is", member_id)
+
+  if (num_domains === 0){
+    modalHeading = `Are you sure you want to delete ${member_email}?`;
+    modalDescription = `They will no longer be able to access this organization. \n   
+    This action cannot be undone.`;
+  } else if (num_domains === 1) {
+    modalHeading = `Are you sure you want to delete ${member_email}?`;
+    modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
+    Removing them from the organization will remove all of their domains. They will no longer be able to \n
+    access this organization. This action cannot be undone.`;
+  } else if (num_domains >= 1) {
+    modalHeading = `Are you sure you want to delete ${member_email}?`;
+    modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization. \n
+    Removing them from the organization will remove all of their domains. They will no longer be able to \n
+    access this organization. This action cannot be undone.`;
+  }
+
+  const modalSubmit = `
+    <button type="button"
+    class="usa-button usa-button--secondary usa-modal__submit"
+    data-pk = ${submit_delete_url}
+    name="delete-member">Yes, remove from organizaion</button>
+  `
+
+    const modal = document.createElement('div');
+    modal.setAttribute('class', 'usa-modal');
+    modal.setAttribute('id', `toggle-remove-member-${member_id}`);
+    modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
+    modal.setAttribute('aria-describedby', 'Member will be removed');
+    modal.setAttribute('data-force-action', ''); 
+
+    console.log("modal is", modal)
+
+    modal.innerHTML = `
+      <div class="usa-modal__content">
+        <div class="usa-modal__main">
+          <h2 class="usa-modal__heading" id="modal-1-heading">
+            ${modalHeading}
+          </h2>
+          <div class="usa-prose">
+            <p id="modal-1-description">
+              ${modalDescription}
+            </p>
+          </div>
+          <div class="usa-modal__footer">
+              <ul class="usa-button-group">
+                <li class="usa-button-group__item">
+                  ${modalSubmit}
+                </li>      
+                <li class="usa-button-group__item">
+                    <button
+                        type="button"
+                        class="usa-button usa-button--unstyled padding-105 text-center"
+                        data-close-modal
+                    >
+                        Cancel
+                    </button>
+                </li>
+              </ul>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="usa-button usa-modal__close"
+          aria-label="Close this window"
+          data-close-modal
+        >
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="/public/img/sprite.svg#close"></use>
+          </svg>
+        </button>
+      </div>
+      `
+      if (wrapper_element) {
+        wrapper_element.appendChild(modal);
+      } else {
+        document.body.appendChild(modal);
+      }
+      
+      // wrapper_element.appendChild(modal);
+}
+
+// TODO: Write caption here
+function generateKebabHTML(unique_id, member_name, member_type) {
+  let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
+
+  const kebab =  `
+    <a 
+      role="button" 
+      id="button-trigger-remove-member-${unique_id}"
+      href="#toggle-remove-member-${unique_id}"
+      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
+      aria-controls="toggle-remove-member-${unique_id}"
+      data-open-modal
+    >
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+        <use xlink:href="/public/img/sprite.svg#delete"></use>
+      </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
+    </a>
+
+    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+      <div class="usa-accordion__heading">
+        <button
+          type="button"
+          id="button-toggle-more-actions-${unique_id}"
+          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+          aria-expanded="false"
+          aria-controls="more-actions-${unique_id}"
+        >
+          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+          </svg>
+        </button>
+      </div>
+      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+        <h2>More options</h2>
+        <a 
+          role="button" 
+          id="button-trigger-remove-member-${unique_id}"
+          href="#toggle-remove-member-${unique_id}"
+          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+          aria-controls="toggle-remove-member-${unique_id}"
+          data-open-modal
+        >
+          ${cancelInvitationButton}
+          <span class="usa-sr-only">for ${member_name}</span>
+        </a>
+      </div>
+    </div>
+  `
+  return kebab      
+}
+
+function deleteMember(member_delete_url, pageToDisplay) {
+  // Debugging
+  console.log(member_delete_url);
+
+  // Get csrf token
+  const csrfToken = getCsrfToken();
+  // Create FormData object and append the CSRF token
+  const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+
+  fetch(`${member_delete_url}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrfToken,
+    },
+    body: formData
+  })
+  .then(response => {
+    if (response.status === 200) {
+      response.json().then(data => {
+        if (data.success) {
+          addAlert("success", data.success);
+        }
+        memberTableInstance.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+      });
+    } else {
+      // If the response isn't 204, handle the error response
+      response.json().then(data => {
+        console.log("Member response not 200");
+        if (data.error) {
+          // This should display the error given from backend for
+          // either only admin OR in progress requests
+          addAlert("error", data.error); 
+        } else {
+          throw new Error(`Unexpected status: ${response.status}`);
+        }
+      });
+    }
+  })
+  .catch(error => {
+    console.error('Error deleting member:', error);
+  });
+}
+
+
+/**
+ * Adds an alert message to the page with an alert class.
+ *
+ * @param {string} alertClass - {error, warning, info, success}
+ * @param {string} alertMessage - The text that will be displayed
+ *
+ */
+function addAlert(alertClass, alertMessage) {
+  let toggleableAlertDiv = document.getElementById("toggleable-alert");
+  this.resetAlert();
+  toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
+  let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
+  alertParagraph.innerHTML = alertMessage
+  showElement(toggleableAlertDiv);
+}
+
+/**
+ * Resets the reusable alert message
+ *
+ */
+function resetAlert() {
+  let toggleableAlertDiv = document.getElementById("toggleable-alert");
+  toggleableAlertDiv.classList.remove('usa-alert--error');
+  toggleableAlertDiv.classList.remove('usa-alert--success');
+  hideElement(toggleableAlertDiv);
+}
+
 /**
  * Toggles expand_more / expand_more svgs in buttons or anchors
  * @param {Element} element - DOM element
@@ -2064,208 +2276,6 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
-  addModal(member, member_id, num_domains, submit_delete_url) {
-    const member_email = member.email;
-    let modalHeading = '';
-    let modalDescription = '';
-
-    if (num_domains === 0){
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `They will no longer be able to access this organization. \n   
-      This action cannot be undone.`;
-    } else if (num_domains === 1) {
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
-      Removing them from the organization will remove all of their domains. They will no longer be able to \n
-      access this organization. This action cannot be undone.`;
-    } else if (num_domains >= 1) {
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization. \n
-      Removing them from the organization will remove all of their domains. They will no longer be able to \n
-      access this organization. This action cannot be undone.`;
-    }
-
-    const modalSubmit = `
-      <button type="button"
-      class="usa-button usa-button--secondary usa-modal__submit"
-      data-pk = ${submit_delete_url}
-      name="delete-member">Yes, remove from organizaion</button>
-    `
-
-      const modal = document.createElement('div');
-      modal.setAttribute('class', 'usa-modal');
-      modal.setAttribute('id', `toggle-remove-member-${member_id}`);
-      modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-      modal.setAttribute('aria-describedby', 'Member will be removed');
-      modal.setAttribute('data-force-action', ''); 
-
-      modal.innerHTML = `
-        <div class="usa-modal__content">
-          <div class="usa-modal__main">
-            <h2 class="usa-modal__heading" id="modal-1-heading">
-              ${modalHeading}
-            </h2>
-            <div class="usa-prose">
-              <p id="modal-1-description">
-                ${modalDescription}
-              </p>
-            </div>
-            <div class="usa-modal__footer">
-                <ul class="usa-button-group">
-                  <li class="usa-button-group__item">
-                    ${modalSubmit}
-                  </li>      
-                  <li class="usa-button-group__item">
-                      <button
-                          type="button"
-                          class="usa-button usa-button--unstyled padding-105 text-center"
-                          data-close-modal
-                      >
-                          Cancel
-                      </button>
-                  </li>
-                </ul>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="usa-button usa-modal__close"
-            aria-label="Close this window"
-            data-close-modal
-          >
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-              <use xlink:href="/public/img/sprite.svg#close"></use>
-            </svg>
-          </button>
-        </div>
-        `
-        this.tableWrapper.appendChild(modal);
-  }
-
-  generateKebabHTML(member_dom_id, member_name, last_active) {
-    let isMemberInvited = !last_active || last_active === 'Invited';
-    let cancelInvitationButton = isMemberInvited ? "Cancel invitation" : "Remove member";
-
-    const kebab =  `
-      <a 
-        role="button" 
-        id="button-trigger-remove-member-${member_dom_id}"
-        href="#toggle-remove-member-${member_dom_id}"
-        class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
-        aria-controls="toggle-remove-member-${member_dom_id}"
-        data-open-modal
-      >
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="/public/img/sprite.svg#delete"></use>
-        </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
-      </a>
-
-      <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-        <div class="usa-accordion__heading">
-          <button
-            type="button"
-            id="button-toggle-more-actions-${member_dom_id}"
-            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-            aria-expanded="false"
-            aria-controls="more-actions-${member_dom_id}"
-          >
-            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-            </svg>
-          </button>
-        </div>
-        <div id="more-actions-${member_dom_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
-          <h2>More options</h2>
-          <a 
-            role="button" 
-            id="button-trigger-remove-member-${member_dom_id}"
-            href="#toggle-remove-member-${member_dom_id}"
-            class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-            aria-controls="toggle-remove-member-${member_dom_id}"
-            data-open-modal
-          >
-            ${cancelInvitationButton}
-            <span class="usa-sr-only">for ${member_name}</span>
-          </a>
-        </div>
-      </div>
-    `
-    return kebab      
-  }
-
-  deleteMember(member_delete_url, pageToDisplay) {
-    // Debugging
-    console.log(member_delete_url);
-
-    // Get csrf token
-    const csrfToken = getCsrfToken();
-    // Create FormData object and append the CSRF token
-    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
-
-    fetch(`${member_delete_url}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': csrfToken,
-      },
-      body: formData
-    })
-    .then(response => {
-      if (response.status === 200) {
-        response.json().then(data => {
-          if (data.success) {
-            this.addAlert("success", data.success);
-          }
-          this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
-        });
-      } else {
-        // If the response isn't 204, handle the error response
-        response.json().then(data => {
-          console.log("Member response not 200");
-          if (data.error) {
-            // This should display the error given from backend for
-            // either only admin OR in progress requests
-            this.addAlert("error", data.error); 
-          } else {
-            throw new Error(`Unexpected status: ${response.status}`);
-          }
-        });
-      }
-    })
-    .catch(error => {
-      console.error('Error deleting member:', error);
-    });
-  }
-
-
-  /**
-   * Adds an alert message to the page with an alert class.
-   *
-   * @param {string} alertClass - {error, warning, info, success}
-   * @param {string} alertMessage - The text that will be displayed
-   *
-   */
-  addAlert(alertClass, alertMessage) {
-    let toggleableAlertDiv = document.getElementById("toggleable-alert");
-    this.resetAlert();
-    toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
-    let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
-    alertParagraph.innerHTML = alertMessage
-    showElement(toggleableAlertDiv);
-  }
-
-  /**
-   * Resets the reusable alert message
-   *
-   */
-  resetAlert() {
-    let toggleableAlertDiv = document.getElementById("toggleable-alert");
-    toggleableAlertDiv.classList.remove('usa-alert--error');
-    toggleableAlertDiv.classList.remove('usa-alert--success');
-    hideElement(toggleableAlertDiv);
-  }
-
-
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -2341,27 +2351,18 @@ class MembersTable extends LoadTableBase {
           }
 
           data.members.forEach(member => {
-            // org_member is based on either a UserPortfolioPermission or a PortfolioInvitation
+            // member is based on either a UserPortfolioPermission or a PortfolioInvitation
             // and also includes information from related domains; the 'id' of the org_member
             // is the id of the UserPorfolioPermission or PortfolioInvitation, it is not a user id
-            const member_dom_id = org_member.type + org_member.id; // unique string for use in dom, this is
+            // member.type is either invitedmember or member
+            const unique_id = member.type + member.id; // unique string for use in dom, this is
             // not the id of the associated user
-            const member_delete_url = org_member.action_url + "/delete";
-            const member_name = org_member.name; // name of the associated user
-            const member_display = member.member_display; // display value (email/name) of the associated user
-            const member_permissions = member.permissions;
-            // The url, names, and num_domains relates specifically to the domain info that the member manages
-            const domain_urls = member.domain_urls;
-            const domain_names = member.domain_names;
-            const num_domains = domain_urls.length;
+            const member_delete_url = member.action_url + "/delete";
+            const num_domains = member.domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
-            const kebabHTML = hasEditPermission ? this.generateKebabHTML(member_dom_id, member_name, last_active): ''; 
+            const kebabHTML = hasEditPermission ? generateKebabHTML(unique_id, member.name, member.type): ''; 
             
-            if (hasEditPermission) this.addModal(member, member_dom_id, num_domains, member_delete_url);
-
-            const action_url = member.action_url;
-            const action_label = member.action_label;
-            const svg_icon = member.svg_icon;
+            if (hasEditPermission) addModal(member.email, unique_id, num_domains, member_delete_url, this.tableWrapper);
       
             const row = document.createElement('tr');
             
@@ -2370,8 +2371,8 @@ class MembersTable extends LoadTableBase {
               admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
 
             // generate html blocks for domains and permissions for the member
-            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, action_url);
-            let permissionsHTML = this.generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices);
+            let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
+            let permissionsHTML = this.generatePermissionsHTML(member.permissions, UserPortfolioPermissionChoices);
             
             // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
             let showMoreButton = '';
@@ -2381,7 +2382,7 @@ class MembersTable extends LoadTableBase {
                 <button 
                   type="button" 
                   class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
-                  data-for=${member_dom_id}
+                  data-for=${unique_id}
                   aria-label="Expand for additional information"
                 >
                   <span>Expand</span>
@@ -2391,25 +2392,25 @@ class MembersTable extends LoadTableBase {
                 </button>
               `;
 
-              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_dom_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
               showMoreRow.classList.add('show-more-content');
               showMoreRow.classList.add('display-none');
-              showMoreRow.id = member_dom_id;
+              showMoreRow.id = unique_id;
             }
 
             row.innerHTML = `
-              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_dom_id}'>
-                ${member_display} ${admin_tagHTML} ${showMoreButton}
+              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+                ${member.member_display} ${admin_tagHTML} ${showMoreButton}
               </th>
-              <td headers="header-last-active row-header-${member_dom_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+              <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
                 ${last_active.display_value}
               </td>
-              <td headers="header-action row-header-${member_dom_id}">
-                <a href="${action_url}">
+              <td headers="header-action row-header-${unique_id}">
+                <a href="${member.action_url}">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
+                    <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
                   </svg>
-                  ${action_label} <span class="usa-sr-only">${member_name}</span>
+                  ${member.action_label} <span class="usa-sr-only">${member.name}</span>
                 </a>
               </td>
               ${hasEditPermission ? '<td>'+kebabHTML+'</td>' : ''}
@@ -2441,13 +2442,7 @@ class MembersTable extends LoadTableBase {
                 pageToDisplay--;
               }
 
-              this.deleteMember(pk, pageToDisplay);
-              
-              // Pass member_delete_url in to delete
-              // TODO: Use the PK to call a separate function that triggers a new backend AJAX call 
-              // to delete their UserDomainRoles only for this portfolio + remove their UserPortfolioPermissions
-              //alert('modal submit')
-
+              deleteMember(pk, pageToDisplay);
             });
           });
 
@@ -2991,3 +2986,72 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 })();
+
+document.addEventListener("DOMContentLoaded", () => {
+  (function portfolioMemberToggle() {
+    console.log("IN PORTFOLIOMEMBERTOGGLE")
+    const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
+    console.log("!!!", wrapperDeleteAction)
+    if (wrapperDeleteAction) {
+        const member_type = wrapperDeleteAction.getAttribute("data-member-type");
+        const member_id = wrapperDeleteAction.getAttribute("data-member-id");
+        const num_domains = wrapperDeleteAction.getAttribute("data-num-domains");
+        const member_name = wrapperDeleteAction.getAttribute("data-member-name");
+        const member_email = wrapperDeleteAction.getAttribute("data-member-email"); 
+        const member_delete_url = `${member_type}-${member_id}/delete`;
+        const unique_id = `${member_type}-${member_id}`;
+
+        wrapperDeleteAction.innerHTML = generateKebabHTML(unique_id, member_name, member_type);
+        console.log("WE GENERATED THE KEBAB HERE")
+
+        // Select the button and the menu we just inserted
+        const kebabButton = wrapperDeleteAction.querySelector(`#button-toggle-more-actions-${unique_id}`);
+        const kebabMenu = wrapperDeleteAction.querySelector(`#more-actions-${unique_id}`);
+        console.log("BEFORE LISTENER")
+
+        kebabButton.addEventListener('click', () => {
+          const isExpanded = kebabButton.getAttribute('aria-expanded') === 'true';
+          kebabButton.setAttribute('aria-expanded', !isExpanded);
+          console.log("IN LISTENER")
+          kebabMenu.style.display = isExpanded ? 'none' : 'block';
+          console.log("Menu is now", isExpanded ? "hidden" : "visible");
+        });
+
+        // Handles clicks outside the kebab menu
+        document.addEventListener('click', (event) => {
+          const isClickInsideButton = kebabButton.contains(event.target);
+          const isClickInsideMenu = kebabMenu.contains(event.target);
+
+          if (!isClickInsideButton && !isClickInsideMenu) {
+              kebabButton.setAttribute('aria-expanded', 'false');
+              kebabMenu.style.display = 'none';
+              console.log("Menu is hidden");
+          }
+        });
+        console.log("AFTER LISTENER")
+
+        addModal(member_email, member_id, num_domains, member_delete_url, wrapperDeleteAction);
+
+        initializeModals();
+
+        // Now the DOM and modals are ready, add listeners to the submit buttons
+        const modals = document.querySelectorAll('.usa-modal__content');
+
+        modals.forEach(modal => {
+          const submitButton = modal.querySelector('.usa-modal__submit');
+          const closeButton = modal.querySelector('.usa-modal__close');
+          submitButton.addEventListener('click', () => {
+            let pk = submitButton.getAttribute('data-pk');
+            closeButton.click();
+            // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+            let pageToDisplay = data.page;
+            if (data.total == 1 && data.unfiltered_total > 1) {
+              pageToDisplay--;
+            }
+
+            deleteMember(pk, pageToDisplay);
+          });
+        });
+    }
+  })();
+});
