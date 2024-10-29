@@ -173,7 +173,7 @@
             {% endwith %}
         {% endif %}
 
-        {% if DomainRequest.converted_organization_name %}
+        {% if DomainRequest.organization_name %}
             {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' heading_level=heading_level %}
         {% endif %}
 
