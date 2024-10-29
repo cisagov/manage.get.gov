@@ -3241,7 +3241,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None
+            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -3263,7 +3263,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             if obj.federal_agency and obj.federal_agency.agency != "Non-Federal Agency":
                 if obj.federal_agency.so_federal_agency.first() == obj.senior_official:
                     obj.senior_official = None
-                obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+                obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()  # type: ignore
 
         super().save_model(request, obj, form, change)
 
