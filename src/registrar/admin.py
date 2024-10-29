@@ -3193,9 +3193,6 @@ class PortfolioAdmin(ListHeaderAdmin):
             return self.add_fieldsets
         return super().get_fieldsets(request, obj)
 
-    # TODO - I think the solution to this may just be to set this as editable.
-    # Then in the underlying page override, we need a fake readonly display that
-    # is toggled on or off.
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
@@ -3241,7 +3238,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj: Portfolio, form, change):
-
         if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
@@ -3255,8 +3251,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
 
-        # TODO - this should be handled almost entirely in javascript
-        # Handle the federal agency and senior official fields
+        # Set the senior official field to the senior official on the federal agency
+        # when federal - otherwise, clear the field.
         if obj.organization_type == obj.OrganizationChoices.FEDERAL:
             if obj.federal_agency:
                 if obj.federal_agency.so_federal_agency.exists():
@@ -3268,7 +3264,6 @@ class PortfolioAdmin(ListHeaderAdmin):
                 if obj.federal_agency.so_federal_agency.first() == obj.senior_official:
                     obj.senior_official = None
                 obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
-
 
         super().save_model(request, obj, form, change)
 
