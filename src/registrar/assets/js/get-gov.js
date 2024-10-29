@@ -88,7 +88,7 @@ function makeVisible(el) {
 
 // TODO: Write caption here
 function addModal(member_email, member_id, num_domains, submit_delete_url, wrapper_element) {
-  console.log("We are in addModal")
+
   let modalHeading = '';
   let modalDescription = '';
 
@@ -121,8 +121,6 @@ function addModal(member_email, member_id, num_domains, submit_delete_url, wrapp
     modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
     modal.setAttribute('aria-describedby', 'Member will be removed');
     modal.setAttribute('data-force-action', ''); 
-
-    console.log("modal is", modal)
 
     modal.innerHTML = `
       <div class="usa-modal__content">
@@ -169,8 +167,6 @@ function addModal(member_email, member_id, num_domains, submit_delete_url, wrapp
       } else {
         document.body.appendChild(modal);
       }
-      
-      // wrapper_element.appendChild(modal);
 }
 
 // TODO: Write caption here
@@ -222,83 +218,6 @@ function generateKebabHTML(unique_id, member_name, member_type) {
     </div>
   `
   return kebab      
-}
-
-function deleteMember(member_delete_url, pageToDisplay) {
-  // Debugging
-  console.log(member_delete_url);
-
-  // Get csrf token
-  const csrfToken = getCsrfToken();
-  // Create FormData object and append the CSRF token
-  const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
-
-  fetch(`${member_delete_url}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRFToken': csrfToken,
-    },
-    body: formData
-  })
-  .then(response => {
-    if (response.status === 200) {
-      response.json().then(data => {
-        if (data.success) {
-          addAlert("success", data.success);
-        }
-        memberTableInstance.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
-      });
-    } else {
-      // If the response isn't 204, handle the error response
-      response.json().then(data => {
-        console.log("Member response not 200");
-        if (data.error) {
-          // This should display the error given from backend for
-          // either only admin OR in progress requests
-          addAlert("error", data.error); 
-        } else {
-          throw new Error(`Unexpected status: ${response.status}`);
-        }
-      });
-    }
-  })
-  .catch(error => {
-    console.error('Error deleting member:', error);
-  });
-}
-
-
-/**
- * Adds an alert message to the page with an alert class.
- *
- * @param {string} alertClass - {error, warning, info, success}
- * @param {string} alertMessage - The text that will be displayed
- *
- */
-function addAlert(alertClass, alertMessage) {
-  let toggleableAlertDiv = document.getElementById("toggleable-alert");
-  this.resetAlerts();
-  toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
-  let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
-  alertParagraph.innerHTML = alertMessage
-  showElement(toggleableAlertDiv);
-}
-
-/**
- * Resets the reusable alert message
- *
- */
-function resetAlerts() {
-  // Create a list of any alert that's leftover and remove
-  document.querySelectorAll(".usa-alert:not(#toggleable-alert)").forEach(alert => {
-    alert.remove();
-  });
-  let toggleableAlertDiv = document.getElementById("toggleable-alert");
-  toggleableAlertDiv.classList.remove('usa-alert--error');
-  toggleableAlertDiv.classList.remove('usa-alert--success');
-  hideElement(toggleableAlertDiv);
 }
 
 /**
@@ -1203,7 +1122,10 @@ function initializeTooltips() {
  * 
  */
 function initializeModals() {
+    console.log("We are going to initializeModals")
     window.modal.on();
+    console.log("Finish initializeModals")
+
 }
 
 /**
@@ -1214,7 +1136,9 @@ function initializeModals() {
  * 
  */
 function unloadModals() {
+  console.log("We are going to unloadModals")
   window.modal.off();
+  console.log("Finish unloadModals")
 }
 
 class LoadTableBase {
@@ -2216,6 +2140,78 @@ class MembersTable extends LoadTableBase {
     return domainsHTML;
   }
 
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Get csrf token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+  
+    fetch(`${member_delete_url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (response.status === 200) {
+        response.json().then(data => {
+          if (data.success) {
+            this.addAlert("success", data.success);
+          }
+          this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+        });
+      } else {
+        // If the response isn't 204, handle the error response
+        response.json().then(data => {
+          if (data.error) {
+            // This should display the error given from backend for
+            // either only admin OR in progress requests
+            this.addAlert("error", data.error); 
+          } else {
+            throw new Error(`Unexpected status: ${response.status}`);
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting member:', error);
+    });
+  }
+  
+  
+  /**
+   * Adds an alert message to the page with an alert class.
+   *
+   * @param {string} alertClass - {error, warning, info, success}
+   * @param {string} alertMessage - The text that will be displayed
+   *
+   */
+  addAlert(alertClass, alertMessage) {
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    this.resetAlerts();
+    toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
+    let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
+    alertParagraph.innerHTML = alertMessage
+    showElement(toggleableAlertDiv);
+  }
+  
+  /**
+   * Resets the reusable alert message
+   */
+  resetAlerts() {
+    // Create a list of any alert that's leftover and remove
+    document.querySelectorAll(".usa-alert:not(#toggleable-alert)").forEach(alert => {
+      alert.remove();
+    });
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    toggleableAlertDiv.classList.remove('usa-alert--error');
+    toggleableAlertDiv.classList.remove('usa-alert--success');
+    hideElement(toggleableAlertDiv);
+  }
+
   /**
    * Generates an HTML string summarizing a user's additional permissions within a portfolio, 
    * based on the user's permissions and predefined permission choices.
@@ -2290,8 +2286,6 @@ class MembersTable extends LoadTableBase {
      * @param {*} portfolio - the portfolio id
      */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
-
-    console.log("in loadTable");
       // --------- SEARCH
       let searchParams = new URLSearchParams(
         {
@@ -2318,9 +2312,6 @@ class MembersTable extends LoadTableBase {
 
       // Get whether the logged in user has edit members permission
       const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
-
-      console.log(this.portfolioElement.getAttribute('data-has-edit-permission'))
-      console.log(hasEditPermission)
   
       let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
       fetch(url)
@@ -2333,6 +2324,10 @@ class MembersTable extends LoadTableBase {
 
           // handle the display of proper messaging in the event that no members exist in the list or search returns no results
           this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+
+          // remove any existing modal elements from the DOM so they can be properly re-initialized
+          // after the DOM content changes and there are new delete modal buttons added
+          unloadModals();
 
           // identify the DOM element where the domain list will be inserted into the DOM
           const memberList = document.querySelector('#members tbody');
@@ -2364,9 +2359,7 @@ class MembersTable extends LoadTableBase {
             const num_domains = member.domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
             const kebabHTML = hasEditPermission ? generateKebabHTML(unique_id, member.name, member.type): ''; 
-            
-            if (hasEditPermission) addModal(member.email, unique_id, num_domains, member_delete_url, this.tableWrapper);
-      
+                  
             const row = document.createElement('tr');
             
             let admin_tagHTML = ``;
@@ -2422,8 +2415,11 @@ class MembersTable extends LoadTableBase {
             if (domainsHTML || permissionsHTML) {
               memberList.appendChild(showMoreRow);
             }
+            // This easter egg is only for fixtures that dont have names as we are displaying their emails
+            // All prod users will have emails linked to their account
+            if (hasEditPermission) addModal(member.email || "Samwise Gamgee", unique_id, num_domains, member_delete_url, row);
           });
-
+          
           this.initShowMoreButtons();
 
           // initialize modals immediately after the DOM content is updated
@@ -2445,7 +2441,7 @@ class MembersTable extends LoadTableBase {
                 pageToDisplay--;
               }
 
-              deleteMember(pk, pageToDisplay);
+              this.deleteMember(pk, pageToDisplay);
             });
           });
 
@@ -2992,9 +2988,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener("DOMContentLoaded", () => {
   (function portfolioMemberToggle() {
-    console.log("IN PORTFOLIOMEMBERTOGGLE")
     const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
-    console.log("!!!", wrapperDeleteAction)
     if (wrapperDeleteAction) {
         const member_type = wrapperDeleteAction.getAttribute("data-member-type");
         const member_id = wrapperDeleteAction.getAttribute("data-member-id");
@@ -3005,19 +2999,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const unique_id = `${member_type}-${member_id}`;
 
         wrapperDeleteAction.innerHTML = generateKebabHTML(unique_id, member_name, member_type);
-        console.log("WE GENERATED THE KEBAB HERE")
 
         // Select the button and the menu we just inserted
         const kebabButton = wrapperDeleteAction.querySelector(`#button-toggle-more-actions-${unique_id}`);
         const kebabMenu = wrapperDeleteAction.querySelector(`#more-actions-${unique_id}`);
-        console.log("BEFORE LISTENER")
 
         kebabButton.addEventListener('click', () => {
           const isExpanded = kebabButton.getAttribute('aria-expanded') === 'true';
           kebabButton.setAttribute('aria-expanded', !isExpanded);
-          console.log("IN LISTENER")
           kebabMenu.style.display = isExpanded ? 'none' : 'block';
-          console.log("Menu is now", isExpanded ? "hidden" : "visible");
         });
 
         // Handles clicks outside the kebab menu
@@ -3033,7 +3023,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         console.log("AFTER LISTENER")
 
-        addModal(member_email, unique_id, num_domains, member_delete_url, wrapperDeleteAction);
+        // This easter egg is only for fixtures that dont have names as we are displaying their emails
+        // All prod users will have emails linked to their account
+        addModal(member_email || "Samwise Gamgee", unique_id, num_domains, member_delete_url, wrapperDeleteAction);
 
         initializeModals();
 

@@ -130,6 +130,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
                 "permissions, make sure they log into the registrar, and then remove this member."
             )
 
+        # From the Members Table page Else the Member Page
         if error_message:
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse(
@@ -143,6 +144,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         # passed all error conditions
         portfolio_member_permission.delete()
 
+        # From the Members Table page Else the Member Page
         success_message = f"You've removed {member.email} from the organization."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
@@ -258,7 +260,13 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
 
         portfolio_invitation.delete()
 
-        return HttpResponse(status=204)
+        success_message = f"You've removed {portfolio_invitation.email} from the organization."
+        # From the Members Table page Else the Member Page
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        else:
+            messages.success(request, success_message)
+            return redirect(reverse("members"))
 
 
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
