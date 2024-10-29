@@ -92,13 +92,11 @@ function addModal(member_email, member_id, num_domains, submit_delete_url, wrapp
   let modalHeading = '';
   let modalDescription = '';
 
-  console.log("member_id is", member_id)
-
-  if (num_domains === 0){
+  if (num_domains == 0){
     modalHeading = `Are you sure you want to delete ${member_email}?`;
     modalDescription = `They will no longer be able to access this organization. \n   
     This action cannot be undone.`;
-  } else if (num_domains === 1) {
+  } else if (num_domains == 1) {
     modalHeading = `Are you sure you want to delete ${member_email}?`;
     modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
     Removing them from the organization will remove all of their domains. They will no longer be able to \n
