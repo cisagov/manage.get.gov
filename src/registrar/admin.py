@@ -1,11 +1,13 @@
 from datetime import date
 import logging
+from django.contrib.admin.widgets import AutocompleteSelect
 import copy
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.utility.admin_helpers import (
+    AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
     get_field_links_as_list,
@@ -46,6 +48,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.contrib.admin import options
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +237,11 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+            'investigator': AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field('investigator'),
+                admin.site,
+                attrs={'data-placeholder': '---------'}
+            ),
         }
         labels = {
             "action_needed_reason_email": "Email",
