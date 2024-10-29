@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CF_USERNAME: CF_MS_USERNAME
-      CF_PASSWORD: CF_STAGING_PASSWORD
+      CF_PASSWORD: CF_MS_PASSWORD
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
