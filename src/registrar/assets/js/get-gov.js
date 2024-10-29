@@ -279,7 +279,7 @@ function deleteMember(member_delete_url, pageToDisplay) {
  */
 function addAlert(alertClass, alertMessage) {
   let toggleableAlertDiv = document.getElementById("toggleable-alert");
-  this.resetAlert();
+  this.resetAlerts();
   toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
   let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
   alertParagraph.innerHTML = alertMessage
@@ -290,7 +290,11 @@ function addAlert(alertClass, alertMessage) {
  * Resets the reusable alert message
  *
  */
-function resetAlert() {
+function resetAlerts() {
+  // Create a list of any alert that's leftover and remove
+  document.querySelectorAll(".usa-alert:not(#toggleable-alert)").forEach(alert => {
+    alert.remove();
+  });
   let toggleableAlertDiv = document.getElementById("toggleable-alert");
   toggleableAlertDiv.classList.remove('usa-alert--error');
   toggleableAlertDiv.classList.remove('usa-alert--success');

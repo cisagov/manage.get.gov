@@ -115,7 +115,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 
         support_url = "https://get.gov/contact/"
 
-        error_message = ''
+        error_message = ""
 
         if active_requests_count > 0:
             # If they have any in progress requests
@@ -133,14 +133,12 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         if error_message:
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse(
-                    {
-                        "error": error_message
-                    },
+                    {"error": error_message},
                     status=400,
                 )
             else:
                 messages.error(request, error_message)
-                return redirect(reverse('member', kwargs={'pk': pk}))
+                return redirect(reverse("member", kwargs={"pk": pk}))
 
         # passed all error conditions
         portfolio_member_permission.delete()
@@ -150,7 +148,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
             return JsonResponse({"success": success_message}, status=200)
         else:
             messages.success(request, success_message)
-            return redirect(reverse('members'))
+            return redirect(reverse("members"))
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
