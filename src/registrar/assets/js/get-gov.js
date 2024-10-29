@@ -239,6 +239,7 @@ function deleteMember(member_delete_url, pageToDisplay) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
       'X-CSRFToken': csrfToken,
     },
     body: formData
@@ -1200,7 +1201,7 @@ function initializeTooltips() {
  * 
  */
 function initializeModals() {
-  window.modal.on();
+    window.modal.on();
 }
 
 /**
@@ -3030,7 +3031,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         console.log("AFTER LISTENER")
 
-        addModal(member_email, member_id, num_domains, member_delete_url, wrapperDeleteAction);
+        addModal(member_email, unique_id, num_domains, member_delete_url, wrapperDeleteAction);
 
         initializeModals();
 
@@ -3041,15 +3042,11 @@ document.addEventListener("DOMContentLoaded", () => {
           const submitButton = modal.querySelector('.usa-modal__submit');
           const closeButton = modal.querySelector('.usa-modal__close');
           submitButton.addEventListener('click', () => {
-            let pk = submitButton.getAttribute('data-pk');
             closeButton.click();
-            // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
-            let pageToDisplay = data.page;
-            if (data.total == 1 && data.unfiltered_total > 1) {
-              pageToDisplay--;
+            let delete_member_form = document.getElementById("member-delete-form");
+            if (delete_member_form) {
+              delete_member_form.submit();
             }
-
-            deleteMember(pk, pageToDisplay);
           });
         });
     }

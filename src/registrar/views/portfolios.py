@@ -2,6 +2,7 @@ import logging
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.contrib import messages
 
 from registrar.forms.portfolio import (
@@ -114,29 +115,42 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 
         support_url = "https://get.gov/contact/"
 
-        # If they have any in progress requests
+        error_message = ''
+
         if active_requests_count > 0:
-            return JsonResponse(
-                {
-                    "error": f"This member has an active domain request and can't be removed from the organization. "
-                    f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
-                },
-                status=400,
+            # If they have any in progress requests
+            error_message = mark_safe(
+                f"This member has an active domain request and can't be removed from the organization. "
+                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+            )
+        elif member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
+            # If they are the last manager of a domain
+            error_message = (
+                "There must be at least one admin in your organization. Give another member admin "
+                "permissions, make sure they log into the registrar, and then remove this member."
             )
 
-        # If they are the last manager of a domain
-        if member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
-            return JsonResponse(
-                {
-                    "error": "There must be at least one admin in your organization. Give another member admin \n"
-                    "persmissions, make sure they log into the registrar, and then remove this member."
-                },
-                status=400,
-            )
+        if error_message:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse(
+                    {
+                        "error": error_message
+                    },
+                    status=400,
+                )
+            else:
+                messages.error(request, error_message)
+                return redirect(reverse('member', kwargs={'pk': pk}))
 
+        # passed all error conditions
         portfolio_member_permission.delete()
 
-        return JsonResponse({"success": f"You've removed {member.email} from the organization."}, status=200)
+        success_message = f"You've removed {member.email} from the organization."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        else:
+            messages.success(request, success_message)
+            return redirect(reverse('members'))
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):

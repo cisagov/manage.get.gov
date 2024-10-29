@@ -60,6 +60,7 @@
     {% endif %}
   </div>
 
+  <form method="post" id="member-delete-form" action="{{ request.path }}/delete"> {% csrf_token %} </form>
   <address>
     <strong class="text-primary-dark">Last active:</strong>
     {% if member and member.last_login %}
