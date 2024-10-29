@@ -39,7 +39,7 @@
       {% if member %}
         <div id="wrapper-delete-action"
         data-member-name="{{ member.email }}"
-        data-member_type="member"
+        data-member-type="member"
         data-member-id="{{ member.id }}"
         data-num-domains="{{ portfolio_permission.get_managed_domains_count }}"
         data-member-email="{{ member.email }}"
@@ -49,7 +49,7 @@
       {% elif portfolio_invitation %}
         <div id="wrapper-delete-action"
         data-member-name="{{ portfolio_invitation.email }}"
-        data-member_type="invitedmember"
+        data-member-type="invitedmember"
         data-member-id="{{ portfolio_invitation.id }}"
         data-num-domains="{{ portfolio_invitation.get_managed_domains_count }}"
         data-member-email="{{ portfolio_invitation.email }}"
