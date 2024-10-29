@@ -1333,8 +1333,7 @@ class DomainRequest(TimeStampedModel):
             return False
         return True
 
-    """the following converted_ property methods get their respective field names from portfolio,
-    if the domain request has a portfolio. if it does not, it will get the info from the model itself."""
+    """The following converted_ property methods get field data from this domain request's portfolio, if there is an associated portfolio. If not, they return data from the domain request model."""
 
     @property
     def converted_organization_name(self):
