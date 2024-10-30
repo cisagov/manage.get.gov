@@ -1152,7 +1152,9 @@ class DomainRequest(TimeStampedModel):
         # If a suborganization already exists, it can't possibly be a new one
         if self.sub_organization:
             return False
-        return bool(self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory)
+        return bool(
+            self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory
+        )
 
     # ## Form unlocking steps ## #
     #
