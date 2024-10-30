@@ -1125,16 +1125,49 @@ class DomainRequest(TimeStampedModel):
 
         self.creator.restrict_user()
 
-    # Form unlocking steps
+    def requesting_entity_is_portfolio(self) -> bool:
+        """Determines if this record is requesting that a portfolio be their organization."""
+        return self.portfolio and self.organization_name == self.portfolio.organization_name
+
+    def requesting_entity_is_suborganization(self) -> bool:
+        """Used to determine if this domain request is also requesting that it be tied to a suborganization.
+        Checks if this record has a suborganization or not by checking if a suborganization exists,
+        and if it doesn't, determining if properties like requested_suborganization exist.
+        """
+
+        if self.portfolio:
+            if self.sub_organization:
+                return True
+            if self.is_requesting_new_suborganization():
+                return True
+        return False
+
+    def is_requesting_new_suborganization(self) -> bool:
+        """Used on the requesting entity form to determine if a user is trying to request
+        a new suborganization using the domain request form.
+
+        This only occurs when no suborganization is selected, but they've filled out
+        the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
+        """
+        # If a suborganization already exists, it can't possibly be a new one
+        if self.sub_organization:
+            return False
+        return bool(self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory)
+
+    # ## Form unlocking steps ## #
+    #
     # These methods control the conditions in which we should unlock certain domain wizard steps.
+
     def unlock_requesting_entity(self) -> bool:
         """Unlocks the requesting entity step"""
-        if self.portfolio and self.organization_name == self.portfolio.organization_name:
+        if self.requesting_entity_is_suborganization():
+            return True
+        elif self.requesting_entity_is_portfolio():
             return True
         else:
-            return self.is_suborganization()
+            return False
 
-    # ## Form policies ###
+    # ## Form policies ## #
     #
     # These methods control what questions need to be answered by applicants
     # during the domain request flow. They are policies about the domain request so
@@ -1202,39 +1235,6 @@ class DomainRequest(TimeStampedModel):
         if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
-
-    def is_suborganization(self) -> bool:
-        """Determines if this record is a suborganization or not by checking if a suborganization exists,
-        and if it doesn't, determining if properties like requested_suborganization exist."""
-        if self.portfolio:
-            if self.sub_organization:
-                return True
-
-            if self.has_information_required_to_make_suborganization():
-                return True
-
-        return False
-
-    def is_custom_suborganization(self) -> bool:
-        """Used on the requesting entity form to determine if a user is trying to request
-        a new suborganization using the domain request form.
-
-        This only occurs when no suborganization is selected, but they've filled out
-        the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
-        """
-        if self.is_suborganization():
-            return not self.sub_organization and self.has_information_required_to_make_suborganization()
-        else:
-            return False
-
-    def has_information_required_to_make_suborganization(self) -> bool:
-        """Checks if we have all the information we need to create a new suborganization object.
-        Checks for a the existence of requested_suborganization, suborganization_city, suborganization_state_territory
-        """
-        if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
-            return True
-        else:
-            return False
 
     def to_dict(self):
         """This is to process to_dict for Domain Information, making it friendly

@@ -1685,9 +1685,9 @@ class TestRequestingEntity(WebTest):
         form = response.forms[0]
 
         # Test selecting an existing suborg
-        form["portfolio_requesting_entity-is_suborganization"] = True
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-sub_organization"] = f"{self.suborganization.id}"
-        form["portfolio_requesting_entity-is_custom_suborganization"] = False
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = False
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1718,8 +1718,8 @@ class TestRequestingEntity(WebTest):
         form = response.forms[0]
 
         # Test selecting an existing suborg
-        form["portfolio_requesting_entity-is_suborganization"] = True
-        form["portfolio_requesting_entity-is_custom_suborganization"] = True
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
         form["portfolio_requesting_entity-sub_organization"] = ""
 
         form["portfolio_requesting_entity-requested_suborganization"] = "moon"
@@ -1759,7 +1759,7 @@ class TestRequestingEntity(WebTest):
         form = response.forms[0]
 
         # Test selecting an existing suborg
-        form["portfolio_requesting_entity-is_suborganization"] = False
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1784,7 +1784,7 @@ class TestRequestingEntity(WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Test missing suborganization selection
-        form["portfolio_requesting_entity-is_suborganization"] = True
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-sub_organization"] = ""
 
         response = form.submit()
@@ -1792,7 +1792,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Select a suborganization.", status_code=200)
 
         # Test missing custom suborganization details
-        form["portfolio_requesting_entity-is_custom_suborganization"] = True
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
         response = form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         self.assertContains(response, "Enter details for your organization name.", status_code=200)

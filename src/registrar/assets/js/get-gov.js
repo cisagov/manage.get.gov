@@ -2741,49 +2741,45 @@ document.addEventListener('DOMContentLoaded', function() {
  * This page has a radio button that dynamically toggles some fields
  * Within that, the dropdown also toggles some additional form elements.
 */
-(function handleRequestingEntityFieldset() {
-  // Check if the requesting-entity-fieldset exists. 
+(function handleRequestingEntityFieldset() { 
+  // Sadly, these ugly ids are the auto generated with this prefix
+  const formPrefix = "portfolio_requesting_entity"
+
   // This determines if we are on the requesting entity page or not.
-  const fieldset = document.getElementById("requesting-entity-fieldset");
-  if (!fieldset) return;
+  const isSubOrgFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
+  if (!isSubOrgFieldset) return;
 
   // Get the is_suborganization radio buttons
-  // Sadly, these ugly ids are the auto generated
-  const formPrefix = "portfolio_requesting_entity"
-  const isSuborgRadios = document.querySelectorAll(`input[name="${formPrefix}-is_suborganization"]`);
-  const subOrgSelect = document.querySelector(`#id_${formPrefix}-sub_organization`);
+  const isSuborgRadios = isSubOrgFieldset.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
+  const subOrgSelect = document.getElementById(`id_${formPrefix}-sub_organization`);
 
   // The suborganization section is its own div
   // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory.
-  const suborganizationFieldset = document.querySelector("#requesting-entity-fieldset__suborganization");
-  const suborganizationDetailsFieldset = document.querySelector("#requesting-entity-fieldset__suborganization__details");
+  const suborganizationContainer = document.getElementById("suborganization-container");
+  const suborganizationDetailsContainer = document.getElementById("suborganization-container__details");
 
-  // This variable determines if the user is trying to request a new suborganization or not
-  var isCustomSuborganization = document.querySelector("#id_portfolio_requesting_entity-is_custom_suborganization")
+  // This variable determines if the user is trying to *create* a new suborganization or not.
+  var isRequestingSuborganization = document.getElementById(`id_${formPrefix}-is_requesting_new_suborganization`)
 
   // Don't do anything if we are missing crucial page elements
-  if (!isSuborgRadios || !subOrgSelect || !suborganizationFieldset || !suborganizationDetailsFieldset) return;
+  if (!isSuborgRadios || !subOrgSelect || !suborganizationContainer || !suborganizationDetailsContainer) return;
 
   // Function to toggle suborganization based on is_suborganization selection
   function toggleSuborganization(radio) {
     if (radio && radio.checked && radio.value === "True") {
-      showElement(suborganizationFieldset);
-      toggleSuborganizationDetails();
-    } else {
-      hideElement(suborganizationFieldset);
-      hideElement(suborganizationDetailsFieldset);
-    }
-  };
+      showElement(suborganizationContainer);
 
-  // Function to toggle organization details based on sub_organization selection
-  function toggleSuborganizationDetails () {
-    // We should hide the org name fields when we select the special other value
-    if (subOrgSelect.value === "other") {
-      showElement(suborganizationDetailsFieldset);
-      isCustomSuborganization.value = "True";
+      // Handle custom suborganizations
+      if (subOrgSelect.value === "other") {
+        showElement(suborganizationDetailsContainer);
+        isRequestingSuborganization.value = "True";
+      } else {
+        hideElement(suborganizationDetailsContainer);
+        isRequestingSuborganization.value = "False";
+      }
     } else {
-      hideElement(suborganizationDetailsFieldset);
-      isCustomSuborganization.value = "False";
+      hideElement(suborganizationContainer);
+      hideElement(suborganizationDetailsContainer);
     }
   };
 
@@ -2795,7 +2791,8 @@ document.addEventListener('DOMContentLoaded', function() {
     subOrgSelect.add(fakeOption);
   }
 
-  if (isCustomSuborganization.value === "True") {
+  console.log(isRequestingSuborganization.value)
+  if (isRequestingSuborganization.value === "True") {
     subOrgSelect.value = "other"
   }
 
@@ -2813,6 +2810,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add event listener to the suborg dropdown to show/hide the suborg details section
   subOrgSelect.addEventListener("change", () => {
-    toggleSuborganizationDetails();
+    // Handle the custom suborganization field
+    if (subOrgSelect.value === "other") {
+      showElement(suborganizationDetailsContainer);
+      isRequestingSuborganization.value = "True";
+    } else {
+      hideElement(suborganizationDetailsContainer);
+      isRequestingSuborganization.value = "False";
+    }
   });
 })();

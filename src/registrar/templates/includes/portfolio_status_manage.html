@@ -1,7 +1,0 @@
-{% extends "includes/request_status_manage.html" %}
-{% load custom_filters %}
-{% load static url_helpers %}
-
-{% block request_summary %}
-    {% include "includes/portfolio_request_review_steps.html" with is_editable=False domain_request=DomainRequest %}
-{% endblock request_summary %}

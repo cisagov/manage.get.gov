@@ -596,13 +596,13 @@ class RequestingEntity(DomainRequestWizard):
         if the user selects one."""
         requesting_entity_form = forms[1]
         cleaned_data = requesting_entity_form.cleaned_data
-        is_suborganization = cleaned_data.get("is_suborganization")
+        requesting_entity_is_suborganization = cleaned_data.get("requesting_entity_is_suborganization")
         sub_organization = cleaned_data.get("sub_organization")
         requested_suborganization = cleaned_data.get("requested_suborganization")
 
         # If no suborganization presently exists but the user filled out
         # org information then create a suborg automatically.
-        if is_suborganization and (sub_organization or requested_suborganization):
+        if requesting_entity_is_suborganization and (sub_organization or requested_suborganization):
             # Cleanup the organization name field, as this isn't for suborganizations.
             self.domain_request.organization_name = None
             self.domain_request.sub_organization = sub_organization

@@ -268,17 +268,17 @@ def display_requesting_entity(domain_request):
     Boise, ID
     """
     display = ""
-    if domain_request.portfolio and domain_request.organization_name == domain_request.portfolio.organization_name:
-        display = (
-            f"{domain_request.portfolio.organization_name}\n"
-            f"{domain_request.portfolio.city}, {domain_request.portfolio.state_territory}"
-        )
-    elif domain_request.sub_organization:
+    if domain_request.sub_organization:
         display = domain_request.sub_organization
-    elif domain_request.has_information_required_to_make_suborganization():
+    elif domain_request.requesting_entity_is_suborganization():
         display = (
             f"{domain_request.requested_suborganization}\n"
             f"{domain_request.suborganization_city}, {domain_request.suborganization_state_territory}"
+        )
+    elif domain_request.requesting_entity_is_portfolio():
+        display = (
+            f"{domain_request.portfolio.organization_name}\n"
+            f"{domain_request.portfolio.city}, {domain_request.portfolio.state_territory}"
         )
 
     return display

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block form_fields %}
-    <fieldset id="requesting-entity-fieldset" class="usa-fieldset">
+    <fieldset class="usa-fieldset">
         <legend>
         <h2>Who will use the domain you’re requesting?</h2>
         </legend>
@@ -19,7 +19,7 @@
         {# forms.0 is a small yes/no form that toggles the visibility of "requesting entity" formset #}
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
             {% with attr_required=True %}
-                {% input_with_errors forms.0.is_suborganization %}
+                {% input_with_errors forms.0.requesting_entity_is_suborganization %}
             {% endwith %}
         {% endwith %}
 
@@ -27,10 +27,10 @@
         was selected or not. This allows for persistence across page reloads without using session variables.
         {% endcomment %}
         {% with add_group_class="display-none" %}
-            {% input_with_errors forms.1.is_custom_suborganization %}
+            {% input_with_errors forms.1.is_requesting_new_suborganization %}
         {% endwith %}
 
-        <div id="requesting-entity-fieldset__suborganization" class="margin-top-4">
+        <div id="suborganization-container" class="margin-top-4">
             <h2>Add suborganization information</h2>
             <p>
                 This information will be published in <a class="usa-link usa-link--always-blue" href="{% public_site_url 'about/data' %}">.gov’s public data</a>. If you don’t see your suborganization in the list, 
@@ -43,7 +43,7 @@
             {% comment %} This will be toggled if a special value, "other", is selected.
             Otherwise this field is invisible. 
             {% endcomment %}
-            <div id="requesting-entity-fieldset__suborganization__details">
+            <div id="suborganization-container__details">
                 {% with attr_required=True %}
                     {% input_with_errors forms.1.requested_suborganization %}
                 {% endwith %}
