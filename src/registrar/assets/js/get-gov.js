@@ -22,8 +22,7 @@ var SUCCESS = "success";
  *
 */
 const hideElement = (element) => {
-  if (element && !element.classList.contains("display-none"))
-      element.classList.add('display-none');
+  element.classList.add('display-none');
 };
 
 /**
@@ -31,8 +30,7 @@ const hideElement = (element) => {
 *
 */
 const showElement = (element) => {
-  if (element && element.classList.contains("display-none"))
-      element.classList.remove('display-none');
+  element.classList.remove('display-none');
 };
 
 /**

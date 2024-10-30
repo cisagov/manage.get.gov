@@ -27,21 +27,21 @@ class RequestingEntityForm(RegistrarForm):
     All of these fields are not required by default, but as we use javascript to conditionally show
     and hide some of these, they then become required in certain circumstances."""
 
-    # Add a hidden field to store if the user is requesting a new suborganization
+    # Add a hidden field to store if the user is requesting a new suborganization.
+    # This hidden boolean is used for our javascript to communicate to us and to it.
+    # If true, the suborganization form will auto select a js value "Other".
+    # If this selection is made on the form (tracked by js), then it will toggle the form value of this.
+    # In other words, this essentially tracks if the suborganization field == "Other".
+    # "Other" is just an imaginary value that is otherwise invalid.
+    # Note the logic in `def clean` and line 2744 in get-gov.js
     is_requesting_new_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
     sub_organization = forms.ModelChoiceField(
         label="Suborganization name",
-        # not required because this field won't be filled out unless
-        # it is a federal agency. Use clean to check programatically
-        # if it has been filled in when required.
         required=False,
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
     )
-
-    # We are using the current sub_organization naming convention here.
-    # We may want to refactor this to suborganization eventually.
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
         required=False,
@@ -147,7 +147,10 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
     @property
     def form_is_checked(self):
         """
-        Determines the initial checked state of the form based on the domain_request's attributes.
+        Determines if the requesting entity is a suborganization, or a portfolio.
+        For suborganizations, users have the ability to request a new one if the
+        desired suborg doesn't exist. We expose additional fields that denote this,
+        like `requested_suborganization`. So we also check on those.
         """
 
         if self.domain_request.requesting_entity_is_suborganization():
