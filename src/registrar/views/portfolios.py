@@ -388,13 +388,6 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         else:
             return self.form_invalid(form)
 
-    def form_valid(self, form):
-        """Handle the case when the form is valid."""
-        # self.object = form.save(commit=False)
-        # self.object.creator = self.request.user
-        # self.object.save()
-        # messages.success(self.request, "The organization information for this portfolio has been updated.")
-        return super().form_valid(form)
 
     def form_invalid(self, form):
         """Handle the case when the form is invalid."""
@@ -405,7 +398,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         return reverse("members")
 
     ##########################################
-    # TODO: future ticket
+    # TODO: future ticket #2854
     # (save/invite new member)
     ##########################################
 
@@ -526,64 +519,3 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
     #     else:
     #         messages.success(self.request, f"Added user {requested_email}.")
     #     return redirect(self.get_success_url())
-
-
-# class NewMemberView(PortfolioMembersPermissionView, FormMixin):
-#     form = portfolioForms.NewMemberForm
-#     template_name = 'portfolio_members_add_new.html'  # Assuming you have a template file for the form
-
-# #     model = UserPortfolioPermission
-# #     template_name = "portfolio_members_add_new.html"
-# #     form_class = portfolioForms.NewMemberForm
-# #     context_object_name = "userPortfolioPermission"
-
-#     def get_success_url(self):
-#         return reverse('success')  # Redirect after successful submission
-
-#     def get_context_data(self, **kwargs):
-#         """Add additional context data to the template."""
-#         #TODO: Add permissions to context
-#         context = super().get_context_data(**kwargs)
-#         portfolio = self.request.session.get("portfolio")
-#         context["has_invite_members_permission"] = self.request.user.has_edit_members_portfolio_permission(portfolio)
-#         return context
-
-#     def form_valid(self, form):
-#         # Get the cleaned data from the form
-#         cleaned_data = form.cleaned_data
-#         email = cleaned_data.get('email')
-#         # grade = cleaned_data.get('grade')
-#         # sport = cleaned_data.get('sport')
-
-#         ##########################################
-#         # TODO: future ticket
-#         # (validate and save/invite new member here)
-#         ##########################################
-
-#         # Lookup member by email
-#         # member = get_object_or_404(User, email=email)
-
-#         # Check existing portfolio permissions
-#         # TODO: future ticket -- check for existing portfolio permissions, multipe portfolio flags, etc.
-#         # school = self.get_context_data()['school']
-
-#         # Update student school information
-#         # student.school = school
-#         # student.save()
-
-#         # Create or update the SportEnrollment for this student
-#         # SportEnrollment.objects.create(
-#         #     student=student,
-#         #     grade=grade,
-#         #     sport=sport
-#         # )
-
-#         return super().form_valid(form)
-
-#     def form_invalid(self, form):
-#         # If the form is invalid, show errors
-#         return self.render_to_response(self.get_context_data(form=form))
-
-
-#     def get(self, request):
-#         return render(request, "portfolio_members_add_new.html")

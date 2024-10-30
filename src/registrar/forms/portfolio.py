@@ -180,7 +180,7 @@ class NewMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Domain request permission is required",
+            "required": "Admin domain request permission is required",
         },
     )
     admin_org_members_permissions = forms.ChoiceField(
@@ -189,7 +189,7 @@ class NewMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Member permission is required",
+            "required": "Admin member permission is required",
         },
     )
     basic_org_domain_request_permissions = forms.ChoiceField(
@@ -202,7 +202,7 @@ class NewMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Member permission is required",
+            "required": "Basic member permission is required",
         },
     )
 
@@ -234,6 +234,11 @@ class NewMemberForm(forms.ModelForm):
         if email_value:
             cleaned_data["email"] = email_value.lower()
 
+
+        ##########################################
+        # TODO: future ticket
+        # (invite new member)
+        ##########################################
         # Check for an existing user (if there isn't any, send an invite)
         # if email_value:
         #     try:
@@ -241,21 +246,29 @@ class NewMemberForm(forms.ModelForm):
         #     except User.DoesNotExist:
         #         raise forms.ValidationError("User with this email does not exist.")
 
-        # Get the grade and sport from POST data
-        permission_level = cleaned_data.get("member_access_level")
-        # permission_level = self.data.get('new_member-permission_level')
-        if not permission_level:
+        member_access_level = cleaned_data.get("member_access_level")
+
+        # Intercept the error messages so that we don't validate hidden inputs
+        if not member_access_level:
+            # If no member access level has been selected, delete error messages
+            # for all hidden inputs (which is everything except the e-mail input
+            # and member access selection)
             for field in self.fields:
                 if field in self.errors and field != "email" and field != "member_access_level":
                     del self.errors[field]
             return cleaned_data
+        
+        basic_dom_req_error = "basic_org_domain_request_permissions"
+        admin_dom_req_error = "admin_org_domain_request_permissions"
+        admin_member_error = "admin_org_members_permissions"
 
-        # Validate the sport based on the selected grade
-        if permission_level == "True":
+        if member_access_level == "admin" and basic_dom_req_error in self.errors:
             # remove the error messages pertaining to basic permission inputs
-            del self.errors["basic_org_domain_request_permissions"]
-        else:
+            del self.errors[basic_dom_req_error]
+        elif member_access_level == "basic":
             # remove the error messages pertaining to admin permission inputs
-            del self.errors["admin_org_domain_request_permissions"]
-            del self.errors["admin_org_members_permissions"]
+            if admin_dom_req_error in self.errors: 
+                del self.errors[admin_dom_req_error]
+            if admin_member_error in self.errors: 
+                del self.errors[admin_member_error]
         return cleaned_data

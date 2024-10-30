@@ -337,7 +337,7 @@ function HookupRadioTogglerListener(radioButtonName, valueToElementMap) {
     allElementIds.forEach(function (elementId) {
       let element = document.getElementById(elementId);
       if (element) {
-        element.style.display = 'none';
+        hideElement(element);
       }
     });
 
@@ -345,7 +345,7 @@ function HookupRadioTogglerListener(radioButtonName, valueToElementMap) {
     if (selectedValue && valueToElementMap[selectedValue]) {
       let elementToShow = document.getElementById(valueToElementMap[selectedValue]);
       if (elementToShow) {
-        elementToShow.style.display = 'block';
+        showElement(elementToShow);
       }
     }
   }
