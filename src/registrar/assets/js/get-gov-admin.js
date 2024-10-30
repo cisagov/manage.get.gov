@@ -57,7 +57,7 @@ function handleSuborganizationFields(
     suborgCitySelector=".field-suborganization_city", 
     suborgStateTerritorySelector=".field-suborganization_state_territory"
 ) {
-    // These dropdown arecselect2 fields so they must be interacted with via jquery
+    // These dropdown are select2 fields so they must be interacted with via jquery
     const portfolioDropdown = django.jQuery(portfolioDropdownSelector)
     const suborganizationDropdown = django.jQuery(suborgDropdownSelector)
     const requestedSuborgField = document.querySelector(requestedSuborgFieldSelector);
