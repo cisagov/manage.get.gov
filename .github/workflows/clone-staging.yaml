@@ -36,7 +36,7 @@ jobs:
       - name: Clone Database
         uses: cloud-gov/cg-cli-tools@main
         with:
-          cf_username: ${{ secrets.CF_MS_USERNAM }}
+          cf_username: ${{ secrets.CF_MS_USERNAME }}
           cf_password: ${{ secrets.CF_MS_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.SOURCE_ENVIRONMENT }}
@@ -45,7 +45,7 @@ jobs:
       - name: Unshare DB Service
         uses: cloud-gov/cg-cli-tools@main
         with:
-          cf_username: ${{ secrets.CF_MS_USERNAM }}
+          cf_username: ${{ secrets.CF_MS_USERNAME }}
           cf_password: ${{ secrets.CF_MS_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.SOURCE_ENVIRONMENT }}
