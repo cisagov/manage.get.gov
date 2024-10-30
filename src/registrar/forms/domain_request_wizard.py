@@ -154,7 +154,8 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         desired suborg doesn't exist. We expose additional fields that denote this,
         like `requested_suborganization`. So we also check on those.
         """
-
+        # True means that the requesting entity is a suborganization,
+        # whereas False means that the requesting entity is a portfolio.
         if self.domain_request.requesting_entity_is_suborganization():
             return True
         elif self.domain_request.requesting_entity_is_portfolio():

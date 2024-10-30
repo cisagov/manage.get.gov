@@ -594,16 +594,19 @@ class RequestingEntity(DomainRequestWizard):
         """Override of save to clear or associate certain suborganization data
         depending on what the user wishes to do. For instance, we want to add a suborganization
         if the user selects one."""
-        yesno_form = forms[0]
-        requesting_entity_form = forms[1]
 
+        # Get the yes/no dropdown value
+        yesno_form = forms[0]
         yesno_cleaned_data = yesno_form.cleaned_data
         requesting_entity_is_suborganization = yesno_cleaned_data.get("requesting_entity_is_suborganization")
 
+        # Get the suborg value, and the requested suborg value
+        requesting_entity_form = forms[1]
         cleaned_data = requesting_entity_form.cleaned_data
         sub_organization = cleaned_data.get("sub_organization")
         requested_suborganization = cleaned_data.get("requested_suborganization")
 
+        # Do some data cleanup, depending on what option was checked
         if requesting_entity_is_suborganization and (sub_organization or requested_suborganization):
             # Cleanup the organization name field, as this isn't for suborganizations.
             requesting_entity_form.cleaned_data.update({"organization_name": None})
