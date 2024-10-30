@@ -152,13 +152,13 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         Determines the initial checked state of the form based on the domain_request's attributes.
         """
 
-        if (
+        if self.domain_request.is_suborganization():
+            return True
+        elif (
             self.domain_request.portfolio
             and self.domain_request.organization_name == self.domain_request.portfolio.organization_name
         ):
             return False
-        elif self.domain_request.is_suborganization():
-            return True
         else:
             return None
 
