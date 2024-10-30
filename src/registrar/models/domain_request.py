@@ -1137,13 +1137,10 @@ class DomainRequest(TimeStampedModel):
         Checks if this record has a suborganization or not by checking if a suborganization exists,
         and if it doesn't, determining if properties like requested_suborganization exist.
         """
-
-        if self.portfolio:
-            if self.sub_organization:
-                return True
-            if self.is_requesting_new_suborganization():
-                return True
-        return False
+        if self.portfolio and (self.sub_organization or self.is_requesting_new_suborganization()):
+            return True
+        else:
+            return False
 
     def is_requesting_new_suborganization(self) -> bool:
         """Used on the requesting entity form to determine if a user is trying to request
@@ -1152,11 +1149,15 @@ class DomainRequest(TimeStampedModel):
         This only occurs when no suborganization is selected, but they've filled out
         the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
         """
-        # If a suborganization already exists, it can't possibly be a new one
-        if self.sub_organization:
-            return False
 
-        if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
+        # If a suborganization already exists, it can't possibly be a new one.
+        # As well, we need all required fields to exist.
+        required_fields = [
+            self.requested_suborganization,
+            self.suborganization_city,
+            self.suborganization_state_territory
+        ]
+        if not self.sub_organization and all(required_fields):
             return True
         else:
             return False
@@ -1167,9 +1168,7 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_requesting_entity(self) -> bool:
         """Unlocks the requesting entity step"""
-        if self.requesting_entity_is_suborganization():
-            return True
-        elif self.requesting_entity_is_portfolio():
+        if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
             return True
         else:
             return False
