@@ -1300,13 +1300,17 @@ class LoadTableBase {
     header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
   };
 
-  // // Abstract method (to be implemented in the child class)
-  // loadTable(page, sortBy, order) {
-  //   throw new Error('loadData() must be implemented in a subclass');
-  // }
 
+  /**
+   * Generates search params for filtering and sorting
+   * @param {number} page - The current page number for pagination (starting with 1)
+   * @param {*} sortBy - The sort column option
+   * @param {*} order - The order of sorting {asc, desc}
+   * @param {string} searchTerm - The search term used to filter results for a specific keyword
+   * @param {*} status - The status filter applied {ready, dns_needed, etc}
+   * @param {string} portfolio - The portfolio id
+   */
   getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
-    // --------- SEARCH
     let searchParams = new URLSearchParams(
       {
         "page": page,
@@ -1333,33 +1337,101 @@ class LoadTableBase {
     return searchParams;
   }
 
-   // Abstract method (to be implemented in the child class)
+  /**
+   * Gets the base URL of API requests
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   */
   getBaseUrl() {
     throw new Error('getBaseUrl must be defined');
   }
+
+  /**
+   * Calls "uswdsUnloadModals" to remove any existing modal element to make sure theres no unintended consequences 
+   * from leftover event listeners + can be properly re-initialized
+   */
   unloadModals(){}
+
+  /**
+   * Initializes modals + sets up event listeners for the modal submit actions
+   * "Activates" the modals after the DOM updates 
+   * Utilizes "uswdsInitializeModals"
+   * Adds click event listeners to each modal's submit button so we can handle a user's actions
+   *
+   * When the submit button is clicked:
+   * - Triggers the close button to reset modal classes
+   * - Determines if the page needs refreshing if the last item is deleted
+   * @param {number} page - The current page number for pagination
+   * @param {number} total - The total # of items on the current page
+   * @param {number} unfiltered_total - The total # of items across all pages
+   */
   initializeModals(page, total, unfiltered_total) {}
+  
+  /**
+   * Allows us to customize the table display based on specific conditions and a user's permissions
+   * Dynamically manages the visibility set up of columns, adding/removing headers 
+   * (ie if a domain request is deleteable, we include the kebab column or if a user has edit permissions
+   * for a member, they will also see the kebab column)
+   * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
+   * Currently returns a dictionary of either:
+   * - "needsAdditionalColumn": If a new column should be displayed 
+   * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
+   */
   customizeTable(dataObjects){ return {}; }
 
-  // Abstract method (to be implemented in the child class)
+  /**
+   * Abstract method for retrieving specific data objects from the provided data set.
+   * This method should be implemented by child classes to extract and return a specific
+   * subset of data (e.g., `members`, `domains`, or `domain_requests`) based on the class's context.
+   * 
+   * Expected implementations:
+   * - Could return `data.members`, `data.domains`, `data.domain_requests`, etc., depending on the child class.
+   * 
+   * @param {Object} data - The full data set from which a subset of objects is extracted.
+   * @throws {Error} Throws an error if not implemented in a child class.
+   * @returns {Array|Object} The extracted data subset, as defined in the child class.
+   */
+
+  /**
+   * Retrieves specific data objects
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   * Returns either: data.members, data.domains or data.domain_requests
+   * @param {Object} data - The full data set from which a subset of objects is extracted.
+   */
   getDataObjects(data) {
     throw new Error('getDataObjects must be defined');
   }
-  // Abstract method (to be implemented in the child class)
+
+  /**
+   * Creates + appends a row to a tbody element
+   * Tailored structure set up for each data object (domain, domain_request, member, etc) 
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   * Returns either: data.members, data.domains or data.domain_requests
+   * @param {Object} dataObject - The data used to populate the row content 
+   * @param {HTMLElement} tbody - The table body to which the new row is appended to 
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie needsAdditionalColumn)
+   */
   addRow(dataObject, tbody, customTableOptions) {
     throw new Error('addRow must be defined');
   }
+
+   /**
+   * See function for more details
+   */
   initShowMoreButtons(){}
+
   /**
-       * Loads rows in the members list, as well as updates pagination around the members list
-       * based on the supplied attributes.
-       * @param {*} page - the page number of the results (starts with 1)
-       * @param {*} sortBy - the sort column option
-       * @param {*} order - the sort order {asc, desc}
-       * @param {*} scroll - control for the scrollToElement functionality
-       * @param {*} searchTerm - the search term
-       * @param {*} portfolio - the portfolio id
-       */
+   * Loads rows in the members list, as well as updates pagination around the members list
+   * based on the supplied attributes.
+   * @param {*} page - The page number of the results (starts with 1)
+   * @param {*} sortBy - The sort column option
+   * @param {*} order - The sort order {asc, desc}
+   * @param {*} scroll - The control for the scrollToElement functionality
+   * @param {*} searchTerm - The search term
+   * @param {*} portfolio - The portfolio id
+   */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
     // --------- SEARCH
     let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
@@ -1376,7 +1448,6 @@ class LoadTableBase {
     if (!baseUrlValue) {
       return;
     }
-
     
     let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
     fetch(url)
@@ -1399,15 +1470,10 @@ class LoadTableBase {
         this.unloadModals();
 
         let dataObjects = this.getDataObjects(data);
-
         let customTableOptions = this.customizeTable(data);
 
-        
-      
         dataObjects.forEach(dataObject => {
-
           this.addRow(dataObject, tbody, customTableOptions);
-          
         });
         
         this.initShowMoreButtons();
@@ -1664,7 +1730,6 @@ class DomainsTable extends LoadTableBase {
     `;
     tbody.appendChild(row);
   }
-
 }
 
 class DomainRequestsTable extends LoadTableBase {
@@ -1720,6 +1785,7 @@ class DomainRequestsTable extends LoadTableBase {
     }
     return { 'needsAdditionalColumn': needsDeleteColumn };
   }
+
   addRow(dataObject, tbody, customTableOptions) {
     const request = dataObject;
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -1794,7 +1860,6 @@ class DomainRequestsTable extends LoadTableBase {
       }
     }
 
-
     const row = document.createElement('tr');
     row.innerHTML = `
       <th scope="row" role="rowheader" data-label="Domain name">
@@ -1819,6 +1884,7 @@ class DomainRequestsTable extends LoadTableBase {
     `;
     tbody.appendChild(row);
   }
+
   initializeModals(page, total, unfiltered_total) {
     // initialize modals immediately after the DOM content is updated
     uswdsInitializeModals();
@@ -2745,7 +2811,7 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
-  (function portfolioMemberToggle() {
+  (function portfolioMemberPageToggle() {
     const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
     if (wrapperDeleteAction) {
         const member_type = wrapperDeleteAction.getAttribute("data-member-type");
