@@ -111,7 +111,9 @@ class RequestingEntityForm(RegistrarForm):
 
         # Get the value of the yes/no checkbox from RequestingEntityYesNoForm.
         # Since self.data stores this as a string, we need to convert "True" => True.
-        requesting_entity_is_suborganization = self.data.get("portfolio_requesting_entity-requesting_entity_is_suborganization")
+        requesting_entity_is_suborganization = self.data.get(
+            "portfolio_requesting_entity-requesting_entity_is_suborganization"
+        )
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields

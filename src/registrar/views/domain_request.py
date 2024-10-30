@@ -594,25 +594,32 @@ class RequestingEntity(DomainRequestWizard):
         """Override of save to clear or associate certain suborganization data
         depending on what the user wishes to do. For instance, we want to add a suborganization
         if the user selects one."""
+        yesno_form = forms[0]
         requesting_entity_form = forms[1]
+
+        yesno_cleaned_data = yesno_form.cleaned_data
+        requesting_entity_is_suborganization = yesno_cleaned_data.get("requesting_entity_is_suborganization")
+
         cleaned_data = requesting_entity_form.cleaned_data
-        requesting_entity_is_suborganization = cleaned_data.get("requesting_entity_is_suborganization")
         sub_organization = cleaned_data.get("sub_organization")
         requested_suborganization = cleaned_data.get("requested_suborganization")
 
         if requesting_entity_is_suborganization and (sub_organization or requested_suborganization):
             # Cleanup the organization name field, as this isn't for suborganizations.
-            self.domain_request.organization_name = None
-            self.domain_request.sub_organization = sub_organization
+            requesting_entity_form.cleaned_data.update({"organization_name": None})
         else:
             # If the user doesn't intend to create a suborg, simply don't make one and do some data cleanup
-            if self.domain_request.portfolio:
-                self.domain_request.organization_name = self.domain_request.portfolio.organization_name
-
-            self.domain_request.sub_organization = None
-            self.domain_request.requested_suborganization = None
-            self.domain_request.suborganization_city = None
-            self.domain_request.suborganization_state_territory = None
+            requesting_entity_form.cleaned_data.update(
+                {
+                    "organization_name": (
+                        self.domain_request.portfolio.organization_name if self.domain_request.portfolio else None
+                    ),
+                    "sub_organization": None,
+                    "requested_suborganization": None,
+                    "suborganization_city": None,
+                    "suborganization_state_territory": None,
+                }
+            )
 
         super().save(forms)
 

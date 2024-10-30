@@ -2789,7 +2789,6 @@ document.addEventListener('DOMContentLoaded', function() {
     subOrgSelect.add(fakeOption);
   }
 
-  console.log(isRequestingSuborganization.value)
   if (isRequestingSuborganization.value === "True") {
     subOrgSelect.value = "other"
   }

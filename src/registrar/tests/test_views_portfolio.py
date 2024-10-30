@@ -1717,7 +1717,6 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Who will use the domain you’re requesting?")
         form = response.forms[0]
 
-        # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
         form["portfolio_requesting_entity-sub_organization"] = ""
