@@ -13,15 +13,15 @@ class FederalAgency(TimeStampedModel):
 
     agency = models.CharField(
         null=True,
-        blank=True,
-        help_text="Federal agency",
+        blank=False,
+        verbose_name="Federal agency",
     )
 
     federal_type = models.CharField(
         max_length=20,
         choices=BranchChoices.choices,
         null=True,
-        blank=True,
+        blank=False,
     )
 
     acronym = models.CharField(
