@@ -1127,7 +1127,10 @@ class DomainRequest(TimeStampedModel):
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization."""
-        return self.portfolio and self.organization_name == self.portfolio.organization_name
+        if self.portfolio and self.organization_name == self.portfolio.organization_name:
+            return True
+        else:
+            return False
 
     def requesting_entity_is_suborganization(self) -> bool:
         """Used to determine if this domain request is also requesting that it be tied to a suborganization.
@@ -1152,9 +1155,11 @@ class DomainRequest(TimeStampedModel):
         # If a suborganization already exists, it can't possibly be a new one
         if self.sub_organization:
             return False
-        return bool(
-            self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory
-        )
+
+        if self.requested_suborganization and self.suborganization_city and self.suborganization_state_territory:
+            return True
+        else:
+            return False
 
     # ## Form unlocking steps ## #
     #
