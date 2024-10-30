@@ -2745,32 +2745,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const radioFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
   const radios = radioFieldset?.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
   const select = document.getElementById(`id_${formPrefix}-sub_organization`);
-  const suborganizationContainer = document.getElementById("suborganization-container");
-  const suborganizationDetailsContainer = document.getElementById("suborganization-container__details");
-  if (!radios || !select || !suborganizationContainer || !suborganizationDetailsContainer) return;
+  const suborgContainer = document.getElementById("suborganization-container");
+  const suborgDetailsContainer = document.getElementById("suborganization-container__details");
+  if (!radios || !select || !suborgContainer || !suborgDetailsContainer) return;
 
   // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
   // requestingNewSuborganization: This variable determines if the user is trying to *create* a new suborganization or not.
-  var requestingSuborganization = false;
+  var requestingSuborganization = Array.from(radios).find(radio => radio.checked)?.value === "True";
   var requestingNewSuborganization = document.getElementById(`id_${formPrefix}-is_requesting_new_suborganization`);
 
-  function toggleSuborganization(radio) {
-    requestingSuborganization = radio?.checked && radio.value === "True";
-    if (requestingSuborganization) {
-      showElement(suborganizationContainer);
-    }else {
-      hideElement(suborganizationContainer);
-    }
-  }
-
-  function toggleSuborganizationDetails() {
-    if (requestingSuborganization && select.value === "other") {
-      showElement(suborganizationDetailsContainer);
-      requestingNewSuborganization.value = "True";
-    }else {
-      hideElement(suborganizationDetailsContainer);
-      requestingNewSuborganization.value = "False";
-    }
+  function toggleSuborganization(radio=null) {
+    if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
+    requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
+    requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+    requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
   }
 
   // Add fake "other" option to sub_organization select
@@ -2783,12 +2771,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Add event listener to is_suborganization radio buttons, and run for initial display
+  toggleSuborganization();
   radios.forEach(radio => {
-    toggleSuborganization(radio);
     radio.addEventListener("click", () => toggleSuborganization(radio));
   });
 
   // Add event listener to the suborg dropdown to show/hide the suborg details section
-  toggleSuborganizationDetails();
-  select.addEventListener("change", () => toggleSuborganizationDetails());
+  select.addEventListener("change", () => toggleSuborganization());
 })();
