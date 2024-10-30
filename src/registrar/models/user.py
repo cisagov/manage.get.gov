@@ -478,7 +478,6 @@ class User(AbstractUser):
         # Get the portfolio from the session using the existing method
 
         portfolio = request.session.get("portfolio")
-        print(f"Portfolio from session: {portfolio}")
 
         if not portfolio:
             return 0  # No portfolio found

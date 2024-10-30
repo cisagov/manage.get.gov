@@ -87,49 +87,24 @@ function makeVisible(el) {
 }
 
 // TODO: Write caption here
-function addModal(member_email, member_id, num_domains, submit_delete_url, wrapper_element) {
-
-  let modalHeading = '';
-  let modalDescription = '';
-
-  if (num_domains == 0){
-    modalHeading = `Are you sure you want to delete ${member_email}?`;
-    modalDescription = `They will no longer be able to access this organization. \n   
-    This action cannot be undone.`;
-  } else if (num_domains == 1) {
-    modalHeading = `Are you sure you want to delete ${member_email}?`;
-    modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization. \n
-    Removing them from the organization will remove all of their domains. They will no longer be able to \n
-    access this organization. This action cannot be undone.`;
-  } else if (num_domains >= 1) {
-    modalHeading = `Are you sure you want to delete ${member_email}?`;
-    modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization. \n
-    Removing them from the organization will remove all of their domains. They will no longer be able to \n
-    access this organization. This action cannot be undone.`;
-  }
-
-  const modalSubmit = `
-    <button type="button"
-    class="usa-button usa-button--secondary usa-modal__submit"
-    data-pk = ${submit_delete_url}
-    name="delete-member">Yes, remove from organizaion</button>
-  `
+function addModal(action, id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
 
     const modal = document.createElement('div');
     modal.setAttribute('class', 'usa-modal');
-    modal.setAttribute('id', `toggle-remove-member-${member_id}`);
-    modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-    modal.setAttribute('aria-describedby', 'Member will be removed');
-    modal.setAttribute('data-force-action', ''); 
+    modal.setAttribute('id', `${action}-${id}`);
+    modal.setAttribute('aria-labelledby', ariaLabelledby);
+    modal.setAttribute('aria-describedby', ariaDescribedby);
+    if (forceAction)
+      modal.setAttribute('data-force-action', ''); 
 
     modal.innerHTML = `
       <div class="usa-modal__content">
         <div class="usa-modal__main">
-          <h2 class="usa-modal__heading" id="modal-1-heading">
+          <h2 class="usa-modal__heading">
             ${modalHeading}
           </h2>
           <div class="usa-prose">
-            <p id="modal-1-description">
+            <p>
               ${modalDescription}
             </p>
           </div>
@@ -169,29 +144,35 @@ function addModal(member_email, member_id, num_domains, submit_delete_url, wrapp
       }
 }
 
-// TODO: Write caption here
-function generateKebabHTML(unique_id, member_name, member_type) {
-  let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
-
+/**
+ * Helper function that creates a dynamic accordion navigation
+ * @param {string} action
+ * @param {string} unique_id - An ID that when combined with action makes a unique identifier
+ * @param {string} modal_button_text - The action button's text
+ * @param {string} screen_reader_text - A screen reader helper
+ */
+function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_text) {
+  // The first block displays regiular buttons on mobile. The class visible-mobile-flex controls this.
+  // The second block build a kebob triggered accordion on larger screens, controlled by hidden-mobile-flex.
   const kebab =  `
     <a 
       role="button" 
-      id="button-trigger-remove-member-${unique_id}"
-      href="#toggle-remove-member-${unique_id}"
-      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary  visible-mobile-flex"
-      aria-controls="toggle-remove-member-${unique_id}"
+      id="button-trigger-${action}-${unique_id}"
+      href="#toggle-${action}-${unique_id}"
+      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
+      aria-controls="toggle-${action}-${unique_id}"
       data-open-modal
     >
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
         <use xlink:href="/public/img/sprite.svg#delete"></use>
-      </svg>${cancelInvitationButton} <span class="usa-sr-only">${member_name}</span>
+      </svg>${modal_button_text}
+      <span class="usa-sr-only">${screen_reader_text}</span>
     </a>
 
     <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
       <div class="usa-accordion__heading">
         <button
           type="button"
-          id="button-toggle-more-actions-${unique_id}"
           class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
           aria-expanded="false"
           aria-controls="more-actions-${unique_id}"
@@ -205,14 +186,14 @@ function generateKebabHTML(unique_id, member_name, member_type) {
         <h2>More options</h2>
         <a 
           role="button" 
-          id="button-trigger-remove-member-${unique_id}"
-          href="#toggle-remove-member-${unique_id}"
+          id="button-trigger-${action}-${unique_id}"
+          href="#toggle-${action}-${unique_id}"
           class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-          aria-controls="toggle-remove-member-${unique_id}"
+          aria-controls="toggle-${action}-${unique_id}"
           data-open-modal
         >
-          ${cancelInvitationButton}
-          <span class="usa-sr-only">for ${member_name}</span>
+          ${modal_button_text}
+          <span class="usa-sr-only">${screen_reader_text}</span>
         </a>
       </div>
     </div>
@@ -1122,9 +1103,7 @@ function initializeTooltips() {
  * 
  */
 function initializeModals() {
-    console.log("We are going to initializeModals")
     window.modal.on();
-    console.log("Finish initializeModals")
 
 }
 
@@ -1136,9 +1115,7 @@ function initializeModals() {
  * 
  */
 function unloadModals() {
-  console.log("We are going to unloadModals")
   window.modal.off();
-  console.log("Finish unloadModals")
 }
 
 class LoadTableBase {
@@ -1782,13 +1759,14 @@ class DomainRequestsTable extends LoadTableBase {
               }
             }
 
+            // 1st option: Just a modal trigger in any screen size for non-org users
             modalTrigger = `
               <a 
                 role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
+                id="button-toggle-delete-domain-${request.id}"
+                href="#toggle-delete-domain-${request.id}"
                 class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
+                aria-controls="toggle-delete-domain-${request.id}"
                 data-open-modal
               >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -1803,102 +1781,14 @@ class DomainRequestsTable extends LoadTableBase {
               name="delete-domain-request">Yes, delete request</button>
             `
 
-            const modal = document.createElement('div');
-            modal.setAttribute('class', 'usa-modal');
-            modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
-            modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-            modal.setAttribute('aria-describedby', 'Domain will be removed');
-            modal.setAttribute('data-force-action', '');
-
-            modal.innerHTML = `
-              <div class="usa-modal__content">
-                <div class="usa-modal__main">
-                  <h2 class="usa-modal__heading" id="modal-1-heading">
-                    ${modalHeading}
-                  </h2>
-                  <div class="usa-prose">
-                    <p id="modal-1-description">
-                      ${modalDescription}
-                    </p>
-                  </div>
-                  <div class="usa-modal__footer">
-                      <ul class="usa-button-group">
-                        <li class="usa-button-group__item">
-                          ${modalSubmit}
-                        </li>      
-                        <li class="usa-button-group__item">
-                            <button
-                                type="button"
-                                class="usa-button usa-button--unstyled padding-105 text-center"
-                                data-close-modal
-                            >
-                                Cancel
-                            </button>
-                        </li>
-                      </ul>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="usa-button usa-modal__close"
-                  aria-label="Close this window"
-                  data-close-modal
-                >
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                    <use xlink:href="/public/img/sprite.svg#close"></use>
-                  </svg>
-                </button>
-              </div>
-              `
-
-            this.tableWrapper.appendChild(modal);
+            addModal('toggle-delete-domain', request.id, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, tbody, true);
 
             // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
             if (this.portfolioValue) {
-              modalTrigger = `
-              <a 
-                role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
-                class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
-                data-open-modal
-              >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg> Delete <span class="usa-sr-only">${domainName}</span>
-              </a>
 
-              <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                <div class="usa-accordion__heading">
-                  <button
-                    type="button"
-                    class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-                    aria-expanded="false"
-                    aria-controls="more-actions-${request.id}"
-                  >
-                    <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                      <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                    </svg>
-                  </button>
-                </div>
-                <div id="more-actions-${request.id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
-                  <h2>More options</h2>
-                  <a 
-                    role="button" 
-                    id="button-toggle-delete-domain-alert-${request.id}"
-                    href="#toggle-delete-domain-alert-${request.id}"
-                    class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
-                    aria-controls="toggle-delete-domain-alert-${request.id}"
-                    data-open-modal
-                  >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                      <use xlink:href="/public/img/sprite.svg#delete"></use>
-                    </svg> Delete <span class="usa-sr-only">${domainName}</span>
-                  </a>
-                </div>
-              </div>
-              `
+              // 2nd option: Just a modal trigger on mobile for org users
+              // 3rd option: kebab + accordion with nested modal trigger on desktop for org users
+              modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
             }
           }
 
@@ -2275,6 +2165,36 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
+  static addMemberModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
+    let modalHeading = '';
+    let modalDescription = '';
+    
+    if (num_domains == 0){
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `They will no longer be able to access this organization. 
+      This action cannot be undone.`;
+    } else if (num_domains == 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    } else if (num_domains >= 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    }
+
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${submit_delete_url}
+      name="delete-member">Yes, remove from organization</button>
+    `
+
+    addModal('toggle-remove-member', id, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
+  }
+
   /**
      * Loads rows in the members list, as well as updates pagination around the members list
      * based on the supplied attributes.
@@ -2358,7 +2278,8 @@ class MembersTable extends LoadTableBase {
             const member_delete_url = member.action_url + "/delete";
             const num_domains = member.domain_urls.length;
             const last_active = this.handleLastActive(member.last_active);
-            const kebabHTML = hasEditPermission ? generateKebabHTML(unique_id, member.name, member.type): ''; 
+            let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
+            const kebabHTML = hasEditPermission ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member.name}`): ''; 
                   
             const row = document.createElement('tr');
             
@@ -2417,7 +2338,7 @@ class MembersTable extends LoadTableBase {
             }
             // This easter egg is only for fixtures that dont have names as we are displaying their emails
             // All prod users will have emails linked to their account
-            if (hasEditPermission) addModal(member.email || "Samwise Gamgee", unique_id, num_domains, member_delete_url, row);
+            if (hasEditPermission) MembersTable.addMemberModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
           });
           
           this.initShowMoreButtons();
@@ -2998,34 +2919,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const member_delete_url = `${member_type}-${member_id}/delete`;
         const unique_id = `${member_type}-${member_id}`;
 
-        wrapperDeleteAction.innerHTML = generateKebabHTML(unique_id, member_name, member_type);
-
-        // Select the button and the menu we just inserted
-        const kebabButton = wrapperDeleteAction.querySelector(`#button-toggle-more-actions-${unique_id}`);
-        const kebabMenu = wrapperDeleteAction.querySelector(`#more-actions-${unique_id}`);
-
-        kebabButton.addEventListener('click', () => {
-          const isExpanded = kebabButton.getAttribute('aria-expanded') === 'true';
-          kebabButton.setAttribute('aria-expanded', !isExpanded);
-          kebabMenu.style.display = isExpanded ? 'none' : 'block';
-        });
-
-        // Handles clicks outside the kebab menu
-        document.addEventListener('click', (event) => {
-          const isClickInsideButton = kebabButton.contains(event.target);
-          const isClickInsideMenu = kebabMenu.contains(event.target);
-
-          if (!isClickInsideButton && !isClickInsideMenu) {
-              kebabButton.setAttribute('aria-expanded', 'false');
-              kebabMenu.style.display = 'none';
-              console.log("Menu is hidden");
-          }
-        });
-        console.log("AFTER LISTENER")
+        let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
+        wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member_name}`);
 
         // This easter egg is only for fixtures that dont have names as we are displaying their emails
         // All prod users will have emails linked to their account
-        addModal(member_email || "Samwise Gamgee", unique_id, num_domains, member_delete_url, wrapperDeleteAction);
+        MembersTable.addMemberModal(num_domains, member_email || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
 
         initializeModals();
 
