@@ -234,7 +234,6 @@ class NewMemberForm(forms.ModelForm):
         if email_value:
             cleaned_data["email"] = email_value.lower()
 
-
         ##########################################
         # TODO: future ticket
         # (invite new member)
@@ -257,7 +256,7 @@ class NewMemberForm(forms.ModelForm):
                 if field in self.errors and field != "email" and field != "member_access_level":
                     del self.errors[field]
             return cleaned_data
-        
+
         basic_dom_req_error = "basic_org_domain_request_permissions"
         admin_dom_req_error = "admin_org_domain_request_permissions"
         admin_member_error = "admin_org_members_permissions"
@@ -267,8 +266,8 @@ class NewMemberForm(forms.ModelForm):
             del self.errors[basic_dom_req_error]
         elif member_access_level == "basic":
             # remove the error messages pertaining to admin permission inputs
-            if admin_dom_req_error in self.errors: 
+            if admin_dom_req_error in self.errors:
                 del self.errors[admin_dom_req_error]
-            if admin_member_error in self.errors: 
+            if admin_member_error in self.errors:
                 del self.errors[admin_member_error]
         return cleaned_data

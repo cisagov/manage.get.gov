@@ -423,7 +423,6 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         else:
             return self.form_invalid(form)
 
-
     def form_invalid(self, form):
         """Handle the case when the form is invalid."""
         return self.render_to_response(self.get_context_data(form=form))
