@@ -2742,78 +2742,53 @@ document.addEventListener('DOMContentLoaded', function() {
 (function handleRequestingEntityFieldset() { 
   // Sadly, these ugly ids are the auto generated with this prefix
   const formPrefix = "portfolio_requesting_entity"
-
-  // This determines if we are on the requesting entity page or not.
-  const isSubOrgFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
-  if (!isSubOrgFieldset) return;
-
-  // Get the is_suborganization radio buttons
-  const isSuborgRadios = isSubOrgFieldset.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
-  const subOrgSelect = document.getElementById(`id_${formPrefix}-sub_organization`);
-
-  // The suborganization section is its own div
-  // Within the suborganization section, we also have a div that contains orgname, city, and stateterritory.
+  const radioFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
+  const radios = radioFieldset?.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
+  const select = document.getElementById(`id_${formPrefix}-sub_organization`);
   const suborganizationContainer = document.getElementById("suborganization-container");
   const suborganizationDetailsContainer = document.getElementById("suborganization-container__details");
+  if (!radios || !select || !suborganizationContainer || !suborganizationDetailsContainer) return;
 
-  // This variable determines if the user is trying to *create* a new suborganization or not.
-  var isRequestingSuborganization = document.getElementById(`id_${formPrefix}-is_requesting_new_suborganization`)
+  // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
+  // requestingNewSuborganization: This variable determines if the user is trying to *create* a new suborganization or not.
+  var requestingSuborganization = false;
+  var requestingNewSuborganization = document.getElementById(`id_${formPrefix}-is_requesting_new_suborganization`);
 
-  // Don't do anything if we are missing crucial page elements
-  if (!isSuborgRadios || !subOrgSelect || !suborganizationContainer || !suborganizationDetailsContainer) return;
-
-  // Function to toggle suborganization based on is_suborganization selection
   function toggleSuborganization(radio) {
-    if (radio && radio.checked && radio.value === "True") {
+    requestingSuborganization = radio?.checked && radio.value === "True";
+    if (requestingSuborganization) {
       showElement(suborganizationContainer);
-
-      // Handle custom suborganizations
-      if (subOrgSelect.value === "other") {
-        showElement(suborganizationDetailsContainer);
-        isRequestingSuborganization.value = "True";
-      } else {
-        hideElement(suborganizationDetailsContainer);
-        isRequestingSuborganization.value = "False";
-      }
-    } else {
+    }else {
       hideElement(suborganizationContainer);
-      hideElement(suborganizationDetailsContainer);
     }
-  };
-
-    // Add fake "other" option to sub_organization select
-  if (subOrgSelect && !Array.from(subOrgSelect.options).some(option => option.value === "other")) {
-    const fakeOption = document.createElement("option");
-    fakeOption.value = "other";
-    fakeOption.text = "Other (enter your organization manually)";
-    subOrgSelect.add(fakeOption);
   }
 
-  if (isRequestingSuborganization.value === "True") {
-    subOrgSelect.value = "other"
+  function toggleSuborganizationDetails() {
+    if (requestingSuborganization && select.value === "other") {
+      showElement(suborganizationDetailsContainer);
+      requestingNewSuborganization.value = "True";
+    }else {
+      hideElement(suborganizationDetailsContainer);
+      requestingNewSuborganization.value = "False";
+    }
   }
 
-  // Add event listener to is_suborganization radio buttons
-  isSuborgRadios.forEach(radio => {
-    // Run this here for initial display.
-    // Since there are only two radio buttons and since this has (practically speaking) no performance impact, this is fine to do.
+  // Add fake "other" option to sub_organization select
+  if (select && !Array.from(select.options).some(option => option.value === "other")) {
+    select.add(new Option("Other (enter your organization manually)", "other"));
+  }
+
+  if (requestingNewSuborganization.value === "True") {
+    select.value = "other";
+  }
+
+  // Add event listener to is_suborganization radio buttons, and run for initial display
+  radios.forEach(radio => {
     toggleSuborganization(radio);
-
-    // Add an event listener to each to show/hide the relevant fields
-    radio.addEventListener("click", () => {
-      toggleSuborganization(radio);
-    });
+    radio.addEventListener("click", () => toggleSuborganization(radio));
   });
 
   // Add event listener to the suborg dropdown to show/hide the suborg details section
-  subOrgSelect.addEventListener("change", () => {
-    // Handle the custom suborganization field
-    if (subOrgSelect.value === "other") {
-      showElement(suborganizationDetailsContainer);
-      isRequestingSuborganization.value = "True";
-    } else {
-      hideElement(suborganizationDetailsContainer);
-      isRequestingSuborganization.value = "False";
-    }
-  });
+  toggleSuborganizationDetails();
+  select.addEventListener("change", () => toggleSuborganizationDetails());
 })();
