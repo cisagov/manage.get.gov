@@ -138,7 +138,7 @@ class UserFixture:
             "title": "Sweetwater sailor",
         },
         {
-            "username": "cce058bc-9e52-456b-99ff-f5775c481c8f",
+            "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
             "first_name": "Elizabeth",
             "last_name": "Liao",
             "email": "elizabeth.liao@cisa.dhs.gov",
@@ -246,7 +246,7 @@ class UserFixture:
             "email": "annagingle+analyst@truss.works",
         },
         {
-            "username": "373f7073-f90b-49d8-8da2-459246fa33bd",
+            "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
             "first_name": "Elizabeth-Analyst",
             "last_name": "Liao-Analyst",
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",

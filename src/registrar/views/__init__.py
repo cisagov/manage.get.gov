@@ -19,3 +19,5 @@ from .health import *
 from .index import *
 from .portfolios import *
 from .transfer_user import TransferUserView
+from .member_domains_json import PortfolioMemberDomainsJson
+from .portfolio_members_json import PortfolioMembersJson

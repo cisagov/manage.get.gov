@@ -26,7 +26,6 @@ from registrar.views.report_views import (
 # --jsons
 from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
-from registrar.views.portfolio_members_json import get_portfolio_members_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
@@ -97,6 +96,11 @@ urlpatterns = [
         name="member-permissions",
     ),
     path(
+        "member/<int:pk>/domains",
+        views.PortfolioMemberDomainsView.as_view(),
+        name="member-domains",
+    ),
+    path(
         "invitedmember/<int:pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
@@ -106,6 +110,16 @@ urlpatterns = [
         views.PortfolioInvitedMemberEditView.as_view(),
         name="invitedmember-permissions",
     ),
+    path(
+        "invitedmember/<int:pk>/domains",
+        views.PortfolioInvitedMemberDomainsView.as_view(),
+        name="invitedmember-domains",
+    ),
+    # path(
+    #     "no-organization-members/",
+    #     views.PortfolioNoMembersView.as_view(),
+    #     name="no-portfolio-members",
+    # ),
     path(
         "members/new-member/",
         views.NewMemberView.as_view(),
@@ -328,7 +342,8 @@ urlpatterns = [
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
-    path("get-portfolio-members-json/", get_portfolio_members_json, name="get_portfolio_members_json"),
+    path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
+    path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
