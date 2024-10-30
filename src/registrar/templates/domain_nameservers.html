@@ -47,7 +47,7 @@
           {% endwith %}
         </div>
         <div class="tablet:grid-col-5">
-          {% with sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" %}
+          {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
             {% input_with_errors form.ip %}
           {% endwith %}
         </div>
@@ -56,6 +56,7 @@
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
             </svg>Delete
+            <span class="sr-only">Name server {{forloop.counter}}</span>
           </button>
         </div>
       </div>
