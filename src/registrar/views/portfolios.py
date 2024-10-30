@@ -18,8 +18,7 @@ from registrar.views.utility.permission_views import (
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
-    PortfolioInvitedMemberEditPermissionView,
-    PortfolioInvitedMemberPermissionView,
+    PortfolioMemberDomainsPermissionView,
     PortfolioMemberEditPermissionView,
     PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
@@ -88,6 +87,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
             self.template_name,
             {
                 "edit_url": reverse("member-permissions", args=[pk]),
+                "domains_url": reverse("member-domains", args=[pk]),
                 "portfolio_permission": portfolio_permission,
                 "member": member,
                 "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
@@ -138,7 +138,25 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
         )
 
 
-class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
+class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
+
+    template_name = "portfolio_member_domains.html"
+
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "portfolio_permission": portfolio_permission,
+                "member": member,
+            },
+        )
+
+
+class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
 
     template_name = "portfolio_member.html"
     # form_class = PortfolioInvitedMemberForm
@@ -166,6 +184,7 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
             self.template_name,
             {
                 "edit_url": reverse("invitedmember-permissions", args=[pk]),
+                "domains_url": reverse("invitedmember-domains", args=[pk]),
                 "portfolio_invitation": portfolio_invitation,
                 "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
@@ -175,7 +194,7 @@ class PortfolioInvitedMemberView(PortfolioInvitedMemberPermissionView, View):
         )
 
 
-class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, View):
+class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
     form_class = PortfolioInvitedMemberForm
@@ -206,6 +225,22 @@ class PortfolioInvitedMemberEditView(PortfolioInvitedMemberEditPermissionView, V
             {
                 "form": form,
                 "invitation": portfolio_invitation,  # Pass the user object again to the template
+            },
+        )
+
+
+class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
+
+    template_name = "portfolio_member_domains.html"
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "portfolio_invitation": portfolio_invitation,
             },
         )
 
