@@ -1126,7 +1126,8 @@ class DomainRequest(TimeStampedModel):
         self.creator.restrict_user()
 
     def requesting_entity_is_portfolio(self) -> bool:
-        """Determines if this record is requesting that a portfolio be their organization."""
+        """Determines if this record is requesting that a portfolio be their organization.
+        Used for the RequestingEntity page."""
         if self.portfolio and self.organization_name == self.portfolio.organization_name:
             return True
         else:
@@ -1136,6 +1137,7 @@ class DomainRequest(TimeStampedModel):
         """Used to determine if this domain request is also requesting that it be tied to a suborganization.
         Checks if this record has a suborganization or not by checking if a suborganization exists,
         and if it doesn't, determining if properties like requested_suborganization exist.
+        Used for the RequestingEntity page.
         """
         if self.portfolio and (self.sub_organization or self.is_requesting_new_suborganization()):
             return True
@@ -1148,6 +1150,7 @@ class DomainRequest(TimeStampedModel):
 
         This only occurs when no suborganization is selected, but they've filled out
         the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
+        Used for the RequestingEntity page.
         """
 
         # If a suborganization already exists, it can't possibly be a new one.
@@ -1167,7 +1170,7 @@ class DomainRequest(TimeStampedModel):
     # These methods control the conditions in which we should unlock certain domain wizard steps.
 
     def unlock_requesting_entity(self) -> bool:
-        """Unlocks the requesting entity step"""
+        """Unlocks the requesting entity step. Used for the RequestingEntity page."""
         if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
             return True
         else:

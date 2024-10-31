@@ -27,6 +27,8 @@ class RequestingEntityForm(RegistrarForm):
     All of these fields are not required by default, but as we use javascript to conditionally show
     and hide some of these, they then become required in certain circumstances."""
 
+    # IMPORTANT: This is tied to DomainRequest.is_requesting_new_suborganization().
+    # This is due to the from_database method on DomainRequestWizard.
     # Add a hidden field to store if the user is requesting a new suborganization.
     # This hidden boolean is used for our javascript to communicate to us and to it.
     # If true, the suborganization form will auto select a js value "Other".
@@ -134,6 +136,9 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
 
     # This first option will change dynamically
     form_choices = ((False, "Current Organization"), (True, "A suborganization. (choose from list)"))
+
+    # IMPORTANT: This is tied to DomainRequest.is_requesting_new_suborganization().
+    # This is due to the from_database method on DomainRequestWizard.
     field_name = "requesting_entity_is_suborganization"
 
     def __init__(self, *args, **kwargs):
