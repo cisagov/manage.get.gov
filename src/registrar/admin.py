@@ -1354,7 +1354,9 @@ class DomainInvitationAdmin(ListHeaderAdmin):
     class Meta:
         model = models.DomainInvitation
         fields = "__all__"
+    
 
+    print(DomainInvitation.objects.all())
     _meta = Meta()
 
     # Columns

@@ -2,7 +2,7 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView, TemplateView
+from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
 from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
@@ -168,6 +168,9 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
     model = DomainInvitation
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
+class DomainInvitationUpdateView(DomainInvitationPermission, UpdateView, abc.ABC):
+    model = DomainInvitation
+    object: DomainInvitation
 
 class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
     """Abstract view for deleting a DomainRequest."""

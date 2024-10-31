@@ -26,6 +26,7 @@ class DomainInvitation(TimeStampedModel):
     class DomainInvitationStatus(models.TextChoices):
         INVITED = "invited", "Invited"
         RETRIEVED = "retrieved", "Retrieved"
+        CANCELED = "canceled", "Canceled"
 
     email = models.EmailField(
         null=False,
@@ -73,3 +74,9 @@ class DomainInvitation(TimeStampedModel):
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
             logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+
+    @transition(field=status, source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
+    def cancel_invitation(self):
+        logger.info(f"Invitation for {self.domain} has been cancelled.")
+        
+    
