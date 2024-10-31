@@ -401,7 +401,7 @@ class DomainRequestWizardPermission(PermissionsLoginMixin):
         id = self.kwargs.get("id") if hasattr(self, "kwargs") else None
         if not id:
             domain_request_wizard = self.request.session.get("wizard_domain_request")
-            if domain_request_wizard and self.request.session.get("new_request") is False:
+            if domain_request_wizard:
                 id = domain_request_wizard.get("domain_request_id")
 
         # If no id is provided, we can assume that the user is starting a new request.
