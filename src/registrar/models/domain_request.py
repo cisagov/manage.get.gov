@@ -1155,7 +1155,7 @@ class DomainRequest(TimeStampedModel):
         required_fields = [
             self.requested_suborganization,
             self.suborganization_city,
-            self.suborganization_state_territory
+            self.suborganization_state_territory,
         ]
         if not self.sub_organization and all(required_fields):
             return True
