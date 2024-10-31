@@ -22,7 +22,16 @@ jobs:
       CF_PASSWORD: CF_MS_PASSWORD
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip' # caching pip dependencies
+          
+      - name: Install CG Tool
+        run: pip install git+https://github.com/cloud-gov/cg-manage-rds.git
 
       - name: Share DB Service
         uses: cloud-gov/cg-cli-tools@main
