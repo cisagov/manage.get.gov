@@ -53,7 +53,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     URL_NAMESPACE = "domain-request"
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
-    NEW_URL_NAME = "/request/"
+    NEW_URL_NAME = "/request/start/"
 
     # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
@@ -315,6 +315,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
+            print(F"what is this? {request.path_info}")
             if request.path_info == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
@@ -485,6 +486,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # Hides the requests and domains buttons in the navbar
         context_stuff["hide_requests"] = self.is_portfolio
         context_stuff["hide_domains"] = self.is_portfolio
+        context_stuff["domain_request_id"] = self.domain_request.id
 
         return context_stuff
 
@@ -493,12 +495,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return request_step_list(self, self.get_step_enum())
 
     def goto(self, step):
-        if step == "generic_org_type" or step == "portfolio_requesting_entity":
-            # We need to avoid creating a new domain request if the user
-            # clicks the back button
-            self.request.session["new_request"] = False
         self.steps.current = step
-        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
+        self.domain_request
+            # Get or create the domain request
+        domain_request = self.domain_request
+        test = self.storage.get("domain_request_id")
+        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"pk": domain_request.pk}))
 
     def goto_next_step(self):
         """Redirects to the next step."""
@@ -523,9 +525,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-
-        if "new_request" not in request.session:
-            request.session["new_request"] = True
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
@@ -564,9 +563,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def handle_intro_acknowledge(self, request):
         """If we are starting a new request, clear storage
         and redirect to the first step"""
-        if request.path_info == self.NEW_URL_NAME:
-            if self.request.session["new_request"] is True:
-                del self.storage
         return self.goto(self.steps.first)
 
     def save(self, forms: list):

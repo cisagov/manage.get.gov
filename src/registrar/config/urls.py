@@ -39,10 +39,11 @@ from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
-domain_request_urls = [
-    path("", views.DomainRequestWizard.as_view(), name=""),
+domain_request_start_and_finished_urls = [
+    path("start/", views.DomainRequestWizard.as_view(), name="start"),
     path("finished/", views.Finished.as_view(), name="finished"),
 ]
+domain_request_urls = []
 
 # dynamically generate the other domain_request_urls
 for step, view in [
@@ -253,7 +254,9 @@ urlpatterns = [
     ),
     path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
-    path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
+    path("request/start/", views.DomainRequestWizard.as_view(), name="start"),
+    #path("request/", include((domain_request_start_and_finished_urls, DOMAIN_REQUEST_NAMESPACE))),
+    path("request/<int:pk>/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),

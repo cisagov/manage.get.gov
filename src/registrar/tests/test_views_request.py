@@ -54,7 +54,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         self.assertContains(intro_page, "You’re about to start your .gov domain request")
 
     @less_console_noise_decorator
@@ -110,7 +110,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_empty_submit(self):
         """Tests empty submit on the first page after the acknowledgement page"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -141,7 +141,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             domain_request.save()
 
         # now, attempt to create another one
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         intro_form = intro_page.forms[0]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -167,7 +167,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
 
         # Select the form
         intro_form = intro_page.forms[0]
@@ -225,7 +225,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         SKIPPED_PAGES = 3
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -549,7 +549,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         num_pages_tested = 0
         # skipping elections, type_of_work, tribal_government
 
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -873,7 +873,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -929,7 +929,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_conditional_elections(self):
         """Election question is shown for other organizations."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -984,7 +984,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1029,7 +1029,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1074,7 +1074,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1104,7 +1104,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_federal_agency_dropdown_excludes_expected_values(self):
         """The Federal Agency dropdown on a domain request form should not
         include options for gov Administration and Non-Federal Agency"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2303,7 +2303,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2332,7 +2332,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_tribal_government(self):
         """Tribal organizations have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2363,7 +2363,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_request_so_dynamic_text(self):
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2447,7 +2447,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2712,7 +2712,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the domain request form,
         org step
         """
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2751,7 +2751,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
         # This user should be forbidden from creating new domain requests
-        intro_page = self.app.get(reverse("domain-request:"), expect_errors=True)
+        intro_page = self.app.get(reverse("domain-request:start"), expect_errors=True)
         self.assertEqual(intro_page.status_code, 403)
 
         # This user should also be forbidden from editing existing ones
@@ -2773,7 +2773,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
         # This user should be allowed to create new domain requests
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         self.assertEqual(intro_page.status_code, 200)
 
         # This user should also be allowed to edit existing ones

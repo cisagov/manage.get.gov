@@ -100,7 +100,7 @@ class CheckUserProfileMiddleware:
 
         # In some cases, we don't want to redirect to home. This handles that.
         # Can easily be generalized if need be, but for now lets keep this easy to read.
-        custom_redirect = "domain-request:" if request.path == "/request/" else None
+        custom_redirect = "domain-request:start" if request.path == "/request/" else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self._get_excluded_pages(profile_page)):

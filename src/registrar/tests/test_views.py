@@ -718,7 +718,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.app.set_user(incomplete_regular_user.username)
         with override_flag("", active=True):
             # This will redirect the user to the setup page
-            finish_setup_page = self.app.get(reverse("domain-request:")).follow()
+            finish_setup_page = self.app.get(reverse("domain-request:start")).follow()
             self._set_session_cookie()
 
             # Assert that we're on the right page
@@ -927,7 +927,7 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_user_profile_back_button_when_coming_from_domain_request(self):
         """tests user profile,
         and when they are redirected from the domain request page"""
-        response = self.client.get("/user-profile?redirect=domain-request:")
+        response = self.client.get("/user-profile?redirect=domain-request:start")
         self.assertContains(response, "Your profile")
         self.assertContains(response, "Go back to your domain request")
         self.assertNotContains(response, "Back to manage your domains")
