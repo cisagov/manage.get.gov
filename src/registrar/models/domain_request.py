@@ -1408,5 +1408,3 @@ class DomainRequest(TimeStampedModel):
             return self.portfolio.senior_official
         else:
             return self.senior_official
-
-    
