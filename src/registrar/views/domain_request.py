@@ -308,6 +308,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["domain_request_id"] = kwargs["id"]
+        elif "id" not in kwargs:
+            del self.storage
 
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
@@ -496,11 +498,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def goto(self, step):
         self.steps.current = step
-        self.domain_request
-            # Get or create the domain request
-        domain_request = self.domain_request
-        test = self.storage.get("domain_request_id")
-        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"pk": domain_request.pk}))
+        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"id": self.domain_request.id}))
 
     def goto_next_step(self):
         """Redirects to the next step."""
