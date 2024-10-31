@@ -86,88 +86,108 @@ function makeVisible(el) {
   el.style.visibility = "visible";
 }
 
-// TODO: Write caption here
+/**
+ * Creates and adds a modal dialog to the DOM with customizable attributes and content.
+ *
+ * @param {string} action - The action type or identifier used to create a unique modal ID.
+ * @param {string} id - A unique identifier for the modal, appended to the action for uniqueness.
+ * @param {string} ariaLabelledby - The ID of the element that labels the modal, for accessibility.
+ * @param {string} ariaDescribedby - The ID of the element that describes the modal, for accessibility.
+ * @param {string} modalHeading - The heading text displayed at the top of the modal.
+ * @param {string} modalDescription - The main descriptive text displayed within the modal.
+ * @param {string} modalSubmit - The HTML content for the submit button, allowing customization.
+ * @param {HTMLElement} wrapper_element - Optional. The element to which the modal is appended. If not provided, defaults to `document.body`.
+ * @param {boolean} forceAction - Optional. If true, adds a `data-force-action` attribute to the modal for additional control.
+ *
+ * The modal includes a heading, description, submit button, and a cancel button, along with a close button.
+ * The `data-close-modal` attribute is added to cancel and close buttons to enable closing functionality.
+ */
 function addModal(action, id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
 
-    const modal = document.createElement('div');
-    modal.setAttribute('class', 'usa-modal');
-    modal.setAttribute('id', `${action}-${id}`);
-    modal.setAttribute('aria-labelledby', ariaLabelledby);
-    modal.setAttribute('aria-describedby', ariaDescribedby);
-    if (forceAction)
-      modal.setAttribute('data-force-action', ''); 
+  const modal = document.createElement('div');
+  modal.setAttribute('class', 'usa-modal');
+  modal.setAttribute('id', `${action}-${id}`);
+  modal.setAttribute('aria-labelledby', ariaLabelledby);
+  modal.setAttribute('aria-describedby', ariaDescribedby);
+  if (forceAction)
+    modal.setAttribute('data-force-action', ''); 
 
-    modal.innerHTML = `
-      <div class="usa-modal__content">
-        <div class="usa-modal__main">
-          <h2 class="usa-modal__heading">
-            ${modalHeading}
-          </h2>
-          <div class="usa-prose">
-            <p>
-              ${modalDescription}
-            </p>
-          </div>
-          <div class="usa-modal__footer">
-              <ul class="usa-button-group">
-                <li class="usa-button-group__item">
-                  ${modalSubmit}
-                </li>      
-                <li class="usa-button-group__item">
-                    <button
-                        type="button"
-                        class="usa-button usa-button--unstyled padding-105 text-center"
-                        data-close-modal
-                    >
-                        Cancel
-                    </button>
-                </li>
-              </ul>
-          </div>
+  modal.innerHTML = `
+    <div class="usa-modal__content">
+      <div class="usa-modal__main">
+        <h2 class="usa-modal__heading">
+          ${modalHeading}
+        </h2>
+        <div class="usa-prose">
+          <p>
+            ${modalDescription}
+          </p>
         </div>
-        <button
-          type="button"
-          class="usa-button usa-modal__close"
-          aria-label="Close this window"
-          data-close-modal
-        >
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-            <use xlink:href="/public/img/sprite.svg#close"></use>
-          </svg>
-        </button>
+        <div class="usa-modal__footer">
+            <ul class="usa-button-group">
+              <li class="usa-button-group__item">
+                ${modalSubmit}
+              </li>      
+              <li class="usa-button-group__item">
+                  <button
+                      type="button"
+                      class="usa-button usa-button--unstyled padding-105 text-center"
+                      data-close-modal
+                  >
+                      Cancel
+                  </button>
+              </li>
+            </ul>
+        </div>
       </div>
-      `
-      if (wrapper_element) {
-        wrapper_element.appendChild(modal);
-      } else {
-        document.body.appendChild(modal);
-      }
+      <button
+        type="button"
+        class="usa-button usa-modal__close"
+        aria-label="Close this window"
+        data-close-modal
+      >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="/public/img/sprite.svg#close"></use>
+        </svg>
+      </button>
+    </div>
+    `
+  if (wrapper_element) {
+    wrapper_element.appendChild(modal);
+  } else {
+    document.body.appendChild(modal);
+  }
 }
 
 /**
  * Helper function that creates a dynamic accordion navigation
- * @param {string} action
+ * @param {string} action - The action type or identifier used to create a unique DOM IDs.
  * @param {string} unique_id - An ID that when combined with action makes a unique identifier
  * @param {string} modal_button_text - The action button's text
  * @param {string} screen_reader_text - A screen reader helper
  */
 function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_text) {
-  // The first block displays regiular buttons on mobile. The class visible-mobile-flex controls this.
-  // The second block build a kebob triggered accordion on larger screens, controlled by hidden-mobile-flex.
-  const kebab =  `
+
+  const generateModalButton = (mobileOnly = false) => `
     <a 
       role="button" 
       id="button-trigger-${action}-${unique_id}"
       href="#toggle-${action}-${unique_id}"
-      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
+      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary ${mobileOnly ? 'visible-mobile-flex' : ''}"
       aria-controls="toggle-${action}-${unique_id}"
       data-open-modal
     >
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+      ${mobileOnly ? `<svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
         <use xlink:href="/public/img/sprite.svg#delete"></use>
-      </svg>${modal_button_text}
+      </svg>` : ''}
+      ${modal_button_text}
       <span class="usa-sr-only">${screen_reader_text}</span>
     </a>
+  `;
+
+  // Main kebab structure
+  const kebab = `
+    ${generateModalButton(true)} <!-- Mobile button -->
 
     <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
       <div class="usa-accordion__heading">
@@ -184,22 +204,14 @@ function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_t
       </div>
       <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
         <h2>More options</h2>
-        <a 
-          role="button" 
-          id="button-trigger-${action}-${unique_id}"
-          href="#toggle-${action}-${unique_id}"
-          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-          aria-controls="toggle-${action}-${unique_id}"
-          data-open-modal
-        >
-          ${modal_button_text}
-          <span class="usa-sr-only">${screen_reader_text}</span>
-        </a>
+        ${generateModalButton()} <!-- Desktop button -->
       </div>
     </div>
-  `
-  return kebab      
+  `;
+
+  return kebab;
 }
+
 
 /**
  * Toggles expand_more / expand_more svgs in buttons or anchors
@@ -219,9 +231,9 @@ function toggleCaret(element) {
 }
 
 /**
- * Helper function that scrolls to an element
+ * Helper function that scrolls to an element, identified by a class or an id.
  * @param {string} attributeName - The string "class" or "id"
- * @param {string} attributeValue - The class or id name
+ * @param {string} attributeValue - The class or id used name to identify the element
  */
 function ScrollToElement(attributeName, attributeValue) {
   let targetEl = null;
@@ -1118,7 +1130,11 @@ function uswdsUnloadModals() {
   window.modal.off();
 }
 
-class LoadTableBase {
+/**
+ * Base table class which handles search, retrieval, rendering and interaction with results.
+ * Classes can extend the basic behavior of this class to customize display and interaction.
+ */
+class BaseTable {
   constructor(itemName) {
     this.itemName = itemName;
     this.sectionSelector = itemName + 's';
@@ -1151,13 +1167,13 @@ class LoadTableBase {
   }
 
   /**
- * Generalized function to update pagination for a list.
- * @param {number} currentPage - The current page number (starting with 1).
- * @param {number} numPages - The total number of pages.
- * @param {boolean} hasPrevious - Whether there is a page before the current page.
- * @param {boolean} hasNext - Whether there is a page after the current page.
- * @param {number} total - The total number of items.
- */  
+   * Generalized function to update pagination for a list.
+   * @param {number} currentPage - The current page number (starting with 1).
+   * @param {number} numPages - The total number of pages.
+   * @param {boolean} hasPrevious - Whether there is a page before the current page.
+   * @param {boolean} hasNext - Whether there is a page after the current page.
+   * @param {number} total - The total number of items.
+   */  
   updatePagination(
     currentPage,
     numPages,
@@ -1247,9 +1263,12 @@ class LoadTableBase {
   }
 
   /**
-   * A helper that toggles content/ no content/ no search results
-   *
-  */
+   * A helper that toggles content/ no content/ no search results based on results in data.
+   * @param {Object} data - Data representing current page of results data.
+   * @param {HTMLElement} dataWrapper - The DOM element to show if there are results on the current page.
+   * @param {HTMLElement} noDataWrapper - The DOM element to show if there are no results period.
+   * @param {HTMLElement} noSearchResultsWrapper - The DOM element to show if there are no results in the current filtered search.
+   */
   updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
     const { unfiltered_total, total } = data;
     if (unfiltered_total) {
@@ -1666,7 +1685,7 @@ class LoadTableBase {
   }
 }
 
-class DomainsTable extends LoadTableBase {
+class DomainsTable extends BaseTable {
 
   constructor() {
     super('domain');
@@ -1732,7 +1751,7 @@ class DomainsTable extends LoadTableBase {
   }
 }
 
-class DomainRequestsTable extends LoadTableBase {
+class DomainRequestsTable extends BaseTable {
 
   constructor() {
     super('domain-request');
@@ -1942,7 +1961,7 @@ class DomainRequestsTable extends LoadTableBase {
   }
 }
 
-class MembersTable extends LoadTableBase {
+class MembersTable extends BaseTable {
 
   constructor() {
     super('member');
@@ -2375,7 +2394,7 @@ class MembersTable extends LoadTableBase {
   
 }
 
-class MemberDomainsTable extends LoadTableBase {
+class MemberDomainsTable extends BaseTable {
 
   constructor() {
     super('member-domain');
