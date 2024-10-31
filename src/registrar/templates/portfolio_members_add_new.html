@@ -79,41 +79,37 @@
 
 <!-- Admin access form -->
 <div id="new-member-admin-permissions" class="margin-top-2">
-  <legend>
     <h2>Admin access permissions</h2>
     <p>Member permissions available for admin-level acccess.</p>
-  </legend>
-  
-  <h3 class="margin-bottom-0">Organization domain requests</h3>
-  {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-    {% input_with_errors form.admin_org_domain_request_permissions %}
-  {% endwith %}
 
-  <h3 class="margin-bottom-0 margin-top-3">Organization members</h3>
-  {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-    {% input_with_errors form.admin_org_members_permissions %}
-  {% endwith %}
-</div>
+    <h3 class="margin-bottom-0">Organization domain requests</h3>
+    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+      {% input_with_errors form.admin_org_domain_request_permissions %}
+    {% endwith %}
+
+    <h3 class="margin-bottom-0 margin-top-3">Organization members</h3>
+    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+      {% input_with_errors form.admin_org_members_permissions %}
+    {% endwith %}
+  </div>
 
 <!-- Basic access form -->
 <div id="new-member-basic-permissions" class="margin-top-2">
-  <legend>
     <h2>Basic member permissions</h2>
     <p>Member permissions available for basic-level access</p>
     {% input_with_errors form.basic_org_domain_request_permissions %}
-  </legend>
-  
 </div>
 
 <!-- Submit/cancel buttons -->
 <div class="margin-top-3">
-  <button
-  href="/members/"
+  <a
+    type="button"
+    href="{% url 'members' %}"
     class="usa-button usa-button--outline"
     name="btn-cancel-click"
     aria-label="Cancel adding new member"
   >Cancel
-</button>
+</a>
   <button type="submit" class="usa-button">Invite Member</button>
 </div>
 </form>
