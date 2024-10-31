@@ -1401,10 +1401,3 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.urbanization
         return self.urbanization
-
-    @property
-    def converted_senior_official(self):
-        if self.portfolio:
-            return self.portfolio.senior_official
-        else:
-            return self.senior_official
