@@ -1054,26 +1054,26 @@ class DomainAddUserView(DomainFormBaseView):
 # # The order of the superclasses matters here. BaseDeleteView has a bug where the
 # # "form_valid" function does not call super, so it cannot use SuccessMessageMixin.
 # # The workaround is to use SuccessMessageMixin first.
-# class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
-#     object: DomainInvitation  # workaround for type mismatch in DeleteView
+class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
+    object: DomainInvitation  # workaround for type mismatch in DeleteView
 
-#     def post(self, request, *args, **kwargs):
-#         """Override post method in order to error in the case when the
-#         domain invitation status is RETRIEVED"""
-#         self.object = self.get_object()
-#         form = self.get_form()
-#         if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
-#             return self.form_valid(form)
-#         else:
-#             # Produce an error message if the domain invatation status is RETRIEVED
-#             messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
-#             return HttpResponseRedirect(self.get_success_url())
+    def post(self, request, *args, **kwargs):
+        """Override post method in order to error in the case when the
+        domain invitation status is RETRIEVED"""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
+            return self.form_valid(form)
+        else:
+            # Produce an error message if the domain invatation status is RETRIEVED
+            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
+            return HttpResponseRedirect(self.get_success_url())
 
-#     def get_success_url(self):
-#         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+    def get_success_url(self):
+        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-#     def get_success_message(self, cleaned_data):
-#         return f"Canceled invitation to {self.object.email}."
+    def get_success_message(self, cleaned_data):
+        return f"Canceled invitation to {self.object.email}."
     
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationUpdateView):

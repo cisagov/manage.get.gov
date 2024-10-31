@@ -12,6 +12,7 @@ from .domain import (
     DomainUsersView,
     DomainAddUserView,
     DomainInvitationDeleteView,
+    DomainInvitationCancelView,
     DomainDeleteUserView,
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
