@@ -20,7 +20,7 @@
 <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
   <ol class="usa-breadcrumb__list">
     <li class="usa-breadcrumb__list-item">
-      <a href="/members/" class="usa-breadcrumb__link"><span>Members</span></a>
+      <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
     </li>
     <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
       <span>Add a new member</span>
@@ -45,8 +45,6 @@
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
       {% input_with_errors form.email %}
     {% endwith %}
-
-    <!-- {{ form.as_p }} -->
 </fieldset>
 
 <!-- Member access radio buttons (Toggles other sections) -->
