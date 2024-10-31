@@ -487,6 +487,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         review_page = requirements_result.follow()
         review_form = review_page.forms[0]
+        
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
         self.assertContains(review_page, "Federal")
