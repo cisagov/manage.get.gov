@@ -158,6 +158,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # Configure titles, wizard_conditions, unlocking_steps, and steps
         self.configure_step_options()
         self._domain_request = None  # for caching
+        self.domain_request_id = None
 
     def configure_step_options(self):
         """Changes which steps are available to the user based on self.is_portfolio.
@@ -182,7 +183,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        return "domain_request_id" in self.storage
+        
+        return self.kwargs.get("id") is not None
 
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""
@@ -214,11 +216,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
-            id = self.storage["domain_request_id"]
             try:
                 self._domain_request = DomainRequest.objects.get(
                     creator=creator,
-                    pk=id,
+                    pk=self.kwargs.get('id'),
                 )
                 return self._domain_request
             except DomainRequest.DoesNotExist:
@@ -239,7 +240,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
 
-        self.storage["domain_request_id"] = self._domain_request.id
+        self.kwargs["id"] = self._domain_request.id
         return self._domain_request
 
     @property
@@ -295,6 +296,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get(self, request, *args, **kwargs):
         """This method handles GET requests."""
 
+        self.kwargs = kwargs
         if not self.is_portfolio and self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
@@ -307,9 +309,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
-            self.storage["domain_request_id"] = kwargs["id"]
-        elif "id" not in kwargs:
-            del self.storage
 
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
@@ -317,7 +316,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
-            print(F"what is this? {request.path_info}")
             if request.path_info == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
