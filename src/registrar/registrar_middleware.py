@@ -8,7 +8,8 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from registrar.models import User
 from waffle.decorators import flag_is_active
-
+from django.urls import resolve, Resolver404
+from registrar.config.urls import DOMAIN_REQUEST_NAMESPACE
 from registrar.models.utility.generic_helper import replace_url_queryparams
 
 logger = logging.getLogger(__name__)
@@ -169,3 +170,40 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = request.user.get_first_portfolio()
         else:
             request.session["portfolio"] = request.user.get_first_portfolio()
+
+
+class NewRequestMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+    
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if not request.user.is_authenticated:
+            return None
+
+        if request.session.get("new_request") is None:
+            request.session["new_request"] = True
+
+        resolved = resolve(request.path)
+        if request.session.get("new_request") is False:
+            try:
+                resolved = resolve(request.path)
+                # Check if we're in the domain-request namespace.
+                # If not, then a new request is not being made.
+                if resolved.namespace != DOMAIN_REQUEST_NAMESPACE:
+                    request.session["new_request"] = True
+            # URL doesn't match any known pattern.
+            # This shouldn't happen (caught before this), but redundancy is good.
+            except Resolver404:
+                # If you somehow see this log, something must have went very, *very* wrong.
+                # All I can offer in consolidation is this ASCII cat to tend to these hard times:
+                # ⠀ ／l、
+                # （ﾟ､ ｡ ７
+                # ⠀ l、ﾞ ~ヽ
+                #   じしf_, )ノ
+                logger.error("[CRITICAL] NewRequestMiddleware => Could not resolve the request path.")
+
+        return None

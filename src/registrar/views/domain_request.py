@@ -308,6 +308,13 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
             self.storage["domain_request_id"] = kwargs["id"]
+        elif self.request.session.get("new_request") is True and current_url != self.NEW_URL_NAME and current_url != "":
+            print(f"what is the url: {current_url} vs type: {type(current_url)}")
+            # Add some popup here that indicates a new request was started...
+            logger.info(f"DomainRequestWizard => user {request.user} was redirected to home (because, etc...)")
+            del self.storage
+            return HttpResponseRedirect(reverse("home"))
+
 
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
@@ -493,10 +500,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return request_step_list(self, self.get_step_enum())
 
     def goto(self, step):
-        if step == "generic_org_type" or step == "portfolio_requesting_entity":
-            # We need to avoid creating a new domain request if the user
-            # clicks the back button
-            self.request.session["new_request"] = False
+        # We need to avoid creating a new domain request if the user clicks the back button
+        self.request.session["new_request"] = False
         self.steps.current = step
         return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
 
@@ -523,9 +528,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-
-        if "new_request" not in request.session:
-            request.session["new_request"] = True
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
@@ -564,6 +566,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def handle_intro_acknowledge(self, request):
         """If we are starting a new request, clear storage
         and redirect to the first step"""
+        print(f"path info is: {request.path_info}")
         if request.path_info == self.NEW_URL_NAME:
             if self.request.session["new_request"] is True:
                 del self.storage

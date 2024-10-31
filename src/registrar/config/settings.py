@@ -193,6 +193,7 @@ MIDDLEWARE = [
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
+    "registrar.registrar_middleware.NewRequestMiddleware"
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
