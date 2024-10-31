@@ -22,7 +22,16 @@ jobs:
       CF_PASSWORD: CF_MS_PASSWORD
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip' # caching pip dependencies
+          
+      - name: Install CG Tool
+        run: pip install git+https://github.com/cloud-gov/cg-manage-rds.git
 
       - name: Share DB Service
         uses: cloud-gov/cg-cli-tools@main
@@ -40,7 +49,7 @@ jobs:
           cf_password: ${{ secrets.CF_MS_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.SOURCE_ENVIRONMENT }}
-          command: pip install git+https://github.com/cloud-gov/cg-manage-rds.git && cg-manage-rds clone getgov-${{ env.SOURCE_ENVIRONMENT }}-database getgov-${{ env.DESTINATION_ENVIRONMENT }}-database
+          command: cg-manage-rds clone getgov-${{ env.SOURCE_ENVIRONMENT }}-database getgov-${{ env.DESTINATION_ENVIRONMENT }}-database
       
       - name: Unshare DB Service
         uses: cloud-gov/cg-cli-tools@main
