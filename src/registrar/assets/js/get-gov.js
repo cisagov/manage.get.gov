@@ -1329,7 +1329,7 @@ class BaseTable {
    * @param {*} status - The status filter applied {ready, dns_needed, etc}
    * @param {string} portfolio - The portfolio id
    */
-  getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
+  #getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
     let searchParams = new URLSearchParams(
       {
         "page": page,
@@ -1453,7 +1453,7 @@ class BaseTable {
    */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
     // --------- SEARCH
-    let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
+    let searchParams = this.#getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
 
     // --------- FETCH DATA
     // fetch json of page of domains, given params
