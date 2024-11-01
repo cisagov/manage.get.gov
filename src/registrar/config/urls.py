@@ -41,7 +41,10 @@ from api.views import available, rdap, get_current_federal, get_current_full
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
 # dynamically generate the other domain_request_urls
-domain_request_urls = []
+domain_request_urls = [
+    path("start/", views.DomainRequestWizard.as_view(), name="start"),
+    path("finished/", views.Finished.as_view(), name="finished"),
+]
 for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
@@ -62,7 +65,7 @@ for step, view in [
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
     (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
-    domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"<int:id>/{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -255,9 +258,7 @@ urlpatterns = [
     ),
     path("health", views.health, name="health"),
     path("openid/", include("djangooidc.urls")),
-    path("request/start/", views.DomainRequestWizard.as_view(), name="start"),
-    path("request/finished/", views.Finished.as_view(), name="finished"),
-    path("request/<int:id>/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
+    path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
     path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
