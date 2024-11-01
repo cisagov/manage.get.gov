@@ -1484,9 +1484,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
-                    "requested_suborganization",
-                    "suborganization_city",
-                    "suborganization_state_territory",
                     "creator",
                     "domain_request",
                     "notes",
