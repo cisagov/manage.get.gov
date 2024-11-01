@@ -426,13 +426,14 @@ class DomainInformation(TimeStampedModel):
         else:
             return None
 
+    # ----- Portfolio Properties -----
+
     @property
     def converted_organization_name(self):
         if self.portfolio:
             return self.portfolio.organization_name
         return self.organization_name
 
-    # ----- Portfolio Properties -----
     @property
     def converted_generic_org_type(self):
         if self.portfolio:
@@ -474,7 +475,7 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.city
         return self.city
-
+    
     @property
     def converted_state_territory(self):
         if self.portfolio:
@@ -492,3 +493,9 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.urbanization
         return self.urbanization
+
+
+
+
+
+

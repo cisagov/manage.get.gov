@@ -1461,10 +1461,15 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     form = DomainInformationAdminForm
 
+    # Customize column header text
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+
     # Columns
     list_display = [
         "domain",
-        "generic_org_type",
+        "converted_generic_org_type",
         "created_at",
     ]
 
@@ -1493,7 +1498,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             },
         ),
         (".gov domain", {"fields": ["domain"]}),
-        ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Contacts", {"fields": ["generic_org_type", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
@@ -1611,6 +1616,12 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            converted_generic_org_type_display="hey"
+        )
 
 
 class DomainRequestResource(FsmModelResource):
