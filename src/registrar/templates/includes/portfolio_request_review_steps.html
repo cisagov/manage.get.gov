@@ -18,7 +18,7 @@
         {% elif domain_request.requesting_entity_is_portfolio %}
             {% include "includes/summary_item.html" with value=domain_request.portfolio.organization_name edit_link=domain_request_url %}
             {% if domain_request.portfolio.city and domain_request.portfolio.state_territory %}
-                <p class="margin-top-0 margin-bottom-0">{{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}</p>
+                <p class="margin-y-0">{{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}</p>
             {% endif %}
         {% else %}
             {% with value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
