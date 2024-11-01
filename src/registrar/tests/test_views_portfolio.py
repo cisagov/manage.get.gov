@@ -959,7 +959,7 @@ class TestPortfolio(WebTest):
         )
 
         # Assert buttons and links within the page are correct
-        self.assertContains(response, "usa-button--more-actions")  # test that 3 dot is present
+        self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
         self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
@@ -1077,9 +1077,8 @@ class TestPortfolio(WebTest):
         self.assertContains(
             response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
         )
-
         # Assert buttons and links within the page are correct
-        self.assertContains(response, "usa-button--more-actions")  # test that 3 dot is present
+        self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
         self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
