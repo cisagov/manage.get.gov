@@ -1689,7 +1689,7 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-
+            self.maxDiff = None
             expected_fields = [
                 "other_contacts",
                 "current_websites",
@@ -1709,6 +1709,9 @@ class TestDomainRequestAdmin(MockEppLib):
                 "cisa_representative_first_name",
                 "cisa_representative_last_name",
                 "cisa_representative_email",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
             ]
             self.assertEqual(readonly_fields, expected_fields)
 

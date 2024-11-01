@@ -43,9 +43,6 @@ class RequestingEntityForm(RegistrarForm):
         required=False,
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
-        error_messages={
-        "required": ("Requesting entity is required.")
-        },
     )
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
@@ -118,13 +115,13 @@ class RequestingEntityForm(RegistrarForm):
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields
                 if not cleaned_data.get("requested_suborganization"):
-                    self.add_error("requested_suborganization", "Enter details for your organization name.")
+                    self.add_error("requested_suborganization", "Organization name is required.")
                 if not cleaned_data.get("suborganization_city"):
-                    self.add_error("suborganization_city", "Enter details for your city.")
+                    self.add_error("suborganization_city", "City is required.")
                 if not cleaned_data.get("suborganization_state_territory"):
-                    self.add_error("suborganization_state_territory", "Enter details for your state or territory.")
+                    self.add_error("suborganization_state_territory", "State or territory is required.")
             elif not suborganization:
-                self.add_error("sub_organization", "Select a suborganization.")
+                self.add_error("sub_organization", "Suborganization is required.")
 
         return cleaned_data
 
@@ -138,6 +135,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
     # IMPORTANT: This is tied to DomainRequest.is_requesting_new_suborganization().
     # This is due to the from_database method on DomainRequestWizard.
     field_name = "requesting_entity_is_suborganization"
+    required_error_message = "Requesting entity is required."
 
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
@@ -153,7 +151,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
     def form_is_checked(self):
         """
         Determines the initial checked state of the form.
-        Returns True (checked) if the requesting entity is a suborganization, 
+        Returns True (checked) if the requesting entity is a suborganization,
         and False if it is a portfolio. Returns None if neither condition is met.
         """
         # True means that the requesting entity is a suborganization,
