@@ -1829,23 +1829,6 @@ class DomainRequestsTable extends BaseTable {
     }
 
     if (request.is_deletable) {
-      // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
-      let modalHeading = '';
-      let modalDescription = '';
-
-      if (request.requested_domain) {
-        modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
-        modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-      } else {
-        if (request.created_at) {
-          modalHeading = 'Are you sure you want to delete this domain request?';
-          modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
-        } else {
-          modalHeading = 'Are you sure you want to delete New domain request?';
-          modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-        }
-      }
-
       // 1st option: Just a modal trigger in any screen size for non-org users
       modalTrigger = `
         <a 
@@ -1860,15 +1843,6 @@ class DomainRequestsTable extends BaseTable {
             <use xlink:href="/public/img/sprite.svg#delete"></use>
           </svg> Delete <span class="usa-sr-only">${domainName}</span>
         </a>`
-
-      const modalSubmit = `
-        <button type="button"
-        class="usa-button usa-button--secondary usa-modal__submit"
-        data-pk = ${request.id}
-        name="delete-domain-request">Yes, delete request</button>
-      `
-
-      addModal('toggle-delete-domain', request.id, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, tbody, true);
 
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
@@ -1902,6 +1876,7 @@ class DomainRequestsTable extends BaseTable {
       ${customTableOptions.needsAdditionalColumn ? '<td>'+modalTrigger+'</td>' : ''}
     `;
     tbody.appendChild(row);
+    if (request.is_deletable) DomainRequestsTable.addDomainRequestsModal(request.requested_domain, request.id, request.created_at, tbody);
   }
 
   initializeModals(page, total, unfiltered_total) {
@@ -1958,6 +1933,35 @@ class DomainRequestsTable extends BaseTable {
       this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentStatus, this.currentSearchTerm);
     })
     .catch(error => console.error('Error fetching domain requests:', error));
+  }
+
+  static addDomainRequestsModal(requested_domain, id, created_at, wrapper_element) {
+    // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
+    let modalHeading = '';
+    let modalDescription = '';
+
+    if (requested_domain) {
+      modalHeading = `Are you sure you want to delete ${requested_domain}?`;
+      modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+    } else {
+      if (request.created_at) {
+        modalHeading = 'Are you sure you want to delete this domain request?';
+        modalDescription = `This will remove the domain request (created ${utcDateString(created_at)}) from the .gov registrar. This action cannot be undone`;
+      } else {
+        modalHeading = 'Are you sure you want to delete New domain request?';
+        modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+      }
+    }
+
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${id}
+      name="delete-domain-request">Yes, delete request</button>
+    `
+
+    addModal('toggle-delete-domain', id, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
+
   }
 }
 
