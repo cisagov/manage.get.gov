@@ -1766,7 +1766,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Contacts",
             {
                 "fields": [
-                    "senior_official",
+                    "converted_senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1781,7 +1781,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "is_election_board",
-                    "organization_type",
+                    "converted_generic_org_type",
                 ]
             },
         ),
@@ -1791,8 +1791,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "classes": ["collapse--dgfieldset"],
                 "description": "Extends type of organization",
                 "fields": [
-                    "federal_type",
-                    "federal_agency",
+                    "converted_federal_type",
+                    "converted_federal_agency",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -1804,8 +1804,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Organization name and mailing address",
             {
                 "fields": [
-                    "organization_name",
-                    "state_territory",
+                    "converted_organization_name",
+                    "converted_state_territory",
                 ]
             },
         ),
@@ -1815,11 +1815,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "classes": ["collapse--dgfieldset"],
                 "description": "Extends organization name and mailing address",
                 "fields": [
-                    "address_line1",
-                    "address_line2",
-                    "city",
-                    "zipcode",
-                    "urbanization",
+                    "converted_address_line1",
+                    "converted_address_line2",
+                    "converted_city",
+                    "converted_zipcode",
+                    "converted_urbanization",
                 ],
             },
         ),
@@ -1832,6 +1832,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "status_history",
+        "converted_senior_official",
+        "converted_federal_type",
+        "converted_federal_agency",
+        "converted_state_territory",
+        "converted_organization_name",
+        "converted_address_line1",
+        "converted_address_line2",
+        "converted_zipcode",
+        "converted_urbanization",
+        "converted_city",
+        "converted_generic_org_type"
     )
 
     # Read only that we'll leverage for CISA Analysts

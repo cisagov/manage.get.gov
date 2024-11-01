@@ -1,28 +1,28 @@
-<address>
-    {% if  organization.converted_federal_agency  %}
-        {{ organization.converted_federal_agency }}<br />
+ <address>
+    {% if  organization.federal_agency  %}
+        {{ organization.federal_agency }}<br />
     {% endif %}
-    {% if  organization.converted_organization_name  %}
-        {{ organization.converted_organization_name }}
+    {% if  organization.organization_name  %}
+        {{ organization.organization_name }}
     {% endif %}
-    {% if  organization.converted_address_line1  %}
-        <br />{{ organization.converted_address_line1 }}
+    {% if  organization.address_line1  %}
+        <br />{{ organization.address_line1 }}
     {% endif %}
-    {% if  organization.converted_address_line2  %}
-        <br />{{ organization.converted_address_line2 }}
+    {% if  organization.address_line2  %}
+        <br />{{ organization.address_line2 }}
     {% endif %}
-    {% if  organization.converted_city  %}
-        <br />{{ organization.converted_city }}{% if organization.converted_state_territory %},&nbsp;
+    {% if  organization.city  %}
+        <br />{{ organization.city }}{% if organization.state_territory %},&nbsp;
         {% else %}<br />
         {% endif %}
     {% endif %}
-    {% if  organization.converted_state_territory  %}
-        {{ organization.converted_state_territory }}
+    {% if  organization.state_territory  %}
+        {{ organization.state_territory }}
     {% endif %}
-    {% if  organization.converted_zipcode  %}
-        <br />{{ organization.converted_zipcode }}
+    {% if  organization.zipcode  %}
+        <br />{{ organization.zipcode }}
     {% endif %}
-    {% if  organization.converted_urbanization  %}
-        <br />{{ organization.converted_urbanization }}
+    {% if  organization.urbanization  %}
+        <br />{{ organization.urbanization }}
     {% endif %}
 </address>
