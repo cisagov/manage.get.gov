@@ -202,7 +202,7 @@ function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_t
           </svg>
         </button>
       </div>
-      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
         <h2>More options</h2>
         ${generateModalButton()} <!-- Desktop button -->
       </div>
@@ -1795,7 +1795,7 @@ class DomainRequestsTable extends BaseTable {
         const delheader = document.createElement('th');
         delheader.setAttribute('scope', 'col');
         delheader.setAttribute('role', 'columnheader');
-        delheader.setAttribute('class', 'delete-header');
+        delheader.setAttribute('class', 'delete-header width-5');
         delheader.innerHTML = `
           <span class="usa-sr-only">Delete Action</span>`;
         let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
@@ -2013,7 +2013,7 @@ class MembersTable extends BaseTable {
       const extraActionsHeader = document.createElement('th');
       extraActionsHeader.setAttribute('id', 'extra-actions');
       extraActionsHeader.setAttribute('role', 'columnheader');
-      extraActionsHeader.setAttribute('class', 'extra-actions-header');
+      extraActionsHeader.setAttribute('class', 'extra-actions-header width-5');
       extraActionsHeader.innerHTML = `
         <span class="usa-sr-only">Extra Actions</span>`;
       let tableHeaderRow = this.tableWrapper.querySelector('thead tr');

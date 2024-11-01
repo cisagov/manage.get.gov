@@ -510,5 +510,4 @@ class User(AbstractUser):
             return True  # The user is the only admin
 
         # If there are other admins or the user is not the only one
-        print(f"{self} is NOT the only admin for portfolio {portfolio}.")
         return False

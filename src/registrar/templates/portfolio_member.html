@@ -2,9 +2,6 @@
 {% load static field_helpers%}
 
 {% block title %}Organization member 
-<script>
-  console.log("Inline test in the organization member block");
-</script>
 {% endblock %}
 
 {% load static %}
@@ -44,7 +41,7 @@
         data-num-domains="{{ portfolio_permission.get_managed_domains_count }}"
         data-member-email="{{ member.email }}"
       >
-        MEMBER KEBAB SHOULD BE HERE
+        <!-- JS should inject member kebob here -->
         </div>
       {% elif portfolio_invitation %}
         <div id="wrapper-delete-action"
@@ -54,7 +51,7 @@
         data-num-domains="{{ portfolio_invitation.get_managed_domains_count }}"
         data-member-email="{{ portfolio_invitation.email }}"
       >
-        INV KEBAB SHOULD BE HERE
+        <!-- JS should inject invited kebob here -->
       </div>
       {% endif %}
     {% endif %}
