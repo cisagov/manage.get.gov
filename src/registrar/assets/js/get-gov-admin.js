@@ -966,6 +966,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // This is the additional information that exists beneath the SO element.
     var contactList = document.querySelector(".field-senior_official .dja-address-contact-list");
+    const federalAgencyContainer = document.querySelector(".field-federal_agency");
     document.addEventListener('DOMContentLoaded', function() {
 
         let isPortfolioPage = document.getElementById("portfolio_form");
@@ -1014,11 +1015,13 @@ document.addEventListener('DOMContentLoaded', function() {
             let selectedValue = organizationType.value;
             if (selectedValue === "federal") {
                 hideElement(organizationNameContainer);
+                showElement(federalAgencyContainer);
                 if (federalType) {
                     showElement(federalType);
                 }
             } else {
                 showElement(organizationNameContainer);
+                hideElement(federalAgencyContainer);
                 if (federalType) {
                     hideElement(federalType);
                 }

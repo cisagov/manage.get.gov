@@ -5,6 +5,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
@@ -3243,6 +3244,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
 
+        # Make senior_official readonly for federal organizations
+        if obj and obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if "senior_official" not in readonly_fields:
+                readonly_fields.append("senior_official")
+        elif "senior_official" in readonly_fields:
+            # Remove senior_official from readonly_fields if org is non-federal
+            readonly_fields.remove("senior_official")
+
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
 
@@ -3265,12 +3274,11 @@ class PortfolioAdmin(ListHeaderAdmin):
             extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def save_model(self, request, obj, form, change):
-
+    def save_model(self, request, obj: Portfolio, form, change):
         if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None
+            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -3280,12 +3288,19 @@ class PortfolioAdmin(ListHeaderAdmin):
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
 
-        # Remove this line when senior_official is no longer readonly in /admin.
-        if obj.federal_agency:
-            if obj.federal_agency.so_federal_agency.exists():
-                obj.senior_official = obj.federal_agency.so_federal_agency.first()
-            else:
-                obj.senior_official = None
+        # Set the senior official field to the senior official on the federal agency
+        # when federal - otherwise, clear the field.
+        if obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if obj.federal_agency:
+                if obj.federal_agency.so_federal_agency.exists():
+                    obj.senior_official = obj.federal_agency.so_federal_agency.first()
+                else:
+                    obj.senior_official = None
+        else:
+            if obj.federal_agency and obj.federal_agency.agency != "Non-Federal Agency":
+                if obj.federal_agency.so_federal_agency.first() == obj.senior_official:
+                    obj.senior_official = None
+                obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()  # type: ignore
 
         super().save_model(request, obj, form, change)
 
