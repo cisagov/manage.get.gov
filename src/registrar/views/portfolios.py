@@ -15,7 +15,6 @@ from registrar.forms.portfolio import (
 )
 
 from registrar.forms import portfolio as portfolioForms
->>>>>>> edfc67649d6b2021e972bfa9fd4cad9f78a57e06
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
