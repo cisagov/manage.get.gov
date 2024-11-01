@@ -1,18 +1,10 @@
 import logging
 
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
-
-
-from registrar.forms.portfolio import (
-    PortfolioInvitedMemberForm,
-    PortfolioMemberForm,
-    PortfolioOrgAddressForm,
-    PortfolioSeniorOfficialForm,
-)
 
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
@@ -113,7 +105,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 
         if active_requests_count > 0:
             # If they have any in progress requests
-            error_message = mark_safe(
+            error_message = mark_safe(  # nosec
                 f"This member has an active domain request and can't be removed from the organization. "
                 f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
             )
