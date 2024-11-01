@@ -1127,30 +1127,30 @@ class DomainRequest(TimeStampedModel):
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.
-        Used for the RequestingEntity page."""
+        Used for the RequestingEntity page.
+        Returns True if the portfolio exists and if organization_name matches portfolio.organization_name.
+        """
         if self.portfolio and self.organization_name == self.portfolio.organization_name:
             return True
-        else:
-            return False
+        return False
 
     def requesting_entity_is_suborganization(self) -> bool:
         """Used to determine if this domain request is also requesting that it be tied to a suborganization.
-        Checks if this record has a suborganization or not by checking if a suborganization exists,
-        and if it doesn't, determining if properties like requested_suborganization exist.
-        Used for the RequestingEntity page.
+        Returns True if portfolio exists and either sub_organization exists,
+        or if is_requesting_new_suborganization() is true.
+        Returns False otherwise.
         """
         if self.portfolio and (self.sub_organization or self.is_requesting_new_suborganization()):
             return True
-        else:
-            return False
+        return False
 
     def is_requesting_new_suborganization(self) -> bool:
         """Used on the requesting entity form to determine if a user is trying to request
-        a new suborganization using the domain request form.
+        a new suborganization using the domain request form, rather than one that already exists.
 
-        This only occurs when no suborganization is selected, but they've filled out
-        the requested_suborganization, suborganization_city, and suborganization_state_territory fields.
-        Used for the RequestingEntity page.
+        Returns True if a sub_organization does not exist and if requested_suborganization,
+        suborganization_city, and suborganization_state_territory all exist.
+        Returns False otherwise.
         """
 
         # If a suborganization already exists, it can't possibly be a new one.
@@ -1162,19 +1162,20 @@ class DomainRequest(TimeStampedModel):
         ]
         if not self.sub_organization and all(required_fields):
             return True
-        else:
-            return False
+        return False
 
     # ## Form unlocking steps ## #
     #
     # These methods control the conditions in which we should unlock certain domain wizard steps.
 
     def unlock_requesting_entity(self) -> bool:
-        """Unlocks the requesting entity step. Used for the RequestingEntity page."""
+        """Unlocks the requesting entity step. Used for the RequestingEntity page.
+        Returns true if requesting_entity_is_suborganization() and requesting_entity_is_portfolio().
+        Returns False otherwise.
+        """
         if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
             return True
-        else:
-            return False
+        return False
 
     # ## Form policies ## #
     #

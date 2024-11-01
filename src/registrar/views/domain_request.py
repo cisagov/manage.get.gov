@@ -319,7 +319,15 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(request, "domain_request_intro.html", {"hide_requests": True, "hide_domains": True})
+                return render(
+                    request,
+                    "domain_request_intro.html",
+                    {
+                        "hide_requests": True,
+                        "hide_domains": True,
+                        "hide_members": True,
+                    },
+                )
             else:
                 return self.goto(self.steps.first)
 

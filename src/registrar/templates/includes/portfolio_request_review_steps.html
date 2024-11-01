@@ -14,7 +14,7 @@
             {% comment %} We don't have city or state_territory for suborganizations yet, so no data should display {% endcomment %}
         {% elif domain_request.requesting_entity_is_suborganization %}
             {% include "includes/summary_item.html" with value=domain_request.requested_suborganization edit_link=domain_request_url %}
-            <p class="margin-top-0 margin-bottom-0">{{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}</p>
+            <p class="margin-y-0">{{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}</p>
         {% elif domain_request.requesting_entity_is_portfolio %}
             {% include "includes/summary_item.html" with value=domain_request.portfolio.organization_name edit_link=domain_request_url %}
             {% if domain_request.portfolio.city and domain_request.portfolio.state_territory %}

@@ -35,7 +35,7 @@ class RequestingEntityForm(RegistrarForm):
     # If this selection is made on the form (tracked by js), then it will toggle the form value of this.
     # In other words, this essentially tracks if the suborganization field == "Other".
     # "Other" is just an imaginary value that is otherwise invalid.
-    # Note the logic in `def clean` and line 2744 in get-gov.js
+    # Note the logic in `def clean` and `handleRequestingEntityFieldset` in get-gov.js
     is_requesting_new_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
     sub_organization = forms.ModelChoiceField(
@@ -43,24 +43,22 @@ class RequestingEntityForm(RegistrarForm):
         required=False,
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
+        error_messages={
+        "required": ("Requesting entity is required.")
+        },
     )
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
         required=False,
-        error_messages={"required": "Enter the name of your organization."},
     )
     suborganization_city = forms.CharField(
         label="City",
         required=False,
-        error_messages={"required": "Enter the city where your organization is located."},
     )
     suborganization_state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=False,
         choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
-        error_messages={
-            "required": ("Select the state, territory, or military post where your organization is located.")
-        },
     )
 
     def __init__(self, *args, **kwargs):
@@ -147,17 +145,16 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         if self.domain_request.portfolio:
             self.form_choices = (
                 (False, self.domain_request.portfolio),
-                (True, "A suborganization. (choose from list)"),
+                (True, "A suborganization (choose from list)"),
             )
         self.fields[self.field_name] = self.get_typed_choice_field()
 
     @property
     def form_is_checked(self):
         """
-        Determines if the requesting entity is a suborganization, or a portfolio.
-        For suborganizations, users have the ability to request a new one if the
-        desired suborg doesn't exist. We expose additional fields that denote this,
-        like `requested_suborganization`. So we also check on those.
+        Determines the initial checked state of the form.
+        Returns True (checked) if the requesting entity is a suborganization, 
+        and False if it is a portfolio. Returns None if neither condition is met.
         """
         # True means that the requesting entity is a suborganization,
         # whereas False means that the requesting entity is a portfolio.
