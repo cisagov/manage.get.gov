@@ -89,7 +89,6 @@ class CsvReportsTest(MockDbForSharedTests):
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
-                call("adomain2.gov,Interstate,,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
@@ -470,8 +469,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Invoke setter
         self.domain_1.security_contact
         # Invoke setter
-        self.domain_2.security_contact
-        # Invoke setter
         self.domain_3.security_contact
         # Add a first ready date on the first domain. Leaving the others blank.
         self.domain_1.first_ready = get_default_start_date()
@@ -492,7 +489,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "adomain2.gov,Interstate,,,,,(blank)\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
         # Normalize line endings and remove commas,

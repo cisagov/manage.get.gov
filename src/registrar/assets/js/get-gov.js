@@ -26,8 +26,8 @@ const hideElement = (element) => {
 };
 
 /**
- * Show element
- *
+* Show element
+*
 */
 const showElement = (element) => {
   element.classList.remove('display-none');
@@ -424,28 +424,56 @@ function clearValidators(el) {
  * radio button is false (hides this element if true)
  * **/
 function HookupYesNoListener(radioButtonName, elementIdToShowIfYes, elementIdToShowIfNo) {
+  HookupRadioTogglerListener(radioButtonName, {
+    'True': elementIdToShowIfYes,
+    'False': elementIdToShowIfNo
+  });
+}
+
+/** 
+ * Hookup listeners for radio togglers in form fields.
+ * 
+ * Parameters:
+ *  - radioButtonName: The "name=" value for the radio buttons being used as togglers
+ *  - valueToElementMap: An object where keys are the values of the radio buttons, 
+ *    and values are the corresponding DOM element IDs to show. All other elements will be hidden.
+ * 
+ * Usage Example:
+ * Assuming you have radio buttons with values 'option1', 'option2', and 'option3',
+ * and corresponding DOM IDs 'section1', 'section2', 'section3'.
+ * 
+ * HookupValueBasedListener('exampleRadioGroup', {
+ *      'option1': 'section1',
+ *      'option2': 'section2',
+ *      'option3': 'section3'
+ *    });
+ **/
+function HookupRadioTogglerListener(radioButtonName, valueToElementMap) {
   // Get the radio buttons
   let radioButtons = document.querySelectorAll('input[name="'+radioButtonName+'"]');
+  
+  // Extract the list of all element IDs from the valueToElementMap
+  let allElementIds = Object.values(valueToElementMap);
 
   function handleRadioButtonChange() {
-    // Check the value of the selected radio button
-    // Attempt to find the radio button element that is checked
+    // Find the checked radio button
     let radioButtonChecked = document.querySelector('input[name="'+radioButtonName+'"]:checked');
-
-    // Check if the element exists before accessing its value
     let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
 
-    switch (selectedValue) {
-      case 'True':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 1);
-        break;
+    // Hide all elements by default
+    allElementIds.forEach(function (elementId) {
+      let element = document.getElementById(elementId);
+      if (element) {
+        hideElement(element);
+      }
+    });
 
-      case 'False':
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 2);
-        break;
-
-      default:
-        toggleTwoDomElements(elementIdToShowIfYes, elementIdToShowIfNo, 0);
+    // Show the relevant element for the selected value
+    if (selectedValue && valueToElementMap[selectedValue]) {
+      let elementToShow = document.getElementById(valueToElementMap[selectedValue]);
+      if (elementToShow) {
+        showElement(elementToShow);
+      }
     }
   }
 
@@ -455,10 +483,11 @@ function HookupYesNoListener(radioButtonName, elementIdToShowIfYes, elementIdToS
       radioButton.addEventListener('change', handleRadioButtonChange);
     });
 
-    // initialize
+    // Initialize by checking the current state
     handleRadioButtonChange();
   }
 }
+
 
 // A generic display none/block toggle function that takes an integer param to indicate how the elements toggle
 function toggleTwoDomElements(ele1, ele2, index) {
@@ -1037,6 +1066,18 @@ function setupUrbanizationToggle(stateTerritoryField) {
  */
 (function anythingElseFormListener() {
   HookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null)
+})();
+
+
+/**
+ * An IIFE that listens to the yes/no radio buttons on the anything else form and toggles form field visibility accordingly
+ *
+ */
+(function newMemberFormListener() {
+  HookupRadioTogglerListener('member_access_level', {
+          'admin': 'new-member-admin-permissions',
+          'basic': 'new-member-basic-permissions'
+        });
 })();
 
 /**
@@ -2871,3 +2912,48 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 });
+
+/** An IIFE that intializes the requesting entity page.
+ * This page has a radio button that dynamically toggles some fields
+ * Within that, the dropdown also toggles some additional form elements.
+*/
+(function handleRequestingEntityFieldset() { 
+  // Sadly, these ugly ids are the auto generated with this prefix
+  const formPrefix = "portfolio_requesting_entity"
+  const radioFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
+  const radios = radioFieldset?.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
+  const select = document.getElementById(`id_${formPrefix}-sub_organization`);
+  const suborgContainer = document.getElementById("suborganization-container");
+  const suborgDetailsContainer = document.getElementById("suborganization-container__details");
+  if (!radios || !select || !suborgContainer || !suborgDetailsContainer) return;
+
+  // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
+  // requestingNewSuborganization: This variable determines if the user is trying to *create* a new suborganization or not.
+  var requestingSuborganization = Array.from(radios).find(radio => radio.checked)?.value === "True";
+  var requestingNewSuborganization = document.getElementById(`id_${formPrefix}-is_requesting_new_suborganization`);
+
+  function toggleSuborganization(radio=null) {
+    if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
+    requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
+    requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+    requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
+  }
+
+  // Add fake "other" option to sub_organization select
+  if (select && !Array.from(select.options).some(option => option.value === "other")) {
+    select.add(new Option("Other (enter your organization manually)", "other"));
+  }
+
+  if (requestingNewSuborganization.value === "True") {
+    select.value = "other";
+  }
+
+  // Add event listener to is_suborganization radio buttons, and run for initial display
+  toggleSuborganization();
+  radios.forEach(radio => {
+    radio.addEventListener("click", () => toggleSuborganization(radio));
+  });
+
+  // Add event listener to the suborg dropdown to show/hide the suborg details section
+  select.addEventListener("change", () => toggleSuborganization());
+})();
