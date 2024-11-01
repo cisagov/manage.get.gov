@@ -1508,6 +1508,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the senior_official == #
+        print("SENIOR OFFICIAL")
+        print(response.content.decode("utf-8"))
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
             # Field, expected value
