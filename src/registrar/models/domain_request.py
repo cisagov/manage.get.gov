@@ -1135,7 +1135,8 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def requesting_entity_is_suborganization(self) -> bool:
-        """Used to determine if this domain request is also requesting that it be tied to a suborganization.
+        """Determines if this record is also requesting that it be tied to a suborganization.
+        Used for the RequestingEntity page.
         Returns True if portfolio exists and either sub_organization exists,
         or if is_requesting_new_suborganization() is true.
         Returns False otherwise.
@@ -1145,8 +1146,9 @@ class DomainRequest(TimeStampedModel):
         return False
 
     def is_requesting_new_suborganization(self) -> bool:
-        """Used on the requesting entity form to determine if a user is trying to request
+        """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
+        Used for the RequestingEntity page.
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.

@@ -28,6 +28,7 @@ from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -1863,6 +1864,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
     ]
     autocomplete_fields = [
         "approved_domain",
@@ -1882,24 +1886,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/domain_request_change_form.html"
 
-    # While the organization feature is under development, we can gate some fields
-    # from analysts for now. Remove this array and the get_fieldset overrides once this is done.
-    # Not my code initially, credit to Nicolle. This was once removed and like a phoenix it has been reborn.
-    superuser_only_fields = [
-        "requested_suborganization",
-        "suborganization_city",
-        "suborganization_state_territory",
-    ]
-
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Create a modified version of fieldsets to exclude certain fields
-        if not request.user.has_perm("registrar.full_access_permission"):
+        # Hide certain suborg fields behind the organization feature flag
+        # if it is not enabled
+        if not flag_is_active_for_user(request.user, "organization_feature"):
+            excluded_fields = [
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ]
             modified_fieldsets = []
             for name, data in fieldsets:
                 fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in self.superuser_only_fields)
+                fields = tuple(field for field in fields if field not in excluded_fields)
                 modified_fieldsets.append((name, {**data, "fields": fields}))
             return modified_fieldsets
         return fieldsets
