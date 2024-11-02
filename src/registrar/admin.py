@@ -1766,7 +1766,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             "Contacts",
             {
                 "fields": [
-                    "display_converted_senior_official",
+                    "converted_senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1832,7 +1832,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "status_history",
-        "display_converted_senior_official",
+        "converted_senior_official",
         "converted_federal_type",
         "converted_federal_agency",
         "converted_state_territory",
@@ -1877,22 +1877,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
-
-    def display_converted_senior_official(self, obj):
-        so = obj.converted_senior_official
-        if so:
-            parts = []
-            if so.first_name or so.last_name:
-                full_name = f"{so.first_name or ''} {so.last_name or ''}".strip()
-                parts.append(full_name)
-            if so.title:
-                parts.append(so.title)
-            if so.email:
-                parts.append(so.email)
-            if so.phone:
-                parts.append(str(so.phone))
-        return "\n\n".join(parts) if parts else "N/A"
-
+   
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         """Custom save_model definition that handles edge cases"""

@@ -160,7 +160,6 @@ class TestDomainRequestAdmin(MockEppLib):
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
             ("alternative_domains", "Other domain names the creator provided for consideration"),
             ("no_other_contacts_rationale", "Required if creator does not list other employees"),
-            ("Urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
 
@@ -1508,8 +1507,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Meoward Jones")
 
         # == Check for the senior_official == #
-        print("SENIOR OFFICIAL")
-        print(response.content.decode("utf-8"))
         self.assertContains(response, "testy@town.com", count=2)
         expected_so_fields = [
             # Field, expected value
@@ -1696,7 +1693,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
-                "federal_agency",
+                "converted_federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
