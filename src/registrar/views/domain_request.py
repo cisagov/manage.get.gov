@@ -158,6 +158,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # Configure titles, wizard_conditions, unlocking_steps, and steps
         self.configure_step_options()
         self._domain_request = None  # for caching
+        self.kwargs = {}
 
     def configure_step_options(self):
         """Changes which steps are available to the user based on self.is_portfolio.
@@ -182,7 +183,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        return self.kwargs.get("id") is not None
+        if self.kwargs.get("id") is not None:
+            return True
+        return False
 
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""

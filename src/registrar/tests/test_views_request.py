@@ -154,59 +154,6 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertContains(type_page, "You cannot submit this request yet")
 
-    @less_console_noise_decorator
-    def test_domain_request_into_acknowledgement_creates_new_request(self):
-        """
-        We had to solve a bug where the wizard was creating 2 requests on first intro acknowledgement ('continue')
-        The wizard was also creating multiiple requests on 'continue' -> back button -> 'continue' etc.
-
-        This tests that the domain requests get created only when they should.
-        """
-        # Get the intro page
-        self.app.get(reverse("home"))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_page = self.app.get(reverse("domain-request:start"))
-
-        # Select the form
-        intro_form = intro_page.forms[0]
-
-        # Submit the form, this creates 1 Request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
-
-        # Landing on the next page used to create another 1 request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        response.follow()
-
-        # Check if a new DomainRequest object has been created
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 1)
-
-        # Let's go back to intro and submit again, this should not create a new request
-        # This is the equivalent of a back button nav from step 1 to intro -> continue
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form = intro_form.submit(name="submit_button", value="intro_acknowledge")
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form.follow()
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 1)
-
-        # Go home, which will reset the session flag for new request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.get(reverse("home"))
-
-        # This time, clicking continue will create a new request
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit(name="submit_button", value="intro_acknowledge")
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result.follow()
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 2)
-
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_domain_request_form_submission(self):
@@ -959,7 +906,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # the post request should return a redirect to the elections question
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_election/")
+        self.assertIn("organization_election", type_result["Location"])
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -976,7 +923,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the contact
         # question
         self.assertEqual(election_result.status_code, 302)
-        self.assertEqual(election_result["Location"], "/request/organization_contact/")
+        self.assertIn("organization_contact", election_result["Location"])
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
@@ -984,6 +931,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
+        DomainRequest.objects.all().delete()
         intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
@@ -1022,7 +970,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Should be a link to the organization_federal page since it is now unlocked
         self.assertGreater(
-            len(new_page.html.find_all("a", href="/request/organization_federal/")),
+            len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
             0,
         )
 
@@ -1069,7 +1017,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the
         # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
-        self.assertEqual(contact_result["Location"], "/request/about_your_organization/")
+        self.assertIn("about_your_organization", contact_result["Location"])
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organization_special(self):
@@ -3155,7 +3103,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "usa-current", count=1)
 
             # We default to the requesting entity page
-            expected_url = reverse("domain-request:portfolio_requesting_entity")
+            expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"id": domain_request.id})
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
 

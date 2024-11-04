@@ -2822,14 +2822,8 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 
-(function handleBackButtonStuff() { 
-  function handleStuff() {
-    const domainRequestId = document.getElementById("wizard-domain-request-id")?.value;
-    if (domainRequestId) {
-      sessionStorage.setItem("domainRequestId", domainRequestId);
-      console.log("Domain request ID stored:", domainRequestId);
-    }
-  }
+(function handleDomainRequestIntro() { 
+  const domainRequestId = document.getElementById("wizard-domain-request-id")?.value;
 
   // Handle back button navigation and initial page load
   function handleStartPage(event) {
@@ -2840,10 +2834,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  if (domainRequestId) {
+    sessionStorage.setItem("domainRequestId", domainRequestId);
+    console.log("Domain request ID stored:", domainRequestId);
+  }
+
   // Listen for back/forward navigation
   window.addEventListener('pageshow', handleStartPage);
   
   // Handle initial page load
-  handleStuff();
   handleStartPage();
 })();
