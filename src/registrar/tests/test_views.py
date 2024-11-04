@@ -476,7 +476,7 @@ class HomeTests(TestWithUser):
 
     @less_console_noise_decorator
     def test_domain_request_form_view(self):
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertContains(
             response,
             "You’re about to start your .gov domain request.",
@@ -503,7 +503,7 @@ class HomeTests(TestWithUser):
             title="title",
         )
         self.client.force_login(restricted_user)
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertEqual(response.status_code, 403)
         restricted_user.delete()
 
@@ -914,7 +914,7 @@ class UserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_request_main_nav(self):
         """test that Your profile is in main nav of new request"""
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
