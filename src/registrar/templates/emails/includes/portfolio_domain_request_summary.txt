@@ -1,0 +1,28 @@
+{% load custom_filters %}SUMMARY OF YOUR DOMAIN REQUEST
+
+Requesting entity: {# if blockmakes a newline #}
+{{ domain_request|display_requesting_entity }}
+{% if domain_request.current_websites.exists %}
+Current websites: {% for site in domain_request.current_websites.all %}
+{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+.gov domain:
+{{ domain_request.requested_domain.name }}
+{% if domain_request.alternative_domains.all %}
+Alternative domains:
+{% for site in domain_request.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
+{% endfor %}{% endif %}
+Purpose of your domain:
+{{ domain_request.purpose }}
+{% if domain_request.anything_else %}
+Additional details:
+{{ domain_request.anything_else }}
+{% endif %}
+{% if recipient %}
+Your contact information:
+{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
+{% endif %}
+
+Administrators from your organization:{% for admin in domain_request.portfolio.portfolio_admin_users %}
+{% spaceless %}{% if admin != recipient %}{% include "emails/includes/contact.txt" with contact=admin %}{% endif %}{% endspaceless %}
+{% endfor %}

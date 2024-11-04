@@ -47,9 +47,48 @@ function addOrRemoveSessionBoolean(name, add){
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Event handlers.
+/** Helper function that handles business logic for the suborganization field.
+ * Can be used anywhere the suborganization dropdown exists
+*/
+function handleSuborganizationFields(
+    portfolioDropdownSelector="#id_portfolio",
+    suborgDropdownSelector="#id_sub_organization", 
+    requestedSuborgFieldSelector=".field-requested_suborganization", 
+    suborgCitySelector=".field-suborganization_city", 
+    suborgStateTerritorySelector=".field-suborganization_state_territory"
+) {
+    // These dropdown are select2 fields so they must be interacted with via jquery
+    const portfolioDropdown = django.jQuery(portfolioDropdownSelector)
+    const suborganizationDropdown = django.jQuery(suborgDropdownSelector)
+    const requestedSuborgField = document.querySelector(requestedSuborgFieldSelector);
+    const suborgCity = document.querySelector(suborgCitySelector);
+    const suborgStateTerritory = document.querySelector(suborgStateTerritorySelector);
+    if (!suborganizationDropdown || !requestedSuborgField || !suborgCity || !suborgStateTerritory) {
+        console.error("Requested suborg fields not found.");
+        return;
+    }
+
+    function toggleSuborganizationFields() {
+        if (portfolioDropdown.val() && !suborganizationDropdown.val()) {
+            showElement(requestedSuborgField);
+            showElement(suborgCity);
+            showElement(suborgStateTerritory);
+        }else {
+            hideElement(requestedSuborgField);
+            hideElement(suborgCity);
+            hideElement(suborgStateTerritory);
+        }
+    }
+
+    // Run the function once on page startup, then attach an event listener
+    toggleSuborganizationFields();
+    suborganizationDropdown.on("change", toggleSuborganizationFields);
+    portfolioDropdown.on("change", toggleSuborganizationFields);
+}
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Initialization code.
+
 
 /** An IIFE for pages in DjangoAdmin that use modals.
  * Dja strips out form elements, and modals generate their content outside
@@ -927,6 +966,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // This is the additional information that exists beneath the SO element.
     var contactList = document.querySelector(".field-senior_official .dja-address-contact-list");
+    const federalAgencyContainer = document.querySelector(".field-federal_agency");
     document.addEventListener('DOMContentLoaded', function() {
 
         let isPortfolioPage = document.getElementById("portfolio_form");
@@ -975,11 +1015,13 @@ document.addEventListener('DOMContentLoaded', function() {
             let selectedValue = organizationType.value;
             if (selectedValue === "federal") {
                 hideElement(organizationNameContainer);
+                showElement(federalAgencyContainer);
                 if (federalType) {
                     showElement(federalType);
                 }
             } else {
                 showElement(organizationNameContainer);
+                hideElement(federalAgencyContainer);
                 if (federalType) {
                     hideElement(federalType);
                 }
@@ -1168,5 +1210,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (phoneSpan) {
             phoneSpan.textContent = data.phone || "None";
         };
+    }
+})();
+
+/** An IIFE for dynamic DomainRequest fields
+*/
+(function dynamicDomainRequestFields(){
+    const domainRequestPage = document.getElementById("domainrequest_form");
+    if (domainRequestPage) {
+        handleSuborganizationFields();
+    }
+})();
+
+
+/** An IIFE for dynamic DomainInformation fields
+*/
+(function dynamicDomainInformationFields(){
+    const domainInformationPage = document.getElementById("domaininformation_form");
+    // DomainInformation is embedded inside domain so this should fire there too
+    const domainPage = document.getElementById("domain_form");
+    if (domainInformationPage) {
+        handleSuborganizationFields();
+    }
+
+    if (domainPage) {
+        handleSuborganizationFields(portfolioDropdownSelector="#id_domain_info-0-portfolio", suborgDropdownSelector="#id_domain_info-0-sub_organization");
     }
 })();
