@@ -18,8 +18,8 @@ jobs:
   clone-database:
     runs-on: ubuntu-latest
     env:
-      CF_USERNAME: CF_MS_USERNAME
-      CF_PASSWORD: CF_MS_PASSWORD
+      CF_USERNAME: ${{ secrets[env.CF_USERNAME] }}
+      CF_PASSWORD: ${{ secrets[env.CF_PASSWORD] }}
     steps:
         - name: Clone Database
           run: |
@@ -34,14 +34,14 @@ jobs:
             
             # Authenticate and target CF org and space.
             cf api api.fr.cloud.gov
-            cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
-            cf target -o cisa-dotgov -s ${{ env.DESTINATION_ENVIRONMENT }}
+            cf auth $CF_USERNAME $CF_PASSWORD
+            cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
             # share the target db with the source space
-            cf share-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+            cf share-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
             
             # clone from source to destination
-            cg-manage-rds clone getgov-${{ env.DESTINATION_ENVIRONMENT }}-database getgov-${{ env.SOURCE_ENVIRONMENT }}-database
+            cg-manage-rds clone getgov-$DESTINATION_ENVIRONMENT-database getgov-$SOURCE_ENVIRONMENT-database
             
             # unshare the service
-            cf unshare-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
