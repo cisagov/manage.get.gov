@@ -575,7 +575,6 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        print(response.content.decode("utf-8"))
         self.assertContains(response, "Federal", count=52)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">federal</td>', count=1)
@@ -1700,8 +1699,6 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-            print(" read only fields")
-            print(readonly_fields)
             self.maxDiff = None
             expected_fields = [
                 "other_contacts",
@@ -2170,7 +2167,6 @@ class TestDomainRequestAdmin(MockEppLib):
         response_content = "".join(response.content.decode().split())
 
         # Check if response contains expected_html
-        print(response.content.decode("utf-8"))
         self.assertIn(expected_html, response_content)
 
     @less_console_noise_decorator
