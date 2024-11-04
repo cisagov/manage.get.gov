@@ -2,15 +2,58 @@
 {% load field_helpers url_helpers %}
 
 {% block form_instructions %}
-    <p>🛸🛸🛸🛸 Placeholder content 🛸🛸🛸🛸</p>
+    <p>To help with our review, we need to understand whether the domain you're requesting will be used by the Department of Energy or by one of its suborganizations.</p>
+    <p>We define a suborganization as any entity (agency, bureau, office) that falls under the overarching organization.</p>
 {% endblock %}
 
 {% block form_fields %}
     <fieldset class="usa-fieldset">
         <legend>
-        <h2>What is the name of your space vessel?</h2>
+        <h2>Who will use the domain you’re requesting?</h2>
         </legend>
 
-        {% input_with_errors forms.0.organization_name %}
+        <p class="margin-bottom-0 margin-top-1">
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+        </p>
+
+        {# forms.0 is a small yes/no form that toggles the visibility of "requesting entity" formset #}
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% with attr_required=True %}
+                {% input_with_errors forms.0.requesting_entity_is_suborganization %}
+            {% endwith %}
+        {% endwith %}
+
+        {% comment %} Add an invisible form element to track whether the custom value "other" 
+        was selected or not. This allows for persistence across page reloads without using session variables.
+        {% endcomment %}
+        {% with add_group_class="display-none" %}
+            {% input_with_errors forms.1.is_requesting_new_suborganization %}
+        {% endwith %}
+
+        <div id="suborganization-container" class="margin-top-4">
+            <h2>Add suborganization information</h2>
+            <p>
+                This information will be published in <a class="usa-link usa-link--always-blue" href="{% public_site_url 'about/data' %}">.gov’s public data</a>. If you don’t see your suborganization in the list, 
+                select “other” and enter the name or your suborganization.
+            </p>
+            {% with attr_required=True %}
+                {% input_with_errors forms.1.sub_organization %}
+            {% endwith %}
+
+            {% comment %} This will be toggled if a special value, "other", is selected.
+            Otherwise this field is invisible. 
+            {% endcomment %}
+            <div id="suborganization-container__details">
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.requested_suborganization %}
+                {% endwith %}
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.suborganization_city %}
+                {% endwith %}
+                {% with attr_required=True %}
+                    {% input_with_errors forms.1.suborganization_state_territory %}
+                {% endwith %}
+            </div>
+        </div>
     </fieldset>
 {% endblock %}

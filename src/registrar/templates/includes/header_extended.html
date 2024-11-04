@@ -93,9 +93,9 @@
             </li>
             {% endif %}
 
-            {% if has_organization_members_flag %}
+            {% if has_organization_members_flag and not hide_members %}
                 <li class="usa-nav__primary-item">
-                    <a href="/members/" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
+                    <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
                         Members
                     </a>
                 </li>

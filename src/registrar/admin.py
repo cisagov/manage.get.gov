@@ -5,6 +5,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
@@ -28,6 +29,7 @@ from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -1478,7 +1480,18 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "creator",
+                    "domain_request",
+                    "notes",
+                ]
+            },
+        ),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1793,6 +1806,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
@@ -1905,6 +1921,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
     ]
     autocomplete_fields = [
         "approved_domain",
@@ -1923,6 +1942,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/domain_request_change_form.html"
    
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+
+        # Hide certain suborg fields behind the organization feature flag
+        # if it is not enabled
+        if not flag_is_active_for_user(request.user, "organization_feature"):
+            excluded_fields = [
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ]
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in excluded_fields)
+                modified_fieldsets.append((name, {**data, "fields": fields}))
+            return modified_fieldsets
+        return fieldsets
+
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         """Custom save_model definition that handles edge cases"""
@@ -3261,6 +3299,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
 
+        # Make senior_official readonly for federal organizations
+        if obj and obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if "senior_official" not in readonly_fields:
+                readonly_fields.append("senior_official")
+        elif "senior_official" in readonly_fields:
+            # Remove senior_official from readonly_fields if org is non-federal
+            readonly_fields.remove("senior_official")
+
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
 
@@ -3283,12 +3329,11 @@ class PortfolioAdmin(ListHeaderAdmin):
             extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def save_model(self, request, obj, form, change):
-
+    def save_model(self, request, obj: Portfolio, form, change):
         if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None
+            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -3298,12 +3343,19 @@ class PortfolioAdmin(ListHeaderAdmin):
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
 
-        # Remove this line when senior_official is no longer readonly in /admin.
-        if obj.federal_agency:
-            if obj.federal_agency.so_federal_agency.exists():
-                obj.senior_official = obj.federal_agency.so_federal_agency.first()
-            else:
-                obj.senior_official = None
+        # Set the senior official field to the senior official on the federal agency
+        # when federal - otherwise, clear the field.
+        if obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if obj.federal_agency:
+                if obj.federal_agency.so_federal_agency.exists():
+                    obj.senior_official = obj.federal_agency.so_federal_agency.first()
+                else:
+                    obj.senior_official = None
+        else:
+            if obj.federal_agency and obj.federal_agency.agency != "Non-Federal Agency":
+                if obj.federal_agency.so_federal_agency.first() == obj.senior_official:
+                    obj.senior_official = None
+                obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()  # type: ignore
 
         super().save_model(request, obj, form, change)
 

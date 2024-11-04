@@ -12,41 +12,36 @@ on:
 env:
   DESTINATION_ENVIRONMENT: ms
   SOURCE_ENVIRONMENT: staging
+  
 
 jobs:
   clone-database:
     runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_MS_USERNAME
+      CF_PASSWORD: CF_MS_PASSWORD
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install Cloud Foundry CLI
-        uses: cloud-gov/cg-cli-tools@main
-
-      - name: Clone
-        env:
-          CF_USERNAME: CF_${{ env.DESTINATION_ENVIRONMENT }}_USERNAME
-          CF_PASSWORD: CF_${{ env.DESTINATION_ENVIRONMENT }}_PASSWORD
-        run: |
-          # login to cf cli
-          cf login -a api.fr.cloud.gov -u $CF_USERNAME -p $CF_PASSWORD -o cisa-dotgov -s ${{ env.DESTINATION_ENVIRONMENT }}
-          
-          # install cg-manage-rds tool
-          pip install git+https://github.com/cloud-gov/cg-manage-rds.git
-
-          # share the sandbox db with the Staging space
-          cf share-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
-
-          # target the Staging space
-          cf target -s ${{ env.SOURCE_ENVIRONMENT }}
-
-          # clone from staging to the sandbox
-          cg-manage-rds clone getgov-${{ env.SOURCE_ENVIRONMENT }}-database getgov-${{ env.DESTINATION_ENVIRONMENT }}-database
-
-          rm db_backup.sql
-
-          # switch to the target sandbox space
-          cf target -s ${{ env.DESTINATION_ENVIRONMENT }}
-
-          # un-share the sandbox from Staging
-          cf unshare-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+        - name: Clone Database
+          run: |
+            # install cf cli
+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+            
+            sudo apt-get update
+            sudo apt-get install cf8-cli
+            # install cg-manage-rds tool
+            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
+            
+            # Authenticate and target CF org and space.
+            cf api api.fr.cloud.gov
+            cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
+            cf target -o cisa-dotgov -s ${{ env.DESTINATION_ENVIRONMENT }}
+            
+            # share the target db with the source space
+            cf share-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+            
+            # clone from source to destination
+            cg-manage-rds clone getgov-${{ env.DESTINATION_ENVIRONMENT }}-database getgov-${{ env.SOURCE_ENVIRONMENT }}-database
+            
+            # unshare the service
+            cf unshare-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}

@@ -145,92 +145,96 @@
         {% endblock request_summary_header%}
 
         {% block request_summary %}
-        {% with heading_level='h3' %}
-        {% with org_type=DomainRequest.get_generic_org_type_display %}
-        {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
-        {% endwith %}
-
-        {% if DomainRequest.tribe_name %}
-            {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level %}
-
-            {% if DomainRequest.federally_recognized_tribe %}
-                <p>Federally-recognized tribe</p>
-            {% endif %}
-
-            {% if DomainRequest.state_recognized_tribe %}
-                <p>State-recognized tribe</p>
-            {% endif %}
-
-        {% endif %}
-
-        {% if DomainRequest.get_federal_type_display %}
-            {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.is_election_board %}
-            {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
-                {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
-            {% endwith %}
-        {% endif %}
-
-        {% if DomainRequest.organization_name %}
-            {% include "includes/summary_item.html" with title='Organization' value=DomainRequest address='true' heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.about_your_organization %}
-            {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.senior_official %}
-            {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.current_websites.all %}
-            {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.requested_domain %}
-            {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.alternative_domains.all %}
-            {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.purpose %}
-            {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.creator %}
-            {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
-        {% endif %}
-
-        {% if DomainRequest.other_contacts.all %}
-            {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
+        {% if portfolio %}
+            {% include "includes/portfolio_request_review_steps.html" with is_editable=False domain_request=DomainRequest %}
         {% else %}
-            {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
-        {% endif %}
+            {% with heading_level='h3' %}
+            {% with org_type=DomainRequest.get_generic_org_type_display %}
+            {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
+            {% endwith %}
 
-        {# We always show this field even if None #}
-        {% if DomainRequest %}
-            <h3 class="register-form-review-header">CISA Regional Representative</h3>
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-                {% if DomainRequest.cisa_representative_first_name %}
-                {{ DomainRequest.get_formatted_cisa_rep_name }}
-                {% else %}
-                No
+            {% if DomainRequest.tribe_name %}
+                {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level %}
+
+                {% if DomainRequest.federally_recognized_tribe %}
+                    <p>Federally-recognized tribe</p>
                 {% endif %}
-            </ul>
-            <h3 class="register-form-review-header">Anything else</h3>
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-                {% if DomainRequest.anything_else %}
-                {{DomainRequest.anything_else}}
-                {% else %}
-                No
+
+                {% if DomainRequest.state_recognized_tribe %}
+                    <p>State-recognized tribe</p>
                 {% endif %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+
+            {% endif %}
+
+            {% if DomainRequest.get_federal_type_display %}
+                {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.is_election_board %}
+                {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
+                    {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
+                {% endwith %}
+            {% endif %}
+
+            {% if DomainRequest.organization_name %}
+                {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.about_your_organization %}
+                {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.senior_official %}
+                {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.current_websites.all %}
+                {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.requested_domain %}
+                {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.alternative_domains.all %}
+                {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.purpose %}
+                {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.creator %}
+                {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
+            {% endif %}
+
+            {% if DomainRequest.other_contacts.all %}
+                {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
+            {% else %}
+                {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
+            {% endif %}
+
+            {# We always show this field even if None #}
+            {% if DomainRequest %}
+                <h3 class="register-form-review-header">CISA Regional Representative</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.cisa_representative_first_name %}
+                    {{ DomainRequest.get_formatted_cisa_rep_name }}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+                <h3 class="register-form-review-header">Anything else</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.anything_else %}
+                    {{DomainRequest.anything_else}}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
     {% endblock request_summary%}
     </div>
 </main>
