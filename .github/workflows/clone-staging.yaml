@@ -18,8 +18,8 @@ jobs:
   clone-database:
     runs-on: ubuntu-latest
     env:
-      CF_USERNAME: ${{ secrets[env.CF_USERNAME] }}
-      CF_PASSWORD: ${{ secrets[env.CF_PASSWORD] }}
+      CF_USERNAME: $CF_MS_USERNAME
+      CF_PASSWORD: $CF_MS_PASSWORD
     steps:
         - name: Clone Database
           run: |
