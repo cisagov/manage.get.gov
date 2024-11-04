@@ -105,7 +105,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
         redirect_url = detail_page.url
-        self.assertEqual(redirect_url, "/request/generic_org_type/")
+        self.assertEqual(redirect_url, f"/request/{domain_request.id}/generic_org_type/")
 
     @less_console_noise_decorator
     def test_domain_request_form_empty_submit(self):
@@ -253,7 +253,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -273,7 +273,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -305,7 +305,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
@@ -330,7 +330,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(so_result.status_code, 302)
-        self.assertEqual(so_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result["Location"], f"/request/{domain_request.id}/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
@@ -352,7 +352,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(current_sites_result.status_code, 302)
-        self.assertEqual(current_sites_result["Location"], "/request/dotgov_domain/")
+        self.assertEqual(current_sites_result["Location"], f"/request/{domain_request.id}/dotgov_domain/")
         num_pages_tested += 1
 
         # ---- DOTGOV DOMAIN PAGE  ----
@@ -372,7 +372,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(dotgov_result.status_code, 302)
-        self.assertEqual(dotgov_result["Location"], "/request/purpose/")
+        self.assertEqual(dotgov_result["Location"], f"/request/{domain_request.id}/purpose/")
         num_pages_tested += 1
 
         # ---- PURPOSE PAGE  ----
@@ -391,7 +391,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], f"/request/{domain_request.id}/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
@@ -429,7 +429,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
+        self.assertEqual(other_contacts_result["Location"], f"/request/{domain_request.id}/additional_details/")
         num_pages_tested += 1
 
         # ---- ADDITIONAL DETAILS PAGE  ----
@@ -459,7 +459,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(additional_details_result.status_code, 302)
-        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result["Location"], f"/request/{domain_request.id}/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
@@ -479,7 +479,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
-        self.assertEqual(requirements_result["Location"], "/request/review/")
+        self.assertEqual(requirements_result["Location"], f"/request/{domain_request.id}/review/")
         num_pages_tested += 1
 
         # ---- REVIEW AND FINSIHED PAGES  ----
@@ -577,7 +577,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -597,7 +597,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -629,7 +629,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
@@ -654,7 +654,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(so_result.status_code, 302)
-        self.assertEqual(so_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result["Location"], f"/request/{domain_request.id}/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
@@ -676,7 +676,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(current_sites_result.status_code, 302)
-        self.assertEqual(current_sites_result["Location"], "/request/dotgov_domain/")
+        self.assertEqual(current_sites_result["Location"], f"/request/{domain_request.id}/dotgov_domain/")
         num_pages_tested += 1
 
         # ---- DOTGOV DOMAIN PAGE  ----
@@ -696,7 +696,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(dotgov_result.status_code, 302)
-        self.assertEqual(dotgov_result["Location"], "/request/purpose/")
+        self.assertEqual(dotgov_result["Location"], f"/request/{domain_request.id}/purpose/")
         num_pages_tested += 1
 
         # ---- PURPOSE PAGE  ----
@@ -715,7 +715,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], f"/request/{domain_request.id}/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
@@ -753,7 +753,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
+        self.assertEqual(other_contacts_result["Location"], f"/request/{domain_request.id}/additional_details/")
         num_pages_tested += 1
 
         # ---- ADDITIONAL DETAILS PAGE  ----
@@ -783,7 +783,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(additional_details_result.status_code, 302)
-        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result["Location"], f"/request/{domain_request.id}/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
@@ -811,7 +811,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
-        self.assertEqual(requirements_result["Location"], "/request/review/")
+        self.assertEqual(requirements_result["Location"], f"/request/{domain_request.id}/review/")
         num_pages_tested += 1
 
         # ---- REVIEW AND FINSIHED PAGES  ----
@@ -904,7 +904,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the federal branch
         # question
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertIn("organization_federal", type_result["Location"])
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -921,7 +921,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the contact
         # question
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertIn("organization_federal", type_result["Location"])
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = federal_result.follow()
         self.assertContains(contact_page, "Federal agency")

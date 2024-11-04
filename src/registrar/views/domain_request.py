@@ -217,7 +217,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             try:
                 self._domain_request = DomainRequest.objects.get(
                     creator=creator,
-                    pk=self.kwargs.get('id'),
+                    pk=self.kwargs.get("id"),
                 )
                 return self._domain_request
             except DomainRequest.DoesNotExist:
