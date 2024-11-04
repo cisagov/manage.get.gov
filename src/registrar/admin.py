@@ -1723,11 +1723,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("State/Territory"))
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
-    
+
     @admin.display(description=_("Senior Official"))
     def converted_senior_official(self, obj):
         return obj.converted_senior_official
-    
+
     @admin.display(description=_("Address Line 1"))
     def converted_address_line1(self, obj):
         return obj.converted_address_line1
@@ -1743,6 +1743,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("Urbanization"))
     def converted_urbanization(self, obj):
         return obj.converted_urbanization
+
     # Columns
     list_display = [
         "requested_domain",
@@ -1767,8 +1768,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     def custom_election_board(self, obj):
         return "Yes" if obj.is_election_board else "No"
-   
-
 
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
@@ -1903,7 +1902,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "converted_zipcode",
         "converted_urbanization",
         "converted_city",
-        "converted_generic_org_type"
+        "converted_generic_org_type",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -1941,7 +1940,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
-   
+
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
