@@ -797,6 +797,63 @@ document.addEventListener('DOMContentLoaded', function() {
     customEmail.loadRejectedEmail()
 });
 
+/** An IIFE that hides and shows approved domain select2 row in domain request
+ * conditionally based on the Status field selection. If Approved, show. If not Approved,
+ * don't show.
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const domainRequestForm = document.getElementById("domainrequest_form");
+    if (!domainRequestForm) {
+        return;
+    }
+
+    const statusToCheck = "approved";
+    const statusSelect = document.getElementById("id_status");
+    const sessionVariableName = "showApprovedDomain";
+    let approvedDomainFormGroup = document.querySelector(".field-approved_domain");
+
+    function updateFormGroupVisibility(showFormGroups) {
+        if (showFormGroups) {
+            showElement(approvedDomainFormGroup);
+        }else {
+            hideElement(approvedDomainFormGroup);
+        }
+    }
+
+    // Handle showing/hiding the related fields on page load.
+    function initializeFormGroups() {
+        let isStatus = statusSelect.value == statusToCheck;
+
+        // Initial handling of these groups.
+        updateFormGroupVisibility(isStatus);
+
+        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+        statusSelect.addEventListener('change', () => {
+            // Show the approved if the status is what we expect.
+            isStatus = statusSelect.value == statusToCheck;
+            updateFormGroupVisibility(isStatus);
+            addOrRemoveSessionBoolean(sessionVariableName, isStatus);
+        });
+        
+        // Listen to Back/Forward button navigation and handle approvedDomainFormGroup display based on session storage
+        // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
+        // status select will say (for example) Rejected but the selected option can be something else. To manage the show/hide
+        // accurately for this edge case, we use cache and test for the back/forward navigation.
+        const observer = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+                if (entry.type === "back_forward") {
+                    let showTextAreaFormGroup = sessionStorage.getItem(sessionVariableName) !== null;
+                    updateFormGroupVisibility(showTextAreaFormGroup);
+                }
+            });
+        });
+        observer.observe({ type: "navigation" });
+    }
+
+    initializeFormGroups();
+
+});
+
 
 /** An IIFE for copy summary button (appears in DomainRegistry models)
 */

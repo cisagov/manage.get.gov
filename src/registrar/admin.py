@@ -1759,23 +1759,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             None,
             {
                 "fields": [
-                    "portfolio",
-                    "sub_organization",
-                    "requested_suborganization",
-                    "suborganization_city",
-                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
                     "rejection_reason_email",
                     "action_needed_reason",
                     "action_needed_reason_email",
-                    "investigator",
-                    "creator",
                     "approved_domain",
+                    "investigator",
                     "notes",
                 ]
             },
+        ),
+        (
+            "Requested by",
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
+                    "creator",
+                ]
+            }
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
         (
@@ -1890,10 +1897,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Hide certain suborg fields behind the organization feature flag
+        # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not flag_is_active_for_user(request.user, "organization_feature"):
+        if not flag_is_active_for_user(request.user, "organization_requests"):
             excluded_fields = [
+                "portfolio",
+                "sub_organization",
                 "requested_suborganization",
                 "suborganization_city",
                 "suborganization_state_territory",
