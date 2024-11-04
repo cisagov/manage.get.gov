@@ -321,9 +321,9 @@ urlpatterns = [
         name="user-profile",
     ),
     path(
-        "invitation/<int:pk>/delete",
-        views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
-        name="invitation-delete",
+        "invitation/<int:pk>/cancel",
+        views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
+        name="invitation-cancel",
     ),
     path(
         "domain-request/<int:pk>/delete",

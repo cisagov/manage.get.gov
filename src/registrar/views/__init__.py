@@ -11,7 +11,6 @@ from .domain import (
     DomainSecurityEmailView,
     DomainUsersView,
     DomainAddUserView,
-    DomainInvitationDeleteView,
     DomainInvitationCancelView,
     DomainDeleteUserView,
 )
