@@ -1687,6 +1687,49 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+
+    @admin.display(description=_("Organization Name"))
+    def converted_organization_name(self, obj):
+        return obj.converted_organization_name
+
+    @admin.display(description=_("Federal Agency"))
+    def converted_federal_agency(self, obj):
+        return obj.converted_federal_agency
+
+    @admin.display(description=_("Federal Type"))
+    def converted_federal_type(self, obj):
+        return obj.converted_federal_type
+
+    @admin.display(description=_("City"))
+    def converted_city(self, obj):
+        return obj.converted_city
+
+    @admin.display(description=_("State/Territory"))
+    def converted_state_territory(self, obj):
+        return obj.converted_state_territory
+    
+    @admin.display(description=_("Senior Official"))
+    def converted_senior_official(self, obj):
+        return obj.converted_senior_official
+    
+    @admin.display(description=_("Address Line 1"))
+    def converted_address_line1(self, obj):
+        return obj.converted_address_line1
+
+    @admin.display(description=_("Address Line 2"))
+    def converted_address_line2(self, obj):
+        return obj.converted_address_line2
+
+    @admin.display(description=_("Zipcode"))
+    def converted_zipcode(self, obj):
+        return obj.converted_zipcode
+
+    @admin.display(description=_("Urbanization"))
+    def converted_urbanization(self, obj):
+        return obj.converted_urbanization
     # Columns
     list_display = [
         "requested_domain",
@@ -1711,6 +1754,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     def custom_election_board(self, obj):
         return "Yes" if obj.is_election_board else "No"
+   
+
 
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
@@ -1847,7 +1892,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
-        "federal_agency",
+        "converted_federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
