@@ -139,13 +139,65 @@ function handlePortfolioSelection() {
         // update portfolio organization type
     }
 
+    function updatePortfolioFieldsDataDynamicDisplay(portfolio) {
+
+        // handleFederalAgencyChange
+        federalAgencyContainer = document.querySelector(".field-portfolio_federal_agency");
+
+        let selectedText = document.querySelector('.field-portfolio_federal_agency .readonly').innerText;
+        let organizationTypeValue = document.querySelector(".field-portfolio_organization_type .readonly").innerText.toLowerCase();
+        readonlyOrganizationType = document.querySelector(".field-portfolio_organization_type .readonly");
+        if (selectedText !== "Non-Federal Agency") {
+            if (organizationTypeValue !== "federal") {
+                readonlyOrganizationType.innerText = "Federal"
+            }
+        }else {
+            if (organizationTypeValue === "federal") {
+                readonlyOrganizationType.innerText =  "-"
+            }
+        }
+
+        // handleStateTerritoryChange
+        urbanizationField = document.querySelector(".field-portfolio_urbanization");
+        stateTerritory = document.querySelector(".field-portfolio_state_territory .readonly").innerText;
+        if (stateTerritory === "PR") {
+            showElement(urbanizationField)
+        } else {
+            hideElement(urbanizationField)
+        }
+
+        // handleOrganizationTypeChange
+        let organizationNameContainer = document.querySelector(".field-portfolio_organization_name");
+        let organizationType = document.querySelector(".field-portfolio_organization_type .readonly");
+        let federalType = document.querySelector(".field-portfolio_federal_type");
+        if (organizationType && organizationNameContainer) {
+            let selectedValue = organizationType.innerText;
+            if (selectedValue === "-") {
+                hideElement(organizationNameContainer);
+                showElement(federalAgencyContainer);
+                if (federalType) {
+                    showElement(federalType);
+                }
+            } else {
+                showElement(organizationNameContainer);
+                hideElement(federalAgencyContainer);
+                if (federalType) {
+                    hideElement(federalType);
+                }
+            }
+        }
+    }
+
     function updatePortfolioFields() {
         if (!isPageLoading) {
             if (portfolioDropdown.val()) {
                 let portfolio = getPortfolio(portfolioDropdown.val());
                 updatePortfolioFieldsData(portfolio);
+                updatePortfolioFieldsDisplay();
+                updatePortfolioFieldsDataDynamicDisplay(portfolio);
+            } else {
+                updatePortfolioFieldsDisplay();
             }
-            updatePortfolioFieldsDisplay();
         } else {
             isPageLoading = false;
         }
