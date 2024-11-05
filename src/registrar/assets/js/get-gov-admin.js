@@ -86,6 +86,68 @@ function handleSuborganizationFields(
     portfolioDropdown.on("change", toggleSuborganizationFields);
 }
 
+function handlePortfolioSelection() {
+    // These dropdown are select2 fields so they must be interacted with via jquery
+    const portfolioDropdown = django.jQuery("#id_portfolio");
+    const suborganizationDropdown = django.jQuery("#id_sub_organization");
+    const suborganizationField = document.querySelector(".field-sub_organization");
+    const seniorOfficialField = document.querySelector(".field-senior_official");
+    const portfolioSeniorOfficialField = document.querySelector(".field-portfolio_senior_official");
+    const otherEmployeesField = document.querySelector(".field-other_contacts");
+    const noOtherContactsRationaleField = document.querySelector(".field-no_other_contacts_rationale");
+    const cisaRepresentativeFirstNameField = document.querySelector(".field-cisa_representative_first_name");
+    const cisaRepresentativeLastNameField = document.querySelector(".field-cisa_representative_last_name");
+    const cisaRepresentativeEmailField = document.querySelector(".field-cisa_representative_email");
+    const orgTypeFieldSet = document.querySelector(".field-is_election_board").parentElement;
+    const orgTypeFieldSetDetails = orgTypeFieldSet.nextElementSibling;
+    const orgNameFieldSet = document.querySelector(".field-organization_name").parentElement;
+    const orgNameFieldSetDetails = orgNameFieldSet.nextElementSibling;
+    const portfolioOrgTypeFieldSet = document.querySelector(".field-portfolio_organization_type").parentElement;
+    const portfolioOrgNameFieldSet = document.querySelector(".field-portfolio_organization_name").parentElement;
+    const portfolioOrgNameFieldSetDetails = portfolioOrgNameFieldSet.nextElementSibling;
+
+
+    function toggleSuborganizationFields() {
+        if (portfolioDropdown.val()) {
+            showElement(suborganizationField);
+            hideElement(seniorOfficialField);
+            showElement(portfolioSeniorOfficialField);
+            hideElement(otherEmployeesField);
+            hideElement(noOtherContactsRationaleField);
+            hideElement(cisaRepresentativeFirstNameField);
+            hideElement(cisaRepresentativeLastNameField);
+            hideElement(cisaRepresentativeEmailField);
+            hideElement(orgTypeFieldSet);
+            hideElement(orgTypeFieldSetDetails);
+            hideElement(orgNameFieldSet);
+            hideElement(orgNameFieldSetDetails);
+            showElement(portfolioOrgTypeFieldSet);
+            showElement(portfolioOrgNameFieldSet);
+            showElement(portfolioOrgNameFieldSetDetails);
+        }else {
+            hideElement(suborganizationField);
+            showElement(seniorOfficialField);
+            hideElement(portfolioSeniorOfficialField);
+            showElement(otherEmployeesField);
+            showElement(noOtherContactsRationaleField);
+            showElement(cisaRepresentativeFirstNameField);
+            showElement(cisaRepresentativeLastNameField);
+            showElement(cisaRepresentativeEmailField);
+            showElement(orgTypeFieldSet);
+            showElement(orgTypeFieldSetDetails);
+            showElement(orgNameFieldSet);
+            showElement(orgNameFieldSetDetails);
+            hideElement(portfolioOrgTypeFieldSet);
+            hideElement(portfolioOrgNameFieldSet);
+            hideElement(portfolioOrgNameFieldSetDetails);
+        }
+    }
+
+    // Run the function once on page startup, then attach an event listener
+    toggleSuborganizationFields();
+    portfolioDropdown.on("change", toggleSuborganizationFields);
+}
+
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Initialization code.
 
@@ -1181,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
             }else {
                 if (readonlySeniorOfficial) {
-                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
+                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/ class='test'>${seniorOfficialName}</a>`
                     readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
                 }
             }
@@ -1276,6 +1338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const domainRequestPage = document.getElementById("domainrequest_form");
     if (domainRequestPage) {
         handleSuborganizationFields();
+        handlePortfolioSelection();
     }
 })();
 

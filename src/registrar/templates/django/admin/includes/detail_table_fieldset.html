@@ -66,6 +66,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             No changelog to display.
         </div>
         {% endif %}
+    {% elif field.field.name == "portfolio_senior_official" %}
+        {% if original_object.portfolio.senior_official %}
+            <div class="readonly"><a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a></div>
+        {% endif %}
     {% elif field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
@@ -331,6 +335,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="flex-container">
         <label aria-label="Senior official contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
+        </div>
+    {% elif field.field.name == "portfolio_senior_official" %}
+        <div class="flex-container">
+        <label aria-label="Senior official contact details"></label>
+        {% include "django/admin/includes/contact_detail_list.html" with user=original_object.portfolio.senior_official no_title_top_padding=field.is_readonly %}
         </div>
     {% elif field.field.name == "other_contacts" and original_object.other_contacts.all %}
         {% with all_contacts=original_object.other_contacts.all %}

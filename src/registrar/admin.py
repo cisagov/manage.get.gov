@@ -1,6 +1,7 @@
 from datetime import date
 import logging
 import copy
+from typing import Optional
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
@@ -1728,6 +1729,42 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
+
+    # Define methods to display fields from the related portfolio
+    def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
+        return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
+    portfolio_senior_official.short_description = "Senior official"
+    def portfolio_organization_type(self, obj):
+        return obj.portfolio.organization_type if obj.portfolio else ""
+    portfolio_organization_type.short_description = "Organization type"
+    def portfolio_federal_type(self, obj):
+        return BranchChoices.get_branch_label(obj.portfolio.federal_type) if obj.portfolio and obj.portfolio.federal_type else "-"
+    portfolio_federal_type.short_description = "Federal type"
+    def portfolio_organization_name(self, obj):
+        return obj.portfolio.organization_name if obj.portfolio else ""
+    portfolio_organization_name.short_description = "Organization name"
+    def portfolio_federal_agency(self, obj):
+        return obj.portfolio.federal_agency if obj.portfolio else ""
+    portfolio_federal_agency.short_description = "Federal agency"
+    def portfolio_state_territory(self, obj):
+        return obj.portfolio.state_territory if obj.portfolio else ""
+    portfolio_state_territory.short_description = "State, territory, or military post"
+    def portfolio_address_line1(self, obj):
+        return obj.portfolio.address_line1 if obj.portfolio else ""
+    portfolio_address_line1.short_description = "Address line 1"
+    def portfolio_address_line2(self, obj):
+        return obj.portfolio.address_line2 if obj.portfolio else ""
+    portfolio_address_line2.short_description = "Address line 2"
+    def portfolio_city(self, obj):
+        return obj.portfolio.city if obj.portfolio else ""
+    portfolio_city.short_description = "City"
+    def portfolio_zipcode(self, obj):
+        return obj.portfolio.zipcode if obj.portfolio else ""
+    portfolio_zipcode.short_description = "Zip code"
+    def portfolio_urbanization(self, obj):
+        return obj.portfolio.urbanization if obj.portfolio else ""
+    portfolio_urbanization.short_description = "Urbanization"
+
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
     def status_history(self, obj):
@@ -1790,6 +1827,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "senior_official",
+                    "portfolio_senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1846,10 +1884,55 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 ],
             },
         ),
+        # the below three sections are for portfolio fields
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "portfolio_organization_type",
+                    "portfolio_federal_type",
+                ]
+            }
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "portfolio_organization_name",
+                    "portfolio_federal_agency",
+                ]
+            },
+        ),
+        (
+            "Show details",
+            {
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
+                "fields": [
+                    "portfolio_state_territory",
+                    "portfolio_address_line1",
+                    "portfolio_address_line2",
+                    "portfolio_city",
+                    "portfolio_zipcode",
+                    "portfolio_urbanization",
+                ],
+            },
+        ),
     ]
 
     # Readonly fields for analysts and superusers
     readonly_fields = (
+        "portfolio_senior_official",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
         "other_contacts",
         "current_websites",
         "alternative_domains",
