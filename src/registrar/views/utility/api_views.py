@@ -59,10 +59,6 @@ def get_portfolio_json(request):
     # Convert the portfolio to a dictionary
     portfolio_dict = model_to_dict(portfolio)
 
-    # Add suborganizations related to this portfolio
-    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
-    portfolio_dict["suborganizations"] = list(suborganizations)
-
     # Add senior official information if it exists
     if portfolio.senior_official:
         senior_official = model_to_dict(
@@ -78,6 +74,29 @@ def get_portfolio_json(request):
         portfolio_dict["senior_official"] = None
 
     return JsonResponse(portfolio_dict)
+
+
+@login_required
+@staff_member_required
+def get_suborganization_list_json(request):
+    """Returns suborganization list information for a portfolio as a JSON"""
+
+    # This API is only accessible to admins and analysts
+    superuser_perm = request.user.has_perm("registrar.full_access_permission")
+    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
+
+    portfolio_id = request.GET.get("portfolio_id")
+    try:
+        portfolio = Portfolio.objects.get(id=portfolio_id)
+    except Portfolio.DoesNotExist:
+        return JsonResponse({"error": "Portfolio not found"}, status=404)
+
+    # Add suborganizations related to this portfolio
+    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
+    results = [{"id": sub["id"], "text": sub["name"]} for sub in suborganizations]
+    return JsonResponse({"results": results, "pagination": { "more": False }})
 
 
 @login_required

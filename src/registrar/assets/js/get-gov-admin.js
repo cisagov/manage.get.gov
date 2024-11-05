@@ -106,7 +106,7 @@ function handlePortfolioSelection() {
     const portfolioOrgNameFieldSet = document.querySelector(".field-portfolio_organization_name").parentElement;
     const portfolioOrgNameFieldSetDetails = portfolioOrgNameFieldSet.nextElementSibling;
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
-
+    let isPageLoading = true;
 
     function getPortfolio(portfolio_id) {
         // get portfolio via ajax
@@ -126,23 +126,101 @@ function handlePortfolioSelection() {
         });
     }
 
-    function updatePortfolioFields(portfolio) {
+    function updatePortfolioFieldsData(portfolio) {
         // replace selections in suborganizationDropdown with
         // values in portfolio.suborganizations
         suborganizationDropdown.empty();
-        portfolio.suborganizations.forEach(suborg => {
-            suborganizationDropdown.append(new Option(suborg.name, suborg.id));
-        });
-        
+
+        // // update autocomplete url for suborganizationDropdown
+        // suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolio);
+
         // update portfolio senior official field with portfolio.senior_official
 
         // update portfolio organization type
     }
 
-    function togglePortfolioFields() {
+    function updatePortfolioFields() {
+        console.log("isPageLoading = " + isPageLoading);
+        if (!isPageLoading) {
+            if (portfolioDropdown.val()) {
+                console.log("there is a value in portfolio dropdown")
+                let portfolio = getPortfolio(portfolioDropdown.val());
+                updatePortfolioFieldsData(portfolio);
+            }
+            console.log("updating display");
+            updatePortfolioFieldsDisplay();
+        } else {
+            isPageLoading = false;
+        }
+    }
+
+    function getUrl() {
+        return "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
+    }
+
+    function updateSubOrganizationUrl() {
         if (portfolioDropdown.val()) {
-            let portfolio = getPortfolio(portfolioDropdown.val());
-            updatePortfolioFields(portfolio);
+            const dropdown = django.jQuery("#id_sub_organization");
+            if (dropdown.data('select2')) {
+                console.log("destroying select2");
+                dropdown.select2("destroy");
+            }
+            let newURL = "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
+            dropdown.select2({
+                ajax: {
+                    url: function (params) {
+                        return newURL;
+                    },
+                    dataType: 'json',
+                    delay: 250,
+                    cache: true
+                },
+                theme: 'admin-autocomplete',
+                allowClear: true,
+                placeholder: dropdown.attr('data-placeholder')
+            });
+        }
+    }
+
+    function updatePortfolioFieldsDisplay() {
+        
+        if (portfolioDropdown.val()) {
+            // update autocomplete url for suborganizationDropdown
+            // console.log("updating suborganization dropdown, id to " + portfolioDropdown.val());
+            // console.log(typeof django.jQuery().select2); // Should output 'function'
+            // console.log("Attributes of #id_sub_organization:");
+            console.log(suborganizationDropdown);
+            //suborganizationDropdown.attr("data-ajax--url", function () { return getUrl(); });
+            django.jQuery(document).ready(function() {
+                console.log(suborganizationDropdown);
+            
+                let dropdown = django.jQuery("#id_sub_organization");
+                if (dropdown.data('select2')) {
+                    dropdown.select2('destroy');
+                }
+                let newURL = "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
+
+                // Reinitialize Select2 with the updated URL
+                dropdown = django.jQuery("#id_sub_organization");
+                dropdown.select2({
+                    ajax: {
+                        url: newURL,
+                        dataType: 'json',
+                        delay: 250,
+                        cache: true
+                    },
+                    theme: 'admin-autocomplete',
+                    allowClear: true,
+                    placeholder: dropdown.attr('data-placeholder')
+                });
+                console.log(dropdown);
+            });
+    
+            
+            // suborganizationDropdown.attr("ajaxUrl", "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val());
+
+
+
             showElement(suborganizationField);
             hideElement(seniorOfficialField);
             showElement(portfolioSeniorOfficialField);
@@ -177,9 +255,11 @@ function handlePortfolioSelection() {
         }
     }
 
-    // Run the function once on page startup, then attach an event listener
-    togglePortfolioFields();
-    portfolioDropdown.on("change", togglePortfolioFields);
+    // django.jQuery(document).ready(function() {
+    //     updateSubOrganizationUrl(); 
+        // Run the function once on page startup, then attach an event listener
+        updatePortfolioFieldsDisplay();
+        portfolioDropdown.on("change", updatePortfolioFields);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
