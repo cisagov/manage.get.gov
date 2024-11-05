@@ -34,7 +34,7 @@ jobs:
             
             # Authenticate and target CF org and space.
             cf api api.fr.cloud.gov
-            cf auth $CF_USERNAME $CF_PASSWORD
+            cf auth "$CF_USERNAME" "$CF_PASSWORD"
             cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
             # share the target db with the source space
