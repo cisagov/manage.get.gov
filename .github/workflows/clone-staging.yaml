@@ -18,30 +18,30 @@ jobs:
   clone-database:
     runs-on: ubuntu-latest
     env:
-      CF_USERNAME: CF_MS_USERNAME
-      CF_PASSWORD: CF_MS_PASSWORD
+      CF_USERNAME: ${{ secrets.CF_MS_USERNAME }}
+      CF_PASSWORD: ${{ secrets.CF_MS_PASSWORD }}
     steps:
         - name: Clone Database
           run: |
-            # install cf cli
+            # install cf cli and other tools
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
             echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
             
             sudo apt-get update
-            sudo apt-get install cf8-cli
+            sudo apt-get install cf8-cli postgresql-client-common
             # install cg-manage-rds tool
             pip install git+https://github.com/cloud-gov/cg-manage-rds.git
             
             # Authenticate and target CF org and space.
             cf api api.fr.cloud.gov
-            cf auth ${{ secrets[env.CF_USERNAME] }} ${{ secrets[env.CF_PASSWORD] }}
-            cf target -o cisa-dotgov -s ${{ env.DESTINATION_ENVIRONMENT }}
+            cf auth "$CF_USERNAME" "$CF_PASSWORD"
+            cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
             # share the target db with the source space
-            cf share-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+            cf share-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
             
             # clone from source to destination
-            cg-manage-rds clone getgov-${{ env.DESTINATION_ENVIRONMENT }}-database getgov-${{ env.SOURCE_ENVIRONMENT }}-database
+            cg-manage-rds clone getgov-$DESTINATION_ENVIRONMENT-database getgov-$SOURCE_ENVIRONMENT-database
             
             # unshare the service
-            cf unshare-service getgov-${{ env.DESTINATION_ENVIRONMENT }}-database -s ${{ env.SOURCE_ENVIRONMENT }}
+            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
