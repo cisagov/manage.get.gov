@@ -198,13 +198,11 @@ function handlePortfolioSelection() {
                 if (suborganizationDropdown.data('select2')) {
                     suborganizationDropdown.select2('destroy');
                 }
-                let newURL = "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
 
                 // Reinitialize Select2 with the updated URL
                 dropdown = django.jQuery("#id_sub_organization");
                 suborganizationDropdown.select2({
                     ajax: {
-                        url: "/admin/api/get-suborganization-list-json/",
                         data: function (params) {
                             var query = {
                                 search: params.term,
