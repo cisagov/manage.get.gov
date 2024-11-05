@@ -105,10 +105,44 @@ function handlePortfolioSelection() {
     const portfolioOrgTypeFieldSet = document.querySelector(".field-portfolio_organization_type").parentElement;
     const portfolioOrgNameFieldSet = document.querySelector(".field-portfolio_organization_name").parentElement;
     const portfolioOrgNameFieldSetDetails = portfolioOrgNameFieldSet.nextElementSibling;
+    const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
 
 
-    function toggleSuborganizationFields() {
+    function getPortfolio(portfolio_id) {
+        // get portfolio via ajax
+        fetch(`${portfolioJsonUrl}?id=${portfolio_id}`)
+        .then(response => {
+            return response.json().then(data => data);
+        })
+        .then(data => {
+            if (data.error) {
+                console.error("Error in AJAX call: " + data.error);
+            } else {
+                return data;
+            }
+        })
+        .catch(error => {
+            console.error("Error retrieving portfolio", error)
+        });
+    }
+
+    function updatePortfolioFields(portfolio) {
+        // replace selections in suborganizationDropdown with
+        // values in portfolio.suborganizations
+        suborganizationDropdown.empty();
+        portfolio.suborganizations.forEach(suborg => {
+            suborganizationDropdown.append(new Option(suborg.name, suborg.id));
+        });
+        
+        // update portfolio senior official field with portfolio.senior_official
+
+        // update portfolio organization type
+    }
+
+    function togglePortfolioFields() {
         if (portfolioDropdown.val()) {
+            let portfolio = getPortfolio(portfolioDropdown.val());
+            updatePortfolioFields(portfolio);
             showElement(suborganizationField);
             hideElement(seniorOfficialField);
             showElement(portfolioSeniorOfficialField);
@@ -144,8 +178,8 @@ function handlePortfolioSelection() {
     }
 
     // Run the function once on page startup, then attach an event listener
-    toggleSuborganizationFields();
-    portfolioDropdown.on("change", toggleSuborganizationFields);
+    togglePortfolioFields();
+    portfolioDropdown.on("change", togglePortfolioFields);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>

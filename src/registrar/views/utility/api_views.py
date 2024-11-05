@@ -41,6 +41,47 @@ def get_senior_official_from_federal_agency_json(request):
 
 @login_required
 @staff_member_required
+def get_portfolio_json(request):
+    """Returns portfolio information as a JSON"""
+
+    # This API is only accessible to admins and analysts
+    superuser_perm = request.user.has_perm("registrar.full_access_permission")
+    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
+
+    portfolio_id = request.GET.get("id")
+    try:
+        portfolio = Portfolio.objects.get(id=portfolio_id)
+    except Portfolio.DoesNotExist:
+        return JsonResponse({"error": "Portfolio not found"}, status=404)
+
+    # Convert the portfolio to a dictionary
+    portfolio_dict = model_to_dict(portfolio)
+
+    # Add suborganizations related to this portfolio
+    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
+    portfolio_dict["suborganizations"] = list(suborganizations)
+
+    # Add senior official information if it exists
+    if portfolio.senior_official:
+        senior_official = model_to_dict(
+            portfolio.senior_official,
+            fields=["first_name", "last_name", "title", "phone", "email"]
+        )
+        # The phone number field isn't json serializable, so we
+        # convert this to a string first if it exists.
+        if "phone" in senior_official and senior_official.get("phone"):
+            senior_official["phone"] = str(senior_official["phone"])
+        portfolio_dict["senior_official"] = senior_official
+    else:
+        portfolio_dict["senior_official"] = None
+
+    return JsonResponse(portfolio_dict)
+
+
+@login_required
+@staff_member_required
 def get_federal_and_portfolio_types_from_federal_agency_json(request):
     """Returns specific portfolio information as a JSON. Request must have
     both agency_name and organization_type."""
