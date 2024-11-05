@@ -190,30 +190,37 @@ function handlePortfolioSelection() {
             // console.log(typeof django.jQuery().select2); // Should output 'function'
             // console.log("Attributes of #id_sub_organization:");
             console.log(suborganizationDropdown);
-            //suborganizationDropdown.attr("data-ajax--url", function () { return getUrl(); });
+            suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/");
             django.jQuery(document).ready(function() {
                 console.log(suborganizationDropdown);
             
                 let dropdown = django.jQuery("#id_sub_organization");
-                if (dropdown.data('select2')) {
-                    dropdown.select2('destroy');
+                if (suborganizationDropdown.data('select2')) {
+                    suborganizationDropdown.select2('destroy');
                 }
                 let newURL = "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
 
                 // Reinitialize Select2 with the updated URL
                 dropdown = django.jQuery("#id_sub_organization");
-                dropdown.select2({
+                suborganizationDropdown.select2({
                     ajax: {
-                        url: newURL,
+                        url: "/admin/api/get-suborganization-list-json/",
+                        data: function (params) {
+                            var query = {
+                                search: params.term,
+                                portfolio_id: portfolioDropdown.val()
+                            }
+                            return query;
+                        },
                         dataType: 'json',
                         delay: 250,
                         cache: true
                     },
                     theme: 'admin-autocomplete',
                     allowClear: true,
-                    placeholder: dropdown.attr('data-placeholder')
+                    placeholder: suborganizationDropdown.attr('data-placeholder')
                 });
-                console.log(dropdown);
+                console.log(suborganizationDropdown);
             });
     
             
