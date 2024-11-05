@@ -1923,11 +1923,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "suborganization_city",
                 "suborganization_state_territory",
             ]
-            fieldsets = [
-                (name, {**data, "fields": [f for f in data["fields"] if f not in excluded_fields]})
-                for name, data in fieldsets
-            ]
-
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in excluded_fields)
+                modified_fieldsets.append((name, {**data, "fields": fields}))
+            return modified_fieldsets
         return fieldsets
 
     # Trigger action when a fieldset is changed
@@ -2120,6 +2121,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
+        
         # Check if the creator is restricted
         if obj and obj.creator.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
