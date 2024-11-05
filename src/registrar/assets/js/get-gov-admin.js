@@ -140,36 +140,33 @@ function handlePortfolioSelection() {
     }
 
     function updatePortfolioFields() {
-        console.log("isPageLoading = " + isPageLoading);
         if (!isPageLoading) {
             if (portfolioDropdown.val()) {
-                console.log("there is a value in portfolio dropdown")
                 let portfolio = getPortfolio(portfolioDropdown.val());
                 updatePortfolioFieldsData(portfolio);
             }
-            console.log("updating display");
             updatePortfolioFieldsDisplay();
         } else {
             isPageLoading = false;
         }
     }
 
-    function getUrl() {
-        return "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
-    }
-
-    function updateSubOrganizationUrl() {
-        if (portfolioDropdown.val()) {
-            const dropdown = django.jQuery("#id_sub_organization");
-            if (dropdown.data('select2')) {
-                console.log("destroying select2");
-                dropdown.select2("destroy");
+    function updateSubOrganizationDropdown(portfolio_id) {
+        django.jQuery(document).ready(function() {
+            
+            if (suborganizationDropdown.data('select2')) {
+                suborganizationDropdown.select2('destroy');
             }
-            let newURL = "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val();
-            dropdown.select2({
+
+            // Reinitialize Select2 with the updated URL
+            suborganizationDropdown.select2({
                 ajax: {
-                    url: function (params) {
-                        return newURL;
+                    data: function (params) {
+                        var query = {
+                            search: params.term,
+                            portfolio_id: portfolio_id
+                        }
+                        return query;
                     },
                     dataType: 'json',
                     delay: 250,
@@ -177,55 +174,22 @@ function handlePortfolioSelection() {
                 },
                 theme: 'admin-autocomplete',
                 allowClear: true,
-                placeholder: dropdown.attr('data-placeholder')
+                placeholder: suborganizationDropdown.attr('data-placeholder')
             });
-        }
+        });
+    }
+
+    function initializeSubOrganizationUrl() {
+        suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/");
     }
 
     function updatePortfolioFieldsDisplay() {
-        
-        if (portfolioDropdown.val()) {
-            // update autocomplete url for suborganizationDropdown
-            // console.log("updating suborganization dropdown, id to " + portfolioDropdown.val());
-            // console.log(typeof django.jQuery().select2); // Should output 'function'
-            // console.log("Attributes of #id_sub_organization:");
-            console.log(suborganizationDropdown);
-            suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/");
-            django.jQuery(document).ready(function() {
-                console.log(suborganizationDropdown);
-            
-                let dropdown = django.jQuery("#id_sub_organization");
-                if (suborganizationDropdown.data('select2')) {
-                    suborganizationDropdown.select2('destroy');
-                }
+        let portfolio_id = portfolioDropdown.val();
 
-                // Reinitialize Select2 with the updated URL
-                dropdown = django.jQuery("#id_sub_organization");
-                suborganizationDropdown.select2({
-                    ajax: {
-                        data: function (params) {
-                            var query = {
-                                search: params.term,
-                                portfolio_id: portfolioDropdown.val()
-                            }
-                            return query;
-                        },
-                        dataType: 'json',
-                        delay: 250,
-                        cache: true
-                    },
-                    theme: 'admin-autocomplete',
-                    allowClear: true,
-                    placeholder: suborganizationDropdown.attr('data-placeholder')
-                });
-                console.log(suborganizationDropdown);
-            });
+        if (portfolio_id) {
+
+            updateSubOrganizationDropdown(portfolio_id);
     
-            
-            // suborganizationDropdown.attr("ajaxUrl", "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolioDropdown.val());
-
-
-
             showElement(suborganizationField);
             hideElement(seniorOfficialField);
             showElement(portfolioSeniorOfficialField);
@@ -260,11 +224,11 @@ function handlePortfolioSelection() {
         }
     }
 
-    // django.jQuery(document).ready(function() {
-    //     updateSubOrganizationUrl(); 
-        // Run the function once on page startup, then attach an event listener
-        updatePortfolioFieldsDisplay();
-        portfolioDropdown.on("change", updatePortfolioFields);
+    
+    initializeSubOrganizationUrl(); 
+    // Run the function once on page startup, then attach an event listener
+    updatePortfolioFieldsDisplay();
+    portfolioDropdown.on("change", updatePortfolioFields);
 }
 
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>

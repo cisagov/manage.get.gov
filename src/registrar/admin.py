@@ -236,7 +236,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
-            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False)
         }
         labels = {
             "action_needed_reason_email": "Email",
