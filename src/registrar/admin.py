@@ -1798,91 +1798,95 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
     search_help_text = "Search by domain or creator."
 
-    fieldsets = [
-        (
-            None,
-            {
-                "fields": [
-                    "portfolio",
-                    "sub_organization",
-                    "requested_suborganization",
-                    "suborganization_city",
-                    "suborganization_state_territory",
-                    "status_history",
-                    "status",
-                    "rejection_reason",
-                    "rejection_reason_email",
-                    "action_needed_reason",
-                    "action_needed_reason_email",
-                    "investigator",
-                    "creator",
-                    "approved_domain",
-                    "notes",
-                ]
-            },
-        ),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
-        (
-            "Contacts",
-            {
-                "fields": [
-                    "converted_senior_official",
-                    "other_contacts",
-                    "no_other_contacts_rationale",
-                    "cisa_representative_first_name",
-                    "cisa_representative_last_name",
-                    "cisa_representative_email",
-                ]
-            },
-        ),
-        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
-        (
-            "Type of organization",
-            {
-                "fields": [
-                    "is_election_board",
-                    "converted_generic_org_type",
-                ]
-            },
-        ),
-        (
-            "Show details",
-            {
-                "classes": ["collapse--dgfieldset"],
-                "description": "Extends type of organization",
-                "fields": [
-                    "converted_federal_type",
-                    "converted_federal_agency",
-                    "tribe_name",
-                    "federally_recognized_tribe",
-                    "state_recognized_tribe",
-                    "about_your_organization",
-                ],
-            },
-        ),
-        (
-            "Organization name and mailing address",
-            {
-                "fields": [
-                    "converted_organization_name",
-                    "converted_state_territory",
-                ]
-            },
-        ),
-        (
-            "Show details",
-            {
-                "classes": ["collapse--dgfieldset"],
-                "description": "Extends organization name and mailing address",
-                "fields": [
-                    "converted_address_line1",
-                    "converted_address_line2",
-                    "converted_city",
-                    "converted_zipcode",
-                    "converted_urbanization",
-                ],
-            },
-        ),
+    common_fields = [
+        "portfolio",
+        "sub_organization",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
+        "status_history",
+        "status",
+        "rejection_reason",
+        "rejection_reason_email",
+        "action_needed_reason",
+        "action_needed_reason_email",
+        "investigator",
+        "creator",
+        "approved_domain",
+        "notes",
+    ]
+
+    contact_fields_with_portfolio = [
+        "converted_senior_official",
+        "other_contacts",
+        "no_other_contacts_rationale",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+    ]
+
+    contact_fields_without_portfolio = [
+        "senior_official",
+        "other_contacts",
+        "no_other_contacts_rationale",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+    ]
+
+    background_fields = ["purpose", "anything_else", "current_websites"]
+
+    extends_type_of_org_base_end = [
+        "tribe_name",
+        "federally_recognized_tribe",
+        "state_recognized_tribe",
+        "about_your_organization",
+    ]
+
+    extends_type_of_org_without_portfolio_start = [
+        "federal_type",
+        "federal_agency",
+    ]
+
+    extends_type_of_org_with_portfolio_start = [
+        "converted_federal_type",
+        "converted_federal_agency",
+    ]
+
+    organization_address_fields_with_portfolio = [
+        "converted_organization_name",
+        "converted_state_territory",
+    ]
+
+    organization_address_fields_without_portfolio = [
+        "organization_name",
+        "state_territory",
+    ]
+
+    type_of_org_fields_with_portfolio = [
+        "is_election_board",
+        "converted_generic_org_type",
+    ]
+
+    type_of_org_fields_without_portfolio = [
+        "is_election_board",
+        "generic_org_type",
+    ]
+
+    show_details_address_with_portfolio = [
+        "converted_address_line1",
+        "converted_address_line2",
+        "converted_city",
+        "converted_zipcode",
+        "converted_urbanization",
+    ]
+
+    show_details_address_without_portfolio = [
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
     ]
 
     # Readonly fields for analysts and superusers
@@ -1892,6 +1896,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "status_history",
+    )
+
+    readonly_fields_with_portfolio = [
         "converted_senior_official",
         "converted_federal_type",
         "converted_federal_agency",
@@ -1903,7 +1910,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "converted_urbanization",
         "converted_city",
         "converted_generic_org_type",
-    )
+    ]
+
+    readonly_fields_without_portfolio = [
+        "senior_official",
+        "federal_type",
+        "federal_agency",
+        "state_territory",
+        "organization_name",
+        "address_line1",
+        "address_line2",
+        "zipcode",
+        "urbanization",
+        "city",
+        "generic_org_type",
+    ]
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1924,6 +1945,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "suborganization_city",
         "suborganization_state_territory",
     ]
+
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
@@ -1932,6 +1954,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "portfolio",
         "sub_organization",
     ]
+
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
@@ -1942,22 +1965,78 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     change_form_template = "django/admin/domain_request_change_form.html"
 
     def get_fieldsets(self, request, obj=None):
-        fieldsets = super().get_fieldsets(request, obj)
+        #  fieldsets = list(super().get_fieldsets(request, obj))  # Get the default fieldsets
+        has_portfolio = obj and obj.portfolio  # Check once for portfolio presence
 
-        # Hide certain suborg fields behind the organization feature flag
-        # if it is not enabled
+        # Common fields
+        fieldsets = [(None, {"fields": self.common_fields})]
+        fieldsets.append((".gov domain", {"fields": ["requested_domain", "alternative_domains"]}))
+
+        # Contacts fields based on portfolio
+        contacts_fields = self.contact_fields_with_portfolio if has_portfolio else self.contact_fields_without_portfolio
+        fieldsets.append(("Contacts", {"fields": contacts_fields}))
+
+        # Background info
+        fieldsets.append(("Background info", {"fields": self.background_fields}))
+
+        # Type of organization based on portfolio
+        type_of_org_fields = (
+            self.type_of_org_fields_with_portfolio if has_portfolio else self.type_of_org_fields_without_portfolio
+        )
+        fieldsets.append(("Type of organization", {"fields": type_of_org_fields}))
+
+        fieldsets.append(
+            (
+                "Show details",
+                {
+                    "classes": ["collapse--dgfieldset"],
+                    "description": "Extends type of organization",
+                    "fields": (
+                        self.extends_type_of_org_with_portfolio_start
+                        if has_portfolio
+                        else self.extends_type_of_org_without_portfolio_start + self.extends_type_of_org_base_end
+                    ),
+                },
+            )
+        )
+
+        # Organization name and address
+        address_fields = (
+            self.organization_address_fields_with_portfolio
+            if has_portfolio
+            else self.organization_address_fields_without_portfolio
+        )
+        fieldsets.append(("Organization name and mailing address", {"fields": address_fields}))
+
+        # Additional "Show details" sections
+        fieldsets.append(
+            (
+                "Show details",
+                {
+                    "classes": ["collapse--dgfieldset"],
+                    "description": "Extends organization name and mailing address",
+                    "fields": (
+                        self.show_details_address_with_portfolio
+                        if has_portfolio
+                        else self.show_details_address_without_portfolio
+                    ),
+                },
+            )
+        )
+
+        # Flag-based field exclusion
         if not flag_is_active_for_user(request.user, "organization_feature"):
             excluded_fields = [
                 "requested_suborganization",
                 "suborganization_city",
                 "suborganization_state_territory",
             ]
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in excluded_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
+            # Filter out the excluded fields
+            fieldsets = [
+                (name, {**data, "fields": [f for f in data["fields"] if f not in excluded_fields]})
+                for name, data in fieldsets
+            ]
+
         return fieldsets
 
     # Trigger action when a fieldset is changed
@@ -2150,7 +2229,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
-
+        if obj and obj.portfolio:
+            readonly_fields.extend(self.readonly_fields_with_portfolio)
         # Check if the creator is restricted
         if obj and obj.creator.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is

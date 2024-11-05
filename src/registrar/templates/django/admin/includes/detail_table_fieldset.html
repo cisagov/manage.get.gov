@@ -327,7 +327,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% if not skip_additional_contact_info %}
             {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
         {% endif%}
-    {% elif field.field.name == "converted_senior_official"  or field.field.name == "senior_official" %}
+    {% elif field.field.name == "senior_official" or field.field.name == "converted_senior_official"  %}
         <div class="flex-container">
         <label aria-label="Senior official contact details"></label>
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.senior_official no_title_top_padding=field.is_readonly %}
@@ -388,7 +388,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             </details>
         {% endif %}
         {% endwith %}
-    {% elif field.field.name == "converted_state_territory" or field.field.name == "state_territory" and original_object|model_name_lowercase != 'portfolio' %}
+    {% elif field.field.name == "state_territory" and original_object|model_name_lowercase != 'portfolio' %}
         <div class="flex-container margin-top-2">
             <span>
                 CISA region:
