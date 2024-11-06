@@ -8,6 +8,7 @@ from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
+    AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
     get_field_links_as_list,
@@ -236,7 +237,17 @@ class DomainRequestAdminForm(forms.ModelForm):
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
-            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False)
+            "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+            'portfolio': AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field('portfolio'),
+                admin.site,
+                attrs={'data-placeholder': '---------'}
+            ),
+            'sub_organization': AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field('sub_organization'),
+                admin.site,
+                attrs={'data-placeholder': '---------'}
+            ),
         }
         labels = {
             "action_needed_reason_email": "Email",

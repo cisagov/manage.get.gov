@@ -60,6 +60,8 @@ def get_portfolio_json(request):
     # Convert the portfolio to a dictionary
     portfolio_dict = model_to_dict(portfolio)
 
+    portfolio_dict["id"] = portfolio.id
+
     # map portfolio federal type
     portfolio_dict["federal_type"] = BranchChoices.get_branch_label(portfolio.federal_type) if portfolio.federal_type else "-"
 
@@ -84,9 +86,9 @@ def get_portfolio_json(request):
     if portfolio.federal_agency:
         federal_agency = model_to_dict(
             portfolio.federal_agency,
-            fields=["agency"]
+            fields=["agency", "id"]
         )
-        portfolio_dict["federal_agency"] = federal_agency["agency"]
+        portfolio_dict["federal_agency"] = federal_agency
     else:
         portfolio_dict["federal_agency"] = '-'
 
