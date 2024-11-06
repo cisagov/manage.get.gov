@@ -929,7 +929,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
 
-    #@less_console_noise_decorator
+    @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
         DomainRequest.objects.all().delete()
@@ -2523,8 +2523,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         """Users are able to add more than one of some fields."""
         DomainRequest.objects.all().delete()
 
-        self.app.set_user(self.user.username)
-
         # Create a new domain request
         intro_page = self.app.get(reverse("domain-request:start"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -2533,8 +2531,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         intro_form.submit()
 
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1)
+
+        new_domain_request_id = all_domain_requests.first().id
+
         # Skip to the current sites page
-        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 1}))
+        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": new_domain_request_id}))
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
         self.assertIn("current_sites-0-website", current_sites_form.fields)
