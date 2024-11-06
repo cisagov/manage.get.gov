@@ -92,7 +92,6 @@ function handlePortfolioSelection() {
     const suborganizationDropdown = django.jQuery("#id_sub_organization");
     const suborganizationField = document.querySelector(".field-sub_organization");
     const seniorOfficialField = document.querySelector(".field-senior_official");
-    const portfolioSeniorOfficialField = document.querySelector(".field-portfolio_senior_official");
     const otherEmployeesField = document.querySelector(".field-other_contacts");
     const noOtherContactsRationaleField = document.querySelector(".field-no_other_contacts_rationale");
     const cisaRepresentativeFirstNameField = document.querySelector(".field-cisa_representative_first_name");
@@ -102,6 +101,8 @@ function handlePortfolioSelection() {
     const orgTypeFieldSetDetails = orgTypeFieldSet.nextElementSibling;
     const orgNameFieldSet = document.querySelector(".field-organization_name").parentElement;
     const orgNameFieldSetDetails = orgNameFieldSet.nextElementSibling;
+    const portfolioSeniorOfficialField = document.querySelector(".field-portfolio_senior_official");
+    const portfolioSeniorOfficial = portfolioSeniorOfficialField.querySelector(".readonly");
     const portfolioOrgTypeFieldSet = document.querySelector(".field-portfolio_organization_type").parentElement;
     const portfolioOrgType = document.querySelector(".field-portfolio_organization_type .readonly");
     const portfolioFederalTypeField = document.querySelector(".field-portfolio_federal_type");
@@ -145,37 +146,63 @@ function handlePortfolioSelection() {
         suborganizationDropdown.empty();
 
         // update portfolio senior official
+        // need to add url and name
 
         // update portfolio organization type
         portfolioOrgType.innerText = portfolio.organization_type;
-
         // update portfolio federal type
         portfolioFederalType.innerText = portfolio.federal_type
-
         // update portfolio organization name
         portfolioOrgName.innerText = portfolio.organization_name;
-
         // update portfolio federal agency
         portfolioFederalAgency.innerText = portfolio.federal_agency;
-
         // update portfolio state
         portfolioStateTerritory.innerText = portfolio.state_territory;
-
         // update portfolio address line 1
         portfolioAddressLine1.innerText = portfolio.address_line1;
-
         // update portfolio address line 2
         portfolioAddressLine2.innerText = portfolio.address_line2;
-
         // update portfolio city
         portfolioCity.innerText = portfolio.city;
-
         // update portfolio zip code
         portfolioZipcode.innerText = portfolio.zipcode
-
         // update portfolio urbanization
         portfolioUrbanization.innerText = portfolio.urbanization;
 
+    }
+
+    function updatePortfolioSeniorOfficial(portfoliorSeniorOfficialField, senior_official) {
+        let seniorOfficialAddUrl = "/admin/registrar/seniorofficial/add/";
+
+        let readonlySeniorOfficial = portfolioSeniorOfficialField.querySelector(".readonly");
+         
+            if (senior_official) {
+
+            } else {
+                
+            }
+           
+                    if (statusCode === 404) {
+                        readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
+                        console.warn("Record not found: " + data.error);
+                    }else {
+                        console.error("Error in AJAX call: " + data.error);
+                    }
+                    return;
+                }
+
+                // Update the "contact details" blurb beneath senior official
+                updateContactInfo(data);
+                showElement(contactList.parentElement);
+                
+                // Get the associated senior official with this federal agency
+                let seniorOfficialId = data.id;
+                let seniorOfficialName = [data.first_name, data.last_name].join(" ");
+      
+                if (readonlySeniorOfficial) {
+                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/ class='test'>${seniorOfficialName}</a>`
+                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+                }
     }
 
     function updatePortfolioFieldsDataDynamicDisplay() {
@@ -366,9 +393,7 @@ function handlePortfolioSelection() {
     async function updatePortfolioFields() {
         if (!isPageLoading) {
             if (portfolioDropdown.val()) {
-
                 getPortfolio(portfolioDropdown.val()).then((portfolio) => {
-                    console.log(portfolio);
                     updatePortfolioFieldsData(portfolio);
                     updatePortfolioFieldsDisplay();
                     updatePortfolioFieldsDataDynamicDisplay();
