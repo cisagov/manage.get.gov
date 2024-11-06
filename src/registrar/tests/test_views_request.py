@@ -1157,7 +1157,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1216,7 +1218,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1254,7 +1258,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1316,7 +1322,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1361,7 +1369,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1392,7 +1402,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.pk}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1429,7 +1441,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": domain_request.id}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1649,7 +1663,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
         response = other_contacts_page.forms[0].submit()
@@ -2521,8 +2535,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         value = current_sites_form["current_sites-0-website"].value
         self.assertEqual(value, "https://example.com")
         self.assertIn("current_sites-1-website", current_sites_form.fields)
+
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1, msg="Expected one domain request but got multiple")
         # and it is correctly referenced in the ManyToOne relationship
-        domain_request = DomainRequest.objects.get()  # there's only one
+        domain_request = all_domain_requests.first()  # there's only one
         self.assertEqual(
             domain_request.current_websites.filter(website="https://example.com").count(),
             1,
