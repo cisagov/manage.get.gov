@@ -46,4 +46,4 @@ jobs:
             cg-manage-rds clone getgov-$DESTINATION_ENVIRONMENT-database getgov-$SOURCE_ENVIRONMENT-database
             
             # unshare the service
-            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
+            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f
