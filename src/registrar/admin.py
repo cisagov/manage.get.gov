@@ -1700,6 +1700,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    class FederalTypeFilter(admin.SimpleListFilter):
+        "Define a custom filter for federal type"
+        title = 'Federal Type'
+        parameter_name = 'converted_federal_type'
+
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type
