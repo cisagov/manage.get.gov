@@ -967,7 +967,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Now click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
-
         # Should be a link to the organization_federal page since it is now unlocked
         self.assertGreater(
             len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
@@ -2517,8 +2516,18 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
-        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 0}))
+        DomainRequest.objects.all().delete()
+
+        # Create a new domain request
+        intro_page = self.app.get(reverse("domain-request:start"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_form.submit()
+
+        # Skip to the current sites page
+        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 1}))
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
         self.assertIn("current_sites-0-website", current_sites_form.fields)
