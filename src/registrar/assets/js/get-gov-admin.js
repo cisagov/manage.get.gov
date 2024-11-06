@@ -103,27 +103,40 @@ function handlePortfolioSelection() {
     const orgNameFieldSet = document.querySelector(".field-organization_name").parentElement;
     const orgNameFieldSetDetails = orgNameFieldSet.nextElementSibling;
     const portfolioOrgTypeFieldSet = document.querySelector(".field-portfolio_organization_type").parentElement;
-    const portfolioOrgNameFieldSet = document.querySelector(".field-portfolio_organization_name").parentElement;
+    const portfolioOrgType = document.querySelector(".field-portfolio_organization_type .readonly");
+    const portfolioFederalTypeField = document.querySelector(".field-portfolio_federal_type");
+    const portfolioFederalType = portfolioFederalTypeField.querySelector(".readonly");
+    const portfolioOrgNameField = document.querySelector(".field-portfolio_organization_name")
+    const portfolioOrgName = portfolioOrgNameField.querySelector(".readonly");
+    const portfolioOrgNameFieldSet = portfolioOrgNameField.parentElement;
     const portfolioOrgNameFieldSetDetails = portfolioOrgNameFieldSet.nextElementSibling;
+    const portfolioFederalAgencyField = document.querySelector(".field-portfolio_federal_agency");
+    const portfolioFederalAgency = portfolioFederalAgencyField.querySelector(".readonly");
+    const portfolioStateTerritory = document.querySelector(".field-portfolio_state_territory .readonly");
+    const portfolioAddressLine1 = document.querySelector(".field-portfolio_address_line1 .readonly");
+    const portfolioAddressLine2 = document.querySelector(".field-portfolio_address_line2 .readonly");
+    const portfolioCity = document.querySelector(".field-portfolio_city .readonly");
+    const portfolioZipcode = document.querySelector(".field-portfolio_zipcode .readonly");
+    const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
+    const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
     let isPageLoading = true;
 
     function getPortfolio(portfolio_id) {
-        // get portfolio via ajax
-        fetch(`${portfolioJsonUrl}?id=${portfolio_id}`)
-        .then(response => {
-            return response.json().then(data => data);
-        })
-        .then(data => {
-            if (data.error) {
-                console.error("Error in AJAX call: " + data.error);
-            } else {
-                return data;
-            }
-        })
-        .catch(error => {
-            console.error("Error retrieving portfolio", error)
-        });
+        return fetch(`${portfolioJsonUrl}?id=${portfolio_id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Error in AJAX call: " + data.error);
+                    return null;
+                } else {
+                    return data;
+                }
+            })
+            .catch(error => {
+                console.error("Error retrieving portfolio", error);
+                return null;
+            });
     }
 
     function updatePortfolioFieldsData(portfolio) {
@@ -131,12 +144,38 @@ function handlePortfolioSelection() {
         // values in portfolio.suborganizations
         suborganizationDropdown.empty();
 
-        // // update autocomplete url for suborganizationDropdown
-        // suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/?portfolio_id=" + portfolio);
-
-        // update portfolio senior official field with portfolio.senior_official
+        // update portfolio senior official
 
         // update portfolio organization type
+        portfolioOrgType.innerText = portfolio.organization_type;
+
+        // update portfolio federal type
+        portfolioFederalType.innerText = portfolio.federal_type
+
+        // update portfolio organization name
+        portfolioOrgName.innerText = portfolio.organization_name;
+
+        // update portfolio federal agency
+        portfolioFederalAgency.innerText = portfolio.federal_agency;
+
+        // update portfolio state
+        portfolioStateTerritory.innerText = portfolio.state_territory;
+
+        // update portfolio address line 1
+        portfolioAddressLine1.innerText = portfolio.address_line1;
+
+        // update portfolio address line 2
+        portfolioAddressLine2.innerText = portfolio.address_line2;
+
+        // update portfolio city
+        portfolioCity.innerText = portfolio.city;
+
+        // update portfolio zip code
+        portfolioZipcode.innerText = portfolio.zipcode
+
+        // update portfolio urbanization
+        portfolioUrbanization.innerText = portfolio.urbanization;
+
     }
 
     function updatePortfolioFieldsDataDynamicDisplay() {
@@ -146,49 +185,42 @@ function handlePortfolioSelection() {
 
         // This is the additional information that exists beneath the SO element.
         var contactList = document.querySelector(".field-portfolio_senior_official .dja-address-contact-list");
-        const federalAgencyContainer = document.querySelector(".field-portfolio_federal_agency");
         document.addEventListener('DOMContentLoaded', function() {
 
-            let federalAgencyValue = federalAgencyContainer.querySelector(".readonly").innerText;
-            let readonlyOrganizationType = document.querySelector(".field-portfolio_organization_type .readonly");
-            let organizationTypeValue = readonlyOrganizationType.innerText;
+            let federalAgencyValue = portfolioFederalAgency.innerText;
+            let portfolioOrgTypeValue = portfolioOrgType.innerText;
 
-            let organizationNameContainer = document.querySelector(".field-portfolio_organization_name");
-            let federalType = document.querySelector(".field-portfolio_federal_type");
-
-            if (federalAgencyValue && organizationTypeValue) {
-                handleFederalAgencyChange(federalAgencyValue, organizationTypeValue, organizationNameContainer, federalType);
+            if (federalAgencyValue && portfolioOrgTypeValue) {
+                handleFederalAgencyChange(federalAgencyValue, portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
             }
             // Handle dynamically hiding the urbanization field
-            let urbanizationField = document.querySelector(".field-portfolio_urbanization");
-            let stateTerritory = document.querySelector(".field-portfolio_state_territory");
-            let stateTerritoryValue = stateTerritory.innerText;
-            if (urbanizationField && stateTerritoryValue) {
-                handleStateTerritoryChange(stateTerritoryValue, urbanizationField);
+            let portfolioStateTerritoryValue = portfolioStateTerritory.innerText;
+            if (portfolioUrbanizationField && portfolioStateTerritoryValue) {
+                handleStateTerritoryChange(portfolioStateTerritoryValue, portfolioUrbanizationField);
             }
 
             // Handle hiding the organization name field when the organization_type is federal.
             // Run this first one page load, then secondly on a change event.
-            handleOrganizationTypeChange(organizationTypeValue, organizationNameContainer, federalType);
+            handleOrganizationTypeChange(portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
         });
 
-        function handleOrganizationTypeChange(organizationTypeValue, organizationNameContainer, federalType) {
-            if (organizationTypeValue === "federal") {
-                hideElement(organizationNameContainer);
-                showElement(federalAgencyContainer);
-                if (federalType) {
-                    showElement(federalType);
+        function handleOrganizationTypeChange(portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField) {
+            if (portfolioOrgTypeValue === "federal") {
+                hideElement(portfolioOrgNameField);
+                showElement(portfolioFederalAgencyField);
+                if (portfolioFederalTypeField) {
+                    showElement(portfolioFederalTypeField);
                 }
             } else {
-                showElement(organizationNameContainer);
-                hideElement(federalAgencyContainer);
-                if (federalType) {
-                    hideElement(federalType);
+                showElement(portfolioOrgNameField);
+                hideElement(portfolioFederalAgencyField);
+                if (portfolioFederalTypeField) {
+                    hideElement(portfolioFederalTypeField);
                 }
             }
         }
 
-        function handleFederalAgencyChange(federalAgencyValue, organizationTypeValue, organizationNameContainer, federalType) {
+        function handleFederalAgencyChange(federalAgencyValue, organizationTypeValue, portfolioOrgNameField, portfolioFederalTypeField) {
             // Don't do anything on page load
             if (isInitialPageLoad) {
                 isInitialPageLoad = false;
@@ -202,15 +234,15 @@ function handlePortfolioSelection() {
 
             if (federalAgencyValue !== "Non-Federal Agency") {
                 if (organizationTypeValue !== "federal") {
-                    readonlyOrganizationType.innerText = "Federal"
+                    portfolioOrgType.innerText = "Federal"
                 }
             }else {
                 if (organizationTypeValue === "federal") {
-                    readonlyOrganizationType.innerText =  "-"
+                    portfolioOrgType.innerText =  "-"
                 }
             }
 
-            handleOrganizationTypeChange(organizationTypeValue, organizationNameContainer, federalType);
+            handleOrganizationTypeChange(organizationTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
 
             // We are missing these hooks that exist on the portfolio template, so I hardcoded them for now:
             // <input id="senior_official_from_agency_json_url" class="display-none" value="/admin/api/get-senior-official-from-federal-agency-json/" />
@@ -271,11 +303,11 @@ function handlePortfolioSelection() {
 
         }
 
-        function handleStateTerritoryChange(stateTerritoryValue, urbanizationField) {
-            if (stateTerritoryValue === "PR") {
-                showElement(urbanizationField)
+        function handleStateTerritoryChange(portfolioStateTerritoryValue, portfolioUrbanizationField) {
+            if (portfolioStateTerritoryValue === "PR") {
+                showElement(portfolioUrbanizationField)
             } else {
-                hideElement(urbanizationField)
+                hideElement(portfolioUrbanizationField)
             }
         }
 
@@ -331,13 +363,16 @@ function handlePortfolioSelection() {
         }
     }
 
-    function updatePortfolioFields() {
+    async function updatePortfolioFields() {
         if (!isPageLoading) {
             if (portfolioDropdown.val()) {
-                let portfolio = getPortfolio(portfolioDropdown.val());
-                updatePortfolioFieldsData(portfolio);
-                updatePortfolioFieldsDisplay();
-                updatePortfolioFieldsDataDynamicDisplay();
+
+                getPortfolio(portfolioDropdown.val()).then((portfolio) => {
+                    console.log(portfolio);
+                    updatePortfolioFieldsData(portfolio);
+                    updatePortfolioFieldsDisplay();
+                    updatePortfolioFieldsDataDynamicDisplay();
+                });
             } else {
                 updatePortfolioFieldsDisplay();
             }

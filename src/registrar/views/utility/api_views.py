@@ -59,6 +59,9 @@ def get_portfolio_json(request):
     # Convert the portfolio to a dictionary
     portfolio_dict = model_to_dict(portfolio)
 
+    # map portfolio federal type
+    portfolio_dict["federal_type"] = BranchChoices.get_branch_label(portfolio.federal_type) if portfolio.federal_type else "-"
+   
     # Add senior official information if it exists
     if portfolio.senior_official:
         senior_official = model_to_dict(
@@ -72,6 +75,16 @@ def get_portfolio_json(request):
         portfolio_dict["senior_official"] = senior_official
     else:
         portfolio_dict["senior_official"] = None
+
+    # Add federal agency information if it exists
+    if portfolio.federal_agency:
+        federal_agency = model_to_dict(
+            portfolio.federal_agency,
+            fields=["agency"]
+        )
+        portfolio_dict["federal_agency"] = federal_agency["agency"]
+    else:
+        portfolio_dict["federal_agency"] = None
 
     return JsonResponse(portfolio_dict)
 
