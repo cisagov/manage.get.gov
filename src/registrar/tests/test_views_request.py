@@ -2761,6 +2761,22 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm.delete()
         portfolio.delete()
 
+    def test_non_creator_access(self):
+        """Tests that a user cannot edit a domain request they didn't create"""
+        p = "password"
+        other_user = User.objects.create_user(username="other_user", password=p)
+        domain_request = completed_domain_request(user=other_user)
+
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
+        self.assertEqual(edit_page.status_code, 403)
+
+    def test_creator_access(self):
+        """Tests that a user can edit a domain request they created"""
+        domain_request = completed_domain_request(user=self.user)
+
+        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        self.assertEqual(edit_page.status_code, 200)
+
 
 class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
     def setUp(self):
@@ -3130,22 +3146,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         portfolio.delete()
         federal_agency.delete()
         domain_request.delete()
-    
-    def test_non_creator_access(self):
-        """Tests that a user cannot edit a domain request they didn't create"""
-        p = "password"
-        other_user = User.objects.create_user(username="other_user", password=p)
-        domain_request = completed_domain_request(user=other_user)
-
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
-        self.assertEqual(edit_page.status_code, 403)
-
-    def test_creator_access(self):
-        """Tests that a user can edit a domain request they created"""
-        domain_request = completed_domain_request(user=self.user)
-
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
-        self.assertEqual(edit_page.status_code, 200)
 
 
 class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
