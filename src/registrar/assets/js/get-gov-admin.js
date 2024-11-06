@@ -86,6 +86,10 @@ function handleSuborganizationFields(
     portfolioDropdown.on("change", toggleSuborganizationFields);
 }
 
+
+/** 
+ * IMPORTANT NOTE: The logic in this method is paired dynamicPortfolioFields
+*/
 function handlePortfolioSelection() {
     // These dropdown are select2 fields so they must be interacted with via jquery
     const portfolioDropdown = django.jQuery("#id_portfolio");
@@ -121,6 +125,7 @@ function handlePortfolioSelection() {
     const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
     const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
+    const seniorOfficialAddress = portfolioSeniorOfficialField.querySelector(".dja-address-contact-list");  
     let isPageLoading = true;
 
     function getPortfolio(portfolio_id) {
@@ -174,19 +179,16 @@ function handlePortfolioSelection() {
     function updatePortfolioSeniorOfficial(seniorOfficialField, senior_official) {
 
         let seniorOfficial = seniorOfficialField.querySelector(".readonly");
-        let seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
-        let portfolioSeniorOfficialAddress = document.querySelector(".field-portfolio_senior_official .dja-address-contact-list");
-        
-         
+             
         if (senior_official) {
             let seniorOfficialName = [senior_official.first_name, senior_official.last_name].join(' ');
             let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${senior_official.id}/change/ class='test'>${seniorOfficialName}</a>`
             seniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
             updateSeniorOfficialContactInfo(seniorOfficialAddress, senior_official);
-            showElement(portfolioSeniorOfficialAddress);
+            showElement(seniorOfficialAddress);
         } else {
             portfolioSeniorOfficial.innerText = "No senior official found.";
-            hideElement(portfolioSeniorOfficialAddress);
+            hideElement(seniorOfficialAddress);
         }
     }
 
@@ -216,20 +218,15 @@ function handlePortfolioSelection() {
     }
 
     function updatePortfolioFieldsDataDynamicDisplay() {
-
-        // the federal agency change listener fires on page load, which we don't want.
-        var isInitialPageLoad = true
-
-        // This is the additional information that exists beneath the SO element.
-        var contactList = document.querySelector(".field-portfolio_senior_official .dja-address-contact-list");
+        
         document.addEventListener('DOMContentLoaded', function() {
 
             let federalAgencyValue = portfolioFederalAgency.innerText;
             let portfolioOrgTypeValue = portfolioOrgType.innerText;
 
-            // if (federalAgencyValue && portfolioOrgTypeValue) {
-            //     handleFederalAgencyChange(federalAgencyValue, portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
-            // }
+            if (federalAgencyValue && portfolioOrgTypeValue) {
+                handleFederalAgencyChange(federalAgencyValue, portfolioOrgTypeValue);
+            }
             // Handle dynamically hiding the urbanization field
             let portfolioStateTerritoryValue = portfolioStateTerritory.innerText;
             if (portfolioUrbanizationField && portfolioStateTerritoryValue) {
@@ -237,8 +234,9 @@ function handlePortfolioSelection() {
             }
 
             // Handle hiding the organization name field when the organization_type is federal.
-            // Run this first one page load, then secondly on a change event.
             handleOrganizationTypeChange(portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
+
+            handleNoSeniorOfficialData();
         });
 
         function handleOrganizationTypeChange(portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField) {
@@ -257,13 +255,7 @@ function handlePortfolioSelection() {
             }
         }
 
-        function handleFederalAgencyChange(federalAgencyValue, organizationTypeValue, portfolioOrgNameField, portfolioFederalTypeField) {
-            // Don't do anything on page load
-            if (isInitialPageLoad) {
-                isInitialPageLoad = false;
-                return;
-            }
-
+        function handleFederalAgencyChange(federalAgencyValue, organizationTypeValue) {
             // There isn't a federal senior official associated with null records
             if (!federalAgencyValue) {
                 return;
@@ -273,70 +265,11 @@ function handlePortfolioSelection() {
                 if (organizationTypeValue !== "federal") {
                     portfolioOrgType.innerText = "Federal"
                 }
-            }else {
+            } else {
                 if (organizationTypeValue === "federal") {
                     portfolioOrgType.innerText =  "-"
                 }
-            }
-
-            handleOrganizationTypeChange(organizationTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
-
-            // We are missing these hooks that exist on the portfolio template, so I hardcoded them for now:
-            // <input id="senior_official_from_agency_json_url" class="display-none" value="/admin/api/get-senior-official-from-federal-agency-json/" />
-            // <input id="federal_and_portfolio_types_from_agency_json_url" class="display-none" value="/admin/api/get-federal-and-portfolio-types-from-federal-agency-json/" />
-            // <input id="senior-official-add-url" class="display-none" value="/admin/registrar/seniorofficial/add/" />
-
-            let federalPortfolioApi = "/admin/api/get-federal-and-portfolio-types-from-federal-agency-json/";
-            fetch(`${federalPortfolioApi}?&agency_name=${selectedText}`)
-            .then(response => {
-                const statusCode = response.status;
-                return response.json().then(data => ({ statusCode, data }));
-            })
-            .then(({ statusCode, data }) => {
-                if (data.error) {
-                    console.error("Error in AJAX call: " + data.error);
-                    return;
-                }
-                updateReadOnly(data.federal_type, '.field-portfolio_federal_type');
-            })
-            .catch(error => console.error("Error fetching federal and portfolio types: ", error));
-
-            hideElement(contactList.parentElement);
-            
-            let seniorOfficialAddUrl = "/admin/registrar/seniorofficial/add/";
-            let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
-            let seniorOfficialApi = "/admin/api/get-senior-official-from-federal-agency-json/";
-            fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
-            .then(response => {
-                const statusCode = response.status;
-                return response.json().then(data => ({ statusCode, data }));
-            })
-            .then(({ statusCode, data }) => {
-                if (data.error) {
-                    if (statusCode === 404) {
-                        readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
-                        console.warn("Record not found: " + data.error);
-                    }else {
-                        console.error("Error in AJAX call: " + data.error);
-                    }
-                    return;
-                }
-
-                // Update the "contact details" blurb beneath senior official
-                updateContactInfo(data);
-                showElement(contactList.parentElement);
-                
-                // Get the associated senior official with this federal agency
-                let seniorOfficialId = data.id;
-                let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-      
-                if (readonlySeniorOfficial) {
-                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/ class='test'>${seniorOfficialName}</a>`
-                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
-                }
-   
-            })
-            .catch(error => console.error("Error fetching senior official: ", error));
+            }         
 
         }
 
@@ -348,55 +281,10 @@ function handlePortfolioSelection() {
             }
         }
 
-        /**
-         * Utility that selects a div from the DOM using selectorString,
-         * and updates a div within that div which has class of 'readonly'
-         * so that the text of the div is updated to updateText
-         * @param {*} updateText 
-         * @param {*} selectorString 
-         */
-        function updateReadOnly(updateText, selectorString) {
-            // find the div by selectorString
-            const selectedDiv = document.querySelector(selectorString);
-            if (selectedDiv) {
-                // find the nested div with class 'readonly' inside the selectorString div
-                const readonlyDiv = selectedDiv.querySelector('.readonly');
-                if (readonlyDiv) {
-                    // Update the text content of the readonly div
-                    readonlyDiv.textContent = updateText !== null ? updateText : '-';
-                }
+        function handleNoSeniorOfficialData() {
+            if (portfolioSeniorOfficial.innerText.includes("No additional contact information found")) {
+                hideElement(seniorOfficialAddress);
             }
-        }
-
-        function updateContactInfo(data) {
-            if (!contactList) return;
-        
-            const titleSpan = contactList.querySelector(".contact_info_title");
-            const emailSpan = contactList.querySelector(".contact_info_email");
-            const phoneSpan = contactList.querySelector(".contact_info_phone");
-        
-            if (titleSpan) { 
-                titleSpan.textContent = data.title || "None";
-            };
-
-            // Update the email field and the content for the clipboard
-            if (emailSpan) {
-                let copyButton = contactList.querySelector(".admin-icon-group");
-                emailSpan.textContent = data.email || "None";
-                if (data.email) {
-                    const clipboardInput = contactList.querySelector(".admin-icon-group input");
-                    if (clipboardInput) {
-                        clipboardInput.value = data.email;
-                    };
-                    showElement(copyButton);
-                }else {
-                    hideElement(copyButton);
-                }
-            }
-
-            if (phoneSpan) {
-                phoneSpan.textContent = data.phone || "None";
-            };
         }
     }
 
@@ -1426,6 +1314,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 /** An IIFE for dynamically changing some fields on the portfolio admin model
+ * IMPORTANT NOTE: The logic in this IIFE is paired handlePortfolioSelection
 */
 (function dynamicPortfolioFields(){
 

@@ -1735,7 +1735,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
     portfolio_senior_official.short_description = "Senior official"
     def portfolio_organization_type(self, obj):
-        return obj.portfolio.organization_type if obj.portfolio else ""
+        return DomainRequest.OrganizationChoices.get_org_label(obj.portfolio.organization_type) if obj.portfolio and obj.portfolio.organization_type else "-"
     portfolio_organization_type.short_description = "Organization type"
     def portfolio_federal_type(self, obj):
         return BranchChoices.get_branch_label(obj.portfolio.federal_type) if obj.portfolio and obj.portfolio.federal_type else "-"
