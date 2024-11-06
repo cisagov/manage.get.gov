@@ -66,7 +66,7 @@ def get_portfolio_json(request):
     if portfolio.senior_official:
         senior_official = model_to_dict(
             portfolio.senior_official,
-            fields=["first_name", "last_name", "title", "phone", "email"]
+            fields=["id", "first_name", "last_name", "title", "phone", "email"]
         )
         # The phone number field isn't json serializable, so we
         # convert this to a string first if it exists.
