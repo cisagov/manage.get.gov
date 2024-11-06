@@ -6,7 +6,7 @@
 
     {% if show_formatted_name %}
         {% if user.get_formatted_name %}
-            <a id="contact_info_name" href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a>
+            <a class="contact_info_name" href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a>
         {% else %}
             None
         {% endif %}
@@ -16,7 +16,7 @@
     {% if user|has_contact_info %}
         {# Title #}
         {% if user.title %}
-            <span id="contact_info_title">{{ user.title }}</span>
+            <span class="contact_info_title">{{ user.title }}</span>
         {% else %}
             None
         {% endif %}
@@ -24,7 +24,7 @@
 
         {# Email #}
         {% if user.email %}
-            <span id="contact_info_email">{{ user.email }}</span>
+            <span class="contact_info_email">{{ user.email }}</span>
             {% include "admin/input_with_clipboard.html" with field=user invisible_input_field=True %}
             <br>
         {% else %}
@@ -33,7 +33,7 @@
 
         {# Phone #}
         {% if user.phone %}
-            <span id="contact_info_phone">{{ user.phone }}</span>
+            <span class="contact_info_phone">{{ user.phone }}</span>
             <br>
         {% else %}
             None<br>
@@ -44,6 +44,6 @@
     {% endif %}
 
     {% if user_verification_type and not skip_additional_contact_info %}
-        <span id="contact_info_phone">{{ user_verification_type }}</span>
+        <span class="contact_info_phone">{{ user_verification_type }}</span>
     {% endif %}
 </address>

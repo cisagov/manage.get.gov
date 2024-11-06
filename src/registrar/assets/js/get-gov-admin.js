@@ -334,9 +334,9 @@ function handlePortfolioSelection() {
         function updateContactInfo(data) {
             if (!contactList) return;
         
-            const titleSpan = contactList.querySelector("#contact_info_title");
-            const emailSpan = contactList.querySelector("#contact_info_email");
-            const phoneSpan = contactList.querySelector("#contact_info_phone");
+            const titleSpan = contactList.querySelector(".contact_info_title");
+            const emailSpan = contactList.querySelector(".contact_info_email");
+            const phoneSpan = contactList.querySelector(".contact_info_phone");
         
             if (titleSpan) { 
                 titleSpan.textContent = data.title || "None";
@@ -1277,10 +1277,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (contacts) {
                 contacts.forEach(contact => {
                     // Check if the <dl> element is not empty
-                    const name = contact.querySelector('a#contact_info_name')?.innerText;
-                    const title = contact.querySelector('span#contact_info_title')?.innerText;
-                    const email = contact.querySelector('span#contact_info_email')?.innerText;
-                    const phone = contact.querySelector('span#contact_info_phone')?.innerText;
+                    const name = contact.querySelector('a.contact_info_name')?.innerText;
+                    const title = contact.querySelector('span.contact_info_title')?.innerText;
+                    const email = contact.querySelector('span.contact_info_email')?.innerText;
+                    const phone = contact.querySelector('span.contact_info_phone')?.innerText;
                     const url = nameToUrlMap[name] || '#';
                     // Format the contact information
                     const listItem = document.createElement('li');
@@ -1331,9 +1331,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
             const seniorOfficialElement = document.getElementById('id_senior_official');
             const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
-            const seniorOfficialTitle = extractTextById('contact_info_title', seniorOfficialDiv);
-            const seniorOfficialEmail = extractTextById('contact_info_email', seniorOfficialDiv);
-            const seniorOfficialPhone = extractTextById('contact_info_phone', seniorOfficialDiv);
+            const seniorOfficialTitle = seniorOfficialDiv.querySelector('.contact_info_title');
+            const seniorOfficialEmail = seniorOfficialDiv.querySelector('.contact_info_email');
+            const seniorOfficialPhone = seniorOfficialDiv.querySelector('.contact_info_phone');
             let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
 
             const html_summary = `<strong>Recommendation:</strong></br>` +
@@ -1617,9 +1617,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateContactInfo(data) {
         if (!contactList) return;
     
-        const titleSpan = contactList.querySelector("#contact_info_title");
-        const emailSpan = contactList.querySelector("#contact_info_email");
-        const phoneSpan = contactList.querySelector("#contact_info_phone");
+        const titleSpan = contactList.querySelector(".contact_info_title");
+        const emailSpan = contactList.querySelector(".contact_info_email");
+        const phoneSpan = contactList.querySelector(".contact_info_phone");
     
         if (titleSpan) { 
             titleSpan.textContent = data.title || "None";
