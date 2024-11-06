@@ -425,3 +425,70 @@ class DomainInformation(TimeStampedModel):
             return self.domain.get_state_display()
         else:
             return None
+
+    @property
+    def converted_organization_name(self):
+        if self.portfolio:
+            return self.portfolio.organization_name
+        return self.organization_name
+
+    # ----- Portfolio Properties -----
+    @property
+    def converted_generic_org_type(self):
+        if self.portfolio:
+            return self.portfolio.organization_type
+        return self.generic_org_type
+
+    @property
+    def converted_federal_agency(self):
+        if self.portfolio:
+            return self.portfolio.federal_agency
+        return self.federal_agency
+
+    @property
+    def converted_federal_type(self):
+        if self.portfolio:
+            return self.portfolio.federal_type
+        return self.federal_type
+
+    @property
+    def converted_senior_official(self):
+        if self.portfolio:
+            return self.portfolio.senior_official
+        return self.senior_official
+
+    @property
+    def converted_address_line1(self):
+        if self.portfolio:
+            return self.portfolio.address_line1
+        return self.address_line1
+
+    @property
+    def converted_address_line2(self):
+        if self.portfolio:
+            return self.portfolio.address_line2
+        return self.address_line2
+
+    @property
+    def converted_city(self):
+        if self.portfolio:
+            return self.portfolio.city
+        return self.city
+
+    @property
+    def converted_state_territory(self):
+        if self.portfolio:
+            return self.portfolio.state_territory
+        return self.state_territory
+
+    @property
+    def converted_zipcode(self):
+        if self.portfolio:
+            return self.portfolio.zipcode
+        return self.zipcode
+
+    @property
+    def converted_urbanization(self):
+        if self.portfolio:
+            return self.portfolio.urbanization
+        return self.urbanization

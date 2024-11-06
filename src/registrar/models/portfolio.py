@@ -2,6 +2,8 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
+from registrar.models.user import User
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -130,6 +132,17 @@ class Portfolio(TimeStampedModel):
     @classmethod
     def get_federal_type(cls, federal_agency):
         return federal_agency.federal_type if federal_agency else None
+
+    @property
+    def portfolio_admin_users(self):
+        """Gets all users with the role organization_admin for this particular portfolio.
+        Returns a queryset of User."""
+        admin_ids = self.portfolio_users.filter(
+            roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            ],
+        ).values_list("user__id", flat=True)
+        return User.objects.filter(id__in=admin_ids)
 
     # == Getters for domains == #
     def get_domains(self, order_by=None):

@@ -13,6 +13,8 @@ from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 
+from registrar.utility.waffle import flag_is_active_for_user
+
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -342,6 +344,24 @@ class DomainRequest(TimeStampedModel):
         related_name="request_sub_organization",
         help_text="If blank, request is associated with the overarching organization for this portfolio.",
         verbose_name="Suborganization",
+    )
+
+    requested_suborganization = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_city = models.CharField(
+        null=True,
+        blank=True,
+    )
+
+    suborganization_state_territory = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,
+        null=True,
+        blank=True,
+        verbose_name="state, territory, or military post",
     )
 
     # This is the domain request user who created this domain request.
@@ -823,10 +843,13 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
+                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
+                is_org_user = has_organization_feature_flag and recipient.has_base_portfolio_permission(self.portfolio)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
+                    "is_org_user": is_org_user,
                 }
 
             if custom_email_content:
@@ -1102,7 +1125,61 @@ class DomainRequest(TimeStampedModel):
 
         self.creator.restrict_user()
 
-    # ## Form policies ###
+    def requesting_entity_is_portfolio(self) -> bool:
+        """Determines if this record is requesting that a portfolio be their organization.
+        Used for the RequestingEntity page.
+        Returns True if the portfolio exists and if organization_name matches portfolio.organization_name.
+        """
+        if self.portfolio and self.organization_name == self.portfolio.organization_name:
+            return True
+        return False
+
+    def requesting_entity_is_suborganization(self) -> bool:
+        """Determines if this record is also requesting that it be tied to a suborganization.
+        Used for the RequestingEntity page.
+        Returns True if portfolio exists and either sub_organization exists,
+        or if is_requesting_new_suborganization() is true.
+        Returns False otherwise.
+        """
+        if self.portfolio and (self.sub_organization or self.is_requesting_new_suborganization()):
+            return True
+        return False
+
+    def is_requesting_new_suborganization(self) -> bool:
+        """Determines if a user is trying to request
+        a new suborganization using the domain request form, rather than one that already exists.
+        Used for the RequestingEntity page.
+
+        Returns True if a sub_organization does not exist and if requested_suborganization,
+        suborganization_city, and suborganization_state_territory all exist.
+        Returns False otherwise.
+        """
+
+        # If a suborganization already exists, it can't possibly be a new one.
+        # As well, we need all required fields to exist.
+        required_fields = [
+            self.requested_suborganization,
+            self.suborganization_city,
+            self.suborganization_state_territory,
+        ]
+        if not self.sub_organization and all(required_fields):
+            return True
+        return False
+
+    # ## Form unlocking steps ## #
+    #
+    # These methods control the conditions in which we should unlock certain domain wizard steps.
+
+    def unlock_requesting_entity(self) -> bool:
+        """Unlocks the requesting entity step. Used for the RequestingEntity page.
+        Returns true if requesting_entity_is_suborganization() and requesting_entity_is_portfolio().
+        Returns False otherwise.
+        """
+        if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
+            return True
+        return False
+
+    # ## Form policies ## #
     #
     # These methods control what questions need to be answered by applicants
     # during the domain request flow. They are policies about the domain request so

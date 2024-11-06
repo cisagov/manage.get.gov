@@ -2103,6 +2103,66 @@ class TestPortfolioAdmin(TestCase):
         display_members = self.admin.display_members(self.portfolio)
         self.assertIn(f'<a href="{url}">2 members</a>', display_members)
 
+    @less_console_noise_decorator
+    def test_senior_official_readonly_for_federal_org(self):
+        """Test that senior_official field is readonly for federal organizations"""
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Create a federal portfolio
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Federal Org",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            creator=self.superuser,
+        )
+
+        readonly_fields = self.admin.get_readonly_fields(request, portfolio)
+        self.assertIn("senior_official", readonly_fields)
+
+        # Change to non-federal org
+        portfolio.organization_type = DomainRequest.OrganizationChoices.CITY
+        readonly_fields = self.admin.get_readonly_fields(request, portfolio)
+        self.assertNotIn("senior_official", readonly_fields)
+
+    @less_console_noise_decorator
+    def test_senior_official_auto_assignment(self):
+        """Test automatic senior official assignment based on organization type and federal agency"""
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Create a federal agency with a senior official
+        federal_agency = FederalAgency.objects.create(agency="Test Agency")
+        senior_official = SeniorOfficial.objects.create(
+            first_name="Test",
+            last_name="Official",
+            title="Some guy",
+            email="test@example.gov",
+            federal_agency=federal_agency,
+        )
+
+        # Create a federal portfolio
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Federal Org",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            creator=self.superuser,
+        )
+
+        # Test that the federal org gets senior official from agency when federal
+        portfolio.federal_agency = federal_agency
+        self.admin.save_model(request, portfolio, form=None, change=False)
+        self.assertEqual(portfolio.senior_official, senior_official)
+
+        # Test non-federal org clears senior official when not city
+        portfolio.organization_type = DomainRequest.OrganizationChoices.CITY
+        self.admin.save_model(request, portfolio, form=None, change=True)
+        self.assertIsNone(portfolio.senior_official)
+        self.assertEqual(portfolio.federal_agency.agency, "Non-Federal Agency")
+
+        # Cleanup
+        senior_official.delete()
+        federal_agency.delete()
+        portfolio.delete()
+
 
 class TestTransferUser(WebTest):
     """User transfer custom admin page"""

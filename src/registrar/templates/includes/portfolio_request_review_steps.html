@@ -8,15 +8,24 @@
     {% endif %}
 
     {% if step == Step.REQUESTING_ENTITY %}
-        {% if domain_request.organization_name %}
-            {% with title=form_titles|get_item:step value=domain_request %}
-                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url address='true' %}
-            {% endwith %}
+        {% with title=form_titles|get_item:step %}
+        {% if domain_request.sub_organization %}
+            {% include "includes/summary_item.html" with value=domain_request.sub_organization edit_link=domain_request_url %}
+            {% comment %} We don't have city or state_territory for suborganizations yet, so no data should display {% endcomment %}
+        {% elif domain_request.requesting_entity_is_suborganization %}
+            {% include "includes/summary_item.html" with value=domain_request.requested_suborganization edit_link=domain_request_url %}
+            <p class="margin-y-0">{{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}</p>
+        {% elif domain_request.requesting_entity_is_portfolio %}
+            {% include "includes/summary_item.html" with value=domain_request.portfolio.organization_name edit_link=domain_request_url %}
+            {% if domain_request.portfolio.city and domain_request.portfolio.state_territory %}
+                <p class="margin-y-0">{{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}</p>
+            {% endif %}
         {% else %}
-            {% with title=form_titles|get_item:step value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
-                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% with value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+                {% include "includes/summary_item.html" with edit_link=domain_request_url %}
             {% endwith %}
-        {% endif%}
+        {% endif %}
+        {% endwith %}
     {% endif %}
 
     {% if step == Step.CURRENT_SITES %}
