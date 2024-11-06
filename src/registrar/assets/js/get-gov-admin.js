@@ -175,6 +175,7 @@ function handlePortfolioSelection() {
 
         let seniorOfficial = seniorOfficialField.querySelector(".readonly");
         let seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
+        let portfolioSeniorOfficialAddress = document.querySelector(".field-portfolio_senior_official .dja-address-contact-list");
         
          
         if (senior_official) {
@@ -203,7 +204,7 @@ function handlePortfolioSelection() {
         if (emailSpan) {
             emailSpan.textContent = senior_official.email || "None";
             if (senior_official.email) {
-                hiddenInput.value = data.email;
+                hiddenInput.value = senior_official.email;
                 showElement(copyButton);
             }else {
                 hideElement(copyButton);

@@ -67,9 +67,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         </div>
         {% endif %}
     {% elif field.field.name == "portfolio_senior_official" %}
-        {% if original_object.portfolio.senior_official %}
-            <div class="readonly"><a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a></div>
-        {% endif %}
+        <div class="readonly">
+            {% if original_object.portfolio.senior_official %}
+                <a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a></div>
+            {% endif %}
+        </div>
     {% elif field.field.name == "other_contacts" %}
         {% if all_contacts.count > 2 %}
             <div class="readonly">
