@@ -146,7 +146,7 @@ function handlePortfolioSelection() {
         suborganizationDropdown.empty();
 
         // update portfolio senior official
-        // need to add url and name
+        updatePortfolioSeniorOfficial(portfolioSeniorOfficialField, portfolio.senior_official);
 
         // update portfolio organization type
         portfolioOrgType.innerText = portfolio.organization_type;
@@ -171,38 +171,47 @@ function handlePortfolioSelection() {
 
     }
 
-    function updatePortfolioSeniorOfficial(portfoliorSeniorOfficialField, senior_official) {
-        let seniorOfficialAddUrl = "/admin/registrar/seniorofficial/add/";
+    function updatePortfolioSeniorOfficial(seniorOfficialField, senior_official) {
 
-        let readonlySeniorOfficial = portfolioSeniorOfficialField.querySelector(".readonly");
+        let seniorOfficial = seniorOfficialField.querySelector(".readonly");
+        let seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
+        
          
-            if (senior_official) {
+        if (senior_official) {
+            let seniorOfficialName = [senior_official.first_name, senior_official.last_name].join(' ');
+            let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${senior_official.id}/change/ class='test'>${seniorOfficialName}</a>`
+            seniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+            updateSeniorOfficialContactInfo(seniorOfficialAddress, senior_official);
+            showElement(portfolioSeniorOfficialAddress);
+        } else {
+            portfolioSeniorOfficial.innerText = "No senior official found.";
+            hideElement(portfolioSeniorOfficialAddress);
+        }
+    }
 
-            } else {
-                
+    function updateSeniorOfficialContactInfo(addressField, senior_official) {
+    
+        const titleSpan = addressField.querySelector(".contact_info_title");
+        const emailSpan = addressField.querySelector(".contact_info_email");
+        const phoneSpan = addressField.querySelector(".contact_info_phone");
+        const hiddenInput = addressField.querySelector("input");
+        const copyButton = addressField.querySelector(".admin-icon-group");
+
+        if (titleSpan) { 
+            titleSpan.textContent = senior_official.title || "None";
+        };
+        if (emailSpan) {
+            emailSpan.textContent = senior_official.email || "None";
+            if (senior_official.email) {
+                hiddenInput.value = data.email;
+                showElement(copyButton);
+            }else {
+                hideElement(copyButton);
             }
-           
-                    if (statusCode === 404) {
-                        readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
-                        console.warn("Record not found: " + data.error);
-                    }else {
-                        console.error("Error in AJAX call: " + data.error);
-                    }
-                    return;
-                }
-
-                // Update the "contact details" blurb beneath senior official
-                updateContactInfo(data);
-                showElement(contactList.parentElement);
-                
-                // Get the associated senior official with this federal agency
-                let seniorOfficialId = data.id;
-                let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-      
-                if (readonlySeniorOfficial) {
-                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/ class='test'>${seniorOfficialName}</a>`
-                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
-                }
+        }
+        if (phoneSpan) {
+            phoneSpan.textContent = senior_official.phone || "None";
+        };
     }
 
     function updatePortfolioFieldsDataDynamicDisplay() {
@@ -217,9 +226,9 @@ function handlePortfolioSelection() {
             let federalAgencyValue = portfolioFederalAgency.innerText;
             let portfolioOrgTypeValue = portfolioOrgType.innerText;
 
-            if (federalAgencyValue && portfolioOrgTypeValue) {
-                handleFederalAgencyChange(federalAgencyValue, portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
-            }
+            // if (federalAgencyValue && portfolioOrgTypeValue) {
+            //     handleFederalAgencyChange(federalAgencyValue, portfolioOrgTypeValue, portfolioOrgNameField, portfolioFederalTypeField);
+            // }
             // Handle dynamically hiding the urbanization field
             let portfolioStateTerritoryValue = portfolioStateTerritory.innerText;
             if (portfolioUrbanizationField && portfolioStateTerritoryValue) {

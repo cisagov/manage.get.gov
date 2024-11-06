@@ -38,7 +38,14 @@
         {% else %}
             None<br>
         {% endif %}
-
+    {% elif fields_always_present %}
+        <span class="contact_info_title"></span>
+        </br>
+        <span class="contact_info_email"></span>
+        {% include "admin/input_with_clipboard.html" with field=user empty_field=True %}
+        <br>
+        <span class="contact_info_phone"></span>
+        <br>
     {% elif not hide_no_contact_info_message %}
         No additional contact information found.<br>
     {% endif %}
