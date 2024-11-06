@@ -1265,11 +1265,11 @@ class DomainRequestExport(BaseExport):
         """
 
         # Handle the federal_type field. Defaults to the wrong format.
-        federal_type = model.converted_federal_type
+        federal_type = model.get("federal_type")
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.converted_generic_org_type
+        org_type = model.get("generic_org_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
@@ -1277,7 +1277,7 @@ class DomainRequestExport(BaseExport):
         status_display = DomainRequest.DomainRequestStatus.get_status_label(status) if status else None
 
         # Handle the region field.
-        state_territory = model.converted_state_territory
+        state_territory = model.get("state_territory")
         region = get_region(state_territory) if state_territory else None
 
         # Handle the requested_domain field (add a default if None)
