@@ -92,7 +92,7 @@ class CheckUserProfileMiddleware:
 
         We set the "redirect" query param equal to where the user wants to go.
 
-        If the user wants to go to '/request/', then we set that
+        If the user wants to go to '/request/start/' or '/request/', then we set that
         information in the query param.
 
         Otherwise, we assume they want to go to the home page.
@@ -100,7 +100,8 @@ class CheckUserProfileMiddleware:
 
         # In some cases, we don't want to redirect to home. This handles that.
         # Can easily be generalized if need be, but for now lets keep this easy to read.
-        custom_redirect = "domain-request:start" if request.path == "/request/" else None
+        start_paths = ["/request/", "/request/start/"]
+        custom_redirect = "domain-request:start" if request.path in start_paths else None
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self._get_excluded_pages(profile_page)):

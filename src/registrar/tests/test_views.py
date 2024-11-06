@@ -49,9 +49,9 @@ class TestViews(TestCase):
     @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
-        response = self.client.get("/request/")
+        response = self.client.get(reverse("domain-request:start"))
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login?next=/request/", response.headers["Location"])
+        self.assertIn("/login?next=/request/start/", response.headers["Location"])
 
 
 class TestWithUser(MockEppLib):

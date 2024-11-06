@@ -2820,28 +2820,3 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add event listener to the suborg dropdown to show/hide the suborg details section
   select.addEventListener("change", () => toggleSuborganization());
 })();
-
-
-(function handleDomainRequestIntro() { 
-  const domainRequestId = document.getElementById("wizard-domain-request-id")?.value;
-
-  // Handle back button navigation and initial page load
-  function handleStartPage(event) {
-    if (window.location.pathname === "/request/start/") {
-      if (event && !event.persisted) return;
-      const domainRequestId = sessionStorage.getItem("domainRequestId");
-      console.log("Domain request ID retrieved:", domainRequestId);
-    }
-  }
-
-  if (domainRequestId) {
-    sessionStorage.setItem("domainRequestId", domainRequestId);
-    console.log("Domain request ID stored:", domainRequestId);
-  }
-
-  // Listen for back/forward navigation
-  window.addEventListener('pageshow', handleStartPage);
-  
-  // Handle initial page load
-  handleStartPage();
-})();

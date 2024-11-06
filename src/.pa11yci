@@ -7,6 +7,7 @@
         "http://localhost:8080/",
         "http://localhost:8080/health/",
         "http://localhost:8080/request/",
+        "http://localhost:8080/request/start",
         "http://localhost:8080/request/organization/",
         "http://localhost:8080/request/org_federal/",
         "http://localhost:8080/request/org_election/",
