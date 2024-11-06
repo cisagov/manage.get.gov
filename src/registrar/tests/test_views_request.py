@@ -930,51 +930,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertNotContains(contact_page, "Federal agency")
 
     @less_console_noise_decorator
-    def test_domain_request_form_section_skipping(self):
-        """Can skip forward and back in sections"""
-        DomainRequest.objects.all().delete()
-        intro_page = self.app.get(reverse("domain-request:start"))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit()
-
-        # follow first redirect
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_page = intro_result.follow()
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        # fill out the organization type section then submit
-        type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_result = type_form.submit()
-
-        # follow first redirect to the next section
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_page = type_result.follow()
-
-        # we need to fill out the federal section so it stays unlocked
-        fed_branch_form = federal_page.forms[0]
-        fed_branch_form["organization_federal-federal_type"] = "executive"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        fed_branch_form.submit()
-
-        # Now click back to the organization type
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
-        # Should be a link to the organization_federal page since it is now unlocked
-        self.assertGreater(
-            len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
-            0,
-        )
-
-    @less_console_noise_decorator
     def test_domain_request_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
         intro_page = self.app.get(reverse("domain-request:start"))
@@ -2514,47 +2469,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
-    @less_console_noise_decorator
-    def test_domain_request_formsets(self):
-        """Users are able to add more than one of some fields."""
-        DomainRequest.objects.all().delete()
-
-        # Create a new domain request
-        intro_page = self.app.get(reverse("domain-request:start"))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_form.submit()
-
-        # Skip to the current sites page
-        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 1}))
-        # fill in the form field
-        current_sites_form = current_sites_page.forms[0]
-        self.assertIn("current_sites-0-website", current_sites_form.fields)
-        self.assertNotIn("current_sites-1-website", current_sites_form.fields)
-        current_sites_form["current_sites-0-website"] = "https://example.com"
-
-        # click "Add another"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_result = current_sites_form.submit("submit_button", value="save")
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_form = current_sites_result.follow().forms[0]
-
-        # verify that there are two form fields
-        value = current_sites_form["current_sites-0-website"].value
-        self.assertEqual(value, "https://example.com")
-        self.assertIn("current_sites-1-website", current_sites_form.fields)
-
-        all_domain_requests = DomainRequest.objects.all()
-        self.assertEqual(all_domain_requests.count(), 1, msg="Expected one domain request but got multiple")
-        # and it is correctly referenced in the ManyToOne relationship
-        domain_request = all_domain_requests.first()  # there's only one
-        self.assertEqual(
-            domain_request.current_websites.filter(website="https://example.com").count(),
-            1,
-        )
-
     @skip("WIP")
     def test_domain_request_edit_restore(self):
         """
@@ -2949,6 +2863,92 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_domain_request_formsets(self):
+        """Users are able to add more than one of some fields."""
+        DomainRequest.objects.all().delete()
+
+        # Create a new domain request
+        intro_page = self.app.get(reverse("domain-request:start"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_form.submit()
+
+        # Skip to the current sites page
+        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 1}))
+        # fill in the form field
+        current_sites_form = current_sites_page.forms[0]
+        self.assertIn("current_sites-0-website", current_sites_form.fields)
+        self.assertNotIn("current_sites-1-website", current_sites_form.fields)
+        current_sites_form["current_sites-0-website"] = "https://example.com"
+
+        # click "Add another"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit("submit_button", value="save")
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_form = current_sites_result.follow().forms[0]
+
+        # verify that there are two form fields
+        value = current_sites_form["current_sites-0-website"].value
+        self.assertEqual(value, "https://example.com")
+        self.assertIn("current_sites-1-website", current_sites_form.fields)
+
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1, msg="Expected one domain request but got multiple")
+        # and it is correctly referenced in the ManyToOne relationship
+        domain_request = all_domain_requests.first()  # there's only one
+        self.assertEqual(
+            domain_request.current_websites.filter(website="https://example.com").count(),
+            1,
+        )
+
+    @less_console_noise_decorator
+    def test_domain_request_form_section_skipping(self):
+        """Can skip forward and back in sections"""
+        DomainRequest.objects.all().delete()
+        intro_page = self.app.get(reverse("domain-request:start"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_page = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # fill out the organization type section then submit
+        type_form = type_page.forms[0]
+        type_form["generic_org_type-generic_org_type"] = "federal"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        type_result = type_form.submit()
+
+        # follow first redirect to the next section
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        federal_page = type_result.follow()
+
+        # we need to fill out the federal section so it stays unlocked
+        fed_branch_form = federal_page.forms[0]
+        fed_branch_form["organization_federal-federal_type"] = "executive"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        fed_branch_form.submit()
+
+        # Now click back to the organization type
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        # Should be a link to the organization_federal page since it is now unlocked
+        self.assertGreater(
+            len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
+            0,
+        )
 
     @less_console_noise_decorator
     def test_unlocked_steps_empty_domain_request(self):
