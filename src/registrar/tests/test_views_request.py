@@ -49,6 +49,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
+        User.objects.all().delete()
         self.federal_agency.delete()
 
     @less_console_noise_decorator
