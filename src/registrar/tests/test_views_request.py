@@ -969,10 +969,12 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
         # Should be a link to the organization_federal page since it is now unlocked
-        logger.info(f"new_page: {new_page}")
-        logger.info(f"domain requests: {DomainRequest.objects.all()}")
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1)
+
+        new_request_id = all_domain_requests.first().id
         self.assertGreater(
-            len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
+            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_federal/")),
             0,
         )
 
