@@ -1269,7 +1269,7 @@ class DomainRequestExport(BaseExport):
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.get("generic_org_type")
+        org_type = model.get("generic_org_type") or model.get("organization_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
