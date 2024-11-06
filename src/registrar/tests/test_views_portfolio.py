@@ -2,7 +2,7 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
     DomainRequest,
@@ -1390,6 +1390,296 @@ class TestPortfolio(WebTest):
         # Check that the domain request still exists
         self.assertTrue(DomainRequest.objects.filter(pk=domain_request.pk).exists())
         domain_request.delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_members_table_contains_hidden_permissions_js_hook(self):
+        # In the members_table.html we use data-has-edit-permission as a boolean
+        # to indicate if a user has permission to edit members in the specific portfolio
+
+        # 1. User w/ edit permission
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Create a member under same portfolio
+        member_email = "a_member@example.com"
+        member, _ = User.objects.get_or_create(username="a_member", email=member_email)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # I log in as the User so I can see the Members Table
+        self.client.force_login(self.user)
+
+        # Specifically go to the Member Table page
+        response = self.client.get(reverse("members"))
+
+        self.assertContains(response, 'data-has-edit-permission="True"')
+
+        # 2. User w/o edit permission (additional permission of EDIT_MEMBERS removed)
+        permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
+
+        # Remove the EDIT_MEMBERS additional permission
+        permission.additional_permissions = [
+            perm for perm in permission.additional_permissions if perm != UserPortfolioPermissionChoices.EDIT_MEMBERS
+        ]
+
+        # Save the updated permissions list
+        permission.save()
+
+        # Re-fetch the page to check for updated permissions
+        response = self.client.get(reverse("members"))
+
+        self.assertContains(response, 'data-has-edit-permission="False"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_page_has_kebab_wrapper_for_member_if_user_has_edit_permission(self):
+        """Test that the kebab wrapper displays for a member with edit permissions"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Create a member under same portfolio
+        member_email = "a_member@example.com"
+        member, _ = User.objects.get_or_create(username="a_member", email=member_email)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # I log in as the User so I can see the Manage Member page
+        self.client.force_login(self.user)
+
+        # Specifically go to the Manage Member page
+        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Check for email AND member type (which here is just member)
+        self.assertContains(response, f'data-member-name="{member_email}"')
+        self.assertContains(response, 'data-member-type="member"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_page_has_kebab_wrapper_for_invited_member_if_user_has_edit_permission(self):
+        """Test that the kebab wrapper displays for an invitedmember with edit permissions"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Invite a member under same portfolio
+        invited_member_email = "invited_member@example.com"
+        invitation = PortfolioInvitation.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # I log in as the User so I can see the Manage Member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember", args=[invitation.id]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Assert the invited members email + invitedmember type
+        self.assertContains(response, f'data-member-name="{invited_member_email}"')
+        self.assertContains(response, 'data-member-type="invitedmember"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_page_does_not_have_kebab_wrapper(self):
+        """Test that the kebab does not display."""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # That creates a member with only view access
+        member_email = "member_with_view_access@example.com"
+        member, _ = User.objects.get_or_create(username="test_member_with_view_access", email=member_email)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # I log in as the Member with only view permissions to evaluate the pages behaviour
+        # when viewd by someone who doesn't have edit perms
+        self.client.force_login(member)
+
+        # Go to the Manage Member page
+        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Assert that the kebab edit options are unavailable
+        self.assertNotContains(response, 'data-member-type="member"')
+        self.assertNotContains(response, 'data-member-type="invitedmember"')
+        self.assertNotContains(response, f'data-member-name="{member_email}"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_page_has_correct_form_wrapper(self):
+        """Test that the manage members page the right form wrapper"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # That creates a member
+        member_email = "a_member@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # Login as the User to see the Manage Member page
+        self.client.force_login(self.user)
+
+        # Specifically go to the Manage Member page
+        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+
+        # Check for a 200 response
+        self.assertEqual(response.status_code, 200)
+
+        # Check for form method + that its "post" and id "member-delete-form"
+        self.assertContains(response, "<form")
+        self.assertContains(response, 'method="post"')
+        self.assertContains(response, 'id="member-delete-form"')
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_toggleable_alert_wrapper_exists_on_members_page(self):
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # That creates a member
+        member_email = "a_member@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # Login as the User to see the Members Table page
+        self.client.force_login(self.user)
+
+        # Specifically go to the Members Table page
+        response = self.client.get(reverse("members"))
+
+        # Assert that the toggleable alert ID exists
+        self.assertContains(response, '<div id="toggleable-alert"')
+
+    # 1. I'm deleting a member with active requests on the Members Table page,
+    # it should give me the error "This member has an active domain request and can't be removed" and then stay on the page
+
+    # 2. I'm deleting a member with active requests on the Manage Members page,
+    # it should give me the error "This member has an active domain request and can't be removed" stay on the Manage Members page
+
+    # @less_console_noise_decorator
+    # @override_flag("organization_feature", active=True)
+    # @override_flag("organization_members", active=True)
+    # @patch("registrar.models.User.get_active_requests_count_in_portfolio", return_value=1)
+    # @patch("django.contrib.messages.error")  # Mock the messages.error function to test error handling
+    # def test_portfolio_member_delete_view_members_table(self):
+    #     # I'm a user
+    #     UserPortfolioPermission.objects.get_or_create(
+    #         user=self.user,
+    #         portfolio=self.portfolio,
+    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+    #         additional_permissions=[
+    #             UserPortfolioPermissionChoices.VIEW_MEMBERS,
+    #             UserPortfolioPermissionChoices.EDIT_MEMBERS,
+    #         ],
+    #     )
+    #     # That creates a member
+    #     member_email = "a_member@example.com"
+    #     member, _ = User.objects.get_or_create(email=member_email)
+
+    #     UserPortfolioPermission.objects.get_or_create(
+    #         user=member,
+    #         portfolio=self.portfolio,
+    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+    #     )
+    #     with patch.object(User, 'get_active_requests_count_in_portfolio', return_value=1):
+    #         self.client.force_login(self.user)
+    #         response = self.client.post(reverse("portfolio_member_delete", kwargs={"pk": self.member.pk}),
+    #             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    #         self.assertEqual(response.status_code, 400)  # Bad request due to active requests
+    #         mock_messages_error.assert_called_once_with(
+    #             self.user.request,
+    #             "This member has an active domain request and can't be removed from the organization. "
+    #             "<a href='/support-url' target='_blank'>Contact the .gov team</a> to remove them."
+    #         )
+    #         # Ensure we are still on the same Members Table page (no redirect)
+    #         self.assertTemplateUsed(response, 'members_table.html')
 
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):

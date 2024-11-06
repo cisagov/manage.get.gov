@@ -824,6 +824,92 @@ class TestUser(TestCase):
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."
         )
 
+    @less_console_noise_decorator
+    def test_get_active_requests_count_in_portfolio_returns_zero_if_no_portfolio(self):
+        # There is no portfolio referenced in session so should return 0
+        request = self.factory.get("/")
+        request.session = {}
+
+        count = self.user.get_active_requests_count_in_portfolio(request)
+        self.assertEqual(count, 0)
+
+    @less_console_noise_decorator
+    def test_get_active_requests_count_in_portfolio_returns_count_if_portfolio(self):
+        request = self.factory.get("/")
+        request.session = {"portfolio": self.portfolio}
+
+        # Create active requests
+        domain_1, _ = DraftDomain.objects.get_or_create(name="meoward1.gov")
+        domain_2, _ = DraftDomain.objects.get_or_create(name="meoward2.gov")
+        domain_3, _ = DraftDomain.objects.get_or_create(name="meoward3.gov")
+        domain_4, _ = DraftDomain.objects.get_or_create(name="meoward4.gov")
+
+        # Create 3 active requests + 1 that isn't
+        DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=domain_1,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            portfolio=self.portfolio,
+        )
+        DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=domain_2,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            portfolio=self.portfolio,
+        )
+        DomainRequest.objects.create(
+            creator=self.user,
+            requested_domain=domain_3,
+            status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            portfolio=self.portfolio,
+        )
+        DomainRequest.objects.create(  # This one should not be counted
+            creator=self.user,
+            requested_domain=domain_4,
+            status=DomainRequest.DomainRequestStatus.REJECTED,
+            portfolio=self.portfolio,
+        )
+
+        count = self.user.get_active_requests_count_in_portfolio(request)
+        self.assertEqual(count, 3)
+
+    @less_console_noise_decorator
+    def test_is_only_admin_of_portfolio_returns_true(self):
+        # Create user as the only admin of the portfolio
+        UserPortfolioPermission.objects.create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.assertTrue(self.user.is_only_admin_of_portfolio(self.portfolio))
+
+    @less_console_noise_decorator
+    def test_is_only_admin_of_portfolio_returns_false_if_no_admins(self):
+        # No admin for the portfolio
+        self.assertFalse(self.user.is_only_admin_of_portfolio(self.portfolio))
+
+    @less_console_noise_decorator
+    def test_is_only_admin_of_portfolio_returns_false_if_multiple_admins(self):
+        # Create multiple admins for the same portfolio
+        UserPortfolioPermission.objects.create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # Create another user within this test
+        other_user = User.objects.create(email="second_admin@igorville.gov", username="second_admin")
+        UserPortfolioPermission.objects.create(
+            user=other_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.assertFalse(self.user.is_only_admin_of_portfolio(self.portfolio))
+
+    @less_console_noise_decorator
+    def test_is_only_admin_of_portfolio_returns_false_if_user_not_admin(self):
+        # Create other_user for same portfolio and is given admin access
+        other_user = User.objects.create(email="second_admin@igorville.gov", username="second_admin")
+
+        UserPortfolioPermission.objects.create(
+            user=other_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # User doesn't have admin access so should return false
+        self.assertFalse(self.user.is_only_admin_of_portfolio(self.portfolio))
+
 
 class TestContact(TestCase):
     @less_console_noise_decorator
