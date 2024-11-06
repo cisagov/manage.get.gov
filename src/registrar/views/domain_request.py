@@ -240,8 +240,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
-
-        self.kwargs["id"] = self._domain_request.id
         return self._domain_request
 
     @property
