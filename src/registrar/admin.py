@@ -1457,12 +1457,41 @@ class DomainInformationResource(resources.ModelResource):
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Customize domain information admin class."""
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Information object."""
+
+        title = "generic organization"
+        parameter_name = 'converted_generic_orgs'
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            for domainInfo in DomainInformation.objects.all():
+                converted_generic_org = domainInfo.converted_generic_org_type
+                if converted_generic_org:
+                    converted_generic_orgs.add(converted_generic_org)
+            
+            return sorted((org, org) for org in converted_generic_orgs)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    # Filter based on the generic org value returned by converted_generic_org_type
+                    id__in=[
+                        domainInfo.id for domainInfo in queryset if domainInfo.converted_generic_org_type and domainInfo.converted_generic_org_type == self.value()
+                    ]
+                )
+            return queryset
+
     resource_classes = [DomainInformationResource]
 
     form = DomainInformationAdminForm
 
     # Customize column header text
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Converted Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type
 
@@ -1476,7 +1505,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     orderable_fk_fields = [("domain", "name")]
 
     # Filters
-    list_filter = ["generic_org_type"]
+    list_filter = [GenericOrgFilter]
 
     # Search
     search_fields = [
@@ -1550,7 +1579,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ]
 
     # Readonly fields for analysts and superusers
-    readonly_fields = ("other_contacts", "is_election_board")
+    readonly_fields = ("other_contacts", "is_election_board", "converted_generic_org_type")
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
@@ -1616,12 +1645,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
-    
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.annotate(
-            converted_generic_org_type_display="hey"
-        )
 
 
 class DomainRequestResource(FsmModelResource):
