@@ -1592,7 +1592,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", reverse={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1633,7 +1633,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
         """Applicants with no other contacts have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", reverse={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
         response = other_contacts_page.forms[0].submit()
@@ -1649,7 +1649,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", reverse={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
         response = other_contacts_page.forms[0].submit()
@@ -1955,7 +1955,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", reverse={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2031,7 +2031,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", reverse={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2101,7 +2101,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2170,7 +2170,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2503,7 +2503,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
-        current_sites_page = self.app.get(reverse("domain-request:current_sites"))
+        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": 0}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
@@ -2686,7 +2686,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         NOTE: This may be a moot point if we implement a more solid pattern in the
         future, like not a submit action at all on the review page."""
 
-        review_page = self.app.get(reverse("domain-request:review"))
+        review_page = self.app.get(reverse("domain-request:review", kwargs={"id": 0}))
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
