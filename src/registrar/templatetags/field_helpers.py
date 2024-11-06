@@ -24,6 +24,7 @@ def input_with_errors(context, field=None):  # noqa: C901
         add_label_class: append to input element's label's `class` attribute
         add_legend_class: append to input element's legend's `class` attribute
         add_group_class: append to input element's surrounding tag's `class` attribute
+        add_aria_label: append to input element's `aria_label` attribute
         attr_* - adds or replaces any single html attribute for the input
         add_error_attr_* - like `attr_*` but only if field.errors is not empty
         toggleable_input: shows a simple edit button, and adds display-none to the input field.
@@ -55,6 +56,7 @@ def input_with_errors(context, field=None):  # noqa: C901
     label_classes = []
     legend_classes = []
     group_classes = []
+    aria_labels = []
 
     # this will be converted to an attribute string
     described_by = []
@@ -97,6 +99,9 @@ def input_with_errors(context, field=None):  # noqa: C901
             # Used such that we can toggle it with JS
             if "display-none" not in classes:
                 classes.append("display-none")
+
+        elif key == "add_aria_label":
+            aria_labels.append(value)
 
     attrs["id"] = field.auto_id
 
@@ -151,7 +156,10 @@ def input_with_errors(context, field=None):  # noqa: C901
         # ensure we don't overwrite existing attribute value
         if "aria-describedby" in attrs:
             described_by.append(attrs["aria-describedby"])
-        attrs["aria-describedby"] = " ".join(described_by)
+        attrs["aria_describedby"] = " ".join(described_by)
+
+    if aria_labels:
+        context["aria_label"] = " ".join(aria_labels)
 
     # ask Django to give us the widget dict
     # see Widget.get_context() on
