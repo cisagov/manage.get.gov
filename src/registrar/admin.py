@@ -2121,7 +2121,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
-        
+
         # Check if the creator is restricted
         if obj and obj.creator.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is

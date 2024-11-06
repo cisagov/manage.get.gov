@@ -1448,3 +1448,9 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.state_territory
         return self.state_territory
+
+    @property
+    def converted_senior_official(self):
+        if self.portfolio:
+            return self.portfolio.senior_official
+        return self.senior_official
