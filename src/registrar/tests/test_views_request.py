@@ -929,7 +929,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
 
-    @less_console_noise_decorator
+    #@less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
         DomainRequest.objects.all().delete()
@@ -969,6 +969,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
         # Should be a link to the organization_federal page since it is now unlocked
+        logger.info(f"new_page: {new_page}")
+        logger.info(f"domain requests: {DomainRequest.objects.all()}")
         self.assertGreater(
             len(new_page.html.find_all("a", href="/request/1/organization_federal/")),
             0,
@@ -2518,6 +2520,8 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
         DomainRequest.objects.all().delete()
+
+        self.app.set_user(self.user.username)
 
         # Create a new domain request
         intro_page = self.app.get(reverse("domain-request:start"))
