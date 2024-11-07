@@ -546,7 +546,6 @@ function handlePortfolioSelection() {
 
     /**
      * Initializes necessary data and display configurations for the portfolio fields.
-     * Also, sets up event listeners for interactive dropdown elements.
      */
     function initializePortfolioSettings() {
         // Set URL for the suborganization dropdown, enabling asynchronous data fetching.
