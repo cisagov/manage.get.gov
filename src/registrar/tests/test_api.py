@@ -2,7 +2,8 @@ from django.urls import reverse
 from django.test import TestCase, Client
 from registrar.models import FederalAgency, SeniorOfficial, User, DomainRequest
 from django.contrib.auth import get_user_model
-from registrar.tests.common import create_superuser, create_user, completed_domain_request
+from registrar.models.portfolio import Portfolio
+from registrar.tests.common import create_superuser, create_test_user, create_user, completed_domain_request
 
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.constants import BranchChoices
@@ -72,6 +73,76 @@ class GetSeniorOfficialJsonTest(TestCase):
         self.assertEqual(response.status_code, 404)
         data = response.json()
         self.assertEqual(data["error"], "Senior Official not found")
+
+
+class GetPortfolioJsonTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_test_user()
+        self.superuser = create_superuser()
+        self.analyst_user = create_user()
+
+        self.agency = FederalAgency.objects.create(agency="Test Agency")
+        self.senior_official = SeniorOfficial.objects.create(
+            first_name="John", last_name="Doe", title="Director", federal_agency=self.agency
+        )
+        self.portfolio = Portfolio.objects.create(
+            creator=self.user, federal_agency=self.agency, senior_official=self.senior_official,
+            organization_name="Org name", organization_type=Portfolio.OrganizationChoices.FEDERAL,
+            )
+
+        self.api_url = reverse("get-portfolio-json")
+
+    def tearDown(self):
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        SeniorOfficial.objects.all().delete()
+        FederalAgency.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_get_portfolio_authenticated_superuser(self):
+        """Test that a superuser can get the portfolio information."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.api_url, {"id": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        portfolio = response.json()
+        self.assertEqual(portfolio["id"], self.portfolio.id)
+        self.assertEqual(portfolio["creator"], self.user.id)
+        self.assertEqual(portfolio["organization_name"], self.portfolio.organization_name)
+        self.assertEqual(portfolio["organization_type"], "Federal")
+        self.assertEqual(portfolio["notes"], None)
+        self.assertEqual(portfolio["federal_agency"]["id"], self.agency.id)
+        self.assertEqual(portfolio["federal_agency"]["agency"], self.agency.agency)
+        self.assertEqual(portfolio["senior_official"]["id"], self.senior_official.id)
+        self.assertEqual(portfolio["senior_official"]["first_name"], self.senior_official.first_name)
+        self.assertEqual(portfolio["senior_official"]["last_name"], self.senior_official.last_name)
+        self.assertEqual(portfolio["senior_official"]["title"], self.senior_official.title)
+        self.assertEqual(portfolio["senior_official"]["phone"], None)
+        self.assertEqual(portfolio["senior_official"]["email"], None)
+        self.assertEqual(portfolio["federal_type"], "-")
+        
+    @less_console_noise_decorator
+    def test_get_portfolio_json_authenticated_analyst(self):
+        """Test that an analyst user can fetch the portfolio's information."""
+        self.client.force_login(self.analyst_user)
+        response = self.client.get(self.api_url, {"id": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        portfolio = response.json()
+        self.assertEqual(portfolio["id"], self.portfolio.id)
+
+    @less_console_noise_decorator
+    def test_get_portfolio_json_unauthenticated(self):
+        """Test that an unauthenticated user receives a 403 with an error message."""
+        self.client.force_login(self.user)
+        response = self.client.get(self.api_url, {"id": self.portfolio.id})
+        self.assertEqual(response.status_code, 302)
+
+    @less_console_noise_decorator
+    def test_get_portfolio_json_not_found(self):
+        """Test that a request for a non-existent portfolio returns a 404 with an error message."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.api_url, {"id": -1})
+        self.assertEqual(response.status_code, 404)
 
 
 class GetFederalPortfolioTypeJsonTest(TestCase):
