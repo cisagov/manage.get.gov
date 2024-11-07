@@ -2728,7 +2728,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "expiration_date",
         "first_ready",
         "deleted",
-        "converted_federal_agency",
+        "federal_agency",
         "dnssecdata",
         "nameservers",
     )
