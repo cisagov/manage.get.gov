@@ -701,6 +701,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             csv_file.seek(0)
             # Read the content into a variable
             csv_content = csv_file.read()
+
             expected_content = (
                 "Domain request,Domain type,Federal type\n"
                 "city3.gov,Federal,Executive\n"
