@@ -6,7 +6,6 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
-from registrar.models.domain_request import DomainRequest
 from registrar.utility.constants import BranchChoices
 
 logger = logging.getLogger(__name__)
@@ -63,16 +62,21 @@ def get_portfolio_json(request):
     portfolio_dict["id"] = portfolio.id
 
     # map portfolio federal type
-    portfolio_dict["federal_type"] = BranchChoices.get_branch_label(portfolio.federal_type) if portfolio.federal_type else "-"
+    portfolio_dict["federal_type"] = (
+        BranchChoices.get_branch_label(portfolio.federal_type) if portfolio.federal_type else "-"
+    )
 
     # map portfolio organization type
-    portfolio_dict["organization_type"] = DomainRequest.OrganizationChoices.get_org_label(portfolio.organization_type) if portfolio.organization_type else "-"
-   
+    portfolio_dict["organization_type"] = (
+        DomainRequest.OrganizationChoices.get_org_label(portfolio.organization_type)
+        if portfolio.organization_type
+        else "-"
+    )
+
     # Add senior official information if it exists
     if portfolio.senior_official:
         senior_official = model_to_dict(
-            portfolio.senior_official,
-            fields=["id", "first_name", "last_name", "title", "phone", "email"]
+            portfolio.senior_official, fields=["id", "first_name", "last_name", "title", "phone", "email"]
         )
         # The phone number field isn't json serializable, so we
         # convert this to a string first if it exists.
@@ -84,13 +88,10 @@ def get_portfolio_json(request):
 
     # Add federal agency information if it exists
     if portfolio.federal_agency:
-        federal_agency = model_to_dict(
-            portfolio.federal_agency,
-            fields=["agency", "id"]
-        )
+        federal_agency = model_to_dict(portfolio.federal_agency, fields=["agency", "id"])
         portfolio_dict["federal_agency"] = federal_agency
     else:
-        portfolio_dict["federal_agency"] = '-'
+        portfolio_dict["federal_agency"] = "-"
 
     return JsonResponse(portfolio_dict)
 
@@ -115,7 +116,7 @@ def get_suborganization_list_json(request):
     # Add suborganizations related to this portfolio
     suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
     results = [{"id": sub["id"], "text": sub["name"]} for sub in suborganizations]
-    return JsonResponse({"results": results, "pagination": { "more": False }})
+    return JsonResponse({"results": results, "pagination": {"more": False}})
 
 
 @login_required

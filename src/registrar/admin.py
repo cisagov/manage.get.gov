@@ -238,15 +238,11 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
-            'portfolio': AutocompleteSelectWithPlaceholder(
-                DomainRequest._meta.get_field('portfolio'),
-                admin.site,
-                attrs={'data-placeholder': '---------'}
+            "portfolio": AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
             ),
-            'sub_organization': AutocompleteSelectWithPlaceholder(
-                DomainRequest._meta.get_field('sub_organization'),
-                admin.site,
-                attrs={'data-placeholder': '---------'}
+            "sub_organization": AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field("sub_organization"), admin.site, attrs={"data-placeholder": "---------"}
             ),
         }
         labels = {
@@ -1740,40 +1736,68 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
-
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
+
     portfolio_senior_official.short_description = "Senior official"
+
     def portfolio_organization_type(self, obj):
-        return DomainRequest.OrganizationChoices.get_org_label(obj.portfolio.organization_type) if obj.portfolio and obj.portfolio.organization_type else "-"
+        return (
+            DomainRequest.OrganizationChoices.get_org_label(obj.portfolio.organization_type)
+            if obj.portfolio and obj.portfolio.organization_type
+            else "-"
+        )
+
     portfolio_organization_type.short_description = "Organization type"
+
     def portfolio_federal_type(self, obj):
-        return BranchChoices.get_branch_label(obj.portfolio.federal_type) if obj.portfolio and obj.portfolio.federal_type else "-"
+        return (
+            BranchChoices.get_branch_label(obj.portfolio.federal_type)
+            if obj.portfolio and obj.portfolio.federal_type
+            else "-"
+        )
+
     portfolio_federal_type.short_description = "Federal type"
+
     def portfolio_organization_name(self, obj):
         return obj.portfolio.organization_name if obj.portfolio else ""
+
     portfolio_organization_name.short_description = "Organization name"
+
     def portfolio_federal_agency(self, obj):
         return obj.portfolio.federal_agency if obj.portfolio else ""
+
     portfolio_federal_agency.short_description = "Federal agency"
+
     def portfolio_state_territory(self, obj):
         return obj.portfolio.state_territory if obj.portfolio else ""
+
     portfolio_state_territory.short_description = "State, territory, or military post"
+
     def portfolio_address_line1(self, obj):
         return obj.portfolio.address_line1 if obj.portfolio else ""
+
     portfolio_address_line1.short_description = "Address line 1"
+
     def portfolio_address_line2(self, obj):
         return obj.portfolio.address_line2 if obj.portfolio else ""
+
     portfolio_address_line2.short_description = "Address line 2"
+
     def portfolio_city(self, obj):
         return obj.portfolio.city if obj.portfolio else ""
+
     portfolio_city.short_description = "City"
+
     def portfolio_zipcode(self, obj):
         return obj.portfolio.zipcode if obj.portfolio else ""
+
     portfolio_zipcode.short_description = "Zip code"
+
     def portfolio_urbanization(self, obj):
         return obj.portfolio.urbanization if obj.portfolio else ""
+
     portfolio_urbanization.short_description = "Urbanization"
 
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
@@ -1830,7 +1854,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "suborganization_state_territory",
                     "creator",
                 ]
-            }
+            },
         ),
         (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
         (
@@ -1903,7 +1927,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "portfolio_organization_type",
                     "portfolio_federal_type",
                 ]
-            }
+            },
         ),
         (
             "Organization name and mailing address",
