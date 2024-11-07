@@ -576,7 +576,7 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=52)
+        self.assertContains(response, "Federal", count=51)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">federal</td>', count=1)
         # Now let's make sure the long description does not exist
@@ -1696,7 +1696,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
-                "converted_federal_agency",
+                "federal_agency",
                 "creator",
                 "about_your_organization",
                 "requested_domain",
@@ -1935,8 +1935,8 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_list_filter(request)
             expected_fields = (
                 DomainRequestAdmin.StatusListFilter,
-                "generic_org_type",
-                "federal_type",
+                DomainRequestAdmin.GenericOrgFilter,
+                DomainRequestAdmin.FederalTypeFilter,
                 DomainRequestAdmin.ElectionOfficeFilter,
                 "rejection_reason",
                 DomainRequestAdmin.InvestigatorFilter,
