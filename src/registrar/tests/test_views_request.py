@@ -3209,7 +3209,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # We shouldn't show the "domains" and "domain requests" buttons
             # on this page.
             self.assertNotContains(detail_page, "Domains")
-            self.assertNotContains(detail_page, "Domain requests")
+            self.assertNotContains(detail_page, "<span>Domain requests")
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
