@@ -1703,8 +1703,8 @@ class TestPortfolio(WebTest):
 
             self.assertEqual(response.status_code, 400)
             expected_error_message = (
-                f"There must be at least one admin in your organization. Give another member admin "
-                f"permissions, make sure they log into the registrar, and then remove this member."
+                "There must be at least one admin in your organization. Give another member admin "
+                "permissions, make sure they log into the registrar, and then remove this member."
             )
             self.assertContains(response, expected_error_message, status_code=400)
 
@@ -1856,7 +1856,7 @@ class TestPortfolio(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_portfolio_member_delete_view_manage_members_page_invitedmember(self):
-        """Success state with deleting an invited member on Manage Members page which should redirect back to Members Table"""
+        """Success state w/ deleting invited member on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
