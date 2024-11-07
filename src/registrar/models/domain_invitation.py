@@ -75,8 +75,12 @@ class DomainInvitation(TimeStampedModel):
             # the invitation was retrieved. Log that this occurred.
             logger.warn("Invitation %s was retrieved for a role that already exists.", self)
 
-    @transition(field=status, source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
+    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
         logger.info(f"Invitation for {self.domain} has been cancelled.")
-        
-    
+
+
+    @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
+    def update_cancellation_status(self):
+        pass
+

@@ -708,7 +708,7 @@ class TestDomainManagers(TestDomainOverview):
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
         mock_client = MockSESClient()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
         mock_client.EMAILS_SENT.clear()
         with self.assertRaises(DomainInvitation.DoesNotExist):
             DomainInvitation.objects.get(id=invitation.id)
@@ -720,7 +720,7 @@ class TestDomainManagers(TestDomainOverview):
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+        response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
         # Assert that the Cancel link is not displayed
@@ -740,7 +740,7 @@ class TestDomainManagers(TestDomainOverview):
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
 
         self.assertEqual(result.status_code, 403)
 

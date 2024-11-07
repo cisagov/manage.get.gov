@@ -111,7 +111,7 @@
   </a>
   </section>
 
-  {% if domain.invitations.exists %}
+  {% if domain_invitations|length > 0%}
   <section class="section-outlined">
   <h2>Invitations</h2>
   <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table--stacked dotgov-table">
@@ -125,7 +125,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for invitation in domain.invitations.all %}
+        {% for invitation in domain_invitations %}
         <tr>
           <th scope="row" role="rowheader" data-sort-value="{{ invitation.user.email }}" data-label="Email">
             {{ invitation.email }}

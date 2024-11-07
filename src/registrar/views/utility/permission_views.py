@@ -168,9 +168,11 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
     model = DomainInvitation
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
+
 class DomainInvitationUpdateView(DomainInvitationPermission, UpdateView, abc.ABC):
     model = DomainInvitation
     object: DomainInvitation
+
 
 class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
     """Abstract view for deleting a DomainRequest."""
