@@ -2960,6 +2960,69 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_breadcrumb_navigation(self):
+        """
+        Tests the breadcrumb navigation behavior in domain request wizard.
+        Ensures that:
+        - Breadcrumb shows correct text based on portfolio flag
+        - Links point to correct destinations
+        - Back button appears on appropriate steps
+        - Back button is not present on first step
+        """
+        # Create initial domain request
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            user=self.user,
+        )
+
+        # Test without portfolio flag
+        start_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Check initial breadcrumb state.
+        # Ensure that the request name is shown if it exists, otherwise just show new domain request.
+        self.assertContains(start_page, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(start_page, "city.gov")
+        self.assertContains(start_page, 'href="/"')
+        self.assertContains(start_page, "Manage your domains")
+        self.assertNotContains(start_page, "Previous step")
+
+        # Move to next step
+        form = start_page.forms[0]
+        next_page = form.submit().follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the back button appears
+        self.assertContains(next_page, "Previous step")
+        self.assertContains(next_page, "#arrow_back")
+
+        # Test with portfolio flag
+        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
+            portfolio = Portfolio.objects.create(
+                creator=self.user,
+                organization_name="test portfolio",
+            )
+            permission = UserPortfolioPermission.objects.create(
+                user=self.user,
+                portfolio=portfolio,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            )
+
+            # Check portfolio-specific breadcrumb
+            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+            self.assertContains(portfolio_page, "Domain requests")
+
+            # Clean up portfolio
+            permission.delete()
+            portfolio.delete()
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
     def test_unlocked_steps_empty_domain_request(self):
         """Test when all fields in the domain request are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
