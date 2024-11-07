@@ -1976,6 +1976,13 @@ class DomainRequestsTable extends BaseTable {
     .catch(error => console.error('Error fetching domain requests:', error));
   }
 
+    /**
+     * Modal that displays when deleting a domain request 
+     * @param {string} requested_domain - The requested domain URL 
+     * @param {string} id - The request's ID
+     * @param {string}} created_at - When the request was created at
+     * @param {HTMLElement} wrapper_element - The element to which the modal is appended
+     */
   static addDomainRequestsModal(requested_domain, id, created_at, wrapper_element) {
     // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
     let modalHeading = '';
@@ -2271,8 +2278,17 @@ class MembersTable extends BaseTable {
     return domainsHTML;
   }
 
+  /**
+   * The POST call for deleting a Member and which error or success message it should return
+   * and redirection if necessary
+   * 
+   * @param {string} member_delete_url - The URL for deletion ie `${member_type}-${member_id}/delete``
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+   * Note: X-Request-With is used for security reasons to present CSRF attacks, the server checks that this header is present
+   * (consent via CORS) so it knows it's not from a random request attempt
+   */
   deleteMember(member_delete_url, pageToDisplay) {
-    // Get csrf token
+    // Get CSRF token
     const csrfToken = getCsrfToken();
     // Create FormData object and append the CSRF token
     const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
@@ -2295,7 +2311,6 @@ class MembersTable extends BaseTable {
           this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentStatus, this.currentSearchTerm);
         });
       } else {
-        // If the response isn't 204, handle the error response
         response.json().then(data => {
           if (data.error) {
             // This should display the error given from backend for
@@ -2406,6 +2421,13 @@ class MembersTable extends BaseTable {
     return permissionsHTML;
   }
 
+    /**
+   * Modal that displays when deleting a domain request 
+   * @param {string} num_domains - Number of domain a user has within the org
+   * @param {string} member_email - The member's email
+   * @param {string} submit_delete_url - `${member_type}-${member_id}/delete`
+   * @param {HTMLElement} wrapper_element - The element to which the modal is appended
+   */
   static addMemberModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
     let modalHeading = '';
     let modalDescription = '';
@@ -2435,8 +2457,6 @@ class MembersTable extends BaseTable {
 
     addModal('toggle-remove-member', id, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
   }
-
-  
 }
 
 class MemberDomainsTable extends BaseTable {

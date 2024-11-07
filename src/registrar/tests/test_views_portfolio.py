@@ -4,6 +4,7 @@ from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
 from unittest.mock import MagicMock, patch
 from django_webtest import WebTest  # type: ignore
+from django.core.handlers.wsgi import WSGIRequest
 from registrar.models import (
     DomainRequest,
     Domain,
@@ -1464,7 +1465,7 @@ class TestPortfolio(WebTest):
         member_email = "a_member@example.com"
         member, _ = User.objects.get_or_create(username="a_member", email=member_email)
 
-        UserPortfolioPermission.objects.get_or_create(
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
@@ -1474,7 +1475,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
 
         # Specifically go to the Manage Member page
-        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+        response = self.client.get(reverse("member", args=[upp.id]), follow=True)
 
         self.assertEqual(response.status_code, 200)
 
@@ -1538,7 +1539,7 @@ class TestPortfolio(WebTest):
         member_email = "member_with_view_access@example.com"
         member, _ = User.objects.get_or_create(username="test_member_with_view_access", email=member_email)
 
-        UserPortfolioPermission.objects.get_or_create(
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
@@ -1548,11 +1549,11 @@ class TestPortfolio(WebTest):
         )
 
         # I log in as the Member with only view permissions to evaluate the pages behaviour
-        # when viewd by someone who doesn't have edit perms
+        # when viewed by someone who doesn't have edit perms
         self.client.force_login(member)
 
         # Go to the Manage Member page
-        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+        response = self.client.get(reverse("member", args=[upp.id]), follow=True)
 
         self.assertEqual(response.status_code, 200)
 
@@ -1582,7 +1583,7 @@ class TestPortfolio(WebTest):
         member_email = "a_member@example.com"
         member, _ = User.objects.get_or_create(email=member_email)
 
-        UserPortfolioPermission.objects.get_or_create(
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
@@ -1592,7 +1593,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
 
         # Specifically go to the Manage Member page
-        response = self.client.get(reverse("member", args=[member.id]), follow=True)
+        response = self.client.get(reverse("member", args=[upp.id]), follow=True)
 
         # Check for a 200 response
         self.assertEqual(response.status_code, 200)
@@ -1636,50 +1637,264 @@ class TestPortfolio(WebTest):
         # Assert that the toggleable alert ID exists
         self.assertContains(response, '<div id="toggleable-alert"')
 
-    # 1. I'm deleting a member with active requests on the Members Table page,
-    # it should give me the error "This member has an active domain request and can't be removed" and then stay on the page
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_delete_view_members_table_active_requests(self):
+        """Error state w/ deleting a member with active request on Members Table"""
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        # That creates a member
+        member_email = "a_member@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
 
-    # 2. I'm deleting a member with active requests on the Manage Members page,
-    # it should give me the error "This member has an active domain request and can't be removed" stay on the Manage Members page
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=1):
+            self.client.force_login(self.user)
+            # We check X_REQUESTED_WITH bc those return JSON responses
+            response = self.client.post(
+                reverse("member-delete", kwargs={"pk": upp.pk}), HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+            )
 
-    # @less_console_noise_decorator
-    # @override_flag("organization_feature", active=True)
-    # @override_flag("organization_members", active=True)
-    # @patch("registrar.models.User.get_active_requests_count_in_portfolio", return_value=1)
-    # @patch("django.contrib.messages.error")  # Mock the messages.error function to test error handling
-    # def test_portfolio_member_delete_view_members_table(self):
-    #     # I'm a user
-    #     UserPortfolioPermission.objects.get_or_create(
-    #         user=self.user,
-    #         portfolio=self.portfolio,
-    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-    #         additional_permissions=[
-    #             UserPortfolioPermissionChoices.VIEW_MEMBERS,
-    #             UserPortfolioPermissionChoices.EDIT_MEMBERS,
-    #         ],
-    #     )
-    #     # That creates a member
-    #     member_email = "a_member@example.com"
-    #     member, _ = User.objects.get_or_create(email=member_email)
+            self.assertEqual(response.status_code, 400)  # Bad request due to active requests
+            support_url = "https://get.gov/contact/"
+            expected_error_message = (
+                f"This member has an active domain request and can't be removed from the organization. "
+                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+            )
 
-    #     UserPortfolioPermission.objects.get_or_create(
-    #         user=member,
-    #         portfolio=self.portfolio,
-    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-    #     )
-    #     with patch.object(User, 'get_active_requests_count_in_portfolio', return_value=1):
-    #         self.client.force_login(self.user)
-    #         response = self.client.post(reverse("portfolio_member_delete", kwargs={"pk": self.member.pk}),
-    #             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertContains(response, expected_error_message, status_code=400)
 
-    #         self.assertEqual(response.status_code, 400)  # Bad request due to active requests
-    #         mock_messages_error.assert_called_once_with(
-    #             self.user.request,
-    #             "This member has an active domain request and can't be removed from the organization. "
-    #             "<a href='/support-url' target='_blank'>Contact the .gov team</a> to remove them."
-    #         )
-    #         # Ensure we are still on the same Members Table page (no redirect)
-    #         self.assertTemplateUsed(response, 'members_table.html')
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_delete_view_members_table_only_admin(self):
+        """Error state w/ deleting a member that's the only admin on Members Table"""
+
+        # I'm a user with admin permission
+        admin_perm_user, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        with patch.object(User, "is_only_admin_of_portfolio", return_value=True):
+            self.client.force_login(self.user)
+            # We check X_REQUESTED_WITH bc those return JSON responses
+            response = self.client.post(
+                reverse("member-delete", kwargs={"pk": admin_perm_user.pk}), HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+            )
+
+            self.assertEqual(response.status_code, 400)
+            expected_error_message = (
+                f"There must be at least one admin in your organization. Give another member admin "
+                f"permissions, make sure they log into the registrar, and then remove this member."
+            )
+            self.assertContains(response, expected_error_message, status_code=400)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_table_delete_view_success(self):
+        """Success state with deleting on Members Table page bc no active request AND not only admin"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Creating a member that can be deleted (see patch)
+        member_email = "deleteable_member@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        # Set up the member in the portfolio
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # And set that the member has no active requests AND it's not the only admin
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
+            User, "is_only_admin_of_portfolio", return_value=False
+        ):
+
+            # Attempt to delete
+            self.client.force_login(self.user)
+            response = self.client.post(
+                # We check X_REQUESTED_WITH bc those return JSON responses
+                reverse("member-delete", kwargs={"pk": upp.pk}),
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+
+            # Check for a successful deletion
+            self.assertEqual(response.status_code, 200)
+
+            expected_success_message = f"You've removed {member.email} from the organization."
+            self.assertContains(response, expected_success_message, status_code=200)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_delete_view_manage_members_page_active_requests(self):
+        """Error state when deleting a member with active requests on the Manage Members page"""
+
+        # I'm an admin user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Create a member with active requests
+        member_email = "member_with_active_request@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=1):
+            with patch("django.contrib.messages.error") as mock_error:
+                self.client.force_login(self.user)
+                response = self.client.post(
+                    reverse("member-delete", kwargs={"pk": upp.pk}),
+                )
+                # We don't want to do follow=True in response bc that does automatic redirection
+
+                # We want 302 bc indicates redirect
+                self.assertEqual(response.status_code, 302)
+
+                support_url = "https://get.gov/contact/"
+                expected_error_message = (
+                    f"This member has an active domain request and can't be removed from the organization. "
+                    f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                )
+
+                args, kwargs = mock_error.call_args
+                # Check if first arg is a WSGIRequest, confirms request object passed correctly
+                # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
+                self.assertIsInstance(args[0], WSGIRequest)
+                # Check that the error message matches the expected error message
+                self.assertEqual(args[1], expected_error_message)
+
+                # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
+                # and then confirm that we're still on the Manage Members page
+                self.assertEqual(response.headers["Location"], reverse("member", kwargs={"pk": upp.pk}))
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_delete_view_manage_members_page_only_admin(self):
+        """Error state when trying to delete the only admin on the Manage Members page"""
+
+        # Create an admin with admin user perms
+        admin_perm_user, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Set them to be the only admin and attempt to delete
+        with patch.object(User, "is_only_admin_of_portfolio", return_value=True):
+            with patch("django.contrib.messages.error") as mock_error:
+                self.client.force_login(self.user)
+                response = self.client.post(
+                    reverse("member-delete", kwargs={"pk": admin_perm_user.pk}),
+                )
+
+                self.assertEqual(response.status_code, 302)
+
+                expected_error_message = (
+                    "There must be at least one admin in your organization. Give another member admin "
+                    "permissions, make sure they log into the registrar, and then remove this member."
+                )
+
+                args, kwargs = mock_error.call_args
+                # Check if first arg is a WSGIRequest, confirms request object passed correctly
+                # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
+                self.assertIsInstance(args[0], WSGIRequest)
+                # Check that the error message matches the expected error message
+                self.assertEqual(args[1], expected_error_message)
+
+                # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
+                # and then confirm that we're still on the Manage Members page
+                self.assertEqual(response.headers["Location"], reverse("member", kwargs={"pk": admin_perm_user.pk}))
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self):
+        """Success state with deleting an invited member on Manage Members page which should redirect back to Members Table"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Invite a member under same portfolio
+        invited_member_email = "invited_member@example.com"
+        invitation = PortfolioInvitation.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        with patch("django.contrib.messages.success") as mock_success:
+            self.client.force_login(self.user)
+            response = self.client.post(
+                reverse("invitedmember-delete", kwargs={"pk": invitation.pk}),
+            )
+
+            self.assertEqual(response.status_code, 302)
+
+            expected_success_message = f"You've removed {invitation.email} from the organization."
+            args, kwargs = mock_success.call_args
+            # Check if first arg is a WSGIRequest, confirms request object passed correctly
+            # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
+            self.assertIsInstance(args[0], WSGIRequest)
+            # Check that the error message matches the expected error message
+            self.assertEqual(args[1], expected_success_message)
+
+            # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
+            # and then confirm that we're now on Members Table page
+            self.assertEqual(response.headers["Location"], reverse("members"))
 
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
