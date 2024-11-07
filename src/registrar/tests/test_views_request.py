@@ -3063,7 +3063,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
             self.assertContains(detail_page, "#check_circle", count=9)
             # Type of organization
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
             self.assertContains(detail_page, "link_usa-checked", count=10)
 
         else:
@@ -3125,7 +3125,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=4)
             # Type of organization
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
             self.assertContains(detail_page, "link_usa-checked", count=4)
 
         else:
@@ -3199,7 +3199,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "#lock", 1)
 
             # The current option should be selected
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
 
             # We default to the requesting entity page
             expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"id": domain_request.id})
