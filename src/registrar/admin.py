@@ -1643,7 +1643,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
-        organization in the Domain Information object."""
+        organization in the Domain Request object."""
 
         title = "generic organization"
         parameter_name = "converted_generic_orgs"
