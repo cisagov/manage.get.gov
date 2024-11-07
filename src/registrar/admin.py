@@ -1740,7 +1740,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
 
-    portfolio_senior_official.short_description = "Senior official"
+    portfolio_senior_official.short_description = "Senior official"  # type: ignore
 
     def portfolio_organization_type(self, obj):
         return (
@@ -1749,7 +1749,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else "-"
         )
 
-    portfolio_organization_type.short_description = "Organization type"
+    portfolio_organization_type.short_description = "Organization type"  # type: ignore
 
     def portfolio_federal_type(self, obj):
         return (
@@ -1758,47 +1758,47 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             else "-"
         )
 
-    portfolio_federal_type.short_description = "Federal type"
+    portfolio_federal_type.short_description = "Federal type"  # type: ignore
 
     def portfolio_organization_name(self, obj):
         return obj.portfolio.organization_name if obj.portfolio else ""
 
-    portfolio_organization_name.short_description = "Organization name"
+    portfolio_organization_name.short_description = "Organization name"  # type: ignore
 
     def portfolio_federal_agency(self, obj):
         return obj.portfolio.federal_agency if obj.portfolio else ""
 
-    portfolio_federal_agency.short_description = "Federal agency"
+    portfolio_federal_agency.short_description = "Federal agency"  # type: ignore
 
     def portfolio_state_territory(self, obj):
         return obj.portfolio.state_territory if obj.portfolio else ""
 
-    portfolio_state_territory.short_description = "State, territory, or military post"
+    portfolio_state_territory.short_description = "State, territory, or military post"  # type: ignore
 
     def portfolio_address_line1(self, obj):
         return obj.portfolio.address_line1 if obj.portfolio else ""
 
-    portfolio_address_line1.short_description = "Address line 1"
+    portfolio_address_line1.short_description = "Address line 1"  # type: ignore
 
     def portfolio_address_line2(self, obj):
         return obj.portfolio.address_line2 if obj.portfolio else ""
 
-    portfolio_address_line2.short_description = "Address line 2"
+    portfolio_address_line2.short_description = "Address line 2"  # type: ignore
 
     def portfolio_city(self, obj):
         return obj.portfolio.city if obj.portfolio else ""
 
-    portfolio_city.short_description = "City"
+    portfolio_city.short_description = "City"  # type: ignore
 
     def portfolio_zipcode(self, obj):
         return obj.portfolio.zipcode if obj.portfolio else ""
 
-    portfolio_zipcode.short_description = "Zip code"
+    portfolio_zipcode.short_description = "Zip code"  # type: ignore
 
     def portfolio_urbanization(self, obj):
         return obj.portfolio.urbanization if obj.portfolio else ""
 
-    portfolio_urbanization.short_description = "Urbanization"
+    portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
