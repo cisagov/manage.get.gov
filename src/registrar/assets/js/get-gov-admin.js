@@ -291,6 +291,8 @@ function handlePortfolioSelection() {
      *    - If `portfolioOrgType` is "Federal", hides `portfolioOrgNameField` and shows both `portfolioFederalAgencyField`
      *      and `portfolioFederalTypeField`.
      *    - If not Federal, shows `portfolioOrgNameField` and hides `portfolioFederalAgencyField` and `portfolioFederalTypeField`.
+     *    - Certain text fields (Organization Type, Organization Name, Federal Type, Federal Agency) updated to links
+     *      to edit the portfolio
      *
      * Dependencies:
      * - Expects specific elements to be defined globally (`portfolioSeniorOfficial`, `portfolioUrbanizationField`, etc.).
@@ -323,6 +325,20 @@ function handlePortfolioSelection() {
             hideElement(portfolioFederalAgencyField);
             hideElement(portfolioFederalTypeField);
         }
+
+        // Modify the display of certain fields to convert them from text to links
+        // to edit the portfolio
+        let portfolio_id = portfolioDropdown.val();
+        let portfolioEditUrl = `/admin/registrar/portfolio/${portfolio_id}/change/`;
+        let portfolioOrgTypeValue = portfolioOrgType.innerText;
+        portfolioOrgType.innerHTML = `<a href=${portfolioEditUrl}>${portfolioOrgTypeValue}</a>`;
+        let portfolioOrgNameValue = portfolioOrgName.innerText;
+        portfolioOrgName.innerHTML = `<a href=${portfolioEditUrl}>${portfolioOrgNameValue}</a>`;
+        let portfolioFederalAgencyValue = portfolioFederalAgency.innerText;
+        portfolioFederalAgency.innerHTML = `<a href=${portfolioEditUrl}>${portfolioFederalAgencyValue}</a>`;
+        let portfolioFederalTypeValue = portfolioFederalType.innerText;
+        if (portfolioFederalTypeValue !== '-')
+            portfolioFederalType.innerHTML = `<a href=${portfolioEditUrl}>${portfolioFederalTypeValue}</a>`;
 
     }
 
@@ -1652,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
             }else {
                 if (readonlySeniorOfficial) {
-                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/ class='test'>${seniorOfficialName}</a>`
+                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
                     readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
                 }
             }
