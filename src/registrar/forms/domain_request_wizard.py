@@ -774,7 +774,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
 
 class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
-        required=True,
+        required=False,
         label="Anything else?",
         widget=forms.Textarea(),
         validators=[
