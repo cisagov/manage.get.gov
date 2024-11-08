@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  DESTINATION_ENVIRONMENT: ms
-  SOURCE_ENVIRONMENT: staging
+  DESTINATION_ENVIRONMENT: staging
+  SOURCE_ENVIRONMENT: stable
   
 
 jobs:
