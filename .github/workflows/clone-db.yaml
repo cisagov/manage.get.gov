@@ -1,4 +1,4 @@
-name: Clone Staging Database
+name: Clone Stable Database
 
 on:
   schedule:
@@ -16,8 +16,8 @@ jobs:
   clone-database:
     runs-on: ubuntu-24.04
     env:
-      CF_USERNAME: ${{ secrets.CF_MS_USERNAME }}
-      CF_PASSWORD: ${{ secrets.CF_MS_PASSWORD }}
+      CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
+      CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
     steps:
         - name: Clone Database
           run: |
