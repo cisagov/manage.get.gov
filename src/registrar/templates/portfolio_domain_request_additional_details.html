@@ -13,7 +13,7 @@
     </fieldset>
 
     <div class="margin-top-3" id="anything-else">
-        <p><em>This question is optional.</em></p>
+        <p><em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em></p>
         {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.0.anything_else %}
         {% endwith %}
