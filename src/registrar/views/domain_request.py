@@ -489,11 +489,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
-
-        # Hides the requests and domains buttons in the navbar
-        context_stuff["hide_requests"] = self.is_portfolio
-        context_stuff["hide_domains"] = self.is_portfolio
-
         return context_stuff
 
     def get_step_list(self) -> list:
