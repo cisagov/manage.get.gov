@@ -71,7 +71,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             {% if original_object.portfolio.senior_official %}
                 <a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a>
             {% else %}
-                No additional contact information found.<br>
+                No senior official found.<br>
             {% endif %}
         </div>
     {% elif field.field.name == "other_contacts" %}

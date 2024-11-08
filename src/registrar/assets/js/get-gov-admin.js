@@ -301,7 +301,7 @@ function handlePortfolioSelection() {
     function updatePortfolioFieldsDataDynamicDisplay() {
 
         // Handle visibility of senior official's contact information
-        if (portfolioSeniorOfficial.innerText.includes("No additional contact information found")) {
+        if (portfolioSeniorOfficial.innerText.includes("No senior official found.")) {
             hideElement(portfolioSeniorOfficialAddress);
         } else {
             showElement(portfolioSeniorOfficialAddress);
