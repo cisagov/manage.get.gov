@@ -87,9 +87,12 @@ class GetPortfolioJsonTest(TestCase):
             first_name="John", last_name="Doe", title="Director", federal_agency=self.agency
         )
         self.portfolio = Portfolio.objects.create(
-            creator=self.user, federal_agency=self.agency, senior_official=self.senior_official,
-            organization_name="Org name", organization_type=Portfolio.OrganizationChoices.FEDERAL,
-            )
+            creator=self.user,
+            federal_agency=self.agency,
+            senior_official=self.senior_official,
+            organization_name="Org name",
+            organization_type=Portfolio.OrganizationChoices.FEDERAL,
+        )
 
         self.api_url = reverse("get-portfolio-json")
 
@@ -120,7 +123,7 @@ class GetPortfolioJsonTest(TestCase):
         self.assertEqual(portfolio["senior_official"]["phone"], None)
         self.assertEqual(portfolio["senior_official"]["email"], None)
         self.assertEqual(portfolio["federal_type"], "-")
-        
+
     @less_console_noise_decorator
     def test_get_portfolio_json_authenticated_analyst(self):
         """Test that an analyst user can fetch the portfolio's information."""
