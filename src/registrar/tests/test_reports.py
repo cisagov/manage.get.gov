@@ -682,7 +682,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     def test_domain_request_growth(self):
         """Shows submitted requests within a date range, sorted"""
         # Remove "Submitted at" because we can't guess this immutable, dynamically generated test data
-        print("we are in here")
         columns = [
             "Domain request",
             "Domain type",
@@ -693,7 +692,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             # Create a CSV file in memory
             csv_file = StringIO()
             # Call the export functions
-            print("something")
             DomainRequestGrowth.export_data_to_csv(
                 csv_file,
                 start_date=self.start_date.strftime("%Y-%m-%d"),
@@ -701,11 +699,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             )
             # Reset the CSV file's position to the beginning
             csv_file.seek(0)
-            print("uuuuu")
-            print(csv_file)
             # Read the content into a variable
             csv_content = csv_file.read()
-            print(csv_content)
+
             expected_content = (
                 "Domain request,Domain type,Federal type\n"
                 "city3.gov,Federal,Executive\n"

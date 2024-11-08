@@ -1640,6 +1640,70 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "generic organization"
+        parameter_name = "converted_generic_orgs"
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_generic_org = domain_request.converted_generic_org_type
+                if converted_generic_org:
+                    converted_generic_orgs.add(converted_generic_org)
+
+            return sorted((org, org) for org in converted_generic_orgs)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    # Filter based on the generic org value returned by converted_generic_org_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_generic_org_type
+                        and domain_request.converted_generic_org_type == self.value()
+                    ]
+                )
+            return queryset
+
+    class FederalTypeFilter(admin.SimpleListFilter):
+        """Custom Federal Type filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's federal type.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "federal Type"
+        parameter_name = "converted_federal_types"
+
+        def lookups(self, request, model_admin):
+            converted_federal_types = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_federal_type = domain_request.converted_federal_type
+                if converted_federal_type:
+                    converted_federal_types.add(converted_federal_type)
+
+            return sorted((type, type) for type in converted_federal_types)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if federal Type is selected in the filter
+                return queryset.filter(
+                    # Filter based on the federal type returned by converted_federal_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_federal_type
+                        and domain_request.converted_federal_type == self.value()
+                    ]
+                )
+            return queryset
+
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
@@ -1762,8 +1826,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Filters
     list_filter = (
         StatusListFilter,
-        "generic_org_type",
-        "federal_type",
+        GenericOrgFilter,
+        FederalTypeFilter,
         ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
@@ -1876,7 +1940,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
-        "converted_federal_agency",
+        "federal_agency",
         "creator",
         "about_your_organization",
         "requested_domain",
