@@ -323,9 +323,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                     request,
                     "domain_request_intro.html",
                     {
-                        "hide_requests": True,
-                        "hide_domains": True,
-                        "hide_members": True,
+                        "hide_requests": False,
+                        "hide_domains": False,
+                        "hide_members": False,
                     },
                 )
             else:
