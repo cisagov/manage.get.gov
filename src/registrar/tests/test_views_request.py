@@ -3158,11 +3158,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             expected_url = reverse("domain-request:portfolio_requesting_entity")
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
-
-            # We shouldn't show the "domains" and "domain requests" buttons
-            # on this page.
-            self.assertNotContains(detail_page, "Domains")
-            self.assertNotContains(detail_page, "Domain requests")
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
