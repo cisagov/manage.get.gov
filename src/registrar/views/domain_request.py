@@ -183,9 +183,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        if self.kwargs.get("id") is not None:
-            return True
-        return False
+        return bool(self.kwargs.get("id") is not None)
 
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""
@@ -450,7 +448,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if self.domain_request.requested_domain is not None:
             requested_domain_name = self.domain_request.requested_domain.name
 
-        context_stuff = {}
+        context = {}
 
         # Note: we will want to consolidate the non_org_steps_complete check into the same check that
         # org_steps_complete is using at some point.
@@ -458,7 +456,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
         if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
             modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
-            context_stuff = {
+            context = {
                 "not_form": False,
                 "form_titles": self.titles,
                 "steps": self.steps,
@@ -475,7 +473,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             }
         else:  # form is not complete
             modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
-            context_stuff = {
+            context = {
                 "not_form": True,
                 "form_titles": self.titles,
                 "steps": self.steps,
@@ -491,11 +489,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             }
 
         # Hides the requests and domains buttons in the navbar
-        context_stuff["hide_requests"] = self.is_portfolio
-        context_stuff["hide_domains"] = self.is_portfolio
-        context_stuff["domain_request_id"] = self.domain_request.id
+        context["hide_requests"] = self.is_portfolio
+        context["hide_domains"] = self.is_portfolio
+        context["domain_request_id"] = self.domain_request.id
 
-        return context_stuff
+        return context
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
