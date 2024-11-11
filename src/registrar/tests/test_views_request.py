@@ -3162,6 +3162,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
         # Data cleanup
+        # test deployment
         user_portfolio_permission.delete()
         portfolio.delete()
         federal_agency.delete()
