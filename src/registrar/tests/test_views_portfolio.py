@@ -2,6 +2,7 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
+from unittest.mock import MagicMock
 from django_webtest import WebTest  # type: ignore
 from registrar.models import (
     DomainRequest,
@@ -9,13 +10,15 @@ from registrar.models import (
     DomainInformation,
     UserDomainRole,
     User,
+    Suborganization,
+    AllowedEmail,
 )
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.tests.test_views import TestWithUser
-from .common import MockSESClient, completed_domain_request, create_test_user
+from .common import MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
@@ -1592,3 +1595,284 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+
+class TestRequestingEntity(WebTest):
+    """The requesting entity page is a domain request form that only exists
+    within the context of a portfolio."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.user = create_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel Alaska")
+        self.suborganization, _ = Suborganization.objects.get_or_create(
+            name="Rocky road",
+            portfolio=self.portfolio,
+        )
+        self.suborganization_2, _ = Suborganization.objects.get_or_create(
+            name="Vanilla",
+            portfolio=self.portfolio,
+        )
+        self.unrelated_suborganization, _ = Suborganization.objects.get_or_create(
+            name="Cold",
+            portfolio=self.portfolio_2,
+        )
+        self.portfolio_role = UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # Login the current user
+        self.app.set_user(self.user.username)
+
+        self.mock_client_class = MagicMock()
+        self.mock_client = self.mock_client_class.return_value
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_requesting_entity_page_new_request(self):
+        """Tests that the requesting entity page loads correctly when a new request is started"""
+
+        response = self.app.get(reverse("domain-request:"))
+
+        # Navigate past the intro page
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_form = response.forms[0]
+        response = intro_form.submit().follow()
+
+        # Test the requesting entiy page
+        self.assertContains(response, "Who will use the domain you’re requesting?")
+        self.assertContains(response, "Add suborganization information")
+        # We expect to see the portfolio name in two places:
+        # the header, and as one of the radio button options.
+        self.assertContains(response, self.portfolio.organization_name, count=2)
+
+        # We expect the dropdown list to contain the suborganizations that currently exist on this portfolio
+        self.assertContains(response, self.suborganization.name, count=1)
+        self.assertContains(response, self.suborganization_2.name, count=1)
+
+        # However, we should only see suborgs that are on the actual portfolio
+        self.assertNotContains(response, self.unrelated_suborganization.name)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_requesting_entity_page_existing_suborg_submission(self):
+        """Tests that you can submit a form on this page and set a suborg"""
+        response = self.app.get(reverse("domain-request:"))
+
+        # Navigate past the intro page
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        form = response.forms[0]
+        response = form.submit().follow()
+
+        # Check that we're on the right page
+        self.assertContains(response, "Who will use the domain you’re requesting?")
+        form = response.forms[0]
+
+        # Test selecting an existing suborg
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
+        form["portfolio_requesting_entity-sub_organization"] = f"{self.suborganization.id}"
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = False
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = form.submit().follow()
+
+        # Ensure that the post occurred successfully by checking that we're on the following page.
+        self.assertContains(response, "Current websites")
+        created_domain_request_exists = DomainRequest.objects.filter(
+            organization_name__isnull=True, sub_organization=self.suborganization
+        ).exists()
+        self.assertTrue(created_domain_request_exists)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_requesting_entity_page_new_suborg_submission(self):
+        """Tests that you can submit a form on this page and set a new suborg"""
+        response = self.app.get(reverse("domain-request:"))
+
+        # Navigate past the intro page
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        form = response.forms[0]
+        response = form.submit().follow()
+
+        # Check that we're on the right page
+        self.assertContains(response, "Who will use the domain you’re requesting?")
+        form = response.forms[0]
+
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
+        form["portfolio_requesting_entity-sub_organization"] = ""
+
+        form["portfolio_requesting_entity-requested_suborganization"] = "moon"
+        form["portfolio_requesting_entity-suborganization_city"] = "kepler"
+        form["portfolio_requesting_entity-suborganization_state_territory"] = "AL"
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = form.submit().follow()
+
+        # Ensure that the post occurred successfully by checking that we're on the following page.
+        self.assertContains(response, "Current websites")
+        created_domain_request_exists = DomainRequest.objects.filter(
+            organization_name__isnull=True,
+            sub_organization__isnull=True,
+            requested_suborganization="moon",
+            suborganization_city="kepler",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.ALABAMA,
+        ).exists()
+        self.assertTrue(created_domain_request_exists)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_requesting_entity_page_organization_submission(self):
+        """Tests submitting an organization on the requesting org form"""
+        response = self.app.get(reverse("domain-request:"))
+
+        # Navigate past the intro page
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        form = response.forms[0]
+        response = form.submit().follow()
+
+        # Check that we're on the right page
+        self.assertContains(response, "Who will use the domain you’re requesting?")
+        form = response.forms[0]
+
+        # Test selecting an existing suborg
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = form.submit().follow()
+
+        # Ensure that the post occurred successfully by checking that we're on the following page.
+        self.assertContains(response, "Current websites")
+        created_domain_request_exists = DomainRequest.objects.filter(
+            organization_name=self.portfolio.organization_name,
+        ).exists()
+        self.assertTrue(created_domain_request_exists)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_requesting_entity_page_errors(self):
+        """Tests that we get the expected form errors on requesting entity"""
+        domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)
+        response = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        form = response.forms[0]
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Test missing suborganization selection
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
+        form["portfolio_requesting_entity-sub_organization"] = ""
+
+        response = form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        self.assertContains(response, "Suborganization is required.", status_code=200)
+
+        # Test missing custom suborganization details
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
+        response = form.submit()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        self.assertContains(response, "Requested suborganization is required.", status_code=200)
+        self.assertContains(response, "City is required.", status_code=200)
+        self.assertContains(response, "State, territory, or military post is required.", status_code=200)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_requesting_entity_submission_email_sent(self):
+        """Tests that an email is sent out on successful form submission"""
+        AllowedEmail.objects.create(email=self.user.email)
+        domain_request = completed_domain_request(
+            user=self.user,
+            # This is the additional details field
+            has_anything_else=True,
+        )
+        domain_request.portfolio = self.portfolio
+        domain_request.requested_suborganization = "moon"
+        domain_request.suborganization_city = "kepler"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        domain_request.save()
+        domain_request.refresh_from_db()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            domain_request.submit()
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertNotIn("Anything else", body)
+        self.assertIn("kepler, AL", body)
+        self.assertIn("Requesting entity:", body)
+        self.assertIn("Administrators from your organization:", body)
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_requesting_entity_viewonly(self):
+        """Tests the review steps page on under our viewonly context"""
+        domain_request = completed_domain_request(
+            user=create_test_user(),
+            # This is the additional details field
+            has_anything_else=True,
+        )
+        domain_request.portfolio = self.portfolio
+        domain_request.requested_suborganization = "moon"
+        domain_request.suborganization_city = "kepler"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        domain_request.save()
+        domain_request.refresh_from_db()
+
+        domain_request.submit()
+
+        response = self.app.get(reverse("domain-request-status-viewonly", kwargs={"pk": domain_request.pk}))
+        self.assertContains(response, "Requesting entity")
+        self.assertContains(response, "moon")
+        self.assertContains(response, "kepler, AL")
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_requesting_entity_manage(self):
+        """Tests the review steps page on under our manage context"""
+        domain_request = completed_domain_request(
+            user=self.user,
+            # This is the additional details field
+            has_anything_else=True,
+        )
+        domain_request.portfolio = self.portfolio
+        domain_request.requested_suborganization = "moon"
+        domain_request.suborganization_city = "kepler"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        domain_request.save()
+        domain_request.refresh_from_db()
+
+        domain_request.submit()
+
+        response = self.app.get(reverse("domain-request-status", kwargs={"pk": domain_request.pk}))
+        self.assertContains(response, "Requesting entity")
+        self.assertContains(response, "moon")
+        self.assertContains(response, "kepler, AL")

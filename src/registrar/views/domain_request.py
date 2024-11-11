@@ -137,7 +137,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     }
 
     PORTFOLIO_UNLOCKING_STEPS = {
-        PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda self: self.domain_request.organization_name is not None,
+        PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
         PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
             self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
         ),
@@ -319,7 +319,15 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(request, "domain_request_intro.html", {"hide_requests": True, "hide_domains": True})
+                return render(
+                    request,
+                    "domain_request_intro.html",
+                    {
+                        "hide_requests": True,
+                        "hide_domains": True,
+                        "hide_members": True,
+                    },
+                )
             else:
                 return self.goto(self.steps.first)
 
@@ -588,7 +596,43 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 # Portfolio pages
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
-    forms = [forms.RequestingEntityForm]
+    forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
+
+    def save(self, forms: list):
+        """Override of save to clear or associate certain suborganization data
+        depending on what the user wishes to do. For instance, we want to add a suborganization
+        if the user selects one."""
+
+        # Get the yes/no dropdown value
+        yesno_form = forms[0]
+        yesno_cleaned_data = yesno_form.cleaned_data
+        requesting_entity_is_suborganization = yesno_cleaned_data.get("requesting_entity_is_suborganization")
+
+        # Get the suborg value, and the requested suborg value
+        requesting_entity_form = forms[1]
+        cleaned_data = requesting_entity_form.cleaned_data
+        sub_organization = cleaned_data.get("sub_organization")
+        requested_suborganization = cleaned_data.get("requested_suborganization")
+
+        # Do some data cleanup, depending on what option was checked
+        if requesting_entity_is_suborganization and (sub_organization or requested_suborganization):
+            # Cleanup the organization name field, as this isn't for suborganizations.
+            requesting_entity_form.cleaned_data.update({"organization_name": None})
+        else:
+            # If the user doesn't intend to create a suborg, simply don't make one and do some data cleanup
+            requesting_entity_form.cleaned_data.update(
+                {
+                    "organization_name": (
+                        self.domain_request.portfolio.organization_name if self.domain_request.portfolio else None
+                    ),
+                    "sub_organization": None,
+                    "requested_suborganization": None,
+                    "suborganization_city": None,
+                    "suborganization_state_territory": None,
+                }
+            )
+
+        super().save(forms)
 
 
 class PortfolioAdditionalDetails(DomainRequestWizard):
@@ -833,6 +877,18 @@ class DomainRequestStatus(DomainRequestPermissionView):
                 return False
 
         return True
+
+    def get_context_data(self, **kwargs):
+        """Context override to add a step list to the context"""
+        context = super().get_context_data(**kwargs)
+        # Create a temp wizard object to grab the step list
+        if self.request.user.is_org_user(self.request):
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
+        return context
 
 
 class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):

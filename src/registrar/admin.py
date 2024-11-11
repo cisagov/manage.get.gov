@@ -5,6 +5,7 @@ from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
@@ -28,6 +29,7 @@ from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -1478,7 +1480,18 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain."
 
     fieldsets = [
-        (None, {"fields": ["portfolio", "sub_organization", "creator", "domain_request", "notes"]}),
+        (
+            None,
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "creator",
+                    "domain_request",
+                    "notes",
+                ]
+            },
+        ),
         (".gov domain", {"fields": ["domain"]}),
         ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
@@ -1627,6 +1640,70 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "generic organization"
+        parameter_name = "converted_generic_orgs"
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_generic_org = domain_request.converted_generic_org_type
+                if converted_generic_org:
+                    converted_generic_orgs.add(converted_generic_org)
+
+            return sorted((org, org) for org in converted_generic_orgs)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    # Filter based on the generic org value returned by converted_generic_org_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_generic_org_type
+                        and domain_request.converted_generic_org_type == self.value()
+                    ]
+                )
+            return queryset
+
+    class FederalTypeFilter(admin.SimpleListFilter):
+        """Custom Federal Type filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's federal type.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "federal Type"
+        parameter_name = "converted_federal_types"
+
+        def lookups(self, request, model_admin):
+            converted_federal_types = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_federal_type = domain_request.converted_federal_type
+                if converted_federal_type:
+                    converted_federal_types.add(converted_federal_type)
+
+            return sorted((type, type) for type in converted_federal_types)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if federal Type is selected in the filter
+                return queryset.filter(
+                    # Filter based on the federal type returned by converted_federal_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_federal_type
+                        and domain_request.converted_federal_type == self.value()
+                    ]
+                )
+            return queryset
+
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
@@ -1687,6 +1764,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+
+    @admin.display(description=_("Organization Name"))
+    def converted_organization_name(self, obj):
+        return obj.converted_organization_name
+
+    @admin.display(description=_("Federal Agency"))
+    def converted_federal_agency(self, obj):
+        return obj.converted_federal_agency
+
+    @admin.display(description=_("Federal Type"))
+    def converted_federal_type(self, obj):
+        return obj.converted_federal_type
+
+    @admin.display(description=_("City"))
+    def converted_city(self, obj):
+        return obj.converted_city
+
+    @admin.display(description=_("State/Territory"))
+    def converted_state_territory(self, obj):
+        return obj.converted_state_territory
+
     # Columns
     list_display = [
         "requested_domain",
@@ -1694,13 +1795,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "generic_org_type",
-        "federal_type",
-        "federal_agency",
-        "organization_name",
         "custom_election_board",
-        "city",
-        "state_territory",
+        "converted_generic_org_type",
+        "converted_organization_name",
+        "converted_federal_agency",
+        "converted_federal_type",
+        "converted_city",
+        "converted_state_territory",
         "investigator",
     ]
 
@@ -1725,8 +1826,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Filters
     list_filter = (
         StatusListFilter,
-        "generic_org_type",
-        "federal_type",
+        GenericOrgFilter,
+        FederalTypeFilter,
         ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
@@ -1748,6 +1849,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
@@ -1849,16 +1953,20 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
     ]
+
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
         "creator",
-        "senior_official",
         "investigator",
         "portfolio",
         "sub_organization",
     ]
+
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
@@ -1867,6 +1975,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     ordering = ["-last_submitted_date", "requested_domain__name"]
 
     change_form_template = "django/admin/domain_request_change_form.html"
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+
+        # Hide certain suborg fields behind the organization feature flag
+        # if it is not enabled
+        if not flag_is_active_for_user(request.user, "organization_feature"):
+            excluded_fields = [
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ]
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field not in excluded_fields)
+                modified_fieldsets.append((name, {**data, "fields": fields}))
+            return modified_fieldsets
+        return fieldsets
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -3206,6 +3333,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
 
+        # Make senior_official readonly for federal organizations
+        if obj and obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if "senior_official" not in readonly_fields:
+                readonly_fields.append("senior_official")
+        elif "senior_official" in readonly_fields:
+            # Remove senior_official from readonly_fields if org is non-federal
+            readonly_fields.remove("senior_official")
+
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
 
@@ -3228,12 +3363,11 @@ class PortfolioAdmin(ListHeaderAdmin):
             extra_context["domain_requests"] = obj.get_domain_requests(order_by=["requested_domain__name"])
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def save_model(self, request, obj, form, change):
-
+    def save_model(self, request, obj: Portfolio, form, change):
         if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None
+            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -3243,12 +3377,19 @@ class PortfolioAdmin(ListHeaderAdmin):
         if is_federal and obj.organization_name is None:
             obj.organization_name = obj.federal_agency.agency
 
-        # Remove this line when senior_official is no longer readonly in /admin.
-        if obj.federal_agency:
-            if obj.federal_agency.so_federal_agency.exists():
-                obj.senior_official = obj.federal_agency.so_federal_agency.first()
-            else:
-                obj.senior_official = None
+        # Set the senior official field to the senior official on the federal agency
+        # when federal - otherwise, clear the field.
+        if obj.organization_type == obj.OrganizationChoices.FEDERAL:
+            if obj.federal_agency:
+                if obj.federal_agency.so_federal_agency.exists():
+                    obj.senior_official = obj.federal_agency.so_federal_agency.first()
+                else:
+                    obj.senior_official = None
+        else:
+            if obj.federal_agency and obj.federal_agency.agency != "Non-Federal Agency":
+                if obj.federal_agency.so_federal_agency.first() == obj.senior_official:
+                    obj.senior_official = None
+                obj.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()  # type: ignore
 
         super().save_model(request, obj, form, change)
 

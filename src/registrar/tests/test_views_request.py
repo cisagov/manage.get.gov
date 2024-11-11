@@ -2887,8 +2887,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         detail_page = self.app.get(f"/domain-request/{domain_request.id}")
         self.assertContains(detail_page, "city.gov")
         self.assertContains(detail_page, "city1.gov")
-        self.assertContains(detail_page, "Chief Tester")
-        self.assertContains(detail_page, "testy@town.com")
         self.assertContains(detail_page, "Status:")
         # click the "Withdraw request" button
         mock_client = MockSESClient()
