@@ -62,7 +62,7 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from .utility import DomainPermissionView, DomainInvitationUpdateView
+from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 
 logger = logging.getLogger(__name__)
 
@@ -1062,7 +1062,7 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
-class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationUpdateView):
+class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
     object: DomainInvitation
     fields = []
 

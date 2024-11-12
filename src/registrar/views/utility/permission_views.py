@@ -169,7 +169,9 @@ class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteVie
     object: DomainInvitation  # workaround for type mismatch in DeleteView
 
 
-class DomainInvitationUpdateView(DomainInvitationPermission, UpdateView, abc.ABC):
+class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
+    """Abstract view for cancelling a DomainInvitation."""
+
     model = DomainInvitation
     object: DomainInvitation
 
