@@ -77,8 +77,10 @@ class DomainInvitation(TimeStampedModel):
 
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
+        """When an invitation is cancel, change the status to canceled"""
         pass
 
     @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
     def update_cancellation_status(self):
+        """When an invitation is canceled but reinvited, update the status to invited"""
         pass
