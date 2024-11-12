@@ -963,7 +963,7 @@ class DomainAddUserView(DomainFormBaseView):
         # Check to see if an invite has already been sent
         try:
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
-            # check if the invite has already been accepted
+            # check if the invite has already been accepted or has a canceled invite
             add_success = self._check_invite_status(invite, email)
         except Exception:
             logger.error("An error occured")
