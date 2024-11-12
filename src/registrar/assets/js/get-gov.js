@@ -89,7 +89,6 @@ function makeVisible(el) {
 /**
  * Creates and adds a modal dialog to the DOM with customizable attributes and content.
  *
- * @param {string} action - The action type or identifier used to create a unique modal ID.
  * @param {string} id - A unique identifier for the modal, appended to the action for uniqueness.
  * @param {string} ariaLabelledby - The ID of the element that labels the modal, for accessibility.
  * @param {string} ariaDescribedby - The ID of the element that describes the modal, for accessibility.
@@ -102,11 +101,11 @@ function makeVisible(el) {
  * The modal includes a heading, description, submit button, and a cancel button, along with a close button.
  * The `data-close-modal` attribute is added to cancel and close buttons to enable closing functionality.
  */
-function addModal(action, id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
+function addModal(id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
 
   const modal = document.createElement('div');
   modal.setAttribute('class', 'usa-modal');
-  modal.setAttribute('id', `${action}-${id}`);
+  modal.setAttribute('id', id);
   modal.setAttribute('aria-labelledby', ariaLabelledby);
   modal.setAttribute('aria-describedby', ariaDescribedby);
   if (forceAction)
@@ -1149,10 +1148,10 @@ function initializeTooltips() {
  * Initialize USWDS modals by calling on method.  Requires that uswds-edited.js be loaded
  * before get-gov.js.  uswds-edited.js adds the modal module to the window to be accessible
  * directly in get-gov.js.
- * initializeModals adds modal-related DOM elements, based on other DOM elements existing in 
+ * load Modals adds modal-related DOM elements, based on other DOM elements existing in 
  * the page.  It needs to be called only once for any particular DOM element; otherwise, it
  * will initialize improperly.  Therefore, if DOM elements change dynamically and include
- * DOM elements with modal classes, uswdsUnloadModals needs to be called before initializeModals.
+ * DOM elements with modal classes, uswdsUnloadModals needs to be called before loadModals.
  * 
  */
 function uswdsInitializeModals() {
@@ -1164,7 +1163,7 @@ function uswdsInitializeModals() {
  * Unload existing USWDS modals by calling off method.  Requires that uswds-edited.js be
  * loaded before get-gov.js.  uswds-edited.js adds the modal module to the window to be
  * accessible directly in get-gov.js.
- * See note above with regards to calling this method relative to initializeModals.
+ * See note above with regards to calling this method relative to loadModals.
  * 
  */
 function uswdsUnloadModals() {
@@ -1174,6 +1173,7 @@ function uswdsUnloadModals() {
 /**
  * Base table class which handles search, retrieval, rendering and interaction with results.
  * Classes can extend the basic behavior of this class to customize display and interaction.
+ * NOTE: PLEASE notice that whatever itemName is coming in will have an "s" added to it (ie domain -> domains)
  */
 class BaseTable {
   constructor(itemName) {
@@ -1220,7 +1220,7 @@ class BaseTable {
     numPages,
     hasPrevious,
     hasNext,
-    totalItems,
+    totalItems
   ) {
     const paginationButtons = document.querySelector(`#${this.sectionSelector}-pagination .usa-pagination__list`);
     const counterSelectorEl = document.querySelector(`#${this.sectionSelector}-pagination .usa-pagination__counter`);
@@ -1240,7 +1240,7 @@ class BaseTable {
     // Helper function to create a pagination item, such as a 
     const createPaginationItem = (page) => {
       const paginationItem = document.createElement('li');
-      paginationItem.className = 'usa-pagination__item usa-pagination__page-no';
+      paginationItem.classList.add('usa-pagination__item', 'usa-pagination__page-no');
       paginationItem.innerHTML = `
         <a href="${parentTableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
       `;
@@ -1370,7 +1370,7 @@ class BaseTable {
    * @param {*} status - The status filter applied {ready, dns_needed, etc}
    * @param {string} portfolio - The portfolio id
    */
-  #getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
+  getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
     let searchParams = new URLSearchParams(
       {
         "page": page,
@@ -1413,7 +1413,7 @@ class BaseTable {
   unloadModals(){}
 
   /**
-   * Initializes modals + sets up event listeners for the modal submit actions
+   * Loads modals + sets up event listeners for the modal submit actions
    * "Activates" the modals after the DOM updates 
    * Utilizes "uswdsInitializeModals"
    * Adds click event listeners to each modal's submit button so we can handle a user's actions
@@ -1425,7 +1425,7 @@ class BaseTable {
    * @param {number} total - The total # of items on the current page
    * @param {number} unfiltered_total - The total # of items across all pages
    */
-  initializeModals(page, total, unfiltered_total) {}
+  loadModals(page, total, unfiltered_total) {}
   
   /**
    * Allows us to customize the table display based on specific conditions and a user's permissions
@@ -1438,19 +1438,6 @@ class BaseTable {
    * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
    */
   customizeTable(dataObjects){ return {}; }
-
-  /**
-   * Abstract method for retrieving specific data objects from the provided data set.
-   * This method should be implemented by child classes to extract and return a specific
-   * subset of data (e.g., `members`, `domains`, or `domain_requests`) based on the class's context.
-   * 
-   * Expected implementations:
-   * - Could return `data.members`, `data.domains`, `data.domain_requests`, etc., depending on the child class.
-   * 
-   * @param {Object} data - The full data set from which a subset of objects is extracted.
-   * @throws {Error} Throws an error if not implemented in a child class.
-   * @returns {Array|Object} The extracted data subset, as defined in the child class.
-   */
 
   /**
    * Retrieves specific data objects
@@ -1494,22 +1481,14 @@ class BaseTable {
    */
   loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
     // --------- SEARCH
-    let searchParams = this.#getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
+    let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
 
     // --------- FETCH DATA
     // fetch json of page of domains, given params
-    let baseUrl = this.getBaseUrl();
-
-    if (!baseUrl) {
-      return;
-    }
-
-    let baseUrlValue = baseUrl.innerHTML;
-    if (!baseUrlValue) {
-      return;
-    }
+    const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
+    if (!baseUrlValue) return;
     
-    let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
+    let url = `${baseUrlValue}?${searchParams.toString()}`
     fetch(url)
       .then(response => response.json())
       .then(data => {
@@ -1538,7 +1517,7 @@ class BaseTable {
         
         this.initShowMoreButtons();
 
-        this.initializeModals(data.page, data.total, data.unfiltered_total);
+        this.loadModals(data.page, data.total, data.unfiltered_total);
 
         // Do not scroll on first page load
         if (scroll)
@@ -1870,7 +1849,7 @@ class DomainRequestsTable extends BaseTable {
     }
 
     if (request.is_deletable) {
-      // 1st option: Just a modal trigger in any screen size for non-org users
+      // 1st path: Just a modal trigger in any screen size for non-org users
       modalTrigger = `
         <a 
           role="button" 
@@ -1888,8 +1867,7 @@ class DomainRequestsTable extends BaseTable {
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
 
-        // 2nd option: Just a modal trigger on mobile for org users
-        // 3rd option: kebab + accordion with nested modal trigger on desktop for org users
+        // 2nd path: Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
         modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
       }
     }
@@ -1920,7 +1898,7 @@ class DomainRequestsTable extends BaseTable {
     if (request.is_deletable) DomainRequestsTable.addDomainRequestsModal(request.requested_domain, request.id, request.created_at, tbody);
   }
 
-  initializeModals(page, total, unfiltered_total) {
+  loadModals(page, total, unfiltered_total) {
     // initialize modals immediately after the DOM content is updated
     uswdsInitializeModals();
 
@@ -1932,7 +1910,7 @@ class DomainRequestsTable extends BaseTable {
       const closeButton = modal.querySelector('.usa-modal__close');
       submitButton.addEventListener('click', () => {
         let pk = submitButton.getAttribute('data-pk');
-        // Close the modal to remove the USWDS UI local classes
+        // Workaround: Close the modal to remove the USWDS UI local classes
         closeButton.click();
         // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
         let pageToDisplay = page;
@@ -2008,7 +1986,7 @@ class DomainRequestsTable extends BaseTable {
       name="delete-domain-request">Yes, delete request</button>
     `
 
-    addModal('toggle-delete-domain', id, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
+    addModal(`toggle-delete-domain-${id}`, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
 
   }
 }
@@ -2030,7 +2008,7 @@ class MembersTable extends BaseTable {
   unloadModals() {
     uswdsUnloadModals();
   }
-  initializeModals(page, total, unfiltered_total) {
+  loadModals(page, total, unfiltered_total) {
     // initialize modals immediately after the DOM content is updated
     uswdsInitializeModals();
 
@@ -2441,7 +2419,7 @@ class MembersTable extends BaseTable {
       modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization.
       Removing them from the organization will remove all of their domains. They will no longer be able to
       access this organization. This action cannot be undone.`;
-    } else if (num_domains >= 1) {
+    } else if (num_domains > 1) {
       modalHeading = `Are you sure you want to delete ${member_email}?`;
       modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization.
       Removing them from the organization will remove all of their domains. They will no longer be able to
@@ -2455,7 +2433,7 @@ class MembersTable extends BaseTable {
       name="delete-member">Yes, remove from organization</button>
     `
 
-    addModal('toggle-remove-member', id, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
+    addModal(`toggle-remove-member-${id}`, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
   }
 }
 
@@ -2894,6 +2872,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 })();
 
+// This is specifically for the Member Profile (Manage Member) Page member/invitation removal
 document.addEventListener("DOMContentLoaded", () => {
   (function portfolioMemberPageToggle() {
     const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
