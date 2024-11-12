@@ -913,6 +913,7 @@ class DomainAddUserView(DomainFormBaseView):
         )
 
     def _check_invite_status(self, invite, email):
+        """Check invitation status if it is canceled or retrieved, and gives the appropiate response"""
         if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
             messages.warning(
                 self.request,

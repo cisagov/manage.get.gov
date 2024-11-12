@@ -709,7 +709,7 @@ class TestDomainManagers(TestDomainOverview):
         self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
         invitation = DomainInvitation.objects.get(id=invitation.id)
         self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
-    
+
     @less_console_noise_decorator
     def test_domain_invitation_cancel_retrieved_invitation(self):
         """Posting to the cancel view when invitation retrieved returns an error message"""
@@ -725,7 +725,7 @@ class TestDomainManagers(TestDomainOverview):
         # Assert that the DomainInvitation is not deleted
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
         DomainInvitation.objects.filter(email=email_address).delete()
-    
+
     @less_console_noise_decorator
     def test_domain_invitation_cancel_no_permissions(self):
         """Posting to the cancel view as a different user should fail."""
