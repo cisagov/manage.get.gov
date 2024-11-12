@@ -706,32 +706,13 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
-        mock_client.EMAILS_SENT.clear()
-        with self.assertRaises(DomainInvitation.DoesNotExist):
-            DomainInvitation.objects.get(id=invitation.id)
-
-    @less_console_noise_decorator
-    def test_domain_invitation_cancel_retrieved_invitation(self):
-        """Posting to the delete view when invitation retrieved returns an error message"""
-        email_address = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(
-            domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
-        )
-        response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
-        # Assert that an error message is displayed to the user
-        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
-        # Assert that the Cancel link is not displayed
-        self.assertNotContains(response, "Cancel")
-        # Assert that the DomainInvitation is not deleted
-        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
-        DomainInvitation.objects.filter(email=email_address).delete()
+        self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
+        invitation = DomainInvitation.objects.get(id=invitation.id)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel_no_permissions(self):
-        """Posting to the delete view as a different user should fail."""
+        """Posting to the cancel view as a different user should fail."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 

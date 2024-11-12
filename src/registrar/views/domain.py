@@ -912,6 +912,22 @@ class DomainAddUserView(DomainFormBaseView):
             existing_org_invitation and existing_org_invitation.portfolio != requestor_org
         )
 
+    def _check_invite_status(self, invite, email):
+        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+            messages.warning(
+                self.request,
+                f"{email} is already a manager for this domain.",
+            )
+            return False
+        elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
+            invite.update_cancellation_status()
+            invite.save()
+            return True
+        else:
+            # else if it has been sent but not accepted
+            messages.warning(self.request, f"{email} has already been invited to this domain")
+            return False
+
     def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
@@ -948,23 +964,9 @@ class DomainAddUserView(DomainFormBaseView):
         try:
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
             # check if the invite has already been accepted
-            if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-                add_success = False
-                messages.warning(
-                    self.request,
-                    f"{email} is already a manager for this domain.",
-                )
-            elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
-                add_success = True
-                invite.update_cancellation_status()
-            else:
-                add_success = False
-                # else if it has been sent but not accepted
-                messages.warning(self.request, f"{email} has already been invited to this domain")
+            add_success = self._check_invite_status(invite, email)
         except Exception:
             logger.error("An error occured")
-
-
 
         try:
             send_templated_email(
@@ -1070,6 +1072,7 @@ class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationUpdateView
         form = self.get_form()
         if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
             self.object.cancel_invitation()
+            self.object.save()
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
