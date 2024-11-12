@@ -19,6 +19,7 @@ jobs:
       CF_USERNAME: ${{ secrets.CF_MS_USERNAME }}
       CF_PASSWORD: ${{ secrets.CF_MS_PASSWORD }}
     steps:
+        - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         - name: Clone Database
           run: |
             # install cf cli and other tools
