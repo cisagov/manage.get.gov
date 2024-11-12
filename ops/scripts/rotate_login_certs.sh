@@ -1,5 +1,6 @@
 # This script rotates the login.gov credentials, DJANGO_SECRET_KEY and DJANGO_SECRET_LOGIN_KEY that allow for identity sandbox to work on sandboxes and local.
 # The echo prints in this script should serve for documentation for running manually.
+# Run this script once a year for each environment
 # NOTE: This script was written for MacOS and to be run at the root directory. 
 
 
@@ -27,12 +28,12 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     cf login -a https://api.fr.cloud.gov --sso
 fi
-echo "targeting space"
-cf target -o "cisa-dotgov" -s $1
+echo "Targeting space"
+cf target -o cisa-dotgov -s $1
 
 echo "Creating new login.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
-openssl req -nodes -x509 -days 365 -newkey rsa:2048 -keyout private-$1.pem -out public-$1.crt
+openssl req -noenc -x509 -days 365 -newkey rsa:2048 -keyout private-$1.pem -out public-$1.crt
 login_key=$(base64 -i private-$1.pem)
 
 echo "Creating the final json"
