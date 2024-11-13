@@ -1,5 +1,7 @@
 # This workflow runs at the top of every hour and can be manually run as needed
 # The workflow will copy the database from stable (production) to our staging sandbox.
+# This workflow may fail if changes to the database schema make objects in stable 
+# incompatible with staging. This should resolve once both schemas match again.
 
 name: Clone Stable Database
 
