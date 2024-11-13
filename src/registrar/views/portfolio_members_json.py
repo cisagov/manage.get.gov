@@ -9,7 +9,7 @@ from django.views import View
 
 from registrar.models import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.csv_export import UserPortfolioPermissionModelDict, PortfolioInvitationModelDict
+from registrar.utility.model_dicts import PortfolioInvitationModelDict, UserPortfolioPermissionModelDict
 from registrar.views.utility.mixins import PortfolioMembersPermission
 
 
