@@ -2786,9 +2786,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const radioFieldset = document.getElementById(`id_${formPrefix}-requesting_entity_is_suborganization__fieldset`);
   const radios = radioFieldset?.querySelectorAll(`input[name="${formPrefix}-requesting_entity_is_suborganization"]`);
   const select = document.getElementById(`id_${formPrefix}-sub_organization`);
+  const selectParent = select?.parentElement;
   const suborgContainer = document.getElementById("suborganization-container");
   const suborgDetailsContainer = document.getElementById("suborganization-container__details");
-  if (!radios || !select || !suborgContainer || !suborgDetailsContainer) return;
+  if (!radios || !select || !selectParent || !suborgContainer || !suborgDetailsContainer) return;
 
   // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
   // requestingNewSuborganization: This variable determines if the user is trying to *create* a new suborganization or not.
@@ -2799,6 +2800,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
     requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
     requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+
+    if (requestingNewSuborganization.value === "True") {
+      selectParent.classList.add("padding-bottom-2");
+      showElement(suborgDetailsContainer);
+    }else {
+      selectParent.classList.remove("padding-bottom-2");
+      hideElement(suborgDetailsContainer);
+    }
     requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
   }
 
