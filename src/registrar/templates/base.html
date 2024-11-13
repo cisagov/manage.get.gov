@@ -72,8 +72,18 @@
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
   {% if not IS_PRODUCTION %}
-    {% include "includes/non-production-alert.html" %}
+    {% include "includes/banner-non-production-alert.html" %}
   {% endif %}
+
+  {% comment %}
+    Site banner / red alert banner / emergency banner / incident banner - Remove one of those includes and place outside the comment block to activate the banner. 
+    {% include "includes/banner-error.html" %}
+    {% include "includes/banner-info.html" %}
+    {% include "includes/banner-service-disruption.html" %}
+    {% include "includes/banner-site-alert.html" %}
+    {% include "includes/banner-system-outage.html" %}
+    {% include "includes/banner-warning.html" %}
+  {% endcomment %}
 
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
