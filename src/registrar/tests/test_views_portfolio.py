@@ -1794,9 +1794,13 @@ class TestRequestingEntity(WebTest):
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
         response = form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.assertContains(response, "Requested suborganization is required.", status_code=200)
-        self.assertContains(response, "City is required.", status_code=200)
-        self.assertContains(response, "State, territory, or military post is required.", status_code=200)
+        self.assertContains(response, "Enter the name of your suborganization.", status_code=200)
+        self.assertContains(response, "Enter the city where your suborganization is located.", status_code=200)
+        self.assertContains(
+            response,
+            "Select the state, territory, or military post where your suborganization is located",
+            status_code=200,
+        )
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)

@@ -119,7 +119,10 @@ class RequestingEntityForm(RegistrarForm):
                 if not cleaned_data.get("suborganization_city"):
                     self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
                 if not cleaned_data.get("suborganization_state_territory"):
-                    self.add_error("suborganization_state_territory", "Select the state, territory, or military post where your suborganization is located")
+                    self.add_error(
+                        "suborganization_state_territory",
+                        "Select the state, territory, or military post where your suborganization is located",
+                    )
             elif not suborganization:
                 self.add_error("sub_organization", "Suborganization is required.")
 
