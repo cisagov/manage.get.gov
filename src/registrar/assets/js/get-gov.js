@@ -2804,7 +2804,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add fake "other" option to sub_organization select
   if (select && !Array.from(select.options).some(option => option.value === "other")) {
-    select.add(new Option("Other (enter your organization manually)", "other"));
+    select.add(new Option("Other (enter your suborganization manually)", "other"));
   }
 
   if (requestingNewSuborganization.value === "True") {

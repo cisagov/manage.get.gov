@@ -115,11 +115,11 @@ class RequestingEntityForm(RegistrarForm):
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields
                 if not cleaned_data.get("requested_suborganization"):
-                    self.add_error("requested_suborganization", "Requested suborganization is required.")
+                    self.add_error("requested_suborganization", "Enter the name of your suborganization.")
                 if not cleaned_data.get("suborganization_city"):
-                    self.add_error("suborganization_city", "City is required.")
+                    self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
                 if not cleaned_data.get("suborganization_state_territory"):
-                    self.add_error("suborganization_state_territory", "State, territory, or military post is required.")
+                    self.add_error("suborganization_state_territory", "Select the state, territory, or military post where your suborganization is located.")
             elif not suborganization:
                 self.add_error("sub_organization", "Suborganization is required.")
 
