@@ -55,7 +55,6 @@ jobs:
   pa11y-scan:
     runs-on: ubuntu-20.04
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
 
       - name: Disable Login
