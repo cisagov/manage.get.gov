@@ -1814,10 +1814,10 @@ class DomainRequestsTable extends LoadTableBase {
               ${submissionDate}
             </td>
             ${markupCreatorRow}
-            <td data-label="Status">
+            <td data-label="Status" class="maxw-10">
               ${request.status}
             </td>
-            <td>
+            <td class="adding-left-05">
               <a href="${actionUrl}">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                   <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
