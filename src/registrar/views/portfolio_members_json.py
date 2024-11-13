@@ -7,10 +7,9 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.csv_export import UserPortfolioPermissionModelDict, PortfolioInvitationModelDict
 from registrar.views.utility.mixins import PortfolioMembersPermission
 
 
@@ -39,7 +38,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         page_number = request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
 
-        members = [self.serialize_members(request, portfolio, item, request.user) for item in page_obj.object_list]
+        members = [self.serialize_members(portfolio, item, request.user) for item in page_obj.object_list]
 
         return JsonResponse(
             {
@@ -56,92 +55,8 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
-        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
-        permissions = (
-            permissions.select_related("user")
-            .annotate(
-                first_name=F("user__first_name"),
-                last_name=F("user__last_name"),
-                email_display=F("user__email"),
-                last_active=Coalesce(
-                    Cast(F("user__last_login"), output_field=TextField()),  # Cast last_login to text
-                    Value("Invalid date"),
-                    output_field=TextField(),
-                ),
-                additional_permissions_display=F("additional_permissions"),
-                member_display=Case(
-                    # If email is present and not blank, use email
-                    When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
-                    # If first name or last name is present, use concatenation of first_name + " " + last_name
-                    When(
-                        Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
-                        then=Concat(
-                            Coalesce(F("user__first_name"), Value("")),
-                            Value(" "),
-                            Coalesce(F("user__last_name"), Value("")),
-                        ),
-                    ),
-                    # If neither, use an empty string
-                    default=Value(""),
-                    output_field=CharField(),
-                ),
-                domain_info=ArrayAgg(
-                    # an array of domains, with id and name, colon separated
-                    Concat(
-                        F("user__permissions__domain_id"),
-                        Value(":"),
-                        F("user__permissions__domain__name"),
-                        # specify the output_field to ensure union has same column types
-                        output_field=CharField(),
-                    ),
-                    distinct=True,
-                    filter=Q(user__permissions__domain__isnull=False)  # filter out null values
-                    & Q(
-                        user__permissions__domain__domain_info__portfolio=portfolio
-                    ),  # only include domains in portfolio
-                ),
-                source=Value("permission", output_field=CharField()),
-            )
-            .values(
-                "id",
-                "first_name",
-                "last_name",
-                "email_display",
-                "last_active",
-                "roles",
-                "additional_permissions_display",
-                "member_display",
-                "domain_info",
-                "source",
-            )
-        )
-        return permissions
-
-    def initial_invitations_search(self, portfolio):
-        """Perform initial invitations search and get related DomainInvitation data based on the email."""
-        # Get DomainInvitation query for matching email and for the portfolio
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
-            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()))
-        # PortfolioInvitation query
-        invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
-        invitations = invitations.annotate(
-            first_name=Value(None, output_field=CharField()),
-            last_name=Value(None, output_field=CharField()),
-            email_display=F("email"),
-            last_active=Value("Invited", output_field=TextField()),
-            additional_permissions_display=F("additional_permissions"),
-            member_display=F("email"),
-            # Use ArrayRemove to return an empty list when no domain invitations are found
-            domain_info=ArrayRemove(
-                ArrayAgg(
-                    Subquery(domain_invitations.values("domain_info")),
-                    distinct=True,
-                )
-            ),
-            source=Value("invitation", output_field=CharField()),
-        ).values(
+        queryset = UserPortfolioPermissionModelDict.get_annotated_queryset(portfolio)
+        return queryset.values(
             "id",
             "first_name",
             "last_name",
@@ -153,7 +68,23 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "domain_info",
             "source",
         )
-        return invitations
+
+    def initial_invitations_search(self, portfolio):
+        """Perform initial invitations search and get related DomainInvitation data based on the email."""
+        # Get DomainInvitation query for matching email and for the portfolio
+        queryset = PortfolioInvitationModelDict.get_annotated_queryset(portfolio)
+        return queryset.values(
+            "id",
+            "first_name",
+            "last_name",
+            "email_display",
+            "last_active",
+            "roles",
+            "additional_permissions_display",
+            "member_display",
+            "domain_info",
+            "source",
+        )
 
     def apply_search_term(self, queryset, request):
         """Apply search term to the queryset."""
@@ -179,7 +110,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             queryset = queryset.order_by(sort_by)
         return queryset
 
-    def serialize_members(self, request, portfolio, item, user):
+    def serialize_members(self, portfolio, item, user):
         # Check if the user can edit other users
         user_can_edit_other_users = any(
             user.has_perm(perm) for perm in ["registrar.full_access_permission", "registrar.change_user"]
@@ -213,9 +144,3 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "svg_icon": ("visibility" if view_only else "settings"),
         }
         return member_json
-
-
-# Custom Func to use array_remove to remove null values
-class ArrayRemove(Func):
-    function = "array_remove"
-    template = "%(function)s(%(expressions)s, NULL)"
