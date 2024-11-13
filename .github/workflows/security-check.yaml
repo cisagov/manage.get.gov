@@ -38,7 +38,6 @@ jobs:
       REGISTRY_HOSTNAME: localhost
 
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Check out
         uses: actions/checkout@v3
       - name: Scan Django settings for security issues
@@ -55,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Check out
         uses: actions/checkout@v3
       - name: MockUserLogin should not be in settings.MIDDLEWARE
@@ -66,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Check out
         uses: actions/checkout@v3
 
