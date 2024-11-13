@@ -20,12 +20,6 @@ from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
 
-
-
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 logger = logging.getLogger(__name__)
 
 
@@ -202,7 +196,6 @@ class BaseExport(ABC):
         All domain metadata:
         Exports domains of all statuses plus domain managers.
         """
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Exporting data")
 
         writer = csv.writer(csv_file)
         columns = cls.get_columns()
@@ -232,8 +225,6 @@ class BaseExport(ABC):
             model_queryset, computed_fields, related_table_fields, **kwargs
         )
         models_dict = convert_queryset_to_dict(annotated_queryset, is_model=False)
-
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"COLUMNS: {columns}")
 
         # Write to csv file before the write_csv
         cls.write_csv_before(writer, **export_kwargs)
@@ -424,8 +415,7 @@ class DomainExport(BaseExport):
         }
 
         row = [FIELDS.get(column, "") for column in columns]
-        
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, f"PARSING ROW:  {row}")     
+       
 
         return row
 
@@ -483,15 +473,12 @@ class DomainDataType(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, f"DomainDataType!!") 
-
     @classmethod
     def get_columns(cls):
         """
         Overrides the columns for CSV export specific to DomainExport.
         """
 
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, f"...getting columns") 
         return [
             "Domain name",
             "Status",
