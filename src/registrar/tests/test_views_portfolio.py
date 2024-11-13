@@ -1798,7 +1798,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Enter the city where your suborganization is located.", status_code=200)
         self.assertContains(
             response,
-            "Select the state, territory, or military post where your suborganization is located",
+            "Select the state, territory, or military post where your suborganization is located.",
             status_code=200,
         )
 
