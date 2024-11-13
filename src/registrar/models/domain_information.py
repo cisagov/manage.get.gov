@@ -431,8 +431,8 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_organization_name(self):
         if self.portfolio:
-            return self.portfolio.organization_name
-        return self.organization_name
+            return "portoflio name" #self.portfolio.organization_name
+        return "self name" #self.organization_name
 
     @property
     def converted_generic_org_type(self):
@@ -493,9 +493,5 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.urbanization
         return self.urbanization
-
-
-
-
 
 

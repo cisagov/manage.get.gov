@@ -1416,8 +1416,8 @@ class DomainRequest(TimeStampedModel):
     @property
     def converted_organization_name(self):
         if self.portfolio:
-            return self.portfolio.organization_name
-        return self.organization_name
+            return "portfolio name" #self.portfolio.organization_name
+        return "self name" #self.organization_name
 
     @property
     def converted_generic_org_type(self):
@@ -1448,6 +1448,12 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.state_territory
         return self.state_territory
+    
+    @property
+    def converted_urbanization(self):
+        if self.portfolio:
+            return self.portfolio.urbanization
+        return self.urbanization
 
     @property
     def converted_senior_official(self):

@@ -1,10 +1,11 @@
+import csv
 from datetime import date
 import logging
 import copy
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
     get_action_needed_reason_default_email,
@@ -42,7 +43,7 @@ from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
 from django.contrib.admin.views.main import IGNORED_PARAMS
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
-from import_export import resources
+from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -1453,6 +1454,57 @@ class DomainInformationResource(resources.ModelResource):
     class Meta:
         model = models.DomainInformation
 
+    # Override exports for these columns in DomainInformation to use converted values.  These values
+    # come from @Property functions, which are not automatically included in the export and which we
+    # want to use in place of the native fields.
+    organization_name = fields.Field(attribute='converted_organization_name', column_name='organization_name')
+    generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='generic_org_type')
+    federal_type = fields.Field(attribute='converted_federal_type', column_name='federal_type')
+    federal_agency = fields.Field(attribute='converted_federal_agency', column_name='federal_agency')
+    senior_official = fields.Field(attribute='converted_senior_official', column_name='senior_official')
+    address_line1 = fields.Field(attribute='converted_address_line1', column_name='address_line1')
+    address_line2 = fields.Field(attribute='converted_address_line2', column_name='address_line2')
+    city = fields.Field(attribute='converted_city', column_name='city')
+    state_territory = fields.Field(attribute='converted_state_territory', column_name='state_territory')
+    zipcode = fields.Field(attribute='converted_zipcode', column_name='zipcode')
+    urbanization = fields.Field(attribute='converted_urbanization', column_name='urbanization')
+
+    # Custom getters for the above columns that map to @property functions instead of fields
+    def dehydrate_organization_name(self, obj):
+        return obj.converted_organization_name
+    
+    def dehydrate_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+    
+    def dehydrate_federal_type(self, obj):
+        return obj.converted_federal_type
+    
+    def dehydrate_federal_agency(self, obj):
+        return obj.converted_federal_agency
+    
+    def dehydrate_senior_official(self, obj):
+        return obj.converted_senior_official
+    
+    def dehydrate_address_line1(self, obj):
+        return obj.converted_address_line1
+    
+    def dehydrate_address_line2(self, obj):
+        return obj.converted_address_line2
+    
+    def dehydrate_city(self, obj):
+        return obj.converted_city
+    
+    def dehydrate_state_territory(self, obj):
+        return obj.converted_state_territory
+    
+    def dehydrate_zipcode(self, obj):
+        return obj.converted_zipcode
+    
+    def dehydrate_urbanization(self, obj):
+        return obj.converted_urbanization
+    
+
+
 
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Customize domain information admin class."""
@@ -1653,6 +1705,56 @@ class DomainRequestResource(FsmModelResource):
 
     class Meta:
         model = models.DomainRequest
+
+    # Override exports for these columns in DomainInformation to use converted values.  These values
+    # come from @Property functions, which are not automatically included in the export and which we
+    # want to use in place of the native fields.
+    organization_name = fields.Field(attribute='converted_organization_name', column_name='GEN organization_name')
+    generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='GEN generic_org_type')
+    federal_type = fields.Field(attribute='converted_federal_type', column_name='GEN federal_type')
+    federal_agency = fields.Field(attribute='converted_federal_agency', column_name='GEN federal_agency')
+    senior_official = fields.Field(attribute='converted_senior_official', column_name='GEN senior_official')
+    address_line1 = fields.Field(attribute='converted_address_line1', column_name='GEN address_line1')
+    address_line2 = fields.Field(attribute='converted_address_line2', column_name='GEN address_line2')
+    city = fields.Field(attribute='converted_city', column_name='GEN city')
+    state_territory = fields.Field(attribute='converted_state_territory', column_name='GEN state_territory')
+    zipcode = fields.Field(attribute='converted_zipcode', column_name='GEN zipcode')
+    urbanization = fields.Field(attribute='converted_urbanization', column_name='GEN urbanization')
+    senior_official = fields.Field(attribute='converted_urbanization', column_name='GEN senior official')
+
+    # Custom getters for the above columns that map to @property functions instead of fields
+    def dehydrate_organization_name(self, obj):
+        return obj.converted_organization_name
+    
+    def dehydrate_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+    
+    def dehydrate_federal_type(self, obj):
+        return obj.converted_federal_type
+    
+    def dehydrate_federal_agency(self, obj):
+        return obj.converted_federal_agency
+    
+    def dehydrate_senior_official(self, obj):
+        return obj.converted_senior_official
+    
+    def dehydrate_address_line1(self, obj):
+        return obj.converted_address_line1
+    
+    def dehydrate_address_line2(self, obj):
+        return obj.converted_address_line2
+    
+    def dehydrate_city(self, obj):
+        return obj.converted_city
+    
+    def dehydrate_state_territory(self, obj):
+        return obj.converted_state_territory
+    
+    def dehydrate_zipcode(self, obj):
+        return obj.converted_zipcode
+    
+    def dehydrate_urbanization(self, obj):
+        return obj.converted_urbanization
 
 
 class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
@@ -2577,7 +2679,48 @@ class DomainResource(FsmModelResource):
 
     class Meta:
         model = models.Domain
+        #Override the default export so that it matches what is displayed in the admin table for Domains
+        fields = (
+            "name",
+            "converted_generic_org_type",
+            "federal_type",
+            "converted_federal_type",
+            "converted_federal_agency",
+            "converted_organization_name",
+            "custom_election_board",
+            "converted_city",
+            "converted_state_territory",
+            "state",
+            "expiration_date",
+            "created_at",
+            "first_ready",
+            "deleted",
+        )
 
+    # Custom getters to retrieve the values from @Proprerty methods in DomainInfo
+    converted_generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='Converted generic org type')
+    converted_federal_agency = fields.Field(attribute='converted_federal_agency', column_name='Converted federal agency')
+    converted_organization_name = fields.Field(attribute='converted_organization_name', column_name='Converted organization name')
+    converted_city = fields.Field(attribute='converted_city', column_name='city')
+    converted_state_territory = fields.Field(attribute='converted_state_territory', column_name='Converted state territory')
+    
+    # def dehydrate_generic_org_type(self, obj):
+    #     return obj.domain_info.converted_federal_type
+    
+    def dehydrate_converted_generic_org_type(self, obj):
+        return obj.domain_info.converted_generic_org_type
+    
+    def dehydrate_converted_federal_agency(self, obj):
+        return obj.domain_info.converted_federal_agency
+    
+    def dehydrate_converted_organization_name(self, obj):
+        return obj.domain_info.converted_organization_name
+    
+    def dehydrate_converted_city(self, obj):
+        return obj.domain_info.converted_city
+    
+    def dehydrate_converted_state_territory(self, obj):
+        return obj.domain_info.converted_state_territory
 
 class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom domain admin class to add extra buttons."""
@@ -3072,8 +3215,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
-
-    
 
 
 class DraftDomainResource(resources.ModelResource):
