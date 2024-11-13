@@ -1,3 +1,6 @@
+# This workflow runs at the top of every hour and can be manually run as needed
+# The workflow will copy the database from stable (production) to our staging sandbox.
+
 name: Clone Stable Database
 
 on:
@@ -8,7 +11,9 @@ on:
   workflow_dispatch:
 
 env:
+# sandbox receiving the cloned db
   DESTINATION_ENVIRONMENT: staging
+# sandbox we are cloning 
   SOURCE_ENVIRONMENT: stable
   
 
@@ -16,6 +21,7 @@ jobs:
   clone-database:
     runs-on: ubuntu-24.04
     env:
+      # must be the github secrets for the receiving sandbox
       CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
       CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
     steps:
