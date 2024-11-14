@@ -6,9 +6,8 @@ from registrar.models import (
     DomainInvitation,
     PortfolioInvitation,
 )
-from django.db.models import Case, CharField, F, ManyToManyField, Q, QuerySet, Value, When, TextField, OuterRef, Subquery
-from django.db.models.functions import Cast
-from django.db.models.functions import Concat, Coalesce
+from django.db.models import CharField, F, ManyToManyField, Q, QuerySet, Value, TextField, OuterRef, Subquery, Func, Case, When
+from django.db.models.functions import Concat, Coalesce, Cast
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemove
@@ -200,7 +199,7 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
         return Q(portfolio=portfolio)
 
     @classmethod
-    def get_annotated_fields(cls, portfolio):
+    def get_annotated_fields(cls, portfolio, csv_report=False):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -209,12 +208,34 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
             # Return nothing
             return {}
 
+        # Tweak the queries slightly to only return the data we need.
+        # When returning data for the csv report we:
+        # 1. Only return the domain name for 'domain_info'
+        # 2. Return a formatted date for 'last_active'
+        # These are just optimizations that are better done in SQL as opposed to python.
+        if csv_report:
+            domain_query = F("user__permissions__domain__name")
+            last_active_query = Func(
+                F("user__last_login"),
+                Value("FMMonth DD, YYYY"),
+                function="to_char",
+                output_field=TextField()
+            )
+        else:
+            domain_query = Concat(
+                F("user__permissions__domain_id"),
+                Value(":"),
+                F("user__permissions__domain__name"),
+                output_field=CharField(),
+            )
+            last_active_query = Cast(F("user__last_login"), output_field=TextField())
+
         return {
             "first_name": F("user__first_name"),
             "last_name": F("user__last_name"),
             "email_display": F("user__email"),
             "last_active": Coalesce(
-                Cast(F("user__last_login"), output_field=TextField()),
+                last_active_query,
                 Value("Invalid date"),
                 output_field=TextField(),
             ),
@@ -236,12 +257,7 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
                 output_field=CharField(),
             ),
             "domain_info": ArrayAgg(
-                Concat(
-                    F("user__permissions__domain_id"),
-                    Value(":"),
-                    F("user__permissions__domain__name"),
-                    output_field=CharField(),
-                ),
+                domain_query,
                 distinct=True,
                 filter=Q(user__permissions__domain__isnull=False) 
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
@@ -250,7 +266,7 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
         }
     
     @classmethod
-    def get_annotated_queryset(cls, portfolio):
+    def get_annotated_queryset(cls, portfolio, csv_report=False):
         """Override of the base annotated queryset to pass in portfolio"""
         model_queryset = (
             cls.model()
@@ -264,7 +280,7 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
             .distinct()
         )
 
-        annotated_fields = cls.get_annotated_fields(portfolio)
+        annotated_fields = cls.get_annotated_fields(portfolio, csv_report)
         related_table_fields = cls.get_related_table_fields()
         return cls.annotate_and_retrieve_fields(
             model_queryset, annotated_fields, related_table_fields
@@ -291,7 +307,7 @@ class PortfolioInvitationModelDict(BaseModelDict):
         return Q(portfolio=portfolio)
 
     @classmethod
-    def get_annotated_fields(cls, portfolio):
+    def get_annotated_fields(cls, portfolio, csv_report=False):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -300,10 +316,18 @@ class PortfolioInvitationModelDict(BaseModelDict):
             # Return nothing
             return {}
 
+        # Tweak the queries slightly to only return the data we need
+        if csv_report:
+            domain_query = F("domain__name")
+        else:
+            domain_query = Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
+
+        # Get all existing domain invitations and search on that
         domain_invitations = DomainInvitation.objects.filter(
             email=OuterRef("email"),  # Check if email matches the OuterRef("email")
             domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()))
+        ).annotate(domain_info=domain_query)
+
         return {
             "first_name": Value(None, output_field=CharField()),
             "last_name": Value(None, output_field=CharField()),
@@ -321,7 +345,7 @@ class PortfolioInvitationModelDict(BaseModelDict):
         }
 
     @classmethod
-    def get_annotated_queryset(cls, portfolio):
+    def get_annotated_queryset(cls, portfolio, csv_report=False):
         """Override of the base annotated queryset to pass in portfolio"""
         model_queryset = (
             cls.model()
@@ -335,7 +359,7 @@ class PortfolioInvitationModelDict(BaseModelDict):
             .distinct()
         )
 
-        annotated_fields = cls.get_annotated_fields(portfolio)
+        annotated_fields = cls.get_annotated_fields(portfolio, csv_report)
         related_table_fields = cls.get_related_table_fields()
         return cls.annotate_and_retrieve_fields(
             model_queryset, annotated_fields, related_table_fields

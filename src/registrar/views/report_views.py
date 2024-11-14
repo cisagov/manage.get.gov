@@ -173,10 +173,14 @@ class ExportMembersPortfolio(View):
     """Returns a a members report for a given portfolio"""
 
     def get(self, request, *args, **kwargs):
-        portfolio = request.session.get("portfolio")
-        # match the CSV example with all the fields
+        """Returns the members report"""
+
+        portfolio_display = "portfolio"
+        if request.session.get("portfolio"):
+            portfolio_display = str(request.session.get("portfolio")).replace(" ", "-")
+
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="members-for-{portfolio}.csv"'
+        response["Content-Disposition"] = f'attachment; filename="members-for-{portfolio_display}.csv"'
         csv_export.MemberExport.export_data_to_csv(response, request=request)
         return response
 

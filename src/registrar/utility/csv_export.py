@@ -151,11 +151,23 @@ class MemberExport(BaseExport):
         if not portfolio:
             return {}
 
-        # Union the two querysets to combine UserPortfolioPermission + invites
-        permissions = UserPortfolioPermissionModelDict.get_annotated_queryset(portfolio)
-        invitations = PortfolioInvitationModelDict.get_annotated_queryset(portfolio)
-        objects = permissions.union(invitations)
-        return convert_queryset_to_dict(objects, is_model=False)
+        # Union the two querysets to combine UserPortfolioPermission + invites.
+        # Unions cannot have a col mismatch, so we must clamp what is returned here.
+        shared_columns = [
+            "id",
+            "first_name",
+            "last_name",
+            "email_display",
+            "last_active",
+            "roles",
+            "additional_permissions_display",
+            "member_display",
+            "domain_info",
+            "source",
+        ]
+        permissions = UserPortfolioPermissionModelDict.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
+        invitations = PortfolioInvitationModelDict.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
+        return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
 
     @classmethod
     def get_columns(cls):
@@ -183,17 +195,31 @@ class MemberExport(BaseExport):
         """
 
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (model.get("roles") or [])
+        domains = ",".join(model.get("domain_info")) if model.get("domain_info") else ""
         FIELDS = {
-            "Email": model.get("email"),
+            "Email": model.get("email_display"),
             "Organization admin": is_admin,
-            "Invited by": "TODO",
-            "Last active": "TODO",
+            "Invited by": model.get("source"),
+            "Last active": model.get("last_active"),
             "Domain requests": "TODO",
             "Member management": "TODO",
             "Domain management": "TODO",
             "Number of domains": "TODO",
-            "Domains": "TODO",
+            # Quote enclose the domain list
+            # Note: this will only enclose when more than two items exist
+            "Domains": domains,
         }
+
+        #         "id",
+        # "first_name",
+        # "last_name",
+        # "email_display",
+        # "last_active",
+        # "roles",
+        # "additional_permissions_display",
+        # "member_display",
+        # "domain_info",
+        # "source",
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
