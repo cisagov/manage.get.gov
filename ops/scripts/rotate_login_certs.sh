@@ -43,7 +43,7 @@ echo "Updating creds on the sandbox"
 cf uups getgov-credentials -p credentials-$1.json
 cf restage getgov-$1 --strategy rolling
 
-echo "Now you will need to update some things for Login. Please sign-in to https://dashboard.int.identitysandbox.gov/."
+echo "\n\n\nNow you will need to update some things for Login. Please sign-in to https://dashboard.int.identitysandbox.gov/."
 echo "Navigate to our application config: https://dashboard.int.identitysandbox.gov/service_providers/2640/edit?"
 echo "There are two things to update."
 echo "1. Remove the old cert associated with the user's email (under Public Certificates)"
