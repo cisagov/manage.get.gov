@@ -58,7 +58,15 @@
 
     {% include "includes/domain_dates.html" %}
 
-    {% if is_portfolio_user and not is_domain_manager %}
+    {% if is_portfolio_admin and not is_domain_manager %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text ">
+          To manage information for this domain, you must add yourself as a domain manager.
+        </p>
+      </div>
+    </div>
+    {% elif is_portfolio_user and not is_domain_manager %}
     <div class="usa-alert usa-alert--info usa-alert--slim">
       <div class="usa-alert__body">
         <p class="usa-alert__text ">
