@@ -414,28 +414,28 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
-
         self.object = self.get_object()
         form = self.get_form()
 
         if form.is_valid():
-            return JsonResponse({"is_valid": True})
+            return self.form_valid(form)
         else:
-            return JsonResponse({"is_valid": False, "errors": form.errors})
-        # if request.method == "POST" and request.is_ajax():
-        #     if form.is_valid():
-        #         return JsonResponse({"is_valid": True})
-        #     else:
-        #         return JsonResponse({"is_valid": False, "errors": form.errors})
+            return self.form_invalid(form)
 
-        # if form.is_valid():
-        #     return self.form_valid(form)
-        # else:
-        #     return self.form_invalid(form)
+    def is_ajax(self):
+        return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    def form_valid(self, form):
+        if self.is_ajax():
+            return JsonResponse({"is_valid": True})  # Return a JSON response
+        else:
+            return super().form_valid(form)  # Handle non-AJAX requests normally
 
     def form_invalid(self, form):
-        """Handle the case when the form is invalid."""
-        return self.render_to_response(self.get_context_data(form=form))
+        if self.is_ajax():
+            return JsonResponse({"is_valid": False})  # Return a JSON response
+        else:
+            return super().form_invalid(form)  # Handle non-AJAX requests normally
 
     def get_success_url(self):
         """Redirect to members table."""

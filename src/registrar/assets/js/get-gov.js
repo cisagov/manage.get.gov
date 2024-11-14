@@ -2850,7 +2850,7 @@ document.addEventListener('DOMContentLoaded', function() {
             openAddMemberConfirmationModal();
         } else {
             // Handle validation errors
-            alert("Validation failed.");
+            form.submit();
         }
     });
   }
@@ -2918,21 +2918,10 @@ document.addEventListener('DOMContentLoaded', function() {
       showElement(modal);
   }
 
-  // Close the modal
-  function closeModal() {
-    modal = document.getElementById('invite-member-modal');
-    hideElement(modal);
-  }
-
-  // ---- EVENT LISTENERS
-  document.querySelectorAll('[data-close-modal]').forEach(button => {
-      button.addEventListener('click', closeModal);
+  document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
+    // Upon confirmation, submit the form
+    document.getElementById("add_member_form").submit();
   });
-
-  // document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
-  //   // Upon confirmation, submit the form
-  //   document.getElementById("add_member_form").submit();
-  // });
 
   // Attach event listener to the Invite Member button to open the modal
   document.getElementById("invite_member_button").addEventListener('click', function() {
@@ -2943,6 +2932,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById("add_member_form").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevents the form from submitting
-    validateForm();
+    //validateForm();
+    
+    // Check if the form is valid
+    // if (this.checkValidity()) {
+    //      openAddMemberConfirmationModal(); // Show validation errors if any
+    //      return;
+    // }
+    // else {
+    //   this.submit();
+    // }
+
+
+    const formData = new FormData(this);
+
+    fetch(this.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_valid) {
+            // If the form is valid, show the confirmation modal
+            openAddMemberConfirmationModal();
+        } else {
+            this.submit();
+        }
+    });
   });
 })();
