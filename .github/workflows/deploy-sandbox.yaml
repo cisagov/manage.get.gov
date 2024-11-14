@@ -35,6 +35,7 @@ jobs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Setting global variables
         uses: actions/github-script@v6
         id: var
@@ -45,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
       - name: Compile USWDS assets
         working-directory: ./src

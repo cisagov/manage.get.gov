@@ -10,6 +10,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: jenschelkopf/issue-label-notification-action@1.3
         with:
           recipients: |
