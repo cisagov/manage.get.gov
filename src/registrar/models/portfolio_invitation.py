@@ -67,20 +67,6 @@ class PortfolioInvitation(TimeStampedModel):
         protected=True,  # can't alter state except through transition methods!
     )
 
-    # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
-    @property
-    def creator(self):
-        """Get the user who created this invitation from the audit log"""
-        content_type = ContentType.objects.get_for_model(self)
-        log_entry = LogEntry.objects.filter(
-            content_type=content_type,
-            object_id=self.pk,
-            action_flag=ADDITION
-        ).order_by("action_time").first()
-        
-        return log_entry.user if log_entry else None
-
-
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
 
