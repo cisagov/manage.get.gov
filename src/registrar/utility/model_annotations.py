@@ -241,7 +241,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
 
         # Tweak the queries slightly to only return the data we need.
         # When returning data for the csv report we:
-        # 1. Only return the domain name for 'domain_info'
+        # 1. Only return the domain name for 'domain_info' rather than also add ':' seperated id
         # 2. Return a formatted date for 'last_active'
         # These are just optimizations that are better done in SQL as opposed to python.
         if csv_report:

@@ -10,7 +10,6 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     UserDomainRole,
-    PortfolioInvitation,
 )
 from django.db.models import Case, CharField, Count, DateField, F, ManyToManyField, Q, QuerySet, Value, When, TextField, OuterRef, Subquery
 from django.db.models.functions import Cast
@@ -20,7 +19,7 @@ from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemove
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
@@ -197,24 +196,21 @@ class MemberExport(BaseExport):
         Given a set of columns and a model dictionary, generate a new row from cleaned column data.
         Must be implemented by subclasses
         """
-
-        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (model.get("roles") or [])
-        # Tracks if they can view, create requests, or not do anything
-        x = model.get("roles")
-        print(f"what are the roles? {x}")
-        domain_request_user_permission = None
-        
+        roles = model.get("roles")
+        additional_permissions = model.get("additional_permissions_display")
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (roles or [])
+        domain_request_display = UserPortfolioPermission.get_domain_request_permission_display(roles, additional_permissions)
+        member_perm_display = UserPortfolioPermission.get_member_permission_display(roles, additional_permissions)
         user_managed_domains = model.get("domain_info", [])
         managed_domains_as_csv = ",".join(user_managed_domains)
-        # Whether they can make domain requests. Tentatively, I think the options as we currently understand would be: None, Viewer, Viewer Requester
         FIELDS = {
             "Email": model.get("email_display"),
             "Organization admin": is_admin,
             "Invited by": model.get("invited_by"),
             "Invitation date": model.get("invitation_date"),
             "Last active": model.get("last_active"),
-            "Domain requests": "TODO",
-            "Member management": "TODO",
+            "Domain requests": domain_request_display,
+            "Member management": member_perm_display,
             "Domain management": "TODO",
             "Number of domains": len(user_managed_domains),
             # TODO - this doesn't quote enclose with one record
