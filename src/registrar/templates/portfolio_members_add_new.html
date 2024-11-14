@@ -95,8 +95,12 @@
 <!-- Basic access form -->
 <div id="new-member-basic-permissions" class="margin-top-2">
     <h2>Basic member permissions</h2>
-    <p>Member permissions available for basic-level access</p>
-    {% input_with_errors form.basic_org_domain_request_permissions %}
+    <p>Member permissions available for basic-level acccess.</p>
+
+    <h3 class="margin-bottom-0">Organization domain requests</h3>
+    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+      {% input_with_errors form.basic_org_domain_request_permissions %}
+    {% endwith %}
 </div>
 
 <!-- Submit/cancel buttons -->
@@ -110,13 +114,12 @@
   >Cancel
 </a>
   <a
-    id="invite_member_button"
+    id="invite_member_trigger"
     href="#invite-member-modal"
-    type="button"
-    class="usa-button"
+    class="usa-button usa-button--outline margin-top-1 display-none"
     aria-controls="invite-member-modal"
     data-open-modal
-    >Invite Member</a>
+    >Trigger invite member modal</a>
     <button type="submit" class="usa-button">Invite Member</button>
 </div>
 </form>

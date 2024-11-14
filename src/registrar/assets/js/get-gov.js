@@ -2914,8 +2914,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // Show the modal
-      modal = document.getElementById('invite-member-modal');
-      showElement(modal);
+      let modalTrigger = document.querySelector("#invite_member_trigger");
+        if (modalTrigger) {
+          modalTrigger.click()
+        }
   }
 
   document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
@@ -2923,29 +2925,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("add_member_form").submit();
   });
 
-  // Attach event listener to the Invite Member button to open the modal
-  document.getElementById("invite_member_button").addEventListener('click', function() {
-    // Upon confirmation, submit the form
-    console.log("clicked")
-    openAddMemberConfirmationModal();
-  });
-
   document.getElementById("add_member_form").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevents the form from submitting
-    //validateForm();
-    
-    // Check if the form is valid
-    // if (this.checkValidity()) {
-    //      openAddMemberConfirmationModal(); // Show validation errors if any
-    //      return;
-    // }
-    // else {
-    //   this.submit();
-    // }
-
 
     const formData = new FormData(this);
 
+    // Check if the form is valid and trigger events
+    // (like a confirmation modal) accordingly
     fetch(this.action, {
         method: "POST",
         body: formData,
@@ -2957,9 +2943,10 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(response => response.json())
     .then(data => {
         if (data.is_valid) {
-            // If the form is valid, show the confirmation modal
+            // If the form is valid, show the confirmation modal before submitting
             openAddMemberConfirmationModal();
         } else {
+            // If the form is not valid, trigger error messages by firing a submit event
             this.submit();
         }
     });
