@@ -1645,7 +1645,7 @@ class TestRequestingEntity(WebTest):
     def test_requesting_entity_page_new_request(self):
         """Tests that the requesting entity page loads correctly when a new request is started"""
 
-        response = self.app.get(reverse("domain-request:"))
+        response = self.app.get(reverse("domain-request:start"))
 
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1672,7 +1672,7 @@ class TestRequestingEntity(WebTest):
     @less_console_noise_decorator
     def test_requesting_entity_page_existing_suborg_submission(self):
         """Tests that you can submit a form on this page and set a suborg"""
-        response = self.app.get(reverse("domain-request:"))
+        response = self.app.get(reverse("domain-request:start"))
 
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1705,7 +1705,7 @@ class TestRequestingEntity(WebTest):
     @less_console_noise_decorator
     def test_requesting_entity_page_new_suborg_submission(self):
         """Tests that you can submit a form on this page and set a new suborg"""
-        response = self.app.get(reverse("domain-request:"))
+        response = self.app.get(reverse("domain-request:start"))
 
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1745,7 +1745,7 @@ class TestRequestingEntity(WebTest):
     @less_console_noise_decorator
     def test_requesting_entity_page_organization_submission(self):
         """Tests submitting an organization on the requesting org form"""
-        response = self.app.get(reverse("domain-request:"))
+        response = self.app.get(reverse("domain-request:start"))
 
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
