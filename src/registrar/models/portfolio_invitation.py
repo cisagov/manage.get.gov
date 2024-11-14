@@ -9,6 +9,8 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,20 @@ class PortfolioInvitation(TimeStampedModel):
         protected=True,  # can't alter state except through transition methods!
     )
 
+    # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
+    @property
+    def creator(self):
+        """Get the user who created this invitation from the audit log"""
+        content_type = ContentType.objects.get_for_model(self)
+        log_entry = LogEntry.objects.filter(
+            content_type=content_type,
+            object_id=self.pk,
+            action_flag=ADDITION
+        ).order_by("action_time").first()
+        
+        return log_entry.user if log_entry else None
+
+
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
 
@@ -101,7 +117,7 @@ class PortfolioInvitation(TimeStampedModel):
 
         # and create a role for that user on this portfolio
         user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            portfolio=self.portfolio, user=user
+            portfolio=self.portfolio, user=user, invitation=self
         )
         if self.roles and len(self.roles) > 0:
             user_portfolio_permission.roles = self.roles

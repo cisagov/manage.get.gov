@@ -9,7 +9,7 @@ from django.views import View
 
 from registrar.models import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.model_dicts import PortfolioInvitationModelDict, UserPortfolioPermissionModelDict
+from registrar.utility.model_annotations import PortfolioInvitationModelAnnotation, UserPortfolioPermissionModelAnnotation
 from registrar.views.utility.mixins import PortfolioMembersPermission
 
 
@@ -55,7 +55,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
-        queryset = UserPortfolioPermissionModelDict.get_annotated_queryset(portfolio)
+        queryset = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio)
         return queryset.values(
             "id",
             "first_name",
@@ -72,7 +72,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
     def initial_invitations_search(self, portfolio):
         """Perform initial invitations search and get related DomainInvitation data based on the email."""
         # Get DomainInvitation query for matching email and for the portfolio
-        queryset = PortfolioInvitationModelDict.get_annotated_queryset(portfolio)
+        queryset = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio)
         return queryset.values(
             "id",
             "first_name",

@@ -65,6 +65,16 @@ class UserPortfolioPermission(TimeStampedModel):
         help_text="Select one or more additional permissions.",
     )
 
+    # TODO - this needs a small script to update existing values
+    invitation = models.ForeignKey(
+        "registrar.PortfolioInvitation",
+        null=True,
+        blank=True,
+        # We don't want to accidentally delete invitations
+        on_delete=models.PROTECT,
+        related_name="created_user_portfolio_permission",
+    )
+
     def __str__(self):
         readable_roles = []
         if self.roles:

@@ -1,5 +1,24 @@
 """
-TODO: explanation here
+Model annotation classes. Intended to return django querysets with computed fields for api endpoints and our csv reports.
+
+Created to manage the complexity of the MembersTable and Members CSV report, as they require complex but common annotations.
+
+These classes provide consistent, reusable query transformations that:
+1. Add computed fields via annotations
+2. Handle related model data
+3. Format fields for display
+4. Standardize field names across different contexts
+
+Used by both API endpoints (e.g. portfolio members JSON) and data exports (e.g. CSV reports).
+
+Example:
+    # For a JSON table endpoint
+    permissions = UserPortfolioPermissionAnnotation.get_annotated_queryset(portfolio)
+    # Returns queryset with standardized fields for member tables
+    
+    # For a CSV export
+    permissions = UserPortfolioPermissionAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+    # Returns same fields but formatted for CSV export
 """
 from abc import ABC, abstractmethod
 from registrar.models import (
@@ -12,9 +31,19 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemove
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 
 
-class BaseModelDict(ABC):
+class BaseModelAnnotation(ABC):
+    """
+    Abstract base class that standardizes how models are annotated for csv exports or complex annotation queries.
+    For example, the Members table / csv export.
+    
+    Subclasses define model-specific annotations, filters, and field formatting while inheriting
+    common queryset building logic. 
+    Intended ensure consistent data presentation across both table UI components and CSV exports.
+    """
 
     @classmethod
     @abstractmethod
@@ -166,14 +195,16 @@ class BaseModelDict(ABC):
         return queryset
     
     @classmethod
-    def get_models_dict(cls, **kwargs):
-        request = kwargs.get("request")
-        print(f"get_models_dict => request is: {request}")
+    def get_model_dict(cls, **kwargs):
         return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
 
 
-class UserPortfolioPermissionModelDict(BaseModelDict):
-
+class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
+    """
+    Annotates UserPortfolioPermission querysets with computed fields for member tables.
+    Handles formatting of user details, permissions, and related domain information
+    for both UI display and CSV export.
+    """
     @classmethod
     def model(cls):
         # Return the model class that this export handles
@@ -217,7 +248,7 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
             domain_query = F("user__permissions__domain__name")
             last_active_query = Func(
                 F("user__last_login"),
-                Value("FMMonth DD, YYYY"),
+                Value("YYYY-MM-DD"),
                 function="to_char",
                 output_field=TextField()
             )
@@ -263,6 +294,30 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
             "source": Value("permission", output_field=CharField()),
+            "invitation_date": Coalesce(
+                Func(
+                    F("invitation__created_at"),
+                    Value("YYYY-MM-DD"),
+                    function="to_char",
+                    output_field=TextField()
+                ),
+                Value("Invalid date"),
+                output_field=TextField(),
+            ),
+            # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
+            # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
+            # When that happens, just replace this with F("invitation__creator")
+            "invited_by": Coalesce(
+                Subquery(
+                    LogEntry.objects.filter(
+                        content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                        object_id=Cast(OuterRef("invitation__id"), output_field=TextField()),  # Look up the invitation's ID
+                        action_flag=ADDITION
+                    ).order_by("action_time").values("user__email")[:1]
+                ),
+                Value("Unknown"),
+                output_field=CharField()
+            ),
         }
     
     @classmethod
@@ -287,12 +342,24 @@ class UserPortfolioPermissionModelDict(BaseModelDict):
         )
 
 
-class PortfolioInvitationModelDict(BaseModelDict):
+class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
+    """
+    Annotates PortfolioInvitation querysets with computed fields for the member table.
+    Handles formatting of user details, permissions, and related domain information
+    for both UI display and CSV export.
+    """
 
     @classmethod
     def model(cls):
         # Return the model class that this export handles
         return PortfolioInvitation
+
+    @classmethod
+    def get_exclusions(cls):
+        """
+        Get a Q object of exclusion conditions to pass to .exclude() when building queryset.
+        """
+        return Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
 
     @classmethod
     def get_filter_conditions(cls, portfolio):
@@ -322,7 +389,7 @@ class PortfolioInvitationModelDict(BaseModelDict):
         else:
             domain_query = Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
 
-        # Get all existing domain invitations and search on that
+        # Get all existing domain invitations and search on that for domains the user exists on
         domain_invitations = DomainInvitation.objects.filter(
             email=OuterRef("email"),  # Check if email matches the OuterRef("email")
             domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
@@ -342,6 +409,31 @@ class PortfolioInvitationModelDict(BaseModelDict):
                 )
             ),
             "source": Value("invitation", output_field=CharField()),
+            "invitation_date": Coalesce(
+                Func(
+                    F("created_at"),
+                    Value("YYYY-MM-DD"),
+                    function="to_char",
+                    output_field=TextField()
+                ),
+                Value("Invalid date"),
+                output_field=TextField(),
+            ),
+            # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
+            # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
+            # When that happens, just replace this with F("invitation__creator")
+            "invited_by": Coalesce(
+                Subquery(
+                    LogEntry.objects.filter(
+                        content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                        # Look up the invitation's ID. LogEntry expects a string as this it is stored as json.
+                        object_id=Cast(OuterRef("id"), output_field=TextField()),
+                        action_flag=ADDITION
+                    ).order_by("action_time").values("user__email")[:1]
+                ),
+                Value("Unknown"),
+                output_field=CharField()
+            ),
         }
 
     @classmethod

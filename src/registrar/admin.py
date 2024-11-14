@@ -1275,6 +1275,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         "get_roles",
     ]
 
+    readonly_fields = ["invitation"]
+
     autocomplete_fields = ["user", "portfolio"]
     search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
     search_help_text = "Search by first name, last name, email, or portfolio."

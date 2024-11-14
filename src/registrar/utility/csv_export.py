@@ -26,7 +26,7 @@ from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
 from django.contrib.postgres.aggregates import ArrayAgg
 
-from registrar.utility.model_dicts import BaseModelDict, PortfolioInvitationModelDict, UserPortfolioPermissionModelDict
+from registrar.utility.model_annotations import BaseModelAnnotation, PortfolioInvitationModelAnnotation, UserPortfolioPermissionModelAnnotation
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def format_end_date(end_date):
     return timezone.make_aware(datetime.strptime(end_date, "%Y-%m-%d")) if end_date else get_default_end_date()
 
 
-class BaseExport(BaseModelDict):
+class BaseExport(BaseModelAnnotation):
     """
     A generic class for exporting data which returns a csv file for the given model.
     Base class in an inheritance tree of 3.
@@ -87,13 +87,13 @@ class BaseExport(BaseModelDict):
         """
         writer = csv.writer(csv_file)
         columns = cls.get_columns()
-        models_dict = cls.get_models_dict(request=request)
+        model_dict = cls.get_model_dict(request=request)
 
         # Write to csv file before the write_csv
         cls.write_csv_before(writer, **export_kwargs)
 
         # Write the csv file
-        rows = cls.write_csv(writer, columns, models_dict)
+        rows = cls.write_csv(writer, columns, model_dict)
 
         # Return rows that for easier parsing and testing
         return rows
@@ -146,7 +146,7 @@ class MemberExport(BaseExport):
         return None
     
     @classmethod
-    def get_models_dict(cls, request=None):
+    def get_model_dict(cls, request=None):
         portfolio = request.session.get("portfolio")
         if not portfolio:
             return {}
@@ -164,10 +164,13 @@ class MemberExport(BaseExport):
             "member_display",
             "domain_info",
             "source",
+            "invitation_date",
+            "invited_by",
         ]
-        permissions = UserPortfolioPermissionModelDict.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
-        invitations = PortfolioInvitationModelDict.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
-        return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
+        permissions = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
+        invitations = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
+        queryset_dict = convert_queryset_to_dict(permissions.union(invitations), is_model=False)
+        return queryset_dict
 
     @classmethod
     def get_columns(cls):
@@ -178,6 +181,7 @@ class MemberExport(BaseExport):
             "Email",
             "Organization admin",
             "Invited by",
+            "Invitation date",
             "Last active",
             "Domain requests",
             "Member management",
@@ -195,19 +199,26 @@ class MemberExport(BaseExport):
         """
 
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (model.get("roles") or [])
-        domains = ",".join(model.get("domain_info")) if model.get("domain_info") else ""
+        # Tracks if they can view, create requests, or not do anything
+        x = model.get("roles")
+        print(f"what are the roles? {x}")
+        domain_request_user_permission = None
+        
+        user_managed_domains = model.get("domain_info", [])
+        managed_domains_as_csv = ",".join(user_managed_domains)
+        # Whether they can make domain requests. Tentatively, I think the options as we currently understand would be: None, Viewer, Viewer Requester
         FIELDS = {
             "Email": model.get("email_display"),
             "Organization admin": is_admin,
-            "Invited by": model.get("source"),
+            "Invited by": model.get("invited_by"),
+            "Invitation date": model.get("invitation_date"),
             "Last active": model.get("last_active"),
             "Domain requests": "TODO",
             "Member management": "TODO",
             "Domain management": "TODO",
-            "Number of domains": "TODO",
-            # Quote enclose the domain list
-            # Note: this will only enclose when more than two items exist
-            "Domains": domains,
+            "Number of domains": len(user_managed_domains),
+            # TODO - this doesn't quote enclose with one record
+            "Domains": managed_domains_as_csv,
         }
 
         #         "id",
