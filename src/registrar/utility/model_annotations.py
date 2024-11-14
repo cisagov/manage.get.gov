@@ -91,14 +91,14 @@ class BaseModelAnnotation(ABC):
         return Q()
 
     @classmethod
-    def get_filter_conditions(cls, **export_kwargs):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
         return Q()
 
     @classmethod
-    def get_annotated_fields(cls):
+    def get_annotated_fields(cls, **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -169,7 +169,7 @@ class BaseModelAnnotation(ABC):
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
         filter_conditions = cls.get_filter_conditions(**kwargs)
-        annotated_fields = cls.get_annotated_fields()
+        annotated_fields = cls.get_annotated_fields(**kwargs)
         related_table_fields = cls.get_related_table_fields()
 
         model_queryset = (
@@ -218,7 +218,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
         return ["user"]
 
     @classmethod
-    def get_filter_conditions(cls, portfolio):
+    def get_filter_conditions(cls, portfolio, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -319,27 +319,11 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 output_field=CharField()
             ),
         }
-    
+
     @classmethod
     def get_annotated_queryset(cls, portfolio, csv_report=False):
         """Override of the base annotated queryset to pass in portfolio"""
-        model_queryset = (
-            cls.model()
-            .objects
-            .select_related(*cls.get_select_related())
-            .prefetch_related(*cls.get_prefetch_related())
-            .filter(cls.get_filter_conditions(portfolio))
-            .exclude(cls.get_exclusions())
-            .annotate(**cls.get_annotations_for_sort())
-            .order_by(*cls.get_sort_fields())
-            .distinct()
-        )
-
-        annotated_fields = cls.get_annotated_fields(portfolio, csv_report)
-        related_table_fields = cls.get_related_table_fields()
-        return cls.annotate_and_retrieve_fields(
-            model_queryset, annotated_fields, related_table_fields
-        )
+        return super().get_annotated_queryset(portfolio=portfolio, csv_report=csv_report)
 
 
 class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
@@ -362,7 +346,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
         return Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
 
     @classmethod
-    def get_filter_conditions(cls, portfolio):
+    def get_filter_conditions(cls, portfolio, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -439,20 +423,4 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
     @classmethod
     def get_annotated_queryset(cls, portfolio, csv_report=False):
         """Override of the base annotated queryset to pass in portfolio"""
-        model_queryset = (
-            cls.model()
-            .objects
-            .select_related(*cls.get_select_related())
-            .prefetch_related(*cls.get_prefetch_related())
-            .filter(cls.get_filter_conditions(portfolio))
-            .exclude(cls.get_exclusions())
-            .annotate(**cls.get_annotations_for_sort())
-            .order_by(*cls.get_sort_fields())
-            .distinct()
-        )
-
-        annotated_fields = cls.get_annotated_fields(portfolio, csv_report)
-        related_table_fields = cls.get_related_table_fields()
-        return cls.annotate_and_retrieve_fields(
-            model_queryset, annotated_fields, related_table_fields
-        )
+        return super().get_annotated_queryset(portfolio=portfolio, csv_report=csv_report)

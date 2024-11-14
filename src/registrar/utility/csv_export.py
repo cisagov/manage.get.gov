@@ -496,7 +496,7 @@ class DomainDataType(DomainExport):
         return ["domain__permissions"]
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", "):
+    def get_annotated_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -713,7 +713,7 @@ class DomainDataFull(DomainExport):
         )
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", "):
+    def get_annotated_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -808,7 +808,7 @@ class DomainDataFederal(DomainExport):
         )
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", "):
+    def get_annotated_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -1427,7 +1427,7 @@ class DomainRequestDataFull(DomainRequestExport):
         ]
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", "):
+    def get_annotated_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
