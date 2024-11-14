@@ -154,7 +154,7 @@ class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateV
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
-    
+
 
 class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
     """Abstract view for cancelling a DomainInvitation."""
