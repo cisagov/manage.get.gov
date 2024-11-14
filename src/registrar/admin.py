@@ -1640,6 +1640,70 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "generic organization"
+        parameter_name = "converted_generic_orgs"
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_generic_org = domain_request.converted_generic_org_type
+                if converted_generic_org:
+                    converted_generic_orgs.add(converted_generic_org)
+
+            return sorted((org, org) for org in converted_generic_orgs)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    # Filter based on the generic org value returned by converted_generic_org_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_generic_org_type
+                        and domain_request.converted_generic_org_type == self.value()
+                    ]
+                )
+            return queryset
+
+    class FederalTypeFilter(admin.SimpleListFilter):
+        """Custom Federal Type filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's federal type.  If not, use the
+        organization in the Domain Request object."""
+
+        title = "federal Type"
+        parameter_name = "converted_federal_types"
+
+        def lookups(self, request, model_admin):
+            converted_federal_types = set()
+
+            for domain_request in DomainRequest.objects.all():
+                converted_federal_type = domain_request.converted_federal_type
+                if converted_federal_type:
+                    converted_federal_types.add(converted_federal_type)
+
+            return sorted((type, type) for type in converted_federal_types)
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if federal Type is selected in the filter
+                return queryset.filter(
+                    # Filter based on the federal type returned by converted_federal_type
+                    id__in=[
+                        domain_request.id
+                        for domain_request in queryset
+                        if domain_request.converted_federal_type
+                        and domain_request.converted_federal_type == self.value()
+                    ]
+                )
+            return queryset
+
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
@@ -1700,6 +1764,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.converted_generic_org_type
+
+    @admin.display(description=_("Organization Name"))
+    def converted_organization_name(self, obj):
+        return obj.converted_organization_name
+
+    @admin.display(description=_("Federal Agency"))
+    def converted_federal_agency(self, obj):
+        return obj.converted_federal_agency
+
+    @admin.display(description=_("Federal Type"))
+    def converted_federal_type(self, obj):
+        return obj.converted_federal_type
+
+    @admin.display(description=_("City"))
+    def converted_city(self, obj):
+        return obj.converted_city
+
+    @admin.display(description=_("State/Territory"))
+    def converted_state_territory(self, obj):
+        return obj.converted_state_territory
+
     # Columns
     list_display = [
         "requested_domain",
@@ -1707,13 +1795,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "generic_org_type",
-        "federal_type",
-        "federal_agency",
-        "organization_name",
         "custom_election_board",
-        "city",
-        "state_territory",
+        "converted_generic_org_type",
+        "converted_organization_name",
+        "converted_federal_agency",
+        "converted_federal_type",
+        "converted_city",
+        "converted_state_territory",
         "investigator",
     ]
 
@@ -1738,8 +1826,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # Filters
     list_filter = (
         StatusListFilter,
-        "generic_org_type",
-        "federal_type",
+        GenericOrgFilter,
+        FederalTypeFilter,
         ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
@@ -1869,15 +1957,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "suborganization_city",
         "suborganization_state_territory",
     ]
+
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
         "creator",
-        "senior_official",
         "investigator",
         "portfolio",
         "sub_organization",
     ]
+
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering

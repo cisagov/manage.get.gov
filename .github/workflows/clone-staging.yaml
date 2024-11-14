@@ -1,11 +1,9 @@
 name: Clone Staging Database
 
 on:
-  # these will be uncommented after testing
-  # ----
-  # schedule:
-  #   # Run daily at 2:00 PM EST
-  #   - cron: '0 * * * *'
+  schedule:
+    # Run daily at 2:00 PM EST
+    - cron: '0 * * * *'
   # Allow manual triggering
   workflow_dispatch:
 
@@ -16,7 +14,7 @@ env:
 
 jobs:
   clone-database:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CF_USERNAME: ${{ secrets.CF_MS_USERNAME }}
       CF_PASSWORD: ${{ secrets.CF_MS_PASSWORD }}
@@ -26,9 +24,10 @@ jobs:
             # install cf cli and other tools
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
             echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-            
+
             sudo apt-get update
-            sudo apt-get install cf8-cli postgresql-client-common
+            sudo apt-get install cf8-cli
+            
             # install cg-manage-rds tool
             pip install git+https://github.com/cloud-gov/cg-manage-rds.git
             
@@ -41,7 +40,8 @@ jobs:
             cf share-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
             
             # clone from source to destination
-            cg-manage-rds clone getgov-$DESTINATION_ENVIRONMENT-database getgov-$SOURCE_ENVIRONMENT-database
-            
-            # unshare the service
-            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
+            cf target -s $SOURCE_ENVIRONMENT
+            cg-manage-rds clone getgov-$SOURCE_ENVIRONMENT-database getgov-$DESTINATION_ENVIRONMENT-database
+        - name: Cleanup
+          if: always()
+          run: cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f
