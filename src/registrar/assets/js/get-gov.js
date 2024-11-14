@@ -2820,3 +2820,129 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add event listener to the suborg dropdown to show/hide the suborg details section
   select.addEventListener("change", () => toggleSuborganization());
 })();
+
+
+/**
+ * An IIFE that handles the modal associated with adding a new member to a portfolio.
+ */
+(function handleNewMemberModal() {
+  
+  // Validate the form
+  function validateForm() {
+    // Perform an AJAX POST request to validate form data
+    const form = document.getElementById("add_member_form");
+    if (!form) {
+        console.error("Form element not found");
+        return;
+    }
+    const formData = new FormData(form); // Use the form element for FormData
+    fetch("/members/new-member/validate", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_valid) {
+            // If validation passes, display the modal and set values
+            openAddMemberConfirmationModal();
+        } else {
+            // Handle validation errors
+            alert("Validation failed.");
+        }
+    });
+  }
+
+  function populatePermissionDetails(permission_details_div_id) {
+    const permissionDetailsContainer = document.getElementById("permission_details");
+    permissionDetailsContainer.innerHTML = ""; // Clear previous content
+
+    // Get all permission sections (divs with h3 and radio inputs)
+    const permissionSections = document.querySelectorAll("#"+permission_details_div_id+" > h3");
+
+    permissionSections.forEach(section => {
+        // Find the <h3> element text
+        const sectionTitle = section.textContent;
+
+        // Find the associated radio buttons container (next fieldset)
+        const fieldset = section.nextElementSibling;
+
+        if (fieldset && fieldset.tagName.toLowerCase() === 'fieldset') {
+            // Get the selected radio button within this fieldset
+            const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
+
+            // If a radio button is selected, get its label text
+            let selectedPermission = "No permission selected";
+            if (selectedRadio) {
+                const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
+                selectedPermission = label ? label.textContent : "No permission selected";
+            }
+
+            // Create new elements for the modal content
+            const titleElement = document.createElement("h3");
+            titleElement.textContent = sectionTitle;
+
+            const permissionElement = document.createElement("p");
+            permissionElement.textContent = selectedPermission;
+
+            // Append to the modal content container
+            permissionDetailsContainer.appendChild(titleElement);
+            permissionDetailsContainer.appendChild(permissionElement);
+        }
+    });
+}
+
+  // Open the modal
+  function openAddMemberConfirmationModal() {
+
+      // Get email value
+      let emailValue = document.getElementById('id_email').value;
+      document.getElementById('modalEmail').textContent = emailValue;
+
+      // Get selected radio button for access level
+      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
+      let accessText = selectedAccess ? selectedAccess.value : "No access level selected"; //nextElementSibling.textContent.trim()
+      document.getElementById('modalAccessLevel').textContent = accessText;
+
+      // Populate permission details based on access level
+      if (selectedAccess && selectedAccess.value === 'admin') {
+          populatePermissionDetails('new-member-admin-permissions')
+      } else {
+        populatePermissionDetails('new-member-basic-permissions')
+      }
+
+      // Show the modal
+      modal = document.getElementById('invite-member-modal');
+      showElement(modal);
+  }
+
+  // Close the modal
+  function closeModal() {
+    modal = document.getElementById('invite-member-modal');
+    hideElement(modal);
+  }
+
+  // ---- EVENT LISTENERS
+  document.querySelectorAll('[data-close-modal]').forEach(button => {
+      button.addEventListener('click', closeModal);
+  });
+
+  // document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
+  //   // Upon confirmation, submit the form
+  //   document.getElementById("add_member_form").submit();
+  // });
+
+  // Attach event listener to the Invite Member button to open the modal
+  document.getElementById("invite_member_button").addEventListener('click', function() {
+    // Upon confirmation, submit the form
+    console.log("clicked")
+    openAddMemberConfirmationModal();
+  });
+
+  document.getElementById("add_member_form").addEventListener("submit", function(event) {
+    event.preventDefault(); // Prevents the form from submitting
+    validateForm();
+  });
+})();

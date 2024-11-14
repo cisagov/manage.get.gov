@@ -1,5 +1,5 @@
 import logging
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.contrib import messages
@@ -416,12 +416,24 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
+
         self.object = self.get_object()
         form = self.get_form()
+
         if form.is_valid():
-            return self.form_valid(form)
+            return JsonResponse({"is_valid": True})
         else:
-            return self.form_invalid(form)
+            return JsonResponse({"is_valid": False, "errors": form.errors})
+        # if request.method == "POST" and request.is_ajax():
+        #     if form.is_valid():
+        #         return JsonResponse({"is_valid": True})
+        #     else:
+        #         return JsonResponse({"is_valid": False, "errors": form.errors})
+
+        # if form.is_valid():
+        #     return self.form_valid(form)
+        # else:
+        #     return self.form_invalid(form)
 
     def form_invalid(self, form):
         """Handle the case when the form is invalid."""
@@ -497,7 +509,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
     #         raise EmailSendingError("Could not send email invitation.") from exc
     #     else:
     #         if add_success:
-    #             messages.success(self.request, f"{email} has been invited to this domain.")
+    #             messages.success(self.request, f"{email} has been invited.")
 
     # def _make_invitation(self, email_address: str, requestor: User):
     #     """Make a Member invitation for this email and redirect with a message."""
