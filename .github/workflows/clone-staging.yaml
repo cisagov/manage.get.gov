@@ -1,11 +1,9 @@
 name: Clone Staging Database
 
 on:
-  # these will be uncommented after testing
-  # ----
-  # schedule:
-  #   # Run daily at 2:00 PM EST
-  #   - cron: '0 * * * *'
+  schedule:
+    # Run daily at 2:00 PM EST
+    - cron: '0 * * * *'
   # Allow manual triggering
   workflow_dispatch:
 
@@ -21,6 +19,7 @@ jobs:
       CF_USERNAME: ${{ secrets.CF_MS_USERNAME }}
       CF_PASSWORD: ${{ secrets.CF_MS_PASSWORD }}
     steps:
+        - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         - name: Clone Database
           run: |
             # install cf cli and other tools
@@ -43,7 +42,7 @@ jobs:
             
             # clone from source to destination
             cf target -s $SOURCE_ENVIRONMENT
-            cg-manage-rds clone getgov-$DESTINATION_ENVIRONMENT-database getgov-$SOURCE_ENVIRONMENT-database
-            
-            # unshare the service
-            cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
+            cg-manage-rds clone getgov-$SOURCE_ENVIRONMENT-database getgov-$DESTINATION_ENVIRONMENT-database
+        - name: Cleanup
+          if: always()
+          run: cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f

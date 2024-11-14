@@ -21,6 +21,7 @@ jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
 
       - name: Linting
@@ -32,6 +33,7 @@ jobs:
   python-test:
     runs-on: ubuntu-latest
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
 
       - name: Unit tests
@@ -41,6 +43,7 @@ jobs:
   django-migrations-complete:
     runs-on: ubuntu-latest
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
 
       - name: Check for complete migrations
