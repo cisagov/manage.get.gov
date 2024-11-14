@@ -154,20 +154,7 @@ class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateV
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
-
-
-class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteView, abc.ABC):
-    """Abstract view for deleting a domain invitation.
-
-    This one is fairly specialized, but this is the only thing that we do
-    right now with domain invitations. We still have the full
-    `DomainInvitationPermission` class, but here we just pair it with a
-    DeleteView.
-    """
-
-    model = DomainInvitation
-    object: DomainInvitation  # workaround for type mismatch in DeleteView
-
+    
 
 class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
     """Abstract view for cancelling a DomainInvitation."""
