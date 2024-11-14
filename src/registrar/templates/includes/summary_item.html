@@ -119,7 +119,7 @@
           {% endif %}
         {% endif %}
         {% if value.invitations.all %}
-          <p class="margin-top-1">Invitations</p>
+          <h4 class="h4--sm-05">Invited domain managers</h4>
           <ul class="usa-list usa-list--unstyled margin-top-0">
           {% for item in value.invitations.all %}
             <li>{{ item.email }}</li>
