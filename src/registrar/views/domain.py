@@ -2,7 +2,7 @@
 
 Authorization is handled by the `DomainPermissionView`. To ensure that only
 authorized users can see information on a domain, every view here should
-inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
+inherit from `DomainPermissionView`.
 """
 
 from datetime import date
