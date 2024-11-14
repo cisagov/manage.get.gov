@@ -22,13 +22,9 @@
                 <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
             </div>
             <div class="mobile:grid-col-12 tablet:grid-col-6">
-                {% comment %}
-                IMPORTANT:
-                If this button is added on any other page, make sure to update the
-                relevant view to reset request.session["new_request"] = True
-                {% endcomment %}
+ 
                 <p class="float-right-tablet tablet:margin-y-0">
-                    <a href="{% url 'domain-request:' %}" class="usa-button"
+                    <a href="{% url 'domain-request:start' %}" class="usa-button"
                     >
                         Start a new domain request
                     </a>
