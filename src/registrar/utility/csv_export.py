@@ -211,7 +211,7 @@ class MemberExport(BaseExport):
             "Last active": model.get("last_active"),
             "Domain requests": domain_request_display,
             "Member management": member_perm_display,
-            "Domain management": "TODO",
+            "Domain management": len(user_managed_domains) > 0,
             "Number of domains": len(user_managed_domains),
             # TODO - this doesn't quote enclose with one record
             "Domains": managed_domains_as_csv,
