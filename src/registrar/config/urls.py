@@ -21,6 +21,7 @@ from registrar.views.report_views import (
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
     ExportDataTypeRequests,
+    ExportMembersPortfolio,
 )
 
 # --jsons
@@ -216,6 +217,11 @@ urlpatterns = [
         name="get-rejection-email-for-user-json",
     ),
     path("admin/", admin.site.urls),
+    path(
+        "reports/export_members_portfolio/",
+        ExportMembersPortfolio.as_view(),
+        name="export_members_portfolio",
+    ),
     path(
         "reports/export_data_type_user/",
         ExportDataTypeUser.as_view(),

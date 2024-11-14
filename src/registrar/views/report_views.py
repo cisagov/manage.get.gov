@@ -169,6 +169,18 @@ class ExportDataTypeUser(View):
         return response
 
 
+class ExportMembersPortfolio(View):
+    """Returns a a members report for a given portfolio"""
+
+    def get(self, request, *args, **kwargs):
+        portfolio = request.session.get("portfolio")
+        # match the CSV example with all the fields
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="members-for-{portfolio}.csv"'
+        csv_export.MemberExport.export_data_to_csv(response, request=request)
+        return response
+
+
 class ExportDataTypeRequests(View):
     """Returns a domain requests report for a given user on the request"""
 
