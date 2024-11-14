@@ -76,16 +76,23 @@
   {% endif %}
 
   {% comment %}
-    Site banner / red alert banner / emergency banner / incident banner - Remove one of those includes and place outside the comment block to activate the banner. 
+    <!-- Site banner / red alert banner / emergency banner / incident banner - Remove one of those includes and place outside the comment block to activate the banner.
+    DO NOT FORGET TO EDIT THE BANNER CONTENT -->
+    
+    <!-- Red banner with exclamation mark in a circle: -->
     {% include "includes/banner-error.html" %}
+
+    <!-- Blue banner with 'i'' mark in a circle: -->
     {% include "includes/banner-info.html" %}
+
+    <!-- Marron banner with exclamation mark in a circle: -->
     {% include "includes/banner-service-disruption.html" %}
     {% include "includes/banner-site-alert.html" %}
     {% include "includes/banner-system-outage.html" %}
+
+    <!-- Yellow banner with exclamation mark in a triangle: -->
     {% include "includes/banner-warning.html" %}
   {% endcomment %}
-  
-  {% include "includes/banner-info.html" %}
   
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
