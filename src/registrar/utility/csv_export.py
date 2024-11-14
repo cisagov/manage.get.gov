@@ -547,7 +547,7 @@ class DomainRequestsDataType:
     """
 
     @classmethod
-    def get_filter_conditions(cls, request=None):
+    def get_filter_conditions(cls, request=None, **kwargs):
         if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
             return Q(id__in=[])
 
@@ -697,7 +697,7 @@ class DomainDataFull(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -791,7 +791,7 @@ class DomainDataFederal(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -888,7 +888,7 @@ class DomainGrowth(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -960,7 +960,7 @@ class DomainManaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -1095,7 +1095,7 @@ class DomainUnmanaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -1327,7 +1327,7 @@ class DomainRequestGrowth(DomainRequestExport):
         ]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
