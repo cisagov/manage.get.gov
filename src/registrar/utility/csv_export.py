@@ -892,6 +892,10 @@ class DomainGrowth(DomainExport):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         filter_ready = Q(
             domain__state__in=[Domain.State.READY],
             domain__first_ready__gte=start_date,
@@ -960,10 +964,14 @@ class DomainManaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=False,
@@ -1095,10 +1103,14 @@ class DomainUnmanaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=True,
@@ -1331,6 +1343,9 @@ class DomainRequestGrowth(DomainRequestExport):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
 
         start_date_formatted = format_start_date(start_date)
         end_date_formatted = format_end_date(end_date)
