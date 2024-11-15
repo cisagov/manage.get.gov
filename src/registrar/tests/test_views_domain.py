@@ -342,7 +342,9 @@ class TestDomainDetail(TestDomainOverview):
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
-            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            user=user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             ],
