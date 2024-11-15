@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [variables, deploy]
     permissions:
-      issues: write
+      pull-requests: write
     steps:
       - uses: actions/github-script@v6
         env:
