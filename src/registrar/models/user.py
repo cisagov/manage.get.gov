@@ -259,7 +259,7 @@ class User(AbstractUser):
 
     def is_portfolio_admin(self, portfolio):
         return self.has_edit_suborganization_portfolio_permission(portfolio)
-    
+
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
         if permission:

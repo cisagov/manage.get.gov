@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -342,7 +342,10 @@ class TestDomainDetail(TestDomainOverview):
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
-            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
         )
         user.refresh_from_db()
         self.client.force_login(user)
@@ -353,6 +356,38 @@ class TestDomainDetail(TestDomainOverview):
             "You don't have access to manage "
             + domain.name
             + ". If you need to make updates, contact one of the listed domain managers.",
+        )
+        # Check that user does not have option to Edit domain
+        self.assertNotContains(detail_page, "Edit")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_readonly_on_detail_page_for_org_admin_not_manager(self):
+        """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
+        properly displays read only"""
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        # need to create a different user than self.user because the user needs permission assignments
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+        )
+        domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
+        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        user.refresh_from_db()
+        self.client.force_login(user)
+        detail_page = self.client.get(f"/domain/{domain.id}")
+        # Check that alert message displays properly
+        self.assertContains(
+            detail_page,
+            "To manage information for this domain, you must add yourself as a domain manager.",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
