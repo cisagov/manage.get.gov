@@ -544,19 +544,19 @@ function handlePortfolioSelection() {
      * This function ensures the form dynamically reflects whether a specific suborganization is being selected or requested.
      */
     function updateSuborganizationFieldsDisplay() {
-
+        let portfolio_id = portfolioDropdown.val();
         let suborganization_id = suborganizationDropdown.val();
 
-        if (suborganization_id) {
-            // Hide suborganization request fields if suborganization is selected
-            hideElement(requestedSuborganizationField);
-            hideElement(suborganizationCity);
-            hideElement(suborganizationStateTerritory);
-        } else {
+        if (portfolio_id && !suborganization_id) {
             // Show suborganization request fields
             showElement(requestedSuborganizationField);
             showElement(suborganizationCity);
             showElement(suborganizationStateTerritory);
+        } else {
+            // Hide suborganization request fields if suborganization is selected
+            hideElement(requestedSuborganizationField);
+            hideElement(suborganizationCity);
+            hideElement(suborganizationStateTerritory);  
         }
     }
 
