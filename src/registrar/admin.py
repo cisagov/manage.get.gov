@@ -242,7 +242,9 @@ class DomainRequestAdminForm(forms.ModelForm):
                 DomainRequest._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
             ),
             "sub_organization": AutocompleteSelectWithPlaceholder(
-                DomainRequest._meta.get_field("sub_organization"), admin.site, attrs={"data-placeholder": "---------"}
+                DomainRequest._meta.get_field("sub_organization"),
+                admin.site,
+                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
         }
         labels = {

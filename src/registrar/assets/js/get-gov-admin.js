@@ -98,6 +98,9 @@ function handlePortfolioSelection() {
     const portfolioDropdown = django.jQuery("#id_portfolio");
     const suborganizationDropdown = django.jQuery("#id_sub_organization");
     const suborganizationField = document.querySelector(".field-sub_organization");
+    const requestedSuborganizationField = document.querySelector(".field-requested_suborganization");
+    const suborganizationCity = document.querySelector(".field-suborganization_city");
+    const suborganizationStateTerritory = document.querySelector(".field-suborganization_state_territory");
     const seniorOfficialField = document.querySelector(".field-senior_official");
     const otherEmployeesField = document.querySelector(".field-other_contacts");
     const noOtherContactsRationaleField = document.querySelector(".field-no_other_contacts_rationale");
@@ -128,7 +131,7 @@ function handlePortfolioSelection() {
     const portfolioZipcode = document.querySelector(".field-portfolio_zipcode .readonly");
     const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
     const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
-    const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;  
+    const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
     let isPageLoading = true;
 
    /**
@@ -439,26 +442,6 @@ function handlePortfolioSelection() {
     }
 
     /**
-     * Initializes the Suborganization Dropdown’s AJAX URL.
-     *
-     * This function sets the `data-ajax--url` attribute for `suborganizationDropdown`, defining the endpoint
-     * from which the dropdown will retrieve suborganization data. The endpoint is expected to return a JSON
-     * list of suborganizations suitable for Select2 integration. 
-     *
-     * **Purpose**: To ensure the dropdown is configured with the correct endpoint for fetching data
-     * in real-time, thereby allowing seamless updates and filtering based on user selections.
-     *
-     * **Workflow**:
-     * - Attaches an endpoint URL to `suborganizationDropdown` for fetching suborganization data.
-     *
-     * Dependencies:
-     * - Expects `suborganizationDropdown` to be defined in the global scope.
-     */
-    function initializeSubOrganizationUrl() {
-        suborganizationDropdown.attr("data-ajax--url", "/admin/api/get-suborganization-list-json/");
-    }
-
-    /**
      * Updates the display of portfolio-related fields based on whether a portfolio is selected.
      *
      * This function controls the visibility of specific fields by showing or hiding them
@@ -542,15 +525,45 @@ function handlePortfolioSelection() {
             hideElement(portfolioOrgNameFieldSet);
             hideElement(portfolioOrgNameFieldSetDetails);
         }
+
+        updateSuborganizationFieldsDisplay();
+
+    }
+
+    /**
+     * Updates the visibility of suborganization-related fields based on the selected value in the suborganization dropdown.
+     * 
+     * If a suborganization is selected:
+     *   - Hides the fields related to requesting a new suborganization (`requestedSuborganizationField`).
+     *   - Hides the city (`suborganizationCity`) and state/territory (`suborganizationStateTerritory`) fields for the suborganization.
+     * 
+     * If no suborganization is selected:
+     *   - Shows the fields for requesting a new suborganization (`requestedSuborganizationField`).
+     *   - Displays the city (`suborganizationCity`) and state/territory (`suborganizationStateTerritory`) fields.
+     * 
+     * This function ensures the form dynamically reflects whether a specific suborganization is being selected or requested.
+     */
+    function updateSuborganizationFieldsDisplay() {
+
+        let suborganization_id = suborganizationDropdown.val();
+
+        if (suborganization_id) {
+            // Hide suborganization request fields if suborganization is selected
+            hideElement(requestedSuborganizationField);
+            hideElement(suborganizationCity);
+            hideElement(suborganizationStateTerritory);
+        } else {
+            // Show suborganization request fields
+            showElement(requestedSuborganizationField);
+            showElement(suborganizationCity);
+            showElement(suborganizationStateTerritory);
+        }
     }
 
     /**
      * Initializes necessary data and display configurations for the portfolio fields.
      */
     function initializePortfolioSettings() {
-        // Set URL for the suborganization dropdown, enabling asynchronous data fetching.
-        initializeSubOrganizationUrl();
-
         // Update the visibility of portfolio-related fields based on current dropdown selection.
         updatePortfolioFieldsDisplay();
 
@@ -564,6 +577,8 @@ function handlePortfolioSelection() {
     function setEventListeners() {
         // When the `portfolioDropdown` selection changes, refresh the displayed portfolio fields.
         portfolioDropdown.on("change", updatePortfolioFields);
+        // When the 'suborganizationDropdown' selection changes
+        suborganizationDropdown.on("change", updateSuborganizationFieldsDisplay);
     }
 
     // Run initial setup functions
@@ -1761,7 +1776,6 @@ document.addEventListener('DOMContentLoaded', function() {
 (function dynamicDomainRequestFields(){
     const domainRequestPage = document.getElementById("domainrequest_form");
     if (domainRequestPage) {
-        handleSuborganizationFields();
         handlePortfolioSelection();
     }
 })();

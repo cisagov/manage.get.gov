@@ -106,3 +106,15 @@ class AutocompleteSelectWithPlaceholder(AutocompleteSelect):
         if "data-placeholder" in base_attrs:
             attrs["data-placeholder"] = base_attrs["data-placeholder"]
         return attrs
+
+    def __init__(self, field, admin_site, attrs=None, choices=(), using=None):
+        """Set a custom ajax url for the select2 if passed through attrs"""
+        if attrs:
+            self.custom_ajax_url = attrs.pop("ajax-url", None)
+        super().__init__(field, admin_site, attrs, choices, using)
+
+    def get_url(self):
+        """Override the get_url method to use the custom ajax url"""
+        if self.custom_ajax_url:
+            return reverse(self.custom_ajax_url)
+        return reverse(self.url_name % self.admin_site.name)
