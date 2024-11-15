@@ -11,7 +11,21 @@ from registrar.models import (
     PublicContact,
     UserDomainRole,
 )
-from django.db.models import Case, CharField, Count, DateField, F, ManyToManyField, Q, QuerySet, Value, When, TextField, OuterRef, Subquery
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    DateField,
+    F,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    Value,
+    When,
+    TextField,
+    OuterRef,
+    Subquery,
+)
 from django.db.models.functions import Cast
 from django.utils import timezone
 from django.db.models.functions import Concat, Coalesce
@@ -25,7 +39,11 @@ from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
 from django.contrib.postgres.aggregates import ArrayAgg
 
-from registrar.utility.model_annotations import BaseModelAnnotation, PortfolioInvitationModelAnnotation, UserPortfolioPermissionModelAnnotation
+from registrar.utility.model_annotations import (
+    BaseModelAnnotation,
+    PortfolioInvitationModelAnnotation,
+    UserPortfolioPermissionModelAnnotation,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -134,6 +152,7 @@ class BaseExport(BaseModelAnnotation):
         """
         pass
 
+
 class MemberExport(BaseExport):
 
     @classmethod
@@ -143,7 +162,7 @@ class MemberExport(BaseExport):
         This is a special edge case, but the base report requires this to be defined.
         """
         return None
-    
+
     @classmethod
     def get_model_annotation_dict(cls, request=None, **kwargs):
         portfolio = request.session.get("portfolio")
@@ -166,8 +185,12 @@ class MemberExport(BaseExport):
             "invitation_date",
             "invited_by",
         ]
-        permissions = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
-        invitations = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(*shared_columns)
+        permissions = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(
+            *shared_columns
+        )
+        invitations = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(
+            *shared_columns
+        )
         queryset_dict = convert_queryset_to_dict(permissions.union(invitations), is_model=False)
         return queryset_dict
 
@@ -199,7 +222,9 @@ class MemberExport(BaseExport):
         roles = model.get("roles")
         additional_permissions = model.get("additional_permissions_display")
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (roles or [])
-        domain_request_display = UserPortfolioPermission.get_domain_request_permission_display(roles, additional_permissions)
+        domain_request_display = UserPortfolioPermission.get_domain_request_permission_display(
+            roles, additional_permissions
+        )
         member_perm_display = UserPortfolioPermission.get_member_permission_display(roles, additional_permissions)
         user_managed_domains = model.get("domain_info", [])
         managed_domains_as_csv = ",".join(user_managed_domains)
@@ -230,6 +255,7 @@ class MemberExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
+
 
 class DomainExport(BaseExport):
     """
@@ -1521,4 +1547,3 @@ class DomainRequestDataFull(DomainRequestExport):
             distinct=True,
         )
         return query
-

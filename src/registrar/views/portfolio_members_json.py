@@ -9,7 +9,10 @@ from django.views import View
 
 from registrar.models import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.model_annotations import PortfolioInvitationModelAnnotation, UserPortfolioPermissionModelAnnotation
+from registrar.utility.model_annotations import (
+    PortfolioInvitationModelAnnotation,
+    UserPortfolioPermissionModelAnnotation,
+)
 from registrar.views.utility.mixins import PortfolioMembersPermission
 
 

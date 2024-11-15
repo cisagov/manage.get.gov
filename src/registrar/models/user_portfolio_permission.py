@@ -115,16 +115,19 @@ class UserPortfolioPermission(TimeStampedModel):
         if additional_permissions:
             portfolio_permissions.update(additional_permissions)
         return list(portfolio_permissions)
-    
+
     @classmethod
     def get_domain_request_permission_display(cls, roles, additional_permissions):
         """Class method to return a readable string for domain request permissions"""
         # Tracks if they can view, create requests, or not do anything
         all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, additional_permissions)
-        all_domain_perms = [UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS, UserPortfolioPermissionChoices.EDIT_REQUESTS]
-        if (all(perm in all_permissions for perm in all_domain_perms)):
+        all_domain_perms = [
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+        ]
+        if all(perm in all_permissions for perm in all_domain_perms):
             return "Viewer Requester"
-        elif (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions):
+        elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
             return "Viewer"
         else:
             return "None"
@@ -134,11 +137,11 @@ class UserPortfolioPermission(TimeStampedModel):
         """Class method to return a readable string for member permissions"""
         # Tracks if they can view, create requests, or not do anything
         all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, additional_permissions)
-        # Note for reviewers: the reason why this isn't checking on "all" is because 
+        # Note for reviewers: the reason why this isn't checking on "all" is because
         # the way perms work for members is different than requests. We need to consolidate this.
-        if (UserPortfolioPermissionChoices.EDIT_MEMBERS in all_permissions):
+        if UserPortfolioPermissionChoices.EDIT_MEMBERS in all_permissions:
             return "Manager"
-        elif (UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions):
+        elif UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
             return "Viewer"
         else:
             return "None"

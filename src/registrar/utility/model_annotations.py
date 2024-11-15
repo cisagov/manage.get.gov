@@ -20,12 +20,26 @@ Example:
     permissions = UserPortfolioPermissionAnnotation.get_annotated_queryset(portfolio, csv_report=True)
     # Returns same fields but formatted for CSV export
 """
+
 from abc import ABC, abstractmethod
 from registrar.models import (
     DomainInvitation,
     PortfolioInvitation,
 )
-from django.db.models import CharField, F, ManyToManyField, Q, QuerySet, Value, TextField, OuterRef, Subquery, Func, Case, When
+from django.db.models import (
+    CharField,
+    F,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    Value,
+    TextField,
+    OuterRef,
+    Subquery,
+    Func,
+    Case,
+    When,
+)
 from django.db.models.functions import Concat, Coalesce, Cast
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
@@ -39,9 +53,9 @@ class BaseModelAnnotation(ABC):
     """
     Abstract base class that standardizes how models are annotated for csv exports or complex annotation queries.
     For example, the Members table / csv export.
-    
+
     Subclasses define model-specific annotations, filters, and field formatting while inheriting
-    common queryset building logic. 
+    common queryset building logic.
     Intended ensure consistent data presentation across both table UI components and CSV exports.
     """
 
@@ -118,7 +132,7 @@ class BaseModelAnnotation(ABC):
         Get a list of fields from related tables.
         """
         return []
-    
+
     @classmethod
     def annotate_and_retrieve_fields(
         cls, initial_queryset, annotated_fields, related_table_fields=None, include_many_to_many=False, **kwargs
@@ -174,8 +188,7 @@ class BaseModelAnnotation(ABC):
 
         model_queryset = (
             cls.model()
-            .objects
-            .select_related(*select_related)
+            .objects.select_related(*select_related)
             .prefetch_related(*prefetch_related)
             .filter(filter_conditions)
             .exclude(exclusions)
@@ -183,9 +196,7 @@ class BaseModelAnnotation(ABC):
             .order_by(*sort_fields)
             .distinct()
         )
-        return cls.annotate_and_retrieve_fields(
-            model_queryset, annotated_fields, related_table_fields, **kwargs
-        )
+        return cls.annotate_and_retrieve_fields(model_queryset, annotated_fields, related_table_fields, **kwargs)
 
     @classmethod
     def update_queryset(cls, queryset, **kwargs):
@@ -193,7 +204,7 @@ class BaseModelAnnotation(ABC):
         Returns an updated queryset. Override in subclass to update queryset.
         """
         return queryset
-    
+
     @classmethod
     def get_model_annotation_dict(cls, **kwargs):
         return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
@@ -205,6 +216,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
     Handles formatting of user details, permissions, and related domain information
     for both UI display and CSV export.
     """
+
     @classmethod
     def model(cls):
         # Return the model class that this export handles
@@ -247,10 +259,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
         if csv_report:
             domain_query = F("user__permissions__domain__name")
             last_active_query = Func(
-                F("user__last_login"),
-                Value("YYYY-MM-DD"),
-                function="to_char",
-                output_field=TextField()
+                F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()
             )
         else:
             domain_query = Concat(
@@ -272,10 +281,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
             ),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": Case(
-                When(
-                    Q(user__email__isnull=False) & ~Q(user__email=""), 
-                    then=F("user__email")
-                ),
+                When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
                 When(
                     Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
                     then=Concat(
@@ -290,17 +296,12 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
             "domain_info": ArrayAgg(
                 domain_query,
                 distinct=True,
-                filter=Q(user__permissions__domain__isnull=False) 
+                filter=Q(user__permissions__domain__isnull=False)
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
             "source": Value("permission", output_field=CharField()),
             "invitation_date": Coalesce(
-                Func(
-                    F("invitation__created_at"),
-                    Value("YYYY-MM-DD"),
-                    function="to_char",
-                    output_field=TextField()
-                ),
+                Func(F("invitation__created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
                 Value("Invalid date"),
                 output_field=TextField(),
             ),
@@ -311,12 +312,16 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 Subquery(
                     LogEntry.objects.filter(
                         content_type=ContentType.objects.get_for_model(PortfolioInvitation),
-                        object_id=Cast(OuterRef("invitation__id"), output_field=TextField()),  # Look up the invitation's ID
-                        action_flag=ADDITION
-                    ).order_by("action_time").values("user__email")[:1]
+                        object_id=Cast(
+                            OuterRef("invitation__id"), output_field=TextField()
+                        ),  # Look up the invitation's ID
+                        action_flag=ADDITION,
+                    )
+                    .order_by("action_time")
+                    .values("user__email")[:1]
                 ),
                 Value("Unknown"),
-                output_field=CharField()
+                output_field=CharField(),
             ),
         }
 
@@ -394,12 +399,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             ),
             "source": Value("invitation", output_field=CharField()),
             "invitation_date": Coalesce(
-                Func(
-                    F("created_at"),
-                    Value("YYYY-MM-DD"),
-                    function="to_char",
-                    output_field=TextField()
-                ),
+                Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
                 Value("Invalid date"),
                 output_field=TextField(),
             ),
@@ -412,11 +412,13 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                         content_type=ContentType.objects.get_for_model(PortfolioInvitation),
                         # Look up the invitation's ID. LogEntry expects a string as this it is stored as json.
                         object_id=Cast(OuterRef("id"), output_field=TextField()),
-                        action_flag=ADDITION
-                    ).order_by("action_time").values("user__email")[:1]
+                        action_flag=ADDITION,
+                    )
+                    .order_by("action_time")
+                    .values("user__email")[:1]
                 ),
                 Value("Unknown"),
-                output_field=CharField()
+                output_field=CharField(),
             ),
         }
 
