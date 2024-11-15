@@ -1814,7 +1814,7 @@ class DomainRequestsTable extends LoadTableBase {
               ${submissionDate}
             </td>
             ${markupCreatorRow}
-            <td data-label="Status" class="maxw-10">
+            <td data-label="Status">
               ${request.status}
             </td>
             <td>
