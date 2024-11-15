@@ -45,8 +45,7 @@ jobs:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
-      - name: Delete existing data for ${{ github.event.inputs.environment }}
+]      - name: Delete existing data for ${{ github.event.inputs.environment }}
         uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
