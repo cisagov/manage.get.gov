@@ -23,6 +23,13 @@ class UserFixture:
     """
 
     ADMINS = [
+        # {
+        #     "username": "a6b5dd22-f54e-4d55-83ce-ca7b65b2dc1a",
+        #     "first_name": "Rach test admin",
+        #     "last_name": "Mrad test admin",
+        #     "email": "rachid.mrad+2@gmail.com",
+        #     "title": "Super admin tester",
+        # },
         {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
@@ -154,6 +161,14 @@ class UserFixture:
     ]
 
     STAFF = [
+        
+        # {
+        #     "username": "994b7a90-f1d1-4140-a3d2-ff34183c7ee2",
+        #     "first_name": "Rach test staff",
+        #     "last_name": "Mrad test staff",
+        #     "email": "rachid.mrad+3@gmail.com",
+        #     "title": "Super staff tester",
+        # },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
@@ -308,6 +323,18 @@ class UserFixture:
 
         # Get all users to be updated (both new and existing)
         created_or_existing_users = User.objects.filter(username__in=[user.get("username") for user in users])
+
+        # Update `is_staff` for existing users if necessary
+        users_to_update = []
+        for user in created_or_existing_users:
+            if not user.is_staff:
+                user.is_staff = True
+                users_to_update.append(user)
+        
+        # Save any users that were updated
+        if users_to_update:
+            User.objects.bulk_update(users_to_update, ["is_staff"])
+            logger.info(f"Updated {len(users_to_update)} existing users to have is_staff=True.")
 
         # Filter out users who are already in the group
         users_not_in_group = created_or_existing_users.exclude(groups__id=group.id)
