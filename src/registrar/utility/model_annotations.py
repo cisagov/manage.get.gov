@@ -195,7 +195,7 @@ class BaseModelAnnotation(ABC):
         return queryset
     
     @classmethod
-    def get_model_dict(cls, **kwargs):
+    def get_model_annotation_dict(cls, **kwargs):
         return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
 
 

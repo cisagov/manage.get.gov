@@ -71,7 +71,7 @@ class BaseExport(BaseModelAnnotation):
         return []
 
     @classmethod
-    def write_csv_before(cls, csv_writer, **export_kwargs):
+    def write_csv_before(cls, csv_writer, **kwargs):
         """
         Write to csv file before the write_csv method.
         Override in subclasses where needed.
@@ -79,20 +79,20 @@ class BaseExport(BaseModelAnnotation):
         pass
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, request=None, **export_kwargs):
+    def export_data_to_csv(cls, csv_file, **kwargs):
         """
         All domain metadata:
         Exports domains of all statuses plus domain managers.
         """
         writer = csv.writer(csv_file)
         columns = cls.get_columns()
-        model_dict = cls.get_model_dict(request=request)
+        models_dict = cls.get_model_annotation_dict(**kwargs)
 
         # Write to csv file before the write_csv
-        cls.write_csv_before(writer, **export_kwargs)
+        cls.write_csv_before(writer, **kwargs)
 
         # Write the csv file
-        rows = cls.write_csv(writer, columns, model_dict)
+        rows = cls.write_csv(writer, columns, models_dict)
 
         # Return rows that for easier parsing and testing
         return rows
@@ -145,7 +145,7 @@ class MemberExport(BaseExport):
         return None
     
     @classmethod
-    def get_model_dict(cls, request=None):
+    def get_model_annotation_dict(cls, request=None, **kwargs):
         portfolio = request.session.get("portfolio")
         if not portfolio:
             return {}
