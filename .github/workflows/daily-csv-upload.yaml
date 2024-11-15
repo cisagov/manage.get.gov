@@ -13,7 +13,6 @@ jobs:
       CF_USERNAME: CF_${{ secrets.CF_REPORT_ENV }}_USERNAME
       CF_PASSWORD: CF_${{ secrets.CF_REPORT_ENV }}_PASSWORD
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Generate current-federal.csv
         uses: cloud-gov/cg-cli-tools@main
         with:
