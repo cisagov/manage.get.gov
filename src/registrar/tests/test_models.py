@@ -824,6 +824,15 @@ class TestUser(TestCase):
             cm.exception.message, "When portfolio roles or additional permissions are assigned, portfolio is required."
         )
 
+    @less_console_noise_decorator
+    def test_user_with_admin_portfolio_role(self):
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.assertFalse(self.user.is_portfolio_admin(portfolio))
+        UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.assertTrue(self.user.is_portfolio_admin(portfolio))
+
 
 class TestContact(TestCase):
     @less_console_noise_decorator
