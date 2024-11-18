@@ -23,7 +23,7 @@
                         </svg>
                         Reset
                     </button>
-                    <label class="usa-sr-only" for="domain-requests__search-field">
+                    <label id="domain-requests__search-label" class="usa-sr-only" for="domain-requests__search-field">
                         {% if portfolio %}
                             Search by domain name or creator
                         {% else %}
@@ -41,7 +41,7 @@
                         placeholder="Search by domain name"
                         {% endif %}
                     />
-                    <button class="usa-button" type="submit" id="domain-requests__search-field-submit">
+                    <button class="usa-button" type="submit" id="domain-requests__search-field-submit" aria-labelledby="domain-requests__search-label">
                         <img
                             src="{% static 'img/usa-icons-bg/search--white.svg' %}"
                             class="usa-search__submit-icon"

@@ -41,12 +41,13 @@ from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
-domain_request_urls = [
-    path("", views.DomainRequestWizard.as_view(), name=""),
-    path("finished/", views.Finished.as_view(), name="finished"),
-]
 
 # dynamically generate the other domain_request_urls
+domain_request_urls = [
+    path("", RedirectView.as_view(pattern_name="domain-request:start"), name="redirect-to-start"),
+    path("start/", views.DomainRequestWizard.as_view(), name="start"),
+    path("finished/", views.Finished.as_view(), name="finished"),
+]
 for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
@@ -67,7 +68,7 @@ for step, view in [
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
     (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
-    domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"<int:id>/{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [

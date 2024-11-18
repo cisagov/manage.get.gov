@@ -1,0 +1,65 @@
+# This workflow runs at the top of every hour and can be manually run as needed
+# The workflow will copy the database from stable (production) to our staging sandbox.
+# This workflow may fail if changes to the database schema make objects in stable 
+# incompatible with staging. This should resolve once both schemas match again.
+
+name: Clone Stable Database
+
+on:
+  schedule:
+    # Run daily at 2:00 PM EST
+    - cron: '0 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+
+env:
+# sandbox receiving the cloned db
+  DESTINATION_ENVIRONMENT: staging
+# sandbox we are cloning 
+  SOURCE_ENVIRONMENT: stable
+  
+
+jobs:
+  clone-database:
+    runs-on: ubuntu-24.04
+    env:
+      # must be the github secrets for the receiving sandbox
+      CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
+      CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
+    steps:
+        - name: Clone Database
+          run: |
+            # install cf cli and other tools
+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+
+            sudo apt-get update
+            sudo apt-get install cf8-cli
+            
+            # install cg-manage-rds tool
+            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
+            
+            # Authenticate and target CF org and space.
+            cf api api.fr.cloud.gov
+            cf auth "$CF_USERNAME" "$CF_PASSWORD"
+            cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
+            
+            # share the target db with the source space
+            cf share-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
+            
+            # clone from source to destination
+            cf target -s $SOURCE_ENVIRONMENT
+            cg-manage-rds clone getgov-$SOURCE_ENVIRONMENT-database getgov-$DESTINATION_ENVIRONMENT-database
+        
+        - name: Load Fixtures
+          uses: cloud-gov/cg-cli-tools@main
+          with:
+            cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+            cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+            cf_org: cisa-dotgov
+            cf_space: ${{ env.DESTINATION_ENVIRONMENT }}
+            cf_command: "run-task getgov-staging --command 'python manage.py load' --name fixtures"
+
+        - name: Cleanup
+          if: always()
+          run: cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f
