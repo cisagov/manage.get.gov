@@ -81,12 +81,17 @@
     <h2>Admin access permissions</h2>
     <p>Member permissions available for admin-level acccess.</p>
 
-    <h3 class="margin-bottom-0">Organization domain requests</h3>
+    <h3 class="summary-item__title
+    text-primary-dark
+    margin-bottom-0">Organization domain requests</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
       {% input_with_errors form.admin_org_domain_request_permissions %}
     {% endwith %}
 
-    <h3 class="margin-bottom-0 margin-top-3">Organization members</h3>
+    <h3 class="summary-item__title
+    text-primary-dark
+    margin-bottom-0
+    margin-top-3">Organization members</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
       {% input_with_errors form.admin_org_members_permissions %}
     {% endwith %}
@@ -136,14 +141,15 @@
             <h2 class="usa-modal__heading" id="invite-member-heading">
                 Invite this member to the organization?
             </h2>
-            <h3>Member information and permissions</h3>
+            <h3 class="summary-item__title
+            text-primary-dark">Member information and permissions</h3>
             <div class="usa-prose">
                 <!-- Display email as a header and access level -->
-                <h4>Email</h4>
-                <p id="modalEmail"></p>
+                <h4 class="text-primary">Email</h4>
+                <p class="margin-top-0" id="modalEmail"></p>
 
-                <h4>Member Access</h4>
-                <p id="modalAccessLevel"></p>
+                <h4 class="text-primary">Member Access</h4>
+                <p class="margin-top-0" id="modalAccessLevel"></p>
 
                 <!-- Dynamic Permissions Details -->
                 <div id="permission_details"></div>

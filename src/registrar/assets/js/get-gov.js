@@ -2826,35 +2826,12 @@ document.addEventListener('DOMContentLoaded', function() {
  * An IIFE that handles the modal associated with adding a new member to a portfolio.
  */
 (function handleNewMemberModal() {
-  
-  // Validate the form
-  function validateForm() {
-    // Perform an AJAX POST request to validate form data
-    const form = document.getElementById("add_member_form");
-    if (!form) {
-        console.error("Form element not found");
-        return;
-    }
-    const formData = new FormData(form); // Use the form element for FormData
-    fetch("/members/new-member/validate", {
-        method: "POST",
-        body: formData,
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.is_valid) {
-            // If validation passes, display the modal and set values
-            openAddMemberConfirmationModal();
-        } else {
-            // Handle validation errors
-            form.submit();
-        }
-    });
-  }
 
+
+
+  /*
+    Populates contents of the "Add Member" confirmation modal
+  */
   function populatePermissionDetails(permission_details_div_id) {
     const permissionDetailsContainer = document.getElementById("permission_details");
     permissionDetailsContainer.innerHTML = ""; // Clear previous content
@@ -2881,11 +2858,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Create new elements for the modal content
-            const titleElement = document.createElement("h3");
+            const titleElement = document.createElement("h4");
             titleElement.textContent = sectionTitle;
+            titleElement.classList.add("text-primary");
+            titleElement.classList.add("margin-bottom-0");
 
             const permissionElement = document.createElement("p");
             permissionElement.textContent = selectedPermission;
+            permissionElement.classList.add("margin-top-0");
 
             // Append to the modal content container
             permissionDetailsContainer.appendChild(titleElement);
@@ -2894,9 +2874,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 }
 
-  // Open the modal
+  /*
+    Updates and opens the "Add Member" confirmation modal.
+  */
   function openAddMemberConfirmationModal() {
-
+      //------- Populate modal details
       // Get email value
       let emailValue = document.getElementById('id_email').value;
       document.getElementById('modalEmail').textContent = emailValue;
@@ -2913,7 +2895,7 @@ document.addEventListener('DOMContentLoaded', function() {
         populatePermissionDetails('new-member-basic-permissions')
       }
 
-      // Show the modal
+      //------- Show the modal
       let modalTrigger = document.querySelector("#invite_member_trigger");
         if (modalTrigger) {
           modalTrigger.click()
