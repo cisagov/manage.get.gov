@@ -200,7 +200,7 @@ def is_domain_subpage(path):
         "domain-users-add",
         "domain-request-delete",
         "domain-user-delete",
-        "invitation-delete",
+        "invitation-cancel",
     ]
     return get_url_name(path) in url_names
 
