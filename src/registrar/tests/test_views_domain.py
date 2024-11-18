@@ -340,7 +340,9 @@ class TestDomainDetail(TestDomainOverview):
 
             detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
 
-            self.assertNotContains(detail_page, "To manage information for this domain, you must add yourself as a domain manager.")
+            self.assertNotContains(
+                detail_page, "To manage information for this domain, you must add yourself as a domain manager."
+            )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
