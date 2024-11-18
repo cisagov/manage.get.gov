@@ -987,6 +987,7 @@ class DomainAddUserView(DomainFormBaseView):
                 self.object,
                 exc_info=True,
             )
+            logger.info(exc)
             raise EmailSendingError("Could not send email invitation.") from exc
         else:
             if add_success:
