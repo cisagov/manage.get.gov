@@ -58,26 +58,23 @@
 
     {% include "includes/domain_dates.html" %}
 
-    {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
-      {% if is_portfolio_admin and not is_domain_manager and not is_analyst_managing_domain %}
-      <div class="usa-alert usa-alert--info usa-alert--slim">
-        <div class="usa-alert__body">
-          <p class="usa-alert__text ">
-            To manage information for this domain, you must add yourself as a domain manager.
-          </p>
-        </div>
+    {% if is_portfolio_admin and not is_domain_manager %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text ">
+          To manage information for this domain, you must add yourself as a domain manager.
+        </p>
       </div>
-      {% elif is_portfolio_user and not is_domain_manager and not is_analyst_managing_domain %}
-      <div class="usa-alert usa-alert--info usa-alert--slim">
-        <div class="usa-alert__body">
-          <p class="usa-alert__text ">
-            You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
-          </p>
-        </div>
+    </div>
+    {% elif is_portfolio_user and not is_domain_manager %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text ">
+          You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
+        </p>
       </div>
-      {% endif %}
+    </div>
     {% endif %}
-
 
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
