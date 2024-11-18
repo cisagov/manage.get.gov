@@ -406,7 +406,7 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
         self.assertContains(response, "Add a domain manager")
-        # assert that the non-portfolio view contains Role column and doesn't contain Admin
+        # assert that the portfolio view doesn't contain Role column and does contain Admin
         self.assertNotContains(response, "Role</th>")
         self.assertContains(response, "Admin")
         self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
