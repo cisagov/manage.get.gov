@@ -33,7 +33,7 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     """Abstract base view for domains that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
+    `template_name` update.
     """
 
     # DetailView property for what model this is viewing
