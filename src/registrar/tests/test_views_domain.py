@@ -323,6 +323,25 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "noinformation.gov")
             self.assertContains(detail_page, "Domain missing domain information")
 
+    def test_domain_detail_with_analyst_managing_domain(self):
+        """Test that domain management page returns 200 and does not display
+        blue error message when an analyst is managing the domain"""
+        with less_console_noise():
+            staff_user = create_user()
+            self.client.force_login(staff_user)
+
+            # need to set the analyst_action and analyst_action_location
+            # in the session to emulate user clicking Manage Domain
+            # in the admin interface
+            session = self.client.session
+            session["analyst_action"] = "edit"
+            session["analyst_action_location"] = self.domain.id
+            session.save()
+
+            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+
+            self.assertNotContains(detail_page, "To manage information for this domain, you must add yourself as a domain manager.")
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
