@@ -424,16 +424,12 @@ class DomainInvitationPermission(PermissionsLoginMixin):
     def has_permission(self):
         """Check if this user has a role on the domain of this invitation."""
         if not self.request.user.is_authenticated:
-            print("filter is not authenticated")
             return False
 
-        print("is authenticated")
         if not DomainInvitation.objects.filter(
             id=self.kwargs["pk"], domain__permissions__user=self.request.user
         ).exists():
-            print("returned false in domain invitation objects filter")
             return False
-        print("this actually returned true")
         return True
 
 
