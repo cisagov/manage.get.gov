@@ -2,6 +2,13 @@
 {% load custom_filters %}
 {% load i18n static %}
 
+{% block content %}
+    {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+    {% url 'get-portfolio-json' as url %}
+    <input id="portfolio_json_url" class="display-none" value="{{url}}" />
+    {{ block.super }}
+{% endblock content %}
+
 {% block field_sets %}
     {# Create an invisible <a> tag so that we can use a click event to toggle the modal. #}
     <a id="invisible-ineligible-modal-toggler" class="display-none" href="#toggle-set-ineligible" aria-controls="toggle-set-ineligible" data-open-modal></a>
