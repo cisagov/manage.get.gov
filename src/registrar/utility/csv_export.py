@@ -70,7 +70,7 @@ def format_end_date(end_date):
 class BaseExport(BaseModelAnnotation):
     """
     A generic class for exporting data which returns a csv file for the given model.
-    Base class in an inheritance tree of 3.
+    3rd class in an inheritance tree of 4.
     """
 
     @classmethod
@@ -157,6 +157,8 @@ class MemberExport(BaseExport):
 
     @classmethod
     def get_model_annotation_dict(cls, request=None, **kwargs):
+        """Combines the permissions and invitation model annotations for
+        the final returned csv export which combines both of these contexts"""
         portfolio = request.session.get("portfolio")
         if not portfolio:
             return {}
@@ -230,20 +232,8 @@ class MemberExport(BaseExport):
             "Member management": member_perm_display,
             "Domain management": len(user_managed_domains) > 0,
             "Number of domains": len(user_managed_domains),
-            # TODO - this doesn't quote enclose with one record
             "Domains": managed_domains_as_csv,
         }
-
-        #         "id",
-        # "first_name",
-        # "last_name",
-        # "email_display",
-        # "last_active",
-        # "roles",
-        # "additional_permissions_display",
-        # "member_display",
-        # "domain_info",
-        # "source",
 
         row = [FIELDS.get(column, "") for column in columns]
         return row

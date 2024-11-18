@@ -1,15 +1,11 @@
 """
-Model annotation classes. Intended to return django querysets with computed fields for api endpoints and our csv reports.
+Model annotation classes. 
 
-Created to manage the complexity of the MembersTable and Members CSV report, as they require complex but common annotations.
-
-These classes provide consistent, reusable query transformations that:
-1. Add computed fields via annotations
-2. Handle related model data
-3. Format fields for display
-4. Standardize field names across different contexts
-
+Intended to return django querysets with computed fields for api endpoints and our csv reports.
 Used by both API endpoints (e.g. portfolio members JSON) and data exports (e.g. CSV reports).
+
+Initially created to manage the complexity of the MembersTable and Members CSV report, 
+as they require complex but common annotations.
 
 Example:
     # For a JSON table endpoint
@@ -59,6 +55,8 @@ class BaseModelAnnotation(ABC):
     Subclasses define model-specific annotations, filters, and field formatting while inheriting
     common queryset building logic.
     Intended ensure consistent data presentation across both table UI components and CSV exports.
+
+    Base class in an inheritance tree of 4.
     """
 
     @classmethod
@@ -253,7 +251,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 PortfolioInvitation.objects.filter(
                     status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
                     # Double outer ref because we first go into the LogEntry query,
-                    # then into the
+                    # then into the parent UserPortfolioPermission.
                     email=OuterRef(OuterRef("user__email")),
                     portfolio=OuterRef(OuterRef("portfolio")),
                 ).values("id")[:1]
