@@ -914,7 +914,8 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation if the status is not canceled
+            # Add the role along with the computed flag to the list if the domain invitation
+            # if the status is not canceled
             if domain_invitation.status != "canceled":
                 invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
 
