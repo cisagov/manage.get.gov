@@ -9,8 +9,6 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.admin.models import LogEntry, ADDITION
-from django.contrib.contenttypes.models import ContentType
 
 
 logger = logging.getLogger(__name__)
@@ -103,7 +101,7 @@ class PortfolioInvitation(TimeStampedModel):
 
         # and create a role for that user on this portfolio
         user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            portfolio=self.portfolio, user=user, invitation=self
+            portfolio=self.portfolio, user=user
         )
         if self.roles and len(self.roles) > 0:
             user_portfolio_permission.roles = self.roles

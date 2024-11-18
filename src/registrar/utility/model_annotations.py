@@ -244,6 +244,22 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
         return Q(portfolio=portfolio)
 
     @classmethod
+    def get_portfolio_invitation_id_query(cls):
+        """Gets the id of the portfolio invitation that created this UserPortfolioPermission.
+        This makes the assumption that if an invitation is retrieved, it must have created the given
+        UserPortfolioPermission object."""
+        return Cast(
+            Subquery(
+                PortfolioInvitation.objects.filter(
+                    status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+                    email=OuterRef(OuterRef("user__email")),
+                    portfolio=OuterRef(OuterRef("portfolio"))
+                ).values("id")[:1]
+            ),
+            output_field=TextField()
+        )
+
+    @classmethod
     def get_annotated_fields(cls, portfolio, csv_report=False):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
@@ -302,13 +318,11 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
             "source": Value("permission", output_field=CharField()),
-            "invitation_date": Coalesce(
-                Func(F("invitation__created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
-                Value("Invalid date"),
-                output_field=TextField(),
+            "invitation_date": PortfolioInvitationModelAnnotation.get_invitation_date_query(
+                object_id_query=cls.get_portfolio_invitation_id_query()
             ),
-            "invited_by": PortfolioInvitationModelAnnotation.get_invited_by_from_audit_log_query(
-                object_id_query=Cast(OuterRef("invitation__id"), output_field=TextField())
+            "invited_by": PortfolioInvitationModelAnnotation.get_invited_by_query(
+                object_id_query=cls.get_portfolio_invitation_id_query()
             ),
         }
 
@@ -350,7 +364,39 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
         return Q(portfolio=portfolio)
 
     @classmethod
-    def get_invited_by_from_audit_log_query(cls, object_id_query):
+    def get_invitation_date_query(cls, object_id_query):
+        """Returns the date at which the given invitation was created.
+        Grabs this data from the audit log, given that a portfolio invitation object
+        is specified via object_id_query."""
+        return Coalesce(
+            Subquery(
+                LogEntry.objects.filter(
+                    content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                    object_id=object_id_query,
+                    action_flag=ADDITION,
+                )
+                .annotate(
+                    # Action time will always be equivalent to created_at in this context
+                    display_date=Func(
+                        F("action_time"),
+                        Value("YYYY-MM-DD"),
+                        function="to_char",
+                        output_field=TextField()
+                    )
+                )
+                .order_by("action_time")
+                .values("display_date")[:1]
+            ),
+            Value("Invalid date"),
+            output_field=TextField()
+        )
+
+
+    @classmethod
+    def get_invited_by_query(cls, object_id_query):
+        """Returns the user that created the given portfolio invitation.
+        Grabs this data from the audit log, given that a portfolio invitation object
+        is specified via object_id_query."""
         return Coalesce(
             Subquery(
                 LogEntry.objects.filter(
@@ -374,7 +420,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                     )
                 )
                 .order_by("action_time")
-                .values("display_email")
+                .values("display_email")[:1]
             ),
             Value("Unknown"),
             output_field=CharField(),
@@ -415,15 +461,13 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                 )
             ),
             "source": Value("invitation", output_field=CharField()),
-            "invitation_date": Coalesce(
-                Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
-                Value("Invalid date"),
-                output_field=TextField(),
+            "invitation_date": cls.get_invitation_date_query(
+                object_id_query=Cast(OuterRef("id"), output_field=TextField())
             ),
             # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
             # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
             # When that happens, just replace this with F("invitation__creator")
-            "invited_by": cls.get_invited_by_from_audit_log_query(
+            "invited_by": cls.get_invited_by_query(
                 object_id_query=Cast(OuterRef("id"), output_field=TextField())
             ),
         }

@@ -1268,15 +1268,6 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     _meta = Meta()
 
-    # Question for reviewers: should this include the invitation field?
-    # This is the same layout as before.
-    fieldsets = (
-        (
-            None,
-            {"fields": ("user", "portfolio", "invitation", "roles", "additional_permissions")},
-        ),
-    )
-
     # Columns
     list_display = [
         "user",
