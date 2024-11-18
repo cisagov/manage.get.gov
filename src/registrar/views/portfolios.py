@@ -390,12 +390,8 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         context = {}
         if portfolio:
             user_count = portfolio.portfolio_users.count()
-            invitation_count = PortfolioInvitation.objects.filter(
-                portfolio=portfolio
-            ).count()
-            context.update({
-                "member_count": user_count + invitation_count
-            })
+            invitation_count = PortfolioInvitation.objects.filter(portfolio=portfolio).count()
+            context.update({"member_count": user_count + invitation_count})
         return render(request, "portfolio_members.html", context=context)
 
 

@@ -45,7 +45,7 @@ from django.db.models.functions import Concat, Coalesce, Cast
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemove
+from registrar.models.utility.orm_helper import ArrayRemoveNull
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
@@ -252,11 +252,13 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
             Subquery(
                 PortfolioInvitation.objects.filter(
                     status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+                    # Double outer ref because we first go into the LogEntry query,
+                    # then into the
                     email=OuterRef(OuterRef("user__email")),
-                    portfolio=OuterRef(OuterRef("portfolio"))
+                    portfolio=OuterRef(OuterRef("portfolio")),
                 ).values("id")[:1]
             ),
-            output_field=TextField()
+            output_field=TextField(),
         )
 
     @classmethod
@@ -376,21 +378,19 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                     action_flag=ADDITION,
                 )
                 .annotate(
-                    # Action time will always be equivalent to created_at in this context
+                    # Action time will always be equivalent to created_at in this context.
+                    # Using this instead of created_at is a lot simpler and more performant,
+                    # as otherwise a Case and Subquery need to be used.
                     display_date=Func(
-                        F("action_time"),
-                        Value("YYYY-MM-DD"),
-                        function="to_char",
-                        output_field=TextField()
+                        F("action_time"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()
                     )
                 )
                 .order_by("action_time")
                 .values("display_date")[:1]
             ),
             Value("Invalid date"),
-            output_field=TextField()
+            output_field=TextField(),
         )
-
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
@@ -413,10 +413,10 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                                     user=OuterRef("user"),
                                 )
                             ),
-                            then=Value("help@get.gov")
+                            then=Value("help@get.gov"),
                         ),
                         default=F("user__email"),
-                        output_field=CharField()
+                        output_field=CharField(),
                     )
                 )
                 .order_by("action_time")
@@ -454,7 +454,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             "last_active": Value("Invited", output_field=TextField()),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": F("email"),
-            "domain_info": ArrayRemove(
+            "domain_info": ArrayRemoveNull(
                 ArrayAgg(
                     Subquery(domain_invitations.values("domain_info")),
                     distinct=True,
@@ -467,9 +467,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
             # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
             # When that happens, just replace this with F("invitation__creator")
-            "invited_by": cls.get_invited_by_query(
-                object_id_query=Cast(OuterRef("id"), output_field=TextField())
-            ),
+            "invited_by": cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=TextField())),
         }
 
     @classmethod

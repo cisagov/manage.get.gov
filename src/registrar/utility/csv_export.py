@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections import defaultdict
 import csv
 import logging
@@ -17,27 +17,19 @@ from django.db.models import (
     Count,
     DateField,
     F,
-    ManyToManyField,
     Q,
-    QuerySet,
     Value,
     When,
-    TextField,
-    OuterRef,
-    Subquery,
 )
-from django.db.models.functions import Cast
 from django.utils import timezone
 from django.db.models.functions import Concat, Coalesce
 from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemove
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
-from django.contrib.postgres.aggregates import ArrayAgg
 
 from registrar.utility.model_annotations import (
     BaseModelAnnotation,

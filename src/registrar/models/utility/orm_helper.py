@@ -1,7 +1,7 @@
 from django.db.models.expressions import Func
 
 
-class ArrayRemove(Func):
+class ArrayRemoveNull(Func):
     """Custom Func to use array_remove to remove null values"""
 
     function = "array_remove"
