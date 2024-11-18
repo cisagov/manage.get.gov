@@ -16,10 +16,10 @@
     <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
     
     <!-- Include Select2 JavaScript. Since this view technically falls outside of admin, this is needed. -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{% static js/select2.min.js %}"></script>
     <script type="application/javascript" src="{% static 'js/get-gov-admin-extra.js' %}" defer></script>
 
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
 {% endblock %}
 
 {% block breadcrumbs %}
