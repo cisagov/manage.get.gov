@@ -327,8 +327,22 @@ class UserFixture:
         # Update `is_staff` for existing users if necessary
         users_to_update = []
         for user in created_or_existing_users:
+            updated = False
+
+            if not user.title:
+                user.title = "Peon"
+                updated = True
+
+            if not user.phone:
+                user.phone = "2022222222"
+                updated = True
+
             if not user.is_staff:
                 user.is_staff = True
+                updated = True
+
+            # Only append the user if any of the fields were updated
+            if updated:
                 users_to_update.append(user)
         
         # Save any users that were updated

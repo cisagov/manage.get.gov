@@ -104,7 +104,10 @@ class DomainRequestFixture:
 
     @classmethod
     def fake_dot_gov(cls):
-        return f"{fake.slug()}.gov"
+        while True:
+            fake_name = f"{fake.slug()}.gov"
+            if not Domain.objects.filter(name=fake_name).exists():
+                return DraftDomain.objects.create(name=fake_name)
 
     @classmethod
     def fake_expiration_date(cls):
@@ -192,12 +195,8 @@ class DomainRequestFixture:
             if "requested_domain" in request_dict and request_dict["requested_domain"] is not None:
                 return DraftDomain.objects.get_or_create(name=request_dict["requested_domain"])[0]
             
-            # Generate a unique fake domain
-            # This will help us avoid domain already approved log warnings
-            while True:
-                fake_name = cls.fake_dot_gov()
-                if not Domain.objects.filter(name=fake_name).exists():
-                    return DraftDomain.objects.create(name=fake_name)
+             # Generate a unique fake domain
+            return cls.fake_dot_gov()
         return request.requested_domain
 
     @classmethod
