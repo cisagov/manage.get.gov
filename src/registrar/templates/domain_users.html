@@ -128,7 +128,7 @@
         {% for invitation in domain_invitations %}
         <tr>
           <th scope="row" role="rowheader" data-sort-value="{{ invitation.user.email }}" data-label="Email">
-            {{ invitation.email }}
+            {{ invitation }}
           </th>
           <td data-sort-value="{{ invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.created_at|date }} </td>
           <td data-label="Status">{{ invitation.status|title }}</td>
