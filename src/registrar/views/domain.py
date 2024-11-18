@@ -28,6 +28,7 @@ from registrar.models import (
     UserPortfolioPermission,
     PublicContact,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -841,11 +842,86 @@ class DomainUsersView(DomainBaseView):
         # Add modal buttons to the context (such as for delete)
         context = self._add_modal_buttons_to_context(context)
 
+        # Get portfolio from session (if set)
+        portfolio = self.request.session.get("portfolio")
+
+        # Add domain manager roles separately in order to also pass admin status
+        context = self._add_domain_manager_roles_to_context(context, portfolio)
+
+        # Add domain invitations separately in order to also pass admin status
+        context = self._add_invitations_to_context(context, portfolio)
+
         # Get the email of the current user
         context["current_user_email"] = self.request.user.email
 
         # Filter out the cancelled domain invitations
         context["domain_invitations"] = DomainInvitation.objects.exclude(status="canceled")
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        """Get method for DomainUsersView."""
+        # Call the parent class's `get` method to get the response and context
+        response = super().get(request, *args, **kwargs)
+
+        # Ensure context is available after the parent call
+        context = response.context_data if hasattr(response, "context_data") else {}
+
+        # Check if context contains `domain_managers_roles` and its length is 1
+        if context.get("domain_manager_roles") and len(context["domain_manager_roles"]) == 1:
+            # Add an info message
+            messages.info(request, "This domain has one manager. Adding more can prevent issues.")
+
+        return response
+
+    def _add_domain_manager_roles_to_context(self, context, portfolio):
+        """Add domain_manager_roles to context separately, as roles need admin indicator."""
+
+        # Prepare a list to store roles with an admin flag
+        domain_manager_roles = []
+
+        for permission in self.object.permissions.all():
+            # Determine if the user has the ORGANIZATION_ADMIN role
+            has_admin_flag = any(
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and portfolio == portfolio_permission.portfolio
+                for portfolio_permission in permission.user.portfolio_permissions.all()
+            )
+
+            # Add the role along with the computed flag to the list
+            domain_manager_roles.append({"permission": permission, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["domain_manager_roles"] = domain_manager_roles
+
+        return context
+
+    def _add_invitations_to_context(self, context, portfolio):
+        """Add invitations to context separately as invitations needs admin indicator."""
+
+        # Prepare a list to store invitations with an admin flag
+        invitations = []
+
+        for domain_invitation in self.object.invitations.all():
+            # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
+            has_admin_flag = False
+
+            # Query PortfolioInvitations linked to the same portfolio and check roles
+            portfolio_invitations = PortfolioInvitation.objects.filter(
+                portfolio=portfolio, email=domain_invitation.email
+            )
+
+            # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
+            for portfolio_invitation in portfolio_invitations:
+                if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+                    has_admin_flag = True
+                    break  # Once we find one match, no need to check further
+
+            # Add the role along with the computed flag to the list
+            invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["invitations"] = invitations
 
         return context
 

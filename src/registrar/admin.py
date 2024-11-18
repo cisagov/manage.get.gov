@@ -1,12 +1,14 @@
 from datetime import date
 import logging
 import copy
+from typing import Optional
 from django import forms
 from django.db.models import Value, CharField, Q
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.admin_helpers import (
+    AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
     get_field_links_as_list,
@@ -236,6 +238,14 @@ class DomainRequestAdminForm(forms.ModelForm):
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
+            "portfolio": AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
+            ),
+            "sub_organization": AutocompleteSelectWithPlaceholder(
+                DomainRequest._meta.get_field("sub_organization"),
+                admin.site,
+                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
+            ),
         }
         labels = {
             "action_needed_reason_email": "Email",
@@ -1816,6 +1826,70 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
+    # Define methods to display fields from the related portfolio
+    def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
+        return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
+
+    portfolio_senior_official.short_description = "Senior official"  # type: ignore
+
+    def portfolio_organization_type(self, obj):
+        return (
+            DomainRequest.OrganizationChoices.get_org_label(obj.portfolio.organization_type)
+            if obj.portfolio and obj.portfolio.organization_type
+            else "-"
+        )
+
+    portfolio_organization_type.short_description = "Organization type"  # type: ignore
+
+    def portfolio_federal_type(self, obj):
+        return (
+            BranchChoices.get_branch_label(obj.portfolio.federal_type)
+            if obj.portfolio and obj.portfolio.federal_type
+            else "-"
+        )
+
+    portfolio_federal_type.short_description = "Federal type"  # type: ignore
+
+    def portfolio_organization_name(self, obj):
+        return obj.portfolio.organization_name if obj.portfolio else ""
+
+    portfolio_organization_name.short_description = "Organization name"  # type: ignore
+
+    def portfolio_federal_agency(self, obj):
+        return obj.portfolio.federal_agency if obj.portfolio else ""
+
+    portfolio_federal_agency.short_description = "Federal agency"  # type: ignore
+
+    def portfolio_state_territory(self, obj):
+        return obj.portfolio.state_territory if obj.portfolio else ""
+
+    portfolio_state_territory.short_description = "State, territory, or military post"  # type: ignore
+
+    def portfolio_address_line1(self, obj):
+        return obj.portfolio.address_line1 if obj.portfolio else ""
+
+    portfolio_address_line1.short_description = "Address line 1"  # type: ignore
+
+    def portfolio_address_line2(self, obj):
+        return obj.portfolio.address_line2 if obj.portfolio else ""
+
+    portfolio_address_line2.short_description = "Address line 2"  # type: ignore
+
+    def portfolio_city(self, obj):
+        return obj.portfolio.city if obj.portfolio else ""
+
+    portfolio_city.short_description = "City"  # type: ignore
+
+    def portfolio_zipcode(self, obj):
+        return obj.portfolio.zipcode if obj.portfolio else ""
+
+    portfolio_zipcode.short_description = "Zip code"  # type: ignore
+
+    def portfolio_urbanization(self, obj):
+        return obj.portfolio.urbanization if obj.portfolio else ""
+
+    portfolio_urbanization.short_description = "Urbanization"  # type: ignore
+
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
     def status_history(self, obj):
@@ -1847,21 +1921,28 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             None,
             {
                 "fields": [
-                    "portfolio",
-                    "sub_organization",
-                    "requested_suborganization",
-                    "suborganization_city",
-                    "suborganization_state_territory",
                     "status_history",
                     "status",
                     "rejection_reason",
                     "rejection_reason_email",
                     "action_needed_reason",
                     "action_needed_reason_email",
-                    "investigator",
-                    "creator",
                     "approved_domain",
+                    "investigator",
                     "notes",
+                ]
+            },
+        ),
+        (
+            "Requested by",
+            {
+                "fields": [
+                    "portfolio",
+                    "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
+                    "creator",
                 ]
             },
         ),
@@ -1871,6 +1952,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             {
                 "fields": [
                     "senior_official",
+                    "portfolio_senior_official",
                     "other_contacts",
                     "no_other_contacts_rationale",
                     "cisa_representative_first_name",
@@ -1927,10 +2009,55 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 ],
             },
         ),
+        # the below three sections are for portfolio fields
+        (
+            "Type of organization",
+            {
+                "fields": [
+                    "portfolio_organization_type",
+                    "portfolio_federal_type",
+                ]
+            },
+        ),
+        (
+            "Organization name and mailing address",
+            {
+                "fields": [
+                    "portfolio_organization_name",
+                    "portfolio_federal_agency",
+                ]
+            },
+        ),
+        (
+            "Show details",
+            {
+                "classes": ["collapse--dgfieldset"],
+                "description": "Extends organization name and mailing address",
+                "fields": [
+                    "portfolio_state_territory",
+                    "portfolio_address_line1",
+                    "portfolio_address_line2",
+                    "portfolio_city",
+                    "portfolio_zipcode",
+                    "portfolio_urbanization",
+                ],
+            },
+        ),
     ]
 
     # Readonly fields for analysts and superusers
     readonly_fields = (
+        "portfolio_senior_official",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
         "other_contacts",
         "current_websites",
         "alternative_domains",
@@ -1979,10 +2106,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        # Hide certain suborg fields behind the organization feature flag
+        # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not flag_is_active_for_user(request.user, "organization_feature"):
+        if not flag_is_active_for_user(request.user, "organization_requests"):
             excluded_fields = [
+                "portfolio",
+                "sub_organization",
                 "requested_suborganization",
                 "suborganization_city",
                 "suborganization_state_territory",
