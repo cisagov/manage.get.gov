@@ -1,9 +1,6 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
-from django.db.models.expressions import Func
-from django.db.models.functions import Cast, Coalesce, Concat
-from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import F, Q
 from django.urls import reverse
 from django.views import View
 

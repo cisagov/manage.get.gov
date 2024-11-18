@@ -1268,14 +1268,21 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     _meta = Meta()
 
+    # Question for reviewers: should this include the invitation field?
+    # This is the same layout as before.
+    fieldsets = (
+        (
+            None,
+            {"fields": ("user", "portfolio", "invitation", "roles", "additional_permissions")},
+        ),
+    )
+
     # Columns
     list_display = [
         "user",
         "portfolio",
         "get_roles",
     ]
-
-    readonly_fields = ["invitation"]
 
     autocomplete_fields = ["user", "portfolio"]
     search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]

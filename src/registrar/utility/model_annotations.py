@@ -39,8 +39,10 @@ from django.db.models import (
     Func,
     Case,
     When,
+    Exists,
 )
 from django.db.models.functions import Concat, Coalesce, Cast
+from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemove
@@ -305,23 +307,8 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 Value("Invalid date"),
                 output_field=TextField(),
             ),
-            # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
-            # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
-            # When that happens, just replace this with F("invitation__creator")
-            "invited_by": Coalesce(
-                Subquery(
-                    LogEntry.objects.filter(
-                        content_type=ContentType.objects.get_for_model(PortfolioInvitation),
-                        object_id=Cast(
-                            OuterRef("invitation__id"), output_field=TextField()
-                        ),  # Look up the invitation's ID
-                        action_flag=ADDITION,
-                    )
-                    .order_by("action_time")
-                    .values("user__email")[:1]
-                ),
-                Value("Unknown"),
-                output_field=CharField(),
+            "invited_by": PortfolioInvitationModelAnnotation.get_invited_by_from_audit_log_query(
+                object_id_query=Cast(OuterRef("invitation__id"), output_field=TextField())
             ),
         }
 
@@ -363,6 +350,37 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
         return Q(portfolio=portfolio)
 
     @classmethod
+    def get_invited_by_from_audit_log_query(cls, object_id_query):
+        return Coalesce(
+            Subquery(
+                LogEntry.objects.filter(
+                    content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                    object_id=object_id_query,
+                    action_flag=ADDITION,
+                )
+                .annotate(
+                    display_email=Case(
+                        When(
+                            Exists(
+                                UserGroup.objects.filter(
+                                    name__in=["cisa_analysts_group", "full_access_group"],
+                                    user=OuterRef("user"),
+                                )
+                            ),
+                            then=Value("help@get.gov")
+                        ),
+                        default=F("user__email"),
+                        output_field=CharField()
+                    )
+                )
+                .order_by("action_time")
+                .values("display_email")
+            ),
+            Value("Unknown"),
+            output_field=CharField(),
+        )
+
+    @classmethod
     def get_annotated_fields(cls, portfolio, csv_report=False):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
@@ -383,7 +401,6 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             email=OuterRef("email"),  # Check if email matches the OuterRef("email")
             domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
         ).annotate(domain_info=domain_query)
-
         return {
             "first_name": Value(None, output_field=CharField()),
             "last_name": Value(None, output_field=CharField()),
@@ -406,19 +423,8 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
             # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
             # When that happens, just replace this with F("invitation__creator")
-            "invited_by": Coalesce(
-                Subquery(
-                    LogEntry.objects.filter(
-                        content_type=ContentType.objects.get_for_model(PortfolioInvitation),
-                        # Look up the invitation's ID. LogEntry expects a string as this it is stored as json.
-                        object_id=Cast(OuterRef("id"), output_field=TextField()),
-                        action_flag=ADDITION,
-                    )
-                    .order_by("action_time")
-                    .values("user__email")[:1]
-                ),
-                Value("Unknown"),
-                output_field=CharField(),
+            "invited_by": cls.get_invited_by_from_audit_log_query(
+                object_id_query=Cast(OuterRef("id"), output_field=TextField())
             ),
         }
 

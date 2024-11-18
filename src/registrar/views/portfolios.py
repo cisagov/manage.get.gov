@@ -385,22 +385,18 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
 
     def get(self, request):
         """Add additional context data to the template."""
-        return render(request, "portfolio_members.html")
-    
-    def get_context_data(self, **kwargs):
-        """Add additional context data to the template."""
-        
-        context = super().get_context_data(**kwargs)
-        portfolio = self.request.session.get("portfolio")
-        user_count = portfolio.portfolio_users.count()
-        invitation_count = PortfolioInvitation.objects.filter(
-            portfolio=portfolio
-        ).count()
-        context["member_count"] = user_count + invitation_count
-
-        # check if any portfolio invitations exist 4 portfolio
-        # check if any userportfolioroles exist 4 portfolio
-        return context
+        # Get portfolio from session
+        portfolio = request.session.get("portfolio")
+        context = {}
+        if portfolio:
+            user_count = portfolio.portfolio_users.count()
+            invitation_count = PortfolioInvitation.objects.filter(
+                portfolio=portfolio
+            ).count()
+            context.update({
+                "member_count": user_count + invitation_count
+            })
+        return render(request, "portfolio_members.html", context=context)
 
 
 class NewMemberView(PortfolioMembersPermissionView, FormMixin):
