@@ -854,9 +854,6 @@ class DomainUsersView(DomainBaseView):
         # Get the email of the current user
         context["current_user_email"] = self.request.user.email
 
-        # Filter out the cancelled domain invitations
-        context["domain_invitations"] = DomainInvitation.objects.exclude(status="canceled")
-
         return context
 
     def get(self, request, *args, **kwargs):
@@ -917,8 +914,9 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list
-            invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+            # Add the role along with the computed flag to the list if the domain invitation if the status is not canceled
+            if domain_invitation.status != "canceled":
+                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
