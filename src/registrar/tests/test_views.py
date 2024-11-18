@@ -49,9 +49,9 @@ class TestViews(TestCase):
     @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
-        response = self.client.get("/request/")
+        response = self.client.get(reverse("domain-request:start"))
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login?next=/request/", response.headers["Location"])
+        self.assertIn("/login?next=/request/start/", response.headers["Location"])
 
 
 class TestWithUser(MockEppLib):
@@ -476,7 +476,7 @@ class HomeTests(TestWithUser):
 
     @less_console_noise_decorator
     def test_domain_request_form_view(self):
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertContains(
             response,
             "You’re about to start your .gov domain request.",
@@ -503,7 +503,7 @@ class HomeTests(TestWithUser):
             title="title",
         )
         self.client.force_login(restricted_user)
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertEqual(response.status_code, 403)
         restricted_user.delete()
 
@@ -718,7 +718,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.app.set_user(incomplete_regular_user.username)
         with override_flag("", active=True):
             # This will redirect the user to the setup page
-            finish_setup_page = self.app.get(reverse("domain-request:")).follow()
+            finish_setup_page = self.app.get(reverse("domain-request:start")).follow()
             self._set_session_cookie()
 
             # Assert that we're on the right page
@@ -914,7 +914,7 @@ class UserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_new_request_main_nav(self):
         """test that Your profile is in main nav of new request"""
-        response = self.client.get("/request/", follow=True)
+        response = self.client.get(reverse("domain-request:start"), follow=True)
         self.assertContains(response, "Your profile")
 
     @less_console_noise_decorator
@@ -927,7 +927,7 @@ class UserProfileTests(TestWithUser, WebTest):
     def test_user_profile_back_button_when_coming_from_domain_request(self):
         """tests user profile,
         and when they are redirected from the domain request page"""
-        response = self.client.get("/user-profile?redirect=domain-request:")
+        response = self.client.get("/user-profile?redirect=domain-request:start")
         self.assertContains(response, "Your profile")
         self.assertContains(response, "Go back to your domain request")
         self.assertNotContains(response, "Back to manage your domains")

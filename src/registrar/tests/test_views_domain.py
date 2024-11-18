@@ -407,6 +407,17 @@ class TestDomainManagers(TestDomainOverview):
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
 
+    def setUp(self):
+        super().setUp()
+        # Add portfolio in order to test portfolio view
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = self.portfolio
+        # Add portfolio perms to the user object
+        self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -420,13 +431,22 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
+        self.assertContains(response, "Add a domain manager")
+        # assert that the non-portfolio view contains Role column and doesn't contain Admin
+        self.assertContains(response, "Role</th>")
+        self.assertNotContains(response, "Admin")
+        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
 
     @less_console_noise_decorator
-    def test_domain_managers_add_link(self):
-        """Button to get to user add page works."""
-        management_page = self.app.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
-        add_page = management_page.click("Add a domain manager")
-        self.assertContains(add_page, "Add a domain manager")
+    @override_flag("organization_feature", active=True)
+    def test_domain_managers_portfolio_view(self):
+        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
+        self.assertContains(response, "Domain managers")
+        self.assertContains(response, "Add a domain manager")
+        # assert that the portfolio view doesn't contain Role column and does contain Admin
+        self.assertNotContains(response, "Role</th>")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
 
     @less_console_noise_decorator
     def test_domain_user_add(self):
