@@ -5,8 +5,11 @@ const webpack = require('webpack-stream');
 const uswds = require('@uswds/compile');
 
 const ASSETS_DIR = './registrar/assets/';
-const JS_MODULES_SRC = ASSETS_DIR + 'modules/*.js';
 const JS_BUNDLE_DEST = ASSETS_DIR + 'js';
+const JS_SOURCES = [
+    { src: ASSETS_DIR + 'modules/*.js', output: 'get-gov.js' },
+    { src: ASSETS_DIR + 'modules-admin/*.js', output: 'get-gov-admin.js' },
+];
 
 /**
  * USWDS version
@@ -26,41 +29,46 @@ uswds.paths.dist.js = ASSETS_DIR + 'js';
 uswds.paths.dist.img = ASSETS_DIR + 'img';
 
 /**
- * Task: Bundle JavaScript modules using Webpack
+ * Function: Create Bundling Task
  */
-gulp.task('bundle-js', () => {
-    return gulp
-        .src(JS_MODULES_SRC)
-        .pipe(
-            webpack({
-                mode: 'production', // Use 'development' for debugging
-                output: {
-                    filename: 'get-gov.js',
-                },
-                module: {
-                    rules: [
-                        {
-                            test: /\.js$/,
-                            exclude: /node_modules/,
-                            use: {
-                                loader: 'babel-loader',
-                                options: {
-                                    presets: ['@babel/preset-env'],
+function createBundleTask(source, output) {
+    return () =>
+        gulp
+            .src(source)
+            .pipe(
+                webpack({
+                    mode: 'production',
+                    output: { filename: output },
+                    module: {
+                        rules: [
+                            {
+                                test: /\.js$/,
+                                exclude: /node_modules/,
+                                use: {
+                                    loader: 'babel-loader',
+                                    options: { presets: ['@babel/preset-env'] },
                                 },
                             },
-                        },
-                    ],
-                },
-            })
-        )
-        .pipe(gulp.dest(JS_BUNDLE_DEST));
+                        ],
+                    },
+                })
+            )
+            .pipe(gulp.dest(JS_BUNDLE_DEST));
+}
+
+// Create tasks for JavaScript sources
+JS_SOURCES.forEach(({ src, output }, index) => {
+    const taskName = `bundle-js-${index}`;
+    gulp.task(taskName, createBundleTask(src, output));
 });
 
 /**
- * Task: Watch for changes in JavaScript modules
+ * Watch for changes in JavaScript modules
  */
 gulp.task('watch-js', () => {
-    gulp.watch(JS_MODULES_SRC, gulp.series('bundle-js'));
+    JS_SOURCES.forEach(({ src }, index) => {
+        gulp.watch(src, gulp.series(`bundle-js-${index}`));
+    });
 });
 
 /**
@@ -73,9 +81,9 @@ gulp.task('watch', gulp.parallel('watch-js', uswds.watch));
  * Add as many as you need
  * Some tasks combine USWDS compilation and JavaScript precompilation.
  */
-exports.default = gulp.series(uswds.compile, 'bundle-js');
+exports.default = gulp.series(uswds.compile, ...JS_SOURCES.map((_, i) => `bundle-js-${i}`));
 exports.init = uswds.init;
-exports.compile = gulp.series(uswds.compile, 'bundle-js');
+exports.compile = gulp.series(uswds.compile, ...JS_SOURCES.map((_, i) => `bundle-js-${i}`));
 exports.watch = uswds.watch;
 exports.watchAll = gulp.parallel('watch');
 exports.copyAssets = uswds.copyAssets
