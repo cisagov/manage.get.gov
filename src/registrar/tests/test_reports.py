@@ -52,8 +52,6 @@ from waffle.testutils import override_flag
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-from waffle.testutils import override_flag
 
 
 class CsvReportsTest(MockDbForSharedTests):

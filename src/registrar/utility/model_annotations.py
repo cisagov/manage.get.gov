@@ -1,17 +1,17 @@
 """
-Model annotation classes. 
+Model annotation classes.
 
 Intended to return django querysets with computed fields for api endpoints and our csv reports.
 Used by both API endpoints (e.g. portfolio members JSON) and data exports (e.g. CSV reports).
 
-Initially created to manage the complexity of the MembersTable and Members CSV report, 
+Initially created to manage the complexity of the MembersTable and Members CSV report,
 as they require complex but common annotations.
 
 Example:
     # For a JSON table endpoint
     permissions = UserPortfolioPermissionAnnotation.get_annotated_queryset(portfolio)
     # Returns queryset with standardized fields for member tables
-    
+
     # For a CSV export
     permissions = UserPortfolioPermissionAnnotation.get_annotated_queryset(portfolio, csv_report=True)
     # Returns same fields but formatted for CSV export
