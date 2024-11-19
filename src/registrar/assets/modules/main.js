@@ -1,7 +1,4 @@
-import { hideElement, showElement, scrollToElement, toggleCaret } from './helpers.js';
-import { initializeTooltips, initializeModals, unloadModals } from './helpers-uswds.js';
-import { hookupYesNoListener, hookupRadioTogglerListener } from './helpers-radios.js';
-import { getCsrfToken } from './get-csrf-token.js';
+import { hookupYesNoListener, hookupRadioTogglerListener } from './radios.js';
 import { initDomainValidators } from './domain-validators.js';
 import { initFormsetsForms, triggerModalOnDsDataForm, nameserversFormListener } from './formset-forms.js';
 import { initializeUrbanizationToggle } from './urbanization.js';
@@ -43,6 +40,3 @@ initDomainsTable();
 initDomainRequestsTable();
 initMembersTable();
 initMemberDomainsTable();
-
-
-

@@ -1,10 +1,4 @@
-// <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
-// Event handlers.
-
 var DEFAULT_ERROR = "Please check this field for errors.";
-
-var INFORMATIVE = "info";
-var WARNING = "warning";
 var ERROR = "error";
 var SUCCESS = "success";
 
