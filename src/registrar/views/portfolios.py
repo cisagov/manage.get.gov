@@ -1,6 +1,5 @@
 import logging
 from django.conf import settings
-from django.db import IntegrityError
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -8,10 +7,9 @@ from django.contrib import messages
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email import EmailSendingError, send_templated_email
+from registrar.utility.email import EmailSendingError
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
@@ -439,7 +437,6 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         """Redirect to members table."""
         return reverse("members")
 
-
     def _send_portfolio_invitation_email(self, email: str, requestor: User, add_success=True):
         """Performs the sending of the member invitation email
         email: string- email to send to
@@ -466,7 +463,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
         # Check to see if an invite has already been sent
         try:
-            invite = PortfolioInvitation.objects.get(email=email, domain=self.object)
+            invite = PortfolioInvitation.objects.get(email=email, portfolio=self.object)
             # check if the invite has already been accepted
             if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
                 add_success = False
@@ -482,7 +479,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             logger.error("An error occured")
 
         try:
-            logger.info("e-mail sending for portfolios is under construction")
+            logger.debug("requestor email: " + requestor_email)
 
             # send_templated_email(
             #     "emails/portfolio_invitation.txt",
@@ -516,7 +513,6 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             PortfolioInvitation.objects.get_or_create(email=email_address, portfolio=self.object)
         return redirect(self.get_success_url())
 
-
     def form_valid(self, form):
         if self.is_ajax():
             return JsonResponse({"is_valid": True})  # Return a JSON response
@@ -540,10 +536,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         else:
             # If user already exists, check to see if they are part of the portfolio already
             # If they are already part of the portfolio, raise an error.  Otherwise, send an invite.
-            existing_user = UserPortfolioPermission.objects.get(
-                user=requested_user,
-                portfolio=self.object
-            )
+            existing_user = UserPortfolioPermission.objects.get(user=requested_user, portfolio=self.object)
             if existing_user:
                 messages.warning(self.request, "User is already a member of this portfolio.")
             else:
