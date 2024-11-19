@@ -19,7 +19,7 @@
     "@babel/preset-env": "^7.26.0",
     "@uswds/compile": "^1.0.0-beta.3",
     "babel-loader": "^9.2.1",
-    "gulp": "^5.0.0",
+    "sass-loader": "^12.6.0",
     "webpack": "^5.96.1",
     "webpack-stream": "^7.0.0"
   }

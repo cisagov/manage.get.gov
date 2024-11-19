@@ -5,7 +5,7 @@ const webpack = require('webpack-stream');
 const uswds = require('@uswds/compile');
 
 const ASSETS_DIR = './registrar/assets/';
-const JS_MODULES_SRC = ASSETS_DIR + 'js/modules/*.js';
+const JS_MODULES_SRC = ASSETS_DIR + 'modules/*.js';
 const JS_BUNDLE_DEST = ASSETS_DIR + 'js';
 
 /**
@@ -65,6 +65,11 @@ gulp.task('watch-js', () => {
 
 /**
  * Combine all watch tasks
+ * Using gulp outside of uswds compile's dependencies seems to leverage a different sass compiler
+ * The more up-to-date compiler triggers mixed declarations deprecation warnings
+ * We expect this to be resolved in a future uswds release on the code side: https://github.com/uswds/uswds/issues/5980
+ * USWDS internally uses its version of Dart Sass (sass), and the USWDS compilation process expects a specific Sass behavior.
+ * Babel/Webpack introduces loaders (sass-loader or similar) that interact with Sass. If a newer version of Sass is used due to dependency resolution, the new Sass behavior applies, leading to the warnings.
  */
 gulp.task('watch', gulp.parallel('watch-js', uswds.watch));
 
@@ -79,4 +84,3 @@ exports.compile = gulp.series(uswds.compile, 'bundle-js');
 exports.watch = gulp.parallel('watch');
 exports.copyAssets = uswds.copyAssets
 exports.updateUswds = uswds.updateUswds
-                                                                                  
