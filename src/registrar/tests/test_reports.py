@@ -47,7 +47,6 @@ from .common import (
     get_time_aware_date,
     GenericTestHelper,
 )
-from .common import GenericTestHelper
 from waffle.testutils import override_flag
 
 from datetime import datetime
@@ -55,6 +54,7 @@ from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from waffle.testutils import override_flag
+
 
 class CsvReportsTest(MockDbForSharedTests):
     """Tests to determine if we are uploading our reports correctly."""
@@ -823,9 +823,9 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             object_repr=str(self.portfolio_invitation_1),
             action_flag=ADDITION,
             change_message="Created invitation",
-            action_time=timezone.make_aware(datetime(2023, 4, 12))
+            action_time=timezone.make_aware(datetime(2023, 4, 12)),
         )
-        
+
         # Create log entries for each remaining invitation.
         # Exclude meoward and tired_user (to test null dates, etc).
         for invitation in PortfolioInvitation.objects.exclude(
@@ -838,16 +838,11 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
                 object_repr=str(invitation),
                 action_flag=ADDITION,
                 change_message="Created invitation",
-                action_time=timezone.make_aware(datetime(2024, 1, 15))
+                action_time=timezone.make_aware(datetime(2024, 1, 15)),
             )
         # Set last_login for some users
         active_date = timezone.make_aware(datetime(2024, 2, 1))
-        User.objects.filter(
-            id__in=[
-                self.custom_superuser.id,
-                self.custom_staffuser.id
-            ]
-        ).update(last_login=active_date)
+        User.objects.filter(id__in=[self.custom_superuser.id, self.custom_staffuser.id]).update(last_login=active_date)
         # Retrieve invitations
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             self.meoward_user.check_portfolio_invitations_on_login()
@@ -878,7 +873,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "Member management,Domain management,Number of domains,Domains\n"
             # Content
             "meoward@rocks.com,False,big_lebowski@dude.co,2023-04-12,Invalid date,None,"
-            "Manager,True,2,\"adomain2.gov,cdomain1.gov\"\n"
+            'Manager,True,2,"adomain2.gov,cdomain1.gov"\n'
             "big_lebowski@dude.co,False,help@get.gov,2024-01-15,Invalid date,None,Viewer,True,1,cdomain1.gov\n"
             "tired_sleepy@igorville.gov,False,System,Unknown,Invalid date,Viewer,None,False,0,\n"
             "icy_superuser@igorville.gov,True,help@get.gov,2024-01-15,2024-02-01,Viewer Requester,Manager,False,0,\n"
