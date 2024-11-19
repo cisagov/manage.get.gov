@@ -170,7 +170,7 @@ class ExportDataTypeUser(View):
 
 
 class ExportMembersPortfolio(View):
-    """Returns a a members report for a given portfolio"""
+    """Returns a members report for a given portfolio"""
 
     def get(self, request, *args, **kwargs):
         """Returns the members report"""
