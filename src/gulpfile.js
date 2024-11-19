@@ -81,6 +81,7 @@ gulp.task('watch', gulp.parallel('watch-js', uswds.watch));
 exports.default = gulp.series(uswds.compile, 'bundle-js');
 exports.init = uswds.init;
 exports.compile = gulp.series(uswds.compile, 'bundle-js');
-exports.watch = gulp.parallel('watch');
+exports.watch = uswds.watch;
+exports.watchAll = gulp.parallel('watch');
 exports.copyAssets = uswds.copyAssets
 exports.updateUswds = uswds.updateUswds
