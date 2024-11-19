@@ -1,4 +1,4 @@
-FROM docker.io/cimg/node:18.20-browsers
+FROM docker.io/cimg/node:current-browsers
 WORKDIR /app
 
 # Install app dependencies
