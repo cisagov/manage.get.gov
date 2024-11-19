@@ -22,6 +22,7 @@ from registrar.utility.csv_export import (
     DomainRequestExport,
     DomainRequestGrowth,
     DomainRequestDataFull,
+    MemberExport,
     get_default_start_date,
     get_default_end_date,
 )
@@ -42,7 +43,9 @@ from .common import (
     get_wsgi_request_object,
     less_console_noise,
     get_time_aware_date,
+    GenericTestHelper,
 )
+from .common import GenericTestHelper
 from waffle.testutils import override_flag
 
 
@@ -792,6 +795,53 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
+
+
+class MemberExportTest(MockDbForIndividualTests, MockEppLib):
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @less_console_noise_decorator
+    def test_member_export(self):
+        """Tests the member export report"""
+        # Create a request and add the user to the request
+        request = self.factory.get("/")
+        request.user = self.user
+
+        # Add portfolio to session
+        request = GenericTestHelper._mock_user_request_for_factory(request)
+        request.session["portfolio"] = self.portfolio_1
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        # Call the export function
+        MemberExport.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        print("what is the csv content?")
+        print(csv_content)
+        expected_content = (
+            # Header
+            "Email,Organization admin,Invited by,Invitation date,Last active,Domain requests,"
+            "Member management,Domain management,Number of domains,Domains\n"
+            # Content
+            "meoward@rocks.com,False,Unknown,Unknown,Invited,None,Manager,False,0,\n"
+            "big_lebowski@dude.co,False,Unknown,Unknown,Invited,None,Viewer,False,0,\n"
+            "tired_sleepy@igorville.gov,False,Unknown,Unknown,Invited,Viewer,None,False,0,\n"
+            "icy_superuser@igorville.gov,True,Unknown,Unknown,Invited,Viewer Requester,Manager,False,0,\n"
+            "cozy_staffuser@igorville.gov,True,Unknown,Unknown,Invited,Viewer Requester,None,False,0,\n"
+        )
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.assertEqual(csv_content, expected_content)
 
 
 class HelperFunctions(MockDbForSharedTests):

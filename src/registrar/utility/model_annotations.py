@@ -386,7 +386,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                 .order_by("action_time")
                 .values("display_date")[:1]
             ),
-            Value("Invalid date"),
+            Value("Unknown"),
             output_field=TextField(),
         )
 
