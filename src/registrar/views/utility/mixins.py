@@ -430,7 +430,6 @@ class DomainInvitationPermission(PermissionsLoginMixin):
             id=self.kwargs["pk"], domain__permissions__user=self.request.user
         ).exists():
             return False
-
         return True
 
 

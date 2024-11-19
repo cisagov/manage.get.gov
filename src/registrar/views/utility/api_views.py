@@ -41,6 +41,86 @@ def get_senior_official_from_federal_agency_json(request):
 
 @login_required
 @staff_member_required
+def get_portfolio_json(request):
+    """Returns portfolio information as a JSON"""
+
+    # This API is only accessible to admins and analysts
+    superuser_perm = request.user.has_perm("registrar.full_access_permission")
+    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
+
+    portfolio_id = request.GET.get("id")
+    try:
+        portfolio = Portfolio.objects.get(id=portfolio_id)
+    except Portfolio.DoesNotExist:
+        return JsonResponse({"error": "Portfolio not found"}, status=404)
+
+    # Convert the portfolio to a dictionary
+    portfolio_dict = model_to_dict(portfolio)
+
+    portfolio_dict["id"] = portfolio.id
+
+    # map portfolio federal type
+    portfolio_dict["federal_type"] = (
+        BranchChoices.get_branch_label(portfolio.federal_type) if portfolio.federal_type else "-"
+    )
+
+    # map portfolio organization type
+    portfolio_dict["organization_type"] = (
+        DomainRequest.OrganizationChoices.get_org_label(portfolio.organization_type)
+        if portfolio.organization_type
+        else "-"
+    )
+
+    # Add senior official information if it exists
+    if portfolio.senior_official:
+        senior_official = model_to_dict(
+            portfolio.senior_official, fields=["id", "first_name", "last_name", "title", "phone", "email"]
+        )
+        # The phone number field isn't json serializable, so we
+        # convert this to a string first if it exists.
+        if "phone" in senior_official and senior_official.get("phone"):
+            senior_official["phone"] = str(senior_official["phone"])
+        portfolio_dict["senior_official"] = senior_official
+    else:
+        portfolio_dict["senior_official"] = None
+
+    # Add federal agency information if it exists
+    if portfolio.federal_agency:
+        federal_agency = model_to_dict(portfolio.federal_agency, fields=["agency", "id"])
+        portfolio_dict["federal_agency"] = federal_agency
+    else:
+        portfolio_dict["federal_agency"] = "-"
+
+    return JsonResponse(portfolio_dict)
+
+
+@login_required
+@staff_member_required
+def get_suborganization_list_json(request):
+    """Returns suborganization list information for a portfolio as a JSON"""
+
+    # This API is only accessible to admins and analysts
+    superuser_perm = request.user.has_perm("registrar.full_access_permission")
+    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
+    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
+        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
+
+    portfolio_id = request.GET.get("portfolio_id")
+    try:
+        portfolio = Portfolio.objects.get(id=portfolio_id)
+    except Portfolio.DoesNotExist:
+        return JsonResponse({"error": "Portfolio not found"}, status=404)
+
+    # Add suborganizations related to this portfolio
+    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
+    results = [{"id": sub["id"], "text": sub["name"]} for sub in suborganizations]
+    return JsonResponse({"results": results, "pagination": {"more": False}})
+
+
+@login_required
+@staff_member_required
 def get_federal_and_portfolio_types_from_federal_agency_json(request):
     """Returns specific portfolio information as a JSON. Request must have
     both agency_name and organization_type."""

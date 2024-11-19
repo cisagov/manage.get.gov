@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.html import escape
 from registrar.models.utility.generic_helper import value_of_attribute
+from django.contrib.admin.widgets import AutocompleteSelect
 
 
 def get_action_needed_reason_default_email(domain_request, action_needed_reason):
@@ -94,3 +95,26 @@ def get_field_links_as_list(
     else:
         links = "".join(links)
         return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else msg_for_none
+
+
+class AutocompleteSelectWithPlaceholder(AutocompleteSelect):
+    """Override of the default autoselect element. This is because by default,
+    the autocomplete element clears data-placeholder"""
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs=extra_attrs)
+        if "data-placeholder" in base_attrs:
+            attrs["data-placeholder"] = base_attrs["data-placeholder"]
+        return attrs
+
+    def __init__(self, field, admin_site, attrs=None, choices=(), using=None):
+        """Set a custom ajax url for the select2 if passed through attrs"""
+        if attrs:
+            self.custom_ajax_url = attrs.pop("ajax-url", None)
+        super().__init__(field, admin_site, attrs, choices, using)
+
+    def get_url(self):
+        """Override the get_url method to use the custom ajax url"""
+        if self.custom_ajax_url:
+            return reverse(self.custom_ajax_url)
+        return reverse(self.url_name % self.admin_site.name)

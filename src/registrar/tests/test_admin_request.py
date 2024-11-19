@@ -1526,7 +1526,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "copy-to-clipboard", count=4)
+        self.assertContains(response, "copy-to-clipboard", count=5)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")
@@ -1626,6 +1626,17 @@ class TestDomainRequestAdmin(MockEppLib):
         readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
         expected_fields = [
+            "portfolio_senior_official",
+            "portfolio_organization_type",
+            "portfolio_federal_type",
+            "portfolio_organization_name",
+            "portfolio_federal_agency",
+            "portfolio_state_territory",
+            "portfolio_address_line1",
+            "portfolio_address_line2",
+            "portfolio_city",
+            "portfolio_zipcode",
+            "portfolio_urbanization",
             "other_contacts",
             "current_websites",
             "alternative_domains",
@@ -1691,6 +1702,17 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request)
             self.maxDiff = None
             expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
@@ -1723,6 +1745,17 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
