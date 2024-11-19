@@ -1,9 +1,7 @@
 import os
 import logging
-
 from contextlib import contextmanager
 import random
-import boto3_mocking  # type: ignore
 from string import ascii_uppercase
 import uuid
 from django.test import TestCase
@@ -533,7 +531,6 @@ class AuditedAdminMockData:
 class MockDb(TestCase):
 
     @classmethod
-    @boto3_mocking.patching
     @less_console_noise_decorator
     def sharedSetUp(cls):
         cls.mock_client_class = MagicMock()
@@ -567,7 +564,9 @@ class MockDb(TestCase):
         cls.federal_agency_1, _ = FederalAgency.objects.get_or_create(agency="World War I Centennial Commission")
         cls.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
 
-        cls.portfolio_1, _ = Portfolio.objects.get_or_create(creator=cls.custom_superuser, federal_agency=cls.federal_agency_1)
+        cls.portfolio_1, _ = Portfolio.objects.get_or_create(
+            creator=cls.custom_superuser, federal_agency=cls.federal_agency_1
+        )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))
         # Create start and end dates using timedelta
@@ -624,7 +623,10 @@ class MockDb(TestCase):
             portfolio=cls.portfolio_1,
         )
         cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user, domain=cls.domain_2, generic_org_type="interstate", is_election_board=True,
+            creator=cls.user,
+            domain=cls.domain_2,
+            generic_org_type="interstate",
+            is_election_board=True,
             portfolio=cls.portfolio_1,
         )
         cls.domain_information_3, _ = DomainInformation.objects.get_or_create(
@@ -729,6 +731,12 @@ class MockDb(TestCase):
         )
 
         _, created = DomainInvitation.objects.get_or_create(
+            email=cls.meoward_user.email,
+            domain=cls.domain_11,
+            status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+
+        _, created = DomainInvitation.objects.get_or_create(
             email="woofwardthethird@rocks.com",
             domain=cls.domain_1,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
@@ -742,48 +750,84 @@ class MockDb(TestCase):
             email="squeaker@rocks.com", domain=cls.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
 
-        # Add portfolio invitations + retrieve
-        with boto3_mocking.clients.handler_for("sesv2", cls.mock_client_class):
-            portfolio_invitation_1, _ = PortfolioInvitation.objects.get_or_create(
-                email=cls.meoward_user.email, 
-                portfolio=cls.portfolio_1,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS]
-            )
+        cls.portfolio_invitation_1, _ = PortfolioInvitation.objects.get_or_create(
+            email=cls.meoward_user.email,
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+        )
 
-            portfolio_invitation_2, _ = PortfolioInvitation.objects.get_or_create(
-                email=cls.lebowski_user.email, portfolio=cls.portfolio_1,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS]
-            )
+        cls.portfolio_invitation_2, _ = PortfolioInvitation.objects.get_or_create(
+            email=cls.lebowski_user.email,
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
 
-            portfolio_invitation_3, _ = PortfolioInvitation.objects.get_or_create(
-                email=cls.tired_user.email, portfolio=cls.portfolio_1,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
-            )
+        cls.portfolio_invitation_3, _ = PortfolioInvitation.objects.get_or_create(
+            email=cls.tired_user.email,
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
 
-            portfolio_invitation_4, _ = PortfolioInvitation.objects.get_or_create(
-                email=cls.custom_superuser.email, portfolio=cls.portfolio_1,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                additional_permissions=[
-                    UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                    UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                    UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                    UserPortfolioPermissionChoices.EDIT_REQUESTS
-                ]
-            )
+        cls.portfolio_invitation_4, _ = PortfolioInvitation.objects.get_or_create(
+            email=cls.custom_superuser.email,
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
 
-            portfolio_invitation_5, _ = PortfolioInvitation.objects.get_or_create(
-                email=cls.custom_staffuser.email, portfolio=cls.portfolio_1,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-            )
+        cls.portfolio_invitation_5, _ = PortfolioInvitation.objects.get_or_create(
+            email=cls.custom_staffuser.email,
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
 
-            portfolio_invitation_1.retrieve()
-            portfolio_invitation_2.retrieve()
-            portfolio_invitation_3.retrieve()
-            portfolio_invitation_4.retrieve()
-            portfolio_invitation_5.retrieve()
+        # Add some invitations that we never retireve
+        PortfolioInvitation.objects.get_or_create(
+            email="nonexistentmember_1@igorville.gov",
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+        )
+
+        PortfolioInvitation.objects.get_or_create(
+            email="nonexistentmember_2@igorville.gov",
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+
+        PortfolioInvitation.objects.get_or_create(
+            email="nonexistentmember_3@igorville.gov",
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
+
+        PortfolioInvitation.objects.get_or_create(
+            email="nonexistentmember_4@igorville.gov",
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        PortfolioInvitation.objects.get_or_create(
+            email="nonexistentmember_5@igorville.gov",
+            portfolio=cls.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
 
         with less_console_noise():
             cls.domain_request_1 = completed_domain_request(

@@ -420,7 +420,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                 .order_by("action_time")
                 .values("display_email")[:1]
             ),
-            Value("Unknown"),
+            Value("System"),
             output_field=CharField(),
         )
 
