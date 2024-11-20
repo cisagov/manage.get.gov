@@ -3,7 +3,9 @@
 docs/research/data/**
 **/assets/*
 !**/assets/sass/
+!**/assets/modules-common/
 !**/assets/modules/
+!**/assets/modules-admin/
 !**/assets/img/registrar/
 public/
 credentials*
