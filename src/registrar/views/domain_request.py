@@ -317,15 +317,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(
-                    request,
-                    "domain_request_intro.html",
-                    {
-                        "hide_requests": False,
-                        "hide_domains": False,
-                        "hide_members": False,
-                    },
-                )
+                return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
 
@@ -487,12 +479,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
-
-        # Hides the requests and domains buttons in the navbar
-        context["hide_requests"] = self.is_portfolio
-        context["hide_domains"] = self.is_portfolio
         context["domain_request_id"] = self.domain_request.id
-
         return context
 
     def get_step_list(self) -> list:
