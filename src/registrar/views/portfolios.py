@@ -23,7 +23,15 @@ from registrar.views.utility.permission_views import (
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
 
+
+
+# ---Logger
+import logging
+from venv import logger
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 logger = logging.getLogger(__name__)
+
+
 
 
 class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
@@ -418,6 +426,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         """Handle POST requests to process form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"**post")
 
         if form.is_valid():
             return self.form_valid(form)
@@ -433,6 +442,17 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         else:
             return super().form_invalid(form)  # Handle non-AJAX requests normally
 
+    def form_valid(self, form):
+        
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"VALIDATING")
+
+
+        if self.is_ajax():
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"IS AJAX")
+            return JsonResponse({"is_valid": True})  # Return a JSON response
+        else:
+            return self.submit_new_member(form)
+    
     def get_success_url(self):
         """Redirect to members table."""
         return reverse("members")
@@ -445,6 +465,8 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
         raises EmailSendingError
         """
+
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"_send_portfolio_invitation_email")
 
         # Set a default email address to send to for staff
         requestor_email = settings.DEFAULT_FROM_EMAIL
@@ -469,12 +491,13 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
                 add_success = False
                 messages.warning(
                     self.request,
-                    f"{email} is already a manager for this domain.",
+                    f"{email} is already a manager for this portfolio.",
                 )
             else:
                 add_success = False
                 # else if it has been sent but not accepted
-                messages.warning(self.request, f"{email} has already been invited to this domain")
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"has already been invited to this portfolio")
+                messages.warning(self.request, f"{email} has already been invited to this portfolio")
         except Exception:
             logger.error("An error occured")
 
@@ -513,16 +536,11 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             PortfolioInvitation.objects.get_or_create(email=email_address, portfolio=self.object)
         return redirect(self.get_success_url())
 
-    def form_valid(self, form):
-        if self.is_ajax():
-            return JsonResponse({"is_valid": True})  # Return a JSON response
-        else:
-            return self.submit_new_member(form)
-
     def submit_new_member(self, form):
         """Add the specified user as a member
         for this portfolio.
         Throws EmailSendingError."""
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"Submit new member")
 
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
@@ -532,6 +550,8 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"..making invitation")
+
             return self._make_invitation(requested_email, requestor)
         else:
             # If user already exists, check to see if they are part of the portfolio already
@@ -539,9 +559,11 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             existing_user = UserPortfolioPermission.objects.get(user=requested_user, portfolio=self.object)
             if existing_user:
                 messages.warning(self.request, "User is already a member of this portfolio.")
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"already a member")
             else:
                 try:
                     self._send_portfolio_invitation_email(requested_email, requestor, add_success=False)
+                    TerminalHelper.colorful_logger(logger.info, TerminalColors.OKCYAN, f"..SEnding invitation")
                 except EmailSendingError:
                     logger.warn(
                         "Could not send email invitation (EmailSendingError)",

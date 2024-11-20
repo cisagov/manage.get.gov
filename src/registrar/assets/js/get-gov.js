@@ -2827,8 +2827,6 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 (function handleNewMemberModal() {
 
-
-
   /*
     Populates contents of the "Add Member" confirmation modal
   */
@@ -2909,12 +2907,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById("add_member_form").addEventListener("submit", function(event) {
     event.preventDefault(); // Prevents the form from submitting
+    const form = document.getElementById("add_member_form")
+    const formData = new FormData(form);
 
-    const formData = new FormData(this);
-
-    // Check if the form is valid and trigger events
-    // (like a confirmation modal) accordingly
-    fetch(this.action, {
+    // Check if the form is valid
+    // If the form is valid, open the confirmation modal
+    // If the form is invalid, submit it to trigger error 
+    fetch(form.action, {
         method: "POST",
         body: formData,
         headers: {
@@ -2929,7 +2928,7 @@ document.addEventListener('DOMContentLoaded', function() {
             openAddMemberConfirmationModal();
         } else {
             // If the form is not valid, trigger error messages by firing a submit event
-            this.submit();
+            form.submit();
         }
     });
   });

@@ -127,11 +127,6 @@ urlpatterns = [
         name="new-member",
     ),
     path(
-        "members/new-member/validate",
-        views.NewMemberView.as_view(http_method_names=["post"]),
-        name="new-member-validate",
-    ),
-    path(
         "requests/",
         views.PortfolioDomainRequestsView.as_view(),
         name="domain-requests",
