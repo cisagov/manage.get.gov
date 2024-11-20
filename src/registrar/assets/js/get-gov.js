@@ -1970,7 +1970,7 @@ class DomainRequestsTable extends BaseTable {
       modalHeading = `Are you sure you want to delete ${requested_domain}?`;
       modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
     } else {
-      if (request.created_at) {
+      if (created_at) {
         modalHeading = 'Are you sure you want to delete this domain request?';
         modalDescription = `This will remove the domain request (created ${utcDateString(created_at)}) from the .gov registrar. This action cannot be undone`;
       } else {
