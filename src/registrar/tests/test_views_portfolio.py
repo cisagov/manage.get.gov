@@ -2388,7 +2388,6 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def setUpClass(cls):
         super().setUpClass()
 
-
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
 
@@ -2430,7 +2429,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def test_member_invite_for_new_users(self):
         """Tests the member invitation flow for new users."""
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2439,7 +2438,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         new_member_page = self.app.get(reverse("new-member"))
         self.assertEqual(new_member_page.status_code, 200)
         self.assertContains(new_member_page, "Add a new member")
-        self.assertContains(new_member_page, f'<p class="margin-top-0" id="modalEmail"></p>')
+        self.assertContains(new_member_page, '<p class="margin-top-0" id="modalEmail"></p>')
 
         # Step 2: Fill out the "New Member" form
         new_member_form = new_member_page.forms[0]
@@ -2449,21 +2448,22 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         # Simulate form submission, which would trigger the modal in JavaScript
         response = new_member_form.submit().follow()
-        self.assertEqual(response.status_code, 301) # Ensure the page does not redirect
-
+        self.assertEqual(response.status_code, 301)  # Ensure the page does not redirect
 
         # TODO: test the modal somehow
         # self.assertContains(new_member_page, f'<p class="margin-top-0" id="modalEmail">{self.new_member_email}</p>')
         # form_data = {field.name: field.value() for field in new_member_form}
 
-
         # Simulate user confirming the modal action (frontend JavaScript would normally handle this)
         # Re-submit the form to simulate final submission
-        final_response = self.client.post(reverse("new-member"), {
-            "member_access_level": "basic",
-            "basic_org_domain_request_permissions": "view_only",
-            "email": self.new_member_email
-        })
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.new_member_email,
+            },
+        )
 
         # Ensure the final submission is successful
         self.assertEqual(final_response.status_code, 302)  # redirects after success
@@ -2476,8 +2476,8 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         ).first()
         self.assertIsNotNone(portfolio_invite)
         self.assertEqual(portfolio_invite.email, self.new_member_email)
-        # self.assertEqual(portfolio_invite.access_level, "basic") # TODO: test that roles and permissions are in the portfolio invite
-
+        # self.assertEqual(portfolio_invite.access_level, "basic")
+        # TODO: test that roles and permissions are in the portfolio invite
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2485,7 +2485,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def test_member_invite_for_previously_invited_member(self):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2493,12 +2493,15 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         invite_count_before = PortfolioInvitation.objects.count()
 
         # Simulate submission of member invite for user who has already been invited
-        response = self.client.post(reverse("new-member"), {
-            "member_access_level": "basic",
-            "basic_org_domain_request_permissions": "view_only",
-            "email": self.invited_member_email
-        })
-        self.assertEqual(response.status_code, 302) # Redirects
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.invited_member_email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
 
         # TODO: verify messages
 
@@ -2506,14 +2509,13 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
 
-
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_member_invite_for_existing_member(self):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2521,12 +2523,15 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         invite_count_before = PortfolioInvitation.objects.count()
 
         # Simulate submission of member invite for user who has already been invited
-        response = self.client.post(reverse("new-member"), {
-            "member_access_level": "basic",
-            "basic_org_domain_request_permissions": "view_only",
-            "email": self.user.email
-        })
-        self.assertEqual(response.status_code, 302) # Redirects
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.user.email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
 
         # TODO: verify messages
 
