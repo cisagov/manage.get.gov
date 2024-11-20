@@ -1,4 +1,4 @@
-import { hideElement, showElement } from './helpers.js';
+import { hideElement, showElement } from '../modules-common/helpers.js';
 
 export function loadInitialValuesForComboBoxes() {
   var overrideDefaultClearButton = true;

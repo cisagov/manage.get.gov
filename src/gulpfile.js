@@ -3,6 +3,7 @@
 const gulp = require('gulp');
 const webpack = require('webpack-stream');
 const uswds = require('@uswds/compile');
+const TerserPlugin = require('terser-webpack-plugin');
 
 const ASSETS_DIR = './registrar/assets/';
 const JS_BUNDLE_DEST = ASSETS_DIR + 'js';
@@ -38,6 +39,14 @@ function createBundleTask(source, output) {
             .pipe(
                 webpack({
                     mode: 'production',
+                    optimization: {
+                        minimize: true,
+                        minimizer: [
+                            new TerserPlugin({
+                                extractComments: false, // Prevents generating .LICENSE.txt
+                            }),
+                        ],
+                    },
                     output: { filename: output },
                     module: {
                         rules: [

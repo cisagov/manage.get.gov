@@ -202,7 +202,7 @@ function hideDeletedForms() {
 }
 
 /**
- * An IIFE that attaches a click handler for our dynamic formsets
+ * A function that attaches a click handler for our dynamic formsets
  *
  * Only does something on a few pages, but it should be fast enough to run
  * it everywhere.

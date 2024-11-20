@@ -36,7 +36,7 @@ export function finishUserSetupListener() {
     // Hide the "full_name" field
     let inputField = getInputField(fieldName);
     if (inputField) {
-      inputFieldParentDiv = inputField.closest("div");
+      let inputFieldParentDiv = inputField.closest("div");
       if (inputFieldParentDiv) {
         inputFieldParentDiv.classList.add("display-none");
       }
@@ -63,9 +63,6 @@ export function finishUserSetupListener() {
   }
 
   function setupListener(){
-
-    
-
     document.querySelectorAll('[id$="__edit-button"]').forEach(function(button) {
       // Get the "{field_name}" and "edit-button"
       let fieldIdParts = button.id.split("__")
@@ -171,5 +168,4 @@ export function finishUserSetupListener() {
 
   // Show the input fields if an error exists
   showInputOnErrorFields();
-
 }

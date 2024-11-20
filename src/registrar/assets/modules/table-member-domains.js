@@ -1,4 +1,4 @@
-import { hideElement, showElement, scrollToElement, toggleCaret } from './helpers.js';
+import { hideElement, showElement, scrollToElement, toggleCaret } from '../modules-common/helpers.js';
 import { initializeTooltips, initializeModals, unloadModals } from './helpers-uswds.js';
 import { getCsrfToken } from './helpers-csrf-token.js';
 

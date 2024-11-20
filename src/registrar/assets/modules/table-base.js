@@ -1,4 +1,4 @@
-import { hideElement, showElement, toggleCaret } from './helpers.js';
+import { hideElement, showElement, toggleCaret } from '../modules-common/helpers.js';
 
 export class LoadTableBase {
   constructor(sectionSelector) {

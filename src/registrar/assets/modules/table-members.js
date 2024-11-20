@@ -1,4 +1,4 @@
-import { hideElement, showElement, scrollToElement } from './helpers.js';
+import { hideElement, showElement, scrollToElement } from '../modules-common/helpers.js';
 
 import { LoadTableBase } from './table-base.js';
 

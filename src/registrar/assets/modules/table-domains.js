@@ -1,4 +1,4 @@
-import { scrollToElement } from './helpers.js';
+import { scrollToElement } from '../modules-common/helpers.js';
 import { initializeTooltips } from './helpers-uswds.js';
 
 import { LoadTableBase } from './table-base.js';
