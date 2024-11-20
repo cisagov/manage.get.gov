@@ -194,8 +194,8 @@ class DomainRequestFixture:
         if not request.requested_domain:
             if "requested_domain" in request_dict and request_dict["requested_domain"] is not None:
                 return DraftDomain.objects.get_or_create(name=request_dict["requested_domain"])[0]
-            
-             # Generate a unique fake domain
+
+            # Generate a unique fake domain
             return cls.fake_dot_gov()
         return request.requested_domain
 
@@ -233,19 +233,19 @@ class DomainRequestFixture:
         except Exception as e:
             logger.warning(f"Expected fixture portfolio, did not find it: {e}")
             return None
-        
+
     @classmethod
     def _get_random_sub_organization(cls, request):
         try:
             # Filter Suborganizations by the request's portfolio
             portfolio_suborganizations = Suborganization.objects.filter(portfolio=request.portfolio)
-            
+
             # Assuming SuborganizationFixture.SUBORGS is a list of dictionaries with a "name" key
             suborganization_names = [suborg["name"] for suborg in SuborganizationFixture.SUBORGS]
 
             # Further filter by names in suborganization_names
             suborganization_options = portfolio_suborganizations.filter(name__in=suborganization_names)
-            
+
             # Randomly choose one if any exist
             return random.choice(suborganization_options) if suborganization_options.exists() else None  # nosec
         except Exception as e:

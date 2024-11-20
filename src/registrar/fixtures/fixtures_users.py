@@ -161,7 +161,6 @@ class UserFixture:
     ]
 
     STAFF = [
-        
         # {
         #     "username": "994b7a90-f1d1-4140-a3d2-ff34183c7ee2",
         #     "first_name": "Rach test staff",
@@ -344,7 +343,7 @@ class UserFixture:
             # Only append the user if any of the fields were updated
             if updated:
                 users_to_update.append(user)
-        
+
         # Save any users that were updated
         if users_to_update:
             User.objects.bulk_update(users_to_update, ["is_staff"])
