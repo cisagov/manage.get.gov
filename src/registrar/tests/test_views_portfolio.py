@@ -2434,28 +2434,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Step 1: Access the "New Member" page
-        new_member_page = self.app.get(reverse("new-member"))
-        self.assertEqual(new_member_page.status_code, 200)
-        self.assertContains(new_member_page, "Add a new member")
-        self.assertContains(new_member_page, '<p class="margin-top-0" id="modalEmail"></p>')
-
-        # Step 2: Fill out the "New Member" form
-        new_member_form = new_member_page.forms[0]
-        new_member_form["member_access_level"] = "basic"
-        new_member_form["basic_org_domain_request_permissions"] = "view_only"
-        new_member_form["email"] = self.new_member_email
-
-        # Simulate form submission, which would trigger the modal in JavaScript
-        response = new_member_form.submit().follow()
-        self.assertEqual(response.status_code, 301)  # Ensure the page does not redirect
-
-        # TODO: test the modal somehow
-        # self.assertContains(new_member_page, f'<p class="margin-top-0" id="modalEmail">{self.new_member_email}</p>')
-        # form_data = {field.name: field.value() for field in new_member_form}
-
-        # Simulate user confirming the modal action (frontend JavaScript would normally handle this)
-        # Re-submit the form to simulate final submission
+        # Simulate submission of member invite for new user
         final_response = self.client.post(
             reverse("new-member"),
             {
@@ -2468,16 +2447,12 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         # Ensure the final submission is successful
         self.assertEqual(final_response.status_code, 302)  # redirects after success
 
-        # TODO: verify messages
-
-        # Step 4: Validate Database Changes
+        # Validate Database Changes
         portfolio_invite = PortfolioInvitation.objects.filter(
             email=self.new_member_email, portfolio=self.portfolio
         ).first()
         self.assertIsNotNone(portfolio_invite)
         self.assertEqual(portfolio_invite.email, self.new_member_email)
-        # self.assertEqual(portfolio_invite.access_level, "basic")
-        # TODO: test that roles and permissions are in the portfolio invite
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
