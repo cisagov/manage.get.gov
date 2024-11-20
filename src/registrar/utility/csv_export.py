@@ -146,6 +146,8 @@ class BaseExport(BaseModelAnnotation):
 
 
 class MemberExport(BaseExport):
+    """CSV export for the MembersTable. The members table combines the content
+    of three tables: PortfolioInvitation, UserPortfolioPermission, and DomainInvitation."""
 
     @classmethod
     def model(self):
@@ -185,8 +187,7 @@ class MemberExport(BaseExport):
         invitations = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(
             *shared_columns
         )
-        queryset_dict = convert_queryset_to_dict(permissions.union(invitations), is_model=False)
-        return queryset_dict
+        return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
 
     @classmethod
     def get_columns(cls):
@@ -213,30 +214,23 @@ class MemberExport(BaseExport):
         Given a set of columns and a model dictionary, generate a new row from cleaned column data.
         Must be implemented by subclasses
         """
-        roles = model.get("roles")
-        additional_permissions = model.get("additional_permissions_display")
-        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (roles or [])
-        domain_request_display = UserPortfolioPermission.get_domain_request_permission_display(
-            roles, additional_permissions
-        )
-        member_perm_display = UserPortfolioPermission.get_member_permission_display(roles, additional_permissions)
+        roles = model.get("roles", [])
+        permissions = model.get("additional_permissions_display")
         user_managed_domains = model.get("domain_info", [])
-        managed_domains_as_csv = ",".join(user_managed_domains)
+        length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Organization admin": is_admin,
+            "Organization admin": bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles),
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
-            "Domain requests": domain_request_display,
-            "Member management": member_perm_display,
-            "Domain management": len(user_managed_domains) > 0,
-            "Number of domains": len(user_managed_domains),
-            "Domains": managed_domains_as_csv,
+            "Domain requests": UserPortfolioPermission.get_domain_request_permission_display(roles, permissions),
+            "Member management": UserPortfolioPermission.get_member_permission_display(roles, permissions),
+            "Domain management": bool(length_user_managed_domains > 0),
+            "Number of domains": length_user_managed_domains,
+            "Domains": ",".join(user_managed_domains),
         }
-
-        row = [FIELDS.get(column, "") for column in columns]
-        return row
+        return [FIELDS.get(column, "") for column in columns]
 
 
 class DomainExport(BaseExport):

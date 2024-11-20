@@ -889,7 +889,8 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Manager,False,0,\n"
             "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Viewer,False,0,\n"
             "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,Viewer,None,False,0,\n"
-            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,Manager,False,0,\n"
+            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,"
+            "Invited,Viewer Requester,Manager,False,0,\n"
             "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,None,False,0,\n"
         )
         # Normalize line endings and remove commas,

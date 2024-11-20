@@ -256,7 +256,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                     portfolio=OuterRef(OuterRef("portfolio")),
                 ).values("id")[:1]
             ),
-            output_field=TextField(),
+            output_field=CharField(),
         )
 
     @classmethod
@@ -297,7 +297,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
             "last_active": Coalesce(
                 last_active_query,
                 Value("Invalid date"),
-                output_field=TextField(),
+                output_field=CharField(),
             ),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": Case(
@@ -324,7 +324,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
             "type": Value("member", output_field=CharField()),
-            "joined_date": Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
+            "joined_date": Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
             "invited_by": PortfolioInvitationModelAnnotation.get_invited_by_query(
                 object_id_query=cls.get_portfolio_invitation_id_query()
             ),
@@ -426,7 +426,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             "first_name": Value(None, output_field=CharField()),
             "last_name": Value(None, output_field=CharField()),
             "email_display": F("email"),
-            "last_active": Value("Invited", output_field=TextField()),
+            "last_active": Value("Invited", output_field=CharField()),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": F("email"),
             # Use ArrayRemove to return an empty list when no domain invitations are found
@@ -438,7 +438,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             ),
             "type": Value("invitedmember", output_field=CharField()),
             "joined_date": Value("Unretrieved", output_field=CharField()),
-            "invited_by": cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=TextField())),
+            "invited_by": cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
         }
 
     @classmethod
