@@ -87,6 +87,132 @@ function makeVisible(el) {
 }
 
 /**
+ * Creates and adds a modal dialog to the DOM with customizable attributes and content.
+ *
+ * @param {string} id - A unique identifier for the modal, appended to the action for uniqueness.
+ * @param {string} ariaLabelledby - The ID of the element that labels the modal, for accessibility.
+ * @param {string} ariaDescribedby - The ID of the element that describes the modal, for accessibility.
+ * @param {string} modalHeading - The heading text displayed at the top of the modal.
+ * @param {string} modalDescription - The main descriptive text displayed within the modal.
+ * @param {string} modalSubmit - The HTML content for the submit button, allowing customization.
+ * @param {HTMLElement} wrapper_element - Optional. The element to which the modal is appended. If not provided, defaults to `document.body`.
+ * @param {boolean} forceAction - Optional. If true, adds a `data-force-action` attribute to the modal for additional control.
+ *
+ * The modal includes a heading, description, submit button, and a cancel button, along with a close button.
+ * The `data-close-modal` attribute is added to cancel and close buttons to enable closing functionality.
+ */
+function addModal(id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
+
+  const modal = document.createElement('div');
+  modal.setAttribute('class', 'usa-modal');
+  modal.setAttribute('id', id);
+  modal.setAttribute('aria-labelledby', ariaLabelledby);
+  modal.setAttribute('aria-describedby', ariaDescribedby);
+  if (forceAction)
+    modal.setAttribute('data-force-action', ''); 
+
+  modal.innerHTML = `
+    <div class="usa-modal__content">
+      <div class="usa-modal__main">
+        <h2 class="usa-modal__heading">
+          ${modalHeading}
+        </h2>
+        <div class="usa-prose">
+          <p>
+            ${modalDescription}
+          </p>
+        </div>
+        <div class="usa-modal__footer">
+            <ul class="usa-button-group">
+              <li class="usa-button-group__item">
+                ${modalSubmit}
+              </li>      
+              <li class="usa-button-group__item">
+                  <button
+                      type="button"
+                      class="usa-button usa-button--unstyled padding-105 text-center"
+                      data-close-modal
+                  >
+                      Cancel
+                  </button>
+              </li>
+            </ul>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="usa-button usa-modal__close"
+        aria-label="Close this window"
+        data-close-modal
+      >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="/public/img/sprite.svg#close"></use>
+        </svg>
+      </button>
+    </div>
+    `
+  if (wrapper_element) {
+    wrapper_element.appendChild(modal);
+  } else {
+    document.body.appendChild(modal);
+  }
+}
+
+/**
+ * Helper function that creates a dynamic accordion navigation
+ * @param {string} action - The action type or identifier used to create a unique DOM IDs.
+ * @param {string} unique_id - An ID that when combined with action makes a unique identifier
+ * @param {string} modal_button_text - The action button's text
+ * @param {string} screen_reader_text - A screen reader helper
+ */
+function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_text) {
+
+  const generateModalButton = (mobileOnly = false) => `
+    <a 
+      role="button" 
+      id="button-trigger-${action}-${unique_id}"
+      href="#toggle-${action}-${unique_id}"
+      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary ${mobileOnly ? 'visible-mobile-flex' : ''}"
+      aria-controls="toggle-${action}-${unique_id}"
+      data-open-modal
+    >
+      ${mobileOnly ? `<svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+        <use xlink:href="/public/img/sprite.svg#delete"></use>
+      </svg>` : ''}
+      ${modal_button_text}
+      <span class="usa-sr-only">${screen_reader_text}</span>
+    </a>
+  `;
+
+  // Main kebab structure
+  const kebab = `
+    ${generateModalButton(true)} <!-- Mobile button -->
+
+    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+      <div class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+          aria-expanded="false"
+          aria-controls="more-actions-${unique_id}"
+        >
+          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+          </svg>
+        </button>
+      </div>
+      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+        <h2>More options</h2>
+        ${generateModalButton()} <!-- Desktop button -->
+      </div>
+    </div>
+  `;
+
+  return kebab;
+}
+
+
+/**
  * Toggles expand_more / expand_more svgs in buttons or anchors
  * @param {Element} element - DOM element
  */
@@ -104,9 +230,9 @@ function toggleCaret(element) {
 }
 
 /**
- * Helper function that scrolls to an element
+ * Helper function that scrolls to an element, identified by a class or an id.
  * @param {string} attributeName - The string "class" or "id"
- * @param {string} attributeValue - The class or id name
+ * @param {string} attributeValue - The class or id used name to identify the element
  */
 function ScrollToElement(attributeName, attributeValue) {
   let targetEl = null;
@@ -1022,46 +1148,54 @@ function initializeTooltips() {
  * Initialize USWDS modals by calling on method.  Requires that uswds-edited.js be loaded
  * before get-gov.js.  uswds-edited.js adds the modal module to the window to be accessible
  * directly in get-gov.js.
- * initializeModals adds modal-related DOM elements, based on other DOM elements existing in 
+ * load Modals adds modal-related DOM elements, based on other DOM elements existing in 
  * the page.  It needs to be called only once for any particular DOM element; otherwise, it
  * will initialize improperly.  Therefore, if DOM elements change dynamically and include
- * DOM elements with modal classes, unloadModals needs to be called before initializeModals.
+ * DOM elements with modal classes, uswdsUnloadModals needs to be called before loadModals.
  * 
  */
-function initializeModals() {
-  window.modal.on();
+function uswdsInitializeModals() {
+    window.modal.on();
+
 }
 
 /**
  * Unload existing USWDS modals by calling off method.  Requires that uswds-edited.js be
  * loaded before get-gov.js.  uswds-edited.js adds the modal module to the window to be
  * accessible directly in get-gov.js.
- * See note above with regards to calling this method relative to initializeModals.
+ * See note above with regards to calling this method relative to loadModals.
  * 
  */
-function unloadModals() {
+function uswdsUnloadModals() {
   window.modal.off();
 }
 
-class LoadTableBase {
-  constructor(sectionSelector) {
-    this.tableWrapper = document.getElementById(`${sectionSelector}__table-wrapper`);
-    this.tableHeaders = document.querySelectorAll(`#${sectionSelector} th[data-sortable]`);
+/**
+ * Base table class which handles search, retrieval, rendering and interaction with results.
+ * Classes can extend the basic behavior of this class to customize display and interaction.
+ * NOTE: PLEASE notice that whatever itemName is coming in will have an "s" added to it (ie domain -> domains)
+ */
+class BaseTable {
+  constructor(itemName) {
+    this.itemName = itemName;
+    this.sectionSelector = itemName + 's';
+    this.tableWrapper = document.getElementById(`${this.sectionSelector}__table-wrapper`);
+    this.tableHeaders = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable]`);
     this.currentSortBy = 'id';
     this.currentOrder = 'asc';
     this.currentStatus = [];
     this.currentSearchTerm = '';
     this.scrollToTable = false;
-    this.searchInput = document.getElementById(`${sectionSelector}__search-field`);
-    this.searchSubmit = document.getElementById(`${sectionSelector}__search-field-submit`);
-    this.tableAnnouncementRegion = document.getElementById(`${sectionSelector}__usa-table__announcement-region`);
-    this.resetSearchButton = document.getElementById(`${sectionSelector}__reset-search`);
-    this.resetFiltersButton = document.getElementById(`${sectionSelector}__reset-filters`);
-    this.statusCheckboxes = document.querySelectorAll(`.${sectionSelector} input[name="filter-status"]`);
-    this.statusIndicator = document.getElementById(`${sectionSelector}__filter-indicator`);
-    this.statusToggle = document.getElementById(`${sectionSelector}__usa-button--filter`);
-    this.noTableWrapper = document.getElementById(`${sectionSelector}__no-data`);
-    this.noSearchResultsWrapper = document.getElementById(`${sectionSelector}__no-search-results`);
+    this.searchInput = document.getElementById(`${this.sectionSelector}__search-field`);
+    this.searchSubmit = document.getElementById(`${this.sectionSelector}__search-field-submit`);
+    this.tableAnnouncementRegion = document.getElementById(`${this.sectionSelector}__usa-table__announcement-region`);
+    this.resetSearchButton = document.getElementById(`${this.sectionSelector}__reset-search`);
+    this.resetFiltersButton = document.getElementById(`${this.sectionSelector}__reset-filters`);
+    this.statusCheckboxes = document.querySelectorAll(`.${this.sectionSelector} input[name="filter-status"]`);
+    this.statusIndicator = document.getElementById(`${this.sectionSelector}__filter-indicator`);
+    this.statusToggle = document.getElementById(`${this.sectionSelector}__usa-button--filter`);
+    this.noTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
+    this.noSearchResultsWrapper = document.getElementById(`${this.sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
     this.initializeTableHeaders();
@@ -1074,31 +1208,24 @@ class LoadTableBase {
   }
 
   /**
- * Generalized function to update pagination for a list.
- * @param {string} itemName - The name displayed in the counter
- * @param {string} paginationSelector - CSS selector for the pagination container.
- * @param {string} counterSelector - CSS selector for the pagination counter.
- * @param {string} tableSelector - CSS selector for the header element to anchor the links to.
- * @param {number} currentPage - The current page number (starting with 1).
- * @param {number} numPages - The total number of pages.
- * @param {boolean} hasPrevious - Whether there is a page before the current page.
- * @param {boolean} hasNext - Whether there is a page after the current page.
- * @param {number} total - The total number of items.
- */  
+   * Generalized function to update pagination for a list.
+   * @param {number} currentPage - The current page number (starting with 1).
+   * @param {number} numPages - The total number of pages.
+   * @param {boolean} hasPrevious - Whether there is a page before the current page.
+   * @param {boolean} hasNext - Whether there is a page after the current page.
+   * @param {number} total - The total number of items.
+   */  
   updatePagination(
-    itemName,
-    paginationSelector,
-    counterSelector,
-    parentTableSelector,
     currentPage,
     numPages,
     hasPrevious,
     hasNext,
-    totalItems,
+    totalItems
   ) {
-    const paginationButtons = document.querySelector(`${paginationSelector} .usa-pagination__list`);
-    const counterSelectorEl = document.querySelector(counterSelector);
-    const paginationSelectorEl = document.querySelector(paginationSelector);
+    const paginationButtons = document.querySelector(`#${this.sectionSelector}-pagination .usa-pagination__list`);
+    const counterSelectorEl = document.querySelector(`#${this.sectionSelector}-pagination .usa-pagination__counter`);
+    const paginationSelectorEl = document.querySelector(`#${this.sectionSelector}-pagination`);
+    const parentTableSelector = `#${this.sectionSelector}`;
     counterSelectorEl.innerHTML = '';
     paginationButtons.innerHTML = '';
 
@@ -1108,12 +1235,30 @@ class LoadTableBase {
     // Counter should only be displayed if there is more than 1 item
     paginationSelectorEl.classList.toggle('display-none', totalItems < 1);
 
-    counterSelectorEl.innerHTML = `${totalItems} ${itemName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
+    counterSelectorEl.innerHTML = `${totalItems} ${this.itemName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
+
+    // Helper function to create a pagination item, such as a 
+    const createPaginationItem = (page) => {
+      const paginationItem = document.createElement('li');
+      paginationItem.classList.add('usa-pagination__item', 'usa-pagination__page-no');
+      paginationItem.innerHTML = `
+        <a href="${parentTableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
+      `;
+      if (page === currentPage) {
+        paginationItem.querySelector('a').classList.add('usa-current');
+        paginationItem.querySelector('a').setAttribute('aria-current', 'page');
+      }
+      paginationItem.querySelector('a').addEventListener('click', (event) => {
+        event.preventDefault();
+        this.loadTable(page);
+      });
+      return paginationItem;
+    };
 
     if (hasPrevious) {
-      const prevPageItem = document.createElement('li');
-      prevPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      prevPageItem.innerHTML = `
+      const prevPaginationItem = document.createElement('li');
+      prevPaginationItem.className = 'usa-pagination__item usa-pagination__arrow';
+      prevPaginationItem.innerHTML = `
         <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__previous-page" aria-label="Previous page">
           <svg class="usa-icon" aria-hidden="true" role="img">
             <use xlink:href="/public/img/sprite.svg#navigate_before"></use>
@@ -1121,16 +1266,16 @@ class LoadTableBase {
           <span class="usa-pagination__link-text">Previous</span>
         </a>
       `;
-      prevPageItem.querySelector('a').addEventListener('click', (event) => {
+      prevPaginationItem.querySelector('a').addEventListener('click', (event) => {
         event.preventDefault();
         this.loadTable(currentPage - 1);
       });
-      paginationButtons.appendChild(prevPageItem);
+      paginationButtons.appendChild(prevPaginationItem);
     }
 
     // Add first page and ellipsis if necessary
     if (currentPage > 2) {
-      paginationButtons.appendChild(this.createPageItem(1, parentTableSelector, currentPage));
+      paginationButtons.appendChild(createPaginationItem(1));
       if (currentPage > 3) {
         const ellipsis = document.createElement('li');
         ellipsis.className = 'usa-pagination__item usa-pagination__overflow';
@@ -1142,7 +1287,7 @@ class LoadTableBase {
 
     // Add pages around the current page
     for (let i = Math.max(1, currentPage - 1); i <= Math.min(numPages, currentPage + 1); i++) {
-      paginationButtons.appendChild(this.createPageItem(i, parentTableSelector, currentPage));
+      paginationButtons.appendChild(createPaginationItem(i));
     }
 
     // Add last page and ellipsis if necessary
@@ -1154,13 +1299,13 @@ class LoadTableBase {
         ellipsis.innerHTML = '<span>…</span>';
         paginationButtons.appendChild(ellipsis);
       }
-      paginationButtons.appendChild(this.createPageItem(numPages, parentTableSelector, currentPage));
+      paginationButtons.appendChild(createPaginationItem(numPages));
     }
 
     if (hasNext) {
-      const nextPageItem = document.createElement('li');
-      nextPageItem.className = 'usa-pagination__item usa-pagination__arrow';
-      nextPageItem.innerHTML = `
+      const nextPaginationItem = document.createElement('li');
+      nextPaginationItem.className = 'usa-pagination__item usa-pagination__arrow';
+      nextPaginationItem.innerHTML = `
         <a href="${parentTableSelector}" class="usa-pagination__link usa-pagination__next-page" aria-label="Next page">
           <span class="usa-pagination__link-text">Next</span>
           <svg class="usa-icon" aria-hidden="true" role="img">
@@ -1168,18 +1313,21 @@ class LoadTableBase {
           </svg>
         </a>
       `;
-      nextPageItem.querySelector('a').addEventListener('click', (event) => {
+      nextPaginationItem.querySelector('a').addEventListener('click', (event) => {
         event.preventDefault();
         this.loadTable(currentPage + 1);
       });
-      paginationButtons.appendChild(nextPageItem);
+      paginationButtons.appendChild(nextPaginationItem);
     }
   }
 
   /**
-   * A helper that toggles content/ no content/ no search results
-   *
-  */
+   * A helper that toggles content/ no content/ no search results based on results in data.
+   * @param {Object} data - Data representing current page of results data.
+   * @param {HTMLElement} dataWrapper - The DOM element to show if there are results on the current page.
+   * @param {HTMLElement} noDataWrapper - The DOM element to show if there are no results period.
+   * @param {HTMLElement} noSearchResultsWrapper - The DOM element to show if there are no results in the current filtered search.
+   */
   updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
     const { unfiltered_total, total } = data;
     if (unfiltered_total) {
@@ -1199,24 +1347,6 @@ class LoadTableBase {
     }
   };
 
-  // Helper function to create a page item
-  createPageItem(page, parentTableSelector, currentPage) {
-    const pageItem = document.createElement('li');
-    pageItem.className = 'usa-pagination__item usa-pagination__page-no';
-    pageItem.innerHTML = `
-      <a href="${parentTableSelector}" class="usa-pagination__button" aria-label="Page ${page}">${page}</a>
-    `;
-    if (page === currentPage) {
-      pageItem.querySelector('a').classList.add('usa-current');
-      pageItem.querySelector('a').setAttribute('aria-current', 'page');
-    }
-    pageItem.querySelector('a').addEventListener('click', (event) => {
-      event.preventDefault();
-      this.loadTable(page);
-    });
-    return pageItem;
-  }
-
   /**
    * A helper that resets sortable table headers
    *
@@ -1230,10 +1360,185 @@ class LoadTableBase {
     header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
   };
 
-  // Abstract method (to be implemented in the child class)
-  loadTable(page, sortBy, order) {
-    throw new Error('loadData() must be implemented in a subclass');
+
+  /**
+   * Generates search params for filtering and sorting
+   * @param {number} page - The current page number for pagination (starting with 1)
+   * @param {*} sortBy - The sort column option
+   * @param {*} order - The order of sorting {asc, desc}
+   * @param {string} searchTerm - The search term used to filter results for a specific keyword
+   * @param {*} status - The status filter applied {ready, dns_needed, etc}
+   * @param {string} portfolio - The portfolio id
+   */
+  getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
+    let searchParams = new URLSearchParams(
+      {
+        "page": page,
+        "sort_by": sortBy,
+        "order": order,
+        "search_term": searchTerm,
+      }
+    );
+
+    let emailValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-email') : null;
+    let memberIdValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-id') : null;
+    let memberOnly = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-only') : null;
+
+    if (portfolio)
+      searchParams.append("portfolio", portfolio);
+    if (emailValue)
+      searchParams.append("email", emailValue);
+    if (memberIdValue)
+      searchParams.append("member_id", memberIdValue);
+    if (memberOnly)
+      searchParams.append("member_only", memberOnly);
+    if (status)
+      searchParams.append("status", status);
+    return searchParams;
   }
+
+  /**
+   * Gets the base URL of API requests
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   */
+  getBaseUrl() {
+    throw new Error('getBaseUrl must be defined');
+  }
+
+  /**
+   * Calls "uswdsUnloadModals" to remove any existing modal element to make sure theres no unintended consequences 
+   * from leftover event listeners + can be properly re-initialized
+   */
+  unloadModals(){}
+
+  /**
+   * Loads modals + sets up event listeners for the modal submit actions
+   * "Activates" the modals after the DOM updates 
+   * Utilizes "uswdsInitializeModals"
+   * Adds click event listeners to each modal's submit button so we can handle a user's actions
+   *
+   * When the submit button is clicked:
+   * - Triggers the close button to reset modal classes
+   * - Determines if the page needs refreshing if the last item is deleted
+   * @param {number} page - The current page number for pagination
+   * @param {number} total - The total # of items on the current page
+   * @param {number} unfiltered_total - The total # of items across all pages
+   */
+  loadModals(page, total, unfiltered_total) {}
+  
+  /**
+   * Allows us to customize the table display based on specific conditions and a user's permissions
+   * Dynamically manages the visibility set up of columns, adding/removing headers 
+   * (ie if a domain request is deleteable, we include the kebab column or if a user has edit permissions
+   * for a member, they will also see the kebab column)
+   * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
+   * Currently returns a dictionary of either:
+   * - "needsAdditionalColumn": If a new column should be displayed 
+   * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
+   */
+  customizeTable(dataObjects){ return {}; }
+
+  /**
+   * Retrieves specific data objects
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   * Returns either: data.members, data.domains or data.domain_requests
+   * @param {Object} data - The full data set from which a subset of objects is extracted.
+   */
+  getDataObjects(data) {
+    throw new Error('getDataObjects must be defined');
+  }
+
+  /**
+   * Creates + appends a row to a tbody element
+   * Tailored structure set up for each data object (domain, domain_request, member, etc) 
+   * Placeholder function in a parent class - method should be implemented by child class for specifics
+   * Throws an error if called directly from the parent class
+   * Returns either: data.members, data.domains or data.domain_requests
+   * @param {Object} dataObject - The data used to populate the row content 
+   * @param {HTMLElement} tbody - The table body to which the new row is appended to 
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie needsAdditionalColumn)
+   */
+  addRow(dataObject, tbody, customTableOptions) {
+    throw new Error('addRow must be defined');
+  }
+
+   /**
+   * See function for more details
+   */
+  initShowMoreButtons(){}
+
+  /**
+   * Loads rows in the members list, as well as updates pagination around the members list
+   * based on the supplied attributes.
+   * @param {*} page - The page number of the results (starts with 1)
+   * @param {*} sortBy - The sort column option
+   * @param {*} order - The sort order {asc, desc}
+   * @param {*} scroll - The control for the scrollToElement functionality
+   * @param {*} searchTerm - The search term
+   * @param {*} portfolio - The portfolio id
+   */
+  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+    // --------- SEARCH
+    let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
+
+    // --------- FETCH DATA
+    // fetch json of page of domains, given params
+    const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
+    if (!baseUrlValue) return;
+    
+    let url = `${baseUrlValue}?${searchParams.toString()}`
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error in AJAX call: ' + data.error);
+          return;
+        }
+
+        // handle the display of proper messaging in the event that no members exist in the list or search returns no results
+        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+
+        // identify the DOM element where the list of results will be inserted into the DOM
+        const tbody = this.tableWrapper.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        // remove any existing modal elements from the DOM so they can be properly re-initialized
+        // after the DOM content changes and there are new delete modal buttons added
+        this.unloadModals();
+
+        let dataObjects = this.getDataObjects(data);
+        let customTableOptions = this.customizeTable(data);
+
+        dataObjects.forEach(dataObject => {
+          this.addRow(dataObject, tbody, customTableOptions);
+        });
+        
+        this.initShowMoreButtons();
+
+        this.loadModals(data.page, data.total, data.unfiltered_total);
+
+        // Do not scroll on first page load
+        if (scroll)
+          ScrollToElement('class', this.sectionSelector);
+        this.scrollToTable = true;
+
+        // update pagination
+        this.updatePagination(
+          data.page,
+          data.num_pages,
+          data.has_previous,
+          data.has_next,
+          data.total,
+        );
+        this.currentSortBy = sortBy;
+        this.currentOrder = order;
+        this.currentSearchTerm = searchTerm;
+    })
+    .catch(error => console.error('Error fetching objects:', error));
+  }
+
 
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
@@ -1400,150 +1705,82 @@ class LoadTableBase {
   }
 }
 
-class DomainsTable extends LoadTableBase {
+class DomainsTable extends BaseTable {
 
   constructor() {
-    super('domains');
+    super('domain');
   }
-  /**
-     * Loads rows in the domains list, as well as updates pagination around the domains list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} status - control for the status filter
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+  getBaseUrl() {
+    return document.getElementById("get_domains_json_url");
+  }
+  getDataObjects(data) {
+    return data.domains;
+  }
+  addRow(dataObject, tbody, customTableOptions) {
+    const domain = dataObject;
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
+    const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
+    const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
+    const actionUrl = domain.action_url;
+    const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
 
-      // fetch json of page of domais, given params
-      let baseUrl = document.getElementById("get_domains_json_url");
-      if (!baseUrl) {
-        return;
-      }
+    const row = document.createElement('tr');
 
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
+    let markupForSuborganizationRow = '';
 
-      // fetch json of page of domains, given params
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "status": status,
-          "search_term": searchTerm
-        }
-      );
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
+    if (this.portfolioValue) {
+      markupForSuborganizationRow = `
+        <td>
+            <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
+        </td>
+      `
+    }
 
-      let url = `${baseUrlValue}?${searchParams.toString()}`
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
-          }
-
-          // handle the display of proper messaging in the event that no domains exist in the list or search returns no results
-          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
-
-          // identify the DOM element where the domain list will be inserted into the DOM
-          const domainList = document.querySelector('#domains tbody');
-          domainList.innerHTML = '';
-
-          data.domains.forEach(domain => {
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            const expirationDate = domain.expiration_date ? new Date(domain.expiration_date) : null;
-            const expirationDateFormatted = expirationDate ? expirationDate.toLocaleDateString('en-US', options) : '';
-            const expirationDateSortValue = expirationDate ? expirationDate.getTime() : '';
-            const actionUrl = domain.action_url;
-            const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
-
-            const row = document.createElement('tr');
-
-            let markupForSuborganizationRow = '';
-
-            if (this.portfolioValue) {
-              markupForSuborganizationRow = `
-                <td>
-                    <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
-                </td>
-              `
-            }
-
-            row.innerHTML = `
-              <th scope="row" role="rowheader" data-label="Domain name">
-                ${domain.name}
-              </th>
-              <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
-                ${expirationDateFormatted}
-              </td>
-              <td data-label="Status">
-                ${domain.state_display}
-                <svg 
-                  class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-                  data-position="top"
-                  title="${domain.get_state_help_text}"
-                  focusable="true"
-                  aria-label="${domain.get_state_help_text}"
-                  role="tooltip"
-                >
-                  <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
-                </svg>
-              </td>
-              ${markupForSuborganizationRow}
-              <td>
-                <a href="${actionUrl}">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
-                  </svg>
-                  ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
-                </a>
-              </td>
-            `;
-            domainList.appendChild(row);
-          });
-          // initialize tool tips immediately after the associated DOM elements are added
-          initializeTooltips();
-
-          // Do not scroll on first page load
-          if (scroll)
-            ScrollToElement('class', 'domains');
-          this.scrollToTable = true;
-
-          // update pagination
-          this.updatePagination(
-            'domain',
-            '#domains-pagination',
-            '#domains-pagination .usa-pagination__counter',
-            '#domains',
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-          );
-          this.currentSortBy = sortBy;
-          this.currentOrder = order;
-          this.currentSearchTerm = searchTerm;
-        })
-        .catch(error => console.error('Error fetching domains:', error));
+    row.innerHTML = `
+      <th scope="row" role="rowheader" data-label="Domain name">
+        ${domain.name}
+      </th>
+      <td data-sort-value="${expirationDateSortValue}" data-label="Expires">
+        ${expirationDateFormatted}
+      </td>
+      <td data-label="Status">
+        ${domain.state_display}
+        <svg 
+          class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+          data-position="top"
+          title="${domain.get_state_help_text}"
+          focusable="true"
+          aria-label="${domain.get_state_help_text}"
+          role="tooltip"
+        >
+          <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
+        </svg>
+      </td>
+      ${markupForSuborganizationRow}
+      <td>
+        <a href="${actionUrl}">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
+          </svg>
+          ${domain.action_label} <span class="usa-sr-only">${domain.name}</span>
+        </a>
+      </td>
+    `;
+    tbody.appendChild(row);
   }
 }
 
-class DomainRequestsTable extends LoadTableBase {
+class DomainRequestsTable extends BaseTable {
 
   constructor() {
-    super('domain-requests');
+    super('domain-request');
   }
   
+  getBaseUrl() {
+    return document.getElementById("get_domain_requests_json_url");
+  }
+
   toggleExportButton(requests) {
     const exportButton = document.getElementById('export-csv'); 
     if (exportButton) {
@@ -1553,327 +1790,136 @@ class DomainRequestsTable extends LoadTableBase {
             hideElement(exportButton);
         }
     }
-}
+  }
 
-  /**
-     * Loads rows in the domains list, as well as updates pagination around the domains list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} status - control for the status filter
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm = this.currentSearchTerm, portfolio = this.portfolioValue) {
-    let baseUrl = document.getElementById("get_domain_requests_json_url");
-    
-    if (!baseUrl) {
-      return;
-    }
+  getDataObjects(data) {
+    return data.domain_requests;
+  }
+  unloadModals() {
+    uswdsUnloadModals();
+  }
+  customizeTable(data) {
 
-    let baseUrlValue = baseUrl.innerHTML;
-    if (!baseUrlValue) {
-      return;
-    }
+    // Manage "export as CSV" visibility for domain requests
+    this.toggleExportButton(data.domain_requests);
 
-    // add searchParams
-    let searchParams = new URLSearchParams(
-      {
-        "page": page,
-        "sort_by": sortBy,
-        "order": order,
-        "status": status,
-        "search_term": searchTerm
+    let needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
+
+    // Remove existing delete th and td if they exist
+    let existingDeleteTh =  document.querySelector('.delete-header');
+    if (!needsDeleteColumn) {
+      if (existingDeleteTh)
+        existingDeleteTh.remove();
+    } else {
+      if (!existingDeleteTh) {
+        const delheader = document.createElement('th');
+        delheader.setAttribute('scope', 'col');
+        delheader.setAttribute('role', 'columnheader');
+        delheader.setAttribute('class', 'delete-header width-5');
+        delheader.innerHTML = `
+          <span class="usa-sr-only">Delete Action</span>`;
+        let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
+        tableHeaderRow.appendChild(delheader);
       }
-    );
-    if (portfolio)
-      searchParams.append("portfolio", portfolio)
+    }
+    return { 'needsAdditionalColumn': needsDeleteColumn };
+  }
 
-    let url = `${baseUrlValue}?${searchParams.toString()}`
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          console.error('Error in AJAX call: ' + data.error);
-          return;
+  addRow(dataObject, tbody, customTableOptions) {
+    const request = dataObject;
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
+    const actionUrl = request.action_url;
+    const actionLabel = request.action_label;
+    const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
+    
+    // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
+    // If the request is not deletable, use the following (hidden) span for ANDI screenreaders to indicate this state to the end user
+    let modalTrigger =  `
+    <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
+
+    let markupCreatorRow = '';
+
+    if (this.portfolioValue) {
+      markupCreatorRow = `
+        <td>
+            <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
+        </td>
+      `
+    }
+
+    if (request.is_deletable) {
+      // 1st path: Just a modal trigger in any screen size for non-org users
+      modalTrigger = `
+        <a 
+          role="button" 
+          id="button-toggle-delete-domain-${request.id}"
+          href="#toggle-delete-domain-${request.id}"
+          class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
+          aria-controls="toggle-delete-domain-${request.id}"
+          data-open-modal
+        >
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#delete"></use>
+          </svg> Delete <span class="usa-sr-only">${domainName}</span>
+        </a>`
+
+      // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
+      if (this.portfolioValue) {
+
+        // 2nd path: Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
+        modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
+      }
+    }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <th scope="row" role="rowheader" data-label="Domain name">
+        ${domainName}
+      </th>
+      <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
+        ${submissionDate}
+      </td>
+      ${markupCreatorRow}
+      <td data-label="Status">
+        ${request.status}
+      </td>
+      <td>
+        <a href="${actionUrl}">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
+          </svg>
+          ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
+        </a>
+      </td>
+      ${customTableOptions.needsAdditionalColumn ? '<td>'+modalTrigger+'</td>' : ''}
+    `;
+    tbody.appendChild(row);
+    if (request.is_deletable) DomainRequestsTable.addDomainRequestsModal(request.requested_domain, request.id, request.created_at, tbody);
+  }
+
+  loadModals(page, total, unfiltered_total) {
+    // initialize modals immediately after the DOM content is updated
+    uswdsInitializeModals();
+
+    // Now the DOM and modals are ready, add listeners to the submit buttons
+    const modals = document.querySelectorAll('.usa-modal__content');
+
+    modals.forEach(modal => {
+      const submitButton = modal.querySelector('.usa-modal__submit');
+      const closeButton = modal.querySelector('.usa-modal__close');
+      submitButton.addEventListener('click', () => {
+        let pk = submitButton.getAttribute('data-pk');
+        // Workaround: Close the modal to remove the USWDS UI local classes
+        closeButton.click();
+        // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+        let pageToDisplay = page;
+        if (total == 1 && unfiltered_total > 1) {
+          pageToDisplay--;
         }
-
-        // Manage "export as CSV" visibility for domain requests
-        this.toggleExportButton(data.domain_requests);
-
-        // handle the display of proper messaging in the event that no requests exist in the list or search returns no results
-        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
-
-        // identify the DOM element where the domain request list will be inserted into the DOM
-        const tbody = document.querySelector('#domain-requests tbody');
-        tbody.innerHTML = '';
-
-        // Unload modals will re-inject the DOM with the initial placeholders to allow for .on() in regular use cases
-        // We do NOT want that as it will cause multiple placeholders and therefore multiple inits on delete,
-        // which will cause bad delete requests to be sent.
-        const preExistingModalPlaceholders = document.querySelectorAll('[data-placeholder-for^="toggle-delete-domain-alert"]');
-        preExistingModalPlaceholders.forEach(element => {
-            element.remove();
-        });
-
-        // remove any existing modal elements from the DOM so they can be properly re-initialized
-        // after the DOM content changes and there are new delete modal buttons added
-        unloadModals();
-
-        let needsDeleteColumn = false;
-
-        needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-
-        // Remove existing delete th and td if they exist
-        let existingDeleteTh =  document.querySelector('.delete-header');
-        if (!needsDeleteColumn) {
-          if (existingDeleteTh)
-            existingDeleteTh.remove();
-        } else {
-          if (!existingDeleteTh) {
-            const delheader = document.createElement('th');
-            delheader.setAttribute('scope', 'col');
-            delheader.setAttribute('role', 'columnheader');
-            delheader.setAttribute('class', 'delete-header');
-            delheader.innerHTML = `
-              <span class="usa-sr-only">Delete Action</span>`;
-            let tableHeaderRow = document.querySelector('#domain-requests thead tr');
-            tableHeaderRow.appendChild(delheader);
-          }
-        }
-
-        data.domain_requests.forEach(request => {
-          const options = { year: 'numeric', month: 'short', day: 'numeric' };
-          const domainName = request.requested_domain ? request.requested_domain : `New domain request <br><span class="text-base font-body-xs">(${utcDateString(request.created_at)})</span>`;
-          const actionUrl = request.action_url;
-          const actionLabel = request.action_label;
-          const submissionDate = request.last_submitted_date ? new Date(request.last_submitted_date).toLocaleDateString('en-US', options) : `<span class="text-base">Not submitted</span>`;
-          
-          // The markup for the delete function either be a simple trigger or a 3 dots menu with a hidden trigger (in the case of portfolio requests page)
-          // If the request is not deletable, use the following (hidden) span for ANDI screenreaders to indicate this state to the end user
-          let modalTrigger =  `
-          <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
-
-          let markupCreatorRow = '';
-
-          if (this.portfolioValue) {
-            markupCreatorRow = `
-              <td>
-                  <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
-              </td>
-            `
-          }
-
-          if (request.is_deletable) {
-            // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
-            let modalHeading = '';
-            let modalDescription = '';
-
-            if (request.requested_domain) {
-              modalHeading = `Are you sure you want to delete ${request.requested_domain}?`;
-              modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-            } else {
-              if (request.created_at) {
-                modalHeading = 'Are you sure you want to delete this domain request?';
-                modalDescription = `This will remove the domain request (created ${utcDateString(request.created_at)}) from the .gov registrar. This action cannot be undone`;
-              } else {
-                modalHeading = 'Are you sure you want to delete New domain request?';
-                modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
-              }
-            }
-
-            modalTrigger = `
-              <a 
-                role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
-                class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger line-height-sans-5"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
-                data-open-modal
-              >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg> Delete <span class="usa-sr-only">${domainName}</span>
-              </a>`
-
-            const modalSubmit = `
-              <button type="button"
-              class="usa-button usa-button--secondary usa-modal__submit"
-              data-pk = ${request.id}
-              name="delete-domain-request">Yes, delete request</button>
-            `
-
-            const modal = document.createElement('div');
-            modal.setAttribute('class', 'usa-modal');
-            modal.setAttribute('id', `toggle-delete-domain-alert-${request.id}`);
-            modal.setAttribute('aria-labelledby', 'Are you sure you want to continue?');
-            modal.setAttribute('aria-describedby', 'Domain will be removed');
-            modal.setAttribute('data-force-action', '');
-
-            modal.innerHTML = `
-              <div class="usa-modal__content">
-                <div class="usa-modal__main">
-                  <h2 class="usa-modal__heading" id="modal-1-heading">
-                    ${modalHeading}
-                  </h2>
-                  <div class="usa-prose">
-                    <p id="modal-1-description">
-                      ${modalDescription}
-                    </p>
-                  </div>
-                  <div class="usa-modal__footer">
-                      <ul class="usa-button-group">
-                        <li class="usa-button-group__item">
-                          ${modalSubmit}
-                        </li>      
-                        <li class="usa-button-group__item">
-                            <button
-                                type="button"
-                                class="usa-button usa-button--unstyled padding-105 text-center"
-                                data-close-modal
-                            >
-                                Cancel
-                            </button>
-                        </li>
-                      </ul>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="usa-button usa-modal__close"
-                  aria-label="Close this window"
-                  data-close-modal
-                >
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                    <use xlink:href="/public/img/sprite.svg#close"></use>
-                  </svg>
-                </button>
-              </div>
-              `
-
-            this.tableWrapper.appendChild(modal);
-
-            // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
-            if (this.portfolioValue) {
-              modalTrigger = `
-              <a 
-                role="button" 
-                id="button-toggle-delete-domain-alert-${request.id}"
-                href="#toggle-delete-domain-alert-${request.id}"
-                class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 visible-mobile-flex line-height-sans-5"
-                aria-controls="toggle-delete-domain-alert-${request.id}"
-                data-open-modal
-              >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg> Delete <span class="usa-sr-only">${domainName}</span>
-              </a>
-
-              <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                <div class="usa-accordion__heading">
-                  <button
-                    type="button"
-                    class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
-                    aria-expanded="false"
-                    aria-controls="more-actions-${request.id}"
-                  >
-                    <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                      <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                    </svg>
-                  </button>
-                </div>
-                <div id="more-actions-${request.id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
-                  <h2>More options</h2>
-                  <a 
-                    role="button" 
-                    id="button-toggle-delete-domain-alert-${request.id}"
-                    href="#toggle-delete-domain-alert-${request.id}"
-                    class="usa-button text-secondary usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5"
-                    aria-controls="toggle-delete-domain-alert-${request.id}"
-                    data-open-modal
-                  >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                      <use xlink:href="/public/img/sprite.svg#delete"></use>
-                    </svg> Delete <span class="usa-sr-only">${domainName}</span>
-                  </a>
-                </div>
-              </div>
-              `
-            }
-          }
-
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <th scope="row" role="rowheader" data-label="Domain name">
-              ${domainName}
-            </th>
-            <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
-              ${submissionDate}
-            </td>
-            ${markupCreatorRow}
-            <td data-label="Status">
-              ${request.status}
-            </td>
-            <td>
-              <a href="${actionUrl}">
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                  <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
-                </svg>
-                ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
-              </a>
-            </td>
-            ${needsDeleteColumn ? '<td>'+modalTrigger+'</td>' : ''}
-          `;
-          tbody.appendChild(row);
-        });
-
-        // initialize modals immediately after the DOM content is updated
-        initializeModals();
-
-        // Now the DOM and modals are ready, add listeners to the submit buttons
-        const modals = document.querySelectorAll('.usa-modal__content');
-
-        modals.forEach(modal => {
-          const submitButton = modal.querySelector('.usa-modal__submit');
-          const closeButton = modal.querySelector('.usa-modal__close');
-          submitButton.addEventListener('click', () => {
-            let pk = submitButton.getAttribute('data-pk');
-            // Close the modal to remove the USWDS UI local classes
-            closeButton.click();
-            // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
-            let pageToDisplay = data.page;
-            if (data.total == 1 && data.unfiltered_total > 1) {
-              pageToDisplay--;
-            }
-            this.deleteDomainRequest(pk, pageToDisplay);
-          });
-        });
-
-        // Do not scroll on first page load
-        if (scroll)
-          ScrollToElement('class', 'domain-requests');
-        this.scrollToTable = true;
-
-        // update the pagination after the domain requests list is updated
-        this.updatePagination(
-          'domain request',
-          '#domain-requests-pagination',
-          '#domain-requests-pagination .usa-pagination__counter',
-          '#domain-requests',
-          data.page,
-          data.num_pages,
-          data.has_previous,
-          data.has_next,
-          data.total,
-        );
-        this.currentSortBy = sortBy;
-        this.currentOrder = order;
-        this.currentSearchTerm = searchTerm;
-      })
-      .catch(error => console.error('Error fetching domain requests:', error));
+        this.deleteDomainRequest(pk, pageToDisplay);
+      });
+    });
   }
 
   /**
@@ -1903,18 +1949,186 @@ class DomainRequestsTable extends LoadTableBase {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       // Update data and UI
-      this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentSearchTerm);
+      this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentStatus, this.currentSearchTerm);
     })
     .catch(error => console.error('Error fetching domain requests:', error));
   }
+
+    /**
+     * Modal that displays when deleting a domain request 
+     * @param {string} requested_domain - The requested domain URL 
+     * @param {string} id - The request's ID
+     * @param {string}} created_at - When the request was created at
+     * @param {HTMLElement} wrapper_element - The element to which the modal is appended
+     */
+  static addDomainRequestsModal(requested_domain, id, created_at, wrapper_element) {
+    // If the request is deletable, create modal body and insert it. This is true for both requests and portfolio requests pages
+    let modalHeading = '';
+    let modalDescription = '';
+
+    if (requested_domain) {
+      modalHeading = `Are you sure you want to delete ${requested_domain}?`;
+      modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+    } else {
+      if (request.created_at) {
+        modalHeading = 'Are you sure you want to delete this domain request?';
+        modalDescription = `This will remove the domain request (created ${utcDateString(created_at)}) from the .gov registrar. This action cannot be undone`;
+      } else {
+        modalHeading = 'Are you sure you want to delete New domain request?';
+        modalDescription = 'This will remove the domain request from the .gov registrar. This action cannot be undone.';
+      }
+    }
+
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${id}
+      name="delete-domain-request">Yes, delete request</button>
+    `
+
+    addModal(`toggle-delete-domain-${id}`, 'Are you sure you want to continue?', 'Domain will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
+
+  }
 }
 
-class MembersTable extends LoadTableBase {
+class MembersTable extends BaseTable {
 
   constructor() {
-    super('members');
+    super('member');
   }
   
+  getBaseUrl() {
+    return document.getElementById("get_members_json_url");
+  }
+
+  // Abstract method (to be implemented in the child class)
+  getDataObjects(data) {
+    return data.members;
+  }
+  unloadModals() {
+    uswdsUnloadModals();
+  }
+  loadModals(page, total, unfiltered_total) {
+    // initialize modals immediately after the DOM content is updated
+    uswdsInitializeModals();
+
+    // Now the DOM and modals are ready, add listeners to the submit buttons
+    const modals = document.querySelectorAll('.usa-modal__content');
+
+    modals.forEach(modal => {
+      const submitButton = modal.querySelector('.usa-modal__submit');
+      const closeButton = modal.querySelector('.usa-modal__close');
+      submitButton.addEventListener('click', () => {
+        let pk = submitButton.getAttribute('data-pk');
+        // Close the modal to remove the USWDS UI local classes
+        closeButton.click();
+        // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+        let pageToDisplay = page;
+        if (total == 1 && unfiltered_total > 1) {
+          pageToDisplay--;
+        }
+
+        this.deleteMember(pk, pageToDisplay);
+      });
+    });
+  }
+
+  customizeTable(data) {
+    // Get whether the logged in user has edit members permission
+    const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
+
+    let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
+
+    if (hasEditPermission && !existingExtraActionsHeader) {
+      const extraActionsHeader = document.createElement('th');
+      extraActionsHeader.setAttribute('id', 'extra-actions');
+      extraActionsHeader.setAttribute('role', 'columnheader');
+      extraActionsHeader.setAttribute('class', 'extra-actions-header width-5');
+      extraActionsHeader.innerHTML = `
+        <span class="usa-sr-only">Extra Actions</span>`;
+      let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
+      tableHeaderRow.appendChild(extraActionsHeader);
+    }
+    return { 
+      'needsAdditionalColumn': hasEditPermission,
+      'UserPortfolioPermissionChoices' : data.UserPortfolioPermissionChoices
+    };
+  }
+
+  addRow(dataObject, tbody, customTableOptions) {
+    const member = dataObject;
+    // member is based on either a UserPortfolioPermission or a PortfolioInvitation
+    // and also includes information from related domains; the 'id' of the org_member
+    // is the id of the UserPorfolioPermission or PortfolioInvitation, it is not a user id
+    // member.type is either invitedmember or member
+    const unique_id = member.type + member.id; // unique string for use in dom, this is
+    // not the id of the associated user
+    const member_delete_url = member.action_url + "/delete";
+    const num_domains = member.domain_urls.length;
+    const last_active = this.handleLastActive(member.last_active);
+    let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
+    const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member.name}`): ''; 
+          
+    const row = document.createElement('tr');
+    
+    let admin_tagHTML = ``;
+    if (member.is_admin)
+      admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
+
+    // generate html blocks for domains and permissions for the member
+    let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
+    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices);
+    
+    // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
+    let showMoreButton = '';
+    const showMoreRow = document.createElement('tr');
+    if (domainsHTML || permissionsHTML) {
+      showMoreButton = `
+        <button 
+          type="button" 
+          class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
+          data-for=${unique_id}
+          aria-label="Expand for additional information"
+        >
+          <span>Expand</span>
+          <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+          </svg>
+        </button>
+      `;
+
+      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+      showMoreRow.classList.add('show-more-content');
+      showMoreRow.classList.add('display-none');
+      showMoreRow.id = unique_id;
+    }
+
+    row.innerHTML = `
+      <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+        ${member.member_display} ${admin_tagHTML} ${showMoreButton}
+      </th>
+      <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+        ${last_active.display_value}
+      </td>
+      <td headers="header-action row-header-${unique_id}">
+        <a href="${member.action_url}">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
+          </svg>
+          ${member.action_label} <span class="usa-sr-only">${member.name}</span>
+        </a>
+      </td>
+      ${customTableOptions.needsAdditionalColumn ? '<td>'+kebabHTML+'</td>' : ''}
+    `;
+    tbody.appendChild(row);
+    if (domainsHTML || permissionsHTML) {
+      tbody.appendChild(showMoreRow);
+    }
+    // This easter egg is only for fixtures that dont have names as we are displaying their emails
+    // All prod users will have emails linked to their account
+    if (customTableOptions.needsAdditionalColumn) MembersTable.addMemberModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
+  }
+
   /**
    * Initializes "Show More" buttons on the page, enabling toggle functionality to show or hide content.
    * 
@@ -2043,6 +2257,86 @@ class MembersTable extends LoadTableBase {
   }
 
   /**
+   * The POST call for deleting a Member and which error or success message it should return
+   * and redirection if necessary
+   * 
+   * @param {string} member_delete_url - The URL for deletion ie `${member_type}-${member_id}/delete``
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+   * Note: X-Request-With is used for security reasons to present CSRF attacks, the server checks that this header is present
+   * (consent via CORS) so it knows it's not from a random request attempt
+   */
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Get CSRF token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+  
+    fetch(`${member_delete_url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (response.status === 200) {
+        response.json().then(data => {
+          if (data.success) {
+            this.addAlert("success", data.success);
+          }
+          this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentStatus, this.currentSearchTerm);
+        });
+      } else {
+        response.json().then(data => {
+          if (data.error) {
+            // This should display the error given from backend for
+            // either only admin OR in progress requests
+            this.addAlert("error", data.error); 
+          } else {
+            throw new Error(`Unexpected status: ${response.status}`);
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting member:', error);
+    });
+  }
+  
+  
+  /**
+   * Adds an alert message to the page with an alert class.
+   *
+   * @param {string} alertClass - {error, warning, info, success}
+   * @param {string} alertMessage - The text that will be displayed
+   *
+   */
+  addAlert(alertClass, alertMessage) {
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    this.resetAlerts();
+    toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
+    let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
+    alertParagraph.innerHTML = alertMessage
+    showElement(toggleableAlertDiv);
+  }
+  
+  /**
+   * Resets the reusable alert message
+   */
+  resetAlerts() {
+    // Create a list of any alert that's leftover and remove
+    document.querySelectorAll(".usa-alert:not(#toggleable-alert)").forEach(alert => {
+      alert.remove();
+    });
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    toggleableAlertDiv.classList.remove('usa-alert--error');
+    toggleableAlertDiv.classList.remove('usa-alert--success');
+    hideElement(toggleableAlertDiv);
+  }
+
+  /**
    * Generates an HTML string summarizing a user's additional permissions within a portfolio, 
    * based on the user's permissions and predefined permission choices.
    *
@@ -2105,266 +2399,68 @@ class MembersTable extends LoadTableBase {
     return permissionsHTML;
   }
 
-  /**
-     * Loads rows in the members list, as well as updates pagination around the members list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+    /**
+   * Modal that displays when deleting a domain request 
+   * @param {string} num_domains - Number of domain a user has within the org
+   * @param {string} member_email - The member's email
+   * @param {string} submit_delete_url - `${member_type}-${member_id}/delete`
+   * @param {HTMLElement} wrapper_element - The element to which the modal is appended
+   */
+  static addMemberModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
+    let modalHeading = '';
+    let modalDescription = '';
+    
+    if (num_domains == 0){
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `They will no longer be able to access this organization. 
+      This action cannot be undone.`;
+    } else if (num_domains == 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    } else if (num_domains > 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    }
 
-      // --------- SEARCH
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "search_term": searchTerm
-        }
-      );
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${submit_delete_url}
+      name="delete-member">Yes, remove from organization</button>
+    `
 
-
-      // --------- FETCH DATA
-      // fetch json of page of domains, given params
-      let baseUrl = document.getElementById("get_members_json_url");
-      if (!baseUrl) {
-        return;
-      }
-
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
-  
-      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
-          }
-
-          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
-
-          // identify the DOM element where the domain list will be inserted into the DOM
-          const memberList = document.querySelector('#members tbody');
-          memberList.innerHTML = '';
-
-          const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
-          const invited = 'Invited';
-          const invalid_date = 'Invalid date';
-
-          data.members.forEach(member => {
-            const member_id = member.source + member.id;
-            const member_name = member.name;
-            const member_display = member.member_display;
-            const member_permissions = member.permissions;
-            const domain_urls = member.domain_urls;
-            const domain_names = member.domain_names;
-            const num_domains = domain_urls.length;
-            
-            const last_active = this.handleLastActive(member.last_active);
-
-            const action_url = member.action_url;
-            const action_label = member.action_label;
-            const svg_icon = member.svg_icon;
-      
-            const row = document.createElement('tr');
-
-            let admin_tagHTML = ``;
-            if (member.is_admin)
-              admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
-
-            // generate html blocks for domains and permissions for the member
-            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, action_url);
-            let permissionsHTML = this.generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices);
-            
-            // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
-            let showMoreButton = '';
-            const showMoreRow = document.createElement('tr');
-            if (domainsHTML || permissionsHTML) {
-              showMoreButton = `
-                <button 
-                  type="button" 
-                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
-                  data-for=${member_id}
-                  aria-label="Expand for additional information"
-                >
-                  <span>Expand</span>
-                  <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-                  </svg>
-                </button>
-              `;
-
-              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
-              showMoreRow.classList.add('show-more-content');
-              showMoreRow.classList.add('display-none');
-              showMoreRow.id = member_id;
-            }
-
-            row.innerHTML = `
-              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
-                ${member_display} ${admin_tagHTML} ${showMoreButton}
-              </th>
-              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
-                ${last_active.display_value}
-              </td>
-              <td headers="header-action row-header-${member_id}">
-                <a href="${action_url}">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
-                  </svg>
-                  ${action_label} <span class="usa-sr-only">${member_name}</span>
-                </a>
-              </td>
-            `;
-            memberList.appendChild(row);
-            if (domainsHTML || permissionsHTML) {
-              memberList.appendChild(showMoreRow);
-            }
-          });
-
-          this.initShowMoreButtons();
-
-          // Do not scroll on first page load
-          if (scroll)
-            ScrollToElement('class', 'members');
-          this.scrollToTable = true;
-
-          // update pagination
-          this.updatePagination(
-            'member',
-            '#members-pagination',
-            '#members-pagination .usa-pagination__counter',
-            '#members',
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-          );
-          this.currentSortBy = sortBy;
-          this.currentOrder = order;
-          this.currentSearchTerm = searchTerm;
-      })
-      .catch(error => console.error('Error fetching members:', error));
+    addModal(`toggle-remove-member-${id}`, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
   }
 }
 
-class MemberDomainsTable extends LoadTableBase {
+class MemberDomainsTable extends BaseTable {
 
   constructor() {
-    super('member-domains');
+    super('member-domain');
     this.currentSortBy = 'name';
   }
-  /**
-     * Loads rows in the members list, as well as updates pagination around the members list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
-
-      // --------- SEARCH
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "search_term": searchTerm,
-        }
-      );
-
-      let emailValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-email') : null;
-      let memberIdValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-id') : null;
-      let memberOnly = this.portfolioElement ? this.portfolioElement.getAttribute('data-member-only') : null;
-
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
-      if (emailValue)
-        searchParams.append("email", emailValue)
-      if (memberIdValue)
-        searchParams.append("member_id", memberIdValue)
-      if (memberOnly)
-        searchParams.append("member_only", memberOnly)
-
-
-      // --------- FETCH DATA
-      // fetch json of page of domais, given params
-      let baseUrl = document.getElementById("get_member_domains_json_url");
-      if (!baseUrl) {
-        return;
-      }
-
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
-  
-      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
-          }
-
-          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
-
-          // identify the DOM element where the domain list will be inserted into the DOM
-          const memberDomainsList = document.querySelector('#member-domains tbody');
-          memberDomainsList.innerHTML = '';
-
-
-          data.domains.forEach(domain => {
-            const row = document.createElement('tr');
-
-            row.innerHTML = `
-              <td scope="row" data-label="Domain name">
-                ${domain.name}
-              </td>
-            `;
-            memberDomainsList.appendChild(row);
-          });
-
-          // Do not scroll on first page load
-          if (scroll)
-            ScrollToElement('class', 'member-domains');
-          this.scrollToTable = true;
-
-          // update pagination
-          this.updatePagination(
-            'member domain',
-            '#member-domains-pagination',
-            '#member-domains-pagination .usa-pagination__counter',
-            '#member-domains',
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-          );
-          this.currentSortBy = sortBy;
-          this.currentOrder = order;
-          this.currentSearchTerm = searchTerm;
-      })
-      .catch(error => console.error('Error fetching domains:', error));
+  getBaseUrl() {
+    return document.getElementById("get_member_domains_json_url");
   }
+  getDataObjects(data) {
+    return data.domains;
+  }
+  addRow(dataObject, tbody, customTableOptions) {
+    const domain = dataObject;
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td scope="row" data-label="Domain name">
+        ${domain.name}
+      </td>
+    `;
+    tbody.appendChild(row);
+  }
+
 }
 
 
@@ -2775,6 +2871,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 })();
+
+// This is specifically for the Member Profile (Manage Member) Page member/invitation removal
+document.addEventListener("DOMContentLoaded", () => {
+  (function portfolioMemberPageToggle() {
+    const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
+    if (wrapperDeleteAction) {
+        const member_type = wrapperDeleteAction.getAttribute("data-member-type");
+        const member_id = wrapperDeleteAction.getAttribute("data-member-id");
+        const num_domains = wrapperDeleteAction.getAttribute("data-num-domains");
+        const member_name = wrapperDeleteAction.getAttribute("data-member-name");
+        const member_email = wrapperDeleteAction.getAttribute("data-member-email"); 
+        const member_delete_url = `${member_type}-${member_id}/delete`;
+        const unique_id = `${member_type}-${member_id}`;
+
+        let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
+        wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member_name}`);
+
+        // This easter egg is only for fixtures that dont have names as we are displaying their emails
+        // All prod users will have emails linked to their account
+        MembersTable.addMemberModal(num_domains, member_email || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
+
+        uswdsInitializeModals();
+
+        // Now the DOM and modals are ready, add listeners to the submit buttons
+        const modals = document.querySelectorAll('.usa-modal__content');
+
+        modals.forEach(modal => {
+          const submitButton = modal.querySelector('.usa-modal__submit');
+          const closeButton = modal.querySelector('.usa-modal__close');
+          submitButton.addEventListener('click', () => {
+            closeButton.click();
+            let delete_member_form = document.getElementById("member-delete-form");
+            if (delete_member_form) {
+              delete_member_form.submit();
+            }
+          });
+        });
+    }
+  })();
+});
 
 /** An IIFE that intializes the requesting entity page.
  * This page has a radio button that dynamically toggles some fields

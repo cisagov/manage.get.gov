@@ -2,7 +2,7 @@
 
 Authorization is handled by the `DomainPermissionView`. To ensure that only
 authorized users can see information on a domain, every view here should
-inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
+inherit from `DomainPermissionView` (or DomainInvitationPermissionCancelView).
 """
 
 from datetime import date
@@ -28,6 +28,7 @@ from registrar.models import (
     UserPortfolioPermission,
     PublicContact,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -62,7 +63,7 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
+from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 
 logger = logging.getLogger(__name__)
 
@@ -841,8 +842,85 @@ class DomainUsersView(DomainBaseView):
         # Add modal buttons to the context (such as for delete)
         context = self._add_modal_buttons_to_context(context)
 
+        # Get portfolio from session (if set)
+        portfolio = self.request.session.get("portfolio")
+
+        # Add domain manager roles separately in order to also pass admin status
+        context = self._add_domain_manager_roles_to_context(context, portfolio)
+
+        # Add domain invitations separately in order to also pass admin status
+        context = self._add_invitations_to_context(context, portfolio)
+
         # Get the email of the current user
         context["current_user_email"] = self.request.user.email
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        """Get method for DomainUsersView."""
+        # Call the parent class's `get` method to get the response and context
+        response = super().get(request, *args, **kwargs)
+
+        # Ensure context is available after the parent call
+        context = response.context_data if hasattr(response, "context_data") else {}
+
+        # Check if context contains `domain_managers_roles` and its length is 1
+        if context.get("domain_manager_roles") and len(context["domain_manager_roles"]) == 1:
+            # Add an info message
+            messages.info(request, "This domain has one manager. Adding more can prevent issues.")
+
+        return response
+
+    def _add_domain_manager_roles_to_context(self, context, portfolio):
+        """Add domain_manager_roles to context separately, as roles need admin indicator."""
+
+        # Prepare a list to store roles with an admin flag
+        domain_manager_roles = []
+
+        for permission in self.object.permissions.all():
+            # Determine if the user has the ORGANIZATION_ADMIN role
+            has_admin_flag = any(
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and portfolio == portfolio_permission.portfolio
+                for portfolio_permission in permission.user.portfolio_permissions.all()
+            )
+
+            # Add the role along with the computed flag to the list
+            domain_manager_roles.append({"permission": permission, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["domain_manager_roles"] = domain_manager_roles
+
+        return context
+
+    def _add_invitations_to_context(self, context, portfolio):
+        """Add invitations to context separately as invitations needs admin indicator."""
+
+        # Prepare a list to store invitations with an admin flag
+        invitations = []
+
+        for domain_invitation in self.object.invitations.all():
+            # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
+            has_admin_flag = False
+
+            # Query PortfolioInvitations linked to the same portfolio and check roles
+            portfolio_invitations = PortfolioInvitation.objects.filter(
+                portfolio=portfolio, email=domain_invitation.email
+            )
+
+            # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
+            for portfolio_invitation in portfolio_invitations:
+                if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+                    has_admin_flag = True
+                    break  # Once we find one match, no need to check further
+
+            # Add the role along with the computed flag to the list if the domain invitation
+            # if the status is not canceled
+            if domain_invitation.status != "canceled":
+                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["invitations"] = invitations
 
         return context
 
@@ -909,6 +987,23 @@ class DomainAddUserView(DomainFormBaseView):
             existing_org_invitation and existing_org_invitation.portfolio != requestor_org
         )
 
+    def _check_invite_status(self, invite, email):
+        """Check if invitation status is canceled or retrieved, and gives the appropiate response"""
+        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+            messages.warning(
+                self.request,
+                f"{email} is already a manager for this domain.",
+            )
+            return False
+        elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
+            invite.update_cancellation_status()
+            invite.save()
+            return True
+        else:
+            # else if it has been sent but not accepted
+            messages.warning(self.request, f"{email} has already been invited to this domain")
+            return False
+
     def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
         """Performs the sending of the domain invitation email,
         does not make a domain information object
@@ -944,17 +1039,8 @@ class DomainAddUserView(DomainFormBaseView):
         # Check to see if an invite has already been sent
         try:
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
-            # check if the invite has already been accepted
-            if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-                add_success = False
-                messages.warning(
-                    self.request,
-                    f"{email} is already a manager for this domain.",
-                )
-            else:
-                add_success = False
-                # else if it has been sent but not accepted
-                messages.warning(self.request, f"{email} has already been invited to this domain")
+            # check if the invite has already been accepted or has a canceled invite
+            add_success = self._check_invite_status(invite, email)
         except Exception:
             logger.error("An error occured")
 
@@ -976,6 +1062,7 @@ class DomainAddUserView(DomainFormBaseView):
                 self.object,
                 exc_info=True,
             )
+            logger.info(exc)
             raise EmailSendingError("Could not send email invitation.") from exc
         else:
             if add_success:
@@ -1051,11 +1138,9 @@ class DomainAddUserView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
-# The order of the superclasses matters here. BaseDeleteView has a bug where the
-# "form_valid" function does not call super, so it cannot use SuccessMessageMixin.
-# The workaround is to use SuccessMessageMixin first.
-class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
-    object: DomainInvitation  # workaround for type mismatch in DeleteView
+class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
+    object: DomainInvitation
+    fields = []
 
     def post(self, request, *args, **kwargs):
         """Override post method in order to error in the case when the
@@ -1063,6 +1148,8 @@ class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermission
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
+            self.object.cancel_invitation()
+            self.object.save()
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
