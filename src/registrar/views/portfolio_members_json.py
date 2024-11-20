@@ -66,7 +66,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "additional_permissions_display",
             "member_display",
             "domain_info",
-            "source",
+            "type",
         )
 
     def initial_invitations_search(self, portfolio):
@@ -83,7 +83,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "additional_permissions_display",
             "member_display",
             "domain_info",
-            "source",
+            "type",
         )
 
     def apply_search_term(self, queryset, request):
@@ -119,12 +119,12 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
-        action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
+        action_url = reverse(item["type"], kwargs={"pk": item["id"]})
 
         # Serialize member data
         member_json = {
-            "id": item.get("id", ""),
-            "source": item.get("source", ""),
+            "id": item.get("id", ""),  # id is id of UserPortfolioPermission or PortfolioInvitation
+            "type": item.get("type", ""),  # source is member or invitedmember
             "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
             "email": item.get("email_display", ""),
             "member_display": item.get("member_display", ""),

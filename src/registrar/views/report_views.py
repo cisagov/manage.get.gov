@@ -175,9 +175,10 @@ class ExportMembersPortfolio(View):
     def get(self, request, *args, **kwargs):
         """Returns the members report"""
 
-        portfolio_display = "portfolio"
+        # Swap the spaces for dashes to make the formatted name look prettier
+        portfolio_display = "organization"
         if request.session.get("portfolio"):
-            portfolio_display = str(request.session.get("portfolio")).replace(" ", "-")
+            portfolio_display = str(request.session.get("portfolio")).lower().replace(" ", "-")
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = f'attachment; filename="members-for-{portfolio_display}.csv"'

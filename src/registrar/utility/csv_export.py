@@ -175,7 +175,7 @@ class MemberExport(BaseExport):
             "additional_permissions_display",
             "member_display",
             "domain_info",
-            "source",
+            "type",
             "invitation_date",
             "invited_by",
         ]

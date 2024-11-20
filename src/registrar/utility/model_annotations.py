@@ -280,10 +280,12 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()
             )
         else:
+            # an array of domains, with id and name, colon separated
             domain_query = Concat(
                 F("user__permissions__domain_id"),
                 Value(":"),
                 F("user__permissions__domain__name"),
+                # specify the output_field to ensure union has same column types
                 output_field=CharField(),
             )
             last_active_query = Cast(F("user__last_login"), output_field=TextField())
@@ -299,7 +301,9 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
             ),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": Case(
+                # If email is present and not blank, use email
                 When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
+                # If first name or last name is present, use concatenation of first_name + " " + last_name
                 When(
                     Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
                     then=Concat(
@@ -308,16 +312,18 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                         Coalesce(F("user__last_name"), Value("")),
                     ),
                 ),
+                # If neither, use an empty string
                 default=Value(""),
                 output_field=CharField(),
             ),
             "domain_info": ArrayAgg(
                 domain_query,
                 distinct=True,
+                # only include domains in portfolio
                 filter=Q(user__permissions__domain__isnull=False)
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
-            "source": Value("permission", output_field=CharField()),
+            "type": Value("member", output_field=CharField()),
             "invitation_date": PortfolioInvitationModelAnnotation.get_invitation_date_query(
                 object_id_query=cls.get_portfolio_invitation_id_query()
             ),
@@ -452,13 +458,14 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
             "last_active": Value("Invited", output_field=TextField()),
             "additional_permissions_display": F("additional_permissions"),
             "member_display": F("email"),
+            # Use ArrayRemove to return an empty list when no domain invitations are found
             "domain_info": ArrayRemoveNull(
                 ArrayAgg(
                     Subquery(domain_invitations.values("domain_info")),
                     distinct=True,
                 )
             ),
-            "source": Value("invitation", output_field=CharField()),
+            "type": Value("invitedmember", output_field=CharField()),
             "invitation_date": cls.get_invitation_date_query(
                 object_id_query=Cast(OuterRef("id"), output_field=TextField())
             ),

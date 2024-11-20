@@ -812,7 +812,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
     @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_export(self):
-        """Tests the member export report"""
+        """Tests the member export report by comparing the csv output."""
         content_type = ContentType.objects.get_for_model(PortfolioInvitation)
         LogEntry.objects.create(
             user=self.lebowski_user,
