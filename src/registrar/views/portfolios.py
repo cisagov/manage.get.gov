@@ -1,13 +1,17 @@
 import logging
-from django.http import Http404
+
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.contrib import messages
+
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
@@ -79,6 +83,58 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
             },
         )
+
+
+class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
+
+    def post(self, request, pk):
+        """
+        Find and delete the portfolio member using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_member_permission.user
+
+        active_requests_count = member.get_active_requests_count_in_portfolio(request)
+
+        support_url = "https://get.gov/contact/"
+
+        error_message = ""
+
+        if active_requests_count > 0:
+            # If they have any in progress requests
+            error_message = mark_safe(  # nosec
+                f"This member has an active domain request and can't be removed from the organization. "
+                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+            )
+        elif member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
+            # If they are the last manager of a domain
+            error_message = (
+                "There must be at least one admin in your organization. Give another member admin "
+                "permissions, make sure they log into the registrar, and then remove this member."
+            )
+
+        # From the Members Table page Else the Member Page
+        if error_message:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse(
+                    {"error": error_message},
+                    status=400,
+                )
+            else:
+                messages.error(request, error_message)
+                return redirect(reverse("member", kwargs={"pk": pk}))
+
+        # passed all error conditions
+        portfolio_member_permission.delete()
+
+        # From the Members Table page Else the Member Page
+        success_message = f"You've removed {member.email} from the organization."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        else:
+            messages.success(request, success_message)
+            return redirect(reverse("members"))
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
@@ -175,6 +231,26 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
             },
         )
+
+
+class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
+
+    def post(self, request, pk):
+        """
+        Find and delete the portfolio invited member using the provided primary key (pk).
+        Redirect to a success page after deletion (or any other appropriate page).
+        """
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+
+        portfolio_invitation.delete()
+
+        success_message = f"You've removed {portfolio_invitation.email} from the organization."
+        # From the Members Table page Else the Member Page
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        else:
+            messages.success(request, success_message)
+            return redirect(reverse("members"))
 
 
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
