@@ -171,6 +171,9 @@ node_modules
 # Vim
 *.swp
 
+# VS Code
+.vscode
+
 # Compliance/trestle related
 docs/compliance/.trestle/cache
 
