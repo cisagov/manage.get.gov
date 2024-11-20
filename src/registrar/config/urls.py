@@ -29,6 +29,8 @@ from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
+    get_portfolio_json,
+    get_suborganization_list_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
     get_rejection_email_for_user_json,
@@ -203,6 +205,16 @@ urlpatterns = [
         name="get-senior-official-from-federal-agency-json",
     ),
     path(
+        "admin/api/get-portfolio-json/",
+        get_portfolio_json,
+        name="get-portfolio-json",
+    ),
+    path(
+        "admin/api/get-suborganization-list-json/",
+        get_suborganization_list_json,
+        name="get-suborganization-list-json",
+    ),
+    path(
         "admin/api/get-federal-and-portfolio-types-from-federal-agency-json/",
         get_federal_and_portfolio_types_from_federal_agency_json,
         name="get-federal-and-portfolio-types-from-federal-agency-json",
@@ -333,9 +345,9 @@ urlpatterns = [
         name="user-profile",
     ),
     path(
-        "invitation/<int:pk>/delete",
-        views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
-        name="invitation-delete",
+        "invitation/<int:pk>/cancel",
+        views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
+        name="invitation-cancel",
     ),
     path(
         "domain-request/<int:pk>/delete",

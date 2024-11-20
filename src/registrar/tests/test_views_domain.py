@@ -370,6 +370,17 @@ class TestDomainManagers(TestDomainOverview):
         ]
         AllowedEmail.objects.bulk_create(allowed_emails)
 
+    def setUp(self):
+        super().setUp()
+        # Add portfolio in order to test portfolio view
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        # Add the portfolio to the domain_information object
+        self.domain_information.portfolio = self.portfolio
+        # Add portfolio perms to the user object
+        self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -383,13 +394,22 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
+        self.assertContains(response, "Add a domain manager")
+        # assert that the non-portfolio view contains Role column and doesn't contain Admin
+        self.assertContains(response, "Role</th>")
+        self.assertNotContains(response, "Admin")
+        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
 
     @less_console_noise_decorator
-    def test_domain_managers_add_link(self):
-        """Button to get to user add page works."""
-        management_page = self.app.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
-        add_page = management_page.click("Add a domain manager")
-        self.assertContains(add_page, "Add a domain manager")
+    @override_flag("organization_feature", active=True)
+    def test_domain_managers_portfolio_view(self):
+        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
+        self.assertContains(response, "Domain managers")
+        self.assertContains(response, "Add a domain manager")
+        # assert that the portfolio view doesn't contain Role column and does contain Admin
+        self.assertNotContains(response, "Role</th>")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
 
     @less_console_noise_decorator
     def test_domain_user_add(self):
@@ -706,21 +726,18 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
-        mock_client.EMAILS_SENT.clear()
-        with self.assertRaises(DomainInvitation.DoesNotExist):
-            DomainInvitation.objects.get(id=invitation.id)
+        self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
+        invitation = DomainInvitation.objects.get(id=invitation.id)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel_retrieved_invitation(self):
-        """Posting to the delete view when invitation retrieved returns an error message"""
+        """Posting to the cancel view when invitation retrieved returns an error message"""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+        response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
         # Assert that the Cancel link is not displayed
@@ -731,7 +748,7 @@ class TestDomainManagers(TestDomainOverview):
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel_no_permissions(self):
-        """Posting to the delete view as a different user should fail."""
+        """Posting to the cancel view as a different user should fail."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
@@ -740,7 +757,7 @@ class TestDomainManagers(TestDomainOverview):
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
 
         self.assertEqual(result.status_code, 403)
 

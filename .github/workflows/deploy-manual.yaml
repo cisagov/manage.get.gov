@@ -44,7 +44,6 @@ jobs:
   variables:
     runs-on: ubuntu-latest
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Setting global variables
         uses: actions/github-script@v6
         id: var
@@ -54,7 +53,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v3
       - name: Compile USWDS assets
         working-directory: ./src
