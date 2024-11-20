@@ -16,9 +16,7 @@ on:
 jobs:
   deploy-development:
     runs-on: ubuntu-latest
-    steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
-      
+    steps:      
       - uses: actions/checkout@v3
 
       - name: Compile USWDS assets
