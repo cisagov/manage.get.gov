@@ -38,7 +38,8 @@ function createBundleTask(source, output) {
             .src(source)
             .pipe(
                 webpack({
-                    mode: 'production',
+                    mode: 'production', // Use 'development' if you want less minification during debugging
+                    devtool: 'source-map', // Enable source map generation
                     optimization: {
                         minimize: true,
                         minimizer: [
