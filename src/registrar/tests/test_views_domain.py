@@ -763,21 +763,18 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
-        mock_client.EMAILS_SENT.clear()
-        with self.assertRaises(DomainInvitation.DoesNotExist):
-            DomainInvitation.objects.get(id=invitation.id)
+        self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
+        invitation = DomainInvitation.objects.get(id=invitation.id)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel_retrieved_invitation(self):
-        """Posting to the delete view when invitation retrieved returns an error message"""
+        """Posting to the cancel view when invitation retrieved returns an error message"""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        response = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}), follow=True)
+        response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
         # Assert that the Cancel link is not displayed
@@ -788,7 +785,7 @@ class TestDomainManagers(TestDomainOverview):
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel_no_permissions(self):
-        """Posting to the delete view as a different user should fail."""
+        """Posting to the cancel view as a different user should fail."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
 
@@ -797,7 +794,7 @@ class TestDomainManagers(TestDomainOverview):
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-delete", kwargs={"pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
 
         self.assertEqual(result.status_code, 403)
 

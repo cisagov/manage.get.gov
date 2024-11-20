@@ -94,6 +94,11 @@ urlpatterns = [
         name="member",
     ),
     path(
+        "member/<int:pk>/delete",
+        views.PortfolioMemberDeleteView.as_view(),
+        name="member-delete",
+    ),
+    path(
         "member/<int:pk>/permissions",
         views.PortfolioMemberEditView.as_view(),
         name="member-permissions",
@@ -107,6 +112,11 @@ urlpatterns = [
         "invitedmember/<int:pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
+    ),
+    path(
+        "invitedmember/<int:pk>/delete",
+        views.PortfolioInvitedMemberDeleteView.as_view(),
+        name="invitedmember-delete",
     ),
     path(
         "invitedmember/<int:pk>/permissions",
@@ -339,9 +349,9 @@ urlpatterns = [
         name="user-profile",
     ),
     path(
-        "invitation/<int:pk>/delete",
-        views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
-        name="invitation-delete",
+        "invitation/<int:pk>/cancel",
+        views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
+        name="invitation-cancel",
     ),
     path(
         "domain-request/<int:pk>/delete",

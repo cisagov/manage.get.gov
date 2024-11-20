@@ -1,11 +1,12 @@
 import logging
 
+from django.apps import apps
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
 from registrar.models import DomainInformation, UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
 from .portfolio_invitation import PortfolioInvitation
@@ -474,3 +475,42 @@ class User(AbstractUser):
             return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)
+
+    def get_active_requests_count_in_portfolio(self, request):
+        """Return count of active requests for the portfolio associated with the request."""
+        # Get the portfolio from the session using the existing method
+
+        portfolio = request.session.get("portfolio")
+
+        if not portfolio:
+            return 0  # No portfolio found
+
+        allowed_states = [
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        ]
+
+        # Now filter based on the portfolio retrieved
+        active_requests_count = self.domain_requests_created.filter(
+            status__in=allowed_states, portfolio=portfolio
+        ).count()
+
+        return active_requests_count
+
+    def is_only_admin_of_portfolio(self, portfolio):
+        """Check if the user is the only admin of the given portfolio."""
+
+        UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
+
+        admin_permission = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+
+        admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
+        admin_count = admins.count()
+
+        # Check if the current user is in the list of admins
+        if admin_count == 1 and admins.first().user == self:
+            return True  # The user is the only admin
+
+        # If there are other admins or the user is not the only one
+        return False
