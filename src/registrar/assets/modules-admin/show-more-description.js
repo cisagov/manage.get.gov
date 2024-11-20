@@ -1,4 +1,4 @@
-import { hideElement } from '../modules-common/helpers.js';
+import { hideElement } from './helpers-admin.js';
 
 /** An IIFE for toggling the overflow styles on django-admin__model-description (the show more / show less button) */
 export function initDescriptions() {
@@ -8,7 +8,8 @@ export function initDescriptions() {
             // Hide the toggle button if text content is less than 200 characters
             // This is a little over 160 characters to give us some wiggle room if we
             // change the font size marginally.
-            hideElement(toggleButton);
+            if (toggleButton)
+                hideElement(toggleButton);
         } else {
             toggleButton.addEventListener('click', function() {
                 toggleShowMoreButton(toggleButton, descriptionDiv, 'dja__model-description--no-overflow');

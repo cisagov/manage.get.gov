@@ -1,4 +1,4 @@
-import { hideElement, showElement, addOrRemoveSessionBoolean } from '../modules-common/helpers.js';
+import { hideElement, showElement, addOrRemoveSessionBoolean } from './helpers-admin.js';
 import { handlePortfolioSelection } from './helpers-portfolio-dynamic-fields.js';
 
 function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
@@ -113,7 +113,7 @@ export function initApprovedDomain() {
         function updateFormGroupVisibility(showFormGroups) {
             if (showFormGroups) {
                 showElement(approvedDomainFormGroup);
-            }else {
+            } else {
                 hideElement(approvedDomainFormGroup);
             }
         }
@@ -436,8 +436,8 @@ class CustomizableEmailBase {
         this.modalConfirm.addEventListener("click", () => {
             this.textarea.removeAttribute('readonly');
             this.textarea.focus();
-            hideElement(this.directEditButton);
-            hideElement(this.modalTrigger);  
+                hideElement(this.directEditButton);
+                hideElement(this.modalTrigger);  
         });
     }
 
@@ -445,8 +445,8 @@ class CustomizableEmailBase {
         this.directEditButton.addEventListener("click", () => {
             this.textarea.removeAttribute('readonly');
             this.textarea.focus();
-            hideElement(this.directEditButton);
-            hideElement(this.modalTrigger);  
+                hideElement(this.directEditButton);
+                hideElement(this.modalTrigger);  
         });
     }
 
@@ -473,12 +473,12 @@ class CustomizableEmailBase {
         showElement(this.textarea);
         hideElement(this.textareaPlaceholder);
 
-        if (this.isEmailAlreadySentConst) {
-            hideElement(this.directEditButton);
-            showElement(this.modalTrigger);
-        } else {
-            showElement(this.directEditButton);
-            hideElement(this.modalTrigger);
+            if (this.isEmailAlreadySentConst) {
+                hideElement(this.directEditButton);
+                showElement(this.modalTrigger);
+            } else {
+                showElement(this.directEditButton);
+                hideElement(this.modalTrigger);
         }
 
         if (this.isEmailAlreadySent()) {
@@ -501,10 +501,10 @@ class CustomizableEmailBase {
     showPlaceholder(formLabelText, placeholderText) {
         this.formLabel.innerHTML = formLabelText;
         this.textareaPlaceholder.innerHTML = placeholderText;
-        showElement(this.textareaPlaceholder);
-        hideElement(this.directEditButton);
-        hideElement(this.modalTrigger);
-        hideElement(this.textarea);
+            showElement(this.textareaPlaceholder);
+            hideElement(this.directEditButton);
+            hideElement(this.modalTrigger);
+            hideElement(this.textarea);
     }
 }
 

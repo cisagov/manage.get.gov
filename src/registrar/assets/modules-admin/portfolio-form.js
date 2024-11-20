@@ -1,4 +1,4 @@
-import { hideElement, showElement } from '../modules-common/helpers.js';
+import { hideElement, showElement } from './helpers-admin.js';
 
 /**
  * A function for dynamically changing some fields on the portfolio admin model

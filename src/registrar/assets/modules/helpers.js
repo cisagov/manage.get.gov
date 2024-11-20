@@ -67,12 +67,3 @@ export function debounce(handler, cooldown=600) {
         timeout = setTimeout(() => handler.apply(context, args), cooldown);
     }
 }
-
-// Adds or removes a boolean from our session
-export function addOrRemoveSessionBoolean(name, add){
-    if (add) {
-        sessionStorage.setItem(name, "true");
-    }else {
-        sessionStorage.removeItem(name); 
-    }
-}

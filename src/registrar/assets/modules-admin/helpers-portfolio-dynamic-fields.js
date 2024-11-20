@@ -1,4 +1,4 @@
-import { hideElement, showElement } from '../modules-common/helpers.js';
+import { hideElement, showElement } from './helpers-admin.js';
 
 /**
  * Helper function that handles business logic for the suborganization field.

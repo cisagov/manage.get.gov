@@ -1,4 +1,4 @@
-import { hideElement, showElement } from '../modules-common/helpers.js';
+import { hideElement, showElement } from './helpers.js';
 
 /** A function that intializes the requesting entity page.
  * This page has a radio button that dynamically toggles some fields
