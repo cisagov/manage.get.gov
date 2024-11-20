@@ -805,6 +805,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 class MemberExportTest(MockDbForIndividualTests, MockEppLib):
 
     def setUp(self):
+        """Override of the base setUp to add a request factory"""
         super().setUp()
         self.factory = RequestFactory()
 
@@ -813,6 +814,12 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""
+        # == Data setup == #
+        # Set last_login for some users
+        active_date = timezone.make_aware(datetime(2024, 2, 1))
+        User.objects.filter(id__in=[self.custom_superuser.id, self.custom_staffuser.id]).update(last_login=active_date)
+
+        # Create a logentry for meoward, created by lebowski to test invited_by.
         content_type = ContentType.objects.get_for_model(PortfolioInvitation)
         LogEntry.objects.create(
             user=self.lebowski_user,
@@ -824,8 +831,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             action_time=timezone.make_aware(datetime(2023, 4, 12)),
         )
 
-        # Create log entries for each remaining invitation.
-        # Exclude meoward and tired_user (to test null dates, etc).
+        # Create log entries for each remaining invitation. Exclude meoward and tired_user.
         for invitation in PortfolioInvitation.objects.exclude(
             id__in=[self.portfolio_invitation_1.id, self.portfolio_invitation_3.id]
         ):
@@ -838,9 +844,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
                 change_message="Created invitation",
                 action_time=timezone.make_aware(datetime(2024, 1, 15)),
             )
-        # Set last_login for some users
-        active_date = timezone.make_aware(datetime(2024, 2, 1))
-        User.objects.filter(id__in=[self.custom_superuser.id, self.custom_staffuser.id]).update(last_login=active_date)
+
         # Retrieve invitations
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             self.meoward_user.check_portfolio_invitations_on_login()
@@ -848,6 +852,12 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             self.tired_user.check_portfolio_invitations_on_login()
             self.custom_superuser.check_portfolio_invitations_on_login()
             self.custom_staffuser.check_portfolio_invitations_on_login()
+
+        # Update the created at date on UserPortfolioPermission, so we can test a consistent date.
+        UserPortfolioPermission.objects.filter(portfolio=self.portfolio_1).update(
+            created_at=timezone.make_aware(datetime(2022, 4, 1))
+        )
+        # == End of data setup == #
 
         # Create a request and add the user to the request
         request = self.factory.get("/")
@@ -867,20 +877,20 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         expected_content = (
             # Header
-            "Email,Organization admin,Invited by,Invitation date,Last active,Domain requests,"
+            "Email,Organization admin,Invited by,Joined date,Last active,Domain requests,"
             "Member management,Domain management,Number of domains,Domains\n"
             # Content
-            "meoward@rocks.com,False,big_lebowski@dude.co,2023-04-12,Invalid date,None,"
+            "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
             'Manager,True,2,"adomain2.gov,cdomain1.gov"\n'
-            "big_lebowski@dude.co,False,help@get.gov,2024-01-15,Invalid date,None,Viewer,True,1,cdomain1.gov\n"
-            "tired_sleepy@igorville.gov,False,System,Unknown,Invalid date,Viewer,None,False,0,\n"
-            "icy_superuser@igorville.gov,True,help@get.gov,2024-01-15,2024-02-01,Viewer Requester,Manager,False,0,\n"
-            "cozy_staffuser@igorville.gov,True,help@get.gov,2024-01-15,2024-02-01,Viewer Requester,None,False,0,\n"
-            "nonexistentmember_1@igorville.gov,False,help@get.gov,2024-01-15,Invited,None,Manager,False,0,\n"
-            "nonexistentmember_2@igorville.gov,False,help@get.gov,2024-01-15,Invited,None,Viewer,False,0,\n"
-            "nonexistentmember_3@igorville.gov,False,help@get.gov,2024-01-15,Invited,Viewer,None,False,0,\n"
-            "nonexistentmember_4@igorville.gov,True,help@get.gov,2024-01-15,Invited,Viewer Requester,Manager,False,0,\n"
-            "nonexistentmember_5@igorville.gov,True,help@get.gov,2024-01-15,Invited,Viewer Requester,None,False,0,\n"
+            "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,Viewer,True,1,cdomain1.gov\n"
+            "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,None,False,0,\n"
+            "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,Manager,False,0,\n"
+            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,None,False,0,\n"
+            "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Manager,False,0,\n"
+            "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Viewer,False,0,\n"
+            "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,Viewer,None,False,0,\n"
+            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,Manager,False,0,\n"
+            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,None,False,0,\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace

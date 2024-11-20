@@ -176,7 +176,7 @@ class MemberExport(BaseExport):
             "member_display",
             "domain_info",
             "type",
-            "invitation_date",
+            "joined_date",
             "invited_by",
         ]
         permissions = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True).values(
@@ -197,7 +197,7 @@ class MemberExport(BaseExport):
             "Email",
             "Organization admin",
             "Invited by",
-            "Invitation date",
+            "Joined date",
             "Last active",
             "Domain requests",
             "Member management",
@@ -226,7 +226,7 @@ class MemberExport(BaseExport):
             "Email": model.get("email_display"),
             "Organization admin": is_admin,
             "Invited by": model.get("invited_by"),
-            "Invitation date": model.get("invitation_date"),
+            "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
             "Domain requests": domain_request_display,
             "Member management": member_perm_display,

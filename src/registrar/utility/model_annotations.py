@@ -324,9 +324,7 @@ class UserPortfolioPermissionModelAnnotation(BaseModelAnnotation):
                 & Q(user__permissions__domain__domain_info__portfolio=portfolio),
             ),
             "type": Value("member", output_field=CharField()),
-            "invitation_date": PortfolioInvitationModelAnnotation.get_invitation_date_query(
-                object_id_query=cls.get_portfolio_invitation_id_query()
-            ),
+            "joined_date": Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
             "invited_by": PortfolioInvitationModelAnnotation.get_invited_by_query(
                 object_id_query=cls.get_portfolio_invitation_id_query()
             ),
@@ -368,33 +366,6 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
 
         # Get all members on this portfolio
         return Q(portfolio=portfolio)
-
-    @classmethod
-    def get_invitation_date_query(cls, object_id_query):
-        """Returns the date at which the given invitation was created.
-        Grabs this data from the audit log, given that a portfolio invitation object
-        is specified via object_id_query."""
-        return Coalesce(
-            Subquery(
-                LogEntry.objects.filter(
-                    content_type=ContentType.objects.get_for_model(PortfolioInvitation),
-                    object_id=object_id_query,
-                    action_flag=ADDITION,
-                )
-                .annotate(
-                    # Action time will always be equivalent to created_at in this context.
-                    # Using this instead of created_at is a lot simpler and more performant,
-                    # as otherwise a Case and Subquery need to be used.
-                    display_date=Func(
-                        F("action_time"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()
-                    )
-                )
-                .order_by("action_time")
-                .values("display_date")[:1]
-            ),
-            Value("Unknown"),
-            output_field=TextField(),
-        )
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
@@ -466,12 +437,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                 )
             ),
             "type": Value("invitedmember", output_field=CharField()),
-            "invitation_date": cls.get_invitation_date_query(
-                object_id_query=Cast(OuterRef("id"), output_field=TextField())
-            ),
-            # TODO - replace this with a "creator" field on portfolio invitation. This should be another ticket.
-            # Grab the invitation creator from the audit log. This will need to be replaced with a creator field.
-            # When that happens, just replace this with F("invitation__creator")
+            "joined_date": Value("Unretrieved", output_field=CharField()),
             "invited_by": cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=TextField())),
         }
 
