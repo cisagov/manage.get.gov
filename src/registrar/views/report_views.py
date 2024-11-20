@@ -179,12 +179,11 @@ class ExportMembersPortfolio(View):
         # Check if the user has organization access
         if not request.user.is_org_user(request):
             return render(request, "403.html", status=403)
-        
+
         # Check if the user has member permissions
-        if (
-            not request.user.has_view_members_portfolio_permission(portfolio)
-            and not request.user.has_edit_members_portfolio_permission(portfolio)
-        ):
+        if not request.user.has_view_members_portfolio_permission(
+            portfolio
+        ) and not request.user.has_edit_members_portfolio_permission(portfolio):
             return render(request, "403.html", status=403)
 
         # Swap the spaces for dashes to make the formatted name look prettier
