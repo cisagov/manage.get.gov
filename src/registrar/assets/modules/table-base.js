@@ -124,7 +124,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
 }
 
 export class BaseTable {
-  constructor(sectionSelector) {
+  constructor(itemName) {
     this.itemName = itemName;
     this.sectionSelector = itemName + 's';
     this.tableWrapper = document.getElementById(`${this.sectionSelector}__table-wrapper`);
