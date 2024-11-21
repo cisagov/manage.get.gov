@@ -7,7 +7,7 @@ export function showElement(element) {
 };
 
 /**
-   * Helper function that scrolls to an element
+   * Helper function that scrolls to an element identified by a class or an id.
    * @param {string} attributeName - The string "class" or "id"
    * @param {string} attributeValue - The class or id name
    */

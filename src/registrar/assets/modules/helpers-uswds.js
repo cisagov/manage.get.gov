@@ -21,13 +21,13 @@ export function initializeTooltips() {
  * Initialize USWDS modals by calling on method.  Requires that uswds-edited.js be loaded
  * before get-gov.js.  uswds-edited.js adds the modal module to the window to be accessible
  * directly in get-gov.js.
- * initializeModals adds modal-related DOM elements, based on other DOM elements existing in 
+ * uswdsInitializeModals adds modal-related DOM elements, based on other DOM elements existing in 
  * the page.  It needs to be called only once for any particular DOM element; otherwise, it
  * will initialize improperly.  Therefore, if DOM elements change dynamically and include
- * DOM elements with modal classes, unloadModals needs to be called before initializeModals.
+ * DOM elements with modal classes, uswdsUnloadModals needs to be called before uswdsInitializeModals.
  * 
  */
-export function initializeModals() {
+export function uswdsInitializeModals() {
     window.modal.on();
 }
 
@@ -35,9 +35,9 @@ export function initializeModals() {
  * Unload existing USWDS modals by calling off method.  Requires that uswds-edited.js be
  * loaded before get-gov.js.  uswds-edited.js adds the modal module to the window to be
  * accessible directly in get-gov.js.
- * See note above with regards to calling this method relative to initializeModals.
+ * See note above with regards to calling this method relative to uswdsInitializeModals.
  * 
  */
-export function unloadModals() {
+export function uswdsUnloadModals() {
     window.modal.off();
 }

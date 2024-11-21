@@ -1,13 +1,145 @@
-import { hideElement, showElement, scrollToElement } from './helpers.js';
+import { hideElement, showElement } from './helpers.js';
 
-import { LoadTableBase } from './table-base.js';
+import { BaseTable, addModal, generateKebabHTML } from './table-base.js';
 
-export class MembersTable extends LoadTableBase {
+export class MembersTable extends BaseTable {
 
   constructor() {
-    super('members');
+    super('member');
   }
-  
+
+  getBaseUrl() {
+    return document.getElementById("get_members_json_url");
+  }
+
+  // Abstract method (to be implemented in the child class)
+  getDataObjects(data) {
+    return data.members;
+  }
+  unloadModals() {
+    uswdsUnloadModals();
+  }
+  loadModals(page, total, unfiltered_total) {
+    // initialize modals immediately after the DOM content is updated
+    uswdsInitializeModals();
+
+    // Now the DOM and modals are ready, add listeners to the submit buttons
+    const modals = document.querySelectorAll('.usa-modal__content');
+
+    modals.forEach(modal => {
+      const submitButton = modal.querySelector('.usa-modal__submit');
+      const closeButton = modal.querySelector('.usa-modal__close');
+      submitButton.addEventListener('click', () => {
+        let pk = submitButton.getAttribute('data-pk');
+        // Close the modal to remove the USWDS UI local classes
+        closeButton.click();
+        // If we're deleting the last item on a page that is not page 1, we'll need to refresh the display to the previous page
+        let pageToDisplay = page;
+        if (total == 1 && unfiltered_total > 1) {
+          pageToDisplay--;
+        }
+
+        this.deleteMember(pk, pageToDisplay);
+      });
+    });
+  }
+
+  customizeTable(data) {
+    // Get whether the logged in user has edit members permission
+    const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
+
+    let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
+
+    if (hasEditPermission && !existingExtraActionsHeader) {
+      const extraActionsHeader = document.createElement('th');
+      extraActionsHeader.setAttribute('id', 'extra-actions');
+      extraActionsHeader.setAttribute('role', 'columnheader');
+      extraActionsHeader.setAttribute('class', 'extra-actions-header width-5');
+      extraActionsHeader.innerHTML = `
+        <span class="usa-sr-only">Extra Actions</span>`;
+      let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
+      tableHeaderRow.appendChild(extraActionsHeader);
+    }
+    return { 
+      'needsAdditionalColumn': hasEditPermission,
+      'UserPortfolioPermissionChoices' : data.UserPortfolioPermissionChoices
+    };
+  }
+
+  addRow(dataObject, tbody, customTableOptions) {
+    const member = dataObject;
+    // member is based on either a UserPortfolioPermission or a PortfolioInvitation
+    // and also includes information from related domains; the 'id' of the org_member
+    // is the id of the UserPorfolioPermission or PortfolioInvitation, it is not a user id
+    // member.type is either invitedmember or member
+    const unique_id = member.type + member.id; // unique string for use in dom, this is
+    // not the id of the associated user
+    const member_delete_url = member.action_url + "/delete";
+    const num_domains = member.domain_urls.length;
+    const last_active = this.handleLastActive(member.last_active);
+    let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
+    const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member.name}`): ''; 
+
+    const row = document.createElement('tr');
+
+    let admin_tagHTML = ``;
+    if (member.is_admin)
+      admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
+
+    // generate html blocks for domains and permissions for the member
+    let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
+    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices);
+
+    // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
+    let showMoreButton = '';
+    const showMoreRow = document.createElement('tr');
+    if (domainsHTML || permissionsHTML) {
+      showMoreButton = `
+        <button 
+          type="button" 
+          class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
+          data-for=${unique_id}
+          aria-label="Expand for additional information"
+        >
+          <span>Expand</span>
+          <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+          </svg>
+        </button>
+      `;
+
+      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+      showMoreRow.classList.add('show-more-content');
+      showMoreRow.classList.add('display-none');
+      showMoreRow.id = unique_id;
+    }
+
+    row.innerHTML = `
+      <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+        ${member.member_display} ${admin_tagHTML} ${showMoreButton}
+      </th>
+      <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+        ${last_active.display_value}
+      </td>
+      <td headers="header-action row-header-${unique_id}">
+        <a href="${member.action_url}">
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
+          </svg>
+          ${member.action_label} <span class="usa-sr-only">${member.name}</span>
+        </a>
+      </td>
+      ${customTableOptions.needsAdditionalColumn ? '<td>'+kebabHTML+'</td>' : ''}
+    `;
+    tbody.appendChild(row);
+    if (domainsHTML || permissionsHTML) {
+      tbody.appendChild(showMoreRow);
+    }
+    // This easter egg is only for fixtures that dont have names as we are displaying their emails
+    // All prod users will have emails linked to their account
+    if (customTableOptions.needsAdditionalColumn) MembersTable.addMemberModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
+  }
+
   /**
    * Initializes "Show More" buttons on the page, enabling toggle functionality to show or hide content.
    * 
@@ -136,6 +268,86 @@ export class MembersTable extends LoadTableBase {
   }
 
   /**
+   * The POST call for deleting a Member and which error or success message it should return
+   * and redirection if necessary
+   * 
+   * @param {string} member_delete_url - The URL for deletion ie `${member_type}-${member_id}/delete``
+   * @param {*} pageToDisplay - If we're deleting the last item on a page that is not page 1, we'll need to display the previous page
+   * Note: X-Request-With is used for security reasons to present CSRF attacks, the server checks that this header is present
+   * (consent via CORS) so it knows it's not from a random request attempt
+   */
+  deleteMember(member_delete_url, pageToDisplay) {
+    // Get CSRF token
+    const csrfToken = getCsrfToken();
+    // Create FormData object and append the CSRF token
+    const formData = `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`;
+
+    fetch(`${member_delete_url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrfToken,
+      },
+      body: formData
+    })
+    .then(response => {
+      if (response.status === 200) {
+        response.json().then(data => {
+          if (data.success) {
+            this.addAlert("success", data.success);
+          }
+          this.loadTable(pageToDisplay, this.currentSortBy, this.currentOrder, this.scrollToTable, this.currentStatus, this.currentSearchTerm);
+        });
+      } else {
+        response.json().then(data => {
+          if (data.error) {
+            // This should display the error given from backend for
+            // either only admin OR in progress requests
+            this.addAlert("error", data.error); 
+          } else {
+            throw new Error(`Unexpected status: ${response.status}`);
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting member:', error);
+    });
+  }
+
+
+  /**
+   * Adds an alert message to the page with an alert class.
+   *
+   * @param {string} alertClass - {error, warning, info, success}
+   * @param {string} alertMessage - The text that will be displayed
+   *
+   */
+  addAlert(alertClass, alertMessage) {
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    this.resetAlerts();
+    toggleableAlertDiv.classList.add(`usa-alert--${alertClass}`);
+    let alertParagraph = toggleableAlertDiv.querySelector(".usa-alert__text");
+    alertParagraph.innerHTML = alertMessage
+    showElement(toggleableAlertDiv);
+  }
+
+  /**
+   * Resets the reusable alert message
+   */
+  resetAlerts() {
+    // Create a list of any alert that's leftover and remove
+    document.querySelectorAll(".usa-alert:not(#toggleable-alert)").forEach(alert => {
+      alert.remove();
+    });
+    let toggleableAlertDiv = document.getElementById("toggleable-alert");
+    toggleableAlertDiv.classList.remove('usa-alert--error');
+    toggleableAlertDiv.classList.remove('usa-alert--success');
+    hideElement(toggleableAlertDiv);
+  }
+
+  /**
    * Generates an HTML string summarizing a user's additional permissions within a portfolio, 
    * based on the user's permissions and predefined permission choices.
    *
@@ -199,157 +411,40 @@ export class MembersTable extends LoadTableBase {
   }
 
   /**
-     * Loads rows in the members list, as well as updates pagination around the members list
-     * based on the supplied attributes.
-     * @param {*} page - the page number of the results (starts with 1)
-     * @param {*} sortBy - the sort column option
-     * @param {*} order - the sort order {asc, desc}
-     * @param {*} scroll - control for the scrollToElement functionality
-     * @param {*} searchTerm - the search term
-     * @param {*} portfolio - the portfolio id
-     */
-  loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue) {
+   * Modal that displays when deleting a domain request 
+   * @param {string} num_domains - Number of domain a user has within the org
+   * @param {string} member_email - The member's email
+   * @param {string} submit_delete_url - `${member_type}-${member_id}/delete`
+   * @param {HTMLElement} wrapper_element - The element to which the modal is appended
+   */
+  static addMemberModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
+    let modalHeading = '';
+    let modalDescription = '';
 
-      // --------- SEARCH
-      let searchParams = new URLSearchParams(
-        {
-          "page": page,
-          "sort_by": sortBy,
-          "order": order,
-          "search_term": searchTerm
-        }
-      );
-      if (portfolio)
-        searchParams.append("portfolio", portfolio)
+    if (num_domains == 0){
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `They will no longer be able to access this organization. 
+      This action cannot be undone.`;
+    } else if (num_domains == 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    } else if (num_domains > 1) {
+      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization.
+      Removing them from the organization will remove all of their domains. They will no longer be able to
+      access this organization. This action cannot be undone.`;
+    }
 
+    const modalSubmit = `
+      <button type="button"
+      class="usa-button usa-button--secondary usa-modal__submit"
+      data-pk = ${submit_delete_url}
+      name="delete-member">Yes, remove from organization</button>
+    `
 
-      // --------- FETCH DATA
-      // fetch json of page of domains, given params
-      let baseUrl = document.getElementById("get_members_json_url");
-      if (!baseUrl) {
-        return;
-      }
-
-      let baseUrlValue = baseUrl.innerHTML;
-      if (!baseUrlValue) {
-        return;
-      }
-  
-      let url = `${baseUrlValue}?${searchParams.toString()}` //TODO: uncomment for search function
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            console.error('Error in AJAX call: ' + data.error);
-            return;
-          }
-
-          // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-          this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
-
-          // identify the DOM element where the domain list will be inserted into the DOM
-          const memberList = document.querySelector('#members tbody');
-          memberList.innerHTML = '';
-
-          const UserPortfolioPermissionChoices = data.UserPortfolioPermissionChoices;
-          const invited = 'Invited';
-          const invalid_date = 'Invalid date';
-
-          data.members.forEach(member => {
-            const member_id = member.source + member.id;
-            const member_name = member.name;
-            const member_display = member.member_display;
-            const member_permissions = member.permissions;
-            const domain_urls = member.domain_urls;
-            const domain_names = member.domain_names;
-            const num_domains = domain_urls.length;
-            
-            const last_active = this.handleLastActive(member.last_active);
-
-            const action_url = member.action_url;
-            const action_label = member.action_label;
-            const svg_icon = member.svg_icon;
-      
-            const row = document.createElement('tr');
-
-            let admin_tagHTML = ``;
-            if (member.is_admin)
-              admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
-
-            // generate html blocks for domains and permissions for the member
-            let domainsHTML = this.generateDomainsHTML(num_domains, domain_names, domain_urls, action_url);
-            let permissionsHTML = this.generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices);
-            
-            // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
-            let showMoreButton = '';
-            const showMoreRow = document.createElement('tr');
-            if (domainsHTML || permissionsHTML) {
-              showMoreButton = `
-                <button 
-                  type="button" 
-                  class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
-                  data-for=${member_id}
-                  aria-label="Expand for additional information"
-                >
-                  <span>Expand</span>
-                  <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-                  </svg>
-                </button>
-              `;
-
-              showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${member_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
-              showMoreRow.classList.add('show-more-content');
-              showMoreRow.classList.add('display-none');
-              showMoreRow.id = member_id;
-            }
-
-            row.innerHTML = `
-              <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${member_id}'>
-                ${member_display} ${admin_tagHTML} ${showMoreButton}
-              </th>
-              <td headers="header-last-active row-header-${member_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
-                ${last_active.display_value}
-              </td>
-              <td headers="header-action row-header-${member_id}">
-                <a href="${action_url}">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#${svg_icon}"></use>
-                  </svg>
-                  ${action_label} <span class="usa-sr-only">${member_name}</span>
-                </a>
-              </td>
-            `;
-            memberList.appendChild(row);
-            if (domainsHTML || permissionsHTML) {
-              memberList.appendChild(showMoreRow);
-            }
-          });
-
-          this.initShowMoreButtons();
-
-          // Do not scroll on first page load
-          if (scroll)
-            scrollToElement('class', 'members');
-          this.scrollToTable = true;
-
-          // update pagination
-          this.updatePagination(
-            'member',
-            '#members-pagination',
-            '#members-pagination .usa-pagination__counter',
-            '#members',
-            data.page,
-            data.num_pages,
-            data.has_previous,
-            data.has_next,
-            data.total,
-          );
-          this.currentSortBy = sortBy;
-          this.currentOrder = order;
-          this.currentSearchTerm = searchTerm;
-      })
-      .catch(error => console.error('Error fetching members:', error));
+    addModal(`toggle-remove-member-${id}`, 'Are you sure you want to continue?', 'Member will be removed', modalHeading, modalDescription, modalSubmit, wrapper_element, true);
   }
 }
 

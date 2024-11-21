@@ -9,6 +9,7 @@ import { initDomainsTable } from './table-domains.js';
 import { initDomainRequestsTable } from './table-domain-requests.js';
 import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
+import { initPortfolioMemberPageToggle } from './portfolio-member-page.js';
 
 initDomainValidators();
 
@@ -40,3 +41,5 @@ initDomainsTable();
 initDomainRequestsTable();
 initMembersTable();
 initMemberDomainsTable();
+
+initPortfolioMemberPageToggle();
