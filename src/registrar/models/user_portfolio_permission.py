@@ -1,10 +1,11 @@
 from django.db import models
 from django.forms import ValidationError
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import UserDomainRole
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.apps import apps
 
 
 class UserPortfolioPermission(TimeStampedModel):
@@ -17,13 +18,15 @@ class UserPortfolioPermission(TimeStampedModel):
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             # Domain: field specific permissions
             UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
             UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
+        # NOTE: We currently forbid members from posessing view_members or view_all_domains.
+        # If those are added here, clean() will throw errors.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
@@ -112,24 +115,39 @@ class UserPortfolioPermission(TimeStampedModel):
 
         # Check if portfolio is set without accessing the related object.
         has_portfolio = bool(self.portfolio_id)
-        if not has_portfolio and self._get_portfolio_permissions():
+        portfolio_permissions = self._get_portfolio_permissions()
+        if not has_portfolio and portfolio_permissions:
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
-        if has_portfolio and not self._get_portfolio_permissions():
+        if has_portfolio and not portfolio_permissions:
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in self.roles
+        all_permissions = portfolio_permissions
+        if not is_admin:
+            # Question: should we also check the edit perms?
+            # TODO - need to display multiple validation errors at once
+            if UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
+                raise ValidationError("View members can only be assigned to admin roles.")
+            
+            if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS:
+                raise ValidationError("View all domains can only be assigned to admin roles.")
+
         # Check if a user is set without accessing the related object.
-        has_user = bool(self.user_id)
-        if has_user:
-            existing_permission_pks = UserPortfolioPermission.objects.filter(user=self.user).values_list(
-                "pk", flat=True
-            )
-            if (
-                not flag_is_active_for_user(self.user, "multiple_portfolios")
-                and existing_permission_pks.exists()
-                and self.pk not in existing_permission_pks
-            ):
+        PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
+        existing_permissions = UserPortfolioPermission.objects.exclude(id=self.id).filter(user=self.user)
+        # Should check on isnull portfolio
+        existing_invitations = PortfolioInvitation.objects.filter(email=self.user.email)
+        if not flag_is_active_for_user(self.user, "multiple_portfolios"):
+            # TODO - need to display multiple validation errors
+            if existing_permissions.exists():
                 raise ValidationError(
                     "This user is already assigned to a portfolio. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                )
+            
+            if existing_invitations.exists():
+                raise ValidationError(
+                    "This user is already assigned to a portfolio invitation. "
                     "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
                 )

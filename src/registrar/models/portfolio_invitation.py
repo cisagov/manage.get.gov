@@ -1,14 +1,16 @@
 """People are invited by email to administer domains."""
 
 import logging
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.db import models
 from django_fsm import FSMField, transition
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import DomainInvitation
+from registrar.utility.waffle import flag_is_active_for_user
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.forms import ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,9 @@ class PortfolioInvitation(TimeStampedModel):
         indexes = [
             models.Index(fields=["status"]),
         ]
+
+        # Determine if we need this
+        unique_together = [("email", "portfolio")]
 
     # Constants for status field
     class PortfolioInvitationStatus(models.TextChoices):
@@ -36,7 +41,7 @@ class PortfolioInvitation(TimeStampedModel):
         "registrar.Portfolio",
         on_delete=models.CASCADE,  # delete portfolio, then get rid of invitations
         null=False,
-        related_name="portfolios",
+        related_name="portfolio_invitations",
     )
 
     roles = ArrayField(
@@ -80,7 +85,8 @@ class PortfolioInvitation(TimeStampedModel):
         """
         Retrieve the permissions for the user's portfolio roles from the invite.
         """
-        return UserPortfolioPermission.get_portfolio_permissions(self.roles, self.additional_permissions)
+        UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+        return self.roles, self.additional_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
@@ -91,6 +97,7 @@ class PortfolioInvitation(TimeStampedModel):
         """
 
         # get a user with this email address
+        UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
         User = get_user_model()
         try:
             user = User.objects.get(email=self.email)
@@ -108,3 +115,40 @@ class PortfolioInvitation(TimeStampedModel):
         if self.additional_permissions and len(self.additional_permissions) > 0:
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
+
+    def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
+        super().clean()
+
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in self.roles
+        all_permissions = self.get_portfolio_permissions()
+        if not is_admin:
+            # Question: should we also check the edit perms?
+            # TODO - need to display multiple validation errors at once
+            if UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
+                raise ValidationError("View members cannot be assigned to non-admin roles.")
+            
+            if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS:
+                raise ValidationError("View all domains cannot be assigned to non-admin roles.")
+
+        # Check if a user is set without accessing the related object.
+        # TODO - revise this user check
+        # get a user with this email address
+        User = get_user_model()
+        user = User.objects.filter(email=self.email).first()
+        if not flag_is_active_for_user(user, "multiple_portfolios"):
+            # TODO - need to display multiple validation errors
+            UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+            existing_permissions = UserPortfolioPermission.objects.filter(user=user)
+            existing_invitations = PortfolioInvitation.objects.exclude(id=self.id).filter(email=user.email)
+            if existing_permissions.exists():
+                raise ValidationError(
+                    "This user is already assigned to a portfolio. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                )
+            
+            if existing_invitations.exists():
+                raise ValidationError(
+                    "This user is already assigned to a portfolio invitation. "
+                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                )
