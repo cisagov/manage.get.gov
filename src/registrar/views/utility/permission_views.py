@@ -2,7 +2,7 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView, TemplateView
+from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
 from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
@@ -156,17 +156,11 @@ class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateV
         raise NotImplementedError
 
 
-class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteView, abc.ABC):
-    """Abstract view for deleting a domain invitation.
-
-    This one is fairly specialized, but this is the only thing that we do
-    right now with domain invitations. We still have the full
-    `DomainInvitationPermission` class, but here we just pair it with a
-    DeleteView.
-    """
+class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
+    """Abstract view for cancelling a DomainInvitation."""
 
     model = DomainInvitation
-    object: DomainInvitation  # workaround for type mismatch in DeleteView
+    object: DomainInvitation
 
 
 class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
