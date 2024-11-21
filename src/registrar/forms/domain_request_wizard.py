@@ -524,9 +524,11 @@ class DotGovDomainForm(RegistrarForm):
 class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
         label="Purpose",
-        widget=forms.Textarea(attrs={
-            'aria-label': 'What is the purpose of your requested domain? Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else? You can enter up to 2000 characters.'
-        }),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else? You can enter up to 2000 characters."
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,
