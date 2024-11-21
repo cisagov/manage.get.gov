@@ -357,7 +357,7 @@ export class BaseTable {
    * Calls "uswdsUnloadModals" to remove any existing modal element to make sure theres no unintended consequences 
    * from leftover event listeners + can be properly re-initialized
    */
-  uswdsUnloadModals(){}
+  unloadModals(){}
 
   /**
    * Loads modals + sets up event listeners for the modal submit actions
