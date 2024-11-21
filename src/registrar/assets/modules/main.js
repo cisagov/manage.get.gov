@@ -30,12 +30,12 @@ hookupYesNoListener("additional_details-has_cisa_representative",'cisa-represent
 
 initializeUrbanizationToggle();
 
-userProfileListener;
-finishUserSetupListener;
+userProfileListener();
+finishUserSetupListener();
 
-loadInitialValuesForComboBoxes;
+loadInitialValuesForComboBoxes();
 
-handleRequestingEntityFieldset;
+handleRequestingEntityFieldset();
 
 initDomainsTable();
 initDomainRequestsTable();
