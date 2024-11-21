@@ -70,7 +70,7 @@ def format_end_date(end_date):
 class BaseExport(BaseModelAnnotation):
     """
     A generic class for exporting data which returns a csv file for the given model.
-    3rd class in an inheritance tree of 4.
+    2nd class in an inheritance tree of 4.
     """
 
     @classmethod
