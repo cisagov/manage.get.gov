@@ -23,13 +23,6 @@ class UserFixture:
     """
 
     ADMINS = [
-        # {
-        #     "username": "a6b5dd22-f54e-4d55-83ce-ca7b65b2dc1a",
-        #     "first_name": "Rach test admin",
-        #     "last_name": "Mrad test admin",
-        #     "email": "rachid.mrad+2@gmail.com",
-        #     "title": "Super admin tester",
-        # },
         {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
@@ -161,13 +154,6 @@ class UserFixture:
     ]
 
     STAFF = [
-        # {
-        #     "username": "994b7a90-f1d1-4140-a3d2-ff34183c7ee2",
-        #     "first_name": "Rach test staff",
-        #     "last_name": "Mrad test staff",
-        #     "email": "rachid.mrad+3@gmail.com",
-        #     "title": "Super staff tester",
-        # },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
