@@ -1,7 +1,7 @@
 /**
  * Initialize USWDS tooltips by calling initialization method.  Requires that uswds-edited.js
- * be loaded before get-gov.js.  uswds-edited.js adds the tooltip module to the window to be
- * accessible directly in get-gov.js
+ * be loaded before getgov.min.js.  uswds-edited.js adds the tooltip module to the window to be
+ * accessible directly in getgov.min.js
  * 
  */
 export function initializeTooltips() {
@@ -19,8 +19,8 @@ export function initializeTooltips() {
   
 /**
  * Initialize USWDS modals by calling on method.  Requires that uswds-edited.js be loaded
- * before get-gov.js.  uswds-edited.js adds the modal module to the window to be accessible
- * directly in get-gov.js.
+ * before getgov.min.js.  uswds-edited.js adds the modal module to the window to be accessible
+ * directly in getgov.min.js.
  * uswdsInitializeModals adds modal-related DOM elements, based on other DOM elements existing in 
  * the page.  It needs to be called only once for any particular DOM element; otherwise, it
  * will initialize improperly.  Therefore, if DOM elements change dynamically and include
@@ -33,8 +33,8 @@ export function uswdsInitializeModals() {
 
 /**
  * Unload existing USWDS modals by calling off method.  Requires that uswds-edited.js be
- * loaded before get-gov.js.  uswds-edited.js adds the modal module to the window to be
- * accessible directly in get-gov.js.
+ * loaded before getgov.min.js.  uswds-edited.js adds the modal module to the window to be
+ * accessible directly in getgov.min.js.
  * See note above with regards to calling this method relative to uswdsInitializeModals.
  * 
  */

@@ -2,7 +2,7 @@
 
 docs/research/data/**
 **/assets/*
-!**/assets/sass/
+!**/assets/src/
 !**/assets/modules-common/
 !**/assets/modules/
 !**/assets/modules-admin/

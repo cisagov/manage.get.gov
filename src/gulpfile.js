@@ -8,8 +8,8 @@ const TerserPlugin = require('terser-webpack-plugin');
 const ASSETS_DIR = './registrar/assets/';
 const JS_BUNDLE_DEST = ASSETS_DIR + 'js';
 const JS_SOURCES = [
-    { src: ASSETS_DIR + 'modules/*.js', output: 'get-gov.js' },
-    { src: ASSETS_DIR + 'modules-admin/*.js', output: 'get-gov-admin.js' },
+    { src: ASSETS_DIR + 'src/js/getgov/*.js', output: 'getgov.min.js' },
+    { src: ASSETS_DIR + 'src/js/getgov-admin/*.js', output: 'getgov-admin.min.js' },
 ];
 
 /**
@@ -24,7 +24,7 @@ uswds.settings.version = 3;
  */
 uswds.paths.dist.css = ASSETS_DIR + 'css';
 uswds.paths.dist.sass = ASSETS_DIR + 'sass';
-uswds.paths.dist.theme = ASSETS_DIR + 'sass/_theme';
+uswds.paths.dist.theme = ASSETS_DIR + 'src/sass/_theme';
 uswds.paths.dist.fonts = ASSETS_DIR + 'fonts';
 uswds.paths.dist.js = ASSETS_DIR + 'js';
 uswds.paths.dist.img = ASSETS_DIR + 'img';
