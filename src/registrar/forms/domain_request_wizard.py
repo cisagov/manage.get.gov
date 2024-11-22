@@ -544,6 +544,7 @@ class OtherContactsYesNoForm(BaseYesNoForm):
     """The yes/no field for the OtherContacts form."""
 
     form_choices = ((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)"))
+    title_label = "Are there other employees who can help verify your request?"
     field_name = "has_other_contacts"
 
     @property
