@@ -1026,6 +1026,26 @@ class Domain(TimeStampedModel, DomainHelper):
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
+        
+    def _delete_contacts(self):
+        """Contacts associated with this domain will be deleted.
+        RegistryErrors will be logged and raised. Additional 
+        error handling should be provided by the caller.
+        """
+        contacts = self._cache.get("contacts")
+        for contact in contacts:
+            self._delete_contact(contact)
+        
+    def _delete_subdomains(self):
+        """Subdomains of this domain should be deleted from the registry.
+        Subdomains which are used by other domains (eg as a hostname) will
+        not be deleted.
+
+        Supresses registry error, as registry can disallow delete for various reasons
+        """
+        nameservers = [n[0] for n in self.nameservers]
+        hostsToDelete = self.createDeleteHostList(nameservers)
+        self._delete_hosts_if_not_used(hostsToDelete)
 
     def _delete_domain(self):
         """This domain should be deleted from the registry
@@ -1431,6 +1451,8 @@ class Domain(TimeStampedModel, DomainHelper):
     @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
         """Domain is deleted in epp but is saved in our database.
+        Subdomains will be deleted first if not in use by another domain.
+        Contacts for this domain will also be deleted.
         Error handling should be provided by the caller."""
         # While we want to log errors, we want to preserve
         # that information when this function is called.
@@ -1438,6 +1460,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # as doing everything here would reduce reliablity.
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
+            self._delete_subdomains()
+            self._delete_contacts()
             self._delete_domain()
             self.deleted = timezone.now()
         except RegistryError as err:
@@ -1639,6 +1663,26 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
                 raise e
+    
+    def _delete_contact(self, contact: PublicContact):
+        """Try to delete a contact. RegistryErrors will be logged.
+        
+        raises:
+            RegistryError: if the registry is unable to delete the contact
+        """
+        logger.info("_delete_contact() -> Attempting to delete contact for %s from domain %s", contact.name, contact.domain)
+        try:
+            req = commands.DeletContact(id=contact.registry_id)
+            return registry.send(req, cleaned=True).res_data[0]
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error when trying to delete contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
+                contact.registry_id,
+                contact.contact_type,
+                error.code,
+                error,
+            )
+            raise error
 
     def is_ipv6(self, ip: str):
         ip_addr = ipaddress.ip_address(ip)
