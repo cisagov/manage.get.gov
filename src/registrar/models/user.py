@@ -1,11 +1,10 @@
 import logging
 
-from django.apps import apps
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
-from registrar.models import DomainInformation, UserDomainRole
+from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
@@ -419,7 +418,6 @@ class User(AbstractUser):
     def check_portfolio_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any portfolio
         invitations that match their email address."""
-        PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):
@@ -497,8 +495,6 @@ class User(AbstractUser):
 
     def is_only_admin_of_portfolio(self, portfolio):
         """Check if the user is the only admin of the given portfolio."""
-
-        UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
 
         admin_permission = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
 
