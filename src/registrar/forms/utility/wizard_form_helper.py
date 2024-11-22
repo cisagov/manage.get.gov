@@ -241,7 +241,8 @@ class BaseYesNoForm(RegistrarForm):
 
     # Option to append question to aria label for screenreader accessibility.
     # Not added by default.
-    aria_label = ""
+    title_label = ""
+    aria_label = title_label.join("")
 
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
@@ -262,7 +263,7 @@ class BaseYesNoForm(RegistrarForm):
             initial=self.get_initial_value(),
             widget=forms.RadioSelect(
                 attrs={
-                    "aria-label": self.aria_label
+                    # "aria-label": self.title_label
                 }
             ),
             error_messages={
