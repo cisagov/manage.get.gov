@@ -1,19 +1,25 @@
-<{{ label_tag }}
-  class="{% if label_classes %} {{ label_classes }}{% endif %}{% if label_tag == 'legend' %} {{ legend_classes }}{% endif %}"
-  {% if not field.use_fieldset %}for="{{ widget.attrs.id }}"{% endif %}
->
-  {% if span_for_text %}
-    <span>{{ field.label }}</span>
-  {% else %}
-    {{ field.label }}
-  {% endif %}
+<!-- Exclude extraneous legend from radio elements -->
+{% if not type == "radio" and not label_tag == "legend" %}
+  <{{ label_tag }}
+    class="{% if label_classes %} {{ label_classes }}{% endif %}{% if label_tag == 'legend' %} {{ legend_classes }}{% endif %}"
+    {% if not field.use_fieldset %}for="{{ widget.attrs.id }}"{% endif %}
+  >
+{% endif %}
 
-  {% if widget.attrs.required %}
-  <!--Don't add asterisk to one-field forms -->
-    {% if field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." %}
+    {% if span_for_text %}
+      <span>{{ field.label }}</span>
     {% else %}
-      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+      {{ field.label }}
     {% endif %}
-  {% endif %}
 
-</{{ label_tag }}>
+    {% if widget.attrs.required %}
+    <!--Don't add asterisk to one-field forms -->
+      {% if field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." %}
+      {% else %}
+        <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+      {% endif %}
+    {% endif %}
+
+{% if not type == "radio" and not label_tag == "legend" %}
+  </{{ label_tag }}>
+{% endif %}
