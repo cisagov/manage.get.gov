@@ -1,6 +1,4 @@
 from django.db import models
-from django.forms import ValidationError
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models import UserDomainRole
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
@@ -125,7 +123,6 @@ class UserPortfolioPermission(TimeStampedModel):
     def get_forbidden_permissions(cls, roles, additional_permissions):
         """Some permissions are forbidden for certain roles, like member.
         This checks for conflicts between the role and additional_permissions."""
-        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
 
         # Get intersection of forbidden permissions across all roles.
         # This is because if you have roles ["admin", "member"], then they can have the
@@ -137,8 +134,8 @@ class UserPortfolioPermission(TimeStampedModel):
         )
 
         # Check if the users current permissions overlap with any forbidden permissions
-        bad_perms = portfolio_permissions & common_forbidden_perms
-        return bad_perms
+        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
+        return portfolio_permissions & common_forbidden_perms
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""

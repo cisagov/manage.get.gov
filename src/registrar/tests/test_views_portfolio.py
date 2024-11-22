@@ -483,7 +483,7 @@ class TestPortfolio(WebTest):
         """When multiple_portfolios flag is true and user does not have a portfolio,
         the portfolio should be set to None in session."""
         self.client.force_login(self.user)
-        with override_flag(, active=True):
+        with override_flag("multiple_portfolios", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
             session_middleware = SessionMiddleware(lambda request: None)

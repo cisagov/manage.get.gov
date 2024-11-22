@@ -5,7 +5,11 @@ from django.db import models
 from django_fsm import FSMField, transition
 from django.contrib.auth import get_user_model
 from registrar.models import DomainInvitation, UserPortfolioPermission
-from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices, validate_portfolio_invitation  # type: ignore
+from .utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+    validate_portfolio_invitation,
+)  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
@@ -87,9 +91,9 @@ class PortfolioInvitation(TimeStampedModel):
         Raises:
             RuntimeError if no matching user can be found.
         """
-        User = get_user_model()
 
         # get a user with this email address
+        User = get_user_model()
         try:
             user = User.objects.get(email=self.email)
         except User.DoesNotExist:
