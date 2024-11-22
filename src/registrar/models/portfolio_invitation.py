@@ -1,11 +1,9 @@
 """People are invited by email to administer domains."""
 
 import logging
-from django.apps import apps
-from django.contrib.auth import get_user_model
 from django.db import models
 from django_fsm import FSMField, transition
-from registrar.models import DomainInvitation
+from registrar.models import DomainInvitation, UserPortfolioPermission, User
 from registrar.utility.waffle import flag_is_active_for_user
 from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
@@ -24,9 +22,6 @@ class PortfolioInvitation(TimeStampedModel):
             models.Index(fields=["status"]),
         ]
 
-        # Determine if we need this
-        unique_together = [("email", "portfolio")]
-
     # Constants for status field
     class PortfolioInvitationStatus(models.TextChoices):
         INVITED = "invited", "Invited"
@@ -41,7 +36,7 @@ class PortfolioInvitation(TimeStampedModel):
         "registrar.Portfolio",
         on_delete=models.CASCADE,  # delete portfolio, then get rid of invitations
         null=False,
-        related_name="portfolio_invitations",
+        related_name="portfolios",
     )
 
     roles = ArrayField(
@@ -85,8 +80,8 @@ class PortfolioInvitation(TimeStampedModel):
         """
         Retrieve the permissions for the user's portfolio roles from the invite.
         """
-        UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
-        return self.roles, self.additional_permissions)
+        # UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+        return UserPortfolioPermission.get_portfolio_permissions(self.roles, self.additional_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
@@ -97,8 +92,7 @@ class PortfolioInvitation(TimeStampedModel):
         """
 
         # get a user with this email address
-        UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
-        User = get_user_model()
+        # UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
         try:
             user = User.objects.get(email=self.email)
         except User.DoesNotExist:
@@ -131,14 +125,25 @@ class PortfolioInvitation(TimeStampedModel):
             if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS:
                 raise ValidationError("View all domains cannot be assigned to non-admin roles.")
 
-        # Check if a user is set without accessing the related object.
-        # TODO - revise this user check
-        # get a user with this email address
-        User = get_user_model()
+        # UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+        roles = self.roles if self.roles is not None else []
+        bad_perms = UserPortfolioPermission.get_forbidden_permissions(self.roles, self.additional_permissions)
+        if bad_perms:
+            readable_perms = [
+                UserPortfolioPermissionChoices.get_user_portfolio_permission_label(perm) 
+                for perm in bad_perms
+            ]
+            readable_roles = [
+                UserPortfolioRoleChoices.get_user_portfolio_role_label(role)
+                for role in roles
+            ]
+            raise ValidationError(
+                f"These permissions cannot be assigned to {', '.join(readable_roles)}: <{', '.join(readable_perms)}>"
+            )
+
         user = User.objects.filter(email=self.email).first()
         if not flag_is_active_for_user(user, "multiple_portfolios"):
             # TODO - need to display multiple validation errors
-            UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
             existing_permissions = UserPortfolioPermission.objects.filter(user=user)
             existing_invitations = PortfolioInvitation.objects.exclude(id=self.id).filter(email=user.email)
             if existing_permissions.exists():

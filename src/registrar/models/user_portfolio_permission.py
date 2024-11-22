@@ -32,6 +32,15 @@ class UserPortfolioPermission(TimeStampedModel):
         ],
     }
 
+    # Determines which roles are forbidden for certain role types to possess.
+    FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS = {
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+        ],
+    }
+
     user = models.ForeignKey(
         "registrar.User",
         null=False,
@@ -109,34 +118,72 @@ class UserPortfolioPermission(TimeStampedModel):
             portfolio_permissions.update(additional_permissions)
         return list(portfolio_permissions)
 
+    @classmethod
+    def get_forbidden_permissions(cls, roles, additional_permissions):
+        """Some permissions are forbidden for certain roles, like member.
+        This checks for conflicts between the role and additional_permissions."""
+        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
+
+        # Get intersection of forbidden permissions across all roles.
+        # This is because if you have roles ["admin", "member"], then they can have the
+        # so called "forbidden" ones. But just member on their own cannot.
+        # The solution to this is to only grab what is only COMMONLY "forbidden".
+        # This will scale if we add more roles in the future.
+        common_forbidden_perms = set.intersection(*(
+            set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+            for role in roles
+        ))
+
+        # Check if the users current permissions overlap with any forbidden permissions
+        bad_perms = portfolio_permissions & common_forbidden_perms
+        return bad_perms
+
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
 
         # Check if portfolio is set without accessing the related object.
         has_portfolio = bool(self.portfolio_id)
-        portfolio_permissions = self._get_portfolio_permissions()
+        portfolio_permissions = set(self._get_portfolio_permissions())
+
+        # == Validate required fields == #
         if not has_portfolio and portfolio_permissions:
             raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
         if has_portfolio and not portfolio_permissions:
             raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
-        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in self.roles
-        all_permissions = portfolio_permissions
-        if not is_admin:
-            # Question: should we also check the edit perms?
-            # TODO - need to display multiple validation errors at once
-            if UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
-                raise ValidationError("View members can only be assigned to admin roles.")
-            
-            if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS:
-                raise ValidationError("View all domains can only be assigned to admin roles.")
+        # == Validate role permissions. Compares existing permissions to forbidden ones. == #
+        roles = self.roles if self.roles is not None else []
+        bad_perms = self.get_forbidden_permissions(self.roles, self.additional_permissions)
+        if bad_perms:
+            readable_perms = [
+                UserPortfolioPermissionChoices.get_user_portfolio_permission_label(perm) 
+                for perm in bad_perms
+            ]
+            readable_roles = [
+                UserPortfolioRoleChoices.get_user_portfolio_role_label(role)
+                for role in roles
+            ]
+            raise ValidationError(
+                f"These permissions cannot be assigned to {', '.join(readable_roles)}: <{', '.join(readable_perms)}>"
+            )
+        # NOTE: if the user has two conflicting roles, like ["admin", "member"],
+        # then this validation will still fail if a role is found that conflicts with member.
+        # Question for reviewers: thoughts? 
+        # for role in roles:
+        #     bad_perms = portfolio_permissions & set(self.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
+        #     if bad_perms:
+        #         readable_role = UserPortfolioRoleChoices.get_user_portfolio_role_label(role)
+        #         invalid = [UserPortfolioPermissionChoices.get_user_portfolio_permission_label(perm) for perm in bad_perms]
+        #         raise ValidationError(
+        #             f"These permissions cannot be assigned to {readable_role}: {', '.join(invalid)}"
+        #         )
 
+        # == Validate that only one permission exists when multiple_portfolios is disabled == #
         # Check if a user is set without accessing the related object.
         PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
         existing_permissions = UserPortfolioPermission.objects.exclude(id=self.id).filter(user=self.user)
-        # Should check on isnull portfolio
         existing_invitations = PortfolioInvitation.objects.filter(email=self.user.email)
         if not flag_is_active_for_user(self.user, "multiple_portfolios"):
             # TODO - need to display multiple validation errors

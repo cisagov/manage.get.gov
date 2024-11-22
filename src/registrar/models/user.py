@@ -9,7 +9,6 @@ from registrar.models import DomainInformation, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
-from .portfolio_invitation import PortfolioInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
@@ -420,6 +419,7 @@ class User(AbstractUser):
     def check_portfolio_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any portfolio
         invitations that match their email address."""
+        PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
         for invitation in PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ):

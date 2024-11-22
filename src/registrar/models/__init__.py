@@ -16,12 +16,14 @@ from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
+# IMPORTANT: UserPortfolioPermission must be before PortfolioInvitation.
+# PortfolioInvitation imports from UserPortfolioPermission, so you will get a circular import otherwise.
+from .user_portfolio_permission import UserPortfolioPermission
 from .portfolio_invitation import PortfolioInvitation
 from .portfolio import Portfolio
 from .domain_group import DomainGroup
 from .suborganization import Suborganization
 from .senior_official import SeniorOfficial
-from .user_portfolio_permission import UserPortfolioPermission
 from .allowed_email import AllowedEmail
 
 
