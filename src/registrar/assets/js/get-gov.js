@@ -2925,6 +2925,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectParent = select?.parentElement;
   const suborgContainer = document.getElementById("suborganization-container");
   const suborgDetailsContainer = document.getElementById("suborganization-container__details");
+  const subOrgCreateNewOption = document.getElementById("option-to-add-suborg").value
   if (!radios || !select || !selectParent || !suborgContainer || !suborgDetailsContainer) return;
 
   // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
@@ -2949,7 +2950,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add fake "other" option to sub_organization select
   if (select && !Array.from(select.options).some(option => option.value === "other")) {
-    select.add(new Option("Other (enter your suborganization manually)", "other"));
+    select.add(new Option(subOrgCreateNewOption, "other"));
   }
 
   if (requestingNewSuborganization.value === "True") {
