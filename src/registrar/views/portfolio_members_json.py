@@ -1,32 +1,19 @@
-from django.contrib.postgres.aggregates import ArrayAgg
+from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import (
-    Case,
-    CharField,
-    F,
-    Q,
-    TextField,
-    Value,
-    When,
-    OuterRef,
-    Subquery,
-)
+from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
 from django.db.models.expressions import Func
 from django.db.models.functions import Cast, Coalesce, Concat
-from django.http import JsonResponse
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
-from registrar.models import (
-    DomainInvitation,
-    PortfolioInvitation,
-    UserPortfolioPermission,
-)
-from registrar.models.utility.portfolio_helper import (
-    UserPortfolioPermissionChoices,
-    UserPortfolioRoleChoices,
-)
+from registrar.models.domain_invitation import DomainInvitation
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.mixins import PortfolioMembersPermission
+from registrar.models.utility.orm_helper import ArrayRemoveNull
+
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
 
@@ -53,7 +40,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         page_number = request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
 
-        members = [self.serialize_members(portfolio, item, request.user) for item in page_obj.object_list]
+        members = [self.serialize_members(request, portfolio, item, request.user) for item in page_obj.object_list]
 
         return JsonResponse(
             {
@@ -148,7 +135,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             additional_permissions_display=F("additional_permissions"),
             member_display=F("email"),
             # Use ArrayRemove to return an empty list when no domain invitations are found
-            domain_info=ArrayRemove(
+            domain_info=ArrayRemoveNull(
                 ArrayAgg(
                     Subquery(domain_invitations.values("domain_info")),
                     distinct=True,
@@ -193,7 +180,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             queryset = queryset.order_by(sort_by)
         return queryset
 
-    def serialize_members(self, portfolio, item, user):
+    def serialize_members(self, request, portfolio, item, user):
         # Check if the user can edit other users
         user_can_edit_other_users = any(
             user.has_perm(perm) for perm in ["registrar.full_access_permission", "registrar.change_user"]
@@ -228,8 +215,3 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         }
         return member_json
 
-
-# Custom Func to use array_remove to remove null values
-class ArrayRemove(Func):
-    function = "array_remove"
-    template = "%(function)s(%(expressions)s, NULL)"

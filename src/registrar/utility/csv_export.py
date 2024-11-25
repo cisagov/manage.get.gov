@@ -1,12 +1,19 @@
-import csv
-import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
+import csv
+import logging
 from datetime import datetime
-
-from django.contrib.admin.models import LogEntry, ADDITION
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from registrar.models import (
+    Domain,
+    DomainInvitation,
+    DomainRequest,
+    DomainInformation,
+    PublicContact,
+    UserDomainRole,
+    PortfolioInvitation,
+    UserGroup,
+    UserPortfolioPermission,
+)
 from django.db.models import (
     Case,
     CharField,
@@ -22,21 +29,13 @@ from django.db.models import (
     OuterRef,
     Subquery,
     Exists,
+    Func,
 )
-from django.db.models.functions import Concat, Coalesce, Cast, Func
 from django.utils import timezone
-
-from registrar.models import (
-    Domain,
-    DomainInvitation,
-    DomainRequest,
-    DomainInformation,
-    PublicContact,
-    UserDomainRole,
-    PortfolioInvitation,
-    UserGroup,
-)
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from django.db.models.functions import Concat, Coalesce, Cast
+from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -76,7 +75,7 @@ def format_end_date(end_date):
 class BaseExport(ABC):
     """
     A generic class for exporting data which returns a csv file for the given model.
-    2nd class in an inheritance tree of 4.
+    Base class in an inheritance tree of 3.
     """
 
     @classmethod
@@ -139,7 +138,7 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_annotated_fields(cls, **kwargs):
+    def get_computed_fields(cls, **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -244,7 +243,7 @@ class BaseExport(ABC):
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
         filter_conditions = cls.get_filter_conditions(**kwargs)
-        annotated_fields = cls.get_annotated_fields(**kwargs)
+        annotated_fields = cls.get_computed_fields(**kwargs)
         related_table_fields = cls.get_related_table_fields()
 
         model_queryset = (
@@ -783,7 +782,7 @@ class DomainDataType(DomainExport):
         return ["domain__permissions"]
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -1000,7 +999,7 @@ class DomainDataFull(DomainExport):
         )
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -1095,7 +1094,7 @@ class DomainDataFederal(DomainExport):
         )
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -1729,7 +1728,7 @@ class DomainRequestDataFull(DomainRequestExport):
         ]
 
     @classmethod
-    def get_annotated_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
