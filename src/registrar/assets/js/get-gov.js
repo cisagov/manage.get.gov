@@ -2924,6 +2924,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const select = document.getElementById(`id_${formPrefix}-sub_organization`);
   const suborgContainer = document.getElementById("suborganization-container");
   const suborgDetailsContainer = document.getElementById("suborganization-container__details");
+  const otherContent = document.getElementById("bubblegum")?.value;
   if (!radios || !select || !suborgContainer || !suborgDetailsContainer) return;
 
   // requestingSuborganization: This just broadly determines if they're requesting a suborg at all
@@ -2940,7 +2941,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add fake "other" option to sub_organization select
   if (select && !Array.from(select.options).some(option => option.value === "other")) {
-    select.add(new Option("Other (enter your organization manually)", "other"));
+    select.add(new Option(otherContent, "other"));
   }
 
   if (requestingNewSuborganization.value === "True") {
