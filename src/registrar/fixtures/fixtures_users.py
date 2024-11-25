@@ -152,7 +152,7 @@ class UserFixture:
             "title": "Designer",
         },
         {
-           "username": "bdce4afc-fa35-422d-8c13-bd043679f32e",
+            "username": "bdce4afc-fa35-422d-8c13-bd043679f32e",
             "first_name": "Liz",
             "last_name": "L",
             "email": "elizabeth.liao+sandbox@gwe.cisa.dhs.gov",
