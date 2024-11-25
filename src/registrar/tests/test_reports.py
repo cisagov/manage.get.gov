@@ -245,18 +245,23 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,"
             "SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),meoward@rocks.com,\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),"
+            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,WorldWarICentennialCommission"
+            ",,,, ,,(blank),meoward@rocks.com,\n"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,WorldWarICentennialCommission"
+            ",,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "adomain10.gov,Ready,2024-04-03,(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,squeaker@rocks.com\n"
+            "adomain10.gov,Ready,2024-04-03,(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,"
+            "squeaker@rocks.com\n"
             "bdomain4.gov,Unknown,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
             "bdomain5.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
             "bdomain6.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,ArmedForcesRetirementHome,,,, ,,security@mail.gov,,\n"
+            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,ArmedForcesRetirementHome,,,, ,,"
+            "security@mail.gov,,\n"
             "sdomain8.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
             "xdomain7.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
             "zdomain9.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,squeaker@rocks.com\n"
+            "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,"
+            "squeaker@rocks.com\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
         )
 
@@ -302,7 +307,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
+            "WorldWarICentennialCommission,,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
@@ -539,7 +545,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     def test_domain_growth(self):
         """Shows ready and deleted domains within a date range, sorted"""
         # Remove "Created at" and "First ready" because we can't guess this immutable, dynamically generated test data
-        self.maxDiff=None
+        self.maxDiff = None
         columns = [
             "Domain name",
             "Domain type",

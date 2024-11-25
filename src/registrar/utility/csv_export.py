@@ -324,7 +324,10 @@ class DomainExport(BaseExport):
             "converted_federal_type": Case(
                 # When portfolio is present, use its value instead
                 # NOTE: this is an @Property funciton in portfolio.
-                When(Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False), then=F("portfolio__federal_agency__federal_type")),
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
                 # Otherwise, return the natively assigned value
                 default=F("federal_type"),
                 output_field=CharField(),
@@ -638,7 +641,6 @@ class DomainDataType(DomainExport):
             "Domain managers",
             "Invited domain managers",
         ]
-    
 
     @classmethod
     def get_annotations_for_sort(cls, delimiter=", "):
@@ -852,7 +854,7 @@ class DomainDataFull(DomainExport):
             "State",
             "Security contact email",
         ]
-    
+
     @classmethod
     def get_annotations_for_sort(cls, delimiter=", "):
         """
@@ -940,14 +942,13 @@ class DomainDataFederal(DomainExport):
             "Security contact email",
         ]
 
-
     @classmethod
     def get_annotations_for_sort(cls, delimiter=", "):
         """
         Get a dict of annotations to make available for sorting.
         """
         return cls.get_computed_fields()
-    
+
     @classmethod
     def get_sort_fields(cls):
         """
@@ -1400,7 +1401,10 @@ class DomainRequestExport(BaseExport):
             "converted_federal_type": Case(
                 # When portfolio is present, use its value instead
                 # NOTE: this is an @Property funciton in portfolio.
-                When(Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False), then=F("portfolio__federal_agency__federal_type")),
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
                 # Otherwise, return the natively assigned value
                 default=F("federal_type"),
                 output_field=CharField(),

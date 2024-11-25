@@ -3216,7 +3216,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
-    
+
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
