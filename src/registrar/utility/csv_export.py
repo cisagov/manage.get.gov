@@ -215,6 +215,25 @@ class BaseExport(ABC):
         return cls.update_queryset(queryset, **kwargs)
 
     @classmethod
+    def export_data_to_csv(cls, csv_file, **kwargs):
+        """
+        All domain metadata:
+        Exports domains of all statuses plus domain managers.
+        """
+        writer = csv.writer(csv_file)
+        columns = cls.get_columns()
+        models_dict = cls.get_model_annotation_dict(**kwargs)
+
+        # Write to csv file before the write_csv
+        cls.write_csv_before(writer, **kwargs)
+
+        # Write the csv file
+        rows = cls.write_csv(writer, columns, models_dict)
+
+        # Return rows that for easier parsing and testing
+        return rows
+
+    @classmethod
     def get_annotated_queryset(cls, **kwargs):
         sort_fields = cls.get_sort_fields()
         # Get additional args and merge with incoming kwargs
