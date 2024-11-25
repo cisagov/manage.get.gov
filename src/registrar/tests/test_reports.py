@@ -63,10 +63,10 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call('cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n'),
-                call('cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n'),
-                call('adomain10.gov,Federal,8,,,,(blank)\r\n'),
-                call('ddomain3.gov,Federal,8,,,,(blank)\r\n'),
+                call("cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -85,11 +85,11 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call('cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n'),
-                call('cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n'),
-                call('adomain10.gov,Federal,8,,,,(blank)\r\n'),
-                call('ddomain3.gov,Federal,8,,,,(blank)\r\n'),
-                call('zdomain12.gov,Interstate,,,,,(blank)\r\n'),
+                call("cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
+                call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -247,7 +247,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "SO email,Security contact email,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,188,,,, ,,(blank),meoward@rocks.com,\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,188,,,, ,,(blank),"
-            "\"big_lebowski@dude.co, info@example.com, meoward@rocks.com\",woofwardthethird@rocks.com\n"
+            '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "adomain10.gov,Ready,2024-04-03,(blank),Federal,189,,,, ,,(blank),,squeaker@rocks.com\n"
             "bdomain4.gov,Unknown,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
             "bdomain5.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
@@ -303,17 +303,15 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,190,,,, ,,(blank),"
-            "\"big_lebowski@dude.co, info@example.com, meoward@rocks.com\",woofwardthethird@rocks.com\n"
+            '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
-            "\"info@example.com, meoward@rocks.com\",squeaker@rocks.com\n"
+            '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
         )
 
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
-        
 
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)

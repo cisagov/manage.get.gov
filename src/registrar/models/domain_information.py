@@ -475,7 +475,7 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.city
         return self.city
-    
+
     @property
     def converted_state_territory(self):
         if self.portfolio:
@@ -493,5 +493,3 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.urbanization
         return self.urbanization
-
-

@@ -13,12 +13,8 @@ from registrar.utility import csv_export
 
 import logging
 
-
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 logger = logging.getLogger(__name__)
+
 
 class AnalyticsView(View):
     def get(self, request):
@@ -165,10 +161,7 @@ class ExportDataType(View):
 class ExportDataTypeUser(View):
     """Returns a domain report for a given user on the request"""
 
-    TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"ExportDataTypeUser")
-
     def get(self, request, *args, **kwargs):
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"ExportDataTypeUser -- get")
         # match the CSV example with all the fields
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="your-domains.csv"'

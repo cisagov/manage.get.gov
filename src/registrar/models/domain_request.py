@@ -1460,7 +1460,7 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.state_territory
         return self.state_territory
-    
+
     @property
     def converted_urbanization(self):
         if self.portfolio:
