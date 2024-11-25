@@ -192,7 +192,7 @@ class PopulateScriptTemplate(ABC):
 class TerminalHelper:
     @staticmethod
     def log_script_run_summary(
-        to_update, failed_to_update, skipped, debug: bool, log_header=None, display_as_str=False
+        to_update, failed_to_update, skipped, debug: bool, log_header=None, skipped_header=None, display_as_str=False
     ):
         """Prints success, failed, and skipped counts, as well as
         all affected objects."""
@@ -202,6 +202,9 @@ class TerminalHelper:
 
         if log_header is None:
             log_header = "============= FINISHED ==============="
+
+        if skipped_header is None:
+            skipped_header = "----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----"
 
         # Prepare debug messages
         if debug:
@@ -236,7 +239,7 @@ class TerminalHelper:
                 f"""{TerminalColors.YELLOW}
                 {log_header}
                 Updated {update_success_count} entries
-                ----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----
+                {skipped_header}
                 Skipped updating {update_skipped_count} entries
                 {TerminalColors.ENDC}
                 """

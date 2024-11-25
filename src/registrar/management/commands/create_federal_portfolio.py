@@ -13,15 +13,27 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Creates a federal portfolio given a FederalAgency name"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.created_portfolios = []
+        self.skipped_portfolios = []
+        self.failed_portfolios = []
+
     def add_arguments(self, parser):
         """Add three arguments:
         1. agency_name => the value of FederalAgency.agency
         2. --parse_requests => if true, adds the given portfolio to each related DomainRequest
         3. --parse_domains => if true, adds the given portfolio to each related DomainInformation
         """
-        parser.add_argument(
-            "agency_name",
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            "--agency_name",
             help="The name of the FederalAgency to add",
+        )
+        group.add_argument(
+            "--branch",
+            choices=["executive", "legislative", "judicial"],
+            help="The federal branch to process. Creates a portfolio for each FederalAgency in this branch.",
         )
         parser.add_argument(
             "--parse_requests",
@@ -39,7 +51,9 @@ class Command(BaseCommand):
             help="Adds portfolio to both requests and domains",
         )
 
-    def handle(self, agency_name, **options):
+    def handle(self, **options):
+        agency_name = options.get("agency_name")
+        branch = options.get("branch")
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
@@ -51,25 +65,40 @@ class Command(BaseCommand):
             if parse_requests or parse_domains:
                 raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
 
-        federal_agency = FederalAgency.objects.filter(agency__iexact=agency_name).first()
-        if not federal_agency:
-            raise ValueError(
-                f"Cannot find the federal agency '{agency_name}' in our database. "
-                "The value you enter for `agency_name` must be "
-                "prepopulated in the FederalAgency table before proceeding."
-            )
+        federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
+        agencies = FederalAgency.objects.filter(**federal_agency_filter)
+        if not agencies or agencies.count() < 1:
+            if agency_name:
+                raise ValueError(
+                    f"Cannot find the federal agency '{agency_name}' in our database. "
+                    "The value you enter for `agency_name` must be "
+                    "prepopulated in the FederalAgency table before proceeding."
+                )
+            else:
+                raise ValueError(f"Cannot find '{branch}' federal agencies in our database.")
 
-        portfolio = self.create_or_modify_portfolio(federal_agency)
-        self.create_suborganizations(portfolio, federal_agency)
+        for federal_agency in agencies:
+            message = f"Processing federal agency '{federal_agency.agency}'..."
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+            try:
+                portfolio, created = self.create_portfolio(federal_agency)
+                if created:
+                    self.create_suborganizations(portfolio, federal_agency)
+                    if parse_domains or both:
+                        self.handle_portfolio_domains(portfolio, federal_agency)
 
-        if parse_requests or both:
-            self.handle_portfolio_requests(portfolio, federal_agency)
+                if parse_requests or both:
+                    self.handle_portfolio_requests(portfolio, federal_agency)
 
-        if parse_domains or both:
-            self.handle_portfolio_domains(portfolio, federal_agency)
+            except Exception as exec:
+                self.failed_portfolios.append(federal_agency)
+                logger.error(exec)
+        TerminalHelper.log_script_run_summary(
+            self.created_portfolios, self.failed_portfolios, self.skipped_portfolios, debug=False,
+            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----"
+        )
 
-    def create_or_modify_portfolio(self, federal_agency):
-        """Creates or modifies a portfolio record based on a federal agency."""
+    def create_portfolio(self, federal_agency):
         portfolio_args = {
             "federal_agency": federal_agency,
             "organization_name": federal_agency.agency,
@@ -84,8 +113,8 @@ class Command(BaseCommand):
         portfolio, created = Portfolio.objects.get_or_create(
             organization_name=portfolio_args.get("organization_name"), defaults=portfolio_args
         )
-
         if created:
+            self.created_portfolios.append(portfolio)
             message = f"Created portfolio '{portfolio}'"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
@@ -99,36 +128,12 @@ class Command(BaseCommand):
                 )
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
         else:
-            proceed = TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate=False,
-                prompt_message=f"""
-                The given portfolio '{federal_agency.agency}' already exists in our DB.
-                If you cancel, the rest of the script will still execute but this record will not update.
-                """,
-                prompt_title="Do you wish to modify this record?",
+            self.skipped_portfolios.append(portfolio)
+            message = (
+                f"The given portfolio '{portfolio}' already exists in our DB. Skipping create."
             )
-            if proceed:
-
-                # Don't override the creator and notes fields
-                if portfolio.creator:
-                    portfolio_args.pop("creator")
-
-                if portfolio.notes:
-                    portfolio_args.pop("notes")
-
-                # Update everything else
-                for key, value in portfolio_args.items():
-                    setattr(portfolio, key, value)
-
-                portfolio.save()
-                message = f"Modified portfolio '{portfolio}'"
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
-                if portfolio_args.get("senior_official"):
-                    message = f"Added/modified senior official '{portfolio_args['senior_official']}'"
-                    TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
-        return portfolio
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+        return portfolio, created
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
@@ -149,7 +154,8 @@ class Command(BaseCommand):
         # Check if we need to update any existing suborgs first. This step is optional.
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
         if existing_suborgs.exists():
-            self._update_existing_suborganizations(portfolio, existing_suborgs)
+            message = f"Some suborganizations already exist for portfolio '{portfolio}'. Skipping create."
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
 
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
@@ -175,29 +181,6 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-    def _update_existing_suborganizations(self, portfolio, orgs_to_update):
-        """
-        Update existing suborganizations with new portfolio.
-        Prompts for user confirmation before proceeding.
-        """
-        proceed = TerminalHelper.prompt_for_execution(
-            system_exit_on_terminate=False,
-            prompt_message=f"""Some suborganizations already exist in our DB.
-            If you cancel, the rest of the script will still execute but these records will not update.
-
-            ==Proposed Changes==
-            The following suborgs will be updated: {[org.name for org in orgs_to_update]}
-            """,
-            prompt_title="Do you wish to modify existing suborganizations?",
-        )
-        if proceed:
-            for org in orgs_to_update:
-                org.portfolio = portfolio
-
-            Suborganization.objects.bulk_update(orgs_to_update, ["portfolio"])
-            message = f"Updated {len(orgs_to_update)} suborganizations."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
@@ -208,11 +191,11 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(status__in=invalid_states)
         if not domain_requests.exists():
             message = f"""
-            Portfolios not added to domain requests: no valid records found.
-            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            Portfolio '{portfolio}' not added to domain requests: no valid records found.
+            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' and portfolio__isnull=True returned no results.
             Excluded statuses: STARTED, INELIGIBLE, REJECTED.
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
@@ -234,11 +217,11 @@ class Command(BaseCommand):
         Associate portfolio with domains for a federal agency.
         Updates all relevant domain information records.
         """
-        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
+        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
         if not domain_infos.exists():
             message = f"""
-            Portfolios not added to domains: no valid records found.
-            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            Portfolio '{portfolio}' not added to domains: no valid records found.
+            The filter on DomainInformation for the federal_agency '{federal_agency}' and portfolio__isnull=True returned no results.
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
