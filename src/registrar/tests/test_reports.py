@@ -63,10 +63,10 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
-                call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
-                call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -85,10 +85,10 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
-                call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
-                call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
+                call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
@@ -483,8 +483,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
-            "adomain10.gov,Federal,WorldWarICentennialCommission,,,,(blank)\n"
-            "ddomain3.gov,Federal,WorldWarICentennialCommission,,,,security@mail.gov\n"
+            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
+            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
 
@@ -522,10 +522,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,184,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,184,,,,(blank)\n"
-            "adomain10.gov,Federal,WorldWarICentennialCommission,,,,(blank)\n"
-            "ddomain3.gov,Federal,WorldWarICentennialCommission,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
+            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
+            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
         )
 
         # Normalize line endings and remove commas,
@@ -539,6 +539,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     def test_domain_growth(self):
         """Shows ready and deleted domains within a date range, sorted"""
         # Remove "Created at" and "First ready" because we can't guess this immutable, dynamically generated test data
+        self.maxDiff=None
         columns = [
             "Domain name",
             "Domain type",
@@ -577,13 +578,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 expected_content = (
                     "Domain name,Domain type,Agency,Organization name,City,"
                     "State,Status,Expiration date, Deleted\n"
-                    "cdomain1.gov,Federal-Executive,194,Ready,(blank)\n"
-                    "adomain10.gov,Federal,195,Ready,(blank)\n"
-                    "cdomain11.gov,Federal-Executive,194,Ready,(blank)\n"
+                    "cdomain1.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank)\n"
+                    "adomain10.gov,Federal,ArmedForcesRetirementHome,Ready,(blank)\n"
+                    "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank)\n"
                     "zdomain12.gov,Interstate,Ready,(blank)\n"
-                    "zdomain9.gov,Federal,195,Deleted,(blank),2024-04-01\n"
-                    "sdomain8.gov,Federal,195,Deleted,(blank),2024-04-02\n"
-                    "xdomain7.gov,Federal,195,Deleted,(blank),2024-04-02\n"
+                    "zdomain9.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank),2024-04-01\n"
+                    "sdomain8.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank),2024-04-02\n"
+                    "xdomain7.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank),2024-04-02\n"
                 )
                 # Normalize line endings and remove commas,
                 # spaces and leading/trailing whitespace
