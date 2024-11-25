@@ -302,16 +302,31 @@ class DomainExport(BaseExport):
         """
         Get a dict of computed fields.
         """
-        # NOTE: These computed fields imitate @Property functions in the Domain model where needed.
+        # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
         # This is for performance purposes. Since we are working with dictionary values and not
         # model objects as we export data, trying to reinstate model objects in order to grab @property
         # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
         return {
+            "converted_generic_org_type": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("organization_type"),
+                output_field=CharField(),
+            ),
             "converted_federal_agency": Case(
                 # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
                 # Otherwise, return the natively assigned value
-                default=F("federal_agency"),
+                default=F("federal_agency__agency"),
+                output_field=CharField(),
+            ),
+            "converted_federal_type": Case(
+                # When portfolio is present, use its value instead
+                # NOTE: this is an @Property funciton in portfolio.
+                When(Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False), then=F("portfolio__federal_agency__federal_type")),
+                # Otherwise, return the natively assigned value
+                default=F("federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -475,9 +490,9 @@ class DomainExport(BaseExport):
             first_ready_on = "(blank)"
 
         # organization_type has organization_type AND is_election
-        domain_org_type = model.get("converted_generic_org_type") or model.get("organization_type")
+        domain_org_type = model.get("converted_generic_org_type")
         human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
-        domain_federal_type = model.get("federal_type")
+        domain_federal_type = model.get("converted_federal_type")
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
         domain_type = human_readable_domain_org_type
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
@@ -623,6 +638,14 @@ class DomainDataType(DomainExport):
             "Domain managers",
             "Invited domain managers",
         ]
+    
+
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
 
     @classmethod
     def get_sort_fields(cls):
@@ -631,9 +654,9 @@ class DomainDataType(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            "converted_generic_org_type",
+            Coalesce("converted_federal_type", Value("ZZZZZ")),
+            "converted_federal_agency",
             "domain__name",
         ]
 
@@ -779,7 +802,7 @@ class DomainRequestsDataType:
                     cls.safe_get(getattr(request, "region_field", None)),
                     request.status,
                     cls.safe_get(getattr(request, "election_office", None)),
-                    request.federal_type,
+                    request.converted_federal_type,
                     cls.safe_get(getattr(request, "domain_type", None)),
                     cls.safe_get(getattr(request, "additional_details", None)),
                     cls.safe_get(getattr(request, "creator_approved_domains_count", None)),
@@ -829,6 +852,13 @@ class DomainDataFull(DomainExport):
             "State",
             "Security contact email",
         ]
+    
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
 
     @classmethod
     def get_sort_fields(cls):
@@ -837,9 +867,9 @@ class DomainDataFull(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            "converted_generic_org_type",
+            Coalesce("converted_federal_type", Value("ZZZZZ")),
+            "converted_federal_agency",
             "domain__name",
         ]
 
@@ -910,6 +940,14 @@ class DomainDataFederal(DomainExport):
             "Security contact email",
         ]
 
+
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
+    
     @classmethod
     def get_sort_fields(cls):
         """
@@ -917,9 +955,9 @@ class DomainDataFederal(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            "converted_generic_org_type",
+            Coalesce("converted_federal_type", Value("ZZZZZ")),
+            "converted_federal_agency",
             "domain__name",
         ]
 
@@ -1340,16 +1378,31 @@ class DomainRequestExport(BaseExport):
         """
         Get a dict of computed fields.
         """
-        # NOTE: These computed fields imitate @Property functions in the Domain model where needed.
+        # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
         # This is for performance purposes. Since we are working with dictionary values and not
         # model objects as we export data, trying to reinstate model objects in order to grab @property
         # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
         return {
+            "converted_generic_org_type": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("organization_type"),
+                output_field=CharField(),
+            ),
             "converted_federal_agency": Case(
                 # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
                 # Otherwise, return the natively assigned value
-                default=F("federal_agency"),
+                default=F("federal_agency__agency"),
+                output_field=CharField(),
+            ),
+            "converted_federal_type": Case(
+                # When portfolio is present, use its value instead
+                # NOTE: this is an @Property funciton in portfolio.
+                When(Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False), then=F("portfolio__federal_agency__federal_type")),
+                # Otherwise, return the natively assigned value
+                default=F("federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -1488,11 +1541,11 @@ class DomainRequestExport(BaseExport):
         """
 
         # Handle the federal_type field. Defaults to the wrong format.
-        federal_type = model.get("federal_type")
+        federal_type = model.get("converted_federal_type")
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.get("converted_generic_org_type") or model.get("organization_type")
+        org_type = model.get("converted_generic_org_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.

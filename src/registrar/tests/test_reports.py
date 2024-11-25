@@ -63,8 +63,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
             ]
@@ -85,8 +85,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,183,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,183,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,8,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,8,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -245,17 +245,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,"
             "SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,188,,,, ,,(blank),meoward@rocks.com,\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,188,,,, ,,(blank),"
+            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),meoward@rocks.com,\n"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "adomain10.gov,Ready,2024-04-03,(blank),Federal,189,,,, ,,(blank),,squeaker@rocks.com\n"
-            "bdomain4.gov,Unknown,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
-            "bdomain5.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
-            "bdomain6.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,189,,,, ,,security@mail.gov,,\n"
-            "sdomain8.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
-            "xdomain7.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
-            "zdomain9.gov,Deleted,(blank),(blank),Federal,189,,,, ,,(blank),,\n"
+            "adomain10.gov,Ready,2024-04-03,(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,squeaker@rocks.com\n"
+            "bdomain4.gov,Unknown,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
+            "bdomain5.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
+            "bdomain6.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
+            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,ArmedForcesRetirementHome,,,, ,,security@mail.gov,,\n"
+            "sdomain8.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
+            "xdomain7.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
+            "zdomain9.gov,Deleted,(blank),(blank),Federal,ArmedForcesRetirementHome,,,, ,,(blank),,\n"
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,squeaker@rocks.com\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
         )
@@ -302,7 +302,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,190,,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,WorldWarICentennialCommission,,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "adomain2.gov,Dns needed,(blank),(blank),Interstate,,,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
@@ -481,10 +481,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,186,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,186,,,,(blank)\n"
-            "adomain10.gov,Federal,187,,,,(blank)\n"
-            "ddomain3.gov,Federal,187,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
+            "adomain10.gov,Federal,WorldWarICentennialCommission,,,,(blank)\n"
+            "ddomain3.gov,Federal,WorldWarICentennialCommission,,,,security@mail.gov\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
 
@@ -524,8 +524,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal - Executive,184,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,184,,,,(blank)\n"
-            "adomain10.gov,Federal,185,,,,(blank)\n"
-            "ddomain3.gov,Federal,185,,,,security@mail.gov\n"
+            "adomain10.gov,Federal,WorldWarICentennialCommission,,,,(blank)\n"
+            "ddomain3.gov,Federal,WorldWarICentennialCommission,,,,security@mail.gov\n"
         )
 
         # Normalize line endings and remove commas,
