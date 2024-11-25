@@ -1,18 +1,32 @@
-from django.http import JsonResponse
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.paginator import Paginator
-from django.db.models import F, Q
+from django.db.models import (
+    Case,
+    CharField,
+    F,
+    Q,
+    TextField,
+    Value,
+    When,
+    OuterRef,
+    Subquery,
+)
+from django.db.models.expressions import Func
+from django.db.models.functions import Cast, Coalesce, Concat
+from django.http import JsonResponse
 from django.urls import reverse
 from django.views import View
-from django.db.models.expressions import Func
-from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
-from django.db.models.functions import Cast, Coalesce, Concat
-from django.contrib.postgres.aggregates import ArrayAgg
-from registrar.models import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+
+from registrar.models import (
+    DomainInvitation,
+    PortfolioInvitation,
+    UserPortfolioPermission,
+)
+from registrar.models.utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+)
 from registrar.views.utility.mixins import PortfolioMembersPermission
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
 
