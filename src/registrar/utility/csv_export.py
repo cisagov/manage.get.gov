@@ -1,8 +1,31 @@
-from abc import abstractmethod
-from collections import defaultdict
 import csv
 import logging
+from abc import ABC, abstractmethod
+from collections import defaultdict
 from datetime import datetime
+
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    DateField,
+    F,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    TextField,
+    Value,
+    When,
+    OuterRef,
+    Subquery,
+    Exists,
+)
+from django.db.models.functions import Concat, Coalesce, Cast, Func
+from django.utils import timezone
+
 from registrar.models import (
     Domain,
     DomainInvitation,
@@ -10,55 +33,16 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     UserDomainRole,
+    PortfolioInvitation,
+    UserGroup,
 )
-from django.db.models import (
-    Case,
-    CharField,
-    Count,
-    DateField,
-    F,
-    Q,
-    Value,
-    When,
-)
-from abc import ABC, abstractmethod
-from django.utils import timezone
-from django.db.models.functions import Concat, Coalesce
-from django.contrib.postgres.aggregates import StringAgg
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
+from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail
-from abc import ABC, abstractmethod
-from registrar.models import (
-    DomainInvitation,
-    PortfolioInvitation,
-)
-from django.db.models import (
-    CharField,
-    F,
-    ManyToManyField,
-    Q,
-    QuerySet,
-    Value,
-    TextField,
-    OuterRef,
-    Subquery,
-    Func,
-    Case,
-    When,
-    Exists,
-)
-from django.db.models.functions import Concat, Coalesce, Cast
-from registrar.models.user_group import UserGroup
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemoveNull
-from django.contrib.postgres.aggregates import ArrayAgg
-from django.contrib.admin.models import LogEntry, ADDITION
-from django.contrib.contenttypes.models import ContentType
 
 logger = logging.getLogger(__name__)
 
