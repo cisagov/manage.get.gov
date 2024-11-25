@@ -89,6 +89,13 @@ class BaseExport(ABC):
         pass
 
     @classmethod
+    def get_columns(cls):
+        """
+        Returns the columns for CSV export. Override in subclasses as needed.
+        """
+        return []
+
+    @classmethod
     def get_sort_fields(cls):
         """
         Returns the sort fields for the CSV export. Override in subclasses as needed.
@@ -152,6 +159,21 @@ class BaseExport(ABC):
         Get a list of fields from related tables.
         """
         return []
+    
+    @classmethod
+    def update_queryset(cls, queryset, **kwargs):
+        """
+        Returns an updated queryset. Override in subclass to update queryset.
+        """
+        return queryset
+    
+    @classmethod
+    def write_csv_before(cls, csv_writer, **kwargs):
+        """
+        Write to csv file before the write_csv method.
+        Override in subclasses where needed.
+        """
+        pass
 
     @classmethod
     def annotate_and_retrieve_fields(
@@ -219,30 +241,8 @@ class BaseExport(ABC):
         return cls.annotate_and_retrieve_fields(model_queryset, annotated_fields, related_table_fields, **kwargs)
 
     @classmethod
-    def update_queryset(cls, queryset, **kwargs):
-        """
-        Returns an updated queryset. Override in subclass to update queryset.
-        """
-        return queryset
-
-    @classmethod
     def get_model_annotation_dict(cls, **kwargs):
         return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
-
-    @classmethod
-    def get_columns(cls):
-        """
-        Returns the columns for CSV export. Override in subclasses as needed.
-        """
-        return []
-
-    @classmethod
-    def write_csv_before(cls, csv_writer, **kwargs):
-        """
-        Write to csv file before the write_csv method.
-        Override in subclasses where needed.
-        """
-        pass
 
     @classmethod
     def export_data_to_csv(cls, csv_file, **kwargs):
