@@ -43,7 +43,7 @@
             {% comment %} This will be toggled if a special value, "other", is selected.
             Otherwise this field is invisible. 
             {% endcomment %}
-            <div id="suborganization-container__details">
+            <div id="suborganization-container__details" class="padding-top-2 margin-top-0">
                 {% with attr_required=True %}
                     {% input_with_errors forms.1.requested_suborganization %}
                 {% endwith %}

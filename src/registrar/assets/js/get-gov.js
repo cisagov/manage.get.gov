@@ -2938,13 +2938,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
     requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
     requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
-    if (requestingNewSuborganization.value === "True") {
-      selectParent.classList.add("padding-bottom-2");
-      showElement(suborgDetailsContainer);
-    }else {
-      selectParent.classList.remove("padding-bottom-2");
-      hideElement(suborgDetailsContainer);
-    }
+    requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) :  hideElement(suborgDetailsContainer);
   }
 
   // Add fake "other" option to sub_organization select
