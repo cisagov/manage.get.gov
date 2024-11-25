@@ -2809,17 +2809,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 )
             return queryset
 
-    def get_queryset(self, request):
-        """Custom get_queryset to filter by portfolio if portfolio is in the
-        request params."""
-        qs = super().get_queryset(request)
-        # Check if a 'portfolio' parameter is passed in the request
-        portfolio_id = request.GET.get("portfolio")
-        if portfolio_id:
-            # Further filter the queryset by the portfolio
-            qs = qs.filter(domain_info__portfolio=portfolio_id)
-        return qs
-
     # Filters
     list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
 
@@ -3227,6 +3216,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ):
             return True
         return super().has_change_permission(request, obj)
+    
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(domain_info__portfolio=portfolio_id)
+        return qs
 
 
 class DraftDomainResource(resources.ModelResource):
