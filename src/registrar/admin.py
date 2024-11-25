@@ -1543,7 +1543,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     form = DomainInformationAdminForm
 
     # Customize column header text
-    @admin.display(description=_("Converted Generic Org Type"))
+    @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type
 
@@ -1709,18 +1709,18 @@ class DomainRequestResource(FsmModelResource):
     # Override exports for these columns in DomainInformation to use converted values.  These values
     # come from @Property functions, which are not automatically included in the export and which we
     # want to use in place of the native fields.
-    organization_name = fields.Field(attribute='converted_organization_name', column_name='GEN organization_name')
-    generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='GEN generic_org_type')
-    federal_type = fields.Field(attribute='converted_federal_type', column_name='GEN federal_type')
-    federal_agency = fields.Field(attribute='converted_federal_agency', column_name='GEN federal_agency')
-    senior_official = fields.Field(attribute='converted_senior_official', column_name='GEN senior_official')
-    address_line1 = fields.Field(attribute='converted_address_line1', column_name='GEN address_line1')
-    address_line2 = fields.Field(attribute='converted_address_line2', column_name='GEN address_line2')
-    city = fields.Field(attribute='converted_city', column_name='GEN city')
-    state_territory = fields.Field(attribute='converted_state_territory', column_name='GEN state_territory')
-    zipcode = fields.Field(attribute='converted_zipcode', column_name='GEN zipcode')
-    urbanization = fields.Field(attribute='converted_urbanization', column_name='GEN urbanization')
-    senior_official = fields.Field(attribute='converted_urbanization', column_name='GEN senior official')
+    organization_name = fields.Field(attribute='converted_organization_name', column_name='organization_name')
+    generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='generic_org_type')
+    federal_type = fields.Field(attribute='converted_federal_type', column_name='federal_type')
+    federal_agency = fields.Field(attribute='converted_federal_agency', column_name='federal_agency')
+    senior_official = fields.Field(attribute='converted_senior_official', column_name='senior_official')
+    address_line1 = fields.Field(attribute='converted_address_line1', column_name='address_line1')
+    address_line2 = fields.Field(attribute='converted_address_line2', column_name='address_line2')
+    city = fields.Field(attribute='converted_city', column_name='city')
+    state_territory = fields.Field(attribute='converted_state_territory', column_name='state_territory')
+    zipcode = fields.Field(attribute='converted_zipcode', column_name='zipcode')
+    urbanization = fields.Field(attribute='converted_urbanization', column_name='urbanization')
+    senior_official = fields.Field(attribute='converted_urbanization', column_name='senior official')
 
     # Custom getters for the above columns that map to @property functions instead of fields
     def dehydrate_organization_name(self, obj):
@@ -2698,14 +2698,11 @@ class DomainResource(FsmModelResource):
         )
 
     # Custom getters to retrieve the values from @Proprerty methods in DomainInfo
-    converted_generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='Converted generic org type')
-    converted_federal_agency = fields.Field(attribute='converted_federal_agency', column_name='Converted federal agency')
-    converted_organization_name = fields.Field(attribute='converted_organization_name', column_name='Converted organization name')
+    converted_generic_org_type = fields.Field(attribute='converted_generic_org_type', column_name='generic org type')
+    converted_federal_agency = fields.Field(attribute='converted_federal_agency', column_name='federal agency')
+    converted_organization_name = fields.Field(attribute='converted_organization_name', column_name='organization name')
     converted_city = fields.Field(attribute='converted_city', column_name='city')
-    converted_state_territory = fields.Field(attribute='converted_state_territory', column_name='Converted state territory')
-    
-    # def dehydrate_generic_org_type(self, obj):
-    #     return obj.domain_info.converted_federal_type
+    converted_state_territory = fields.Field(attribute='converted_state_territory', column_name='state territory')
     
     def dehydrate_converted_generic_org_type(self, obj):
         return obj.domain_info.converted_generic_org_type
@@ -2852,67 +2849,72 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     # ------- Domain Information Fields
 
     # --- Generic Org Type
-    @admin.display(description=_("Converted Generic Org Type"))
+    # Use converted value in the table
+    @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.domain_info.converted_generic_org_type
     converted_generic_org_type.admin_order_field = "domain_info__converted_generic_org_type"  # type: ignore
     
+    # Use native value for the change form
     def generic_org_type(self, obj):
         return obj.domain_info.get_generic_org_type_display()
-    # generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
 
     # --- Federal Agency
-    @admin.display(description=_("Converted Federal Agency"))
+    @admin.display(description=_("Federal Agency"))
     def converted_federal_agency(self, obj):
         return obj.domain_info.converted_federal_agency
     converted_federal_agency.admin_order_field = "domain_info__converted_federal_agency"  # type: ignore
 
+    # Use native value for the change form
     def federal_agency(self, obj):
         if obj.domain_info:
             return obj.domain_info.federal_agency
         else:
             return None
-    # federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
 
     # --- Federal Type
-    @admin.display(description=_("Converted Federal Type"))
+    # Use converted value in the table
+    @admin.display(description=_("Federal Type"))
     def converted_federal_type(self, obj):
         return obj.domain_info.converted_federal_type
     converted_federal_type.admin_order_field = "domain_info__converted_federal_type"  # type: ignore
 
+    # Use native value for the change form
     def federal_type(self, obj):
         return obj.domain_info.federal_type if obj.domain_info else None
-    # federal_type.admin_order_field = "domain_info__federal_type"  # type: ignore
 
     # --- Organization Name
-    @admin.display(description=_("Converted Organization Name"))
+    # Use converted value in the table
+    @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
         return obj.domain_info.converted_organization_name
     converted_organization_name.admin_order_field = "domain_info__converted_organization_name"  # type: ignore
 
+    # Use native value for the change form
     def organization_name(self, obj):
         return obj.domain_info.organization_name if obj.domain_info else None
-    # organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
 
     # --- City
-    @admin.display(description=_("Converted City"))
+    # Use converted value in the table
+    @admin.display(description=_("City"))
     def converted_city(self, obj):
         return obj.domain_info.converted_city
     converted_city.admin_order_field = "domain_info__converted_city"  # type: ignore
 
+    # Use native value for the change form
     def city(self, obj):
         return obj.domain_info.city if obj.domain_info else None
-    # city.admin_order_field = "domain_info__city"  # type: ignore
 
     # --- State
-    @admin.display(description=_("Converted State / territory"))
+    # Use converted value in the table
+    @admin.display(description=_("State / territory"))
     def converted_state_territory(self, obj):
         return obj.domain_info.converted_state_territory
     converted_state_territory.admin_order_field = "domain_info__converted_state_territory"  # type: ignore
 
+    # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
-    # state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
 
 
     def dnssecdata(self, obj):
