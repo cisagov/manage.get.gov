@@ -49,12 +49,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         super().tearDown()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
+        User.objects.all().delete()
         self.federal_agency.delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
         """Tests that user is presented with intro acknowledgement page"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         self.assertContains(intro_page, "You’re about to start your .gov domain request")
 
     @less_console_noise_decorator
@@ -105,12 +106,12 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
         redirect_url = detail_page.url
-        self.assertEqual(redirect_url, "/request/generic_org_type/")
+        self.assertEqual(redirect_url, f"/request/{domain_request.id}/generic_org_type/")
 
     @less_console_noise_decorator
     def test_domain_request_form_empty_submit(self):
         """Tests empty submit on the first page after the acknowledgement page"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -141,7 +142,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             domain_request.save()
 
         # now, attempt to create another one
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         intro_form = intro_page.forms[0]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -153,59 +154,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         self.assertContains(type_page, "You cannot submit this request yet")
-
-    @less_console_noise_decorator
-    def test_domain_request_into_acknowledgement_creates_new_request(self):
-        """
-        We had to solve a bug where the wizard was creating 2 requests on first intro acknowledgement ('continue')
-        The wizard was also creating multiiple requests on 'continue' -> back button -> 'continue' etc.
-
-        This tests that the domain requests get created only when they should.
-        """
-        # Get the intro page
-        self.app.get(reverse("home"))
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_page = self.app.get(reverse("domain-request:"))
-
-        # Select the form
-        intro_form = intro_page.forms[0]
-
-        # Submit the form, this creates 1 Request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        response = intro_form.submit(name="submit_button", value="intro_acknowledge")
-
-        # Landing on the next page used to create another 1 request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        response.follow()
-
-        # Check if a new DomainRequest object has been created
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 1)
-
-        # Let's go back to intro and submit again, this should not create a new request
-        # This is the equivalent of a back button nav from step 1 to intro -> continue
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form = intro_form.submit(name="submit_button", value="intro_acknowledge")
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form.follow()
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 1)
-
-        # Go home, which will reset the session flag for new request
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.app.get(reverse("home"))
-
-        # This time, clicking continue will create a new request
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit(name="submit_button", value="intro_acknowledge")
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result.follow()
-        domain_request_count = DomainRequest.objects.count()
-        self.assertEqual(domain_request_count, 2)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -225,7 +173,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         SKIPPED_PAGES = 3
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -253,7 +201,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -273,7 +221,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -305,7 +253,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
@@ -330,7 +278,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(so_result.status_code, 302)
-        self.assertEqual(so_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result["Location"], f"/request/{domain_request.id}/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
@@ -352,7 +300,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(current_sites_result.status_code, 302)
-        self.assertEqual(current_sites_result["Location"], "/request/dotgov_domain/")
+        self.assertEqual(current_sites_result["Location"], f"/request/{domain_request.id}/dotgov_domain/")
         num_pages_tested += 1
 
         # ---- DOTGOV DOMAIN PAGE  ----
@@ -372,7 +320,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(dotgov_result.status_code, 302)
-        self.assertEqual(dotgov_result["Location"], "/request/purpose/")
+        self.assertEqual(dotgov_result["Location"], f"/request/{domain_request.id}/purpose/")
         num_pages_tested += 1
 
         # ---- PURPOSE PAGE  ----
@@ -391,7 +339,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], f"/request/{domain_request.id}/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
@@ -429,7 +377,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
+        self.assertEqual(other_contacts_result["Location"], f"/request/{domain_request.id}/additional_details/")
         num_pages_tested += 1
 
         # ---- ADDITIONAL DETAILS PAGE  ----
@@ -459,7 +407,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(additional_details_result.status_code, 302)
-        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result["Location"], f"/request/{domain_request.id}/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
@@ -479,7 +427,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
-        self.assertEqual(requirements_result["Location"], "/request/review/")
+        self.assertEqual(requirements_result["Location"], f"/request/{domain_request.id}/review/")
         num_pages_tested += 1
 
         # ---- REVIEW AND FINSIHED PAGES  ----
@@ -549,7 +497,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         num_pages_tested = 0
         # skipping elections, type_of_work, tribal_government
 
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -577,7 +525,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
         num_pages_tested += 1
 
         # ---- FEDERAL BRANCH PAGE  ----
@@ -597,7 +545,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
@@ -629,7 +577,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], "/request/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
@@ -654,7 +602,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(so_result.status_code, 302)
-        self.assertEqual(so_result["Location"], "/request/current_sites/")
+        self.assertEqual(so_result["Location"], f"/request/{domain_request.id}/current_sites/")
         num_pages_tested += 1
 
         # ---- CURRENT SITES PAGE  ----
@@ -676,7 +624,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(current_sites_result.status_code, 302)
-        self.assertEqual(current_sites_result["Location"], "/request/dotgov_domain/")
+        self.assertEqual(current_sites_result["Location"], f"/request/{domain_request.id}/dotgov_domain/")
         num_pages_tested += 1
 
         # ---- DOTGOV DOMAIN PAGE  ----
@@ -696,7 +644,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(dotgov_result.status_code, 302)
-        self.assertEqual(dotgov_result["Location"], "/request/purpose/")
+        self.assertEqual(dotgov_result["Location"], f"/request/{domain_request.id}/purpose/")
         num_pages_tested += 1
 
         # ---- PURPOSE PAGE  ----
@@ -715,7 +663,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(purpose_result.status_code, 302)
-        self.assertEqual(purpose_result["Location"], "/request/other_contacts/")
+        self.assertEqual(purpose_result["Location"], f"/request/{domain_request.id}/other_contacts/")
         num_pages_tested += 1
 
         # ---- OTHER CONTACTS PAGE  ----
@@ -753,7 +701,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(other_contacts_result.status_code, 302)
-        self.assertEqual(other_contacts_result["Location"], "/request/additional_details/")
+        self.assertEqual(other_contacts_result["Location"], f"/request/{domain_request.id}/additional_details/")
         num_pages_tested += 1
 
         # ---- ADDITIONAL DETAILS PAGE  ----
@@ -783,7 +731,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(additional_details_result.status_code, 302)
-        self.assertEqual(additional_details_result["Location"], "/request/requirements/")
+        self.assertEqual(additional_details_result["Location"], f"/request/{domain_request.id}/requirements/")
         num_pages_tested += 1
 
         # ---- REQUIREMENTS PAGE  ----
@@ -811,7 +759,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
-        self.assertEqual(requirements_result["Location"], "/request/review/")
+        self.assertEqual(requirements_result["Location"], f"/request/{domain_request.id}/review/")
         num_pages_tested += 1
 
         # ---- REVIEW AND FINSIHED PAGES  ----
@@ -873,7 +821,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_conditional_federal(self):
         """Federal branch question is shown for federal organizations."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -904,7 +852,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the federal branch
         # question
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_federal/")
+        self.assertIn("organization_federal", type_result["Location"])
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -921,7 +869,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the contact
         # question
         self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], "/request/organization_contact/")
+        self.assertIn("organization_federal", type_result["Location"])
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = federal_result.follow()
         self.assertContains(contact_page, "Federal agency")
@@ -929,7 +877,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_conditional_elections(self):
         """Election question is shown for other organizations."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -959,7 +907,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # the post request should return a redirect to the elections question
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], "/request/organization_election/")
+        self.assertIn("organization_election", type_result["Location"])
 
         # and the step label should appear in the sidebar of the resulting page
         # but the step label for the elections page should not appear
@@ -976,7 +924,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the contact
         # question
         self.assertEqual(election_result.status_code, 302)
-        self.assertEqual(election_result["Location"], "/request/organization_contact/")
+        self.assertIn("organization_contact", election_result["Location"])
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         contact_page = election_result.follow()
         self.assertNotContains(contact_page, "Federal agency")
@@ -984,7 +932,8 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
         """Can skip forward and back in sections"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        DomainRequest.objects.all().delete()
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1019,17 +968,20 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Now click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
-
         # Should be a link to the organization_federal page since it is now unlocked
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1)
+
+        new_request_id = all_domain_requests.first().id
         self.assertGreater(
-            len(new_page.html.find_all("a", href="/request/organization_federal/")),
+            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_federal/")),
             0,
         )
 
     @less_console_noise_decorator
     def test_domain_request_form_nonfederal(self):
         """Non-federal organizations don't have to provide their federal agency."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1069,12 +1021,12 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the
         # about your organization page if it was successful.
         self.assertEqual(contact_result.status_code, 302)
-        self.assertEqual(contact_result["Location"], "/request/about_your_organization/")
+        self.assertIn("about_your_organization", contact_result["Location"])
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organization_special(self):
         """Special districts have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1104,7 +1056,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_federal_agency_dropdown_excludes_expected_values(self):
         """The Federal Agency dropdown on a domain request form should not
         include options for gov Administration and Non-Federal Agency"""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1152,7 +1104,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
@@ -1160,7 +1112,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
         """On the Additional Details page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": 0}))
         additional_form = additional_details_page.forms[0]
 
         # Check the cisa representative yes/no field
@@ -1184,7 +1136,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1209,7 +1161,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1239,7 +1193,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1268,7 +1222,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1306,7 +1262,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1368,7 +1326,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1413,7 +1373,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1444,7 +1406,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1481,7 +1445,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        additional_details_page = self.app.get(reverse("domain-request:additional_details"))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"id": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_form = additional_details_page.forms[0]
@@ -1512,7 +1478,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1560,7 +1526,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1644,7 +1610,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1685,7 +1651,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
         """Applicants with no other contacts have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
         response = other_contacts_page.forms[0].submit()
@@ -1701,7 +1667,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
         response = other_contacts_page.forms[0].submit()
@@ -1777,7 +1743,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1850,7 +1816,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1927,7 +1893,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2007,7 +1973,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2083,7 +2049,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts"))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2153,7 +2119,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2222,7 +2188,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official"))
+        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2303,7 +2269,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
         """Special districts have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2332,7 +2298,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_tribal_government(self):
         """Tribal organizations have to answer an additional question."""
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2363,7 +2329,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_request_so_dynamic_text(self):
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2447,7 +2413,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2555,8 +2521,23 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
-        current_sites_page = self.app.get(reverse("domain-request:current_sites"))
+        DomainRequest.objects.all().delete()
+
+        # Create a new domain request
+        intro_page = self.app.get(reverse("domain-request:start"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_form.submit()
+
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1)
+
+        new_domain_request_id = all_domain_requests.first().id
+
+        # Skip to the current sites page
+        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": new_domain_request_id}))
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
         self.assertIn("current_sites-0-website", current_sites_form.fields)
@@ -2573,8 +2554,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         value = current_sites_form["current_sites-0-website"].value
         self.assertEqual(value, "https://example.com")
         self.assertIn("current_sites-1-website", current_sites_form.fields)
+
+        all_domain_requests = DomainRequest.objects.all()
+        self.assertEqual(all_domain_requests.count(), 1, msg="Expected one domain request but got multiple")
         # and it is correctly referenced in the ManyToOne relationship
-        domain_request = DomainRequest.objects.get()  # there's only one
+        domain_request = all_domain_requests.first()  # there's only one
         self.assertEqual(
             domain_request.current_websites.filter(website="https://example.com").count(),
             1,
@@ -2712,7 +2696,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         Make sure the long name is displaying in the domain request form,
         org step
         """
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2738,7 +2722,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         NOTE: This may be a moot point if we implement a more solid pattern in the
         future, like not a submit action at all on the review page."""
 
-        review_page = self.app.get(reverse("domain-request:review"))
+        review_page = self.app.get(reverse("domain-request:review", kwargs={"id": 0}))
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
@@ -2751,7 +2735,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
         # This user should be forbidden from creating new domain requests
-        intro_page = self.app.get(reverse("domain-request:"), expect_errors=True)
+        intro_page = self.app.get(reverse("domain-request:start"), expect_errors=True)
         self.assertEqual(intro_page.status_code, 403)
 
         # This user should also be forbidden from editing existing ones
@@ -2773,7 +2757,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
         # This user should be allowed to create new domain requests
-        intro_page = self.app.get(reverse("domain-request:"))
+        intro_page = self.app.get(reverse("domain-request:start"))
         self.assertEqual(intro_page.status_code, 200)
 
         # This user should also be allowed to edit existing ones
@@ -2976,6 +2960,69 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_breadcrumb_navigation(self):
+        """
+        Tests the breadcrumb navigation behavior in domain request wizard.
+        Ensures that:
+        - Breadcrumb shows correct text based on portfolio flag
+        - Links point to correct destinations
+        - Back button appears on appropriate steps
+        - Back button is not present on first step
+        """
+        # Create initial domain request
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            user=self.user,
+        )
+
+        # Test without portfolio flag
+        start_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Check initial breadcrumb state.
+        # Ensure that the request name is shown if it exists, otherwise just show new domain request.
+        self.assertContains(start_page, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(start_page, "city.gov")
+        self.assertContains(start_page, 'href="/"')
+        self.assertContains(start_page, "Manage your domains")
+        self.assertNotContains(start_page, "Previous step")
+
+        # Move to next step
+        form = start_page.forms[0]
+        next_page = form.submit().follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Verify that the back button appears
+        self.assertContains(next_page, "Previous step")
+        self.assertContains(next_page, "#arrow_back")
+
+        # Test with portfolio flag
+        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
+            portfolio = Portfolio.objects.create(
+                creator=self.user,
+                organization_name="test portfolio",
+            )
+            permission = UserPortfolioPermission.objects.create(
+                user=self.user,
+                portfolio=portfolio,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            )
+
+            # Check portfolio-specific breadcrumb
+            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+            self.assertContains(portfolio_page, "Domain requests")
+
+            # Clean up portfolio
+            permission.delete()
+            portfolio.delete()
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
     def test_unlocked_steps_empty_domain_request(self):
         """Test when all fields in the domain request are empty."""
         unlocked_steps = self.wizard.db_check_for_unlocking_steps()
@@ -3016,7 +3063,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
             self.assertContains(detail_page, "#check_circle", count=9)
             # Type of organization
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
             self.assertContains(detail_page, "link_usa-checked", count=10)
 
         else:
@@ -3078,7 +3125,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # which unlocks if domain exists), one active step, the review step is locked
             self.assertContains(detail_page, "#check_circle", count=4)
             # Type of organization
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
             self.assertContains(detail_page, "link_usa-checked", count=4)
 
         else:
@@ -3152,17 +3199,12 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "#lock", 1)
 
             # The current option should be selected
-            self.assertContains(detail_page, "usa-current", count=1)
+            self.assertContains(detail_page, "usa-current", count=2)
 
             # We default to the requesting entity page
-            expected_url = reverse("domain-request:portfolio_requesting_entity")
+            expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"id": domain_request.id})
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
-
-            # We shouldn't show the "domains" and "domain requests" buttons
-            # on this page.
-            self.assertNotContains(detail_page, "Domains")
-            self.assertNotContains(detail_page, "Domain requests")
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 

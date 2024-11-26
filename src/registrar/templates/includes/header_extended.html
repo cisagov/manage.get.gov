@@ -34,7 +34,6 @@
             </ul>
         </div>
         <ul class="usa-nav__primary usa-accordion">
-            {% if not hide_domains %}
             <li class="usa-nav__primary-item">
                 {% if has_any_domains_portfolio_permission %}
                     {% url 'domains' as url %}
@@ -45,14 +44,13 @@
                 Domains
                 </a>
             </li>
-            {% endif %}
             <!-- <li class="usa-nav__primary-item">
                 <a href="#" class="usa-nav-link">
                     Domain groups
                 </a>
             </li> -->
 
-            {% if has_organization_requests_flag and not hide_requests %}
+            {% if has_organization_requests_flag %}
             <li class="usa-nav__primary-item">
                 <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                 {% if has_edit_request_portfolio_permission %}
@@ -72,7 +70,7 @@
                             >
                         </li>
                         <li class="usa-nav__submenu-item">
-                            <a href="{% url 'domain-request:' %}"
+                            <a href="{% url 'domain-request:start' %}"
                             ><span>Start a new domain request</span></a
                             >
                         </li>
@@ -93,7 +91,7 @@
             </li>
             {% endif %}
 
-            {% if has_organization_members_flag and not hide_members %}
+            {% if has_organization_members_flag %}
                 <li class="usa-nav__primary-item">
                     <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
                         Members
