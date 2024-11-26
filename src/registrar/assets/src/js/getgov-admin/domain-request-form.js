@@ -292,7 +292,7 @@ export function initCopyRequestSummary() {
                     buttonIcon.setAttribute('xlink:href', baseHref + '#check');
 
                     // Change the button text
-                    nearestSpan = copyButton.querySelector("span")
+                    let nearestSpan = copyButton.querySelector("span")
                     original_text = nearestSpan.innerText
                     nearestSpan.innerText = "Copied to clipboard"
 
