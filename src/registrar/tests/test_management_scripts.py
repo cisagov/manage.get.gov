@@ -1456,18 +1456,18 @@ class TestCreateFederalPortfolio(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
-    def run_create_federal_portfolio(self, agency_name, parse_requests=False, parse_domains=False):
+    def run_create_federal_portfolio(self, **kwargs):
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
             return_value=True,
         ):
             call_command(
-                "create_federal_portfolio", agency_name, parse_requests=parse_requests, parse_domains=parse_domains
+                "create_federal_portfolio", **kwargs
             )
 
     def test_create_or_modify_portfolio(self):
         """Test portfolio creation and modification with suborg and senior official."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
         self.assertEqual(portfolio.organization_name, self.federal_agency.agency)
@@ -1485,7 +1485,7 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_handle_portfolio_requests(self):
         """Verify portfolio association with domain requests."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         self.domain_request.refresh_from_db()
         self.assertIsNotNone(self.domain_request.portfolio)
@@ -1494,7 +1494,7 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_handle_portfolio_domains(self):
         """Check portfolio association with domain information."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_domains=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_domains=True)
 
         self.domain_info.refresh_from_db()
         self.assertIsNotNone(self.domain_info.portfolio)
@@ -1503,7 +1503,7 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_handle_parse_both(self):
         """Ensure correct parsing of both requests and domains."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True, parse_domains=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True, parse_domains=True)
 
         self.domain_request.refresh_from_db()
         self.domain_info.refresh_from_db()
@@ -1516,7 +1516,7 @@ class TestCreateFederalPortfolio(TestCase):
         with self.assertRaisesRegex(
             CommandError, "You must specify at least one of --parse_requests or --parse_domains."
         ):
-            self.run_create_federal_portfolio("Test Federal Agency")
+            self.run_create_federal_portfolio(agency_name="Test Federal Agency")
 
     def test_command_error_agency_not_found(self):
         """Check error handling for non-existent agency."""
@@ -1525,7 +1525,7 @@ class TestCreateFederalPortfolio(TestCase):
             "The value you enter for `agency_name` must be prepopulated in the FederalAgency table before proceeding."
         )
         with self.assertRaisesRegex(ValueError, expected_message):
-            self.run_create_federal_portfolio("Non-existent Agency", parse_requests=True)
+            self.run_create_federal_portfolio(agency_name="Non-existent Agency", parse_requests=True)
 
     def test_update_existing_portfolio(self):
         """Test updating an existing portfolio."""
@@ -1538,7 +1538,7 @@ class TestCreateFederalPortfolio(TestCase):
             notes="Old notes",
         )
 
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         existing_portfolio.refresh_from_db()
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
