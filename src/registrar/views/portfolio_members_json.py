@@ -12,6 +12,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.mixins import PortfolioMembersPermission
+from registrar.models.utility.orm_helper import ArrayRemoveNull
 
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
@@ -134,7 +135,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             additional_permissions_display=F("additional_permissions"),
             member_display=F("email"),
             # Use ArrayRemove to return an empty list when no domain invitations are found
-            domain_info=ArrayRemove(
+            domain_info=ArrayRemoveNull(
                 ArrayAgg(
                     Subquery(domain_invitations.values("domain_info")),
                     distinct=True,
@@ -214,8 +215,3 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         }
         return member_json
 
-
-# Custom Func to use array_remove to remove null values
-class ArrayRemove(Func):
-    function = "array_remove"
-    template = "%(function)s(%(expressions)s, NULL)"
