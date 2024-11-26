@@ -1579,7 +1579,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             },
         ),
         (".gov domain", {"fields": ["domain"]}),
-        ("Contacts", {"fields": ["generic_org_type", "other_contacts", "no_other_contacts_rationale"]}),
+        ("Contacts", {"fields": ["senior_official", "other_contacts", "no_other_contacts_rationale"]}),
         ("Background info", {"fields": ["anything_else"]}),
         (
             "Type of organization",
