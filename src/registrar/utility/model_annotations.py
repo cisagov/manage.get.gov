@@ -46,6 +46,8 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 
+from registrar.utility.enums import DefaultEmail, DefaultUser
+
 
 class BaseModelAnnotation(ABC):
     """
@@ -388,7 +390,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                                     user=OuterRef("user"),
                                 )
                             ),
-                            then=Value("help@get.gov"),
+                            then=Value(DefaultEmail.HELP_EMAIL),
                         ),
                         default=F("user__email"),
                         output_field=CharField(),
@@ -397,7 +399,7 @@ class PortfolioInvitationModelAnnotation(BaseModelAnnotation):
                 .order_by("action_time")
                 .values("display_email")[:1]
             ),
-            Value("System"),
+            Value(DefaultUser.SYSTEM),
             output_field=CharField(),
         )
 

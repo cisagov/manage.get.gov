@@ -35,10 +35,22 @@ class DefaultEmail(Enum):
     Overview of emails:
     - PUBLIC_CONTACT_DEFAULT: "dotgov@cisa.dhs.gov"
     - LEGACY_DEFAULT: "registrar@dotgov.gov"
+    - HELP_EMAIL: "help@get.gov"
     """
 
     PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
+    HELP_EMAIL = "help@get.gov"
+
+
+class DefaultUser(Enum):
+    """Stores default values for a default user.
+
+    Overview of defaults:
+    - SYSTEM: "System"
+    """
+
+    SYSTEM = "System"
 
 
 class Step(StrEnum):

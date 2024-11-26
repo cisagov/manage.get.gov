@@ -55,8 +55,9 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
-        queryset = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio)
-        return queryset.values(
+        # Get UserPortfolioPermission query for getting active members on the portfolio
+        permissions = UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio)
+        return permissions.values(
             "id",
             "first_name",
             "last_name",
@@ -71,9 +72,9 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
     def initial_invitations_search(self, portfolio):
         """Perform initial invitations search and get related DomainInvitation data based on the email."""
-        # Get DomainInvitation query for matching email and for the portfolio
-        queryset = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio)
-        return queryset.values(
+        # Get PortfolioInvitation query for getting active invitations on the portfolio
+        invitations = PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio)
+        return invitations.values(
             "id",
             "first_name",
             "last_name",

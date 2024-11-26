@@ -160,7 +160,11 @@ class MemberExport(BaseExport):
     @classmethod
     def get_model_annotation_dict(cls, request=None, **kwargs):
         """Combines the permissions and invitation model annotations for
-        the final returned csv export which combines both of these contexts"""
+        the final returned csv export which combines both of these contexts.
+        Returns a dictionary of a union between: 
+        - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        """
         portfolio = request.session.get("portfolio")
         if not portfolio:
             return {}
