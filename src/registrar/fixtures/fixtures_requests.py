@@ -103,11 +103,13 @@ class DomainRequestFixture:
         }
 
     @classmethod
-    def fake_dot_gov(cls):
-        while True:
+    def fake_dot_gov(cls, max_attempts=100):
+        """Generate a unique .gov domain name without using an infinite loop."""
+        for _ in range(max_attempts):
             fake_name = f"{fake.slug()}.gov"
             if not Domain.objects.filter(name=fake_name).exists():
                 return DraftDomain.objects.create(name=fake_name)
+        raise RuntimeError(f"Failed to generate a unique .gov domain after {max_attempts} attempts")
 
     @classmethod
     def fake_expiration_date(cls):
@@ -240,7 +242,7 @@ class DomainRequestFixture:
             # Filter Suborganizations by the request's portfolio
             portfolio_suborganizations = Suborganization.objects.filter(portfolio=request.portfolio)
 
-            # Assuming SuborganizationFixture.SUBORGS is a list of dictionaries with a "name" key
+            # Select a suborg that's defined in the fixtures
             suborganization_names = [suborg["name"] for suborg in SuborganizationFixture.SUBORGS]
 
             # Further filter by names in suborganization_names
