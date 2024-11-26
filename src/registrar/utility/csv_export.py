@@ -192,7 +192,7 @@ class MemberExport(BaseExport):
     @classmethod
     def get_columns(cls):
         """
-        Returns the columns for CSV export. Override in subclasses as needed.
+        Returns the list of column string names for CSV export. Override in subclasses as needed.
         """
         return [
             "Email",
