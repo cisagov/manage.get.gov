@@ -17,8 +17,8 @@ initFormsetsForms();
 triggerModalOnDsDataForm();
 nameserversFormListener();
 
-hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees')
-hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null)
+hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
+hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
 hookupRadioTogglerListener(
   'member_access_level', 
   {
@@ -26,8 +26,7 @@ hookupRadioTogglerListener(
     'basic': 'new-member-basic-permissions'
   }
 );
-hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null)
-
+hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);
 initializeUrbanizationToggle();
 
 userProfileListener();
