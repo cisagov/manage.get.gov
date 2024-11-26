@@ -457,7 +457,7 @@ class MemberExport(BaseExport):
                                     user=OuterRef("user"),
                                 )
                             ),
-                            then=Value(DefaultEmail.HELP_EMAIL.value),
+                            then=Value(DefaultUserValues.HELP_EMAIL.value),
                         ),
                         default=F("user__email"),
                         output_field=CharField(),
