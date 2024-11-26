@@ -4,6 +4,12 @@
 
 {% block title %}Thanks for your domain request! | {% endblock %}
 
+
+{% comment %} Same as the old wrapper implementation but with padding-top-4 {% endcomment %}
+{% block wrapperdiv %}
+<div id="wrapper" class="wrapper--padding-top-6">
+{% endblock wrapperdiv %}
+
 {% block content %}
 <main id="main-content" class="grid-container register-form-step">
   <span class="display-flex flex-align-center" > 
@@ -28,8 +34,8 @@
     <li>Your requested domain meets our naming requirements.</li>
   </ul>
 
-  <p> We’ll email you if we have questions. We’ll also email you as soon as we complete our review. You can <a href="{% url 'home' %}">check the status</a>
-      of your request at any time on the registrar homepage.</p> 
+  <p> We’ll email you if we have questions. We’ll also email you as soon as we complete our review. You can <a href="{% if portfolio %}{% url 'domain-requests' %}{% else %}{% url 'home' %}{% endif %}">check the status</a>
+      of your request at any time on the registrar.</p> 
   
   <p> <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact' %}">Contact us if you need help during this process</a>.</p>
 
