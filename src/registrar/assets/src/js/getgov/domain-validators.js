@@ -47,8 +47,6 @@ function fetchJSON(endpoint, callback, url="/api/v1/") {
       if (xhr.status != 200) return;
       callback(JSON.parse(xhr.response));
     };
-    // nothing, don't care
-    // xhr.onerror = function() { };
 }
 
 /** Modifies CSS and HTML when an input is valid/invalid. */

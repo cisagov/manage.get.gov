@@ -27,9 +27,7 @@ export function loadInitialValuesForComboBoxes() {
 
       // Override the default clear button behavior such that it no longer clears the input,
       // it just resets to the data-initial-value.
-
       // Due to the nature of how uswds works, this is slightly hacky.
-
       // Use a MutationObserver to watch for changes in the dropdown list
       const dropdownList = comboBox.querySelector(`#${input.id}--list`);
       const observer = new MutationObserver(function(mutations) {

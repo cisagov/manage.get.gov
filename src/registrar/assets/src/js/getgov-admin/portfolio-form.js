@@ -2,7 +2,7 @@ import { hideElement, showElement } from './helpers-admin.js';
 
 /**
  * A function for dynamically changing some fields on the portfolio admin model
- * IMPORTANT NOTE: The logic in this function is paired handlePortfolioSelection and shoul be refactored
+ * IMPORTANT NOTE: The logic in this function is paired handlePortfolioSelection and should be refactored once we solidify our requirements.
 */
 export function initDynamicPortfolioFields(){
 

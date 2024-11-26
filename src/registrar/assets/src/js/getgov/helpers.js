@@ -67,3 +67,11 @@ export function debounce(handler, cooldown=600) {
         timeout = setTimeout(() => handler.apply(context, args), cooldown);
     }
 }
+
+/**
+ * Helper function to get the CSRF token from the cookie
+ *
+*/
+export function getCsrfToken() {
+    return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+}

@@ -153,7 +153,7 @@ export function initApprovedDomain() {
 }
 
 /**
- * A function for copy summary button (appears in DomainRegistry models)
+ * A function for copy summary button
 */
 export function initCopyRequestSummary() {
     const copyButton = document.getElementById('id-copy-to-clipboard-summary');

@@ -1,4 +1,4 @@
-import { hideElement, showElement } from './helpers.js';
+import { hideElement, showElement, getCsrfToken } from './helpers.js';
 import { uswdsInitializeModals, uswdsUnloadModals } from './helpers-uswds.js';
 import { BaseTable, addModal, generateKebabHTML } from './table-base.js';
 
