@@ -198,8 +198,8 @@ class BaseExport(ABC):
 
         # We can infer that if we're passing in annotations,
         # we want to grab the result of said annotation.
-        if computed_fields :
-            related_table_fields.extend(computed_fields .keys())
+        if computed_fields:
+            related_table_fields.extend(computed_fields.keys())
 
         # Get prexisting fields on the model
         model_fields = set()
