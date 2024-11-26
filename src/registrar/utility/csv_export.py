@@ -176,7 +176,7 @@ class BaseExport(ABC):
 
     @classmethod
     def annotate_and_retrieve_fields(
-        cls, initial_queryset, annotated_fields, related_table_fields=None, include_many_to_many=False, **kwargs
+        cls, initial_queryset, computed_fields, related_table_fields=None, include_many_to_many=False, **kwargs
     ) -> QuerySet:
         """
         Applies annotations to a queryset and retrieves specified fields,
@@ -184,7 +184,7 @@ class BaseExport(ABC):
 
         Parameters:
             initial_queryset (QuerySet): Initial queryset.
-            annotated_fields (dict, optional): Fields to compute {field_name: expression}.
+            computed_fields  (dict, optional): Fields to compute {field_name: expression}.
             related_table_fields (list, optional): Extra fields to retrieve; defaults to annotation keys if None.
             include_many_to_many (bool, optional): Determines if we should include many to many fields or not
             **kwargs: Additional keyword arguments for specific parameters (e.g., public_contacts, domain_invitations,
@@ -198,8 +198,8 @@ class BaseExport(ABC):
 
         # We can infer that if we're passing in annotations,
         # we want to grab the result of said annotation.
-        if annotated_fields:
-            related_table_fields.extend(annotated_fields.keys())
+        if computed_fields :
+            related_table_fields.extend(computed_fields .keys())
 
         # Get prexisting fields on the model
         model_fields = set()
@@ -209,7 +209,7 @@ class BaseExport(ABC):
             if many_to_many or not isinstance(field, ManyToManyField):
                 model_fields.add(field.name)
 
-        queryset = initial_queryset.annotate(**annotated_fields).values(*model_fields, *related_table_fields)
+        queryset = initial_queryset.annotate(**computed_fields).values(*model_fields, *related_table_fields)
 
         return cls.update_queryset(queryset, **kwargs)
 
@@ -234,6 +234,7 @@ class BaseExport(ABC):
 
     @classmethod
     def get_annotated_queryset(cls, **kwargs):
+        """Returns an annotated queryset based off of all query conditions."""
         sort_fields = cls.get_sort_fields()
         # Get additional args and merge with incoming kwargs
         additional_args = cls.get_additional_args()
@@ -243,7 +244,7 @@ class BaseExport(ABC):
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
         filter_conditions = cls.get_filter_conditions(**kwargs)
-        annotated_fields = cls.get_computed_fields(**kwargs)
+        computed_fields = cls.get_computed_fields(**kwargs)
         related_table_fields = cls.get_related_table_fields()
 
         model_queryset = (
@@ -256,7 +257,7 @@ class BaseExport(ABC):
             .order_by(*sort_fields)
             .distinct()
         )
-        return cls.annotate_and_retrieve_fields(model_queryset, annotated_fields, related_table_fields, **kwargs)
+        return cls.annotate_and_retrieve_fields(model_queryset, computed_fields, related_table_fields, **kwargs)
 
     @classmethod
     def get_model_annotation_dict(cls, **kwargs):
