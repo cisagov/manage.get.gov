@@ -2,7 +2,12 @@ from django.db import models
 from django.forms import ValidationError
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices, DomainRequestPermissionDisplay, MemberPermissionDisplay
+from registrar.models.utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+    DomainRequestPermissionDisplay,
+    MemberPermissionDisplay,
+)
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
@@ -115,7 +120,7 @@ class UserPortfolioPermission(TimeStampedModel):
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
         ]
-        
+
         if all(perm in all_permissions for perm in all_domain_perms):
             return DomainRequestPermissionDisplay.VIEWER_REQUESTER
         elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
