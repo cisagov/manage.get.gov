@@ -30,7 +30,7 @@ from .common import (
 from unittest.mock import ANY, call, patch
 
 import boto3_mocking  # type: ignore
-import logging
+
 
 class TestDomainAdminAsStaff(MockEppLib):
     """Test DomainAdmin class as staff user.
