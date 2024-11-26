@@ -63,6 +63,7 @@ from .common import (
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
+from django.contrib import messages
 
 from unittest.mock import ANY, patch, Mock
 
@@ -2253,6 +2254,33 @@ class TestTransferUser(WebTest):
         self.assertEquals(user_portfolio_permission.user, self.user1)
 
     @less_console_noise_decorator
+    def test_transfer_user_transfers_user_portfolio_roles_no_error_when_duplicates(self):
+        """Assert that duplicate portfolio user roles do not throw errorsd"""
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        UserPortfolioPermission.objects.create(
+            user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        with patch.object(messages, "error"):
+            user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+
+            submit_form = user_transfer_page.forms[1]
+            submit_form["selected_user"] = self.user2.pk
+            submit_form.submit()
+
+            # Verify portfolio permissions remain valid for the original user
+            self.assertTrue(
+                UserPortfolioPermission.objects.filter(
+                    user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+                ).exists()
+            )
+
+            messages.error.assert_not_called()
+
+    @less_console_noise_decorator
     def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
@@ -2305,6 +2333,35 @@ class TestTransferUser(WebTest):
 
         self.assertEquals(user_domain_role1.user, self.user1)
         self.assertEquals(user_domain_role2.user, self.user1)
+
+    @less_console_noise_decorator
+    def test_transfer_user_transfers_domain_role_no_error_when_duplicate(self):
+        """Assert that duplicate user domain roles do not throw errors"""
+        domain_1, _ = Domain.objects.get_or_create(name="chrome.gov", state=Domain.State.READY)
+        domain_2, _ = Domain.objects.get_or_create(name="v8.gov", state=Domain.State.READY)
+        UserDomainRole.objects.get_or_create(user=self.user1, domain=domain_1, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.get_or_create(user=self.user2, domain=domain_1, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.get_or_create(user=self.user2, domain=domain_2, role=UserDomainRole.Roles.MANAGER)
+
+        with patch.object(messages, "error"):
+
+            user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
+            submit_form = user_transfer_page.forms[1]
+            submit_form["selected_user"] = self.user2.pk
+            submit_form.submit()
+
+            self.assertTrue(
+                UserDomainRole.objects.filter(
+                    user=self.user1, domain=domain_1, role=UserDomainRole.Roles.MANAGER
+                ).exists()
+            )
+            self.assertTrue(
+                UserDomainRole.objects.filter(
+                    user=self.user1, domain=domain_2, role=UserDomainRole.Roles.MANAGER
+                ).exists()
+            )
+
+            messages.error.assert_not_called()
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_verified_by_staff_requestor(self):
