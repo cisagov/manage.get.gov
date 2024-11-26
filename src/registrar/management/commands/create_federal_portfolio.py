@@ -15,9 +15,9 @@ class Command(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.created_portfolios = []
-        self.skipped_portfolios = []
-        self.failed_portfolios = []
+        self.updated_portfolios = set()
+        self.skipped_portfolios = set()
+        self.failed_portfolios = set()
 
     def add_arguments(self, parser):
         """Add three arguments:
@@ -91,49 +91,61 @@ class Command(BaseCommand):
                     self.handle_portfolio_requests(portfolio, federal_agency)
 
             except Exception as exec:
-                self.failed_portfolios.append(federal_agency)
+                self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
+                message = f"Failed to create portfolio '{portfolio}'"
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
+
         TerminalHelper.log_script_run_summary(
-            self.created_portfolios, self.failed_portfolios, self.skipped_portfolios, debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----"
+            self.updated_portfolios,
+            self.failed_portfolios,
+            self.skipped_portfolios,
+            debug=False,
+            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
+            display_as_str=True,
         )
 
     def create_portfolio(self, federal_agency):
-        portfolio_args = {
-            "federal_agency": federal_agency,
-            "organization_name": federal_agency.agency,
-            "organization_type": DomainRequest.OrganizationChoices.FEDERAL,
-            "creator": User.get_default_user(),
-            "notes": "Auto-generated record",
-        }
+        # Get the org name / senior official
+        org_name = federal_agency.agency
+        so = federal_agency.so_federal_agency.first() if federal_agency.so_federal_agency.exists() else None
 
-        if federal_agency.so_federal_agency.exists():
-            portfolio_args["senior_official"] = federal_agency.so_federal_agency.first()
+        # First just try to get an existing portfolio
+        portfolio = Portfolio.objects.filter(organization_name=org_name).first()
+        if portfolio:
+            self.skipped_portfolios.add(portfolio)
+            TerminalHelper.colorful_logger(
+                logger.info,
+                TerminalColors.YELLOW,
+                f"Portfolio with organization name '{org_name}' already exists. Skipping create.",
+            )
+            return portfolio, False
 
-        portfolio, created = Portfolio.objects.get_or_create(
-            organization_name=portfolio_args.get("organization_name"), defaults=portfolio_args
+        # Create new portfolio if it doesn't exist
+        portfolio = Portfolio.objects.create(
+            organization_name=org_name,
+            federal_agency=federal_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            creator=User.get_default_user(),
+            notes="Auto-generated record",
+            senior_official=so,
         )
-        if created:
-            self.created_portfolios.append(portfolio)
-            message = f"Created portfolio '{portfolio}'"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-            if portfolio_args.get("senior_official"):
-                message = f"Added senior official '{portfolio_args['senior_official']}'"
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-            else:
-                message = (
-                    f"No senior official added to portfolio '{portfolio}'. "
-                    "None was returned for the reverse relation `FederalAgency.so_federal_agency.first()`"
-                )
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+        self.updated_portfolios.add(portfolio)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Created portfolio '{portfolio}'")
+
+        # Log if the senior official was added or not.
+        if portfolio.senior_official:
+            message = f"Added senior official '{portfolio.senior_official}'"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
         else:
-            self.skipped_portfolios.append(portfolio)
             message = (
-                f"The given portfolio '{portfolio}' already exists in our DB. Skipping create."
+                f"No senior official added to portfolio '{org_name}'. "
+                "None was returned for the reverse relation `FederalAgency.so_federal_agency.first()`"
             )
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-        return portfolio, created
+
+        return portfolio, True
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
@@ -155,7 +167,7 @@ class Command(BaseCommand):
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
         if existing_suborgs.exists():
             message = f"Some suborganizations already exist for portfolio '{portfolio}'. Skipping create."
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.OKBLUE, message)
 
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
@@ -191,7 +203,9 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(status__in=invalid_states)
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+            status__in=invalid_states
+        )
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
@@ -207,6 +221,7 @@ class Command(BaseCommand):
             domain_request.portfolio = portfolio
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
+            self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
