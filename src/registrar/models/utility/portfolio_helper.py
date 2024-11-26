@@ -1,4 +1,4 @@
-from enum import Enum
+from registrar.utility import StrEnum
 from django.db import models
 
 
@@ -43,20 +43,20 @@ class UserPortfolioPermissionChoices(models.TextChoices):
         return {key: value.value for key, value in cls.__members__.items()}
 
 
-class DomainRequestPermissionDisplay(Enum):
+class DomainRequestPermissionDisplay(StrEnum):
     """Stores display values for domain request permission combinations.
 
     Overview of values:
     - VIEWER_REQUESTER: "Viewer Requester"
-    - VIEWER: "VIEWER"
+    - VIEWER: "Viewer"
     - NONE: "None"
     """
     VIEWER_REQUESTER = "Viewer Requester"
-    VIEWER = "VIEWER"
+    VIEWER = "Viewer"
     NONE = "None"
 
 
-class MemberPermissionDisplay(Enum):
+class MemberPermissionDisplay(StrEnum):
     """Stores display values for member permission combinations.
 
     Overview of values:

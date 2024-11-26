@@ -29,7 +29,7 @@ class LogCode(Enum):
     DEFAULT = 5
 
 
-class DefaultEmail(Enum):
+class DefaultEmail(StrEnum):
     """Stores the string values of default emails
 
     Overview of emails:
@@ -43,7 +43,7 @@ class DefaultEmail(Enum):
     HELP_EMAIL = "help@get.gov"
 
 
-class DefaultUserValues(Enum):
+class DefaultUserValues(StrEnum):
     """Stores default values for a default user.
 
     Overview of defaults:
@@ -53,7 +53,6 @@ class DefaultUserValues(Enum):
 
     SYSTEM = "System"
     UNRETRIEVED = "Unretrieved"
-
 
 
 class Step(StrEnum):

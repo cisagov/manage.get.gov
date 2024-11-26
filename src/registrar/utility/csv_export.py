@@ -158,14 +158,14 @@ class BaseExport(ABC):
         Get a list of fields from related tables.
         """
         return []
-    
+
     @classmethod
     def update_queryset(cls, queryset, **kwargs):
         """
         Returns an updated queryset. Override in subclass to update queryset.
         """
         return queryset
-    
+
     @classmethod
     def write_csv_before(cls, csv_writer, **kwargs):
         """
@@ -335,7 +335,7 @@ class MemberExport(BaseExport):
     def get_model_annotation_dict(cls, request=None, **kwargs):
         """Combines the permissions and invitation model annotations for
         the final returned csv export which combines both of these contexts.
-        Returns a dictionary of a union between: 
+        Returns a dictionary of a union between:
         - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         """
@@ -361,71 +361,77 @@ class MemberExport(BaseExport):
         ]
 
         # Permissions
-        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio).select_related("user").annotate(
-            first_name=F("user__first_name"),
-            last_name=F("user__last_name"),
-            email_display=F("user__email"),
-            last_active=Coalesce(
-                Func(
-                    F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()
+        permissions = (
+            UserPortfolioPermission.objects.filter(portfolio=portfolio)
+            .select_related("user")
+            .annotate(
+                first_name=F("user__first_name"),
+                last_name=F("user__last_name"),
+                email_display=F("user__email"),
+                last_active=Coalesce(
+                    Func(F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
+                    Value("Invalid date"),
+                    output_field=CharField(),
                 ),
-                Value("Invalid date"),
-                output_field=CharField(),
-            ),
-            additional_permissions_display=F("additional_permissions"),
-            member_display=Case(
-                # If email is present and not blank, use email
-                When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
-                # If first name or last name is present, use concatenation of first_name + " " + last_name
-                When(
-                    Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
-                    then=Concat(
-                        Coalesce(F("user__first_name"), Value("")),
-                        Value(" "),
-                        Coalesce(F("user__last_name"), Value("")),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=Case(
+                    # If email is present and not blank, use email
+                    When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
+                    # If first name or last name is present, use concatenation of first_name + " " + last_name
+                    When(
+                        Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
+                        then=Concat(
+                            Coalesce(F("user__first_name"), Value("")),
+                            Value(" "),
+                            Coalesce(F("user__last_name"), Value("")),
+                        ),
                     ),
+                    # If neither, use an empty string
+                    default=Value(""),
+                    output_field=CharField(),
                 ),
-                # If neither, use an empty string
-                default=Value(""),
-                output_field=CharField(),
-            ),
-            domain_info=ArrayAgg(
-                F("user__permissions__domain__name"),
-                distinct=True,
-                # only include domains in portfolio
-                filter=Q(user__permissions__domain__isnull=False)
-                & Q(user__permissions__domain__domain_info__portfolio=portfolio),
-            ),
-            type=Value("member", output_field=CharField()),
-            joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
-            invited_by=cls.get_invited_by_query(
-                object_id_query=cls.get_portfolio_invitation_id_query()
-            ),
-        ).values(*shared_columns)
+                domain_info=ArrayAgg(
+                    F("user__permissions__domain__name"),
+                    distinct=True,
+                    # only include domains in portfolio
+                    filter=Q(user__permissions__domain__isnull=False)
+                    & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                ),
+                type=Value("member", output_field=CharField()),
+                joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+            )
+            .values(*shared_columns)
+        )
 
         # Invitations
         domain_invitations = DomainInvitation.objects.filter(
             email=OuterRef("email"),  # Check if email matches the OuterRef("email")
             domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()))
-        invitations = PortfolioInvitation.objects.filter(portfolio=portfolio).annotate(
-            first_name=Value(None, output_field=CharField()),
-            last_name=Value(None, output_field=CharField()),
-            email_display=F("email"),
-            last_active=Value("Invited", output_field=CharField()),
-            additional_permissions_display=F("additional_permissions"),
-            member_display=F("email"),
-            # Use ArrayRemove to return an empty list when no domain invitations are found
-            domain_info=ArrayRemoveNull(
-                ArrayAgg(
-                    Subquery(domain_invitations.values("domain_info")),
-                    distinct=True,
-                )
-            ),
-            type=Value("invitedmember", output_field=CharField()),
-            joined_date=Value(DefaultUserValues.UNRETRIEVED, output_field=CharField()),
-            invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
-        ).values(*shared_columns)
+        ).annotate(domain_info=F("domain__name"))
+        invitations = (
+            PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+            .filter(portfolio=portfolio)
+            .annotate(
+                first_name=Value(None, output_field=CharField()),
+                last_name=Value(None, output_field=CharField()),
+                email_display=F("email"),
+                last_active=Value("Invited", output_field=CharField()),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=F("email"),
+                # Use ArrayRemove to return an empty list when no domain invitations are found
+                domain_info=ArrayRemoveNull(
+                    ArrayAgg(
+                        Subquery(domain_invitations.values("domain_info")),
+                        distinct=True,
+                    )
+                ),
+                type=Value("invitedmember", output_field=CharField()),
+                joined_date=Value("Unretrieved", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
+            )
+            .values(*shared_columns)
+        )
 
         return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
 
@@ -450,7 +456,7 @@ class MemberExport(BaseExport):
                                     user=OuterRef("user"),
                                 )
                             ),
-                            then=Value(DefaultEmail.HELP_EMAIL),
+                            then=Value(DefaultEmail.HELP_EMAIL.value),
                         ),
                         default=F("user__email"),
                         output_field=CharField(),
@@ -459,7 +465,7 @@ class MemberExport(BaseExport):
                 .order_by("action_time")
                 .values("display_email")[:1]
             ),
-            Value(DefaultUserValues.SYSTEM),
+            Value(DefaultUserValues.SYSTEM.value),
             output_field=CharField(),
         )
 

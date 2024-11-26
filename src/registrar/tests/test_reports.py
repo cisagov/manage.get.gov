@@ -862,7 +862,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         # Create a request and add the user to the request
         request = self.factory.get("/")
         request.user = self.user
-
+        self.maxDiff = None
         # Add portfolio to session
         request = GenericTestHelper._mock_user_request_for_factory(request)
         request.session["portfolio"] = self.portfolio_1
