@@ -2925,7 +2925,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectParent = select?.parentElement;
   const suborgContainer = document.getElementById("suborganization-container");
   const suborgDetailsContainer = document.getElementById("suborganization-container__details");
-  const subOrgCreateNewOption = document.getElementById("option-to-add-suborg").value
+  const subOrgCreateNewOption = document.getElementById("option-to-add-suborg")?.value;
   // Make sure all crucial page elements exist before proceeding.
   // This more or less ensures that we are on the Requesting Entity page, and not elsewhere.
   if (!radios || !select || !selectParent || !suborgContainer || !suborgDetailsContainer) return;
