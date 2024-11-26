@@ -43,14 +43,17 @@ class DefaultEmail(Enum):
     HELP_EMAIL = "help@get.gov"
 
 
-class DefaultUser(Enum):
+class DefaultUserValues(Enum):
     """Stores default values for a default user.
 
     Overview of defaults:
-    - SYSTEM: "System"
+    - SYSTEM: "System" <= Default username
+    - UNRETRIEVED: "Unretrieved" <= Default email state
     """
 
     SYSTEM = "System"
+    UNRETRIEVED = "Unretrieved"
+
 
 
 class Step(StrEnum):

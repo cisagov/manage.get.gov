@@ -41,7 +41,7 @@ from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
-from registrar.utility.enums import DefaultEmail
+from registrar.utility.enums import DefaultEmail, DefaultUserValues
 
 logger = logging.getLogger(__name__)
 
@@ -423,7 +423,7 @@ class MemberExport(BaseExport):
                 )
             ),
             type=Value("invitedmember", output_field=CharField()),
-            joined_date=Value("Unretrieved", output_field=CharField()),
+            joined_date=Value(DefaultUserValues.UNRETRIEVED, output_field=CharField()),
             invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
         ).values(*shared_columns)
 
@@ -450,7 +450,7 @@ class MemberExport(BaseExport):
                                     user=OuterRef("user"),
                                 )
                             ),
-                            then=Value("help@get.gov"),
+                            then=Value(DefaultEmail.HELP_EMAIL),
                         ),
                         default=F("user__email"),
                         output_field=CharField(),
@@ -459,7 +459,7 @@ class MemberExport(BaseExport):
                 .order_by("action_time")
                 .values("display_email")[:1]
             ),
-            Value("System"),
+            Value(DefaultUserValues.SYSTEM),
             output_field=CharField(),
         )
 
