@@ -2585,6 +2585,7 @@ class TestAnalystDelete(MockEppLib):
         self.domain_on_hold, _ = Domain.objects.get_or_create(name="fake-on-hold.gov", state=Domain.State.ON_HOLD)
 
     def tearDown(self):
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -2597,39 +2598,39 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is set.
         """
-        with less_console_noise():
-            # Put the domain in client hold
-            self.domain.place_client_hold()
-            # Delete it...
-            self.domain.deletedInEpp()
-            self.domain.save()
-            self.mockedSendFunction.assert_has_calls(
-                [
-                    call(
-                        commands.DeleteDomain(name="fake.gov"),
-                        cleaned=True,
-                    )
-                ]
-            )
-            # Domain itself should not be deleted
-            self.assertNotEqual(self.domain, None)
-            # Domain should have the right state
-            self.assertEqual(self.domain.state, Domain.State.DELETED)
-            # Domain should have a deleted
-            self.assertNotEqual(self.domain.deleted, None)
-            # Cache should be invalidated
-            self.assertEqual(self.domain._cache, {})
+        # with less_console_noise():
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.domain.save()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
+        # Domain should have a deleted
+        self.assertNotEqual(self.domain.deleted, None)
+        # Cache should be invalidated
+        self.assertEqual(self.domain._cache, {})
 
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
-            When a subdomain exists
+            When a subdomain exists that is in use by another domain
             Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
         with less_console_noise():
             # Desired domain
-            domain, _ = Domain.objects.get_or_create(name="failDelete.gov", state=Domain.State.ON_HOLD)
+            domain, _ = Domain.objects.get_or_create(name="sharingiscaring.gov", state=Domain.State.ON_HOLD)
             # Put the domain in client hold
             domain.place_client_hold()
             # Delete it
@@ -2640,7 +2641,7 @@ class TestAnalystDelete(MockEppLib):
             self.mockedSendFunction.assert_has_calls(
                 [
                     call(
-                        commands.DeleteDomain(name="failDelete.gov"),
+                        commands.DeleteHost(name=common.HostObjSet(hosts=['ns1.sharedhost.com'])),
                         cleaned=True,
                     )
                 ]
