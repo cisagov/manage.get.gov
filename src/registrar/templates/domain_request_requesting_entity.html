@@ -7,6 +7,10 @@
 {% endblock %}
 
 {% block form_fields %}
+    {% comment %} 
+    Store the other option in a variable to be used by the js function handleRequestingEntity. 
+    Injected into the 'sub_organization' option list.
+    {% endcomment %}
     <input id="option-to-add-suborg" class="display-none" value="Other (enter your suborganization manually)"/>
     <fieldset class="usa-fieldset">
         <legend>
