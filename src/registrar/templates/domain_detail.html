@@ -41,14 +41,16 @@
 
     {% include "includes/domain_dates.html" %}
 
-    {% if is_portfolio_user and not is_domain_manager %}
-    <div class="usa-alert usa-alert--info usa-alert--slim">
-      <div class="usa-alert__body">
-        <p class="usa-alert__text ">
-          You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
-        </p>
+    {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
+      {% if is_portfolio_user and not is_domain_manager %}
+      <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body">
+          <p class="usa-alert__text ">
+            You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
+          </p>
+        </div>
       </div>
-    </div>
+      {% endif %}
     {% endif %}
 
 
