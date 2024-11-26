@@ -1,5 +1,6 @@
 import os
 import logging
+
 from contextlib import contextmanager
 import random
 from string import ascii_uppercase
@@ -28,7 +29,6 @@ from registrar.models import (
     FederalAgency,
     UserPortfolioPermission,
     Portfolio,
-    PortfolioInvitation,
 )
 from epplibwrapper import (
     commands,
@@ -39,7 +39,6 @@ from epplibwrapper import (
     ErrorCode,
     responses,
 )
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.user_domain_role import UserDomainRole
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -197,7 +196,6 @@ class GenericTestHelper(TestCase):
 
         self.assertEqual(expected_sort_order, returned_sort_order)
 
-    @classmethod
     def _mock_user_request_for_factory(self, request):
         """Adds sessionmiddleware when using factory to associate session information"""
         middleware = SessionMiddleware(lambda req: req)
@@ -533,8 +531,6 @@ class MockDb(TestCase):
     @classmethod
     @less_console_noise_decorator
     def sharedSetUp(cls):
-        cls.mock_client_class = MagicMock()
-        cls.mock_client = cls.mock_client_class.return_value
         username = "test_user"
         first_name = "First"
         last_name = "Last"
@@ -544,35 +540,15 @@ class MockDb(TestCase):
         cls.user = get_user_model().objects.create(
             username=username, first_name=first_name, last_name=last_name, email=email, title=title, phone=phone
         )
-        cls.meoward_user = get_user_model().objects.create(
-            username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
-        )
-        cls.lebowski_user = get_user_model().objects.create(
-            username="big_lebowski", first_name="big", last_name="lebowski", email="big_lebowski@dude.co"
-        )
-        cls.tired_user = get_user_model().objects.create(
-            username="ministry_of_bedtime", first_name="tired", last_name="sleepy", email="tired_sleepy@igorville.gov"
-        )
-        # Custom superuser and staff so that these do not conflict with what may be defined on what implements this.
-        cls.custom_superuser = create_superuser(
-            username="cold_superuser", first_name="cold", last_name="icy", email="icy_superuser@igorville.gov"
-        )
-        cls.custom_staffuser = create_user(
-            username="warm_staff", first_name="warm", last_name="cozy", email="cozy_staffuser@igorville.gov"
-        )
-
-        cls.federal_agency_1, _ = FederalAgency.objects.get_or_create(agency="World War I Centennial Commission")
-        cls.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
-
-        cls.portfolio_1, _ = Portfolio.objects.get_or_create(
-            creator=cls.custom_superuser, federal_agency=cls.federal_agency_1
-        )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))
         # Create start and end dates using timedelta
 
         cls.end_date = current_date + timedelta(days=2)
         cls.start_date = current_date - timedelta(days=2)
+
+        cls.federal_agency_1, _ = FederalAgency.objects.get_or_create(agency="World War I Centennial Commission")
+        cls.federal_agency_2, _ = FederalAgency.objects.get_or_create(agency="Armed Forces Retirement Home")
 
         cls.domain_1, _ = Domain.objects.get_or_create(
             name="cdomain1.gov", state=Domain.State.READY, first_ready=get_time_aware_date(datetime(2024, 4, 2))
@@ -620,14 +596,9 @@ class MockDb(TestCase):
             federal_agency=cls.federal_agency_1,
             federal_type="executive",
             is_election_board=False,
-            portfolio=cls.portfolio_1,
         )
         cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
-            domain=cls.domain_2,
-            generic_org_type="interstate",
-            is_election_board=True,
-            portfolio=cls.portfolio_1,
+            creator=cls.user, domain=cls.domain_2, generic_org_type="interstate", is_election_board=True
         )
         cls.domain_information_3, _ = DomainInformation.objects.get_or_create(
             creator=cls.user,
@@ -700,6 +671,14 @@ class MockDb(TestCase):
             is_election_board=False,
         )
 
+        cls.meoward_user = get_user_model().objects.create(
+            username="meoward_username", first_name="first_meoward", last_name="last_meoward", email="meoward@rocks.com"
+        )
+
+        cls.lebowski_user = get_user_model().objects.create(
+            username="big_lebowski", first_name="big", last_name="lebowski", email="big_lebowski@dude.co"
+        )
+
         _, created = UserDomainRole.objects.get_or_create(
             user=cls.meoward_user, domain=cls.domain_1, role=UserDomainRole.Roles.MANAGER
         )
@@ -731,12 +710,6 @@ class MockDb(TestCase):
         )
 
         _, created = DomainInvitation.objects.get_or_create(
-            email=cls.meoward_user.email,
-            domain=cls.domain_11,
-            status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
-        )
-
-        _, created = DomainInvitation.objects.get_or_create(
             email="woofwardthethird@rocks.com",
             domain=cls.domain_1,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
@@ -750,85 +723,6 @@ class MockDb(TestCase):
             email="squeaker@rocks.com", domain=cls.domain_10, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
 
-        cls.portfolio_invitation_1, _ = PortfolioInvitation.objects.get_or_create(
-            email=cls.meoward_user.email,
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
-        )
-
-        cls.portfolio_invitation_2, _ = PortfolioInvitation.objects.get_or_create(
-            email=cls.lebowski_user.email,
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
-        )
-
-        cls.portfolio_invitation_3, _ = PortfolioInvitation.objects.get_or_create(
-            email=cls.tired_user.email,
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
-        )
-
-        cls.portfolio_invitation_4, _ = PortfolioInvitation.objects.get_or_create(
-            email=cls.custom_superuser.email,
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            ],
-        )
-
-        cls.portfolio_invitation_5, _ = PortfolioInvitation.objects.get_or_create(
-            email=cls.custom_staffuser.email,
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        # Add some invitations that we never retireve
-        PortfolioInvitation.objects.get_or_create(
-            email="nonexistentmember_1@igorville.gov",
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
-        )
-
-        PortfolioInvitation.objects.get_or_create(
-            email="nonexistentmember_2@igorville.gov",
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
-        )
-
-        PortfolioInvitation.objects.get_or_create(
-            email="nonexistentmember_3@igorville.gov",
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
-        )
-
-        PortfolioInvitation.objects.get_or_create(
-            email="nonexistentmember_4@igorville.gov",
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            ],
-        )
-
-        PortfolioInvitation.objects.get_or_create(
-            email="nonexistentmember_5@igorville.gov",
-            portfolio=cls.portfolio_1,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
         with less_console_noise():
             cls.domain_request_1 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
@@ -837,12 +731,10 @@ class MockDb(TestCase):
             cls.domain_request_2 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 name="city2.gov",
-                portfolio=cls.portfolio_1,
             )
             cls.domain_request_3 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city3.gov",
-                portfolio=cls.portfolio_1,
             )
             cls.domain_request_4 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
@@ -857,7 +749,6 @@ class MockDb(TestCase):
             cls.domain_request_6 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city6.gov",
-                portfolio=cls.portfolio_1,
             )
             cls.domain_request_3.submit()
             cls.domain_request_4.submit()
@@ -906,7 +797,6 @@ class MockDb(TestCase):
         UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()
         DomainInvitation.objects.all().delete()
-        PortfolioInvitation.objects.all().delete()
         cls.federal_agency_1.delete()
         cls.federal_agency_2.delete()
 
@@ -947,18 +837,17 @@ def mock_user():
     return mock_user
 
 
-def create_superuser(**kwargs):
-    """Creates a analyst user with is_staff=True and the group full_access_group"""
+def create_superuser():
     User = get_user_model()
     p = "adminpass"
     user = User.objects.create_user(
-        username=kwargs.get("username", "superuser"),
-        email=kwargs.get("email", "admin@example.com"),
-        first_name=kwargs.get("first_name", "first"),
-        last_name=kwargs.get("last_name", "last"),
-        is_staff=kwargs.get("is_staff", True),
-        password=kwargs.get("password", p),
-        phone=kwargs.get("phone", "8003111234"),
+        username="superuser",
+        email="admin@example.com",
+        first_name="first",
+        last_name="last",
+        is_staff=True,
+        password=p,
+        phone="8003111234",
     )
     # Retrieve the group or create it if it doesn't exist
     group, _ = UserGroup.objects.get_or_create(name="full_access_group")
@@ -967,19 +856,18 @@ def create_superuser(**kwargs):
     return user
 
 
-def create_user(**kwargs):
-    """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
+def create_user():
     User = get_user_model()
     p = "userpass"
     user = User.objects.create_user(
-        username=kwargs.get("username", "staffuser"),
-        email=kwargs.get("email", "staff@example.com"),
-        first_name=kwargs.get("first_name", "first"),
-        last_name=kwargs.get("last_name", "last"),
-        is_staff=kwargs.get("is_staff", True),
-        title=kwargs.get("title", "title"),
-        password=kwargs.get("password", p),
-        phone=kwargs.get("phone", "8003111234"),
+        username="staffuser",
+        email="staff@example.com",
+        first_name="first",
+        last_name="last",
+        is_staff=True,
+        title="title",
+        password=p,
+        phone="8003111234",
     )
     # Retrieve the group or create it if it doesn't exist
     group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
