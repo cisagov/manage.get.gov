@@ -1,5 +1,6 @@
 import { uswdsInitializeModals } from './helpers-uswds.js';
 import { generateKebabHTML } from './table-base.js';
+import { MembersTable } from './table-members.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
 export function initPortfolioMemberPageToggle() {
