@@ -1,8 +1,12 @@
 /* gulpfile.js */
 
+// We need a hook into gulp for the JS jobs definitions
 const gulp = require('gulp');
+// For bundling
 const webpack = require('webpack-stream');
+// Out-of-the-box uswds compiler
 const uswds = require('@uswds/compile');
+// For minimizing and optimizing
 const TerserPlugin = require('terser-webpack-plugin');
 
 const ASSETS_DIR = './registrar/assets/';
@@ -31,6 +35,25 @@ uswds.paths.dist.img = ASSETS_DIR + 'img';
 
 /**
  * Function: Create Bundling Task
+ * 
+ * This function generates a Gulp task for bundling JavaScript files. It accepts a source file pattern
+ * and an output filename, then processes the files using Webpack for tasks like transpilation, bundling, 
+ * and optimization. The resulting task performs the following:
+ * 
+ * 1. Reads the JavaScript source files specified by the `source` parameter.
+ * 2. Transforms the JavaScript using Webpack:
+ *    - Runs in "production" mode by default for optimizations (use "development" mode for easier debugging).
+ *    - Generates a source map for better debugging experience, linking the output to the original source.
+ *    - Minifies the code using TerserPlugin while suppressing the generation of `.LICENSE.txt` files.
+ *    - Processes the JavaScript with Babel to ensure compatibility with older browsers by using the `@babel/preset-env`.
+ * 3. Outputs the bundled and optimized JavaScript to the specified destination folder.
+ * 
+ * Parameters:
+ * - `source`: A glob pattern or file path specifying the input JavaScript files.
+ * - `output`: The filename for the generated JavaScript bundle.
+ * 
+ * Returns:
+ * - A function that can be executed as a Gulp task.
  */
 function createBundleTask(source, output) {
     return () =>
