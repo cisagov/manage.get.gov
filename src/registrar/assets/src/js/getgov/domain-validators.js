@@ -97,11 +97,11 @@ function inlineToast(el, id, style, msg) {
   
 function checkDomainAvailability(el) {
     const callback = (response) => {
-        toggleInputValidity(el, (response && response.available), msg=response.message);
+        toggleInputValidity(el, (response && response.available), response.message);
         announce(el.id, response.message);
     
         // Determines if we ignore the field if it is just blank
-        ignore_blank = el.classList.contains("blank-ok")
+        let ignore_blank = el.classList.contains("blank-ok")
         if (el.validity.valid) {
             el.classList.add('usa-input--success');
             // use of `parentElement` due to .gov inputs being wrapped in www/.gov decoration
