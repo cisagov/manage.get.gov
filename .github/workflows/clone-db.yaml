@@ -7,6 +7,7 @@ name: Clone Stable Database
 
 on:
   schedule:
+    # Run daily at 12:00 AM EST
     - cron: '0 0 * * *'
   # Allow manual triggering
   workflow_dispatch:
