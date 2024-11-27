@@ -1,5 +1,6 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
+@use "typography" as *;
 
 .usa-form .usa-button {
   margin-top: units(3);
@@ -69,9 +70,9 @@ legend.float-left-tablet + button.float-right-tablet {
 }
 
 .read-only-label {
-  font-size: size('body', 'sm');
+  @extend .h4--sm-05;
+  font-weight: bold;
   color: color('primary-dark');
-  margin-bottom: units(0.5);
 }
 
 .read-only-value {

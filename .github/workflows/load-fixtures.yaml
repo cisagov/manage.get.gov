@@ -1,0 +1,50 @@
+# Manually load fixtures to an environment of choice.
+
+name: Load fixtures
+run-name: Manually load fixtures to sandbox of choice
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which environment should we load data for?
+        type: 'choice'
+        options:
+          - ab
+          - backup
+          - el
+          - cb
+          - dk
+          - es
+          - gd
+          - ko
+          - ky
+          - nl
+          - rb
+          - rh
+          - rjm
+          - meoward
+          - bob
+          - hotgov
+          - litterbox
+          - ms
+          - ad
+          - ag
+
+jobs:
+  load-fixtures:
+    runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+    steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
+      - name: Load fake data for ${{ github.event.inputs.environment }}
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ github.event.inputs.environment }}
+          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name loaddata"
+
