@@ -14,6 +14,7 @@ class Command(BaseCommand):
     help = "Creates a federal portfolio given a FederalAgency name"
 
     def __init__(self, *args, **kwargs):
+        """Defines fields to track what portfolios were updated, skipped, or just outright failed."""
         super().__init__(*args, **kwargs)
         self.updated_portfolios = set()
         self.skipped_portfolios = set()
@@ -209,8 +210,11 @@ class Command(BaseCommand):
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
-            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' and portfolio__isnull=True returned no results.
+            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
             Excluded statuses: STARTED, INELIGIBLE, REJECTED.
+            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+                status__in=invalid_states
+            )
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
@@ -236,7 +240,8 @@ class Command(BaseCommand):
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
-            The filter on DomainInformation for the federal_agency '{federal_agency}' and portfolio__isnull=True returned no results.
+            The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
@@ -249,5 +254,5 @@ class Command(BaseCommand):
                 domain_info.sub_organization = suborgs.get(domain_info.organization_name)
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
-        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains"
+        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
