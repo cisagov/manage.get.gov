@@ -1,3 +1,5 @@
+import { hideElement, showElement } from './helpers.js';
+
 // <<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>><<>>
 // Helper functions.
 
