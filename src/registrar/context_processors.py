@@ -99,5 +99,19 @@ def portfolio_permissions(request):
 
 
 def is_widescreen_mode(request):
-    widescreen_paths = ["/domains/", "/requests/", "/members/"]
-    return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}
+    widescreen_paths = []
+    portfolio_widescreen_paths = [
+        "/domains/",
+        "/requests/",
+        "/request/",
+        "/no-organization-requests/",
+        "/no-organization-domains/",
+        "/domain-request/",
+    ]
+    is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
+    is_portfolio_widescreen = bool(
+        hasattr(request.user, "is_org_user")
+        and request.user.is_org_user(request)
+        and any(path in request.path for path in portfolio_widescreen_paths)
+    )
+    return {"is_widescreen_mode": is_widescreen or is_portfolio_widescreen}
