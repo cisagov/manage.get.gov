@@ -82,15 +82,8 @@ class Command(BaseCommand):
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
-                portfolio, created = self.create_portfolio(federal_agency)
-                if created:
-                    self.create_suborganizations(portfolio, federal_agency)
-                    if parse_domains or both:
-                        self.handle_portfolio_domains(portfolio, federal_agency)
-
-                if parse_requests or both:
-                    self.handle_portfolio_requests(portfolio, federal_agency)
-
+                # C901 'Command.handle' is too complex (12)
+                self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -106,7 +99,21 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
+        """Attempts to create a portfolio. If successful, this function will
+        also create new suborganizations"""
+        portfolio, created = self.create_portfolio(federal_agency)
+        if created:
+            self.create_suborganizations(portfolio, federal_agency)
+            if parse_domains or both:
+                self.handle_portfolio_domains(portfolio, federal_agency)
+
+        if parse_requests or both:
+            self.handle_portfolio_requests(portfolio, federal_agency)
+
     def create_portfolio(self, federal_agency):
+        """Creates a portfolio if it doesn't presently exist.
+        Returns portfolio, created."""
         # Get the org name / senior official
         org_name = federal_agency.agency
         so = federal_agency.so_federal_agency.first() if federal_agency.so_federal_agency.exists() else None
@@ -164,11 +171,11 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.FAIL, message)
             return
 
-        # Check if we need to update any existing suborgs first. This step is optional.
+        # Check for existing suborgs on the current portfolio
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
         if existing_suborgs.exists():
             message = f"Some suborganizations already exist for portfolio '{portfolio}'."
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.OKBLUE, message)
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
 
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []

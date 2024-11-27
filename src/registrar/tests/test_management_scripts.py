@@ -1705,7 +1705,7 @@ class TestCreateFederalPortfolio(TestCase):
             "Cannot find the federal agency 'Non-existent Agency' in our database. "
             "The value you enter for `agency_name` must be prepopulated in the FederalAgency table before proceeding."
         )
-        with self.assertRaisesRegex(ValueError, expected_message):
+        with self.assertRaisesRegex(CommandError, expected_message):
             self.run_create_federal_portfolio(agency_name="Non-existent Agency", parse_requests=True)
 
     def test_does_not_update_existing_portfolio(self):
