@@ -342,7 +342,7 @@ class TestDomainDetail(TestDomainOverview):
             detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
 
             self.assertNotContains(
-                detail_page, "To manage information for this domain, you must add yourself as a domain manager."
+                detail_page, "If you need to make updates, contact one of the listed domain managers."
             )
 
     @less_console_noise_decorator
@@ -415,7 +415,7 @@ class TestDomainDetail(TestDomainOverview):
         # Check that alert message displays properly
         self.assertContains(
             detail_page,
-            "To manage information for this domain, you must add yourself as a domain manager.",
+            "If you need to make updates, contact one of the listed domain managers.",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
