@@ -4,6 +4,28 @@
 {% block title %}DNS name servers | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>DNS name servers</span>
+      </li>
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
   {# this is right after the messages block in the parent template #}
   {% for form in formset %}
     {% include "includes/form_errors.html" with form=form %}
