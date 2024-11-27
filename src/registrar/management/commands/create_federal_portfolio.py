@@ -70,13 +70,13 @@ class Command(BaseCommand):
         agencies = FederalAgency.objects.filter(**federal_agency_filter)
         if not agencies or agencies.count() < 1:
             if agency_name:
-                raise ValueError(
+                raise CommandError(
                     f"Cannot find the federal agency '{agency_name}' in our database. "
                     "The value you enter for `agency_name` must be "
                     "prepopulated in the FederalAgency table before proceeding."
                 )
             else:
-                raise ValueError(f"Cannot find '{branch}' federal agencies in our database.")
+                raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
@@ -167,7 +167,7 @@ class Command(BaseCommand):
         # Check if we need to update any existing suborgs first. This step is optional.
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
         if existing_suborgs.exists():
-            message = f"Some suborganizations already exist for portfolio '{portfolio}'. Skipping create."
+            message = f"Some suborganizations already exist for portfolio '{portfolio}'."
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.OKBLUE, message)
 
         # Create new suborgs, as long as they don't exist in the db already

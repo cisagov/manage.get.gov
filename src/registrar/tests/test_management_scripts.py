@@ -1426,13 +1426,27 @@ class TestCreateFederalPortfolio(TestCase):
         self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
 
         # And create some with federal_type ones with creative names
-        self.executive_agency_1 = FederalAgency.objects.create(agency="Executive Agency 1", federal_type=BranchChoices.EXECUTIVE)
-        self.executive_agency_2 = FederalAgency.objects.create(agency="Executive Agency 2", federal_type=BranchChoices.EXECUTIVE)
-        self.executive_agency_3 = FederalAgency.objects.create(agency="Executive Agency 3", federal_type=BranchChoices.EXECUTIVE)
-        self.legislative_agency_1 = FederalAgency.objects.create(agency="Legislative Agency 1", federal_type=BranchChoices.LEGISLATIVE)
-        self.legislative_agency_2 = FederalAgency.objects.create(agency="Legislative Agency 2", federal_type=BranchChoices.LEGISLATIVE)
-        self.judicial_agency_1 = FederalAgency.objects.create(agency="Judicial Agency 1", federal_type=BranchChoices.JUDICIAL)
-        self.judicial_agency_2 = FederalAgency.objects.create(agency="Judicial Agency 2", federal_type=BranchChoices.JUDICIAL)
+        self.executive_agency_1 = FederalAgency.objects.create(
+            agency="Executive Agency 1", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.executive_agency_2 = FederalAgency.objects.create(
+            agency="Executive Agency 2", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.executive_agency_3 = FederalAgency.objects.create(
+            agency="Executive Agency 3", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.legislative_agency_1 = FederalAgency.objects.create(
+            agency="Legislative Agency 1", federal_type=BranchChoices.LEGISLATIVE
+        )
+        self.legislative_agency_2 = FederalAgency.objects.create(
+            agency="Legislative Agency 2", federal_type=BranchChoices.LEGISLATIVE
+        )
+        self.judicial_agency_1 = FederalAgency.objects.create(
+            agency="Judicial Agency 1", federal_type=BranchChoices.JUDICIAL
+        )
+        self.judicial_agency_2 = FederalAgency.objects.create(
+            agency="Judicial Agency 2", federal_type=BranchChoices.JUDICIAL
+        )
         self.senior_official = SeniorOfficial.objects.create(
             first_name="first", last_name="last", email="testuser@igorville.gov", federal_agency=self.federal_agency
         )
@@ -1500,9 +1514,7 @@ class TestCreateFederalPortfolio(TestCase):
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
             return_value=True,
         ):
-            call_command(
-                "create_federal_portfolio", **kwargs
-            )
+            call_command("create_federal_portfolio", **kwargs)
 
     def test_create_single_portfolio(self):
         """Test portfolio creation with suborg and senior official."""
@@ -1522,7 +1534,61 @@ class TestCreateFederalPortfolio(TestCase):
         # Test the senior official
         self.assertEqual(portfolio.senior_official, self.senior_official)
 
-    def test_create_multiple_portfolios_for_branch(self):
+    def test_create_multiple_portfolios_for_branch_judicial(self):
+        """Tests creating all portfolios under a given branch"""
+        federal_choice = DomainRequest.OrganizationChoices.FEDERAL
+        expected_portfolio_names = {
+            self.judicial_agency_1.agency,
+            self.judicial_agency_2.agency,
+        }
+        self.run_create_federal_portfolio(branch="judicial", parse_requests=True, parse_domains=True)
+
+        # Ensure that all the portfolios we expect to get created were created
+        portfolios = Portfolio.objects.all()
+        self.assertEqual(portfolios.count(), 2)
+
+        # Test that all created portfolios have the correct values
+        org_names, org_types, creators, notes = [], [], [], []
+        for portfolio in portfolios:
+            org_names.append(portfolio.organization_name)
+            org_types.append(portfolio.organization_type)
+            creators.append(portfolio.creator)
+            notes.append(portfolio.notes)
+
+        # Test organization_name, organization_type, creator, and notes (in that order)
+        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
+        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
+        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+    def test_create_multiple_portfolios_for_branch_legislative(self):
+        """Tests creating all portfolios under a given branch"""
+        federal_choice = DomainRequest.OrganizationChoices.FEDERAL
+        expected_portfolio_names = {
+            self.legislative_agency_1.agency,
+            self.legislative_agency_2.agency,
+        }
+        self.run_create_federal_portfolio(branch="legislative", parse_requests=True, parse_domains=True)
+
+        # Ensure that all the portfolios we expect to get created were created
+        portfolios = Portfolio.objects.all()
+        self.assertEqual(portfolios.count(), 2)
+
+        # Test that all created portfolios have the correct values
+        org_names, org_types, creators, notes = [], [], [], []
+        for portfolio in portfolios:
+            org_names.append(portfolio.organization_name)
+            org_types.append(portfolio.organization_type)
+            creators.append(portfolio.creator)
+            notes.append(portfolio.notes)
+
+        # Test organization_name, organization_type, creator, and notes (in that order)
+        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
+        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
+        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+    def test_create_multiple_portfolios_for_branch_executive(self):
         """Tests creating all portfolios under a given branch"""
         federal_choice = DomainRequest.OrganizationChoices.FEDERAL
 
@@ -1530,7 +1596,7 @@ class TestCreateFederalPortfolio(TestCase):
         expected_portfolio_names = {
             self.executive_agency_1.agency,
             self.executive_agency_2.agency,
-            self.executive_agency_3.agency
+            self.executive_agency_3.agency,
         }
         self.run_create_federal_portfolio(branch="executive", parse_requests=True, parse_domains=True)
 
@@ -1556,80 +1622,33 @@ class TestCreateFederalPortfolio(TestCase):
         # Test senior officials were assigned correctly
         expected_senior_officials = {
             self.executive_so_1,
-            self.executive_so_2
+            self.executive_so_2,
+            # We expect one record to skip
+            None,
         }
         self.assertTrue(all([senior_official in expected_senior_officials for senior_official in senior_officials]))
 
         # Test that domain requests / domains were assigned correctly
-        expected_requests = DomainRequest.objects.filter(portfolio__id__in=[
-            self.domain_request_3.id,
-            self.domain_request_4.id
-        ])
+        self.domain_request_3.refresh_from_db()
+        self.domain_request_4.refresh_from_db()
+        self.domain_info_3.refresh_from_db()
+        self.domain_info_4.refresh_from_db()
+        expected_requests = DomainRequest.objects.filter(
+            portfolio__id__in=[
+                # Implicity tests for existence
+                self.domain_request_3.portfolio.id,
+                self.domain_request_4.portfolio.id,
+            ]
+        )
         expected_domain_infos = DomainInformation.objects.filter(
             portfolio__id__in=[
-                self.domain_info_3.id,
-                self.domain_info_4.id
+                # Implicity tests for existence
+                self.domain_info_3.portfolio.id,
+                self.domain_info_4.portfolio.id,
             ]
         )
         self.assertEqual(expected_requests.count(), 2)
         self.assertEqual(expected_domain_infos.count(), 2)
-        # == Test creating legislative portfolios == #
-
-        # Clear old portfolios
-        Portfolio.objects.all().delete()
-
-        expected_portfolio_names = {
-            self.legislative_agency_1.agency,
-            self.legislative_agency_2.agency,
-        }
-        self.run_create_federal_portfolio(branch="legislative", parse_requests=True, parse_domains=True)
-
-        # Ensure that all the portfolios we expect to get created were created
-        portfolios = Portfolio.objects.all()
-        self.assertEqual(portfolios.count(), 2)
-
-        # Test that all created portfolios have the correct values
-        org_names, org_types, creators, notes = [], [], [], []
-        for portfolio in portfolios:
-            org_names.append(portfolio.organization_name)
-            org_types.append(portfolio.organization_type)
-            creators.append(portfolio.creator)
-            notes.append(portfolio.notes)
-
-        # Test organization_name, organization_type, creator, and notes (in that order)
-        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
-        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
-        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
-        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
-
-        # == Test creating judicial portfolios == #
-
-        # Clear old portfolios
-        Portfolio.objects.all().delete()
-
-        expected_portfolio_names = {
-            self.judicial_agency_1.agency,
-            self.judicial_agency_2.agency,
-        }
-        self.run_create_federal_portfolio(branch="judicial", parse_requests=True, parse_domains=True)
-
-        # Ensure that all the portfolios we expect to get created were created
-        portfolios = Portfolio.objects.all()
-        self.assertEqual(portfolios.count(), 2)
-
-        # Test that all created portfolios have the correct values
-        org_names, org_types, creators, notes = [], [], [], []
-        for portfolio in portfolios:
-            org_names.append(portfolio.organization_name)
-            org_types.append(portfolio.organization_type)
-            creators.append(portfolio.creator)
-            notes.append(portfolio.notes)
-
-        # Test organization_name, organization_type, creator, and notes (in that order)
-        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
-        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
-        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
-        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
     def test_handle_portfolio_requests(self):
         """Verify portfolio association with domain requests."""
@@ -1662,23 +1681,19 @@ class TestCreateFederalPortfolio(TestCase):
     def test_command_error_parse_options(self):
         """Verify error when bad parse options are provided."""
         # The command should enforce either --branch or --agency_name
-        with self.assertRaisesRegex(
-            CommandError, "Error: one of the arguments --agency_name --branch is required"
-        ):
+        with self.assertRaisesRegex(CommandError, "Error: one of the arguments --agency_name --branch is required"):
             self.run_create_federal_portfolio()
-        
+
         # We should forbid both at the same time
-        with self.assertRaisesRegex(
-            CommandError, "Error: argument --branch: not allowed with argument --agency_name"
-        ):
+        with self.assertRaisesRegex(CommandError, "Error: argument --branch: not allowed with argument --agency_name"):
             self.run_create_federal_portfolio(agency_name="test", branch="executive")
-        
+
         # We expect a error to be thrown when we dont pass parse requests or domains
         with self.assertRaisesRegex(
             CommandError, "You must specify at least one of --parse_requests or --parse_domains."
         ):
             self.run_create_federal_portfolio(branch="executive")
-        
+
         with self.assertRaisesRegex(
             CommandError, "You must specify at least one of --parse_requests or --parse_domains."
         ):
