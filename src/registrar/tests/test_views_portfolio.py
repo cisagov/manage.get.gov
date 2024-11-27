@@ -2128,7 +2128,7 @@ class TestRequestingEntity(WebTest):
             portfolio=self.portfolio,
             user=self.user,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         # Login the current user
         self.app.set_user(self.user.username)
