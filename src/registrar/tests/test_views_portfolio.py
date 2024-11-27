@@ -1048,6 +1048,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1056,6 +1057,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1133,10 +1135,10 @@ class TestPortfolio(WebTest):
         """Test the nav contains a dropdown with a link to create and another link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.EDIT_REQUESTS
-            ]
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         self.client.force_login(self.user)
         # create and submit a domain request
@@ -2123,7 +2125,10 @@ class TestRequestingEntity(WebTest):
             portfolio=self.portfolio_2,
         )
         self.portfolio_role = UserPortfolioPermission.objects.create(
-            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            portfolio=self.portfolio,
+            user=self.user,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
         )
         # Login the current user
         self.app.set_user(self.user.username)
