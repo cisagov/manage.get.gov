@@ -20,7 +20,6 @@
   {% endblock breadcrumb %}
 
   {{ block.super }}
-
   <div class="margin-top-4 tablet:grid-col-10">
     <h2 class="text-bold text-primary-dark domain-name-wrap">{{ domain.name }}</h2>
     <div
@@ -78,6 +77,7 @@
       {% endif %}
     {% endif %}
 
+    
     {% url 'domain-dns-nameservers' pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}

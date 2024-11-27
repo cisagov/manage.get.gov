@@ -142,6 +142,7 @@ class TestWithDomainPermissions(TestWithUser):
     def tearDown(self):
         try:
             UserDomainRole.objects.all().delete()
+            DomainInvitation.objects.all().delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainRequest.objects.all().delete()
@@ -382,6 +383,8 @@ class TestDomainDetail(TestDomainOverview):
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
+        # Check that invited domain manager section not displayed when no invited domain managers
+        self.assertNotContains(detail_page, "Invited domain managers")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -404,6 +407,8 @@ class TestDomainDetail(TestDomainOverview):
         UserPortfolioPermission.objects.get_or_create(
             user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
+        # add a domain invitation
+        DomainInvitation.objects.get_or_create(email="invited@example.com", domain=domain)
         user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
@@ -414,6 +419,9 @@ class TestDomainDetail(TestDomainOverview):
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
+        # Check that invited domain manager is displayed
+        self.assertContains(detail_page, "Invited domain managers")
+        self.assertContains(detail_page, "invited@example.com")
 
 
 class TestDomainManagers(TestDomainOverview):
