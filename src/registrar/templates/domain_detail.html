@@ -3,6 +3,22 @@
 {% load custom_filters %}
 
 {% block domain_content %}
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>{{ domain.name }}</span>
+      </li>
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
     <h2 class="text-bold text-primary-dark domain-name-wrap">{{ domain.name }}</h2>
@@ -74,13 +90,17 @@
       {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
     {% endif %}
 
-    {% if portfolio and has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
-      {% url 'domain-suborganization' pk=domain.id as url %}
-      {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
+    {% if portfolio %}
+      {% if has_any_domains_portfolio_permission and has_edit_suborganization_portfolio_permission %}
+        {% url 'domain-suborganization' pk=domain.id as url %}
+        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
+    {% elif has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
+        {% url 'domain-suborganization' pk=domain.id as url %}
+        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_view_suborganization_portfolio_permission view_button=True %}
+        {% endif %}
     {% else %}
       {% url 'domain-org-name-address' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Organization' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
-
       {% url 'domain-senior-official' pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
     {% endif %}
@@ -92,7 +112,11 @@
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
     {% endif %}
     {% url 'domain-users' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Domain managers' users='true' list=True value=domain.permissions.all edit_link=url editable=is_editable %}
+    {% if portfolio %}
+      {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
+    {% endif %}
 
   </div>
 {% endblock %}  {# domain_content #}

@@ -4,6 +4,32 @@
 {% block title %}DS data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns-dnssec' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNSSEC</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>DS data</span>
+      </li>
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
   {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
