@@ -49,7 +49,7 @@
     <p id="domain_instructions" class="margin-top-05">After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all our requirements after you complete the rest of this form.</p>
 
     {% with attr_aria_describedby="domain_instructions domain_instructions2" %}
-      {# attr_validate / validate="domain" invokes code in get-gov.js #}
+      {# attr_validate / validate="domain" invokes code in getgov.min.js #}
       {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
         {% input_with_errors forms.0.requested_domain %}
       {% endwith %}
