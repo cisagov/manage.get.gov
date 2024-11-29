@@ -1,0 +1,49 @@
+@use "uswds-core" as *;
+@use "base" as *;
+
+// Fixes some font size disparities with the Figma
+// for usa-alert alert elements
+.usa-alert {
+  .usa-alert__heading.larger-font-sizing {
+    font-size: units(3);
+  }
+}
+
+.usa-alert__text.measure-none {
+  max-width: measure(none);
+}
+
+// The icon was off center for some reason
+// Fixes that issue
+@media (min-width: 64em){
+  .usa-alert--warning{
+    .usa-alert__body::before {
+      left: 1rem !important;
+    }
+  }
+  .usa-alert__body.margin-left-1 {
+    margin-left: 0.5rem!important;
+  }
+}
+
+// NOTE: !important is used because _font.scss overrides this
+.usa-alert__body--widescreen {
+  max-width: $widescreen-max-width !important;
+}
+
+.usa-site-alert--hot-pink {
+  .usa-alert {
+    background-color: $hot-pink;
+    border-left-color: $hot-pink;
+    .usa-alert__body {
+      color: color('base-darkest');
+      background-color: $hot-pink;
+    }
+  }
+}
+
+@supports ((-webkit-mask:url()) or (mask:url())) {
+  .usa-site-alert--hot-pink .usa-alert .usa-alert__body::before {
+    background-color: color('base-darkest');
+  }
+}
