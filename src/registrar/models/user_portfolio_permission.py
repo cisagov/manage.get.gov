@@ -2,7 +2,12 @@ from django.db import models
 from django.forms import ValidationError
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+    DomainRequestPermissionDisplay,
+    MemberPermissionDisplay,
+)
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
@@ -105,6 +110,37 @@ class UserPortfolioPermission(TimeStampedModel):
         if additional_permissions:
             portfolio_permissions.update(additional_permissions)
         return list(portfolio_permissions)
+
+    @classmethod
+    def get_domain_request_permission_display(cls, roles, additional_permissions):
+        """Class method to return a readable string for domain request permissions"""
+        # Tracks if they can view, create requests, or not do anything
+        all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, additional_permissions)
+        all_domain_perms = [
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+        ]
+
+        if all(perm in all_permissions for perm in all_domain_perms):
+            return DomainRequestPermissionDisplay.VIEWER_REQUESTER
+        elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
+            return DomainRequestPermissionDisplay.VIEWER
+        else:
+            return DomainRequestPermissionDisplay.NONE
+
+    @classmethod
+    def get_member_permission_display(cls, roles, additional_permissions):
+        """Class method to return a readable string for member permissions"""
+        # Tracks if they can view, create requests, or not do anything.
+        # This is different than get_domain_request_permission_display because member tracks
+        # permissions slightly differently.
+        all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, additional_permissions)
+        if UserPortfolioPermissionChoices.EDIT_MEMBERS in all_permissions:
+            return MemberPermissionDisplay.MANAGER
+        elif UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
+            return MemberPermissionDisplay.VIEWER
+        else:
+            return MemberPermissionDisplay.NONE
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
