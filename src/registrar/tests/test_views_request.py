@@ -3010,6 +3010,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
                 user=self.user,
                 portfolio=portfolio,
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
             )
 
             # Check portfolio-specific breadcrumb
@@ -3168,6 +3169,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             user=self.user,
             portfolio=portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
         )
 
         response = self.app.get(f"/domain-request/{domain_request.id}/edit/")

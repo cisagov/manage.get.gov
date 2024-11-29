@@ -1,7 +1,5 @@
 from django.db import models
-from django.forms import ValidationError
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
