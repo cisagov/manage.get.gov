@@ -614,7 +614,7 @@ class RequestingEntity(DomainRequestWizard):
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
-    forms = [forms.AnythingElseForm]
+    forms = [forms.PortfolioAnythingElseForm]
 
 
 # Non-portfolio pages
