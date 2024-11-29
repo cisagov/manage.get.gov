@@ -41,3 +41,118 @@ export function initPortfolioMemberPageToggle() {
         }
     });
 }
+
+
+/**
+ * Hooks up specialized listeners for handling form validation and modals
+ * on the Add New Member page.
+ */
+export function initAddNewMemberPageListeners() {
+
+  document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
+    // Upon confirmation, submit the form
+    document.getElementById("add_member_form").submit();
+  });
+
+  document.getElementById("add_member_form").addEventListener("submit", function(event) {
+    event.preventDefault(); // Prevents the form from submitting
+    const form = document.getElementById("add_member_form")
+    const formData = new FormData(form);
+
+    // Check if the form is valid
+    // If the form is valid, open the confirmation modal
+    // If the form is invalid, submit it to trigger error 
+    fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_valid) {
+            // If the form is valid, show the confirmation modal before submitting
+            openAddMemberConfirmationModal();
+        } else {
+            // If the form is not valid, trigger error messages by firing a submit event
+            form.submit();
+        }
+    });
+  });
+
+  /*
+    Populates contents of the "Add Member" confirmation modal
+  */
+  function populatePermissionDetails(permission_details_div_id) {
+    const permissionDetailsContainer = document.getElementById("permission_details");
+    permissionDetailsContainer.innerHTML = ""; // Clear previous content
+
+    // Get all permission sections (divs with h3 and radio inputs)
+    const permissionSections = document.querySelectorAll("#"+permission_details_div_id+" > h3");
+
+    permissionSections.forEach(section => {
+        // Find the <h3> element text
+        const sectionTitle = section.textContent;
+
+        // Find the associated radio buttons container (next fieldset)
+        const fieldset = section.nextElementSibling;
+
+        if (fieldset && fieldset.tagName.toLowerCase() === 'fieldset') {
+            // Get the selected radio button within this fieldset
+            const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
+
+            // If a radio button is selected, get its label text
+            let selectedPermission = "No permission selected";
+            if (selectedRadio) {
+                const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
+                selectedPermission = label ? label.textContent : "No permission selected";
+            }
+
+            // Create new elements for the modal content
+            const titleElement = document.createElement("h4");
+            titleElement.textContent = sectionTitle;
+            titleElement.classList.add("text-primary");
+            titleElement.classList.add("margin-bottom-0");
+
+            const permissionElement = document.createElement("p");
+            permissionElement.textContent = selectedPermission;
+            permissionElement.classList.add("margin-top-0");
+
+            // Append to the modal content container
+            permissionDetailsContainer.appendChild(titleElement);
+            permissionDetailsContainer.appendChild(permissionElement);
+        }
+    });
+  }
+
+  /*
+    Updates and opens the "Add Member" confirmation modal.
+  */
+  function openAddMemberConfirmationModal() {
+      //------- Populate modal details
+      // Get email value
+      let emailValue = document.getElementById('id_email').value;
+      document.getElementById('modalEmail').textContent = emailValue;
+
+      // Get selected radio button for access level
+      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
+      let accessText = selectedAccess ? selectedAccess.value : "No access level selected"; //nextElementSibling.textContent.trim()
+      document.getElementById('modalAccessLevel').textContent = accessText;
+
+      // Populate permission details based on access level
+      if (selectedAccess && selectedAccess.value === 'admin') {
+          populatePermissionDetails('new-member-admin-permissions')
+      } else {
+        populatePermissionDetails('new-member-basic-permissions')
+      }
+
+      //------- Show the modal
+      let modalTrigger = document.querySelector("#invite_member_trigger");
+        if (modalTrigger) {
+          modalTrigger.click()
+        }
+  }
+
+}
