@@ -162,13 +162,16 @@ class UserPortfolioPermission(TimeStampedModel):
         # so called "forbidden" ones. But just member on their own cannot.
         # The solution to this is to only grab what is only COMMONLY "forbidden".
         # This will scale if we add more roles in the future.
+        # This is thes same as applying the `&` operator across all sets for each role.
         common_forbidden_perms = set.intersection(
-            *(set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, [])) for role in roles)
+            *[set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, [])) for role in roles]
         )
 
         # Check if the users current permissions overlap with any forbidden permissions
+        # by getting the intersection between current user permissions, and forbidden ones.
+        # This is the same as portfolio_permissions & common_forbidden_perms. 
         portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
-        return portfolio_permissions & common_forbidden_perms
+        return portfolio_permissions.intersection(common_forbidden_perms)
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""

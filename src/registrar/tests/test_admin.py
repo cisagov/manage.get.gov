@@ -25,6 +25,7 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
+    UserPortfolioPermissionAdmin,
 )
 from registrar.models import (
     Domain,
@@ -65,6 +66,8 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 
 from unittest.mock import ANY, patch, Mock
+from registrar.models.utility.portfolio_helper import validate_portfolio_invitation, validate_user_portfolio_permission
+from django.forms import ValidationError
 
 
 import logging
@@ -187,6 +190,93 @@ class TestDomainInvitationAdmin(TestCase):
             self.assertContains(response, retrieved_html, count=1)
 
 
+class TestUserPortfolioPermissionAdmin(TestCase):
+    """Tests for the PortfolioInivtationAdmin class"""
+
+    def setUp(self):
+        """Create a client object"""
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=UserPortfolioPermissionAdmin, admin_site=AdminSite())
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.superuser = create_superuser()
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
+    def tearDown(self):
+        """Delete all DomainInvitation objects"""
+        Portfolio.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_validate_user_portfolio_permission(self):
+        """Tests validation of user portfolio permission"""
+
+        # Test validation fails when portfolio missing but permissions are present
+        permission = UserPortfolioPermission(user=self.superuser, roles=["organization_admin"], portfolio=None)
+        with self.assertRaises(ValidationError) as err:
+            validate_user_portfolio_permission(permission)
+            self.assertEqual(
+                str(err.exception),
+                "When portfolio roles or additional permissions are assigned, portfolio is required.",
+            )
+
+        # Test validation fails when portfolio present but no permissions are present
+        permission = UserPortfolioPermission(user=self.superuser, roles=None, portfolio=self.portfolio)
+        with self.assertRaises(ValidationError) as err:
+            validate_user_portfolio_permission(permission)
+            self.assertEqual(
+                str(err.exception),
+                "When portfolio is assigned, portfolio roles or additional permissions are required.",
+            )
+
+        # Test validation fails with forbidden permissions for single role
+        forbidden_member_roles = UserPortfolioPermission.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(
+            UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        )
+        permission = UserPortfolioPermission(
+            user=self.superuser,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=forbidden_member_roles,
+            portfolio=self.portfolio,
+        )
+        with self.assertRaises(ValidationError) as err:
+            permission.clean()
+            self.assertEqual(
+                str(err.exception),
+                "These permissions cannot be assigned to Member: "
+                "<Create and edit members, View all domains and domain reports, View members>",
+            )
+
+    @less_console_noise_decorator
+    def test_get_forbidden_permissions_with_multiple_roles(self):
+        """Tests that forbidden permissions are properly handled when a user has multiple roles"""
+        # Get forbidden permissions for member role
+        member_forbidden = UserPortfolioPermission.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(
+            UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        )
+
+        # Test with both admin and member roles
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN, UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+
+        # These permissions would be forbidden for member alone, but should be allowed
+        # when combined with admin role
+        permissions = UserPortfolioPermission.get_forbidden_permissions(
+            roles=roles, additional_permissions=member_forbidden
+        )
+
+        # Should return empty set since no permissions are commonly forbidden between admin and member
+        self.assertEqual(permissions, set())
+
+        # Verify the same permissions are forbidden when only member role is present
+        member_only_permissions = UserPortfolioPermission.get_forbidden_permissions(
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER], additional_permissions=member_forbidden
+        )
+
+        # Should return the forbidden permissions for member role
+        self.assertEqual(member_only_permissions, set(member_forbidden))
+
+
 class TestPortfolioInvitationAdmin(TestCase):
     """Tests for the PortfolioInvitationAdmin class as super user
 
@@ -204,15 +294,57 @@ class TestPortfolioInvitationAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
+        Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         Contact.objects.all().delete()
 
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_portfolio_invitation_clean(self):
+        """Tests validation of portfolio invitation permissions"""
+
+        # Test validation fails when portfolio missing but permissions present
+        invitation = PortfolioInvitation(email="test@example.com", roles=["organization_admin"], portfolio=None)
+        with self.assertRaises(ValidationError) as err:
+            invitation.clean()
+            self.assertEqual(
+                str(err.exception),
+                "When portfolio roles or additional permissions are assigned, portfolio is required.",
+            )
+
+        # Test validation fails when portfolio present but no permissions
+        invitation = PortfolioInvitation(email="test@example.com", roles=None, portfolio=self.portfolio)
+        with self.assertRaises(ValidationError) as err:
+            invitation.clean()
+            self.assertEqual(
+                str(err.exception),
+                "When portfolio is assigned, portfolio roles or additional permissions are required.",
+            )
+
+        # Test validation fails with forbidden permissions
+        forbidden_member_roles = UserPortfolioPermission.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(
+            UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        )
+        invitation = PortfolioInvitation(
+            email="test@example.com",
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=forbidden_member_roles,
+            portfolio=self.portfolio,
+        )
+        with self.assertRaises(ValidationError) as err:
+            invitation.clean()
+            self.assertEqual(
+                str(err.exception),
+                "These permissions cannot be assigned to Member: "
+                "<View all domains and domain reports, Create and edit members, View members>",
+            )
 
     @less_console_noise_decorator
     def test_has_model_description(self):
