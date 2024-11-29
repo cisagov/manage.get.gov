@@ -68,6 +68,7 @@ def portfolio_permissions(request):
         "has_organization_feature_flag": False,
         "has_organization_requests_flag": False,
         "has_organization_members_flag": False,
+        "is_portfolio_admin": False,
     }
     try:
         portfolio = request.session.get("portfolio")
@@ -88,6 +89,7 @@ def portfolio_permissions(request):
                 "has_organization_feature_flag": True,
                 "has_organization_requests_flag": request.user.has_organization_requests_flag(),
                 "has_organization_members_flag": request.user.has_organization_members_flag(),
+                "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
             }
         return portfolio_context
 
@@ -97,5 +99,19 @@ def portfolio_permissions(request):
 
 
 def is_widescreen_mode(request):
-    widescreen_paths = ["/domains/", "/requests/", "/members/"]
-    return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}
+    widescreen_paths = []
+    portfolio_widescreen_paths = [
+        "/domains/",
+        "/requests/",
+        "/request/",
+        "/no-organization-requests/",
+        "/no-organization-domains/",
+        "/domain-request/",
+    ]
+    is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
+    is_portfolio_widescreen = bool(
+        hasattr(request.user, "is_org_user")
+        and request.user.is_org_user(request)
+        and any(path in request.path for path in portfolio_widescreen_paths)
+    )
+    return {"is_widescreen_mode": is_widescreen or is_portfolio_widescreen}

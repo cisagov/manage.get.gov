@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -142,6 +142,7 @@ class TestWithDomainPermissions(TestWithUser):
     def tearDown(self):
         try:
             UserDomainRole.objects.all().delete()
+            DomainInvitation.objects.all().delete()
             if hasattr(self.domain, "contacts"):
                 self.domain.contacts.all().delete()
             DomainRequest.objects.all().delete()
@@ -323,6 +324,27 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "noinformation.gov")
             self.assertContains(detail_page, "Domain missing domain information")
 
+    def test_domain_detail_with_analyst_managing_domain(self):
+        """Test that domain management page returns 200 and does not display
+        blue error message when an analyst is managing the domain"""
+        with less_console_noise():
+            staff_user = create_user()
+            self.client.force_login(staff_user)
+
+            # need to set the analyst_action and analyst_action_location
+            # in the session to emulate user clicking Manage Domain
+            # in the admin interface
+            session = self.client.session
+            session["analyst_action"] = "edit"
+            session["analyst_action_location"] = self.domain.id
+            session.save()
+
+            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+
+            self.assertNotContains(
+                detail_page, "If you need to make updates, contact one of the listed domain managers."
+            )
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
@@ -342,7 +364,12 @@ class TestDomainDetail(TestDomainOverview):
         DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
-            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
         )
         user.refresh_from_db()
         self.client.force_login(user)
@@ -356,6 +383,45 @@ class TestDomainDetail(TestDomainOverview):
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
+        # Check that invited domain manager section not displayed when no invited domain managers
+        self.assertNotContains(detail_page, "Invited domain managers")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_readonly_on_detail_page_for_org_admin_not_manager(self):
+        """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
+        properly displays read only"""
+
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        # need to create a different user than self.user because the user needs permission assignments
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+        )
+        domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
+        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # add a domain invitation
+        DomainInvitation.objects.get_or_create(email="invited@example.com", domain=domain)
+        user.refresh_from_db()
+        self.client.force_login(user)
+        detail_page = self.client.get(f"/domain/{domain.id}")
+        # Check that alert message displays properly
+        self.assertContains(
+            detail_page,
+            "If you need to make updates, contact one of the listed domain managers.",
+        )
+        # Check that user does not have option to Edit domain
+        self.assertNotContains(detail_page, "Edit")
+        # Check that invited domain manager is displayed
+        self.assertContains(detail_page, "Invited domain managers")
+        self.assertContains(detail_page, "invited@example.com")
 
 
 class TestDomainManagers(TestDomainOverview):

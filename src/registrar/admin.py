@@ -1570,7 +1570,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "is_policy_acknowledged",
     ]
 
-    # For each filter_horizontal, init in admin js extendFilterHorizontalWidgets
+    # For each filter_horizontal, init in admin js initFilterHorizontalWidget
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
 

@@ -21,7 +21,7 @@
   <script src="{% static 'js/uswds-init.min.js' %}" defer></script>
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="application/javascript" src="{% static 'js/get-gov-admin.js' %}" defer></script>
+  <script type="application/javascript" src="{% static 'js/getgov-admin.min.js' %}" defer></script>
   <script type="application/javascript" src="{% static 'js/get-gov-reports.js' %}" defer></script>
   <script type="application/javascript" src="{% static 'js/dja-collapse.js' %}" defer></script>
 {% endblock %}
@@ -45,7 +45,7 @@
 {% block header %}
   {% if not IS_PRODUCTION %}
     {% with add_body_class="margin-left-1" %}
-      {% include "includes/non-production-alert.html" %}
+      {% include "includes/banner-non-production-alert.html" %}
     {% endwith %}
   {% endif %}
 

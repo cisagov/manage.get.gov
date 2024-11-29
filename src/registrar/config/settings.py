@@ -363,7 +363,6 @@ CSP_DEFAULT_SRC = ("'self'",)
 CSP_STYLE_SRC = [
     "'self'",
     "https://www.ssa.gov/accessibility/andi/andi.css",
-    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css",
 ]
 CSP_SCRIPT_SRC_ELEM = [
     "'self'",
@@ -371,7 +370,6 @@ CSP_SCRIPT_SRC_ELEM = [
     "https://cdn.jsdelivr.net/npm/chart.js",
     "https://www.ssa.gov",
     "https://ajax.googleapis.com",
-    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js",
 ]
 CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
