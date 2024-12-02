@@ -1103,11 +1103,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def is_expiring(self):
         """
-        Check if the domain's expiration date is in the past.
-        Returns True if expired, False otherwise.
+        Check if the domain's expiration date is within 60 days.
+        Return False bc there's no expiration date meaning so not expiring
+        Return True if the expiration date is within 60 days
         """
         if self.expiration_date is None:
-            return False  # If there's no expiration date, it's not expiring soon.
+            return False
 
         now = timezone.now().date()
         threshold_date = now + timedelta(days=60)

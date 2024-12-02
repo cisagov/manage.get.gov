@@ -1,9 +1,24 @@
 {% load static %}
 
 
-
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
+
+{% if expiring_domains_exist %}
+  <section class="usa-site-alert usa-site-alert--info margin-y-0 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+    <div class="usa-alert">
+      <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
+        <h4 class="usa-alert__heading">
+          Some header
+        </h4>
+        <p class="usa-alert__text maxw-none">
+            Text here and then we'll have to link here
+        </p>
+      </div>
+    </div>
+  </section>
+{% endif %}
+
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">

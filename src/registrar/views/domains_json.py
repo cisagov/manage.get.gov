@@ -19,6 +19,8 @@ def get_domains_json(request):
     objects = Domain.objects.filter(id__in=domain_ids).select_related("domain_info__sub_organization")
     unfiltered_total = objects.count()
 
+    expiring_domains_exist = any(domain.is_expiring() for domain in objects)
+
     objects = apply_search(objects, request)
     objects = apply_state_filter(objects, request)
     objects = apply_sorting(objects, request)
@@ -38,6 +40,7 @@ def get_domains_json(request):
             "has_next": page_obj.has_next(),
             "total": paginator.count,
             "unfiltered_total": unfiltered_total,
+            "expiring_domains_exist": expiring_domains_exist,
         }
     )
 
