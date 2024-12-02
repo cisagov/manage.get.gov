@@ -4,6 +4,9 @@
 >
   {% if legend_label %}
     <h2>{{ legend_label }} </h2>
+    {% if widget.attrs.id == 'id_additional_details-has_cisa_representative' %}
+      <p>.gov is managed by the Cybersecurity and Infrastructure Security Agency. CISA has <a href="https://www.cisa.gov/about/regions" target="_blank">10 regions</a> that some organizations choose to work with. Regional representatives use titles like protective security advisors, cyber security advisors, or election security advisors.</p>
+    {% endif %}
   {% else %}
     {% if span_for_text %}
       <span>{{ field.label }}</span>
