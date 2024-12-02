@@ -1526,7 +1526,9 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "copy-to-clipboard", count=5)
+        # We expect 5 in the form + 2 from the js module copy-to-clipboard.js
+        # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
+        self.assertContains(response, "copy-to-clipboard", count=7)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")

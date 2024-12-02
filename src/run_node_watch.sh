@@ -12,4 +12,4 @@ else
   npx gulp init
   npx gulp compile
 fi
-npx gulp watch
+npx gulp watchAll
