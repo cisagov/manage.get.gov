@@ -5,6 +5,8 @@ from registrar.models import (
     DomainRequest,
     Domain,
     UserDomainRole,
+    PortfolioInvitation,
+    User,
 )
 from registrar.models import Portfolio, DraftDomain
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -22,6 +24,7 @@ from registrar.utility.csv_export import (
     DomainRequestExport,
     DomainRequestGrowth,
     DomainRequestDataFull,
+    MemberExport,
     get_default_start_date,
     get_default_end_date,
 )
@@ -42,8 +45,13 @@ from .common import (
     get_wsgi_request_object,
     less_console_noise,
     get_time_aware_date,
+    GenericTestHelper,
 )
 from waffle.testutils import override_flag
+
+from datetime import datetime
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 
 
 class CsvReportsTest(MockDbForSharedTests):
@@ -792,6 +800,104 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
+
+
+class MemberExportTest(MockDbForIndividualTests, MockEppLib):
+
+    def setUp(self):
+        """Override of the base setUp to add a request factory"""
+        super().setUp()
+        self.factory = RequestFactory()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @less_console_noise_decorator
+    def test_member_export(self):
+        """Tests the member export report by comparing the csv output."""
+        # == Data setup == #
+        # Set last_login for some users
+        active_date = timezone.make_aware(datetime(2024, 2, 1))
+        User.objects.filter(id__in=[self.custom_superuser.id, self.custom_staffuser.id]).update(last_login=active_date)
+
+        # Create a logentry for meoward, created by lebowski to test invited_by.
+        content_type = ContentType.objects.get_for_model(PortfolioInvitation)
+        LogEntry.objects.create(
+            user=self.lebowski_user,
+            content_type=content_type,
+            object_id=self.portfolio_invitation_1.id,
+            object_repr=str(self.portfolio_invitation_1),
+            action_flag=ADDITION,
+            change_message="Created invitation",
+            action_time=timezone.make_aware(datetime(2023, 4, 12)),
+        )
+
+        # Create log entries for each remaining invitation. Exclude meoward and tired_user.
+        for invitation in PortfolioInvitation.objects.exclude(
+            id__in=[self.portfolio_invitation_1.id, self.portfolio_invitation_3.id]
+        ):
+            LogEntry.objects.create(
+                user=self.custom_staffuser,
+                content_type=content_type,
+                object_id=invitation.id,
+                object_repr=str(invitation),
+                action_flag=ADDITION,
+                change_message="Created invitation",
+                action_time=timezone.make_aware(datetime(2024, 1, 15)),
+            )
+
+        # Retrieve invitations
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            self.meoward_user.check_portfolio_invitations_on_login()
+            self.lebowski_user.check_portfolio_invitations_on_login()
+            self.tired_user.check_portfolio_invitations_on_login()
+            self.custom_superuser.check_portfolio_invitations_on_login()
+            self.custom_staffuser.check_portfolio_invitations_on_login()
+
+        # Update the created at date on UserPortfolioPermission, so we can test a consistent date.
+        UserPortfolioPermission.objects.filter(portfolio=self.portfolio_1).update(
+            created_at=timezone.make_aware(datetime(2022, 4, 1))
+        )
+        # == End of data setup == #
+
+        # Create a request and add the user to the request
+        request = self.factory.get("/")
+        request.user = self.user
+        self.maxDiff = None
+        # Add portfolio to session
+        request = GenericTestHelper._mock_user_request_for_factory(request)
+        request.session["portfolio"] = self.portfolio_1
+
+        # Create a CSV file in memory
+        csv_file = StringIO()
+        # Call the export function
+        MemberExport.export_data_to_csv(csv_file, request=request)
+        # Reset the CSV file's position to the beginning
+        csv_file.seek(0)
+        # Read the content into a variable
+        csv_content = csv_file.read()
+        expected_content = (
+            # Header
+            "Email,Organization admin,Invited by,Joined date,Last active,Domain requests,"
+            "Member management,Domain management,Number of domains,Domains\n"
+            # Content
+            "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
+            'Manager,True,2,"adomain2.gov,cdomain1.gov"\n'
+            "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,Viewer,True,1,cdomain1.gov\n"
+            "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,None,False,0,\n"
+            "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,Manager,False,0,\n"
+            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,None,False,0,\n"
+            "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Manager,False,0,\n"
+            "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Viewer,False,0,\n"
+            "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,Viewer,None,False,0,\n"
+            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,"
+            "Invited,Viewer Requester,Manager,False,0,\n"
+            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,None,False,0,\n"
+        )
+        # Normalize line endings and remove commas,
+        # spaces and leading/trailing whitespace
+        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.assertEqual(csv_content, expected_content)
 
 
 class HelperFunctions(MockDbForSharedTests):

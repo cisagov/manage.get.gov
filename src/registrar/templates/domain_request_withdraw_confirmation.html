@@ -3,6 +3,10 @@
 {% block title %}Withdraw request for {{ DomainRequest.requested_domain.name }} | {% endblock %}
 {% load static url_helpers %}
 
+{% block wrapperdiv %}
+<div id="wrapper" class="wrapper--padding-top-6">
+{% endblock wrapperdiv %}
+
 {% block content %}
 <div class="grid-container">
 <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">

@@ -6,8 +6,10 @@ from faker import Faker
 from django.db import transaction
 
 from registrar.fixtures.fixtures_portfolios import PortfolioFixture
+from registrar.fixtures.fixtures_suborganizations import SuborganizationFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest, DraftDomain, Contact, Website, FederalAgency
+from registrar.models.domain import Domain
 from registrar.models.portfolio import Portfolio
 from registrar.models.suborganization import Suborganization
 
@@ -101,8 +103,13 @@ class DomainRequestFixture:
         }
 
     @classmethod
-    def fake_dot_gov(cls):
-        return f"{fake.slug()}.gov"
+    def fake_dot_gov(cls, max_attempts=100):
+        """Generate a unique .gov domain name without using an infinite loop."""
+        for _ in range(max_attempts):
+            fake_name = f"{fake.slug()}.gov"
+            if not Domain.objects.filter(name=fake_name).exists():
+                return DraftDomain.objects.create(name=fake_name)
+        raise RuntimeError(f"Failed to generate a unique .gov domain after {max_attempts} attempts")
 
     @classmethod
     def fake_expiration_date(cls):
@@ -189,7 +196,9 @@ class DomainRequestFixture:
         if not request.requested_domain:
             if "requested_domain" in request_dict and request_dict["requested_domain"] is not None:
                 return DraftDomain.objects.get_or_create(name=request_dict["requested_domain"])[0]
-            return DraftDomain.objects.create(name=cls.fake_dot_gov())
+
+            # Generate a unique fake domain
+            return cls.fake_dot_gov()
         return request.requested_domain
 
     @classmethod
@@ -213,7 +222,7 @@ class DomainRequestFixture:
         if not request.sub_organization:
             if "sub_organization" in request_dict and request_dict["sub_organization"] is not None:
                 return Suborganization.objects.get_or_create(name=request_dict["sub_organization"])[0]
-            return cls._get_random_sub_organization()
+            return cls._get_random_sub_organization(request)
         return request.sub_organization
 
     @classmethod
@@ -228,10 +237,19 @@ class DomainRequestFixture:
             return None
 
     @classmethod
-    def _get_random_sub_organization(cls):
+    def _get_random_sub_organization(cls, request):
         try:
-            suborg_options = [Suborganization.objects.first(), Suborganization.objects.last()]
-            return random.choice(suborg_options)  # nosec
+            # Filter Suborganizations by the request's portfolio
+            portfolio_suborganizations = Suborganization.objects.filter(portfolio=request.portfolio)
+
+            # Select a suborg that's defined in the fixtures
+            suborganization_names = [suborg["name"] for suborg in SuborganizationFixture.SUBORGS]
+
+            # Further filter by names in suborganization_names
+            suborganization_options = portfolio_suborganizations.filter(name__in=suborganization_names)
+
+            # Randomly choose one if any exist
+            return random.choice(suborganization_options) if suborganization_options.exists() else None  # nosec
         except Exception as e:
             logger.warning(f"Expected fixture sub_organization, did not find it: {e}")
             return None
@@ -273,6 +291,9 @@ class DomainRequestFixture:
 
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
+        # The atomic block will cause the code to stop executing if one instance in the
+        # nested iteration fails, which will cause an early exit and make it hard to debug.
+        # Comment out with transaction.atomic() when debugging.
         with transaction.atomic():
             try:
                 # Get the usernames of users created in the UserFixture
