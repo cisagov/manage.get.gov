@@ -175,6 +175,5 @@ def input_with_errors(context, field=None):  # noqa: C901
     )  # -> {"widget": {"name": ...}}
 
     context["widget"] = widget["widget"]
-    print("context: ", context)
 
     return context
