@@ -67,7 +67,6 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 
 from unittest.mock import ANY, patch, Mock
-from registrar.models.utility.portfolio_helper import validate_portfolio_invitation, validate_user_portfolio_permission
 from django.forms import ValidationError
 
 
