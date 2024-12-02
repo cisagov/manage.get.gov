@@ -193,6 +193,8 @@ MIDDLEWARE = [
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
+    # Other middleware
+    'registrar.registrar_middleware.SessionLoggingMiddleware',
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -816,7 +818,8 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = True
 
 # session engine to cache session information
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = 'registrar.session_backend'
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

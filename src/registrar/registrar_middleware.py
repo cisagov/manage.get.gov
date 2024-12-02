@@ -2,6 +2,7 @@
 Contains middleware used in settings.py
 """
 
+from django.utils.timezone import now  # Use Django's timezone-aware now
 import logging
 from urllib.parse import parse_qs
 from django.urls import reverse
@@ -10,6 +11,8 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
+
+from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +173,23 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = request.user.get_first_portfolio()
         else:
             request.session["portfolio"] = request.user.get_first_portfolio()
+
+
+class SessionLoggingMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        # Log session access at the start of the request
+        logger.info(f"MIDDLEWARE Session accessed: data={dict(request.session)}")
+
+        if request.session.session_key:
+            try:
+                expiration_date = request.session.get_expiry_date()
+                remaining_seconds = (expiration_date - now()).total_seconds()
+                logger.info(f"Session expires in {remaining_seconds:.0f} seconds (at {expiration_date}).")
+            except Exception as e:
+                logger.error(f"Error calculating session expiration: {e}")
+    
+    def process_response(self, request, response):
+        # Log session updates before the response is sent
+        if hasattr(request, 'session') and request.session.modified:
+            logger.info(f"MIDDLEWARE Session modified: data={dict(request.session)}")
+        return response
