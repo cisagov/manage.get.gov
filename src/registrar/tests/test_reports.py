@@ -326,7 +326,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
@@ -509,7 +508,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_domain_data_federal(self):
         """Shows security contacts, filtered by state and org type"""
         # Add security email information
@@ -606,7 +605,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                     csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
                 )
                 expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
                 self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -689,7 +687,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -727,7 +724,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-
             self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator

@@ -491,7 +491,7 @@ class TestDomainAdminWithClient(TestCase):
         self.assertContains(response, "This table contains all approved domains in the .gov registrar.")
         self.assertContains(response, "Show more")
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_contact_fields_on_domain_change_form_have_detail_table(self):
         """Tests if the contact fields in the inlined Domain information have the detail table
         which displays title, email, and phone"""

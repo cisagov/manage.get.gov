@@ -138,7 +138,7 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_computed_fields(cls, **kwargs):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -526,7 +526,7 @@ class DomainExport(BaseExport):
         return DomainInformation
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -612,7 +612,7 @@ class DomainExport(BaseExport):
             "converted_so_name": Case(
                 # When portfolio is present, use that senior official instead
                 When(
-                    portfolio__isnull=False,
+                    Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
                     then=Concat(
                         Coalesce(F("portfolio__senior_official__first_name"), Value("")),
                         Value(" "),
@@ -1615,7 +1615,7 @@ class DomainRequestExport(BaseExport):
         )
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -1701,7 +1701,7 @@ class DomainRequestExport(BaseExport):
             "converted_so_name": Case(
                 # When portfolio is present, use that senior official instead
                 When(
-                    portfolio__isnull=False,
+                    Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
                     then=Concat(
                         Coalesce(F("portfolio__senior_official__first_name"), Value("")),
                         Value(" "),
