@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from django.urls import reverse
@@ -209,13 +210,13 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
-    def test_validate_user_portfolio_permission(self):
+    def test_clean_user_portfolio_permission(self):
         """Tests validation of user portfolio permission"""
 
         # Test validation fails when portfolio missing but permissions are present
         permission = UserPortfolioPermission(user=self.superuser, roles=["organization_admin"], portfolio=None)
         with self.assertRaises(ValidationError) as err:
-            validate_user_portfolio_permission(permission)
+            permission.clean()
             self.assertEqual(
                 str(err.exception),
                 "When portfolio roles or additional permissions are assigned, portfolio is required.",
@@ -224,7 +225,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Test validation fails when portfolio present but no permissions are present
         permission = UserPortfolioPermission(user=self.superuser, roles=None, portfolio=self.portfolio)
         with self.assertRaises(ValidationError) as err:
-            validate_user_portfolio_permission(permission)
+            permission.clean()
             self.assertEqual(
                 str(err.exception),
                 "When portfolio is assigned, portfolio roles or additional permissions are required.",
@@ -307,7 +308,73 @@ class TestPortfolioInvitationAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
-    def test_portfolio_invitation_clean(self):
+    @override_flag("multiple_portfolios", active=False)
+    def test_clean_multiple_portfolios_inactive(self):
+        """Tests that users cannot have multiple portfolios or invitations when flag is inactive"""
+        # Create the first portfolio permission
+        UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Test a second portfolio permission object (should fail)
+        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", creator=self.superuser)
+        second_permission = UserPortfolioPermission(
+            user=self.superuser, portfolio=second_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        with self.assertRaises(ValidationError) as err:
+            second_permission.clean()
+        self.assertIn("users cannot be assigned to multiple portfolios", str(err.exception))
+
+        # Test that adding a new portfolio invitation also fails
+        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", creator=self.superuser)
+        invitation = PortfolioInvitation(
+            email=self.superuser.email, portfolio=third_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        with self.assertRaises(ValidationError) as err:
+            invitation.clean()
+        self.assertIn("users cannot be assigned to multiple portfolios", str(err.exception))
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    def test_clean_multiple_portfolios_active(self):
+        """Tests that users can have multiple portfolios and invitations when flag is active"""
+        # Create first portfolio permission
+        UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # Second portfolio permission should succeed
+        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", creator=self.superuser)
+        second_permission = UserPortfolioPermission(
+            user=self.superuser, portfolio=second_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        second_permission.clean()
+        second_permission.save()
+
+        # Verify both permissions exist
+        user_permissions = UserPortfolioPermission.objects.filter(user=self.superuser)
+        self.assertEqual(user_permissions.count(), 2)
+
+        # Portfolio invitation should also succeed
+        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", creator=self.superuser)
+        invitation = PortfolioInvitation(
+            email=self.superuser.email, portfolio=third_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        invitation.clean()
+        invitation.save()
+
+        # Verify invitation exists
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email=self.superuser.email,
+                portfolio=third_portfolio,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_clean_portfolio_invitation(self):
         """Tests validation of portfolio invitation permissions"""
 
         # Test validation fails when portfolio missing but permissions present

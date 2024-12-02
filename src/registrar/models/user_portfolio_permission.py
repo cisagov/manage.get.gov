@@ -28,14 +28,14 @@ class UserPortfolioPermission(TimeStampedModel):
             UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
             UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
-        # NOTE: We currently forbid members from posessing view_members or view_all_domains.
-        # If those are added here, clean() will throw errors.
+        # NOTE: Check FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS before adding roles here.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
         ],
     }
 
     # Determines which roles are forbidden for certain role types to possess.
+    # Used to throw a ValidationError on clean() for UserPortfolioPermission and PortfolioInvitation.
     FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
@@ -155,7 +155,10 @@ class UserPortfolioPermission(TimeStampedModel):
     @classmethod
     def get_forbidden_permissions(cls, roles, additional_permissions):
         """Some permissions are forbidden for certain roles, like member.
-        This checks for conflicts between the role and additional_permissions."""
+        This checks for conflicts between the current permission list and forbidden perms."""
+
+        # Get the portfolio permissions that the user currently possesses
+        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
 
         # Get intersection of forbidden permissions across all roles.
         # This is because if you have roles ["admin", "member"], then they can have the
@@ -169,8 +172,7 @@ class UserPortfolioPermission(TimeStampedModel):
 
         # Check if the users current permissions overlap with any forbidden permissions
         # by getting the intersection between current user permissions, and forbidden ones.
-        # This is the same as portfolio_permissions & common_forbidden_perms. 
-        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
+        # This is the same as portfolio_permissions & common_forbidden_perms.
         return portfolio_permissions.intersection(common_forbidden_perms)
 
     def clean(self):

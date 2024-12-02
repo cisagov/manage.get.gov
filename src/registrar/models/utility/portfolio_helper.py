@@ -107,7 +107,7 @@ def validate_user_portfolio_permission(user_portfolio_permission):
     # == Validate role permissions. Compares existing permissions to forbidden ones. == #
     roles = user_portfolio_permission.roles if user_portfolio_permission.roles is not None else []
     bad_perms = user_portfolio_permission.get_forbidden_permissions(
-        user_portfolio_permission.roles, user_portfolio_permission.additional_permissions
+        roles, user_portfolio_permission.additional_permissions
     )
     if bad_perms:
         readable_perms = [
@@ -118,19 +118,18 @@ def validate_user_portfolio_permission(user_portfolio_permission):
             f"These permissions cannot be assigned to {', '.join(readable_roles)}: <{', '.join(readable_perms)}>"
         )
 
+    # == Validate the multiple_porfolios flag. == #
     if not flag_is_active_for_user(user_portfolio_permission.user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.exclude(id=user_portfolio_permission.id).filter(
             user=user_portfolio_permission.user
         )
-
-        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email)
-
         if existing_permissions.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
 
+        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email)
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
@@ -168,10 +167,9 @@ def validate_portfolio_invitation(portfolio_invitation):
     if has_portfolio and not portfolio_permissions:
         raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
+    # == Validate role permissions. Compares existing permissions to forbidden ones. == #
     roles = portfolio_invitation.roles if portfolio_invitation.roles is not None else []
-    bad_perms = UserPortfolioPermission.get_forbidden_permissions(
-        portfolio_invitation.roles, portfolio_invitation.additional_permissions
-    )
+    bad_perms = UserPortfolioPermission.get_forbidden_permissions(roles, portfolio_invitation.additional_permissions)
     if bad_perms:
         readable_perms = [
             UserPortfolioPermissionChoices.get_user_portfolio_permission_label(perm) for perm in bad_perms
@@ -181,6 +179,7 @@ def validate_portfolio_invitation(portfolio_invitation):
             f"These permissions cannot be assigned to {', '.join(readable_roles)}: <{', '.join(readable_perms)}>"
         )
 
+    # == Validate the multiple_porfolios flag. == #
     user = User.objects.filter(email=portfolio_invitation.email).first()
     if not flag_is_active_for_user(user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.filter(user=user)
