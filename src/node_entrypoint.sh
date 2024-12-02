@@ -9,4 +9,5 @@ echo "Updating circleci user and group to match host UID:GID ($HOST_UID:$HOST_GI
 sudo groupmod -g "$HOST_GID" circleci
 sudo usermod -u "$HOST_UID" circleci
 
+# Run command as circleci user. Note that command, run_node_watch.sh, is passed as arg to entrypoint
 exec gosu circleci "$@"

@@ -1,7 +1,7 @@
 FROM docker.io/cimg/node:current-browsers
 WORKDIR /app
 
-# Install gosu
+# Install gosu to run command as a specific user, circleci. Clean up lists.
 USER root
 RUN apt-get update && \
     apt-get install -y gosu && \
