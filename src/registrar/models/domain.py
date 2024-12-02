@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -1101,9 +1101,25 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
         return self.expiration_date < now
 
+    def is_expiring(self):
+        """
+        Check if the domain's expiration date is in the past.
+        Returns True if expired, False otherwise.
+        """
+        if self.expiration_date is None:
+            return False  # If there's no expiration date, it's not expiring soon.
+
+        now = timezone.now().date()
+        threshold_date = now + timedelta(days=60)
+        print("threshold date is ", threshold_date)
+        print("self.expiration_date <= threshold_date is ", self.expiration_date <= threshold_date)
+        return self.expiration_date <= threshold_date
+
     def state_display(self):
         """Return the display status of the domain."""
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expiring() and self.state != self.State.UNKNOWN:
+            return "Expiring"
+        elif self.is_expired() and self.state != self.State.UNKNOWN:
             return "Expired"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
