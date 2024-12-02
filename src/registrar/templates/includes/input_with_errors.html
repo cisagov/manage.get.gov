@@ -52,9 +52,12 @@ error messages, if necessary.
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
     {% for error in field.errors %}
-      <span class="usa-error-message" role="alert">
-        {{ error }}
-      </span>
+      <div class="usa-error-message display-flex" role="alert">
+        <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+          <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
+        </svg>
+        <span class="margin-left-05">{{ error }}</span>
+      </div>
     {% endfor %}
     </div>
   {% endif %}
