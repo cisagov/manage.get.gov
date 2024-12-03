@@ -27,6 +27,9 @@ h2 {
 .usa-form,
 .usa-form fieldset {
   font-size: 1rem;
+  legend em {
+    font-size: 1rem;
+  }
 }
 
 .p--blockquote {
