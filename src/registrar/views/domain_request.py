@@ -12,6 +12,7 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
+from registrar.models.utility.generic_helper import get_url_name
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
@@ -53,7 +54,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     URL_NAMESPACE = "domain-request"
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
-    NEW_URL_NAME = "/request/start/"
+    NEW_URL_NAME = "start"
+    FINISHED_URL_NAME = "finish"
 
     # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
@@ -313,7 +315,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
-            if request.path_info == self.NEW_URL_NAME:
+            if current_url == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
