@@ -15,12 +15,15 @@
     {% endif %}
   {% endif %}
 
-    {% if widget.attrs.required %}
+  {% if widget.attrs.required %}
+
+    {% if field.widget_type == 'radioselect' %}
+      <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
     <!--Don't add asterisk to one-field forms -->
-      {% if field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." or field.label == "Has other contacts" %}
-      {% else %}
-        <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
-      {% endif %}
+    {% elif field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." or field.label == "Has other contacts" %}
+    {% else %}
+      <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
     {% endif %}
+  {% endif %}
 
 </{{ label_tag }}>
