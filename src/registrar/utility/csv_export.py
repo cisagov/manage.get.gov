@@ -539,12 +539,14 @@ class DomainExport(BaseExport):
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("organization_type"),
+                default=F("generic_org_type"),
                 output_field=CharField(),
             ),
             "converted_federal_agency": Case(
                 # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__agency")),
                 # Otherwise, return the natively assigned value
                 default=F("federal_agency__agency"),
                 output_field=CharField(),
@@ -1628,12 +1630,15 @@ class DomainRequestExport(BaseExport):
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("organization_type"),
+                default=F("generic_org_type"),
                 output_field=CharField(),
             ),
             "converted_federal_agency": Case(
                 # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__agency")
+                    ),
                 # Otherwise, return the natively assigned value
                 default=F("federal_agency__agency"),
                 output_field=CharField(),
