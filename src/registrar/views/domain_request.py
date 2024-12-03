@@ -12,7 +12,6 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.models.utility.generic_helper import get_url_name
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
