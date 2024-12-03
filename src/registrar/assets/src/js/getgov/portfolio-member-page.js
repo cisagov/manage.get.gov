@@ -1,4 +1,5 @@
 import { uswdsInitializeModals } from './helpers-uswds.js';
+import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
 
@@ -83,6 +84,14 @@ export function initAddNewMemberPageListeners() {
   });
 
   /*
+    Helper function to capitalize the first letter in a string (for display purposes)
+  */
+  function capitalizeFirstLetter(text) {
+    if (!text) return ''; // Return empty string if input is falsy
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  /*
     Populates contents of the "Add Member" confirmation modal
   */
   function populatePermissionDetails(permission_details_div_id) {
@@ -90,7 +99,7 @@ export function initAddNewMemberPageListeners() {
     permissionDetailsContainer.innerHTML = ""; // Clear previous content
 
     // Get all permission sections (divs with h3 and radio inputs)
-    const permissionSections = document.querySelectorAll("#"+permission_details_div_id+" > h3");
+    const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
 
     permissionSections.forEach(section => {
         // Find the <h3> element text
@@ -138,12 +147,14 @@ export function initAddNewMemberPageListeners() {
 
       // Get selected radio button for access level
       let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
-      let accessText = selectedAccess ? selectedAccess.value : "No access level selected"; //nextElementSibling.textContent.trim()
+      // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
+      // This value does not have the first letter capitalized so let's capitalize it
+      let accessText = selectedAccess ? capitalizeFirstLetter(selectedAccess.value) : "No access level selected";
       document.getElementById('modalAccessLevel').textContent = accessText;
 
       // Populate permission details based on access level
       if (selectedAccess && selectedAccess.value === 'admin') {
-          populatePermissionDetails('new-member-admin-permissions')
+        populatePermissionDetails('new-member-admin-permissions')
       } else {
         populatePermissionDetails('new-member-basic-permissions')
       }

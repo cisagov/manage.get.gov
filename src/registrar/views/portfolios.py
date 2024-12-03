@@ -548,17 +548,19 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         # Check to see if an invite has already been sent
         try:
             invite = PortfolioInvitation.objects.get(email=email, portfolio=self.object)
-            # check if the invite has already been accepted
-            if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
-                add_success = False
-                messages.warning(
-                    self.request,
-                    f"{email} is already a manager for this portfolio.",
-                )
-            else:
-                add_success = False
-                # else if it has been sent but not accepted
-                messages.warning(self.request, f"{email} has already been invited to this portfolio")
+            if invite: # We have an existin invite
+                # check if the invite has already been accepted
+                if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
+                    add_success = False
+                    messages.warning(
+                        self.request,
+                        f"{email} is already a manager for this portfolio.",
+                    )
+                else:
+                    add_success = False
+                    # it has been sent but not accepted
+                    messages.warning(self.request, f"{email} has already been invited to this portfolio")
+                return
         except Exception:
             logger.error("An error occured")
 
@@ -586,11 +588,23 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             if add_success:
                 messages.success(self.request, f"{email} has been invited.")
 
-    def _make_invitation(self, email_address: str, requestor: User):
+    def _make_invitation(self, email_address: str, requestor: User, add_success=True):
         """Make a Member invitation for this email and redirect with a message."""
         try:
-            self._send_portfolio_invitation_email(email=email_address, requestor=requestor)
+            self._send_portfolio_invitation_email(email=email_address, requestor=requestor, add_success=add_success)
         except EmailSendingError:
+            logger.warn(
+                "Could not send email invitation (EmailSendingError)",
+                self.object,
+                exc_info=True,
+            )
+            messages.warning(self.request, "Could not send email invitation.")
+        except Exception:
+            logger.warn(
+                "Could not send email invitation (Other Exception)",
+                self.object,
+                exc_info=True,
+            )
             messages.warning(self.request, "Could not send email invitation.")
         else:
             # (NOTE: only create a MemberInvitation if the e-mail sends correctly)
@@ -603,6 +617,21 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+
+        requested_user = User.objects.filter(email=requested_email).first()
+        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
+        if not requested_user or not permission_exists:
+             return self._make_invitation(requested_email, requestor)
+        else:
+            if permission_exists:
+                messages.warning(self.request, "User is already a member of this portfolio.")
+        return redirect(self.get_success_url())
+
+
+
+
+
+
 
         # look up a user with that email
         try:
