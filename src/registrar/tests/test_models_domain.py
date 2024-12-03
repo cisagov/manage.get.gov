@@ -2586,6 +2586,7 @@ class TestAnalystDelete(MockEppLib):
 
     def tearDown(self):
         Host.objects.all().delete()
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 
@@ -2643,13 +2644,56 @@ class TestAnalystDelete(MockEppLib):
                     call(
                         commands.DeleteHost(name=common.HostObjSet(hosts=['ns1.sharedhost.com'])),
                         cleaned=True,
-                    )
+                    ),
                 ]
             )
             # Domain itself should not be deleted
             self.assertNotEqual(domain, None)
             # State should not have changed
             self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    def test_deletion_with_host_and_contacts(self):
+        """
+        Scenario: Domain with related Host and Contacts is Deleted
+            When a contact and host exists that is tied to this domain
+            Then `commands.DeleteHost` is sent to the registry
+            Then `commands.DeleteContact` is sent to the registry
+            Then `commands.DeleteDomain` is sent to the registry
+            Then `commands.DeleteContact` is sent to the registry for the registrant contact
+            And `state` is set to `DELETED`
+        """
+        # with less_console_noise():
+            # Desired domain
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.ON_HOLD)
+        # Put the domain in client hold
+        domain.place_client_hold()
+        # Delete it
+        domain.deletedInEpp()
+        domain.save()
+
+        # Check that the host and contacts are deleted, order doesn't matter
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(commands.DeleteHost(name=common.HostObjSet(hosts=['fake.host.com'])), cleaned=True),
+                call(commands.DeleteContact(id="securityContact"), cleaned=True),
+                call(commands.DeleteContact(id="technicalContact"), cleaned=True),
+                call(commands.DeleteContact(id="adminContact"),cleaned=True,)
+            ],
+            any_order=True
+        )
+
+        # These calls need to be in order
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(commands.DeleteDomain(name="freeman.gov"), cleaned=True),
+                call(commands.InfoContact(id="regContact"), cleaned=True),
+                call(commands.DeleteContact(id="regContact"), cleaned=True),
+            ],
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should have changed
+        self.assertEqual(domain.state, Domain.State.DELETED)
 
     def test_deletion_ready_fsm_failure(self):
         """

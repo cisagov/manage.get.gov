@@ -1229,6 +1229,7 @@ class MockEppLib(TestCase):
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
+        registrant="regContact",
         ex_date=date(2023, 5, 25),
     )
 
@@ -1610,6 +1611,8 @@ class MockEppLib(TestCase):
                 return self.mockInfoContactCommands(_request, cleaned)
             case commands.CreateContact:
                 return self.mockCreateContactCommands(_request, cleaned)
+            case commands.DeleteContact:
+                return self.mockDeleteContactCommands(_request, cleaned)
             case commands.UpdateDomain:
                 return self.mockUpdateDomainCommands(_request, cleaned)
             case commands.CreateHost:
@@ -1731,6 +1734,7 @@ class MockEppLib(TestCase):
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
+            "fake.gov": (self.mockDataInfoDomain, None),
             "security.gov": (self.infoDomainNoContact, None),
             "dnssec-dsdata.gov": (
                 self.mockDataInfoDomain,
@@ -1811,6 +1815,15 @@ class MockEppLib(TestCase):
             # mocks a contact error on creation
             raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
         return MagicMock(res_data=[self.mockDataInfoHosts])
+    
+    def mockDeleteContactCommands(self, _request, cleaned):
+        if getattr(_request, "id", None) == "fail":
+            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        else:
+            return MagicMock(
+                    res_data=[self.mockDataInfoContact],
+                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+                )
 
     def setUp(self):
         """mock epp send function as this will fail locally"""

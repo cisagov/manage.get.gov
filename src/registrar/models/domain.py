@@ -254,7 +254,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return not cls.available(domain)
 
     @Cache
-    def contacts(self) -> dict[str, str]:
+    def registry_contacts(self) -> dict[str, str]:
         """
         Get a dictionary of registry IDs for the contacts for this domain.
 
@@ -263,7 +263,10 @@ class Domain(TimeStampedModel, DomainHelper):
             { PublicContact.ContactTypeChoices.REGISTRANT: "jd1234",
               PublicContact.ContactTypeChoices.ADMINISTRATIVE: "sh8013",...}
         """
-        raise NotImplementedError()
+        if self._cache.get("contacts"):
+            return self._cache.get("contacts")
+        else:
+            return self._get_property("contacts")
 
     @Cache
     def creation_date(self) -> date:
@@ -1032,17 +1035,19 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
         
-    def _delete_contacts(self):
-        """Contacts associated with this domain will be deleted.
-        RegistryErrors will be logged and raised. Additional 
-        error handling should be provided by the caller.
+    def _delete_nonregistrant_contacts(self):
+        """Non-registrant contacts associated with this domain will be deleted.
+        RegistryErrors will be logged and raised. Error 
+        handling should be provided by the caller.
         """
         logger.info("Deleting contacts for %s", self.name)
-        contacts = self._cache.get("contacts")
+        contacts = self.registry_contacts
         logger.debug("Contacts to delete for %s inside _delete_contacts -> %s", self.name, contacts)
         if contacts:
-            for contact in contacts:
-                self._delete_contact(contact)
+            for contact, id in contacts.items():
+                # registrants have to be deleted after the domain
+                if contact != PublicContact.ContactTypeChoices.REGISTRANT:
+                    self._delete_contact(contact, id)
         
         
     def _delete_subdomains(self):
@@ -1065,6 +1070,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
         request = commands.DeleteDomain(name=self.name)
+        registry.send(request, cleaned=True)
+
+    def _delete_domain_registrant(self):
+        """This domain's registrant should be deleted from the registry
+        may raises RegistryError, should be caught or handled correctly by caller"""
+        registrantID = self.registrant_contact.registry_id
+        request = commands.DeleteContact(id=registrantID)
         registry.send(request, cleaned=True)
 
     def __str__(self) -> str:
@@ -1475,8 +1487,9 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_subdomains()
-            self._delete_contacts()
+            self._delete_nonregistrant_contacts()
             self._delete_domain()
+            self._delete_domain_registrant()
             self.deleted = timezone.now()
         except RegistryError as err:
             logger.error(f"Could not delete domain. Registry returned error: {err}")
@@ -1678,15 +1691,15 @@ class Domain(TimeStampedModel, DomainHelper):
 
                 raise e
     
-    def _delete_contact(self, contact: PublicContact):
+    def _delete_contact(self, contact_name: str, registry_id: str):
         """Try to delete a contact from the registry.
         
         raises:
             RegistryError: if the registry is unable to delete the contact
         """
-        logger.info("_delete_contact() -> Attempting to delete contact for %s from domain %s", contact.name, contact.domain)
+        logger.info("_delete_contact() -> Attempting to delete contact for %s from domain %s", contact_name, self.name)
         try:
-            req = commands.DeletContact(id=contact.registry_id)
+            req = commands.DeleteContact(id=registry_id)
             return registry.send(req, cleaned=True).res_data[0]
         except RegistryError as error:
             logger.error(
