@@ -50,7 +50,7 @@ Email Address []: <example@something.com>
 ```
 Go to https://dashboard.int.identitysandbox.gov/service_providers/2640/edit to remove the old certificate and upload the new one. 
 
-Create the login key:
+### Create the login key
 ```sh
 login_key=$(base64 -i private-<ENVIRONMENT>.pem)
 ```
@@ -67,10 +67,9 @@ Go to https://dashboard.fr.cloud.gov/home.  Find the `getgov-credentials` servic
 cf cups getgov-credentials -p credentials-<ENVIRONMENT>.json
 ```
 
-### Push your manifest
+### Restart, restage or push manifest
+Pushing the manifest works but a restart or restage might work as well.
 
 ```sh
 cf push getgov-<ENVIRONMENT> -f ops/manifests/manifest-<ENVIRONMENT>.yaml
 ```
-
-If you don't need to push a manifest, restaging might also work
