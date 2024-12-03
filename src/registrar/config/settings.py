@@ -819,6 +819,7 @@ SESSION_COOKIE_SECURE = True
 
 # session engine to cache session information
 #SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# session_backend is extension of backends.db, with additional logging
 #SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_ENGINE = 'registrar.session_backend'
 
