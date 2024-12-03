@@ -1,10 +1,11 @@
 from itertools import zip_longest
 import logging
 import ipaddress
+import requests
 import re
 from datetime import date
 from typing import Optional
-
+from django.conf import settings
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
@@ -306,6 +307,90 @@ class Domain(TimeStampedModel, DomainHelper):
 
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
+
+    def create_dns_record(self, dns_record_dict):
+        print(f"what is the key? {settings.SECRET_REGISTRY_TENANT_KEY}")
+        # Cloudflare API endpoints
+        base_url = "https://api.cloudflare.com/client/v4"
+        headers = {
+            "Authorization": f"Bearer {settings.SECRET_REGISTRY_TENANT_KEY}",
+            "Content-Type": "application/json"
+        }
+        if settings.IS_PRODUCTION:
+            if self.name == "igorville.gov":
+                # do stuff
+                pass
+            else:
+                logger.warning(f"create_dns_record was called for domain {self.name}")
+        else:
+            pass
+        
+        # TODO - check if these things exist before doing stuff
+        # 1. Get tenant details
+        # Note: we can grab this more generally but lets be specific to keep things safe.
+        tenant_id = settings.SECRET_REGISTRY_TENANT_ID
+        account_name = f"account-{self.name}"
+
+        # 2. Create account under tenant
+        account_response = requests.post(
+            f"{base_url}/accounts",
+            headers=headers,
+            json={
+                "name": account_name,
+                "type": "enterprise",
+                "unit": {"id": tenant_id}
+            }
+        )
+        account_response.raise_for_status()
+        account_response_json = account_response.json()
+        account_id = account_response_json["result"]["id"]
+        logger.info(f"Created account: {account_response_json}")
+
+        # 3. Create zone under account
+        zone_response = requests.post(
+            f"{base_url}/zones",
+            headers=headers,
+            json={
+                "name": self.name,
+                "account": {"id": account_id},
+                "type": "full"
+            }
+        )
+        zone_response.raise_for_status()
+        zone_response_json = zone_response.json()
+        zone_id = zone_response_json["result"]["id"]
+        logger.info(f"Created zone: {zone_id}")
+
+        # 4. Add zone subscription
+        subscription_response = requests.post(
+            f"{base_url}/zones/{zone_id}/subscription",
+            headers=headers,
+            json={
+                "rate_plan": {"id": "PARTNERS_ENT"},
+                "frequency": "annual"
+            }
+        )
+        subscription_response.raise_for_status()
+        subscription_response_json = subscription_response.json()
+        logger.info(f"Created subscription: {subscription_response_json}")
+
+        # 5. Create DNS record
+        dns_response = requests.post(
+            f"{base_url}/zones/{zone_id}/dns_records",
+            headers=headers,
+            json=dns_record_dict
+        )
+        dns_response.raise_for_status()
+        dns_response_json = dns_response.json()
+        logger.info(f"Created DNS record: {dns_response_json}")
+
+        return {
+            "tenant_id": tenant_id,
+            "account_id": account_id,
+            "zone_id": zone_id,
+            "dns_record_id": dns_response_json["result"]["id"]
+        }
+
 
     def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
         """

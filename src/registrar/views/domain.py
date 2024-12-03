@@ -455,6 +455,12 @@ class DomainDNSView(DomainBaseView):
 
     template_name = "domain_dns.html"
 
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        return context
+
 
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
