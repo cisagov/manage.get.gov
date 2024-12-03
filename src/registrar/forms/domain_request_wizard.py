@@ -796,6 +796,7 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
 
 class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
     """The form for the portfolio additional details page. Tied to the anything_else field."""
+
     anything_else = forms.CharField(
         required=False,
         label="Anything else?",

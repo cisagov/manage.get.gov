@@ -55,7 +55,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
     NEW_URL_NAME = "start"
-    FINISHED_URL_NAME = "finish"
+    FINISHED_URL_NAME = "finished"
 
     # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
