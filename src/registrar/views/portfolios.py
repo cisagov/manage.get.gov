@@ -548,7 +548,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         # Check to see if an invite has already been sent
         try:
             invite = PortfolioInvitation.objects.get(email=email, portfolio=self.object)
-            if invite: # We have an existin invite
+            if invite:  # We have an existin invite
                 # check if the invite has already been accepted
                 if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
                     add_success = False
@@ -621,17 +621,11 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         requested_user = User.objects.filter(email=requested_email).first()
         permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
         if not requested_user or not permission_exists:
-             return self._make_invitation(requested_email, requestor)
+            return self._make_invitation(requested_email, requestor)
         else:
             if permission_exists:
                 messages.warning(self.request, "User is already a member of this portfolio.")
         return redirect(self.get_success_url())
-
-
-
-
-
-
 
         # look up a user with that email
         try:

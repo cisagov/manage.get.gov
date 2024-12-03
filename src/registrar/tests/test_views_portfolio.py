@@ -1876,7 +1876,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
-e        with patch("django.contrib.messages.success") as mock_success:
+        with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
                 reverse("invitedmember-delete", kwargs={"pk": invitation.pk}),
