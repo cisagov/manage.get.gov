@@ -40,12 +40,12 @@ Fill in the following for the prompts:
 Note: for "Common Name" you should put the name of the sandbox and for "Email Address" it should be the address of who owns that sandbox (such as the developer's email, if it's a developer sandbox, or whoever ran this action otherwise)
 
 ```sh
-Country Name (2 letter code) [AU]:US
-State or Province Name (full name) [Some-State]:DC
-Locality Name (eg, city) []:DC
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:DHS
-Organizational Unit Name (eg, section) []:CISA
-Common Name (e.g. server FQDN or YOUR name) []:<ENVIRONMENT>
+Country Name (2 letter code) [AU]: US
+State or Province Name (full name) [Some-State]: DC
+Locality Name (eg, city) []: DC
+Organization Name (eg, company) [Internet Widgits Pty Ltd]: DHS
+Organizational Unit Name (eg, section) []: CISA
+Common Name (e.g. server FQDN or YOUR name) []: <ENVIRONMENT>
 Email Address []: <example@something.com>
 ```
 Go to https://dashboard.int.identitysandbox.gov/service_providers/2640/edit to remove the old certificate and upload the new one. 
