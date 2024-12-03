@@ -69,7 +69,7 @@ def portfolio_permissions(request):
         "has_organization_requests_flag": False,
         "has_organization_members_flag": False,
         "is_portfolio_admin": False,
-        "has_domain_renewal_flag": False
+        "has_domain_renewal_flag": False,
     }
     try:
         portfolio = request.session.get("portfolio")
