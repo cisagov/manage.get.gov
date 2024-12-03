@@ -10,11 +10,6 @@
 {% block form_fields %}
 
     <fieldset class="usa-fieldset margin-top-2">
-      <!-- <legend>
-        <h2>Are you working with a CISA regional representative on your domain request?</h2>
-        <p>.gov is managed by the Cybersecurity and Infrastructure Security Agency. CISA has <a href="https://www.cisa.gov/about/regions" target="_blank">10 regions</a> that some organizations choose to work with. Regional representatives use titles like protective security advisors, cyber security advisors, or election security advisors.</p>
-      </legend> -->
-
       <!-- Toggle -->
       {% with add_class="usa-radio__input--tile" add_legend_label="Are you working with a CISA regional representative on your domain request?" %}
         {% input_with_errors forms.0.has_cisa_representative %}
@@ -30,13 +25,8 @@
     </div>
 
     <fieldset class="usa-fieldset margin-top-2">
-        <legend>
-            <h2>Is there anything else you’d like us to know about your domain request?</h2> 
-        </legend>
-  
         <!-- Toggle -->
-        <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% with add_class="usa-radio__input--tile" add_legend_label="Is there anything else you’d like us to know about your domain request?" %}
           {% input_with_errors forms.2.has_anything_else_text %}
         {% endwith %}
         {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
