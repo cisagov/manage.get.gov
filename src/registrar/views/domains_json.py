@@ -5,6 +5,7 @@ from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +94,10 @@ def apply_state_filter(queryset, request):
         if "expired" in custom_states:
             expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
-        elif "expiring" in custom_states:
-            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring"]
-            state_query |= Q(id__in=expiring_domain_ids)
+        if flag_is_active(request, "domain_renewal"):
+            if "expiring" in custom_states:
+                expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring"]
+                state_query |= Q(id__in=expiring_domain_ids)
         # Apply the combined query
         queryset = queryset.filter(state_query)
         # If there are filtered states, and expired is not one of them, domains with

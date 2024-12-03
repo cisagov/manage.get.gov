@@ -42,6 +42,8 @@ from .public_contact import PublicContact
 
 from .user_domain_role import UserDomainRole
 
+from waffle.decorators import flag_is_active
+
 logger = logging.getLogger(__name__)
 
 
@@ -1115,7 +1117,11 @@ class Domain(TimeStampedModel, DomainHelper):
         print("threshold date is ", threshold_date)
         print("self.expiration_date <= threshold_date is ", self.expiration_date <= threshold_date)
         return self.expiration_date <= threshold_date
-
+    
+    def has_domain_renewal_flag(self):
+        return flag_is_active(None, "domain_renewal")
+    
+    
     def state_display(self):
         """Return the display status of the domain."""
         if self.is_expiring() and self.state != self.State.UNKNOWN:
