@@ -77,3 +77,46 @@ export function initDomainsTable() {
     }
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const expiringLink = document.getElementById('link-expiring-domains');
+
+  if (expiringLink) {
+      // Grab the selection for the status filter by
+      const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+      
+      expiringLink.addEventListener('click', (event) => {
+          event.preventDefault();
+
+          console.log('Expiring domains link clicked');
+          
+          // Loop through all statuses for "EXPIRING" checkbox
+          statusCheckboxes.forEach(checkbox => {
+              // Check for expiring checkbox 
+              if (checkbox.value === "expiring") {
+                  console.log("Expiring checkbox found:", checkbox);
+                  
+                  // And if not checked, check it
+                  if (!checkbox.checked) {
+                      checkbox.checked = true;
+                      // Followed from the radio button method below
+                      // Can also do: checkbox.dispatchEvent(new Event('change'));
+
+                      let event = new Event('change');
+                      checkbox.dispatchEvent(event);
+                      console.log("Expiring checkbox checked");
+                  }
+              }
+          });
+          // We're supposed to reload the table with the new filter but it's not working
+          const domainsTable = new DomainsTable();
+          // loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue)
+          // This is what others have -- domainsTable.loadTable(1, 'id', 'asc');
+          // Maybe we can use something with status = this.currentStatus
+          domainsTable.loadTable();
+          console.log('Table filtered with expiring domains');
+      });
+  }
+});
+
+
