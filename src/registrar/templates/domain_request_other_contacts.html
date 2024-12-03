@@ -9,7 +9,7 @@
       <li><strong>We typically don’t reach out to these employees</strong>, but if contact is necessary, our practice is to coordinate with you first.</li>
     </ul>
   </p>
-
+  {% include "includes/required_fields.html" %}
 {% endblock %}
 
 {% block form_required_fields_help_text %}
@@ -25,7 +25,6 @@
     </div>
 
     <div id="other-employees" class="other-contacts-form">
-        {% include "includes/required_fields.html" %}
         {{ forms.1.management_form }}
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
