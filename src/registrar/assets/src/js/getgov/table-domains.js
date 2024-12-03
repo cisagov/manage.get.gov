@@ -109,11 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
               }
           });
           // We're supposed to reload the table with the new filter but it's not working
-          const domainsTable = new DomainsTable();
+          // const domainsTable = new DomainsTable();
           // loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue)
           // This is what others have -- domainsTable.loadTable(1, 'id', 'asc');
-          // Maybe we can use something with status = this.currentStatus
-          domainsTable.loadTable();
+          // Maybe we can use something with status = this.currentStatus?
+          // this.loadTable();
+          // Maybe we don't need to load the table?
           console.log('Table filtered with expiring domains');
       });
   }
