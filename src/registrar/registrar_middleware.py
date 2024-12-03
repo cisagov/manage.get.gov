@@ -174,6 +174,7 @@ class CheckPortfolioMiddleware:
         else:
             request.session["portfolio"] = request.user.get_first_portfolio()
 
+
 class SessionLoggingMiddleware(MiddlewareMixin):
     def process_request(self, request):
         # Log session access at the start of the request
@@ -189,6 +190,6 @@ class SessionLoggingMiddleware(MiddlewareMixin):
 
     def process_response(self, request, response):
         # Log session updates before the response is sent
-        if hasattr(request, 'session') and request.session.modified:
+        if hasattr(request, "session") and request.session.modified:
             logger.info(f"MIDDLEWARE Session modified: data={dict(request.session)}")
         return response

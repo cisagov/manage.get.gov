@@ -194,7 +194,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Bug fix for issue 3124
-    'registrar.registrar_middleware.SessionLoggingMiddleware',
+    "registrar.registrar_middleware.SessionLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -818,12 +818,12 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = True
 
 # session engine to cache session information
-#SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 # session_backend is extension of backends.db, with additional logging
-#SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_ENGINE = 'registrar.session_backend'
+# SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_ENGINE = "registrar.session_backend"
 
-SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

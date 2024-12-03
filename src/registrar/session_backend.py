@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SessionStore(cacheSessionStore):
     def __init__(self, session_key=None):
         logger.info("SESSION: Custom SessionStore initialized")
@@ -10,7 +11,7 @@ class SessionStore(cacheSessionStore):
 
     def load(self):
         session_data = super().load()
-        if (self.session_key):
+        if self.session_key:
             logger.info(f"SESSION LOAD: key={self.session_key}")
         logger.info(f"SESSION LOAD: data={session_data}")
         # logger.info(f"SESSION LOAD: data={dict(self)}")
@@ -20,10 +21,10 @@ class SessionStore(cacheSessionStore):
     #     super().save(must_create)
 
     def delete(self, session_key=None):
-        if (self.session_key):
+        if self.session_key:
             logger.info(f"SESSION DELETE: key={self.session_key}")
         else:
-            logger.info(f"SESSION DELETE")
+            logger.info("SESSION DELETE")
         # logger.info(f"SESSION DELETE: data={dict(self)}")
         super().delete(session_key)
 
@@ -37,7 +38,7 @@ class SessionStore(cacheSessionStore):
     #     return value
 
     def flush(self):
-        if (self.session_key):
+        if self.session_key:
             logger.info(f"SESSION FLUSH: key={self.session_key}")
         else:
-            logger.info(f"SESSION FLUSH")
+            logger.info("SESSION FLUSH")
