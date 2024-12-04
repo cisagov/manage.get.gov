@@ -25,7 +25,7 @@
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
     {% if not portfolio %}
-      <h2 id="domains-header" class="display-inline-block">Domains</h2>
+      <h2 id="domains-header" class="display-inline-block">Domains {% has_domain_renewal_flag %}</h2>
     {% else %}
       <!-- Embedding the portfolio value in a data attribute -->
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
