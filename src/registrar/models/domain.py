@@ -747,11 +747,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
-        try:
-            self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        except:
-            # in this case we don't care if there's an error, and it will be logged in the function.
-            pass
+        self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
         if successTotalNameservers < 2:
             try:
@@ -1034,10 +1030,10 @@ class Domain(TimeStampedModel, DomainHelper):
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
-        
+
     def _delete_nonregistrant_contacts(self):
         """Non-registrant contacts associated with this domain will be deleted.
-        RegistryErrors will be logged and raised. Error 
+        RegistryErrors will be logged and raised. Error
         handling should be provided by the caller.
         """
         logger.info("Deleting contacts for %s", self.name)
@@ -1048,8 +1044,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 # registrants have to be deleted after the domain
                 if contact != PublicContact.ContactTypeChoices.REGISTRANT:
                     self._delete_contact(contact, id)
-        
-        
+
     def _delete_subdomains(self):
         """Subdomains of this domain should be deleted from the registry.
         Subdomains which are used by other domains (eg as a hostname) will
@@ -1690,10 +1685,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
                 raise e
-    
+
     def _delete_contact(self, contact_name: str, registry_id: str):
         """Try to delete a contact from the registry.
-        
+
         raises:
             RegistryError: if the registry is unable to delete the contact
         """
@@ -1703,10 +1698,8 @@ class Domain(TimeStampedModel, DomainHelper):
             return registry.send(req, cleaned=True).res_data[0]
         except RegistryError as error:
             logger.error(
-                "Registry threw error when trying to delete contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
-                contact.registry_id,
-                contact.contact_type,
-                error.code,
+                "Registry threw error when trying to delete contact %s, error: %s",  # noqa
+                contact_name,
                 error,
             )
             raise error
@@ -1834,7 +1827,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
-            
+
             raise e
 
     def _fix_unknown_state(self, cleaned):

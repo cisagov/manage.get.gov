@@ -1672,7 +1672,7 @@ class MockEppLib(TestCase):
                 res_data=[self.mockDataHostChange],
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
-        
+
     def mockDeleteHostCommands(self, _request, cleaned):
         host = getattr(_request, "name", None)
         if "sharedhost.com" in host:
@@ -1814,15 +1814,15 @@ class MockEppLib(TestCase):
             # mocks a contact error on creation
             raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
         return MagicMock(res_data=[self.mockDataInfoHosts])
-    
+
     def mockDeleteContactCommands(self, _request, cleaned):
         if getattr(_request, "id", None) == "fail":
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:
             return MagicMock(
-                    res_data=[self.mockDataInfoContact],
-                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-                )
+                res_data=[self.mockDataInfoContact],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
 
     def setUp(self):
         """mock epp send function as this will fail locally"""

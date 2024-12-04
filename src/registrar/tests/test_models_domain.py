@@ -2643,7 +2643,7 @@ class TestAnalystDelete(MockEppLib):
             self.mockedSendFunction.assert_has_calls(
                 [
                     call(
-                        commands.DeleteHost(name='ns1.sharedhost.com'),
+                        commands.DeleteHost(name="ns1.sharedhost.com"),
                         cleaned=True,
                     ),
                 ]
@@ -2664,7 +2664,7 @@ class TestAnalystDelete(MockEppLib):
             And `state` is set to `DELETED`
         """
         # with less_console_noise():
-            # Desired domain
+        # Desired domain
         domain, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.ON_HOLD)
         # Put the domain in client hold
         domain.place_client_hold()
@@ -2675,12 +2675,15 @@ class TestAnalystDelete(MockEppLib):
         # Check that the host and contacts are deleted, order doesn't matter
         self.mockedSendFunction.assert_has_calls(
             [
-                call(commands.DeleteHost(name='fake.host.com'), cleaned=True),
+                call(commands.DeleteHost(name="fake.host.com"), cleaned=True),
                 call(commands.DeleteContact(id="securityContact"), cleaned=True),
                 call(commands.DeleteContact(id="technicalContact"), cleaned=True),
-                call(commands.DeleteContact(id="adminContact"),cleaned=True,)
+                call(
+                    commands.DeleteContact(id="adminContact"),
+                    cleaned=True,
+                ),
             ],
-            any_order=True
+            any_order=True,
         )
 
         # These calls need to be in order
