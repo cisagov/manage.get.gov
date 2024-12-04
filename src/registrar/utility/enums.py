@@ -49,6 +49,7 @@ class DefaultUserValues(StrEnum):
     - SYSTEM: "System" <= Default username
     - UNRETRIEVED: "Unretrieved" <= Default email state
     """
+
     HELP_EMAIL = "help@get.gov"
     SYSTEM = "System"
     UNRETRIEVED = "Unretrieved"

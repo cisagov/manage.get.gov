@@ -654,7 +654,9 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "copy-to-clipboard", count=3)
+        # We expect 3 in the form + 2 from the js module copy-to-clipboard.js
+        # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
+        self.assertContains(response, "copy-to-clipboard", count=5)
 
         # cleanup this test
         domain_info.delete()

@@ -51,6 +51,7 @@ class DomainRequestPermissionDisplay(StrEnum):
     - VIEWER: "Viewer"
     - NONE: "None"
     """
+
     VIEWER_REQUESTER = "Viewer Requester"
     VIEWER = "Viewer"
     NONE = "None"
@@ -64,6 +65,7 @@ class MemberPermissionDisplay(StrEnum):
     - VIEWER: "Viewer"
     - NONE: "None"
     """
+
     MANAGER = "Manager"
     VIEWER = "Viewer"
     NONE = "None"

@@ -254,3 +254,10 @@ abbr[title] {
 .break-word {
   word-break: break-word;
 }
+
+//Icon size adjustment used by buttons and form errors
+.usa-icon.usa-icon--large {
+  margin: 0;
+  height: 1.5em;
+  width: 1.5em;
+}
