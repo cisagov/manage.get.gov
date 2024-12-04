@@ -1422,41 +1422,41 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
 
         """
-        # with less_console_noise():
-        self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
-        expectedCalls = [
-            call(
-                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                cleaned=True,
-            ),
-            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-            call(
-                commands.UpdateDomain(
-                    name=self.domainWithThreeNS.name,
-                    add=[],
-                    rem=[
-                        common.HostObjSet(
-                            hosts=[
-                                "ns1.my-nameserver-2.com",
-                                "ns1.cats-are-superior3.com",
-                            ]
-                        ),
-                    ],
-                    nsset=None,
-                    keyset=None,
-                    registrant=None,
-                    auth_info=None,
+        with less_console_noise():
+            self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
+            expectedCalls = [
+                call(
+                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                    cleaned=True,
                 ),
-                cleaned=True,
-            ),
-            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-        ]
+                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+                call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+                call(
+                    commands.UpdateDomain(
+                        name=self.domainWithThreeNS.name,
+                        add=[],
+                        rem=[
+                            common.HostObjSet(
+                                hosts=[
+                                    "ns1.my-nameserver-2.com",
+                                    "ns1.cats-are-superior3.com",
+                                ]
+                            ),
+                        ],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+                call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            ]
 
-        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-        self.assertFalse(self.domainWithThreeNS.is_active())
+            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+            self.assertFalse(self.domainWithThreeNS.is_active())
 
     def test_user_replaces_nameservers(self):
         """
@@ -2601,28 +2601,28 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is set.
         """
-        # with less_console_noise():
-        # Put the domain in client hold
-        self.domain.place_client_hold()
-        # Delete it...
-        self.domain.deletedInEpp()
-        self.domain.save()
-        self.mockedSendFunction.assert_has_calls(
-            [
-                call(
-                    commands.DeleteDomain(name="fake.gov"),
-                    cleaned=True,
-                )
-            ]
-        )
-        # Domain itself should not be deleted
-        self.assertNotEqual(self.domain, None)
-        # Domain should have the right state
-        self.assertEqual(self.domain.state, Domain.State.DELETED)
-        # Domain should have a deleted
-        self.assertNotEqual(self.domain.deleted, None)
-        # Cache should be invalidated
-        self.assertEqual(self.domain._cache, {})
+        with less_console_noise():
+            # Put the domain in client hold
+            self.domain.place_client_hold()
+            # Delete it...
+            self.domain.deletedInEpp()
+            self.domain.save()
+            self.mockedSendFunction.assert_has_calls(
+                [
+                    call(
+                        commands.DeleteDomain(name="fake.gov"),
+                        cleaned=True,
+                    )
+                ]
+            )
+            # Domain itself should not be deleted
+            self.assertNotEqual(self.domain, None)
+            # Domain should have the right state
+            self.assertEqual(self.domain.state, Domain.State.DELETED)
+            # Domain should have a deleted
+            self.assertNotEqual(self.domain.deleted, None)
+            # Cache should be invalidated
+            self.assertEqual(self.domain._cache, {})
 
     def test_deletion_is_unsuccessful(self):
         """
