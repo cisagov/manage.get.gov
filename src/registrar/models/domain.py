@@ -1118,16 +1118,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
         now = timezone.now().date()
         threshold_date = now + timedelta(days=60)
-<<<<<<< HEAD
-        return self.expiration_date <= threshold_date
-    
-=======
-        print("threshold date is ", threshold_date)
-        print("self.expiration_date <= threshold_date is ", self.expiration_date <= threshold_date)
 
         return now <= self.expiration_date <= threshold_date
 
->>>>>>> ad720cbebf983ec37bf54e0248390db9f1ed923c
+
     def has_domain_renewal_flag(self):
         print("domain_renewal flag")
         print(flag_is_active(None, "domain_renewal"))
@@ -1135,14 +1129,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def state_display(self):
         """Return the display status of the domain."""
-<<<<<<< HEAD
-        print(flag_is_active(None, "domain_renewal"))
-        if self.is_expiring() and self.state != self.State.UNKNOWN:
-=======
         # if flag_is_active(self, "domain_request"):
         if self.is_expiring() and self.state == self.State.UNKNOWN:
             # if self.is_expiring() and self.state != self.State.UNKNOWN:
->>>>>>> ad720cbebf983ec37bf54e0248390db9f1ed923c
             return "Expiring"
         if self.is_expired() and self.state == self.State.UNKNOWN:
             # elif self.is_expired() and self.state != self.State.UNKNOWN:

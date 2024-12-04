@@ -106,6 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
                       checkbox.dispatchEvent(event);
                       console.log("Expiring checkbox checked");
                   }
+              else {
+                  // When we come in everything is technically "checked"
+                  // This everything else to be unchecked
+                  checkbox.checked = false;
+                }
               }
           });
           // We're supposed to reload the table with the new filter but it's not working

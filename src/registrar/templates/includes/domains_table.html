@@ -4,22 +4,20 @@
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
 
+{% if has_domain_renewal_flag and has_any_domains_portfolio_permission %}
+<section class="usa-site-alert usa-site-alert--info margin-y-0 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+  <div class="usa-alert">
+    <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
+      <p class="usa-alert__text maxw-none">
+          One or more domains are close to expiration. TEST
 
-{% if has_domain_renewal_flag %}
-  <section class="usa-site-alert usa-site-alert--info margin-y-0 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
-    <div class="usa-alert">
-      <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
-        <p class="usa-alert__text maxw-none">
-            One or more domains are close to expiration. TEST
+      <a href="#" id="link-expiring-domains" class="usa-link">Renew the domain(s)</a>
 
-        <a href="#" id="link-expiring-domains" class="usa-link">Renew the domain(s)</a>
-
-        </p>
-      </div>
+      </p>
     </div>
-  </section>
+  </div>
+</section>
 {% endif %}
-
 
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
@@ -152,7 +150,7 @@
               >Deleted</label
             >
           </div>
-          {% if has_domain_renewal_flag %}
+          {% if has_domain_renewal_flag and has_any_domains_portfolio_permission %}
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
