@@ -444,14 +444,14 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_federal_agency(self):
         if self.portfolio:
-            return self.portfolio.federal_agency
-        return self.federal_agency
+            return self.portfolio.federal_agency.agency
+        return self.federal_agency.agency
 
     @property
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.get_federal_type_display()
+        return self.federal_type
 
     @property
     def converted_senior_official(self):
@@ -502,3 +502,9 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
         return self.get_generic_org_type_display()
+    
+    @property
+    def converted_federal_type_display(self):
+        if self.portfolio:
+            return self.portfolio.federal_agency.get_federal_type_display()
+        return self.get_federal_type_display()

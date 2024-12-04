@@ -767,14 +767,21 @@ class DomainExport(BaseExport):
 
     def get_filtered_domain_infos_by_org(domain_infos_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value."""
-        return domain_infos_to_filter.filter(
-            # Filter based on the generic org value returned by converted_generic_org_type
-            id__in=[
-                domainInfos.id
-                for domainInfos in domain_infos_to_filter
-                if domainInfos.converted_generic_org_type and domainInfos.converted_generic_org_type == org_to_filter_by
-            ]
-        )
+
+        annotated_queryset = domain_infos_to_filter.annotate(
+                converted_generic_org_type=Case(
+                    # Recreate the logic of the converted_generic_org_type property
+                    # here in annotations
+                    When(
+                        portfolio__isnull=False,
+                        then=F("portfolio__organization_type")
+                    ),
+                    default=F("organization_type"),
+                    output_field=CharField(),
+                )
+            )
+        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
+
 
     @classmethod
     def get_sliced_domains(cls, filter_condition):
@@ -1641,6 +1648,17 @@ class DomainRequestExport(BaseExport):
                     ),
                 # Otherwise, return the natively assigned value
                 default=F("federal_agency__agency"),
+                output_field=CharField(),
+            ),
+            "converted_federal_type": Case(
+                # When portfolio is present, use its value instead
+                # NOTE: this is an @Property funciton in portfolio.
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_type"),
                 output_field=CharField(),
             ),
             "converted_federal_type": Case(
