@@ -561,8 +561,8 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
                     # it has been sent but not accepted
                     messages.warning(self.request, f"{email} has already been invited to this portfolio")
                 return
-        except Exception:
-            logger.error("An error occured")
+        except Exception as err:
+            logger.error(f"_send_portfolio_invitation_email() => An error occured: {err}")
 
         try:
             logger.debug("requestor email: " + requestor_email)
