@@ -1098,10 +1098,14 @@ class Domain(TimeStampedModel, DomainHelper):
         Check if the domain's expiration date is in the past.
         Returns True if expired, False otherwise.
         """
-        if self.expiration_date is None:
-            return True
+        # if self.expiration_date is None:
+        #     return True
         now = timezone.now().date()
-        return self.expiration_date < now
+        if self.expiration_date < now:
+            return True
+        else:
+            return False
+        # return self.expiration_date < now
 
     def is_expiring(self):
         """
@@ -1114,20 +1118,34 @@ class Domain(TimeStampedModel, DomainHelper):
 
         now = timezone.now().date()
         threshold_date = now + timedelta(days=60)
+<<<<<<< HEAD
         return self.expiration_date <= threshold_date
     
+=======
+        print("threshold date is ", threshold_date)
+        print("self.expiration_date <= threshold_date is ", self.expiration_date <= threshold_date)
+
+        return now <= self.expiration_date <= threshold_date
+
+>>>>>>> 64bd79631b342aab8bd722bce83e1c2a413042f0
     def has_domain_renewal_flag(self):
         print("domain_renewal flag")
         print(flag_is_active(None, "domain_renewal"))
         return flag_is_active(None, "domain_renewal")
-    
-    
+
     def state_display(self):
         """Return the display status of the domain."""
+<<<<<<< HEAD
         print(flag_is_active(None, "domain_renewal"))
         if self.is_expiring() and self.state != self.State.UNKNOWN:
+=======
+        # if flag_is_active(self, "domain_request"):
+        if self.is_expiring() and self.state == self.State.UNKNOWN:
+            # if self.is_expiring() and self.state != self.State.UNKNOWN:
+>>>>>>> 64bd79631b342aab8bd722bce83e1c2a413042f0
             return "Expiring"
-        elif self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and self.state == self.State.UNKNOWN:
+            # elif self.is_expired() and self.state != self.State.UNKNOWN:
             return "Expired"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"

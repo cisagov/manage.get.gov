@@ -203,7 +203,7 @@ class User(AbstractUser):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
-    
+
     def has_organization_requests_flag(self):
         return flag_is_active_for_user(self, "organization_requests")
 
