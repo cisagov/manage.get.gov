@@ -64,6 +64,7 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
+from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -461,6 +462,50 @@ class DomainDNSView(DomainBaseView):
         context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         return context
 
+
+class PrototypeDomainDNSRecordForm(forms.Form):
+    """Form for adding DNS records in prototype."""
+    
+    record_type = forms.ChoiceField(
+        label="Record Type",
+        choices=[
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+            ("CNAME", "CNAME"),
+            ("TXT", "TXT")
+        ],
+        required=True
+    )
+    
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        help_text="The DNS record name (e.g., www)"
+    )
+
+    content = forms.GenericIPAddressField(
+        label="IPv4 Address",
+        required=True,
+        protocol="IPv4",
+        help_text="The IPv4 address this record points to"
+    )
+    
+    ttl = forms.ChoiceField(
+        label="TTL",
+        choices=[
+            (1, "Automatic"),
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"), 
+            (86400, "1 day")
+        ],
+        initial=1,
+        help_text="Time to Live - how long DNS resolvers should cache this record"
+    )
 
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
