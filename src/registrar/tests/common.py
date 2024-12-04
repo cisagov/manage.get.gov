@@ -1620,7 +1620,7 @@ class MockEppLib(TestCase):
             case commands.UpdateHost:
                 return self.mockUpdateHostCommands(_request, cleaned)
             case commands.DeleteHost:
-                return self.mockDeletHostCommands(_request, cleaned)
+                return self.mockDeleteHostCommands(_request, cleaned)
             case commands.CheckDomain:
                 return self.mockCheckDomainCommand(_request, cleaned)
             case commands.DeleteDomain:
@@ -1673,11 +1673,10 @@ class MockEppLib(TestCase):
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
         
-    def mockDeletHostCommands(self, _request, cleaned):
-        hosts = getattr(_request, "name", None).hosts
-        for host in hosts:
-            if "sharedhost.com" in host:
-                raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION) 
+    def mockDeleteHostCommands(self, _request, cleaned):
+        host = getattr(_request, "name", None)
+        if "sharedhost.com" in host:
+            raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         return MagicMock(
             res_data=[self.mockDataHostChange],
             code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,

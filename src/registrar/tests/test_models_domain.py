@@ -1422,40 +1422,41 @@ class TestRegistrantNameservers(MockEppLib):
             And `domain.is_active` returns False
 
         """
-        with less_console_noise():
-            self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
-            expectedCalls = [
-                call(
-                    commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
-                    cleaned=True,
+        # with less_console_noise():
+        self.domainWithThreeNS.nameservers = [(self.nameserver1,)]
+        expectedCalls = [
+            call(
+                commands.InfoDomain(name=self.domainWithThreeNS.name, auth_info=None),
+                cleaned=True,
+            ),
+            call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+            call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
+            call(
+                commands.UpdateDomain(
+                    name=self.domainWithThreeNS.name,
+                    add=[],
+                    rem=[
+                        common.HostObjSet(
+                            hosts=[
+                                "ns1.my-nameserver-2.com",
+                                "ns1.cats-are-superior3.com",
+                            ]
+                        ),
+                    ],
+                    nsset=None,
+                    keyset=None,
+                    registrant=None,
+                    auth_info=None,
                 ),
-                call(commands.InfoHost(name="ns1.my-nameserver-1.com"), cleaned=True),
-                call(commands.InfoHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-                call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-                call(commands.DeleteHost(name="ns1.my-nameserver-2.com"), cleaned=True),
-                call(
-                    commands.UpdateDomain(
-                        name=self.domainWithThreeNS.name,
-                        add=[],
-                        rem=[
-                            common.HostObjSet(
-                                hosts=[
-                                    "ns1.my-nameserver-2.com",
-                                    "ns1.cats-are-superior3.com",
-                                ]
-                            ),
-                        ],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                ),
-                call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
-            ]
-            self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertFalse(self.domainWithThreeNS.is_active())
+                cleaned=True,
+            ),
+            call(commands.DeleteHost(name="ns1.cats-are-superior3.com"), cleaned=True),
+        ]
+
+        self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
+        self.assertFalse(self.domainWithThreeNS.is_active())
 
     def test_user_replaces_nameservers(self):
         """
@@ -2642,7 +2643,7 @@ class TestAnalystDelete(MockEppLib):
             self.mockedSendFunction.assert_has_calls(
                 [
                     call(
-                        commands.DeleteHost(name=common.HostObjSet(hosts=['ns1.sharedhost.com'])),
+                        commands.DeleteHost(name='ns1.sharedhost.com'),
                         cleaned=True,
                     ),
                 ]
@@ -2674,7 +2675,7 @@ class TestAnalystDelete(MockEppLib):
         # Check that the host and contacts are deleted, order doesn't matter
         self.mockedSendFunction.assert_has_calls(
             [
-                call(commands.DeleteHost(name=common.HostObjSet(hosts=['fake.host.com'])), cleaned=True),
+                call(commands.DeleteHost(name='fake.host.com'), cleaned=True),
                 call(commands.DeleteContact(id="securityContact"), cleaned=True),
                 call(commands.DeleteContact(id="technicalContact"), cleaned=True),
                 call(commands.DeleteContact(id="adminContact"),cleaned=True,)
