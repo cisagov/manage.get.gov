@@ -42,3 +42,4 @@ class SessionStore(cacheSessionStore):
             logger.info(f"SESSION FLUSH: key={self.session_key}")
         else:
             logger.info("SESSION FLUSH")
+        super().flush()
