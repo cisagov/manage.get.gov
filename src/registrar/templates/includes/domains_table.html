@@ -23,7 +23,7 @@
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
     {% if not portfolio %}
-      <h2 id="domains-header" class="display-inline-block">Domains {% has_domain_renewal_flag %}</h2>
+      <h2 id="domains-header" class="display-inline-block">Domains</h2>
     {% else %}
       <!-- Embedding the portfolio value in a data attribute -->
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
@@ -68,7 +68,6 @@
     </div>
     {% endif %}
   </div>
-  {% if portfolio %}
   <div class="display-flex flex-align-center"> 
     <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
     <div class="usa-accordion usa-accordion--select margin-right-2">
@@ -177,7 +176,6 @@
       </svg>
     </button>
   </div>
-  {% endif %}
   <div class="display-none usa-table-container--scrollable margin-top-0" tabindex="0" id="domains__table-wrapper">
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
