@@ -16,6 +16,7 @@ from registrar.models import (
     Host,
     Portfolio,
 )
+from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from .common import (
     MockSESClient,
@@ -59,6 +60,7 @@ class TestDomainAdminAsStaff(MockEppLib):
     def tearDown(self):
         super().tearDown()
         Host.objects.all().delete()
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
