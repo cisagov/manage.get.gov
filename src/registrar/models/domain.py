@@ -231,6 +231,14 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        # If the domain is deleted we don't want the expiration date to be set
+        if self.state == self.State.DELETED and self.expiration_date:
+            self.expiration_date = None
+        super().save(force_insert, force_update, using, update_fields)
+
     @classmethod
     def available(cls, domain: str) -> bool:
         """Check if a domain is available.
@@ -1054,6 +1062,13 @@ class Domain(TimeStampedModel, DomainHelper):
             RegistryError: if any subdomain cannot be deleted
         """
         logger.info("Deleting nameservers for %s", self.name)
+        # check if any nameservers are in use by another domain
+        hosts = Host.objects.filter(name__regex=r'.+{}'.format(self.name))
+        for host in hosts:
+            if host.domain != self:
+                logger.error("Host %s in use by another domain: %s", host.name, host.domain)
+                raise RegistryError("Host in use by another domain: {}".format(host.domain), code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
+        
         nameservers = [n[0] for n in self.nameservers]
         hostsToDelete, _ = self.createDeleteHostList(nameservers)
         logger.debug("HostsToDelete from %s inside _delete_subdomains -> %s", self.name, hostsToDelete)
@@ -1070,9 +1085,10 @@ class Domain(TimeStampedModel, DomainHelper):
     def _delete_domain_registrant(self):
         """This domain's registrant should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
-        registrantID = self.registrant_contact.registry_id
-        request = commands.DeleteContact(id=registrantID)
-        registry.send(request, cleaned=True)
+        if self.registrant_contact:
+            registrantID = self.registrant_contact.registry_id
+            request = commands.DeleteContact(id=registrantID)
+            registry.send(request, cleaned=True)
 
     def __str__(self) -> str:
         return self.name
@@ -1486,6 +1502,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._delete_domain()
             self._delete_domain_registrant()
             self.deleted = timezone.now()
+            self.expiration_date = None
         except RegistryError as err:
             logger.error(f"Could not delete domain. Registry returned error: {err}")
             raise err
