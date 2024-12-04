@@ -174,10 +174,6 @@ class Command(BaseCommand):
         # Check for existing suborgs on the current portfolio
         existing_suborgs = Suborganization.objects.filter(name__in=org_names)
         if existing_suborgs.exists():
-            # QUESTION FOR REVIEWERS: Should we be doing this too?
-            # existing_suborgs.filter(portfolio__isnull=True).update(
-            #     portfolio=portfolio
-            # )
             message = f"Some suborganizations already exist for portfolio '{portfolio}'."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
 

@@ -207,9 +207,9 @@ class TerminalHelper:
             skipped_header = "----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----"
 
         # Give the user the option to see failed / skipped records if any exist.
-        debug_anyway = False
+        display_detailed_logs = False
         if not debug and update_failed_count > 0 or update_skipped_count > 0:
-            debug_anyway = TerminalHelper.prompt_for_execution(
+            display_detailed_logs = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
                 prompt_message=f"You will see {update_failed_count} failed and {update_skipped_count} skipped records.",
                 verify_message="** Some records were skipped, or some failed to update. **",
@@ -217,7 +217,7 @@ class TerminalHelper:
             )
 
         # Prepare debug messages
-        if debug or debug_anyway:
+        if debug or display_detailed_logs:
             updated_display = [str(u) for u in to_update] if display_as_str else to_update
             skipped_display = [str(s) for s in skipped] if display_as_str else skipped
             failed_display = [str(f) for f in failed_to_update] if display_as_str else failed_to_update
