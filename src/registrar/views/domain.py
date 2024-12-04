@@ -465,29 +465,17 @@ class DomainDNSView(DomainBaseView):
 
 class PrototypeDomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
-    
-    record_type = forms.ChoiceField(
-        label="Record Type",
-        choices=[
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-            ("CNAME", "CNAME"),
-            ("TXT", "TXT")
-        ],
-        required=True
-    )
-    
+
     name = forms.CharField(
-        label="Name",
+        label="DNS record name (A record)",
         required=True,
-        help_text="The DNS record name (e.g., www)"
+        help_text="DNS record name"
     )
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
-        help_text="The IPv4 address this record points to"
     )
     
     ttl = forms.ChoiceField(
@@ -504,8 +492,61 @@ class PrototypeDomainDNSRecordForm(forms.Form):
             (86400, "1 day")
         ],
         initial=1,
-        help_text="Time to Live - how long DNS resolvers should cache this record"
     )
+
+class PrototypeDomainDNSRecordView(DomainFormBaseView):
+    template_name = "prototype_domain_dns.html"
+    form_class = PrototypeDomainDNSRecordForm
+    def has_permission(self):
+        has_permission = super().has_permission()
+        if not has_permission:
+            return False
+        
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        if not flag_enabled:
+            return False
+
+        return True
+    
+    def get_success_url(self):
+        return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
+
+    def post(self, request, *args, **kwargs):
+        """Handle form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            try:
+                # Format the DNS record according to Cloudflare's API requirements
+                dns_record = {
+                    "type": "A",
+                    "name": form.cleaned_data["name"],
+                    "content": form.cleaned_data["content"],
+                    "ttl": int(form.cleaned_data["ttl"]),
+                    "comment": f"Test record (will eventually need to clean up)"
+                }
+                
+                result = self.object.create_prototype_dns_record(dns_record)
+                
+                if result:  # Assuming create_prototype_dns_record returns the response data
+                    messages.success(
+                        request,
+                        f"DNS A record '{form.cleaned_data['name']}' created successfully."
+                    )
+                else:
+                    messages.error(
+                        request,
+                        "Failed to create DNS A record. Please try again."
+                    )
+                    
+            except Exception as err:
+                logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
+                messages.error(
+                    request,
+                    f"An error occurred while creating the DNS A record: {err}"
+                )
+        return super().post(request)
+
 
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""

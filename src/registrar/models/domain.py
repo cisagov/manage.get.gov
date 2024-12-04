@@ -355,20 +355,18 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def create_prototype_dns_record(self, dns_record_dict):
         print(f"what is the key? {settings.SECRET_REGISTRY_TENANT_KEY}")
+
+        # Don't execute this function on any other domain
+        if settings.IS_PRODUCTION and self.name != "igorville.gov":
+            logger.warning(f"create_dns_record was called for domain {self.name}")
+            return None
+
         # Cloudflare API endpoints
         base_url = "https://api.cloudflare.com/client/v4"
         headers = {
             "Authorization": f"Bearer {settings.SECRET_REGISTRY_TENANT_KEY}",
             "Content-Type": "application/json"
         }
-        if settings.IS_PRODUCTION:
-            if self.name == "igorville.gov":
-                # do stuff
-                pass
-            else:
-                logger.warning(f"create_dns_record was called for domain {self.name}")
-        else:
-            pass
         
         # TODO - check if these things exist before doing stuff
         # 1. Get tenant details
