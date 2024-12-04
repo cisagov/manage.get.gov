@@ -49,7 +49,10 @@ export function initPortfolioMemberPageToggle() {
  * on the Add New Member page.
  */
 export function initAddNewMemberPageListeners() {
-
+  add_member_form = document.getElementById("add_member_form")
+  if (!add_member_form){
+     return;
+  }
   document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
     // Upon confirmation, submit the form
     document.getElementById("add_member_form").submit();
