@@ -138,7 +138,7 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -526,7 +526,7 @@ class DomainExport(BaseExport):
         return DomainInformation
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", ", **kwargs):
+    def get_computed_fields(cls, **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -776,7 +776,7 @@ class DomainExport(BaseExport):
                         portfolio__isnull=False,
                         then=F("portfolio__organization_type")
                     ),
-                    default=F("organization_type"),
+                    default=F("generic_org_type"),
                     output_field=CharField(),
                 )
             )
@@ -880,7 +880,7 @@ class DomainDataType(DomainExport):
         ]
 
     @classmethod
-    def get_annotations_for_sort(cls, delimiter=", "):
+    def get_annotations_for_sort(cls):
         """
         Get a dict of annotations to make available for sorting.
         """
@@ -1613,15 +1613,32 @@ class DomainRequestExport(BaseExport):
 
     def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value"""
-        return domain_requests_to_filter.filter(
-            # Filter based on the generic org value returned by converted_generic_org_type
-            id__in=[
-                domainRequest.id
-                for domainRequest in domain_requests_to_filter
-                if domainRequest.converted_generic_org_type
-                and domainRequest.converted_generic_org_type == org_to_filter_by
-            ]
-        )
+        annotated_queryset = domain_requests_to_filter.annotate(
+                converted_generic_org_type=Case(
+                    # Recreate the logic of the converted_generic_org_type property
+                    # here in annotations
+                    When(
+                        portfolio__isnull=False,
+                        then=F("portfolio__organization_type")
+                    ),
+                    default=F("generic_org_type"),
+                    output_field=CharField(),
+                )
+            )
+        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
+        
+        # return domain_requests_to_filter.filter(
+        #     # Filter based on the generic org value returned by converted_generic_org_type
+        #     id__in=[
+        #         domainRequest.id
+        #         for domainRequest in domain_requests_to_filter
+        #         if domainRequest.converted_generic_org_type
+        #         and domainRequest.converted_generic_org_type == org_to_filter_by
+        #     ]
+        # )
+    
+
+    
 
     @classmethod
     def get_computed_fields(cls, delimiter=", ", **kwargs):

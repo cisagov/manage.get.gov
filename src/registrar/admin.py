@@ -1760,10 +1760,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                             Q(portfolio__federal_agency__federal_type=self.value()) |
                             Q(portfolio__isnull=True, federal_type=self.value())
                         )
-                # return queryset.filter(
-                #             Q(portfolio__federal_type=self.value()) |
-                #             Q(portfolio__isnull=True, federal_type=self.value())
-                #         )
             return queryset
 
     class InvestigatorFilter(admin.SimpleListFilter):
@@ -2778,8 +2774,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Filter queryset
         def queryset(self, request, queryset):
             if self.value():  # Check if a generic org is selected in the filter
-
-                # return queryset.filter(converted_generic_org_type = self.value)
                 return queryset.filter(
                             Q(domain_info__portfolio__organization_type=self.value()) |
                             Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())

@@ -30,6 +30,9 @@ from .common import (
 from unittest.mock import ANY, call, patch
 
 import boto3_mocking  # type: ignore
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TestDomainAdminAsStaff(MockEppLib):
@@ -723,9 +726,9 @@ class TestDomainAdminWithClient(TestCase):
             domain_request.approve()
 
         response = self.client.get("/admin/registrar/domain/")
-        # The total count should reflect the fact that we are pulling from portfolio
-        # data when portfolios are present
-        self.assertContains(response, "Federal", count=98)
+        # There are 4 template references to Federal (4) plus four references in the table
+        # for our actual domain_request
+        self.assertContains(response, "Federal", count=57)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
