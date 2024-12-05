@@ -522,12 +522,10 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 
                 valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
                 if not settings.IS_PRODUCTION and self.object.name not in valid_domains:
-                    messages.error(
-                        request,
+                    raise Exception(
                         f"Can only create DNS records for: {valid_domains}."
                         " Create one in a test environment if it doesn't already exist."
                     )
-                    return super().post(request)
                 
                 base_url = "https://api.cloudflare.com/client/v4"
                 headers = {
@@ -539,29 +537,30 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 
                 # 1. Get tenant details
                 tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params)
-                tenant_response.raise_for_status()
                 tenant_response_json = tenant_response.json()
                 logger.info(f"Found tenant: {tenant_response_json}")
                 tenant_id = tenant_response_json["result"][0]["tenant_tag"]
+                tenant_response.raise_for_status()
 
-                # 2. Create account under tenant
+                # 2. Create or get a account under tenant
 
-                # Check to see if the account already exists. Filters accounts by tenant_id.
+                # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
                 account_name = f"account-{self.object.name}"
-                params = {"tenant_id": tenant_id}
+                params = {"tenant_id": tenant_id, "name": account_name}
 
                 account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params)
-                account_response.raise_for_status()
                 account_response_json = account_response.json()
-                print(f"account stuff: {account_response_json}")
+                logger.debug(f"account get: {account_response_json}")
+                account_response.raise_for_status()
 
-                # See if we already made an account
+                # See if we already made an account.
+                # This doesn't need to be a for loop (1 record or 0) but alas, here we are 
                 account_id = None
                 accounts = account_response_json.get("result", [])
                 for account in accounts:
                     if account.get("name") == account_name:
                         account_id = account.get("id")
-                        print(f"Found it! Account: {account_name} (ID: {account_id})")
+                        logger.debug(f"Found it! Account: {account_name} (ID: {account_id})")
                         break
                 
                 # If we didn't, create one
@@ -575,25 +574,45 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                             "unit": {"id": tenant_id}
                         }
                     )
-                    account_response.raise_for_status()
                     account_response_json = account_response.json()
                     logger.info(f"Created account: {account_response_json}")
                     account_id = account_response_json["result"]["id"]
+                    account_response.raise_for_status()
 
-                # # 3. Create zone under account
-                # zone_response = requests.post(
-                #     f"{base_url}/zones",
-                #     headers=headers,
-                #     json={
-                #         "name": self.name,
-                #         "account": {"id": account_id},
-                #         "type": "full"
-                #     }
-                # )
-                # zone_response.raise_for_status()
-                # zone_response_json = zone_response.json()
-                # zone_id = zone_response_json["result"]["id"]
-                # logger.info(f"Created zone: {zone_response_json}")
+                # 3. Create or get a zone under account
+
+                # Try to find an existing zone first by searching on the current id
+                zone_name = f"zone-{self.object.name}"
+                params = {"account.id": account_id, "name": zone_name} 
+                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params)
+                zone_response_json = zone_response.json()
+                logger.debug(f"get zone: {zone_response_json}")
+                zone_response.raise_for_status()
+
+                # Get the zone id
+                zone_id = None
+                zones = zone_response_json.get("result", [])
+                for zone in zones:
+                    if zone.get("name") == zone_name:
+                        zone_id = zone.get("id")
+                        logger.debug(f"Found it! Zone: {zone_name} (ID: {zone_id})")
+                        break
+                
+                # Create one if it doesn't presently exist
+                if not zone_id:
+                    zone_response = requests.post(
+                        f"{base_url}/zones",
+                        headers=headers,
+                        json={
+                            "name": zone_name,
+                            "account": {"id": account_id},
+                            "type": "full"
+                        }
+                    )
+                    zone_response_json = zone_response.json()
+                    logger.info(f"Created zone: {zone_response_json}")
+                    zone_id = zone_response_json["result"]["id"]
+                    zone_response.raise_for_status()
 
                 # # 4. Add zone subscription
                 # subscription_response = requests.post(
