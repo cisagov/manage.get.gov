@@ -17,7 +17,7 @@ export class EditMemberDomainsTable extends BaseTable {
     const domain = dataObject;
     const row = document.createElement('tr');
     row.innerHTML = `
-        <td data-label="Selected" data-sort-value="0">
+        <td data-label="Selection" data-sort-value="0">
             <div class="usa-checkbox">
                 <input
                     class="usa-checkbox__input"
