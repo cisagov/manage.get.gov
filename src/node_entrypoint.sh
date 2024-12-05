@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "In node_entrypoint.sh"
+whoami
+
 # Get UID and GID of the /app directory owner
 HOST_UID=$(stat -c '%u' /app)
 HOST_GID=$(stat -c '%g' /app)
