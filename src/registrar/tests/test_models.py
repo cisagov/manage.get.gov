@@ -825,6 +825,15 @@ class TestUser(TestCase):
         )
 
     @less_console_noise_decorator
+    def test_user_with_admin_portfolio_role(self):
+        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.assertFalse(self.user.is_portfolio_admin(portfolio))
+        UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        self.assertTrue(self.user.is_portfolio_admin(portfolio))
+
+    @less_console_noise_decorator
     def test_get_active_requests_count_in_portfolio_returns_zero_if_no_portfolio(self):
         # There is no portfolio referenced in session so should return 0
         request = self.factory.get("/")

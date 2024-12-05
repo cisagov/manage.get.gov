@@ -2,6 +2,7 @@
 
 docs/research/data/**
 **/assets/*
+!**/assets/src/
 !**/assets/sass/
 !**/assets/img/registrar/
 public/

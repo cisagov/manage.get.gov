@@ -10,16 +10,38 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     UserDomainRole,
+    PortfolioInvitation,
+    UserGroup,
+    UserPortfolioPermission,
 )
-from django.db.models import Case, CharField, Count, DateField, F, ManyToManyField, Q, QuerySet, Value, When
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    DateField,
+    F,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    TextField,
+    Value,
+    When,
+    OuterRef,
+    Subquery,
+    Exists,
+    Func,
+)
 from django.utils import timezone
-from django.db.models.functions import Concat, Coalesce
-from django.contrib.postgres.aggregates import StringAgg
+from django.db.models.functions import Concat, Coalesce, Cast
+from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
+from registrar.models.utility.orm_helper import ArrayRemoveNull
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
-from registrar.utility.enums import DefaultEmail
-
+from registrar.utility.enums import DefaultEmail, DefaultUserValues
 
 logger = logging.getLogger(__name__)
 
@@ -109,14 +131,14 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_filter_conditions(cls, **export_kwargs):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
         return Q()
 
     @classmethod
-    def get_computed_fields(cls):
+    def get_computed_fields(cls, **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -145,7 +167,7 @@ class BaseExport(ABC):
         return queryset
 
     @classmethod
-    def write_csv_before(cls, csv_writer, **export_kwargs):
+    def write_csv_before(cls, csv_writer, **kwargs):
         """
         Write to csv file before the write_csv method.
         Override in subclasses where needed.
@@ -162,7 +184,7 @@ class BaseExport(ABC):
 
         Parameters:
             initial_queryset (QuerySet): Initial queryset.
-            computed_fields (dict, optional): Fields to compute {field_name: expression}.
+            computed_fields  (dict, optional): Fields to compute {field_name: expression}.
             related_table_fields (list, optional): Extra fields to retrieve; defaults to annotation keys if None.
             include_many_to_many (bool, optional): Determines if we should include many to many fields or not
             **kwargs: Additional keyword arguments for specific parameters (e.g., public_contacts, domain_invitations,
@@ -192,21 +214,37 @@ class BaseExport(ABC):
         return cls.update_queryset(queryset, **kwargs)
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, **export_kwargs):
+    def export_data_to_csv(cls, csv_file, **kwargs):
         """
         All domain metadata:
         Exports domains of all statuses plus domain managers.
         """
         writer = csv.writer(csv_file)
         columns = cls.get_columns()
+        models_dict = cls.get_model_annotation_dict(**kwargs)
+
+        # Write to csv file before the write_csv
+        cls.write_csv_before(writer, **kwargs)
+
+        # Write the csv file
+        rows = cls.write_csv(writer, columns, models_dict)
+
+        # Return rows that for easier parsing and testing
+        return rows
+
+    @classmethod
+    def get_annotated_queryset(cls, **kwargs):
+        """Returns an annotated queryset based off of all query conditions."""
         sort_fields = cls.get_sort_fields()
-        kwargs = cls.get_additional_args()
+        # Get additional args and merge with incoming kwargs
+        additional_args = cls.get_additional_args()
+        kwargs.update(additional_args)
         select_related = cls.get_select_related()
         prefetch_related = cls.get_prefetch_related()
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
-        filter_conditions = cls.get_filter_conditions(**export_kwargs)
-        computed_fields = cls.get_computed_fields()
+        filter_conditions = cls.get_filter_conditions(**kwargs)
+        computed_fields = cls.get_computed_fields(**kwargs)
         related_table_fields = cls.get_related_table_fields()
 
         model_queryset = (
@@ -219,21 +257,11 @@ class BaseExport(ABC):
             .order_by(*sort_fields)
             .distinct()
         )
+        return cls.annotate_and_retrieve_fields(model_queryset, computed_fields, related_table_fields, **kwargs)
 
-        # Convert the queryset to a dictionary (including annotated fields)
-        annotated_queryset = cls.annotate_and_retrieve_fields(
-            model_queryset, computed_fields, related_table_fields, **kwargs
-        )
-        models_dict = convert_queryset_to_dict(annotated_queryset, is_model=False)
-
-        # Write to csv file before the write_csv
-        cls.write_csv_before(writer, **export_kwargs)
-
-        # Write the csv file
-        rows = cls.write_csv(writer, columns, models_dict)
-
-        # Return rows that for easier parsing and testing
-        return rows
+    @classmethod
+    def get_model_annotation_dict(cls, **kwargs):
+        return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
 
     @classmethod
     def write_csv(
@@ -271,6 +299,218 @@ class BaseExport(ABC):
         Must be implemented by subclasses
         """
         pass
+
+
+class MemberExport(BaseExport):
+    """CSV export for the MembersTable. The members table combines the content
+    of three tables: PortfolioInvitation, UserPortfolioPermission, and DomainInvitation."""
+
+    @classmethod
+    def model(self):
+        """
+        No model is defined for the member report as it is a combination of multiple fields.
+        This is a special edge case, but the base report requires this to be defined.
+        """
+        return None
+
+    @classmethod
+    def get_model_annotation_dict(cls, request=None, **kwargs):
+        """Combines the permissions and invitation model annotations for
+        the final returned csv export which combines both of these contexts.
+        Returns a dictionary of a union between:
+        - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        """
+        portfolio = request.session.get("portfolio")
+        if not portfolio:
+            return {}
+
+        # Union the two querysets to combine UserPortfolioPermission + invites.
+        # Unions cannot have a col mismatch, so we must clamp what is returned here.
+        shared_columns = [
+            "id",
+            "first_name",
+            "last_name",
+            "email_display",
+            "last_active",
+            "roles",
+            "additional_permissions_display",
+            "member_display",
+            "domain_info",
+            "type",
+            "joined_date",
+            "invited_by",
+        ]
+
+        # Permissions
+        permissions = (
+            UserPortfolioPermission.objects.filter(portfolio=portfolio)
+            .select_related("user")
+            .annotate(
+                first_name=F("user__first_name"),
+                last_name=F("user__last_name"),
+                email_display=F("user__email"),
+                last_active=Coalesce(
+                    Func(F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
+                    Value("Invalid date"),
+                    output_field=CharField(),
+                ),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=Case(
+                    # If email is present and not blank, use email
+                    When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
+                    # If first name or last name is present, use concatenation of first_name + " " + last_name
+                    When(
+                        Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
+                        then=Concat(
+                            Coalesce(F("user__first_name"), Value("")),
+                            Value(" "),
+                            Coalesce(F("user__last_name"), Value("")),
+                        ),
+                    ),
+                    # If neither, use an empty string
+                    default=Value(""),
+                    output_field=CharField(),
+                ),
+                domain_info=ArrayAgg(
+                    F("user__permissions__domain__name"),
+                    distinct=True,
+                    # only include domains in portfolio
+                    filter=Q(user__permissions__domain__isnull=False)
+                    & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                ),
+                type=Value("member", output_field=CharField()),
+                joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+            )
+            .values(*shared_columns)
+        )
+
+        # Invitations
+        domain_invitations = DomainInvitation.objects.filter(
+            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
+            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
+        ).annotate(domain_info=F("domain__name"))
+        invitations = (
+            PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+            .filter(portfolio=portfolio)
+            .annotate(
+                first_name=Value(None, output_field=CharField()),
+                last_name=Value(None, output_field=CharField()),
+                email_display=F("email"),
+                last_active=Value("Invited", output_field=CharField()),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=F("email"),
+                # Use ArrayRemove to return an empty list when no domain invitations are found
+                domain_info=ArrayRemoveNull(
+                    ArrayAgg(
+                        Subquery(domain_invitations.values("domain_info")),
+                        distinct=True,
+                    )
+                ),
+                type=Value("invitedmember", output_field=CharField()),
+                joined_date=Value("Unretrieved", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
+            )
+            .values(*shared_columns)
+        )
+
+        return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
+
+    @classmethod
+    def get_invited_by_query(cls, object_id_query):
+        """Returns the user that created the given portfolio invitation.
+        Grabs this data from the audit log, given that a portfolio invitation object
+        is specified via object_id_query."""
+        return Coalesce(
+            Subquery(
+                LogEntry.objects.filter(
+                    content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                    object_id=object_id_query,
+                    action_flag=ADDITION,
+                )
+                .annotate(
+                    display_email=Case(
+                        When(
+                            Exists(
+                                UserGroup.objects.filter(
+                                    name__in=["cisa_analysts_group", "full_access_group"],
+                                    user=OuterRef("user"),
+                                )
+                            ),
+                            then=Value(DefaultUserValues.HELP_EMAIL.value),
+                        ),
+                        default=F("user__email"),
+                        output_field=CharField(),
+                    )
+                )
+                .order_by("action_time")
+                .values("display_email")[:1]
+            ),
+            Value(DefaultUserValues.SYSTEM.value),
+            output_field=CharField(),
+        )
+
+    @classmethod
+    def get_portfolio_invitation_id_query(cls):
+        """Gets the id of the portfolio invitation that created this UserPortfolioPermission.
+        This makes the assumption that if an invitation is retrieved, it must have created the given
+        UserPortfolioPermission object."""
+        return Cast(
+            Subquery(
+                PortfolioInvitation.objects.filter(
+                    status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+                    # Double outer ref because we first go into the LogEntry query,
+                    # then into the parent UserPortfolioPermission.
+                    email=OuterRef(OuterRef("user__email")),
+                    portfolio=OuterRef(OuterRef("portfolio")),
+                ).values("id")[:1]
+            ),
+            output_field=CharField(),
+        )
+
+    @classmethod
+    def get_columns(cls):
+        """
+        Returns the list of column string names for CSV export. Override in subclasses as needed.
+        """
+        return [
+            "Email",
+            "Organization admin",
+            "Invited by",
+            "Joined date",
+            "Last active",
+            "Domain requests",
+            "Member management",
+            "Domain management",
+            "Number of domains",
+            "Domains",
+        ]
+
+    @classmethod
+    @abstractmethod
+    def parse_row(cls, columns, model):
+        """
+        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
+        Must be implemented by subclasses
+        """
+        roles = model.get("roles", [])
+        permissions = model.get("additional_permissions_display")
+        user_managed_domains = model.get("domain_info", [])
+        length_user_managed_domains = len(user_managed_domains)
+        FIELDS = {
+            "Email": model.get("email_display"),
+            "Organization admin": bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles),
+            "Invited by": model.get("invited_by"),
+            "Joined date": model.get("joined_date"),
+            "Last active": model.get("last_active"),
+            "Domain requests": UserPortfolioPermission.get_domain_request_permission_display(roles, permissions),
+            "Member management": UserPortfolioPermission.get_member_permission_display(roles, permissions),
+            "Domain management": bool(length_user_managed_domains > 0),
+            "Number of domains": length_user_managed_domains,
+            "Domains": ",".join(user_managed_domains),
+        }
+        return [FIELDS.get(column, "") for column in columns]
 
 
 class DomainExport(BaseExport):
@@ -531,10 +771,10 @@ class DomainDataType(DomainExport):
         """
         Get a list of tables to pass to prefetch_related when building queryset.
         """
-        return ["permissions"]
+        return ["domain__permissions"]
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -571,7 +811,7 @@ class DomainDataTypeUser(DomainDataType):
     """
 
     @classmethod
-    def get_filter_conditions(cls, request=None):
+    def get_filter_conditions(cls, request=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -589,7 +829,7 @@ class DomainRequestsDataType:
     """
 
     @classmethod
-    def get_filter_conditions(cls, request=None):
+    def get_filter_conditions(cls, request=None, **kwargs):
         if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
             return Q(id__in=[])
 
@@ -739,7 +979,7 @@ class DomainDataFull(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -751,7 +991,7 @@ class DomainDataFull(DomainExport):
         )
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -833,7 +1073,7 @@ class DomainDataFederal(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -846,7 +1086,7 @@ class DomainDataFederal(DomainExport):
         )
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
@@ -930,10 +1170,14 @@ class DomainGrowth(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         filter_ready = Q(
             domain__state__in=[Domain.State.READY],
             domain__first_ready__gte=start_date,
@@ -1002,10 +1246,14 @@ class DomainManaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=False,
@@ -1137,10 +1385,14 @@ class DomainUnmanaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=True,
@@ -1369,10 +1621,13 @@ class DomainRequestGrowth(DomainRequestExport):
         ]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
 
         start_date_formatted = format_start_date(start_date)
         end_date_formatted = format_end_date(end_date)
@@ -1465,7 +1720,7 @@ class DomainRequestDataFull(DomainRequestExport):
         ]
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """

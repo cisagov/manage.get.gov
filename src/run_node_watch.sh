@@ -1,4 +1,5 @@
 #!/bin/bash
+
 npm install
 npm rebuild
 dir=./registrar/assets
@@ -12,4 +13,4 @@ else
   npx gulp init
   npx gulp compile
 fi
-npx gulp watch
+npx gulp watchAll

@@ -35,7 +35,7 @@ class RequestingEntityForm(RegistrarForm):
     # If this selection is made on the form (tracked by js), then it will toggle the form value of this.
     # In other words, this essentially tracks if the suborganization field == "Other".
     # "Other" is just an imaginary value that is otherwise invalid.
-    # Note the logic in `def clean` and `handleRequestingEntityFieldset` in get-gov.js
+    # Note the logic in `def clean` and `handleRequestingEntityFieldset` in getgov.min.js
     is_requesting_new_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
     sub_organization = forms.ModelChoiceField(
