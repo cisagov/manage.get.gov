@@ -91,36 +91,31 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('Expiring domains link clicked');
           
           // Loop through all statuses for "EXPIRING" checkbox
-          statusCheckboxes.forEach(checkbox => {
-              // Check for expiring checkbox 
-              if (checkbox.value === "expiring") {
-                  console.log("Expiring checkbox found:", checkbox);
-                  
-                  // And if not checked, check it
-                  if (!checkbox.checked) {
-                      checkbox.checked = true;
-                      // Followed from the radio button method below
-                      // Can also do: checkbox.dispatchEvent(new Event('change'));
-
-                      let event = new Event('change');
-                      checkbox.dispatchEvent(event);
-                      console.log("Expiring checkbox checked");
-                  }
-              else {
-                  // When we come in everything is technically "checked"
-                  // This everything else to be unchecked
-                  checkbox.checked = false;
+          statusCheckboxes.forEach(checkbox => {  
+            // Check if the checkbox is for "expiring"
+            if (checkbox.value === "expiring") {
+                console.log("Expiring checkbox found:", checkbox);
+        
+                // If the checkbox is not already checked, check it
+                if (!checkbox.checked) {
+                    checkbox.checked = true;
+                    // Followed from the radio button method below
+                    // Can also do: a(new Event('change'));
+                    let event = new Event('change');
+                    checkbox.dispatchEvent(event)  
+                    console.log("Expiring checkbox checked");
                 }
-              }
+            } else {
+                // If it's not the "expiring" checkbox, uncheck it
+                // When we come in everything is technically "checked"
+                // This everything else to be unchecked
+                if (checkbox.checked) {
+                // if (checkbox.checked !== "expiring") {
+                    checkbox.checked = false;
+                    console.log("Unchecked other checkbox:", checkbox);
+                }
+            }
           });
-          // We're supposed to reload the table with the new filter but it's not working
-          // const domainsTable = new DomainsTable();
-          // loadTable(page, sortBy = this.currentSortBy, order = this.currentOrder, scroll = this.scrollToTable, status = this.currentStatus, searchTerm =this.currentSearchTerm, portfolio = this.portfolioValue)
-          // This is what others have -- domainsTable.loadTable(1, 'id', 'asc');
-          // Maybe we can use something with status = this.currentStatus?
-          // this.loadTable();
-          // Maybe we don't need to load the table?
-          console.log('Table filtered with expiring domains');
       });
   }
 });

@@ -1121,7 +1121,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         return now <= self.expiration_date <= threshold_date
 
-
     def has_domain_renewal_flag(self):
         print("domain_renewal flag")
         print(flag_is_active(None, "domain_renewal"))
