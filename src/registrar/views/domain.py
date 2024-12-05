@@ -515,6 +515,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        error_messages = []
         if form.is_valid():
             try:
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
@@ -540,6 +541,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 tenant_response_json = tenant_response.json()
                 logger.info(f"Found tenant: {tenant_response_json}")
                 tenant_id = tenant_response_json["result"][0]["tenant_tag"]
+                errors = tenant_response_json.get("errors", [])
                 tenant_response.raise_for_status()
 
                 # 2. Create or get a account under tenant
@@ -551,6 +553,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params)
                 account_response_json = account_response.json()
                 logger.debug(f"account get: {account_response_json}")
+                errors = account_response_json.get("errors", [])
                 account_response.raise_for_status()
 
                 # See if we already made an account.
@@ -577,16 +580,18 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     account_response_json = account_response.json()
                     logger.info(f"Created account: {account_response_json}")
                     account_id = account_response_json["result"]["id"]
+                    errors = account_response_json.get("errors", [])
                     account_response.raise_for_status()
 
                 # 3. Create or get a zone under account
 
                 # Try to find an existing zone first by searching on the current id
-                zone_name = f"zone-{self.object.name}"
+                zone_name = self.object.name
                 params = {"account.id": account_id, "name": zone_name} 
                 zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params)
                 zone_response_json = zone_response.json()
                 logger.debug(f"get zone: {zone_response_json}")
+                errors = zone_response_json.get("errors", [])
                 zone_response.raise_for_status()
 
                 # Get the zone id
@@ -611,8 +616,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     )
                     zone_response_json = zone_response.json()
                     logger.info(f"Created zone: {zone_response_json}")
-                    zone_id = zone_response_json["result"]["id"]
+                    errors = zone_response_json.get("errors", [])
                     zone_response.raise_for_status()
+                    zone_id = zone_response_json.get("result", {}).get("id")
 
                 # 4. Add or get a zone subscription
 
@@ -643,38 +649,37 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # # 5. Create DNS record
                 # # Format the DNS record according to Cloudflare's API requirements
-                # dns_response = requests.post(
-                #     f"{base_url}/zones/{zone_id}/dns_records",
-                #     headers=headers,
-                #     json={
-                #         "type": "A",
-                #         "name": form.cleaned_data["name"],
-                #         "content": form.cleaned_data["content"],
-                #         "ttl": int(form.cleaned_data["ttl"]),
-                #         "comment": "Test record (will need clean up)"
-                #     }
-                # )
-                # dns_response.raise_for_status()
-                # dns_response_json = dns_response.json()
-                # logger.info(f"Created DNS record: {dns_response_json}")
-
-                # if dns_response_json and "name" in dns_response_json:
-                #     messages.success(
-                #         request,
-                #         f"DNS A record '{form.cleaned_data['name']}' created successfully."
-                #     )
-                # else:
-                #     messages.error(
-                #         request,
-                #         "Failed to create DNS A record. Please try again."
-                #     )
-                    
+                dns_response = requests.post(
+                    f"{base_url}/zones/{zone_id}/dns_records",
+                    headers=headers,
+                    json={
+                        "type": "A",
+                        "name": form.cleaned_data["name"],
+                        "content": form.cleaned_data["content"],
+                        "ttl": int(form.cleaned_data["ttl"]),
+                        "comment": "Test record (will need clean up)"
+                    }
+                )
+                dns_response_json = dns_response.json()
+                logger.info(f"Created DNS record: {dns_response_json}")
+                errors = dns_response_json.get("errors", [])
+                dns_response.raise_for_status()
+                messages.success(
+                    request,
+                    f"DNS A record '{form.cleaned_data['name']}' created successfully."
+                )
             except Exception as err:
                 logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
                 messages.error(
                     request,
-                    f"An error occurred while creating the DNS A record: {err}"
+                    f"An error occurred: {err}"
                 )
+            finally:
+                if errors:
+                    messages.error(
+                        request,
+                        f"Request errors: {errors}"
+                    )
         return super().post(request)
 
 
