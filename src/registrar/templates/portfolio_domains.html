@@ -15,6 +15,6 @@
 
 <div id="main-content">
     <h1 id="domains-header">Domains</h1>
-    {% include "includes/domains_table.html" with portfolio=portfolio user_domain_count=user_domain_count %}
+    {% include "includes/domains_table.html" with portfolio=portfolio user_domain_count=user_domain_count has_expiring_domains=has_expiring_domains%}
 </div>
 {% endblock %}
