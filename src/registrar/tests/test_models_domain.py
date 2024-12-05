@@ -2640,7 +2640,7 @@ class TestAnalystDelete(MockEppLib):
             with self.assertRaises(RegistryError) as err:
                 domain.deletedInEpp()
                 domain.save()
-                
+
                 self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
                 self.assertEqual(err.msg, "Host in use by another domain: fake-on-hold.gov")
             # Domain itself should not be deleted

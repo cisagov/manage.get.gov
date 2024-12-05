@@ -231,9 +231,7 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
@@ -1063,12 +1061,15 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         logger.info("Deleting nameservers for %s", self.name)
         # check if any nameservers are in use by another domain
-        hosts = Host.objects.filter(name__regex=r'.+{}'.format(self.name))
+        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
         for host in hosts:
             if host.domain != self:
                 logger.error("Host %s in use by another domain: %s", host.name, host.domain)
-                raise RegistryError("Host in use by another domain: {}".format(host.domain), code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
-        
+                raise RegistryError(
+                    "Host in use by another domain: {}".format(host.domain),
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
+                )
+
         nameservers = [n[0] for n in self.nameservers]
         hostsToDelete, _ = self.createDeleteHostList(nameservers)
         logger.debug("HostsToDelete from %s inside _delete_subdomains -> %s", self.name, hostsToDelete)
