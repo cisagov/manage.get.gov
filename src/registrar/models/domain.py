@@ -1154,7 +1154,7 @@ class Domain(TimeStampedModel, DomainHelper):
         Returns True if expired, False otherwise.
         """
         if self.expiration_date is None:
-            return True
+            return self.state != self.State.DELETED
         now = timezone.now().date()
         return self.expiration_date < now
 
