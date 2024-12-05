@@ -62,10 +62,10 @@ class RegistryError(Exception):
         - 2501 - 2502 Something malicious or abusive may have occurred
     """
 
-    def __init__(self, *args, code=None, msg=None,**kwargs):
+    def __init__(self, *args, code=None, note=None,**kwargs):
         super().__init__(*args, **kwargs)
         self.code = code
-        self.msg = msg
+        self.note = note
 
     def should_retry(self):
         return self.code == ErrorCode.COMMAND_FAILED
