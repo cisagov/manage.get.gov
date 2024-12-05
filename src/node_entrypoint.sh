@@ -4,14 +4,21 @@
 HOST_UID=$(stat -c '%u' /app)
 HOST_GID=$(stat -c '%g' /app)
 
-# Update circleci user's UID and GID to match the host
-echo "Updating circleci user and group to match host UID:GID ($HOST_UID:$HOST_GID)"
-groupmod -g "$HOST_GID" circleci
-usermod -u "$HOST_UID" circleci
+# Check if the circleci user exists
+if id "circleci" &>/dev/null; then
+  echo "circleci user exists. Updating UID and GID to match host UID:GID ($HOST_UID:$HOST_GID)"
 
-echo "Updating ownership of /app recursively to circleci:circleci"
-chown -R circleci:circleci /app
+  # Update circleci user's UID and GID
+  groupmod -g "$HOST_GID" circleci
+  usermod -u "$HOST_UID" circleci
 
-# Run command as circleci user. Note that command, run_node_watch.sh, is passed as arg to entrypoint
-echo "Switching to circleci user and running command: $@"
-su -s /bin/bash -c "$*" circleci
+  echo "Updating ownership of /app recursively to circleci:circleci"
+  chown -R circleci:circleci /app
+
+  # Switch to circleci user and execute the command
+  echo "Switching to circleci user and running command: $@"
+  su -s /bin/bash -c "$*" circleci
+else
+  echo "circleci user does not exist. Running command as the current user."
+  exec "$@"
+fi
