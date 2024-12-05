@@ -888,13 +888,13 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,Viewer,True,1,cdomain1.gov\n"
             "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,None,False,0,\n"
             "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,Manager,False,0,\n"
-            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer Requester,None,False,0,\n"
+            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,Viewer,Viewer,False,0,\n"
             "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Manager,False,0,\n"
             "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,None,Viewer,False,0,\n"
             "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,Viewer,None,False,0,\n"
             "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,"
             "Invited,Viewer Requester,Manager,False,0,\n"
-            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer Requester,None,False,0,\n"
+            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,Viewer,Viewer,False,0,\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
