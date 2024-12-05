@@ -73,6 +73,14 @@ def portfolio_permissions(request):
     }
     try:
         portfolio = request.session.get("portfolio")
+
+        # These feature flags will display and doesn't depend on portfolio
+        portfolio_context.update(
+            {
+                "has_organization_feature_flag": True,
+                "has_domain_renewal_flag": request.user.has_domain_renewal_flag(),
+            }
+        )
         # Linting: line too long
         view_suborg = request.user.has_view_suborganization_portfolio_permission(portfolio)
         edit_suborg = request.user.has_edit_suborganization_portfolio_permission(portfolio)

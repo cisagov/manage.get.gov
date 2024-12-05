@@ -78,6 +78,7 @@ export function initDomainsTable() {
   });
 }
 
+// For clicking the "Expiring" sandbox
 document.addEventListener('DOMContentLoaded', () => {
   const expiringLink = document.getElementById('link-expiring-domains');
 
@@ -87,32 +88,17 @@ document.addEventListener('DOMContentLoaded', () => {
       
       expiringLink.addEventListener('click', (event) => {
           event.preventDefault();
-
-          console.log('Expiring domains link clicked');
           
-          // Loop through all statuses for "EXPIRING" checkbox
+          // Loop through all statuses
           statusCheckboxes.forEach(checkbox => {  
-            // Check if the checkbox is for "expiring"
+            // To find the for checkbox for "expiring"
             if (checkbox.value === "expiring") {
-                console.log("Expiring checkbox found:", checkbox);
-        
                 // If the checkbox is not already checked, check it
                 if (!checkbox.checked) {
                     checkbox.checked = true;
-                    // Followed from the radio button method below
-                    // Can also do: a(new Event('change'));
+                    // Do the checkbox action
                     let event = new Event('change');
                     checkbox.dispatchEvent(event)  
-                    console.log("Expiring checkbox checked");
-                }
-            } else {
-                // If it's not the "expiring" checkbox, uncheck it
-                // When we come in everything is technically "checked"
-                // This everything else to be unchecked
-                if (checkbox.checked) {
-                // if (checkbox.checked !== "expiring") {
-                    checkbox.checked = false;
-                    console.log("Unchecked other checkbox:", checkbox);
                 }
             }
           });
