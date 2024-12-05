@@ -1,12 +1,11 @@
 from django.db import models
-from django.forms import ValidationError
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
     DomainRequestPermissionDisplay,
     MemberPermissionDisplay,
+    validate_user_portfolio_permission,
 )
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
@@ -22,15 +21,26 @@ class UserPortfolioPermission(TimeStampedModel):
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             # Domain: field specific permissions
             UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
             UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
+        # NOTE: Check FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS before adding roles here.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+        ],
+    }
+
+    # Determines which roles are forbidden for certain role types to possess.
+    # Used to throw a ValidationError on clean() for UserPortfolioPermission and PortfolioInvitation.
+    FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS = {
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
         ],
     }
 
@@ -142,30 +152,30 @@ class UserPortfolioPermission(TimeStampedModel):
         else:
             return MemberPermissionDisplay.NONE
 
+    @classmethod
+    def get_forbidden_permissions(cls, roles, additional_permissions):
+        """Some permissions are forbidden for certain roles, like member.
+        This checks for conflicts between the current permission list and forbidden perms."""
+
+        # Get the portfolio permissions that the user currently possesses
+        portfolio_permissions = set(cls.get_portfolio_permissions(roles, additional_permissions))
+
+        # Get intersection of forbidden permissions across all roles.
+        # This is because if you have roles ["admin", "member"], then they can have the
+        # so called "forbidden" ones. But just member on their own cannot.
+        # The solution to this is to only grab what is only COMMONLY "forbidden".
+        # This will scale if we add more roles in the future.
+        # This is thes same as applying the `&` operator across all sets for each role.
+        common_forbidden_perms = set.intersection(
+            *[set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, [])) for role in roles]
+        )
+
+        # Check if the users current permissions overlap with any forbidden permissions
+        # by getting the intersection between current user permissions, and forbidden ones.
+        # This is the same as portfolio_permissions & common_forbidden_perms.
+        return portfolio_permissions.intersection(common_forbidden_perms)
+
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
-
-        # Check if portfolio is set without accessing the related object.
-        has_portfolio = bool(self.portfolio_id)
-        if not has_portfolio and self._get_portfolio_permissions():
-            raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
-
-        if has_portfolio and not self._get_portfolio_permissions():
-            raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
-
-        # Check if a user is set without accessing the related object.
-        has_user = bool(self.user_id)
-        if has_user:
-            existing_permission_pks = UserPortfolioPermission.objects.filter(user=self.user).values_list(
-                "pk", flat=True
-            )
-            if (
-                not flag_is_active_for_user(self.user, "multiple_portfolios")
-                and existing_permission_pks.exists()
-                and self.pk not in existing_permission_pks
-            ):
-                raise ValidationError(
-                    "This user is already assigned to a portfolio. "
-                    "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
-                )
+        validate_user_portfolio_permission(self)
