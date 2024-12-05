@@ -792,12 +792,7 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
         label="Anything else?",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "Is there anything else you’d like us to know about your domain request? Provide details below. \
-                You can enter up to 2000 characters"
-            }
-        ),
+        widget=forms.Textarea(),
         validators=[
             MaxLengthValidator(
                 2000,
