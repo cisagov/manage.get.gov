@@ -426,7 +426,6 @@ class DomainInformation(TimeStampedModel):
         else:
             return None
 
-   
     # ----- Portfolio Properties -----
 
     @property
@@ -434,7 +433,7 @@ class DomainInformation(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.organization_name
         return self.organization_name
-    
+
     @property
     def converted_generic_org_type(self):
         if self.portfolio:
@@ -495,14 +494,13 @@ class DomainInformation(TimeStampedModel):
             return self.portfolio.display_urbanization
         return self.display_urbanization
 
-
     # ----- Portfolio Properties (display values)-----
     @property
     def converted_generic_org_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
         return self.get_generic_org_type_display()
-    
+
     @property
     def converted_federal_type_display(self):
         if self.portfolio:

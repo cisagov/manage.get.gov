@@ -231,7 +231,7 @@ class BaseExport(ABC):
 
         # Return rows that for easier parsing and testing
         return rows
-    
+
     @classmethod
     def get_annotated_queryset(cls, **kwargs):
         """Returns an annotated queryset based off of all query conditions."""
@@ -546,7 +546,8 @@ class DomainExport(BaseExport):
                 # When portfolio is present, use its value instead
                 When(
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__agency")),
+                    then=F("portfolio__federal_agency__agency"),
+                ),
                 # Otherwise, return the natively assigned value
                 default=F("federal_agency__agency"),
                 output_field=CharField(),
@@ -769,19 +770,15 @@ class DomainExport(BaseExport):
         """Returns a list of Domain Requests that has been filtered by the given organization value."""
 
         annotated_queryset = domain_infos_to_filter.annotate(
-                converted_generic_org_type=Case(
-                    # Recreate the logic of the converted_generic_org_type property
-                    # here in annotations
-                    When(
-                        portfolio__isnull=False,
-                        then=F("portfolio__organization_type")
-                    ),
-                    default=F("generic_org_type"),
-                    output_field=CharField(),
-                )
+            converted_generic_org_type=Case(
+                # Recreate the logic of the converted_generic_org_type property
+                # here in annotations
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                default=F("generic_org_type"),
+                output_field=CharField(),
             )
+        )
         return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
-
 
     @classmethod
     def get_sliced_domains(cls, filter_condition):
@@ -1614,19 +1611,16 @@ class DomainRequestExport(BaseExport):
     def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value"""
         annotated_queryset = domain_requests_to_filter.annotate(
-                converted_generic_org_type=Case(
-                    # Recreate the logic of the converted_generic_org_type property
-                    # here in annotations
-                    When(
-                        portfolio__isnull=False,
-                        then=F("portfolio__organization_type")
-                    ),
-                    default=F("generic_org_type"),
-                    output_field=CharField(),
-                )
+            converted_generic_org_type=Case(
+                # Recreate the logic of the converted_generic_org_type property
+                # here in annotations
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                default=F("generic_org_type"),
+                output_field=CharField(),
             )
+        )
         return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
-        
+
         # return domain_requests_to_filter.filter(
         #     # Filter based on the generic org value returned by converted_generic_org_type
         #     id__in=[
@@ -1636,9 +1630,6 @@ class DomainRequestExport(BaseExport):
         #         and domainRequest.converted_generic_org_type == org_to_filter_by
         #     ]
         # )
-    
-
-    
 
     @classmethod
     def get_computed_fields(cls, delimiter=", ", **kwargs):
@@ -1661,21 +1652,10 @@ class DomainRequestExport(BaseExport):
                 # When portfolio is present, use its value instead
                 When(
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__agency")
-                    ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_agency__agency"),
-                output_field=CharField(),
-            ),
-            "converted_federal_type": Case(
-                # When portfolio is present, use its value instead
-                # NOTE: this is an @Property funciton in portfolio.
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__federal_type"),
+                    then=F("portfolio__federal_agency__agency"),
                 ),
                 # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                default=F("federal_agency__agency"),
                 output_field=CharField(),
             ),
             "converted_federal_type": Case(

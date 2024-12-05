@@ -53,12 +53,6 @@ from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 
-# ---Logger
-import logging
-from venv import logger
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-logger = logging.getLogger(__name__)
-
 
 class CsvReportsTest(MockDbForSharedTests):
     """Tests to determine if we are uploading our reports correctly."""
@@ -257,20 +251,25 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect READY domains,
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,City,State,SO,SO email,"
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,"
+            "Organization name,City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
+            "Portfolio 1 Federal Agency,,,, ,,(blank),"
             "meoward@rocks.com,squeaker@rocks.com\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
+            "Portfolio 1 Federal Agency,,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,World War I Centennial Commission,,,, ,,(blank),"
+            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,"
+            "World War I Centennial Commission,,,, ,,(blank),"
             "meoward@rocks.com,\n"
             "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,"
             "squeaker@rocks.com\n"
             "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "bdomain5.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "bdomain6.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,Armed Forces Retirement Home,,,, ,,security@mail.gov,,\n"
+            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,"
+            "Armed Forces Retirement Home,,,, ,,security@mail.gov,,\n"
             "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
@@ -786,10 +785,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
                 "city3.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
-                'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, Testy Tester testy2@town.com",'
-                "test@igorville.com,\"city.com, https://www.example2.com, https://www.example.com\",\n"
-                "city4.gov,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,city1.gov,Testy,Tester,testy@town.com,"
-                "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
+                'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
+                'Testy Tester testy2@town.com",'
+                'test@igorville.com,"city.com, https://www.example2.com, https://www.example.com",\n'
+                "city4.gov,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,city1.gov,Testy,"
+                "Tester,testy@town.com,"
+                "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
+                "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
                 "city6.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,city1.gov,,,,,"
                 "Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"

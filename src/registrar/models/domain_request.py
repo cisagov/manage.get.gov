@@ -1479,14 +1479,13 @@ class DomainRequest(TimeStampedModel):
             return self.portfolio.senior_official
         return self.senior_official
 
-
     # ----- Portfolio Properties (display values)-----
     @property
     def converted_generic_org_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
         return self.get_generic_org_type_display()
-    
+
     @property
     def converted_federal_type_display(self):
         if self.portfolio:
