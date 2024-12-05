@@ -119,9 +119,6 @@ def input_with_errors(context, field=None):  # noqa: C901
     else:
         context["label_tag"] = "label"
 
-    if field.use_fieldset:
-        label_classes.append("usa-legend")
-
     if field.widget_type == "checkbox":
         label_classes.append("usa-checkbox__label")
     elif not field.use_fieldset:
