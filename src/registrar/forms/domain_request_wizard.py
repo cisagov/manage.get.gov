@@ -794,6 +794,22 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
     )
 
 
+class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
+    """The form for the portfolio additional details page. Tied to the anything_else field."""
+
+    anything_else = forms.CharField(
+        required=False,
+        label="Anything else?",
+        widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                2000,
+                message="Response must be less than 2000 characters.",
+            )
+        ],
+    )
+
+
 class AnythingElseYesNoForm(BaseYesNoForm):
     """Yes/no toggle for the anything else question on additional details"""
 
