@@ -1505,7 +1505,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self.deleted = timezone.now()
             self.expiration_date = None
         except RegistryError as err:
-            logger.error(f"Could not delete domain. Registry returned error: {err}")
+            logger.error(f"Could not delete domain. Registry returned error: {err}. Additional context: {err.note}")
             raise err
         except TransitionNotAllowed as err:
             logger.error("Could not delete domain. FSM failure: {err}")

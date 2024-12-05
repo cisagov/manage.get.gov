@@ -65,6 +65,7 @@ class RegistryError(Exception):
     def __init__(self, *args, code=None, note=None,**kwargs):
         super().__init__(*args, **kwargs)
         self.code = code
+        # note is a string that can be used to provide additional context
         self.note = note
 
     def should_retry(self):

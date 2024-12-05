@@ -2921,7 +2921,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
                 ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: message1,
-                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: err.msg,
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: message2,
             }
 
             message = "Cannot connect to the registry"
