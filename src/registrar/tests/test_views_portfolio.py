@@ -677,18 +677,15 @@ class TestPortfolio(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_cannot_view_members_table(self):
-        """Test that user without proper permission is denied access to members view"""
+        """Test that user without proper permission is denied access to members view."""
 
         # Users can only view the members table if they have
         # Portfolio Permission "view_members" selected.
-        # NOTE: Admins, by default, do NOT have permission
-        # to view/edit members.  This must be enabled explicitly
-        # in the "additional permissions" section for a portfolio
-        # permission.
-        #
+        # NOTE: Admins, by default, DO have permission
+        # to view/edit members.
         # Scenarios to test include;
         # (1) - User is not admin and can view portfolio, but not the members table
-        # (1) - User is admin and can view portfolio, but not the members table
+        # (1) - User is admin and can view portfolio, as well as the members table
 
         # --- non-admin
         self.app.set_user(self.user.username)
@@ -713,11 +710,9 @@ class TestPortfolio(WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
-        # Verify that the user cannot access the members page
-        # This will redirect the user to the members page.
+        # Admins should have access to this page by default
         response = self.client.get(reverse("members"), follow=True)
-        # Assert the response is a 403 Forbidden
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -940,6 +935,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1052,6 +1048,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1060,6 +1057,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1137,7 +1135,10 @@ class TestPortfolio(WebTest):
         """Test the nav contains a dropdown with a link to create and another link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         self.client.force_login(self.user)
         # create and submit a domain request
@@ -2124,7 +2125,10 @@ class TestRequestingEntity(WebTest):
             portfolio=self.portfolio_2,
         )
         self.portfolio_role = UserPortfolioPermission.objects.create(
-            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            portfolio=self.portfolio,
+            user=self.user,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         # Login the current user
         self.app.set_user(self.user.username)
