@@ -102,7 +102,7 @@ export class MembersTable extends BaseTable {
           aria-label="Expand for additional information"
         >
           <span>Expand</span>
-          <svg class="usa-icon usa-icon--big" aria-hidden="true" focusable="false" role="img" width="24">
+          <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#expand_more"></use>
           </svg>
         </button>

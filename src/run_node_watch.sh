@@ -1,4 +1,5 @@
 #!/bin/bash
+
 npm install
 npm rebuild
 dir=./registrar/assets
