@@ -614,18 +614,31 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     zone_id = zone_response_json["result"]["id"]
                     zone_response.raise_for_status()
 
-                # # 4. Add zone subscription
-                # subscription_response = requests.post(
-                #     f"{base_url}/zones/{zone_id}/subscription",
-                #     headers=headers,
-                #     json={
-                #         "rate_plan": {"id": "PARTNERS_ENT"},
-                #         "frequency": "annual"
-                #     }
-                # )
-                # subscription_response.raise_for_status()
-                # subscription_response_json = subscription_response.json()
-                # logger.info(f"Created subscription: {subscription_response_json}")
+                # 4. Add or get a zone subscription
+
+                # See if one already exists
+                subscription_response = requests.get(f"{base_url}/zones/{zone_id}/subscription", headers=headers)
+                subscription_response_json = subscription_response.json()
+                logger.debug(f"get subscription: {subscription_response_json}")
+
+                # Create a subscription if one doesn't exist already.
+                # If it doesn't, we get this error message (code 1207): 
+                # Add a core subscription first and try again. The zone does not have an active core subscription.
+                # Note that status code and error code are different here.
+                if subscription_response.status_code == 404:
+                    subscription_response = requests.post(
+                        f"{base_url}/zones/{zone_id}/subscription",
+                        headers=headers,
+                        json={
+                            "rate_plan": {"id": "PARTNERS_ENT"},
+                            "frequency": "annual"
+                        }
+                    )
+                    subscription_response.raise_for_status()
+                    subscription_response_json = subscription_response.json()
+                    logger.info(f"Created subscription: {subscription_response_json}")
+                else:
+                    subscription_response.raise_for_status()
 
 
                 # # 5. Create DNS record
