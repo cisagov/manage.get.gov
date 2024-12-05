@@ -181,6 +181,8 @@ def validate_portfolio_invitation(portfolio_invitation):
 
     # == Validate the multiple_porfolios flag. == #
     user = User.objects.filter(email=portfolio_invitation.email).first()
+    # If user returns None, then we check for global assignment of multiple_portfolios.
+    # Otherwise we just check on the user.
     if not flag_is_active_for_user(user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.filter(user=user)
 
