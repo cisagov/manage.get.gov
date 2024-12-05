@@ -4,22 +4,23 @@
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
 
-{% if has_domain_renewal_flag and has_any_domains_portfolio_permission %}
-<section class="usa-site-alert usa-site-alert--info margin-y-0 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+
+
+<span id="get_domains_json_url" class="display-none">{{url}}</span>
+
+{% if has_domain_renewal_flag %}
+<section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
       <p class="usa-alert__text maxw-none">
-          One or more domains are close to expiration. TEST
-
-      <a href="#" id="link-expiring-domains" class="usa-link">Renew the domain(s)</a>
-
+          One or more domains are close to expiration. Go to "Manage" to renew the domain(s).
+          <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain(s).</a>
       </p>
     </div>
   </div>
 </section>
 {% endif %}
 
-<span id="get_domains_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
     {% if not portfolio %}
