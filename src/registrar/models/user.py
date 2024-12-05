@@ -164,6 +164,12 @@ class User(AbstractUser):
         ]
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
+    
+    def get_expiring_domains(self):
+        """Return boolean if expiring/expired domains exists"""
+        expiring_domains = [domain for domain in Domain.objects.all() if domain.is_expiring()]
+        print("expiring domains is:", len(expiring_domains))
+        return len(expiring_domains) > 0
 
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""

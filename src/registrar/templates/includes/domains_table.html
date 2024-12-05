@@ -8,7 +8,7 @@
 
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
-{% if has_domain_renewal_flag %}
+{% if has_domain_renewal_flag and has_expiring_domains %}
 <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
@@ -150,7 +150,7 @@
               >Deleted</label
             >
           </div>
-          {% if has_domain_renewal_flag %}
+          {% if has_domain_renewal_flag and has_expiring_domains %}
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"

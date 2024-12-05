@@ -36,6 +36,7 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
         context = {}
         if self.request and self.request.user and self.request.user.is_authenticated:
             context["user_domain_count"] = self.request.user.get_user_domain_ids(request).count()
+            context["has_expiring_domains"] = request.user.get_expiring_domains()
         return render(request, "portfolio_domains.html", context)
 
 
