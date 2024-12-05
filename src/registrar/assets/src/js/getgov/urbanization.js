@@ -1,12 +1,18 @@
+import { hideElement, showElement } from './helpers.js';
+
 function setupUrbanizationToggle(stateTerritoryField) {
-    var urbanizationField = document.getElementById('urbanization-field');
+    let urbanizationField = document.getElementById('urbanization-field');
+    if (!urbanizationField) {
+        console.error("Cannot find expect field: #urbanization-field");
+        return;
+    }
     
     function toggleUrbanizationField() {
         // Checking specifically for Puerto Rico only
         if (stateTerritoryField.value === 'PR') { 
-        urbanizationField.style.display = 'block';
+            showElement(urbanizationField);
         } else {
-        urbanizationField.style.display = 'none';
+            hideElement(urbanizationField);
         }
     }
     
