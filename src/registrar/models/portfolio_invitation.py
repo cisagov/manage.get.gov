@@ -1,15 +1,17 @@
 """People are invited by email to administer domains."""
 
 import logging
-from django.contrib.auth import get_user_model
 from django.db import models
 from django_fsm import FSMField, transition
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from .utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices  # type: ignore
+from django.contrib.auth import get_user_model
+from registrar.models import DomainInvitation, UserPortfolioPermission
+from .utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+    validate_portfolio_invitation,
+)  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
-
 
 logger = logging.getLogger(__name__)
 
@@ -108,3 +110,8 @@ class PortfolioInvitation(TimeStampedModel):
         if self.additional_permissions and len(self.additional_permissions) > 0:
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
+
+    def clean(self):
+        """Extends clean method to perform additional validation, which can raise errors in django admin."""
+        super().clean()
+        validate_portfolio_invitation(self)

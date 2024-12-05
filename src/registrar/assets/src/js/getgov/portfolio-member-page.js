@@ -157,15 +157,15 @@ export function initAddNewMemberPageListeners() {
 
       // Populate permission details based on access level
       if (selectedAccess && selectedAccess.value === 'admin') {
-        populatePermissionDetails('new-member-admin-permissions')
+        populatePermissionDetails('new-member-admin-permissions');
       } else {
-        populatePermissionDetails('new-member-basic-permissions')
+        populatePermissionDetails('new-member-basic-permissions');
       }
 
       //------- Show the modal
       let modalTrigger = document.querySelector("#invite_member_trigger");
         if (modalTrigger) {
-          modalTrigger.click()
+          modalTrigger.click();
         }
   }
 

@@ -1421,9 +1421,40 @@ class TestCreateFederalPortfolio(TestCase):
     def setUp(self):
         self.mock_client = MockSESClient()
         self.user = User.objects.create(username="testuser")
+
+        # Create an agency wih no federal type (can only be created via specifiying it manually)
         self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
+
+        # And create some with federal_type ones with creative names
+        self.executive_agency_1 = FederalAgency.objects.create(
+            agency="Executive Agency 1", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.executive_agency_2 = FederalAgency.objects.create(
+            agency="Executive Agency 2", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.executive_agency_3 = FederalAgency.objects.create(
+            agency="Executive Agency 3", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.legislative_agency_1 = FederalAgency.objects.create(
+            agency="Legislative Agency 1", federal_type=BranchChoices.LEGISLATIVE
+        )
+        self.legislative_agency_2 = FederalAgency.objects.create(
+            agency="Legislative Agency 2", federal_type=BranchChoices.LEGISLATIVE
+        )
+        self.judicial_agency_1 = FederalAgency.objects.create(
+            agency="Judicial Agency 1", federal_type=BranchChoices.JUDICIAL
+        )
+        self.judicial_agency_2 = FederalAgency.objects.create(
+            agency="Judicial Agency 2", federal_type=BranchChoices.JUDICIAL
+        )
         self.senior_official = SeniorOfficial.objects.create(
             first_name="first", last_name="last", email="testuser@igorville.gov", federal_agency=self.federal_agency
+        )
+        self.executive_so_1 = SeniorOfficial.objects.create(
+            first_name="first", last_name="last", email="apple@igorville.gov", federal_agency=self.executive_agency_1
+        )
+        self.executive_so_2 = SeniorOfficial.objects.create(
+            first_name="first", last_name="last", email="mango@igorville.gov", federal_agency=self.executive_agency_2
         )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             self.domain_request = completed_domain_request(
@@ -1436,7 +1467,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
 
             self.domain_request_2 = completed_domain_request(
-                name="sock@igorville.org",
+                name="icecreamforigorville.gov",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
@@ -1445,6 +1476,28 @@ class TestCreateFederalPortfolio(TestCase):
             )
             self.domain_request_2.approve()
             self.domain_info_2 = DomainInformation.objects.filter(domain_request=self.domain_request_2).get()
+
+            self.domain_request_3 = completed_domain_request(
+                name="exec_1.gov",
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                federal_agency=self.executive_agency_1,
+                user=self.user,
+                organization_name="Executive Agency 1",
+            )
+            self.domain_request_3.approve()
+            self.domain_info_3 = self.domain_request_3.DomainRequest_info
+
+            self.domain_request_4 = completed_domain_request(
+                name="exec_2.gov",
+                status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                federal_agency=self.executive_agency_2,
+                user=self.user,
+                organization_name="Executive Agency 2",
+            )
+            self.domain_request_4.approve()
+            self.domain_info_4 = self.domain_request_4.DomainRequest_info
 
     def tearDown(self):
         DomainInformation.objects.all().delete()
@@ -1456,18 +1509,16 @@ class TestCreateFederalPortfolio(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
-    def run_create_federal_portfolio(self, agency_name, parse_requests=False, parse_domains=False):
+    def run_create_federal_portfolio(self, **kwargs):
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
             return_value=True,
         ):
-            call_command(
-                "create_federal_portfolio", agency_name, parse_requests=parse_requests, parse_domains=parse_domains
-            )
+            call_command("create_federal_portfolio", **kwargs)
 
-    def test_create_or_modify_portfolio(self):
-        """Test portfolio creation and modification with suborg and senior official."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+    def test_create_single_portfolio(self):
+        """Test portfolio creation with suborg and senior official."""
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
         self.assertEqual(portfolio.organization_name, self.federal_agency.agency)
@@ -1483,9 +1534,125 @@ class TestCreateFederalPortfolio(TestCase):
         # Test the senior official
         self.assertEqual(portfolio.senior_official, self.senior_official)
 
+    def test_create_multiple_portfolios_for_branch_judicial(self):
+        """Tests creating all portfolios under a given branch"""
+        federal_choice = DomainRequest.OrganizationChoices.FEDERAL
+        expected_portfolio_names = {
+            self.judicial_agency_1.agency,
+            self.judicial_agency_2.agency,
+        }
+        self.run_create_federal_portfolio(branch="judicial", parse_requests=True, parse_domains=True)
+
+        # Ensure that all the portfolios we expect to get created were created
+        portfolios = Portfolio.objects.all()
+        self.assertEqual(portfolios.count(), 2)
+
+        # Test that all created portfolios have the correct values
+        org_names, org_types, creators, notes = [], [], [], []
+        for portfolio in portfolios:
+            org_names.append(portfolio.organization_name)
+            org_types.append(portfolio.organization_type)
+            creators.append(portfolio.creator)
+            notes.append(portfolio.notes)
+
+        # Test organization_name, organization_type, creator, and notes (in that order)
+        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
+        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
+        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+    def test_create_multiple_portfolios_for_branch_legislative(self):
+        """Tests creating all portfolios under a given branch"""
+        federal_choice = DomainRequest.OrganizationChoices.FEDERAL
+        expected_portfolio_names = {
+            self.legislative_agency_1.agency,
+            self.legislative_agency_2.agency,
+        }
+        self.run_create_federal_portfolio(branch="legislative", parse_requests=True, parse_domains=True)
+
+        # Ensure that all the portfolios we expect to get created were created
+        portfolios = Portfolio.objects.all()
+        self.assertEqual(portfolios.count(), 2)
+
+        # Test that all created portfolios have the correct values
+        org_names, org_types, creators, notes = [], [], [], []
+        for portfolio in portfolios:
+            org_names.append(portfolio.organization_name)
+            org_types.append(portfolio.organization_type)
+            creators.append(portfolio.creator)
+            notes.append(portfolio.notes)
+
+        # Test organization_name, organization_type, creator, and notes (in that order)
+        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
+        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
+        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+    def test_create_multiple_portfolios_for_branch_executive(self):
+        """Tests creating all portfolios under a given branch"""
+        federal_choice = DomainRequest.OrganizationChoices.FEDERAL
+
+        # == Test creating executive portfolios == #
+        expected_portfolio_names = {
+            self.executive_agency_1.agency,
+            self.executive_agency_2.agency,
+            self.executive_agency_3.agency,
+        }
+        self.run_create_federal_portfolio(branch="executive", parse_requests=True, parse_domains=True)
+
+        # Ensure that all the portfolios we expect to get created were created
+        portfolios = Portfolio.objects.all()
+        self.assertEqual(portfolios.count(), 3)
+
+        # Test that all created portfolios have the correct values
+        org_names, org_types, creators, notes, senior_officials = [], [], [], [], []
+        for portfolio in portfolios:
+            org_names.append(portfolio.organization_name)
+            org_types.append(portfolio.organization_type)
+            creators.append(portfolio.creator)
+            notes.append(portfolio.notes)
+            senior_officials.append(portfolio.senior_official)
+
+        # Test organization_name, organization_type, creator, and notes (in that order)
+        self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
+        self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
+        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+        # Test senior officials were assigned correctly
+        expected_senior_officials = {
+            self.executive_so_1,
+            self.executive_so_2,
+            # We expect one record to skip
+            None,
+        }
+        self.assertTrue(all([senior_official in expected_senior_officials for senior_official in senior_officials]))
+
+        # Test that domain requests / domains were assigned correctly
+        self.domain_request_3.refresh_from_db()
+        self.domain_request_4.refresh_from_db()
+        self.domain_info_3.refresh_from_db()
+        self.domain_info_4.refresh_from_db()
+        expected_requests = DomainRequest.objects.filter(
+            portfolio__id__in=[
+                # Implicity tests for existence
+                self.domain_request_3.portfolio.id,
+                self.domain_request_4.portfolio.id,
+            ]
+        )
+        expected_domain_infos = DomainInformation.objects.filter(
+            portfolio__id__in=[
+                # Implicity tests for existence
+                self.domain_info_3.portfolio.id,
+                self.domain_info_4.portfolio.id,
+            ]
+        )
+        self.assertEqual(expected_requests.count(), 2)
+        self.assertEqual(expected_domain_infos.count(), 2)
+
     def test_handle_portfolio_requests(self):
         """Verify portfolio association with domain requests."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         self.domain_request.refresh_from_db()
         self.assertIsNotNone(self.domain_request.portfolio)
@@ -1494,7 +1661,7 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_handle_portfolio_domains(self):
         """Check portfolio association with domain information."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_domains=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_domains=True)
 
         self.domain_info.refresh_from_db()
         self.assertIsNotNone(self.domain_info.portfolio)
@@ -1503,7 +1670,7 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_handle_parse_both(self):
         """Ensure correct parsing of both requests and domains."""
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True, parse_domains=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True, parse_domains=True)
 
         self.domain_request.refresh_from_db()
         self.domain_info.refresh_from_db()
@@ -1511,12 +1678,26 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertIsNotNone(self.domain_info.portfolio)
         self.assertEqual(self.domain_request.portfolio, self.domain_info.portfolio)
 
-    def test_command_error_no_parse_options(self):
-        """Verify error when no parse options are provided."""
+    def test_command_error_parse_options(self):
+        """Verify error when bad parse options are provided."""
+        # The command should enforce either --branch or --agency_name
+        with self.assertRaisesRegex(CommandError, "Error: one of the arguments --agency_name --branch is required"):
+            self.run_create_federal_portfolio()
+
+        # We should forbid both at the same time
+        with self.assertRaisesRegex(CommandError, "Error: argument --branch: not allowed with argument --agency_name"):
+            self.run_create_federal_portfolio(agency_name="test", branch="executive")
+
+        # We expect a error to be thrown when we dont pass parse requests or domains
         with self.assertRaisesRegex(
             CommandError, "You must specify at least one of --parse_requests or --parse_domains."
         ):
-            self.run_create_federal_portfolio("Test Federal Agency")
+            self.run_create_federal_portfolio(branch="executive")
+
+        with self.assertRaisesRegex(
+            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+        ):
+            self.run_create_federal_portfolio(agency_name="test")
 
     def test_command_error_agency_not_found(self):
         """Check error handling for non-existent agency."""
@@ -1524,11 +1705,11 @@ class TestCreateFederalPortfolio(TestCase):
             "Cannot find the federal agency 'Non-existent Agency' in our database. "
             "The value you enter for `agency_name` must be prepopulated in the FederalAgency table before proceeding."
         )
-        with self.assertRaisesRegex(ValueError, expected_message):
-            self.run_create_federal_portfolio("Non-existent Agency", parse_requests=True)
+        with self.assertRaisesRegex(CommandError, expected_message):
+            self.run_create_federal_portfolio(agency_name="Non-existent Agency", parse_requests=True)
 
-    def test_update_existing_portfolio(self):
-        """Test updating an existing portfolio."""
+    def test_does_not_update_existing_portfolio(self):
+        """Tests that an existing portfolio is not updated"""
         # Create an existing portfolio
         existing_portfolio = Portfolio.objects.create(
             federal_agency=self.federal_agency,
@@ -1538,12 +1719,15 @@ class TestCreateFederalPortfolio(TestCase):
             notes="Old notes",
         )
 
-        self.run_create_federal_portfolio("Test Federal Agency", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         existing_portfolio.refresh_from_db()
-        self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
-        self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
+        # SANITY CHECK: if the portfolio updates, it will change to FEDERAL.
+        # if this case fails, it means we are overriding data (and not simply just other weirdness)
+        self.assertNotEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
         # Notes and creator should be untouched
+        self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
