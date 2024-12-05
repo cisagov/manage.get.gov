@@ -280,7 +280,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -327,7 +326,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -506,7 +504,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -546,14 +543,12 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
     def test_domain_growth(self):
         """Shows ready and deleted domains within a date range, sorted"""
         # Remove "Created at" and "First ready" because we can't guess this immutable, dynamically generated test data
-        self.maxDiff = None
         columns = [
             "Domain name",
             "Domain type",
@@ -616,7 +611,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         squeaker@rocks.com is invited to domain2 (DNS_NEEDED) and domain10 (No managers).
         She should show twice in this report but not in test_DomainManaged."""
-        self.maxDiff = None
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
@@ -651,7 +645,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -729,7 +722,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
     # @less_console_noise_decorator
     def test_domain_request_data_full(self):
-        self.maxDiff = None
         """Tests the full domain request report."""
         # Remove "Submitted at" because we can't guess this immutable, dynamically generated test data
         columns = [
@@ -865,7 +857,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         # Create a request and add the user to the request
         request = self.factory.get("/")
         request.user = self.user
-        self.maxDiff = None
         # Add portfolio to session
         request = GenericTestHelper._mock_user_request_for_factory(request)
         request.session["portfolio"] = self.portfolio_1

@@ -1693,7 +1693,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "notes",
             "alternative_domains",
         ]
-        self.maxDiff = None
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
@@ -1702,7 +1701,6 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-            self.maxDiff = None
             expected_fields = [
                 "portfolio_senior_official",
                 "portfolio_organization_type",
