@@ -20,6 +20,7 @@ from registrar.views.utility.permission_views import (
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
     PortfolioMemberDomainsPermissionView,
+    PortfolioMemberDomainsEditPermissionView,
     PortfolioMemberEditPermissionView,
     PortfolioMemberPermissionView,
     PortfolioMembersPermissionView,
@@ -198,6 +199,24 @@ class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
         )
 
 
+class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, View):
+
+    template_name = "portfolio_member_domains_edit.html"
+
+    def get(self, request, pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "portfolio_permission": portfolio_permission,
+                "member": member,
+            },
+        )
+
+
 class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
 
     template_name = "portfolio_member.html"
@@ -294,6 +313,22 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
 
     template_name = "portfolio_member_domains.html"
+
+    def get(self, request, pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "portfolio_invitation": portfolio_invitation,
+            },
+        )
+    
+
+class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, View):
+
+    template_name = "portfolio_member_domains_edit.html"
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
