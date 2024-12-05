@@ -5,7 +5,6 @@ from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,6 @@ def apply_search(queryset, request):
 
 def apply_state_filter(queryset, request):
     status_param = request.GET.get("status")
-    print("status_param is ", status_param)
     if status_param:
         status_list = status_param.split(",")
         # if unknown is in status_list, append 'dns needed' since both
