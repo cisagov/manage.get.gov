@@ -431,7 +431,7 @@ export class BaseTable {
     let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
 
     // --------- FETCH DATA
-    // fetch json of page of domains, given params
+    // fetch json of page of objects, given params
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
 

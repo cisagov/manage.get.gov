@@ -65,7 +65,7 @@
                 type="search"
                 name="member-domains-search"
                 />
-                <button class="usa-button" type="submit" id="member-domains__search-field-submit">
+                <button class="usa-button" type="submit" id="edit-member-domains__search-field-submit">
                     <span class="usa-search__submit-text">Search </span>
                     <img
                         src="{% static 'img/usa-icons-bg/search--white.svg' %}"
@@ -80,11 +80,12 @@
     </div>
 
     <!-- ---------- MAIN TABLE ---------- -->
-    <div class="display-none margin-top-0" id="member-domains__table-wrapper">
+    <div class="display-none margin-top-0" id="edit-member-domains__table-wrapper">
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
         <caption class="sr-only">member domains</caption>
         <thead>
           <tr>
+            <th data-sortable="checked" scope="col" role="columnheader"><span class="sr-only">Selected</span></th>
             <!-- We override default sort to be name/ascending in the JSON endpoint. We add the correct aria-sort attribute here to reflect that in the UI -->
             <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
           </tr>
@@ -94,18 +95,18 @@
         </tbody>
       </table>
       <div
-        class="usa-sr-only usa-table__announcement-region" id="member-domains__usa-table__announcement-region"
+        class="usa-sr-only usa-table__announcement-region" id="edit-member-domains__usa-table__announcement-region"
         aria-live="polite"
       ></div>
     </div>
-    <div class="display-none" id="member-domains__no-data">
+    <div class="display-none" id="edit-member-domains__no-data">
       <p>This member does not manage any domains.  Click the Edit domain assignments buttons to assign domains.</p>
     </div>
-    <div class="display-none" id="member-domains__no-search-results">
+    <div class="display-none" id="edit-member-domains__no-search-results">
       <p>No results found</p>
     </div>
   </section>
-  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="member-domains-pagination">
+  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="edit-member-domains-pagination">
     <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
       <!-- Count will be dynamically populated by JS -->
     </span>
