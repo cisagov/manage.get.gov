@@ -169,7 +169,7 @@ class HomeTests(TestWithUser):
         self.assertContains(response, "You don't have any registered domains.")
         self.assertContains(response, "Why don't I see my domain when I sign in to the registrar?")
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_state_help_text(self):
         """Tests if each domain state has help text"""
 
