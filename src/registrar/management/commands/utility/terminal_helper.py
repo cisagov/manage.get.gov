@@ -192,7 +192,7 @@ class PopulateScriptTemplate(ABC):
 class TerminalHelper:
     @staticmethod
     def log_script_run_summary(
-        to_update, failed_to_update, skipped, debug: bool, log_header=None, display_as_str=False
+        to_update, failed_to_update, skipped, debug: bool, log_header=None, skipped_header=None, display_as_str=False
     ):
         """Prints success, failed, and skipped counts, as well as
         all affected objects."""
@@ -203,8 +203,21 @@ class TerminalHelper:
         if log_header is None:
             log_header = "============= FINISHED ==============="
 
+        if skipped_header is None:
+            skipped_header = "----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----"
+
+        # Give the user the option to see failed / skipped records if any exist.
+        display_detailed_logs = False
+        if not debug and update_failed_count > 0 or update_skipped_count > 0:
+            display_detailed_logs = TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=False,
+                prompt_message=f"You will see {update_failed_count} failed and {update_skipped_count} skipped records.",
+                verify_message="** Some records were skipped, or some failed to update. **",
+                prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
+            )
+
         # Prepare debug messages
-        if debug:
+        if debug or display_detailed_logs:
             updated_display = [str(u) for u in to_update] if display_as_str else to_update
             skipped_display = [str(s) for s in skipped] if display_as_str else skipped
             failed_display = [str(f) for f in failed_to_update] if display_as_str else failed_to_update
@@ -217,7 +230,7 @@ class TerminalHelper:
             # Print out a list of everything that was changed, if we have any changes to log.
             # Otherwise, don't print anything.
             TerminalHelper.print_conditional(
-                debug,
+                True,
                 f"{debug_messages.get('success') if update_success_count > 0 else ''}"
                 f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
                 f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
@@ -236,7 +249,7 @@ class TerminalHelper:
                 f"""{TerminalColors.YELLOW}
                 {log_header}
                 Updated {update_success_count} entries
-                ----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----
+                {skipped_header}
                 Skipped updating {update_skipped_count} entries
                 {TerminalColors.ENDC}
                 """
@@ -368,7 +381,9 @@ class TerminalHelper:
                     logger.info(print_statement)
 
     @staticmethod
-    def prompt_for_execution(system_exit_on_terminate: bool, prompt_message: str, prompt_title: str) -> bool:
+    def prompt_for_execution(
+        system_exit_on_terminate: bool, prompt_message: str, prompt_title: str, verify_message=None
+    ) -> bool:
         """Create to reduce code complexity.
         Prompts the user to inspect the given string
         and asks if they wish to proceed.
@@ -380,6 +395,9 @@ class TerminalHelper:
         if system_exit_on_terminate:
             action_description_for_selecting_no = "exit"
 
+        if verify_message is None:
+            verify_message = "*** IMPORTANT:  VERIFY THE FOLLOWING LOOKS CORRECT ***"
+
         # Allow the user to inspect the command string
         # and ask if they wish to proceed
         proceed_execution = TerminalHelper.query_yes_no_exit(
@@ -387,7 +405,7 @@ class TerminalHelper:
             =====================================================
             {prompt_title}
             =====================================================
-            *** IMPORTANT:  VERIFY THE FOLLOWING LOOKS CORRECT ***
+            {verify_message}
 
             {prompt_message}
             {TerminalColors.FAIL}

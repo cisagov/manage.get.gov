@@ -116,6 +116,10 @@ class TransferUserView(View):
                 if model_class.objects.filter(user=current_user, domain=obj.domain).exists():
                     continue  # Skip the update to avoid a duplicate
 
+            if model_class == UserPortfolioPermission:
+                if model_class.objects.filter(user=current_user, portfolio=obj.portfolio).exists():
+                    continue  # Skip the update to avoid a duplicate
+
             # Update the field on the object and save it
             setattr(obj, field_name, current_user)
             obj.save()
