@@ -14,16 +14,16 @@
       id="portfolio-js-value" 
       class="display-none" 
       data-portfolio="{{ portfolio.id }}"
-      data-email="{{  portfolio_invitation.email }}"
+      data-email="{{ portfolio_invitation.email }}"
       data-member-id=""
       data-member-only="true"
     ></span>
 {% endif %}
 
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
-{% url 'get_member_domains_json' as url %}
-<span id="get_member_domains_json_url" class="display-none">{{url}}</span>
-<section class="section-outlined member-domains margin-top-0 section-outlined--border-base-light" id="member-domains">
+{% url 'get_member_domains_edit_json' as url %}
+<span id="get_member_domains_edit_json_url" class="display-none">{{url}}</span>
+<section class="section-outlined member-domains margin-top-0 section-outlined--border-base-light" id="edit-member-domains">
     
     <h2>
       Domains assigned to 
@@ -40,7 +40,7 @@
         <section aria-label="Member domains search component" class="margin-top-2">
           <form class="usa-search usa-search--show-label" method="POST" role="search">
             {% csrf_token %}
-            <label class="usa-label display-block margin-bottom-05" for="member-domains__search-field">
+            <label class="usa-label display-block margin-bottom-05" for="edit-member-domains__search-field">
               {% if has_edit_members_portfolio_permission %}
                 Search all domains
               {% else %}
@@ -53,7 +53,7 @@
               {% endif %}
             </label>            
             <div class="usa-search--show-label__input-wrapper">
-                <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="member-domains__reset-search" type="button">
+                <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="edit-member-domains__reset-search" type="button">
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                       <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
                     </svg>

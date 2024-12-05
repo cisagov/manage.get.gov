@@ -1,0 +1,51 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Edit organization member domains {% endblock %}
+
+{% load static %}
+
+{% block portfolio_content %}
+<div id="main-content">
+
+    {% url 'members' as url %}
+    {% if portfolio_permission %}
+        {% url 'member' pk=portfolio_permission.id as url2 %}
+        {% url 'member-domains' pk=portfolio_permission.id as url3 %}
+    {% else %}
+        {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
+        {% url 'invitedmember-domains' pk=portfolio_invitation.id as url3 %}
+    {% endif %}
+    <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
+    <ol class="usa-breadcrumb__list">
+        <li class="usa-breadcrumb__list-item">
+        <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item">
+            <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current edit-domain-assignments-breadcrumb" aria-current="page">
+            <span>Edit domain assignments</span>
+        </li>
+        <li class="usa-breadcrumb__list-item review-domain-assignments-breadcrumb display-none">
+            <a href="{{ url3 }}" class="usa-breadcrumb__link"><span>Edit domain assignments</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current review-domain-assignments-breadcrumb display-none" aria-current="page">
+            <span>Review</span>
+        </li>
+    </ol>
+    </nav>
+
+    <h1 class="margin-bottom-3">Edit domain assignments</h1>
+
+    <p class="margin-bottom-0">
+        A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
+    </p>
+    <p>
+        When you save this form the member will get an email to notify them of any changes.
+    </p>
+
+    {% include "includes/member_domains_edit_table.html" %}
+
+</div>
+{% endblock %}
