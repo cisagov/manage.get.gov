@@ -415,7 +415,8 @@ class MemberExport(BaseExport):
             .values(*shared_columns)
         )
 
-        return convert_queryset_to_dict(permissions.union(invitations), is_model=False)
+        members = permissions.union(invitations).order_by("email_display")
+        return convert_queryset_to_dict(members, is_model=False)
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
