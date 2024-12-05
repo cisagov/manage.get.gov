@@ -2388,3 +2388,136 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
+
+
+class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+
+        # Add an invited member who has been invited to manage domains
+        cls.invited_member_email = "invited@example.com"
+        cls.invitation = PortfolioInvitation.objects.create(
+            email=cls.invited_member_email,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        cls.new_member_email = "new_user@example.com"
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=cls.user,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_new_users(self):
+        """Tests the member invitation flow for new users."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Simulate submission of member invite for new user
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.new_member_email,
+            },
+        )
+
+        # Ensure the final submission is successful
+        self.assertEqual(final_response.status_code, 302)  # redirects after success
+
+        # Validate Database Changes
+        portfolio_invite = PortfolioInvitation.objects.filter(
+            email=self.new_member_email, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, self.new_member_email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_previously_invited_member(self):
+        """Tests the member invitation flow for existing portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.invited_member_email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
+
+        # TODO: verify messages
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_existing_member(self):
+        """Tests the member invitation flow for existing portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.user.email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
+
+        # TODO: verify messages
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
