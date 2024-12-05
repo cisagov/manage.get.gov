@@ -9,5 +9,4 @@ def index(request):
         # This controls the creation of a new domain request in the wizard
         context["user_domain_count"] = request.user.get_user_domain_ids(request).count()
     
-        
     return render(request, "home.html", context)
