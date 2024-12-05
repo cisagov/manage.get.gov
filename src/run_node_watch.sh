@@ -1,6 +1,5 @@
 #!/bin/bash
-echo "In run_node_watch.sh"
-whoami
+
 npm install
 npm rebuild
 dir=./registrar/assets
