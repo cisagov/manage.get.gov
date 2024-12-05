@@ -7,7 +7,7 @@ inherit from `DomainPermissionView` (or DomainInvitationPermissionCancelView).
 
 from datetime import date
 import logging
-
+import requests
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
@@ -517,27 +517,125 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         form = self.get_form()
         if form.is_valid():
             try:
-                # Format the DNS record according to Cloudflare's API requirements
-                dns_record = {
-                    "type": "A",
-                    "name": form.cleaned_data["name"],
-                    "content": form.cleaned_data["content"],
-                    "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": f"Test record (will eventually need to clean up)"
-                }
+                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
+                    raise Exception(f"create dns record was called for domain {self.name}")
                 
-                result = self.object.create_prototype_dns_record(dns_record)
-                
-                if result:  # Assuming create_prototype_dns_record returns the response data
-                    messages.success(
-                        request,
-                        f"DNS A record '{form.cleaned_data['name']}' created successfully."
-                    )
-                else:
+                valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+                if not settings.IS_PRODUCTION and self.object.name not in valid_domains:
                     messages.error(
                         request,
-                        "Failed to create DNS A record. Please try again."
+                        f"Can only create DNS records for: {valid_domains}."
+                        " Create one in a test environment if it doesn't already exist."
                     )
+                    return super().post(request)
+                
+                base_url = "https://api.cloudflare.com/client/v4"
+                headers = {
+                    "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
+                    "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
+                    "Content-Type": "application/json"
+                }
+                params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
+                
+                # 1. Get tenant details
+                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params)
+                tenant_response.raise_for_status()
+                tenant_response_json = tenant_response.json()
+                logger.info(f"Found tenant: {tenant_response_json}")
+                tenant_id = tenant_response_json["result"][0]["tenant_tag"]
+
+                # 2. Create account under tenant
+
+                # Check to see if the account already exists. Filters accounts by tenant_id.
+                account_name = f"account-{self.object.name}"
+                params = {"tenant_id": tenant_id}
+
+                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params)
+                account_response.raise_for_status()
+                account_response_json = account_response.json()
+                print(f"account stuff: {account_response_json}")
+
+                # See if we already made an account
+                account_id = None
+                accounts = account_response_json.get("result", [])
+                for account in accounts:
+                    if account.get("name") == account_name:
+                        account_id = account.get("id")
+                        print(f"Found it! Account: {account_name} (ID: {account_id})")
+                        break
+                
+                # If we didn't, create one
+                if not account_id:
+                    account_response = requests.post(
+                        f"{base_url}/accounts",
+                        headers=headers,
+                        json={
+                            "name": account_name,
+                            "type": "enterprise",
+                            "unit": {"id": tenant_id}
+                        }
+                    )
+                    account_response.raise_for_status()
+                    account_response_json = account_response.json()
+                    logger.info(f"Created account: {account_response_json}")
+                    account_id = account_response_json["result"]["id"]
+
+                # # 3. Create zone under account
+                # zone_response = requests.post(
+                #     f"{base_url}/zones",
+                #     headers=headers,
+                #     json={
+                #         "name": self.name,
+                #         "account": {"id": account_id},
+                #         "type": "full"
+                #     }
+                # )
+                # zone_response.raise_for_status()
+                # zone_response_json = zone_response.json()
+                # zone_id = zone_response_json["result"]["id"]
+                # logger.info(f"Created zone: {zone_response_json}")
+
+                # # 4. Add zone subscription
+                # subscription_response = requests.post(
+                #     f"{base_url}/zones/{zone_id}/subscription",
+                #     headers=headers,
+                #     json={
+                #         "rate_plan": {"id": "PARTNERS_ENT"},
+                #         "frequency": "annual"
+                #     }
+                # )
+                # subscription_response.raise_for_status()
+                # subscription_response_json = subscription_response.json()
+                # logger.info(f"Created subscription: {subscription_response_json}")
+
+
+                # # 5. Create DNS record
+                # # Format the DNS record according to Cloudflare's API requirements
+                # dns_response = requests.post(
+                #     f"{base_url}/zones/{zone_id}/dns_records",
+                #     headers=headers,
+                #     json={
+                #         "type": "A",
+                #         "name": form.cleaned_data["name"],
+                #         "content": form.cleaned_data["content"],
+                #         "ttl": int(form.cleaned_data["ttl"]),
+                #         "comment": "Test record (will need clean up)"
+                #     }
+                # )
+                # dns_response.raise_for_status()
+                # dns_response_json = dns_response.json()
+                # logger.info(f"Created DNS record: {dns_response_json}")
+
+                # if dns_response_json and "name" in dns_response_json:
+                #     messages.success(
+                #         request,
+                #         f"DNS A record '{form.cleaned_data['name']}' created successfully."
+                #     )
+                # else:
+                #     messages.error(
+                #         request,
+                #         "Failed to create DNS A record. Please try again."
+                #     )
                     
             except Exception as err:
                 logger.error(f"Error creating DNS A record for {self.object.name}: {err}")

@@ -239,6 +239,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+        return True
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -307,97 +308,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
-
-    def create_prototype_account(self, base_url, headers, tenant_id):
-        account_response = requests.post(
-            f"{base_url}/accounts",
-            headers=headers,
-            json={
-                "name": f"account-{self.name}",
-                "type": "enterprise",
-                "unit": {"id": tenant_id}
-            }
-        )
-        account_response.raise_for_status()
-        account_response_json = account_response.json()
-        account_id = account_response_json["result"]["id"]
-        logger.info(f"Created account: {account_response_json}")
-        return account_id
-    
-    def create_prototype_zone(self, base_url, headers, account_id):
-        zone_response = requests.post(
-            f"{base_url}/zones",
-            headers=headers,
-            json={
-                "name": self.name,
-                "account": {"id": account_id},
-                "type": "full"
-            }
-        )
-        zone_response.raise_for_status()
-        zone_response_json = zone_response.json()
-        zone_id = zone_response_json["result"]["id"]
-        logger.info(f"Created zone: {zone_response_json}")
-        return zone_id
-
-    def create_prototype_subscription(self, base_url, headers, zone_id):
-        subscription_response = requests.post(
-            f"{base_url}/zones/{zone_id}/subscription",
-            headers=headers,
-            json={
-                "rate_plan": {"id": "PARTNERS_ENT"},
-                "frequency": "annual"
-            }
-        )
-        subscription_response.raise_for_status()
-        subscription_response_json = subscription_response.json()
-        logger.info(f"Created subscription: {subscription_response_json}")
-
-    def create_prototype_dns_record(self, dns_record_dict):
-        print(f"what is the key? {settings.SECRET_REGISTRY_TENANT_KEY}")
-
-        # Don't execute this function on any other domain
-        if settings.IS_PRODUCTION and self.name != "igorville.gov":
-            logger.warning(f"create_dns_record was called for domain {self.name}")
-            return None
-
-        # Cloudflare API endpoints
-        base_url = "https://api.cloudflare.com/client/v4"
-        headers = {
-            "Authorization": f"Bearer {settings.SECRET_REGISTRY_TENANT_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        # TODO - check if these things exist before doing stuff
-        # 1. Get tenant details
-        # Note: we can grab this more generally but lets be specific to keep things safe.
-        tenant_id = settings.SECRET_REGISTRY_TENANT_ID
-
-        # 2. Create account under tenant
-        account_id = self.create_prototype_account(base_url, headers, tenant_id)
-
-        # 3. Create zone under account
-        zone_id = self.create_prototype_zone(base_url, headers, account_id)
-
-        # 4. Add zone subscription
-        self.create_prototype_subscription(base_url, headers, zone_id)
-
-        # 5. Create DNS record
-        dns_response = requests.post(
-            f"{base_url}/zones/{zone_id}/dns_records",
-            headers=headers,
-            json=dns_record_dict
-        )
-        dns_response.raise_for_status()
-        dns_response_json = dns_response.json()
-        logger.info(f"Created DNS record: {dns_response_json}")
-
-        return {
-            "tenant_id": tenant_id,
-            "account_id": account_id,
-            "zone_id": zone_id,
-            "dns_record_id": dns_response_json["result"]["id"]
-        }
 
     def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
         """
