@@ -1677,7 +1677,7 @@ class MockEppLib(TestCase):
         host = getattr(_request, "name", None)
         if "sharedhost.com" in host:
             print("raising registry error")
-            raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
+            raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION, note="otherdomain.gov")
         return MagicMock(
             res_data=[self.mockDataHostChange],
             code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,

@@ -172,7 +172,7 @@ class TestDomainAdminAsStaff(MockEppLib):
     @less_console_noise_decorator
     def test_deletion_is_successful(self):
         """
-        Scenario: Domain deletion is unsuccessful
+        Scenario: Domain deletion is successful
             When the domain is deleted
             Then a user-friendly success message is returned for displaying on the web
             And `state` is set to `DELETED`
@@ -222,6 +222,55 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertContains(response, "Yes, remove from registry")
 
         self.assertEqual(domain.state, Domain.State.DELETED)
+
+    # @less_console_noise_decorator
+    def test_deletion_is_unsuccessful(self):
+        """
+        Scenario: Domain deletion is unsuccessful
+            When the domain is deleted and has shared subdomains
+            Then a user-friendly success message is returned for displaying on the web
+            And `state` is not set to `DELETED`
+        """
+        domain, _ = Domain.objects.get_or_create(name="sharingiscaring.gov", state=Domain.State.ON_HOLD)
+        # Put in client hold
+        domain.place_client_hold()
+        # Ensure everything is displaying correctly
+        response = self.client.get(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain.name)
+        self.assertContains(response, "Remove from registry")
+
+        # The contents of the modal should exist before and after the post.
+        # Check for the header
+        self.assertContains(response, "Are you sure you want to remove this domain from the registry?")
+
+        # Check for some of its body
+        self.assertContains(response, "When a domain is removed from the registry:")
+
+        # Check for some of the button content
+        self.assertContains(response, "Yes, remove from registry")
+
+        # Test the info dialog
+        request = self.factory.post(
+            "/admin/registrar/domain/{}/change/".format(domain.pk),
+            {"_delete_domain": "Remove from registry", "name": domain.name},
+            follow=True,
+        )
+        request.user = self.client
+        with patch("django.contrib.messages.add_message") as mock_add_message:
+            self.admin.do_delete_domain(request, domain)
+            mock_add_message.assert_called_once_with(
+                request,
+                messages.ERROR,
+                "Error deleting this Domain: This subdomain is being used as a hostname on another domain: otherdomain.gov",
+                extra_tags="",
+                fail_silently=False,
+            )
+
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
