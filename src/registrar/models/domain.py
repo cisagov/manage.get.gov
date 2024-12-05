@@ -1066,7 +1066,7 @@ class Domain(TimeStampedModel, DomainHelper):
             if host.domain != self:
                 logger.error("Host %s in use by another domain: %s", host.name, host.domain)
                 raise RegistryError(
-                    "Host in use by another domain: {}".format(host.domain),
+                    msg="Host in use by another domain: {}".format(host.domain),
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                 )
 

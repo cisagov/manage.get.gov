@@ -2916,18 +2916,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
-            message2 = "This subdomain is being used as a hostname on another domain"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
                 ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: message1,
-                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: message2,
+                ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: err.msg,
             }
 
             message = "Cannot connect to the registry"
             if not err.is_connection_error():
                 # If nothing is found, will default to returned err
-                message = error_messages.get(err.code, err)
+                message = error_messages[err.code]
             self.message_user(request, f"Error deleting this Domain: {message}", messages.ERROR)
         except TransitionNotAllowed:
             if obj.state == Domain.State.DELETED:
