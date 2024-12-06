@@ -516,6 +516,10 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
 
+    def find_by_name(self, items, name):
+        """Find an item by name in a list of dictionaries."""
+        return next((item.get("id") for item in items if item.get("name") == name), None)
+
     def post(self, request, *args, **kwargs):
         """Handle form submission."""
         self.object = self.get_object()
@@ -562,13 +566,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # See if we already made an account.
                 # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
-                account_id = None
                 accounts = account_response_json.get("result", [])
-                for account in accounts:
-                    if account.get("name") == account_name:
-                        account_id = account.get("id")
-                        logger.debug(f"Found it! Account: {account_name} (ID: {account_id})")
-                        break
+                account_id = self.find_by_name(accounts, account_name)
 
                 # If we didn't, create one
                 if not account_id:
@@ -596,13 +595,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 zone_response.raise_for_status()
 
                 # Get the zone id
-                zone_id = None
                 zones = zone_response_json.get("result", [])
-                for zone in zones:
-                    if zone.get("name") == zone_name:
-                        zone_id = zone.get("id")
-                        logger.debug(f"Found it! Zone: {zone_name} (ID: {zone_id})")
-                        break
+                zone_id = self.find_by_name(zones, zone_name)
 
                 # Create one if it doesn't presently exist
                 if not zone_id:
@@ -662,7 +656,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 logger.info(f"Created DNS record: {dns_response_json}")
                 errors = dns_response_json.get("errors", [])
                 dns_response.raise_for_status()
-                messages.success(request, f"DNS A record '{form.cleaned_data['name']}' created successfully.")
+                dns_name = dns_response_json["result"]["name"]
+                messages.success(request, f"DNS A record '{dns_name}' created successfully.")
             except Exception as err:
                 logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
                 messages.error(request, f"An error occurred: {err}")
