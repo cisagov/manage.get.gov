@@ -497,6 +497,13 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+    base_url = "https://api.cloudflare.com/client/v4"
+    headers = {
+        "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
+        "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
+        "Content-Type": "application/json",
+    }
+    errors = []
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -516,159 +523,170 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
 
+    def find_by_name(self, items, name):
+        """Find an item by name in a list of dictionaries."""
+        return next((item.get("id") for item in items if item.get("name") == name), None)
+
+    def call_cloudflare(self, method, url, log_msg="Response", params=None, json=None, expect_404=False):
+        """Make a request to the Cloudflare API."""
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=self.headers,
+            params=params,
+            json=json,
+            timeout=5
+        )
+        response_json = response.json()
+        self.errors = response_json.get("errors", [])
+        logger.info(f"{log_msg}: {response_json}")
+        if response.status_code == 404 and expect_404:
+            return response_json
+
+        response.raise_for_status()
+        return response_json
+
+    def get_tenant(self):
+        response = self.call_cloudflare(
+            method="GET",
+            url=f"{self.base_url}/accounts",
+            log_msg="Getting tenant",
+            params={"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
+        )
+        return response["result"][0]["tenant_tag"]
+
+    def get_or_create_account(self, tenant_id, account_name, domain_name):
+        account_name = f"account-{domain_name}"
+    
+        # Try to find an existing account
+        response = self.call_cloudflare(
+            method="GET",
+            url=f"{self.base_url}/accounts",
+            log_msg="Existing accounts",
+            params={"tenant_id": tenant_id, "name": account_name}
+        )
+        
+        account_id = self.find_by_name(response.get("result", []), account_name)
+        if account_id:
+            return account_id
+
+        # Create new account
+        response = self.call_cloudflare(
+            method="POST",
+            url=f"{self.base_url}/accounts",
+            log_msg="Created account",
+            json={
+                "name": account_name,
+                "type": "enterprise",
+                "unit": {"id": tenant_id}
+            }
+        )
+        return response["result"]["id"]
+
+    def get_or_create_zone(self, account_id, domain_name):
+        # Try to find an existing zone
+        response = self.call_cloudflare(
+            method="GET",
+            url=f"{self.base_url}/zones",
+            log_msg="Existing zones",
+            params={"account.id": account_id, "name": domain_name}
+        )
+        
+        zone_id = self.find_by_name(response.get("result", []), domain_name)
+        if zone_id:
+            return zone_id
+
+        # Create new zone
+        response = self.call_cloudflare(
+            method="POST",
+            url=f"{self.base_url}/zones",
+            log_msg="Created zone",
+            json={
+                "name": domain_name,
+                "account": {"id": account_id},
+                "type": "full"
+            }
+        )
+        return response["result"]["id"]
+
+    def create_zone_subscription(self, zone_id):
+        # Check for existing subscription
+        subscription = self.call_cloudflare(
+            method="GET",
+            url=f"{self.base_url}/zones/{zone_id}/subscription",
+            log_msg="Existing subscriptions",
+            expect_404=True
+        )
+        
+        # Create one
+        if not subscription:
+            self.call_cloudflare(
+                method="POST",
+                url=f"{self.base_url}/zones/{zone_id}/subscription",
+                log_msg="Created subscription",
+                json={
+                    "rate_plan": {"id": "PARTNERS_ENT"},
+                    "frequency": "annual"
+                }
+            )
+
+    def create_dns_record(self, zone_id, record_data):
+        """Create a DNS record in the zone."""
+        response = self.call_cloudflare(
+            method="POST",
+            url=f"{self.base_url}/zones/{zone_id}/dns_records",
+            log_msg="Created DNS record",
+            json={
+                "type": "A",
+                "name": record_data["name"],
+                "content": record_data["content"],
+                "ttl": int(record_data["ttl"]),
+                "comment": "Test record (will need clean up)"
+            }
+        )
+        return response["result"]["name"]
+
     def post(self, request, *args, **kwargs):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
-        errors = []
-        if form.is_valid():
-            try:
-                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                    raise Exception(f"create dns record was called for domain {self.name}")
+        if not form.is_valid():
+            return super().post(request)
 
-                if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
-                    raise Exception(
-                        f"Can only create DNS records for: {self.valid_domains}."
-                        " Create one in a test environment if it doesn't already exist."
-                    )
+        try:
+            if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
+                raise ValueError(f"Create dns record was called for domain {self.name}")
 
-                base_url = "https://api.cloudflare.com/client/v4"
-                headers = {
-                    "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
-                    "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
-                    "Content-Type": "application/json",
-                }
-                params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
-
-                # 1. Get tenant details
-                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params, timeout=5)
-                tenant_response_json = tenant_response.json()
-                logger.info(f"Found tenant: {tenant_response_json}")
-                tenant_id = tenant_response_json["result"][0]["tenant_tag"]
-                errors = tenant_response_json.get("errors", [])
-                tenant_response.raise_for_status()
-
-                # 2. Create or get a account under tenant
-
-                # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
-                account_name = f"account-{self.object.name}"
-                params = {"tenant_id": tenant_id, "name": account_name}
-
-                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
-                account_response_json = account_response.json()
-                logger.debug(f"account get: {account_response_json}")
-                errors = account_response_json.get("errors", [])
-                account_response.raise_for_status()
-
-                # See if we already made an account.
-                # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
-                account_id = None
-                accounts = account_response_json.get("result", [])
-                for account in accounts:
-                    if account.get("name") == account_name:
-                        account_id = account.get("id")
-                        logger.debug(f"Found it! Account: {account_name} (ID: {account_id})")
-                        break
-
-                # If we didn't, create one
-                if not account_id:
-                    account_response = requests.post(
-                        f"{base_url}/accounts",
-                        headers=headers,
-                        json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
-                        timeout=5,
-                    )
-                    account_response_json = account_response.json()
-                    logger.info(f"Created account: {account_response_json}")
-                    account_id = account_response_json["result"]["id"]
-                    errors = account_response_json.get("errors", [])
-                    account_response.raise_for_status()
-
-                # 3. Create or get a zone under account
-
-                # Try to find an existing zone first by searching on the current id
-                zone_name = self.object.name
-                params = {"account.id": account_id, "name": zone_name}
-                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params, timeout=5)
-                zone_response_json = zone_response.json()
-                logger.debug(f"get zone: {zone_response_json}")
-                errors = zone_response_json.get("errors", [])
-                zone_response.raise_for_status()
-
-                # Get the zone id
-                zone_id = None
-                zones = zone_response_json.get("result", [])
-                for zone in zones:
-                    if zone.get("name") == zone_name:
-                        zone_id = zone.get("id")
-                        logger.debug(f"Found it! Zone: {zone_name} (ID: {zone_id})")
-                        break
-
-                # Create one if it doesn't presently exist
-                if not zone_id:
-                    zone_response = requests.post(
-                        f"{base_url}/zones",
-                        headers=headers,
-                        json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
-                        timeout=5,
-                    )
-                    zone_response_json = zone_response.json()
-                    logger.info(f"Created zone: {zone_response_json}")
-                    zone_id = zone_response_json.get("result", {}).get("id")
-                    errors = zone_response_json.get("errors", [])
-                    zone_response.raise_for_status()
-
-                # 4. Add or get a zone subscription
-
-                # See if one already exists
-                subscription_response = requests.get(
-                    f"{base_url}/zones/{zone_id}/subscription", headers=headers, timeout=5
+            if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
+                raise ValueError(
+                    f"Can only create DNS records for: {self.valid_domains}."
+                    " Create one in a test environment if it doesn't already exist."
                 )
-                subscription_response_json = subscription_response.json()
-                logger.debug(f"get subscription: {subscription_response_json}")
 
-                # Create a subscription if one doesn't exist already.
-                # If it doesn't, we get this error message (code 1207):
-                # Add a core subscription first and try again. The zone does not have an active core subscription.
-                # Note that status code and error code are different here.
-                if subscription_response.status_code == 404:
-                    subscription_response = requests.post(
-                        f"{base_url}/zones/{zone_id}/subscription",
-                        headers=headers,
-                        json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
-                        timeout=5,
-                    )
-                    subscription_response.raise_for_status()
-                    subscription_response_json = subscription_response.json()
-                    logger.info(f"Created subscription: {subscription_response_json}")
-                else:
-                    subscription_response.raise_for_status()
+            # 1. Get tenant details
+            tenant_id = self.get_tenant()
 
-                # # 5. Create DNS record
-                # # Format the DNS record according to Cloudflare's API requirements
-                dns_response = requests.post(
-                    f"{base_url}/zones/{zone_id}/dns_records",
-                    headers=headers,
-                    json={
-                        "type": "A",
-                        "name": form.cleaned_data["name"],
-                        "content": form.cleaned_data["content"],
-                        "ttl": int(form.cleaned_data["ttl"]),
-                        "comment": "Test record (will need clean up)",
-                    },
-                    timeout=5,
-                )
-                dns_response_json = dns_response.json()
-                logger.info(f"Created DNS record: {dns_response_json}")
-                errors = dns_response_json.get("errors", [])
-                dns_response.raise_for_status()
-                messages.success(request, f"DNS A record '{form.cleaned_data['name']}' created successfully.")
-            except Exception as err:
-                logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
-                messages.error(request, f"An error occurred: {err}")
-            finally:
-                if errors:
-                    messages.error(request, f"Request errors: {errors}")
+            # 2. Create or get a account under tenant
+            domain_name = self.object.name
+            account_name = f"account-{self.object.name}"
+            account_id = self.get_or_create_account(tenant_id, account_name, domain_name)
+
+            # 3. Create or get a zone under account
+            zone_id = self.get_or_create_zone(account_id, domain_name)
+
+            # 4. Add a zone subscription
+            self.create_zone_subscription(zone_id)
+
+            # 5. Create DNS record
+            record_name = self.create_dns_record(zone_id, form.cleaned_data)
+            messages.success(request, f"DNS A record '{record_name}' created successfully.")
+        except Exception as err:
+            logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
+            messages.error(request, f"An error occurred: {err}")
+
+        if self.errors:
+            messages.error(request, f"Request errors: {self.errors}")
+
         return super().post(request)
 
 
