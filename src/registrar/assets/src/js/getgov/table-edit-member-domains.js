@@ -101,6 +101,10 @@ export class EditMemberDomainsTable extends BaseTable {
       console.log(dataObjects);
       // Map the id attributes of dataObjects to this.initialDomainAssignments
       this.initialDomainAssignments = dataObjects.map(obj => obj.id);
+      this.initialDomainAssignmentsOnlyMember = dataObjects
+        .filter(obj => obj.member_is_only_manager)
+        .map(obj => obj.id);
+
       console.log(this.initialDomainAssignments);
     })
     .catch(error => console.error('Error fetching domain assignments:', error));

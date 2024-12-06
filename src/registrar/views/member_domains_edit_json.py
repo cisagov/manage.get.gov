@@ -32,7 +32,8 @@ class PortfolioMemberDomainsEditJson(PortfolioMemberDomainsEditPermission, View)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
 
-        domains = [self.serialize_domain(domain, request.user) for domain in page_obj.object_list]
+        member_id = request.GET.get("member_id")
+        domains = [self.serialize_domain(domain, member_id, request.user) for domain in page_obj.object_list]
 
         return JsonResponse(
             {
@@ -92,7 +93,7 @@ class PortfolioMemberDomainsEditJson(PortfolioMemberDomainsEditPermission, View)
             sort_by = f"-{sort_by}"
         return queryset.order_by(sort_by)
 
-    def serialize_domain(self, domain, user):
+    def serialize_domain(self, domain, member_id, user):
         suborganization_name = None
         try:
             domain_info = domain.domain_info
@@ -107,9 +108,18 @@ class PortfolioMemberDomainsEditJson(PortfolioMemberDomainsEditPermission, View)
         # Check if there is a UserDomainRole for this domain and user
         user_domain_role_exists = UserDomainRole.objects.filter(domain_id=domain.id, user=user).exists()
         view_only = not user_domain_role_exists or domain.state in [Domain.State.DELETED, Domain.State.ON_HOLD]
+
+        # Check if the specified member is the only member assigned as manager of domain
+        only_member_assigned_to_domain = False
+        if member_id:
+            member_domain_role_count = UserDomainRole.objects.filter(domain_id=domain.id).count()
+            member_domain_role_exists = UserDomainRole.objects.filter(domain_id=domain.id, user_id=member_id).exists()
+            only_member_assigned_to_domain = member_domain_role_exists and member_domain_role_count == 1
+
         return {
             "id": domain.id,
             "name": domain.name,
+            "member_is_only_manager": only_member_assigned_to_domain,
             "expiration_date": domain.expiration_date,
             "state": domain.state,
             "state_display": domain.state_display(),
