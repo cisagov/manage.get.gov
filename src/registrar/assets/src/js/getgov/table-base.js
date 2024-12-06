@@ -417,6 +417,11 @@ export class BaseTable {
   initShowMoreButtons(){}
 
   /**
+   * See function for more details
+   */
+  initCheckboxListeners(){}
+
+  /**
    * Loads rows in the members list, as well as updates pagination around the members list
    * based on the supplied attributes.
    * @param {*} page - The page number of the results (starts with 1)
@@ -462,6 +467,7 @@ export class BaseTable {
         });
 
         this.initShowMoreButtons();
+        this.initCheckboxListeners();
 
         this.loadModals(data.page, data.total, data.unfiltered_total);
 
