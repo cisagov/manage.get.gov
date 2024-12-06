@@ -256,11 +256,6 @@ urlpatterns = [
         name="export_data_type_requests",
     ),
     path(
-        "reports/export_data_type_requests/",
-        ExportDataTypeRequests.as_view(),
-        name="export_data_type_requests",
-    ),
-    path(
         "domain-request/<int:id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
