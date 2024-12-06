@@ -93,7 +93,7 @@ def apply_state_filter(queryset, request):
         # For some reason having this flag adds DNS_NEEDED in?
         # if flag_is_active(request, "organization_request"):
         if "expiring" in custom_states:
-            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring"]
+            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
             state_query |= Q(id__in=expiring_domain_ids)
         # Apply the combined query
         queryset = queryset.filter(state_query)

@@ -8,8 +8,8 @@
 
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
-<!-- Banner for when it's org model  -->
-{% if has_domain_renewal_flag and has_expiring_domains and portfolio %}
+<!-- Banner for when it's org model (org manager can view, domain manager can edit)  -->
+{% if has_domain_renewal_flag and has_expiring_domains and has_any_domains_portfolio_permission %}
 <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
@@ -72,7 +72,7 @@
   </div>
 
   <!-- Banner for when it's not org model bc placement in the table -->
-  {% if has_domain_renewal_flag and not portfolio %}
+  {% if has_domain_renewal_flag and has_expiring_domains and not portfolio %}
   <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
       <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
@@ -176,7 +176,7 @@
               value="expiring"
             />
             <label class="usa-checkbox__label" for="filter-status-expiring"
-              >EXPIRING</label>
+              >Expiring soon</label>
           </div>
           {% endif %}
         </fieldset>

@@ -88,10 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       expiringLink.addEventListener('click', (event) => {
           event.preventDefault();
-          
           // Loop through all statuses
           statusCheckboxes.forEach(checkbox => {  
-            // To find the for checkbox for "expiring"
+            // To find the for checkbox for "Expiring soon"
             if (checkbox.value === "expiring") {
                 // If the checkbox is not already checked, check it
                 if (!checkbox.checked) {
