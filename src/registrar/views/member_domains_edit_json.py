@@ -111,9 +111,9 @@ class PortfolioMemberDomainsEditJson(PortfolioMemberDomainsEditPermission, View)
             )
             # Add ordering logic for 'checked'
             if order == "desc":
-                queryset = queryset.order_by("-checked")
+                queryset = queryset.order_by("-checked","name")
             else:
-                queryset = queryset.order_by("checked")
+                queryset = queryset.order_by("checked","name")
         else:
             # Handle other fields as normal
             if order == "desc":
