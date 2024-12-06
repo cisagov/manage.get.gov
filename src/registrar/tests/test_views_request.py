@@ -26,7 +26,7 @@ from registrar.views.domain_request import DomainRequestWizard, Step
 
 from .common import less_console_noise
 from .test_views import TestWithUser
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,10 +47,12 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def tearDown(self):
         super().tearDown()
-        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
         User.objects.all().delete()
-        self.federal_agency.delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
@@ -2753,7 +2755,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         """Tests that a portfolio user with edit request permissions can edit and add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
         portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
 
         # This user should be allowed to create new domain requests
@@ -2764,11 +2769,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request = completed_domain_request(user=self.user)
         edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
         self.assertEqual(edit_page.status_code, 200)
-
-        # Cleanup
-        DomainRequest.objects.all().delete()
-        portfolio_perm.delete()
-        portfolio.delete()
 
     def test_non_creator_access(self):
         """Tests that a user cannot edit a domain request they didn't create"""
@@ -2863,7 +2863,10 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
@@ -3007,6 +3010,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
                 user=self.user,
                 portfolio=portfolio,
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
             )
 
             # Check portfolio-specific breadcrumb
@@ -3165,6 +3169,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             user=self.user,
             portfolio=portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
         )
 
         response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
@@ -3205,11 +3212,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"id": domain_request.id})
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
-
-            # We shouldn't show the "domains" and "domain requests" buttons
-            # on this page.
-            self.assertNotContains(detail_page, "Domains")
-            self.assertNotContains(detail_page, "<span>Domain requests")
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
 

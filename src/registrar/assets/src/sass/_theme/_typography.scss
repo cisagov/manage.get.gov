@@ -23,6 +23,13 @@ h2 {
   color: color('primary-darker');
 }
 
+.h4--sm-05 {
+  font-size: size('body', 'sm');
+  font-weight: normal;
+  color: color('primary');
+  margin-bottom: units(0.5);
+}
+
 // Normalize typography in forms
 .usa-form,
 .usa-form fieldset {

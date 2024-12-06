@@ -21,6 +21,7 @@ from registrar.views.report_views import (
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
     ExportDataTypeRequests,
+    ExportMembersPortfolio,
 )
 
 # --jsons
@@ -45,8 +46,8 @@ DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 # dynamically generate the other domain_request_urls
 domain_request_urls = [
     path("", RedirectView.as_view(pattern_name="domain-request:start"), name="redirect-to-start"),
-    path("start/", views.DomainRequestWizard.as_view(), name="start"),
-    path("finished/", views.Finished.as_view(), name="finished"),
+    path("start/", views.DomainRequestWizard.as_view(), name=views.DomainRequestWizard.NEW_URL_NAME),
+    path("finished/", views.Finished.as_view(), name=views.DomainRequestWizard.FINISHED_URL_NAME),
 ]
 for step, view in [
     # add/remove steps here
@@ -239,6 +240,11 @@ urlpatterns = [
         name="get-rejection-email-for-user-json",
     ),
     path("admin/", admin.site.urls),
+    path(
+        "reports/export_members_portfolio/",
+        ExportMembersPortfolio.as_view(),
+        name="export_members_portfolio",
+    ),
     path(
         "reports/export_data_type_user/",
         ExportDataTypeUser.as_view(),

@@ -677,18 +677,15 @@ class TestPortfolio(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_cannot_view_members_table(self):
-        """Test that user without proper permission is denied access to members view"""
+        """Test that user without proper permission is denied access to members view."""
 
         # Users can only view the members table if they have
         # Portfolio Permission "view_members" selected.
-        # NOTE: Admins, by default, do NOT have permission
-        # to view/edit members.  This must be enabled explicitly
-        # in the "additional permissions" section for a portfolio
-        # permission.
-        #
+        # NOTE: Admins, by default, DO have permission
+        # to view/edit members.
         # Scenarios to test include;
         # (1) - User is not admin and can view portfolio, but not the members table
-        # (1) - User is admin and can view portfolio, but not the members table
+        # (1) - User is admin and can view portfolio, as well as the members table
 
         # --- non-admin
         self.app.set_user(self.user.username)
@@ -713,11 +710,9 @@ class TestPortfolio(WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
-        # Verify that the user cannot access the members page
-        # This will redirect the user to the members page.
+        # Admins should have access to this page by default
         response = self.client.get(reverse("members"), follow=True)
-        # Assert the response is a 403 Forbidden
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -940,6 +935,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1052,6 +1048,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1060,6 +1057,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
@@ -1137,7 +1135,10 @@ class TestPortfolio(WebTest):
         """Test the nav contains a dropdown with a link to create and another link to view requests
         Also test for the existence of the Create a new request btn on the requests page"""
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         self.client.force_login(self.user)
         # create and submit a domain request
@@ -2124,7 +2125,10 @@ class TestRequestingEntity(WebTest):
             portfolio=self.portfolio_2,
         )
         self.portfolio_role = UserPortfolioPermission.objects.create(
-            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            portfolio=self.portfolio,
+            user=self.user,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         # Login the current user
         self.app.set_user(self.user.username)
@@ -2162,7 +2166,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Add suborganization information")
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
-        self.assertContains(response, self.portfolio.organization_name, count=2)
+        self.assertContains(response, self.portfolio.organization_name, count=3)
 
         # We expect the dropdown list to contain the suborganizations that currently exist on this portfolio
         self.assertContains(response, self.suborganization.name, count=1)
@@ -2298,9 +2302,13 @@ class TestRequestingEntity(WebTest):
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
         response = form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.assertContains(response, "Requested suborganization is required.", status_code=200)
-        self.assertContains(response, "City is required.", status_code=200)
-        self.assertContains(response, "State, territory, or military post is required.", status_code=200)
+        self.assertContains(response, "Enter the name of your suborganization.", status_code=200)
+        self.assertContains(response, "Enter the city where your suborganization is located.", status_code=200)
+        self.assertContains(
+            response,
+            "Select the state, territory, or military post where your suborganization is located.",
+            status_code=200,
+        )
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
@@ -2380,3 +2388,136 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
+
+
+class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+
+        # Add an invited member who has been invited to manage domains
+        cls.invited_member_email = "invited@example.com"
+        cls.invitation = PortfolioInvitation.objects.create(
+            email=cls.invited_member_email,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        cls.new_member_email = "new_user@example.com"
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=cls.user,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_new_users(self):
+        """Tests the member invitation flow for new users."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Simulate submission of member invite for new user
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.new_member_email,
+            },
+        )
+
+        # Ensure the final submission is successful
+        self.assertEqual(final_response.status_code, 302)  # redirects after success
+
+        # Validate Database Changes
+        portfolio_invite = PortfolioInvitation.objects.filter(
+            email=self.new_member_email, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, self.new_member_email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_previously_invited_member(self):
+        """Tests the member invitation flow for existing portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.invited_member_email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
+
+        # TODO: verify messages
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_existing_member(self):
+        """Tests the member invitation flow for existing portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "member_access_level": "basic",
+                "basic_org_domain_request_permissions": "view_only",
+                "email": self.user.email,
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects
+
+        # TODO: verify messages
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)

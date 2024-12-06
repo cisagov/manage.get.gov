@@ -53,7 +53,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     URL_NAMESPACE = "domain-request"
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
-    NEW_URL_NAME = "/request/start/"
+    NEW_URL_NAME = "start"
+    FINISHED_URL_NAME = "finished"
 
     # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
@@ -313,19 +314,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
-            if request.path_info == self.NEW_URL_NAME:
+            if current_url == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(
-                    request,
-                    "domain_request_intro.html",
-                    {
-                        "hide_requests": True,
-                        "hide_domains": True,
-                        "hide_members": True,
-                    },
-                )
+                return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
 
@@ -487,12 +480,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
-
-        # Hides the requests and domains buttons in the navbar
-        context["hide_requests"] = self.is_portfolio
-        context["hide_domains"] = self.is_portfolio
         context["domain_request_id"] = self.domain_request.id
-
         return context
 
     def get_step_list(self) -> list:
@@ -627,7 +615,7 @@ class RequestingEntity(DomainRequestWizard):
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
-    forms = [forms.AnythingElseForm]
+    forms = [forms.PortfolioAnythingElseForm]
 
 
 # Non-portfolio pages
