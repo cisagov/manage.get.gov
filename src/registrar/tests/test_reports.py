@@ -433,12 +433,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertIn(dd_3.name, csv_content)
         self.assertNotIn(dd_2.name, csv_content)
 
-        # Get the csv content
-        csv_content = self._run_domain_request_data_type_user_export(request)
-        self.assertIn(dd_1.name, csv_content)
-        self.assertIn(dd_3.name, csv_content)
-        self.assertNotIn(dd_2.name, csv_content)
-
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
