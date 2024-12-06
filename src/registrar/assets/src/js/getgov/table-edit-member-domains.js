@@ -35,10 +35,26 @@ export class EditMemberDomainsTable extends BaseTable {
   }
   getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
     let searchParams = super.getSearchParams(page, sortBy, order, searchTerm, status, portfolio);
-    if (this.addedDomains)
-      searchParams.append("addedDomainIds", this.addedDomains);
-    if (this.removedDomains)
-      searchParams.append("removedDomainIds", this.removedDomains);
+    // Add checkedDomains to searchParams
+    // Clone the initial domains to avoid mutating them
+    let checkedDomains = [...this.initialDomainAssignments];
+    // Add IDs from addedDomains that are not already in checkedDomains
+    this.addedDomains.forEach(domain => {
+        if (!checkedDomains.includes(domain.id)) {
+            checkedDomains.push(domain.id);
+        }
+    });
+    // Remove IDs from removedDomains
+    this.removedDomains.forEach(domain => {
+        const index = checkedDomains.indexOf(domain.id);
+        if (index !== -1) {
+            checkedDomains.splice(index, 1);
+        }
+    });
+    // Append updated checkedDomain IDs to searchParams
+    if (checkedDomains.length > 0) {
+        searchParams.append("checkedDomainIds", checkedDomains.join(","));
+    }
     return searchParams;
   }
   addRow(dataObject, tbody, customTableOptions) {
@@ -52,8 +68,8 @@ export class EditMemberDomainsTable extends BaseTable {
     let disabled = false;
     if (
       (this.initialDomainAssignments.includes(domain.id) || 
-      this.addedDomains.map(obj => obj.id).includes(domain.id.toString())) && 
-      !this.removedDomains.map(obj => obj.id).includes(domain.id.toString())
+      this.addedDomains.map(obj => obj.id).includes(domain.id)) && 
+      !this.removedDomains.map(obj => obj.id).includes(domain.id)
     ) {
       console.log("checked domain: " + domain.id);
       checked = true;
@@ -116,7 +132,7 @@ export class EditMemberDomainsTable extends BaseTable {
         const checkboxes = this.tableWrapper.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', () => {
-                const domain = { id: checkbox.value, name: checkbox.name };
+                const domain = { id: +checkbox.value, name: checkbox.name };
 
                 if (checkbox.checked) {
                     this.updateDomainLists(domain, this.removedDomains, this.addedDomains);

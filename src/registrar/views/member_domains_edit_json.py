@@ -1,4 +1,5 @@
 import logging
+from django.db import models
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
@@ -87,11 +88,40 @@ class PortfolioMemberDomainsEditJson(PortfolioMemberDomainsEditPermission, View)
         return queryset
 
     def apply_sorting(self, queryset, request):
+        # Get the sorting parameters from the request
         sort_by = request.GET.get("sort_by", "name")
         order = request.GET.get("order", "asc")
-        if order == "desc":
-            sort_by = f"-{sort_by}"
-        return queryset.order_by(sort_by)
+        # Sort by 'checked' if specified, otherwise by the given field
+        if sort_by == "checked":
+            # Get list of checked ids from the request
+            checked_ids = request.GET.get("checkedDomainIds")
+            if checked_ids:
+                # Split the comma-separated string into a list of integers
+                checked_ids = [int(id.strip()) for id in checked_ids.split(",") if id.strip().isdigit()]
+            else:
+                # If no value is passed, set checked_ids to an empty list
+                checked_ids = []
+            # Annotate each object with a 'checked' value based on whether its ID is in checkedIds
+            queryset = queryset.annotate(
+                checked=models.Case(
+                    models.When(id__in=checked_ids, then=models.Value(True)),
+                    default=models.Value(False),
+                    output_field=models.BooleanField(),
+                )
+            )
+            # Add ordering logic for 'checked'
+            if order == "desc":
+                queryset = queryset.order_by("-checked")
+            else:
+                queryset = queryset.order_by("checked")
+        else:
+            # Handle other fields as normal
+            if order == "desc":
+                sort_by = f"-{sort_by}"
+            queryset = queryset.order_by(sort_by)
+        
+        return queryset
+
 
     def serialize_domain(self, domain, member_id, user):
         suborganization_name = None
