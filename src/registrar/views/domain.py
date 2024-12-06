@@ -543,7 +543,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
 
                 # 1. Get tenant details
-                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params)
+                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params, timeout=5)
                 tenant_response_json = tenant_response.json()
                 logger.info(f"Found tenant: {tenant_response_json}")
                 tenant_id = tenant_response_json["result"][0]["tenant_tag"]
@@ -556,7 +556,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_name = f"account-{self.object.name}"
                 params = {"tenant_id": tenant_id, "name": account_name}
 
-                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params)
+                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
                 account_response_json = account_response.json()
                 logger.debug(f"account get: {account_response_json}")
                 errors = account_response_json.get("errors", [])
@@ -578,6 +578,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         f"{base_url}/accounts",
                         headers=headers,
                         json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
+                        timeout=5,
                     )
                     account_response_json = account_response.json()
                     logger.info(f"Created account: {account_response_json}")
@@ -590,7 +591,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 # Try to find an existing zone first by searching on the current id
                 zone_name = self.object.name
                 params = {"account.id": account_id, "name": zone_name}
-                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params)
+                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params, timeout=5)
                 zone_response_json = zone_response.json()
                 logger.debug(f"get zone: {zone_response_json}")
                 errors = zone_response_json.get("errors", [])
@@ -611,6 +612,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         f"{base_url}/zones",
                         headers=headers,
                         json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
+                        timeout=5,
                     )
                     zone_response_json = zone_response.json()
                     logger.info(f"Created zone: {zone_response_json}")
@@ -621,7 +623,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 # 4. Add or get a zone subscription
 
                 # See if one already exists
-                subscription_response = requests.get(f"{base_url}/zones/{zone_id}/subscription", headers=headers)
+                subscription_response = requests.get(
+                    f"{base_url}/zones/{zone_id}/subscription", headers=headers, timeout=5
+                )
                 subscription_response_json = subscription_response.json()
                 logger.debug(f"get subscription: {subscription_response_json}")
 
@@ -634,6 +638,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         f"{base_url}/zones/{zone_id}/subscription",
                         headers=headers,
                         json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
+                        timeout=5,
                     )
                     subscription_response.raise_for_status()
                     subscription_response_json = subscription_response.json()
@@ -653,6 +658,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         "ttl": int(form.cleaned_data["ttl"]),
                         "comment": "Test record (will need clean up)",
                     },
+                    timeout=5,
                 )
                 dns_response_json = dns_response.json()
                 logger.info(f"Created DNS record: {dns_response_json}")
