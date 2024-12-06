@@ -7,7 +7,7 @@
     data-portfolio="{{ portfolio.id }}"
     data-email=""
     data-member-id="{{ member.id }}"
-    data-member-only="true"
+    data-member-only="false"
   ></span>
 {% else %}
   <span 
@@ -16,7 +16,7 @@
       data-portfolio="{{ portfolio.id }}"
       data-email="{{ portfolio_invitation.email }}"
       data-member-id=""
-      data-member-only="true"
+      data-member-only="false"
     ></span>
 {% endif %}
 
@@ -61,7 +61,7 @@
                 </button>
                 <input
                 class="usa-input"
-                id="member-domains__search-field"
+                id="edit-member-domains__search-field"
                 type="search"
                 name="member-domains-search"
                 />
