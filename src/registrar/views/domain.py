@@ -459,15 +459,7 @@ class DomainDNSView(DomainBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        object = self.get_object()
         context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
-
-        context["is_valid_domain_for_prototype"] = True
-        x = object.name == "igorville.gov"
-        print(f"what is the object? {object.name} and equal? {x}")
-        if settings.IS_PRODUCTION:
-            context["is_valid_domain_for_prototype"] = object.name == "igorville.gov"
-
         return context
 
 

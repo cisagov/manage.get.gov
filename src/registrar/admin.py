@@ -3579,6 +3579,14 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
+    # Hack to get the dns_prototype_flag to auto populate when you navigate to
+    # the waffle flag page.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        return super().changelist_view(request, extra_context=extra_context)
+
 
 class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ["name", "portfolio"]
