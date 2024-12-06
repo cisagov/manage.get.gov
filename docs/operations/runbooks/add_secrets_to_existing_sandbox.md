@@ -62,14 +62,12 @@ jq -n --arg django_key "$django_key" --arg login_key "$login_key" '{"DJANGO_SECR
 
 Copy `REGISTRY_*` credentials from another sandbox into your `credentials-<ENVIRONMENT>.json` file.  Also add your `AWS_*` credentials if you have them, otherwise also copy them from another sandbox. You can either use the cloud.gov dashboard or the command `cf env <APP>` to find other credentials.
 
-Go to https://dashboard.fr.cloud.gov/home.  Find the `getgov-credentials` service tied to your ENVIRONMENT. Double check it is the right one and delete it. Recreate the service using the updated credentials:
+### Update the `getgov-credentials` service tied to your environment.
 ```sh
-cf cups getgov-credentials -p credentials-<ENVIRONMENT>.json
+cf uups getgov-credentials -p credentials-<ENVIRONMENT>.json
 ```
 
-### Restart, restage or push manifest
-Pushing the manifest works but a restart or restage might work as well.
-
+### Restage your application
 ```sh
-cf push getgov-<ENVIRONMENT> -f ops/manifests/manifest-<ENVIRONMENT>.yaml
+cf restage getgov-<ENVIRONMENT> --strategy rolling
 ```
