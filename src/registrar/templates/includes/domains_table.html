@@ -8,12 +8,13 @@
 
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
-{% if has_domain_renewal_flag and has_expiring_domains %}
+<!-- Banner for when it's org model  -->
+{% if has_domain_renewal_flag and has_expiring_domains and portfolio %}
 <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
       <p class="usa-alert__text maxw-none">
-          One or more domains are close to expiration. Go to "Manage" to renew the domain(s).
+          One or more domains are close to expiration. Go to "Manage" to renew the domain(s). 
           <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain(s).</a>
       </p>
     </div>
@@ -69,6 +70,21 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Banner for when it's not org model bc placement in the table -->
+  {% if has_domain_renewal_flag and not portfolio %}
+  <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+    <div class="usa-alert">
+      <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
+        <p class="usa-alert__text maxw-none">
+            One or more domains are close to expiration. Go to "Manage" to renew the domain(s).
+            <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain(s).</a>
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <div class="display-flex flex-align-center"> 
     <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
     <div class="usa-accordion usa-accordion--select margin-right-2">
