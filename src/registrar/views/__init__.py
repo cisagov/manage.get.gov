@@ -20,5 +20,4 @@ from .index import *
 from .portfolios import *
 from .transfer_user import TransferUserView
 from .member_domains_json import PortfolioMemberDomainsJson
-from .member_domains_edit_json import PortfolioMemberDomainsEditJson
 from .portfolio_members_json import PortfolioMembersJson

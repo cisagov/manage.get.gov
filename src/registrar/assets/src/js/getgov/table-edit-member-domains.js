@@ -15,7 +15,7 @@ export class EditMemberDomainsTable extends BaseTable {
     this.initCancelEditDomainAssignmentButton();
   }
   getBaseUrl() {
-    return document.getElementById("get_member_domains_edit_json_url");
+    return document.getElementById("get_member_domains_json_url");
   }
   getDataObjects(data) {
     return data.domains;
