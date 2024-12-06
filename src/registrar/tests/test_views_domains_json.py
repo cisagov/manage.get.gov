@@ -374,6 +374,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         states = [domain["state_display"] for domain in data["domains"]]
         self.assertEqual(states, sorted(states, reverse=True))
 
+    @override_flag("domain_renewal", active=False)
     @less_console_noise_decorator
     def test_state_filtering(self):
         """Test that different states in request get expected responses."""

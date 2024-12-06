@@ -7,7 +7,7 @@ This file tests the various ways in which the registrar interacts with the regis
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
-import datetime
+from datetime import datetime, timedelta
 from django.utils.timezone import make_aware
 from registrar.models import Domain, Host, HostIP
 
@@ -2293,11 +2293,35 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             # to do this, need to mock value returned from timezone.now
             # set now to 2023-01-01
-            mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
             # force fetch_cache which sets the expiration date to 2023-05-25
             self.domain.statuses
             with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
                 self.assertFalse(self.domain.is_expired())
+
+    def test_is_expiring_within_threshold(self):
+        """assert that is_expiring returns true when expiration date is within 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=30)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertTrue(self.domain.is_expiring())
+
+    def test_is_not_expiring_outside_threshold(self):
+        """assert that is_expiring returns false when expiration date is outside 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=61)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertFalse(self.domain.is_expiring())
 
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""

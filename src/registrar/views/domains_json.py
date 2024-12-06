@@ -80,7 +80,7 @@ def apply_state_filter(queryset, request):
             status_list.append("dns needed")
         # Split the status list into normal states and custom states
         normal_states = [state for state in status_list if state in Domain.State.values]
-        custom_states = [state for state in status_list if state == "expired"]
+        custom_states = [state for state in status_list if (state == "expired" or state == "expiring")]
         # Construct Q objects for normal states that can be queried through ORM
         state_query = Q()
         if normal_states:
@@ -89,6 +89,12 @@ def apply_state_filter(queryset, request):
         if "expired" in custom_states:
             expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
+        # if flag_is_active(request, "domain_renewal"):
+        # For some reason having this flag adds DNS_NEEDED in?
+        # if flag_is_active(request, "organization_request"):
+        if "expiring" in custom_states:
+            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
+            state_query |= Q(id__in=expiring_domain_ids)
         # Apply the combined query
         queryset = queryset.filter(state_query)
         # If there are filtered states, and expired is not one of them, domains with

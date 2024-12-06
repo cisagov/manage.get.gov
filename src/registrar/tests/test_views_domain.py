@@ -2348,3 +2348,49 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+class TestDomainRenewal(TestWithUser):
+    def setUp(self):
+        super().setUp()
+        self.domain_with_expiring_soon_date = Domain.objects.get_or_create(
+            name="igorville.gov",
+            expiration_date=date(2024, 12, 25),
+        )
+        self.domain_with_expired_date = Domain.objects.get_or_create(
+            name="domainwithexpireddate.com",
+            expired_date=date(2022,12,25)
+        )
+
+        self.domain_with_current_date = Domain.objects.get_or_create(
+            name="domainwithfarexpireddate.com",
+            expired_date=date(2025,7,14)
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_current_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expired_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+
+    def tearDown(self):
+        try:
+            UserDomainRole.objects.all().delete()
+            Domain.objects.all().delete()
+        except ValueError:
+            pass
+        super().tearDown()
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=False)
+    def test_without_domain_renewal_flag(self):
+        self.client.force_login(self.user)
+        domains_page=self.client.get(f"/")
+        self.assertNotContains(domains_page, "will expire soon")
+
