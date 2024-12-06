@@ -455,11 +455,13 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        context["is_valid_domain"] = self.object.name in self.valid_domains
         return context
 
 
@@ -494,6 +496,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -502,6 +505,10 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
         flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         if not flag_enabled:
+            return False
+
+        self.object = self.get_object()
+        if self.object.name not in self.valid_domains:
             return False
 
         return True
@@ -513,16 +520,15 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
-        error_messages = []
+        errors = []
         if form.is_valid():
             try:
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                     raise Exception(f"create dns record was called for domain {self.name}")
 
-                valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
-                if not settings.IS_PRODUCTION and self.object.name not in valid_domains:
+                if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
                     raise Exception(
-                        f"Can only create DNS records for: {valid_domains}."
+                        f"Can only create DNS records for: {self.valid_domains}."
                         " Create one in a test environment if it doesn't already exist."
                     )
 

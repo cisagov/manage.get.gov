@@ -36,7 +36,7 @@
 
   {% url 'domain-dns-dnssec' pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
-  {% if dns_prototype_flag %}
+  {% if dns_prototype_flag and is_valid_domain %}
     <li><a href="{% url 'prototype-domain-dns' pk=domain.id %}">Prototype DNS record creator</a></li>
   {% endif %}
 </ul>
