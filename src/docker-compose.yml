@@ -88,6 +88,7 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+    entrypoint: /app/node_entrypoint.sh
     stdin_open: true
     tty: true
     command: ./run_node_watch.sh

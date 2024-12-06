@@ -527,7 +527,12 @@ class DotGovDomainForm(RegistrarForm):
 class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
         label="Purpose",
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                Will it be used for a website, email, or something else? You can enter up to 2000 characters."
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,
@@ -791,6 +796,22 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
             )
         },
+    )
+
+
+class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
+    """The form for the portfolio additional details page. Tied to the anything_else field."""
+
+    anything_else = forms.CharField(
+        required=False,
+        label="Anything else?",
+        widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                2000,
+                message="Response must be less than 2000 characters.",
+            )
+        ],
     )
 
 

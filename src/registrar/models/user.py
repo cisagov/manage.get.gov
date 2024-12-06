@@ -1,15 +1,13 @@
 import logging
 
-from django.apps import apps
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
-from registrar.models import DomainInformation, UserDomainRole
+from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
-from .portfolio_invitation import PortfolioInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
@@ -500,8 +498,6 @@ class User(AbstractUser):
 
     def is_only_admin_of_portfolio(self, portfolio):
         """Check if the user is the only admin of the given portfolio."""
-
-        UserPortfolioPermission = apps.get_model("registrar", "UserPortfolioPermission")
 
         admin_permission = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
 
