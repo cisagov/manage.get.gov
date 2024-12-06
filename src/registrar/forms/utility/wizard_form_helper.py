@@ -239,11 +239,6 @@ class BaseYesNoForm(RegistrarForm):
     # Default form choice mapping. Default is suitable for most cases.
     form_choices = ((True, "Yes"), (False, "No"))
 
-    # Option to append question to aria label for screenreader accessibility.
-    # Not added by default.
-    title_label = ""
-    aria_label = title_label.join("")
-
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
@@ -261,11 +256,7 @@ class BaseYesNoForm(RegistrarForm):
             coerce=lambda x: x.lower() == "true" if x is not None else None,
             choices=self.form_choices,
             initial=self.get_initial_value(),
-            widget=forms.RadioSelect(
-                attrs={
-                    # "aria-label": self.title_label
-                }
-            ),
+            widget=forms.RadioSelect(),
             error_messages={
                 "required": self.required_error_message,
             },
