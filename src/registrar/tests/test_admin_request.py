@@ -576,9 +576,9 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=51)
+        self.assertContains(response, "Federal", count=55)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">federal</td>', count=1)
+        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -1693,7 +1693,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "notes",
             "alternative_domains",
         ]
-        self.maxDiff = None
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
@@ -1702,7 +1701,6 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-            self.maxDiff = None
             expected_fields = [
                 "portfolio_senior_official",
                 "portfolio_organization_type",

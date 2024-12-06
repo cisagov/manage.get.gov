@@ -378,3 +378,18 @@ Then, copy the variables under the section labled `s3`.
 ## Request Flow FSM Diagram
 
 The [.gov Domain Request & Domain Status Digram](https://miro.com/app/board/uXjVMuqbLOk=/?moveToWidget=3458764594819017396&cot=14) visualizes the domain request flow and resulting domain objects.
+
+
+## Testing the prototype add DNS record feature (delete this after we are done testing!)
+We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
+`prototype_dns_flag` waffle flag and navigate to `igorville.gov`, `dns.gov`, or `domainops.gov`. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
+
+Before we can send data to cloudflare, you will need these values in your .env file:
+```
+REGISTRY_TENANT_KEY = {tenant key}
+REGISTRY_SERVICE_EMAIL = {An email address}
+REGISTRY_TENANT_NAME = {Name of the bucket, i.e. "CISA" }
+```
+You can obtain these by following the steps outlined in the [dns hosting discovery doc](https://docs.google.com/document/d/1Yq5d2M3MgM2vPhUBZ0k5wOmCQst4vND9-2qEZ55-h-Y/edit?tab=t.0), BUT it is far easier to just get these from someone else. Reach out to Zander for this information if you do not have it.
+
+Alternatively, if you are testing on a sandbox, you will need to add those to getgov-credentials.

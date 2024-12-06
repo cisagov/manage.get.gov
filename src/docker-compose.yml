@@ -59,6 +59,9 @@ services:
       - AWS_S3_BUCKET_NAME
       # File encryption credentials
       - SECRET_ENCRYPT_METADATA
+      - REGISTRY_TENANT_KEY
+      - REGISTRY_SERVICE_EMAIL
+      - REGISTRY_TENANT_NAME
     stdin_open: true
     tty: true
     ports:
@@ -85,6 +88,7 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+    entrypoint: /app/node_entrypoint.sh
     stdin_open: true
     tty: true
     command: ./run_node_watch.sh

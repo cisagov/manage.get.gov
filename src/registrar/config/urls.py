@@ -46,8 +46,8 @@ DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 # dynamically generate the other domain_request_urls
 domain_request_urls = [
     path("", RedirectView.as_view(pattern_name="domain-request:start"), name="redirect-to-start"),
-    path("start/", views.DomainRequestWizard.as_view(), name="start"),
-    path("finished/", views.Finished.as_view(), name="finished"),
+    path("start/", views.DomainRequestWizard.as_view(), name=views.DomainRequestWizard.NEW_URL_NAME),
+    path("finished/", views.Finished.as_view(), name=views.DomainRequestWizard.FINISHED_URL_NAME),
 ]
 for step, view in [
     # add/remove steps here
@@ -256,11 +256,6 @@ urlpatterns = [
         name="export_data_type_requests",
     ),
     path(
-        "reports/export_data_type_requests/",
-        ExportDataTypeRequests.as_view(),
-        name="export_data_type_requests",
-    ),
-    path(
         "domain-request/<int:id>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
@@ -298,6 +293,7 @@ urlpatterns = [
         name="todo",
     ),
     path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
+    path("domain/<int:pk>/prototype-dns", views.PrototypeDomainDNSRecordView.as_view(), name="prototype-domain-dns"),
     path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
         "domain/<int:pk>/dns",

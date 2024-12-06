@@ -10,18 +10,21 @@ from .host import Host
 from .domain_invitation import DomainInvitation
 from .user_domain_role import UserDomainRole
 from .public_contact import PublicContact
+
+# IMPORTANT: UserPortfolioPermission must be before PortfolioInvitation.
+# PortfolioInvitation imports from UserPortfolioPermission, so you will get a circular import otherwise.
+from .user_portfolio_permission import UserPortfolioPermission
+from .portfolio_invitation import PortfolioInvitation
 from .user import User
 from .user_group import UserGroup
 from .website import Website
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .waffle_flag import WaffleFlag
-from .portfolio_invitation import PortfolioInvitation
 from .portfolio import Portfolio
 from .domain_group import DomainGroup
 from .suborganization import Suborganization
 from .senior_official import SeniorOfficial
-from .user_portfolio_permission import UserPortfolioPermission
 from .allowed_email import AllowedEmail
 
 
