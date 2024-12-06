@@ -25,92 +25,118 @@
 <span id="get_member_domains_edit_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined member-domains margin-top-0 section-outlined--border-base-light" id="edit-member-domains">
     
-    <h2>
-      Domains assigned to 
-      {% if member %}
-        {{ member.email }}
-      {% else %}
-        {{ portfolio_invitation.email }}
-      {% endif %}
-    </h2>
+  <h2>
+    Domains assigned to 
+    {% if member %}
+      {{ member.email }}
+    {% else %}
+      {{ portfolio_invitation.email }}
+    {% endif %}
+  </h2>
 
   <div class="section-outlined__header margin-bottom-3 grid-row">
-      <!-- ---------- SEARCH ---------- -->
-      <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-6">
-        <section aria-label="Member domains search component" class="margin-top-2">
-          <form class="usa-search usa-search--show-label" method="POST" role="search">
-            {% csrf_token %}
-            <label class="usa-label display-block margin-bottom-05" for="edit-member-domains__search-field">
-              {% if has_edit_members_portfolio_permission %}
-                Search all domains
+    <!-- ---------- SEARCH ---------- -->
+    <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-6">
+      <section aria-label="Member domains search component" class="margin-top-2">
+        <form class="usa-search usa-search--show-label" method="POST" role="search">
+          {% csrf_token %}
+          <label class="usa-label display-block margin-bottom-05" for="edit-member-domains__search-field">
+            {% if has_edit_members_portfolio_permission %}
+              Search all domains
+            {% else %}
+              Search domains assigned to
+              {% if member %}
+                {{ member.email }}
               {% else %}
-                Search domains assigned to
-                {% if member %}
-                  {{ member.email }}
-                {% else %}
-                  {{ portfolio_invitation.email }}
-                {% endif %}
+                {{ portfolio_invitation.email }}
               {% endif %}
-            </label>            
-            <div class="usa-search--show-label__input-wrapper">
-                <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="edit-member-domains__reset-search" type="button">
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                      <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                    </svg>
-                    Reset
-                </button>
-                <input
-                class="usa-input"
-                id="edit-member-domains__search-field"
-                type="search"
-                name="member-domains-search"
-                />
-                <button class="usa-button" type="submit" id="edit-member-domains__search-field-submit">
-                    <span class="usa-search__submit-text">Search </span>
-                    <img
-                        src="{% static 'img/usa-icons-bg/search--white.svg' %}"
-                        class="usa-search__submit-icon"
-                        alt="Search"
-                    />
-                </button>
-            </div>
-          </form>
-        </section>
-      </div>
+            {% endif %}
+          </label>            
+          <div class="usa-search--show-label__input-wrapper">
+              <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="edit-member-domains__reset-search" type="button">
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                  </svg>
+                  Reset
+              </button>
+              <input
+              class="usa-input"
+              id="edit-member-domains__search-field"
+              type="search"
+              name="member-domains-search"
+              />
+              <button class="usa-button" type="submit" id="edit-member-domains__search-field-submit">
+                  <span class="usa-search__submit-text">Search </span>
+                  <img
+                      src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                      class="usa-search__submit-icon"
+                      alt="Search"
+                  />
+              </button>
+          </div>
+        </form>
+      </section>
     </div>
+  </div>
 
-    <!-- ---------- MAIN TABLE ---------- -->
-    <div class="display-none margin-top-0" id="edit-member-domains__table-wrapper">
-      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
-        <caption class="sr-only">member domains</caption>
-        <thead>
-          <tr>
-            <th data-sortable="checked" scope="col" role="columnheader"><span class="sr-only">Selected</span></th>
-            <!-- We override default sort to be name/ascending in the JSON endpoint. We add the correct aria-sort attribute here to reflect that in the UI -->
-            <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- AJAX will populate this tbody -->
-        </tbody>
-      </table>
-      <div
-        class="usa-sr-only usa-table__announcement-region" id="edit-member-domains__usa-table__announcement-region"
-        aria-live="polite"
-      ></div>
-    </div>
-    <div class="display-none" id="edit-member-domains__no-data">
-      <p>This member does not manage any domains.  Click the Edit domain assignments buttons to assign domains.</p>
-    </div>
-    <div class="display-none" id="edit-member-domains__no-search-results">
-      <p>No results found</p>
-    </div>
-  </section>
-  <nav aria-label="Pagination" class="usa-pagination flex-justify" id="edit-member-domains-pagination">
-    <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
-      <!-- Count will be dynamically populated by JS -->
-    </span>
-    <ul class="usa-pagination__list">
-      <!-- Pagination links will be dynamically populated by JS -->
-    </ul>
-  </nav>
+  <!-- ---------- MAIN TABLE ---------- -->
+  <div class="display-none margin-top-0" id="edit-member-domains__table-wrapper">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+      <caption class="sr-only">member domains</caption>
+      <thead>
+        <tr>
+          <th data-sortable="checked" scope="col" role="columnheader"><span class="sr-only">Assigned domains</span></th>
+          <!-- We override default sort to be name/ascending in the JSON endpoint. We add the correct aria-sort attribute here to reflect that in the UI -->
+          <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- AJAX will populate this tbody -->
+      </tbody>
+    </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region" id="edit-member-domains__usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
+  </div>
+  <div class="display-none" id="edit-member-domains__no-data">
+    <p>This member does not manage any domains.  Click the Edit domain assignments buttons to assign domains.</p>
+  </div>
+  <div class="display-none" id="edit-member-domains__no-search-results">
+    <p>No results found</p>
+  </div>
+</section>
+<nav aria-label="Pagination" class="usa-pagination flex-justify" id="edit-member-domains-pagination">
+  <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
+    <!-- Count will be dynamically populated by JS -->
+  </span>
+  <ul class="usa-pagination__list">
+    <!-- Pagination links will be dynamically populated by JS -->
+  </ul>
+</nav>
+
+<a
+  id="hidden-cancel-edit-domain-assignments-modal-trigger"
+  href="#cancel-edit-domain-assignments-modal"
+  class="usa-button usa-button--outline margin-top-1 display-none"
+  aria-controls="cancel-edit-domain-assignments-modal"
+  data-open-modal
+  ></a
+>
+
+<div
+  class="usa-modal"
+  id="cancel-edit-domain-assignments-modal"
+  aria-labelledby="Are you sure you want to continue?"
+  aria-describedby="You have unsaved changes that will be lost."
+>
+{% if portfolio_permission %}
+{% url 'member-domains' pk=portfolio_permission.id as url %}
+{% else %}
+{% url 'invitedmember-domains' pk=portfolio_invitation.id as url %}
+{% endif %}
+
+{% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_url=url modal_button_text="Continue without saving" %}
+</div>
+
+
