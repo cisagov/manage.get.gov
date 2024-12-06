@@ -293,6 +293,7 @@ urlpatterns = [
         name="todo",
     ),
     path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
+    path("domain/<int:pk>/prototype-dns", views.PrototypeDomainDNSRecordView.as_view(), name="prototype-domain-dns"),
     path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
         "domain/<int:pk>/dns",
