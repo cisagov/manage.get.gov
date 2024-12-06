@@ -7,12 +7,15 @@
 
     {% include "includes/form_errors.html" with form=form %}
 
-    <h1>Add a cloudflare DNS record</h1>
+    <h1>Add DNS records</h1>
 
     <p>
-    This is a prototype that demonstrates adding an 'A' record to igorville.gov.
+    This is a prototype that demonstrates adding an 'A' record to a zone.
     Do note that this just adds records, but does not update or delete existing ones.
-    <strong>You can only use this on igorville.gov, domainops.gov, and dns.gov.</strong>
+    <strong>
+        On non-production environments, you can only use this on igorville.gov, domainops.gov, and dns.gov.
+        On production environments, you can only use this on igorville.gov.
+    </strong>
     </p>
 
     <form class="usa-form usa-form--large" method="post" novalidate id="form-container">

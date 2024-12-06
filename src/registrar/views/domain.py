@@ -459,25 +459,29 @@ class DomainDNSView(DomainBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
+        object = self.get_object()
         context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+
+        context["is_valid_domain_for_prototype"] = True
+        x = object.name == "igorville.gov"
+        print(f"what is the object? {object.name} and equal? {x}")
+        if settings.IS_PRODUCTION:
+            context["is_valid_domain_for_prototype"] = object.name == "igorville.gov"
+
         return context
 
 
 class PrototypeDomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
-    name = forms.CharField(
-        label="DNS record name (A record)",
-        required=True,
-        help_text="DNS record name"
-    )
+    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
     )
-    
+
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
@@ -488,26 +492,28 @@ class PrototypeDomainDNSRecordForm(forms.Form):
             (3600, "1 hour"),
             (7200, "2 hours"),
             (18000, "5 hours"),
-            (43200, "12 hours"), 
-            (86400, "1 day")
+            (43200, "12 hours"),
+            (86400, "1 day"),
         ],
         initial=1,
     )
 
+
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
+
     def has_permission(self):
         has_permission = super().has_permission()
         if not has_permission:
             return False
-        
+
         flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         if not flag_enabled:
             return False
 
         return True
-    
+
     def get_success_url(self):
         return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
 
@@ -520,22 +526,22 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
             try:
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                     raise Exception(f"create dns record was called for domain {self.name}")
-                
+
                 valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
                 if not settings.IS_PRODUCTION and self.object.name not in valid_domains:
                     raise Exception(
                         f"Can only create DNS records for: {valid_domains}."
                         " Create one in a test environment if it doesn't already exist."
                     )
-                
+
                 base_url = "https://api.cloudflare.com/client/v4"
                 headers = {
                     "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
                     "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
                 params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
-                
+
                 # 1. Get tenant details
                 tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params)
                 tenant_response_json = tenant_response.json()
@@ -557,7 +563,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_response.raise_for_status()
 
                 # See if we already made an account.
-                # This doesn't need to be a for loop (1 record or 0) but alas, here we are 
+                # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
                 account_id = None
                 accounts = account_response_json.get("result", [])
                 for account in accounts:
@@ -565,17 +571,13 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         account_id = account.get("id")
                         logger.debug(f"Found it! Account: {account_name} (ID: {account_id})")
                         break
-                
+
                 # If we didn't, create one
                 if not account_id:
                     account_response = requests.post(
                         f"{base_url}/accounts",
                         headers=headers,
-                        json={
-                            "name": account_name,
-                            "type": "enterprise",
-                            "unit": {"id": tenant_id}
-                        }
+                        json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
                     )
                     account_response_json = account_response.json()
                     logger.info(f"Created account: {account_response_json}")
@@ -587,7 +589,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # Try to find an existing zone first by searching on the current id
                 zone_name = self.object.name
-                params = {"account.id": account_id, "name": zone_name} 
+                params = {"account.id": account_id, "name": zone_name}
                 zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params)
                 zone_response_json = zone_response.json()
                 logger.debug(f"get zone: {zone_response_json}")
@@ -602,23 +604,19 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         zone_id = zone.get("id")
                         logger.debug(f"Found it! Zone: {zone_name} (ID: {zone_id})")
                         break
-                
+
                 # Create one if it doesn't presently exist
                 if not zone_id:
                     zone_response = requests.post(
                         f"{base_url}/zones",
                         headers=headers,
-                        json={
-                            "name": zone_name,
-                            "account": {"id": account_id},
-                            "type": "full"
-                        }
+                        json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
                     )
                     zone_response_json = zone_response.json()
                     logger.info(f"Created zone: {zone_response_json}")
+                    zone_id = zone_response_json.get("result", {}).get("id")
                     errors = zone_response_json.get("errors", [])
                     zone_response.raise_for_status()
-                    zone_id = zone_response_json.get("result", {}).get("id")
 
                 # 4. Add or get a zone subscription
 
@@ -628,24 +626,20 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 logger.debug(f"get subscription: {subscription_response_json}")
 
                 # Create a subscription if one doesn't exist already.
-                # If it doesn't, we get this error message (code 1207): 
+                # If it doesn't, we get this error message (code 1207):
                 # Add a core subscription first and try again. The zone does not have an active core subscription.
                 # Note that status code and error code are different here.
                 if subscription_response.status_code == 404:
                     subscription_response = requests.post(
                         f"{base_url}/zones/{zone_id}/subscription",
                         headers=headers,
-                        json={
-                            "rate_plan": {"id": "PARTNERS_ENT"},
-                            "frequency": "annual"
-                        }
+                        json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
                     )
                     subscription_response.raise_for_status()
                     subscription_response_json = subscription_response.json()
                     logger.info(f"Created subscription: {subscription_response_json}")
                 else:
                     subscription_response.raise_for_status()
-
 
                 # # 5. Create DNS record
                 # # Format the DNS record according to Cloudflare's API requirements
@@ -657,29 +651,20 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         "name": form.cleaned_data["name"],
                         "content": form.cleaned_data["content"],
                         "ttl": int(form.cleaned_data["ttl"]),
-                        "comment": "Test record (will need clean up)"
-                    }
+                        "comment": "Test record (will need clean up)",
+                    },
                 )
                 dns_response_json = dns_response.json()
                 logger.info(f"Created DNS record: {dns_response_json}")
                 errors = dns_response_json.get("errors", [])
                 dns_response.raise_for_status()
-                messages.success(
-                    request,
-                    f"DNS A record '{form.cleaned_data['name']}' created successfully."
-                )
+                messages.success(request, f"DNS A record '{form.cleaned_data['name']}' created successfully.")
             except Exception as err:
                 logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
-                messages.error(
-                    request,
-                    f"An error occurred: {err}"
-                )
+                messages.error(request, f"An error occurred: {err}")
             finally:
                 if errors:
-                    messages.error(
-                        request,
-                        f"Request errors: {errors}"
-                    )
+                    messages.error(request, f"Request errors: {errors}")
         return super().post(request)
 
 
