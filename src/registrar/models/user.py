@@ -173,8 +173,7 @@ class User(AbstractUser):
         for domain in domains:
             if domain.is_expiring() == True:
                 how_many_expired_domains += 1
-        print("domains", how_many_expired_domains)
-        return how_many_expired_domains > 0
+        return how_many_expired_domains
 
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""

@@ -9,13 +9,16 @@
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
 <!-- Banner for when it's org model (org manager can view, domain manager can edit)  -->
-{% if has_domain_renewal_flag and has_expiring_domains and has_any_domains_portfolio_permission %}
+{% if has_domain_renewal_flag and has_expiring_domains > 0 and has_any_domains_portfolio_permission %}
 <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
       <p class="usa-alert__text maxw-none">
-          One or more domains are close to expiration. Go to "Manage" to renew the domain(s). 
-          <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain(s).</a>
+        {% if has_expiring_domains == 1%}  
+        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+        {% else%}
+        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+        {% endif %}
       </p>
     </div>
   </div>
@@ -72,13 +75,16 @@
   </div>
 
   <!-- Banner for when it's not org model bc placement in the table -->
-  {% if has_domain_renewal_flag and has_expiring_domains and not portfolio %}
+  {% if has_domain_renewal_flag and has_expiring_domains > 0 and not portfolio %}
   <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
       <div class="usa-alert__body {% if is_widescreen_mode %}usa-alert__body--widescreen{% endif %}">
         <p class="usa-alert__text maxw-none">
-            One or more domains are close to expiration. Go to "Manage" to renew the domain(s).
-            <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain(s).</a>
+          {% if has_expiring_domains == 1%}  
+          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+          {% else%}
+          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+          {% endif %}
         </p>
       </div>
     </div>
@@ -166,7 +172,7 @@
               >Deleted</label
             >
           </div>
-          {% if has_domain_renewal_flag and has_expiring_domains %}
+          {% if has_domain_renewal_flag and has_expiring_domains > 0 %}
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
