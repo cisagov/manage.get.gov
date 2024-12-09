@@ -86,6 +86,11 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
+# PROTOTYPE: Used for DNS hosting
+secret_registry_tenant_key = secret("REGISTRY_TENANT_KEY", None)
+secret_registry_tenant_name = secret("REGISTRY_TENANT_NAME", None)
+secret_registry_service_email = secret("REGISTRY_SERVICE_EMAIL", None)
+
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -685,6 +690,9 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
+SECRET_REGISTRY_TENANT_KEY = secret_registry_tenant_key
+SECRET_REGISTRY_TENANT_NAME = secret_registry_tenant_name
+SECRET_REGISTRY_SERVICE_EMAIL = secret_registry_service_email
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
