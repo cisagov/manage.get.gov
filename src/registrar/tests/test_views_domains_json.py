@@ -397,11 +397,8 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         ]
 
         for state, num_domains in expected_values:
-            print("state, num_domains is ", state, num_domains)
             with self.subTest(state=state, num_domains=num_domains):
                 response = self.app.get(reverse("get_domains_json"), {"status": state})
-                # print("response is ", response)
                 self.assertEqual(response.status_code, 200)
                 data = response.json
-                print("data['domains'] is", data["domains"])
                 self.assertEqual(len(data["domains"]), num_domains)
