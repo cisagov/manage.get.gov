@@ -1,16 +1,24 @@
 
 import { BaseTable } from './table-base.js';
 
+/**
+ * EditMemberDomainsTable is used for PortfolioMember and PortfolioInvitedMember
+ * Domain Editing.
+ * 
+ * This table has additional functionality for tracking and making changes
+ * to domains assigned to the member/invited member.
+ */
 export class EditMemberDomainsTable extends BaseTable {
-
+  
   constructor() {
     super('edit-member-domain');
     this.displayName = "domain";
     this.currentSortBy = 'name';
-    this.initialDomainAssignments = [];
-    this.initialDomainAssignmentsOnlyMember = [];
-    this.addedDomains = [];
-    this.removedDomains = [];
+    this.initialDomainAssignments = []; // list of initially assigned domains
+    this.initialDomainAssignmentsOnlyMember = []; // list of initially assigned domains
+        // which are readonly
+    this.addedDomains = []; // list of domains added to member
+    this.removedDomains = []; // list of domains removed from member
     this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
   }
@@ -20,6 +28,11 @@ export class EditMemberDomainsTable extends BaseTable {
   getDataObjects(data) {
     return data.domains;
   }
+  /** getDomainAssignmentSearchParams is used to prepare search to populate
+   * initialDomainAssignments and initialDomainAssignmentsOnlyMember
+   * 
+   * searches with memberOnly True so that only domains assigned to the member are returned
+   */
   getDomainAssignmentSearchParams(portfolio) {
     let searchParams = new URLSearchParams();
     let emailValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-email') : null;
@@ -35,6 +48,11 @@ export class EditMemberDomainsTable extends BaseTable {
       searchParams.append("member_only", memberOnly);
     return searchParams;
   }
+  /** getSearchParams extends base class getSearchParams.
+   * 
+   * additional searchParam for this table is checkedDomains. This is used to allow
+   * for backend sorting by domains which are 'checked' in the form.
+   */
   getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
     let searchParams = super.getSearchParams(page, sortBy, order, searchTerm, status, portfolio);
     // Add checkedDomains to searchParams
@@ -105,6 +123,11 @@ export class EditMemberDomainsTable extends BaseTable {
     `;
     tbody.appendChild(row);
   }
+  /**
+   * initializeDomainAssignments searches via ajax on page load for domains assigned to
+   * member. It populates both initialDomainAssignments and initialDomainAssignmentsOnlyMember.
+   * It is called once per page load, but not called with subsequent table changes.
+   */
   initializeDomainAssignments() {
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
@@ -130,69 +153,81 @@ export class EditMemberDomainsTable extends BaseTable {
     })
     .catch(error => console.error('Error fetching domain assignments:', error));
   }
-  
-    initCheckboxListeners() {
-        const checkboxes = this.tableWrapper.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                const domain = { id: +checkbox.value, name: checkbox.name };
+  /**
+   * Initializes listeners on checkboxes in the table. Checkbox listeners are used
+   * in this case to track changes to domain assignments in js (addedDomains and removedDomains)
+   * before changes are saved.
+   * initCheckboxListeners is called each time table is loaded.
+   */
+  initCheckboxListeners() {
+    const checkboxes = this.tableWrapper.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        const domain = { id: +checkbox.value, name: checkbox.name };
 
-                if (checkbox.checked) {
-                    this.updateDomainLists(domain, this.removedDomains, this.addedDomains);
-                } else {
-                    this.updateDomainLists(domain, this.addedDomains, this.removedDomains);
-                }
-
-                // console.log(`this.addedDomains ${JSON.stringify(this.addedDomains)}`)
-                // console.log(`this.removedDomains ${JSON.stringify(this.removedDomains)}`)
-            });
-        });
-    }
-
-    updateDomainLists(domain, fromList, toList) {
-        const index = fromList.findIndex(item => item.id === domain.id && item.name === domain.name);
-
-        if (index > -1) {
-            fromList.splice(index, 1); // Remove from the `fromList` if it exists
+        if (checkbox.checked) {
+            this.updateDomainLists(domain, this.removedDomains, this.addedDomains);
         } else {
-            toList.push(domain); // Add to the `toList` if not already there
+            this.updateDomainLists(domain, this.addedDomains, this.removedDomains);
         }
+      });
+    });
+  }
+  /**
+   * Helper function which updates domain lists. When called, if domain is in the fromList,
+   * it removes it; if domain is not in the toList, it is added to the toList.
+   * @param {*} domain - object containing the domain id and name
+   * @param {*} fromList - list of domains
+   * @param {*} toList - list of domains
+   */
+  updateDomainLists(domain, fromList, toList) {
+    const index = fromList.findIndex(item => item.id === domain.id && item.name === domain.name);
+
+    if (index > -1) {
+      fromList.splice(index, 1); // Remove from the `fromList` if it exists
+    } else {
+      toList.push(domain); // Add to the `toList` if not already there
+    }
+  }
+  /**
+   * initializes the Cancel button on the Edit domains page.
+   * Cancel triggers modal in certain conditions and the initialization for the modal is done
+   * in this function.
+   */
+  initCancelEditDomainAssignmentButton() {
+    const cancelEditDomainAssignmentButton = document.getElementById('cancel-edit-domain-assignments');
+    if (!cancelEditDomainAssignmentButton) {
+      console.error("Expected element #cancel-edit-domain-assignments, but it does not exist.");
+      return; // Exit early if the button doesn't exist
     }
 
-    initCancelEditDomainAssignmentButton() {
-        const cancelEditDomainAssignmentButton = document.getElementById('cancel-edit-domain-assignments');
-        if (!cancelEditDomainAssignmentButton) {
-            console.error("Expected element #cancel-edit-domain-assignments, but it does not exist.");
-            return; // Exit early if the button doesn't exist
-        }
-    
-        // Find the last breadcrumb link
-        const lastPageLinkElement = document.querySelector('.usa-breadcrumb__list-item:nth-last-child(2) a');
-        const lastPageLink = lastPageLinkElement ? lastPageLinkElement.getAttribute('href') : null;
+    // Find the last breadcrumb link
+    const lastPageLinkElement = document.querySelector('.usa-breadcrumb__list-item:nth-last-child(2) a');
+    const lastPageLink = lastPageLinkElement ? lastPageLinkElement.getAttribute('href') : null;
 
-        const hiddenModalTrigger = document.getElementById("hidden-cancel-edit-domain-assignments-modal-trigger");
-    
-        if (!lastPageLink) {
-            console.warn("Last breadcrumb link not found or missing href.");
-        }
-        if (!hiddenModalTrigger) {
-            console.warn("Hidden modal trigger not found.");
-        }
-    
-        // Add click event listener
-        cancelEditDomainAssignmentButton.addEventListener('click', () => {
-            console.log('click cancel')
-            if (this.addedDomains.length || this.removedDomains.length) {
-                console.log('Changes detected. Triggering modal...');
-                hiddenModalTrigger.click();
-            } else if (lastPageLink) {
-                window.location.href = lastPageLink; // Redirect to the last breadcrumb link
-            } else {
-                console.warn("No changes detected, but no valid lastPageLink to navigate to.");
-                
-            }
-        });
+    const hiddenModalTrigger = document.getElementById("hidden-cancel-edit-domain-assignments-modal-trigger");
+
+    if (!lastPageLink) {
+      console.warn("Last breadcrumb link not found or missing href.");
     }
+    if (!hiddenModalTrigger) {
+      console.warn("Hidden modal trigger not found.");
+    }
+
+    // Add click event listener
+    cancelEditDomainAssignmentButton.addEventListener('click', () => {
+      console.log('click cancel')
+      if (this.addedDomains.length || this.removedDomains.length) {
+          console.log('Changes detected. Triggering modal...');
+          hiddenModalTrigger.click();
+      } else if (lastPageLink) {
+          window.location.href = lastPageLink; // Redirect to the last breadcrumb link
+      } else {
+          console.warn("No changes detected, but no valid lastPageLink to navigate to.");
+          
+      }
+    });
+  }
     
 }
 
