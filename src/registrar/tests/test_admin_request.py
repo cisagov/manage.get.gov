@@ -203,7 +203,7 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.save()
 
         domain_request.action_needed()
-        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
+        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ALREADY_HAS_A_DOMAIN
         domain_request.save()
 
         # Let's just change the action needed reason
@@ -230,7 +230,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "In review",
             "Rejected - Purpose requirements not met",
             "Action needed - Unclear organization eligibility",
-            "Action needed - Already has domains",
+            "Action needed - Already has a domain",
             "In review",
             "Submitted",
             "Started",
@@ -241,7 +241,7 @@ class TestDomainRequestAdmin(MockEppLib):
         assert_status_count(normalized_content, "Started", 1)
         assert_status_count(normalized_content, "Submitted", 1)
         assert_status_count(normalized_content, "In review", 2)
-        assert_status_count(normalized_content, "Action needed - Already has domains", 1)
+        assert_status_count(normalized_content, "Action needed - Already has a domain", 1)
         assert_status_count(normalized_content, "Action needed - Unclear organization eligibility", 1)
         assert_status_count(normalized_content, "Rejected - Purpose requirements not met", 1)
 
@@ -576,9 +576,9 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=51)
+        self.assertContains(response, "Federal", count=55)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">federal</td>', count=1)
+        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -685,9 +685,9 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a sample domain request
         domain_request = completed_domain_request(status=in_review, user=_creator)
 
-        # Test the email sent out for already_has_domains
-        already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+        # Test the email sent out for already_has_a_domain
+        already_has_a_domain = DomainRequest.ActionNeededReasons.ALREADY_HAS_A_DOMAIN
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_a_domain)
 
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
@@ -1693,7 +1693,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "notes",
             "alternative_domains",
         ]
-        self.maxDiff = None
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
@@ -1702,7 +1701,6 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-            self.maxDiff = None
             expected_fields = [
                 "portfolio_senior_official",
                 "portfolio_organization_type",
