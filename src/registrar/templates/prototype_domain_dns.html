@@ -1,0 +1,34 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers url_helpers %}
+
+{% block title %}Prototype DNS | {{ domain.name }} | {% endblock %}
+
+{% block domain_content %}
+
+    {% include "includes/form_errors.html" with form=form %}
+
+    <h1>Add DNS records</h1>
+
+    <p>
+    This is a prototype that demonstrates adding an 'A' record to a zone.
+    Do note that this just adds records, but does not update or delete existing ones.
+    </p>
+    <p>
+        You can only use this functionality on a limited set of domains:
+        <strong>
+            igorville.gov, dns.gov (non-prod), and domainops.gov (non-prod).
+        </strong>
+    </p>
+    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
+        {% csrf_token %}
+        {% input_with_errors form.name %}
+        {% input_with_errors form.content %}
+        {% input_with_errors form.ttl %}
+        <button
+            type="submit"
+            class="usa-button"
+        >
+            Add record
+        </button>
+    </form>
+{% endblock %}  {# domain_content #}

@@ -280,7 +280,7 @@ class DomainRequest(TimeStampedModel):
 
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
         QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
-        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
+        ALREADY_HAS_A_DOMAIN = ("already_has_a_domain", "Already has a domain")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
 
