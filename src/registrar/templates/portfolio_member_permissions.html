@@ -10,12 +10,6 @@
 
 {% block portfolio_content %}
 
-<!-- Form mesages -->
-{% include "includes/form_errors.html" with form=form %}
-{% block messages %}
-  {% include "includes/form_messages.html" %}
-{% endblock messages%}
-
 <!-- Navigation breadcrumbs -->
 <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
   <ol class="usa-breadcrumb__list">
@@ -33,9 +27,7 @@
 </nav>
 
 <!-- Page header -->
-{% block new_member_header %}
 <h1>Member access and permissions</h1>
-{% endblock new_member_header %}
 
 {% include "includes/required_fields.html" %}
 
@@ -45,7 +37,6 @@
     <legend>
       <h2>Member email</h2>
     </legend>
-    {% comment %} TODO should default to name {% endcomment %}
     <p>
       {% if member %}
         {{ member.email }}
@@ -64,24 +55,15 @@
 
   <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
 
-  {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-  <div class="usa-radio">
-    {% for radio in form.member_access_level %}
-        {{ radio.tag }}
-        <label class="usa-radio__label usa-legend" for="{{ radio.id_for_label }}">
-          {{ radio.choice_label }}
-          <p class="margin-0 margin-top-2">
-          {% if radio.choice_label == "Admin Access" %}
-              Grants this member access to the organization-wide information on domains, domain requests, and members. Domain management can be assigned separately.
-          {% else %}
-              Grants this member access to the organization.  They can be given extra permissions to view all organization domain requests and submit domain requests on behalf of the organization. Basic access members can’t view all members of an organization or manage them. Domain management can be assigned separately.
-          {% endif %}
-        </p>
-      </label>
-    {% endfor %}
-  </div>
+  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+    {% input_with_errors form.role %}
   {% endwith %}
 
+  {% comment %} {% if radio.value == "organization_admin" %}
+  Grants this member access to the organization-wide information on domains, domain requests, and members. Domain management can be assigned separately.
+  {% elif radio.value == "organization_member" %}
+    Grants this member access to the organization. They can be given extra permissions to view all organization domain requests and submit domain requests on behalf of the organization. Basic access members can’t view all members of an organization or manage them. Domain management can be assigned separately.
+  {% endif %} {% endcomment %}
 </fieldset>
 
 <!-- Admin access form -->
@@ -93,7 +75,7 @@
     text-primary-dark
     margin-bottom-0">Organization domain requests</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.admin_org_domain_request_permissions %}
+      {% input_with_errors form.domain_request_permissions_admin %}
     {% endwith %}
 
     <h3 class="summary-item__title
@@ -101,7 +83,7 @@
     margin-bottom-0
     margin-top-3">Organization members</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.admin_org_members_permissions %}
+      {% input_with_errors form.member_permissions_admin %}
     {% endwith %}
   </div>
 
@@ -112,7 +94,7 @@
 
       <h3 class="margin-bottom-0">Organization domain requests</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-        {% input_with_errors form.basic_org_domain_request_permissions %}
+        {% input_with_errors form.domain_request_permissions_member %}
       {% endwith %}
   </div>
 
@@ -123,17 +105,11 @@
       href="{% url 'members' %}"
       class="usa-button usa-button--outline"
       name="btn-cancel-click"
-      aria-label="Cancel adding new member"
-    >Cancel
-  </a>
-    <a
-      id="invite_member_trigger"
-      href="#invite-member-modal"
-      class="usa-button usa-button--outline margin-top-1 display-none"
-      aria-controls="invite-member-modal"
-      data-open-modal
-      >Trigger invite member modal</a>
-      <button id="invite_new_member_submit" type="submit" class="usa-button">Invite Member</button>
+      aria-label="Cancel editing member"
+    >
+      Cancel
+    </a>
+    <button type="submit" class="usa-button">Update Member</button>
   </div>
 </form>
 

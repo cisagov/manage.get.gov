@@ -110,51 +110,168 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         return cleaned_data
 
 
-class PortfolioMemberForm(forms.ModelForm):
+class BasePortfolioMemberForm(forms.ModelForm):
+    role = forms.ChoiceField(
+        label="Select permission",
+        choices=[
+            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin Access"),
+            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic Access")
+        ],
+        widget=forms.RadioSelect,
+        required=True,
+        error_messages={
+            "required": "Member access level is required",
+        },
+    )
+    # Permissions for admins
+    domain_request_permissions_admin = forms.ChoiceField(
+        label="Select permission",
+        choices=[
+            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
+            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "Create and edit requests")
+        ],
+        widget=forms.RadioSelect,
+        required=False,
+        error_messages={
+            "required": "Admin domain request permission is required",
+        },
+    )
+    member_permissions_admin = forms.ChoiceField(
+        label="Select permission",
+        choices=[
+            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
+            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "Create and edit members")
+        ],
+        widget=forms.RadioSelect,
+        required=False,
+        error_messages={
+            "required": "Admin member permission is required",
+        },
+    )
+    domain_request_permissions_member = forms.ChoiceField(
+        label="Select permission",
+        choices=[
+            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
+            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "Create and edit members")
+        ],
+        widget=forms.RadioSelect,
+        required=False,
+        error_messages={
+            "required": "Basic member permission is required",
+        },
+    )
+
+    # this form dynamically shows/hides some fields, depending on what
+    # was selected prior. This toggles which field is required or not.
+    ROLE_REQUIRED_FIELDS = {
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
+            "domain_request_permissions_admin",
+            "member_permissions_admin",
+        ],
+        UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            "domain_request_permissions_member",
+        ],
+    }
+
+    def _map_instance_to_form(self, instance):
+        """Maps model instance data to form fields"""
+        if not instance:
+            return {}
+        mapped_data = {}
+        # Map roles with priority for admin
+        if instance.roles:
+            if UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value in instance.roles:
+                mapped_data['role'] = UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value
+            else:
+                mapped_data['role'] = UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value
+
+        perms = UserPortfolioPermission.get_portfolio_permissions(instance.roles, instance.additional_permissions)
+        # Map permissions with priority for edit permissions
+        if perms:
+            if UserPortfolioPermissionChoices.EDIT_REQUESTS.value in perms:
+                mapped_data['domain_request_permissions_admin'] = UserPortfolioPermissionChoices.EDIT_REQUESTS.value
+            elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value in perms:
+                mapped_data['domain_request_permissions_admin'] = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
+
+            if UserPortfolioPermissionChoices.EDIT_MEMBERS.value in perms:
+                mapped_data['member_permissions_admin'] = UserPortfolioPermissionChoices.EDIT_MEMBERS.value
+            elif UserPortfolioPermissionChoices.VIEW_MEMBERS.value in perms:
+                mapped_data['member_permissions_admin'] = UserPortfolioPermissionChoices.VIEW_MEMBERS.value
+                
+        return mapped_data
+
+    def _map_form_to_instance(self, instance):
+        """Maps form data to model instance"""
+        if not self.is_valid():
+            return
+
+        role = self.cleaned_data.get("role")
+        domain_request_permissions_member = self.cleaned_data.get("domain_request_permissions_member")
+        domain_request_permissions_admin = self.cleaned_data.get('domain_request_permissions_admin')
+        member_permissions_admin = self.cleaned_data.get('member_permissions_admin')
+
+        instance.roles = [role]
+        additional_permissions = []
+        if domain_request_permissions_member:
+            additional_permissions.append(domain_request_permissions_member)
+        elif domain_request_permissions_admin:
+            additional_permissions.append(domain_request_permissions_admin)
+        
+        if member_permissions_admin:
+            additional_permissions.append(member_permissions_admin)
+
+        instance.additional_permissions = additional_permissions
+        return instance
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get("role")
+
+        # Get required fields for the selected role.
+        # Then validate all required fields for the role.
+        required_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
+        for field_name in required_fields:
+            if not cleaned_data.get(field_name):
+                self.add_error(
+                    field_name,
+                    self.fields.get(field_name).error_messages.get("required")
+                )
+
+        return cleaned_data
+
+
+class PortfolioMemberForm(BasePortfolioMemberForm):
     """
     Form for updating a portfolio member.
     """
-
-    roles = forms.MultipleChoiceField(
-        choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Roles",
-    )
-
-    additional_permissions = forms.MultipleChoiceField(
-        choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Additional Permissions",
-    )
-
     class Meta:
         model = UserPortfolioPermission
         fields = [
             "roles",
             "additional_permissions",
         ]
+    def __init__(self, *args, instance=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].descriptions = {
+            "organization_admin": UserPortfolioRoleChoices.get_role_description(UserPortfolioRoleChoices.ORGANIZATION_ADMIN),
+            "organization_member": UserPortfolioRoleChoices.get_role_description(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        }
+        self.instance = instance
+        self.initial = self._map_instance_to_form(self.instance)
+    
+    def save(self):
+        """Save form data to instance"""
+        if not self.instance:
+            self.instance = self.Meta.model()
+        self._map_form_to_instance(self.instance)
+        self.instance.save()
+        return self.instance
 
 
-class PortfolioInvitedMemberForm(forms.ModelForm):
+class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
     """
     Form for updating a portfolio invited member.
     """
-
-    roles = forms.MultipleChoiceField(
-        choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Roles",
-    )
-
-    additional_permissions = forms.MultipleChoiceField(
-        choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Additional Permissions",
-    )
 
     class Meta:
         model = PortfolioInvitation
