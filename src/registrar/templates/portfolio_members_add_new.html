@@ -35,7 +35,8 @@
 
 {% include "includes/required_fields.html" %}
 
-<form class="usa-form usa-form--large" method="post" novalidate>
+<form class="usa-form usa-form--large" method="post" id="add_member_form" novalidate>
+  
 <fieldset class="usa-fieldset margin-top-2">
   <legend>
     <h2>Email</h2>
@@ -80,12 +81,17 @@
     <h2>Admin access permissions</h2>
     <p>Member permissions available for admin-level acccess.</p>
 
-    <h3 class="margin-bottom-0">Organization domain requests</h3>
+    <h3 class="summary-item__title
+    text-primary-dark
+    margin-bottom-0">Organization domain requests</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
       {% input_with_errors form.admin_org_domain_request_permissions %}
     {% endwith %}
 
-    <h3 class="margin-bottom-0 margin-top-3">Organization members</h3>
+    <h3 class="summary-item__title
+    text-primary-dark
+    margin-bottom-0
+    margin-top-3">Organization members</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
       {% input_with_errors form.admin_org_members_permissions %}
     {% endwith %}
@@ -94,8 +100,12 @@
 <!-- Basic access form -->
 <div id="new-member-basic-permissions" class="margin-top-2">
     <h2>Basic member permissions</h2>
-    <p>Member permissions available for basic-level access</p>
-    {% input_with_errors form.basic_org_domain_request_permissions %}
+    <p>Member permissions available for basic-level acccess.</p>
+
+    <h3 class="margin-bottom-0">Organization domain requests</h3>
+    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+      {% input_with_errors form.basic_org_domain_request_permissions %}
+    {% endwith %}
 </div>
 
 <!-- Submit/cancel buttons -->
@@ -108,9 +118,75 @@
     aria-label="Cancel adding new member"
   >Cancel
 </a>
-  <button type="submit" class="usa-button">Invite Member</button>
+  <a
+    id="invite_member_trigger"
+    href="#invite-member-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="invite-member-modal"
+    data-open-modal
+    >Trigger invite member modal</a>
+    <button id="invite_new_member_submit" type="submit" class="usa-button">Invite Member</button>
 </div>
 </form>
+
+<div
+    class="usa-modal"
+    id="invite-member-modal"
+    aria-labelledby="invite-member-heading"
+    aria-describedby="confirm-invite-description"
+    style="display: none;"
+>
+    <div class="usa-modal__content">
+        <div class="usa-modal__main">
+            <h2 class="usa-modal__heading" id="invite-member-heading">
+                Invite this member to the organization?
+            </h2>
+            <h3 class="summary-item__title
+            text-primary-dark">Member information and permissions</h3>
+            <div class="usa-prose">
+                <!-- Display email as a header and access level -->
+                <h4 class="text-primary">Email</h4>
+                <p class="margin-top-0" id="modalEmail"></p>
+
+                <h4 class="text-primary">Member Access</h4>
+                <p class="margin-top-0" id="modalAccessLevel"></p>
+
+                <!-- Dynamic Permissions Details -->
+                <div id="permission_details"></div>
+            </div>
+
+            <div class="usa-modal__footer">
+                <ul class="usa-button-group">
+                    <li class="usa-button-group__item">
+                        <button id="confirm_new_member_submit" type="submit" class="usa-button">Yes, invite member</button>
+                    </li>
+                    <li class="usa-button-group__item">
+                        <button
+                            type="button"
+                            class="usa-button usa-button--unstyled"
+                            data-close-modal
+                            onclick="closeModal()"
+                        >
+                            Cancel
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <button
+            type="button"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            data-close-modal
+            onclick="closeModal()"
+        >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="{% static 'img/sprite.svg' %}#close"></use>
+            </svg>
+        </button>
+    </div>
+</div>
+
 
 {% endblock portfolio_content%}
 

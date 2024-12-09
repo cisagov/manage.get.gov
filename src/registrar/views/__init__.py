@@ -13,6 +13,7 @@ from .domain import (
     DomainAddUserView,
     DomainInvitationCancelView,
     DomainDeleteUserView,
+    PrototypeDomainDNSRecordView,
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *
