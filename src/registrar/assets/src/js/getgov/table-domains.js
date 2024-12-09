@@ -31,6 +31,9 @@ export class DomainsTable extends BaseTable {
         </td>
       `
     }
+    const isExpiring = domain.state_display === "Expiring soon"
+    const iconType = isExpiring ? "error_outline" : "info_outline";
+    const iconColor = isExpiring ? "text-secondary-vivid" : "text-accent-cool"
     row.innerHTML = `
       <th scope="row" role="rowheader" data-label="Domain name">
         ${domain.name}
@@ -41,14 +44,14 @@ export class DomainsTable extends BaseTable {
       <td data-label="Status">
         ${domain.state_display}
         <svg 
-          class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+          class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 ${iconColor} no-click-outline-and-cursor-help" 
           data-position="top"
           title="${domain.get_state_help_text}"
           focusable="true"
           aria-label="${domain.get_state_help_text}"
           role="tooltip"
         >
-          <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
+          <use aria-hidden="true" xlink:href="/public/img/sprite.svg#${iconType}"></use>
         </svg>
       </td>
       ${markupForSuborganizationRow}
