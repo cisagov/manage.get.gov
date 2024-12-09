@@ -2344,7 +2344,7 @@ class TestCreationDate(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # creation_date returned from mockDataInfoDomain with creation date:
         # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35))
+        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2353,7 +2353,7 @@ class TestCreationDate(MockEppLib):
     def test_creation_date_setter_not_implemented(self):
         """assert that the setter for creation date is not implemented and will raise error"""
         with self.assertRaises(NotImplementedError):
-            self.domain.creation_date = datetime.date.today()
+            self.domain.creation_date = datetime.today()
 
     def test_creation_date_updated_on_info_domain_call(self):
         """assert that creation date in db is updated on info domain call"""
