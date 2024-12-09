@@ -736,7 +736,14 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=("No other employees rationale"),
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "You don’t need to provide names of other employees now, \
+                but it may slow down our assessment of your eligibility. Describe \
+                why there are no other employees who can help verify your request. \
+                You can enter up to 1000 characters."
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 1000,
@@ -784,7 +791,12 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
         label="Anything else?",
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Is there anything else you’d like us to know about your domain request? \
+                    Provide details below. You can enter up to 2000 characters"
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,
