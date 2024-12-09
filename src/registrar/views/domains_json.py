@@ -102,6 +102,9 @@ def apply_state_filter(queryset, request):
         if "expired" not in custom_states:
             expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
             queryset = queryset.exclude(id__in=expired_domain_ids)
+        if "expiring" not in custom_states:
+            expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
+            queryset = queryset.exclude(id__in=expired_domain_ids)
 
     return queryset
 

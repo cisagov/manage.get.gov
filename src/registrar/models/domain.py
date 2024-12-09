@@ -1124,11 +1124,12 @@ class Domain(TimeStampedModel, DomainHelper):
     def state_display(self):
         """Return the display status of the domain."""
         # if flag_is_active(self, "domain_request"):
-        if self.is_expiring() and self.state == self.State.UNKNOWN:
-            # if self.is_expiring() and self.state != self.State.UNKNOWN:
+        # if self.is_expiring() and self.state == self.State.UNKNOWN:
+        if self.is_expiring() and self.state != self.State.UNKNOWN:
+            print("do we come into expiring soon for state_display?")
             return "Expiring soon"
-        if self.is_expired() and self.state == self.State.UNKNOWN:
-            # elif self.is_expired() and self.state != self.State.UNKNOWN:
+        # if self.is_expired() and self.state == self.State.UNKNOWN:
+        if self.is_expired() and self.state != self.State.UNKNOWN:
             return "Expired"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
