@@ -108,6 +108,7 @@ def is_widescreen_mode(request):
         "/no-organization-domains/",
         "/domain-request/",
     ]
+    # widescreen_paths can be a bear as it trickles down sub-urls. exclude_paths gives us a way out.
     exclude_paths = [
         "/domains/edit",
     ]

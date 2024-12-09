@@ -80,10 +80,6 @@ export class EditMemberDomainsTable extends BaseTable {
   addRow(dataObject, tbody, customTableOptions) {
     const domain = dataObject;
     const row = document.createElement('tr');
-    // console.log("initialDomainAssignments: " + this.initialDomainAssignments);
-    // console.log("testing domain: " + domain.id);
-    // console.log(`this.addedDomains ${JSON.stringify(this.addedDomains)}`)
-    // console.log(`this.removedDomains ${JSON.stringify(this.removedDomains)}`)
     let checked = false;
     let disabled = false;
     if (
@@ -91,11 +87,9 @@ export class EditMemberDomainsTable extends BaseTable {
       this.addedDomains.map(obj => obj.id).includes(domain.id)) && 
       !this.removedDomains.map(obj => obj.id).includes(domain.id)
     ) {
-      console.log("checked domain: " + domain.id);
       checked = true;
     }
     if (this.initialDomainAssignmentsOnlyMember.includes(domain.id)) {
-      console.log("disabled domain: " + domain.id);
       disabled = true;
     }
     
@@ -142,14 +136,11 @@ export class EditMemberDomainsTable extends BaseTable {
       }
 
       let dataObjects = this.getDataObjects(data);
-      console.log(dataObjects);
       // Map the id attributes of dataObjects to this.initialDomainAssignments
       this.initialDomainAssignments = dataObjects.map(obj => obj.id);
       this.initialDomainAssignmentsOnlyMember = dataObjects
         .filter(obj => obj.member_is_only_manager)
         .map(obj => obj.id);
-
-      console.log(this.initialDomainAssignments);
     })
     .catch(error => console.error('Error fetching domain assignments:', error));
   }
@@ -216,7 +207,6 @@ export class EditMemberDomainsTable extends BaseTable {
 
     // Add click event listener
     cancelEditDomainAssignmentButton.addEventListener('click', () => {
-      console.log('click cancel')
       if (this.addedDomains.length || this.removedDomains.length) {
           console.log('Changes detected. Triggering modal...');
           hiddenModalTrigger.click();
@@ -235,7 +225,6 @@ export function initEditMemberDomainsTable() {
   document.addEventListener('DOMContentLoaded', function() {
       const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
       if (isEditMemberDomainsPage) {
-        console.log("isEditMemberDomainsPage");
         const editMemberDomainsTable = new EditMemberDomainsTable();
         if (editMemberDomainsTable.tableWrapper) {
           // Initial load
