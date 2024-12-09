@@ -50,7 +50,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
 
     def get_page_size(self, request):
         """Gets the page size.
-        
+
         If member_only, need to return the entire result set every time, so need
         to set to a very large page size. If not member_only, this can be adjusted
         to provide a smaller page size"""
@@ -64,7 +64,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             # This number can be adjusted if we want to add pagination to the result page
             # later
             return 1000
-        
+
     def get_domain_ids_from_request(self, request):
         """Get domain ids from request.
 
@@ -128,17 +128,16 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             )
             # Add ordering logic for 'checked'
             if order == "desc":
-                queryset = queryset.order_by("-checked","name")
+                queryset = queryset.order_by("-checked", "name")
             else:
-                queryset = queryset.order_by("checked","name")
+                queryset = queryset.order_by("checked", "name")
         else:
             # Handle other fields as normal
             if order == "desc":
                 sort_by = f"-{sort_by}"
             queryset = queryset.order_by(sort_by)
-        
-        return queryset
 
+        return queryset
 
     def serialize_domain(self, domain, member_id, user):
         suborganization_name = None
@@ -159,8 +158,12 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         # Check if the specified member is the only member assigned as manager of domain
         only_member_assigned_to_domain = False
         if member_id:
-            member_domain_role_count = UserDomainRole.objects.filter(domain_id=domain.id).count()
-            member_domain_role_exists = UserDomainRole.objects.filter(domain_id=domain.id, user_id=member_id).exists()
+            member_domain_role_count = UserDomainRole.objects.filter(
+                domain_id=domain.id, role=UserDomainRole.Roles.MANAGER
+            ).count()
+            member_domain_role_exists = UserDomainRole.objects.filter(
+                domain_id=domain.id, user_id=member_id, role=UserDomainRole.Roles.MANAGER
+            ).exists()
             only_member_assigned_to_domain = member_domain_role_exists and member_domain_role_count == 1
 
         return {

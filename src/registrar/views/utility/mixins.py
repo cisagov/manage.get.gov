@@ -572,7 +572,7 @@ class PortfolioMemberDomainsPermission(PortfolioBasePermission):
             return False
 
         return super().has_permission()
-    
+
 
 class PortfolioMemberDomainsEditPermission(PortfolioBasePermission):
     """Permission mixin that allows access to portfolio member or invited member domains edit pages if user

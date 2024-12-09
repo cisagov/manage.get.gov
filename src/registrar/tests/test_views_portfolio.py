@@ -2153,7 +2153,8 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_member_domains_edit_not_found(self):
-        """Tests that the portfolio member domains edit view returns not found if user portfolio permission not found."""
+        """Tests that the portfolio member domains edit view returns not found if user
+        portfolio permission not found."""
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("member-domains-edit", kwargs={"pk": "0"}))

@@ -282,7 +282,9 @@ class PortfolioMemberDomainsPermissionView(PortfolioMemberDomainsPermission, Por
     """
 
 
-class PortfolioMemberDomainsEditPermissionView(PortfolioMemberDomainsEditPermission, PortfolioBasePermissionView, abc.ABC):
+class PortfolioMemberDomainsEditPermissionView(
+    PortfolioMemberDomainsEditPermission, PortfolioBasePermissionView, abc.ABC
+):
     """Abstract base view for portfolio member domains edit views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify

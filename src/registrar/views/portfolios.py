@@ -324,7 +324,7 @@ class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, Vi
                 "portfolio_invitation": portfolio_invitation,
             },
         )
-    
+
 
 class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, View):
 

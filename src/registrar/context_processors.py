@@ -112,10 +112,10 @@ def is_widescreen_mode(request):
     exclude_paths = [
         "/domains/edit",
     ]
-    
+
     # Check if the current path matches a widescreen path or the root path.
     is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
-    
+
     # Check if the user is an organization user and the path matches portfolio paths.
     is_portfolio_widescreen = (
         hasattr(request.user, "is_org_user")
@@ -123,6 +123,6 @@ def is_widescreen_mode(request):
         and any(path in request.path for path in portfolio_widescreen_paths)
         and not any(exclude_path in request.path for exclude_path in exclude_paths)
     )
-    
+
     # Return a dictionary with the widescreen mode status.
     return {"is_widescreen_mode": is_widescreen or is_portfolio_widescreen}
