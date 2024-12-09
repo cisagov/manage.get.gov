@@ -5,6 +5,7 @@ from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +90,6 @@ def apply_state_filter(queryset, request):
         if "expired" in custom_states:
             expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
-        # if flag_is_active(request, "domain_renewal"):
-        # For some reason having this flag adds DNS_NEEDED in?
-        # if flag_is_active(request, "organization_request"):
         if "expiring" in custom_states:
             expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
             state_query |= Q(id__in=expiring_domain_ids)

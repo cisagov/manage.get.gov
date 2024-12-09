@@ -1098,14 +1098,10 @@ class Domain(TimeStampedModel, DomainHelper):
         Check if the domain's expiration date is in the past.
         Returns True if expired, False otherwise.
         """
-        # if self.expiration_date is None:
-        #     return True
-        now = timezone.now().date()
-        if self.expiration_date < now:
+        if self.expiration_date is None:
             return True
-        else:
-            return False
-        # return self.expiration_date < now
+        now = timezone.now().date()
+        return self.expiration_date < now
 
     def is_expiring(self):
         """
@@ -1119,22 +1115,38 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
         threshold_date = now + timedelta(days=60)
 
+        print(
+            f"Checking if expiring: now={now}, expiration_date={self.expiration_date}, threshold_date={threshold_date}"
+        )
         return now <= self.expiration_date <= threshold_date
 
     def state_display(self):
         """Return the display status of the domain."""
-        # if flag_is_active(self, "domain_request"):
-        # if self.is_expiring() and self.state == self.State.UNKNOWN:
-        if self.is_expiring() and self.state != self.State.UNKNOWN:
-            print("do we come into expiring soon for state_display?")
+        print(f"Domain: {self.name}, State: {self.state}, Expiration Date: {self.expiration_date}")
+        if self.is_expiring() and (self.state == self.State.UNKNOWN):
+            print(f"Domain {self.name} is marked as 'Expiring soon'")
             return "Expiring soon"
-        # if self.is_expired() and self.state == self.State.UNKNOWN:
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and (self.state == self.State.UNKNOWN):
+            print(f"Domain {self.name} is marked as 'Expired'")
             return "Expired"
-        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+        if self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+            print(f"Domain {self.name} is marked as 'Unknown or Dns needed'")
             return "DNS needed"
-        else:
-            return self.state.capitalize()
+        return self.state.capitalize()
+
+        # # if self.is_expiring() and self.state == self.State.UNKNOWN:
+        # if self.is_expiring() and self.state != self.State.UNKNOWN:
+        #     print(f"Domain {self.name} is marked as 'Expiring soon'")
+        #     return "Expiring soon"
+        # # if self.is_expired() and self.state == self.State.UNKNOWN:
+        # elif self.is_expired() and self.state != self.State.UNKNOWN:
+        #     print(f"Domain {self.name} is marked as 'Expired'")
+        #     return "Expired"
+        # elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+        #     print(f"Domain {self.name} is marked as 'Unknown or Dns needed'")
+        #     return "DNS needed"
+        # else:
+        #     return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.

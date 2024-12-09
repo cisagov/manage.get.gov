@@ -16,8 +16,8 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         today = datetime.now()
-        expiring_date = today - timedelta(days=58)
-        expiring_date_2 = today - timedelta(days=57)
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        expiring_date_2 = (today + timedelta(days=31)).strftime("%Y-%m-%d")
 
         # Create test domains
         self.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-01-01", state="unknown")
@@ -73,7 +73,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["num_pages"], 1)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 5)
 
         # Expected domains
         expected_domains = [self.domain1, self.domain2, self.domain3]
@@ -320,7 +320,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertEqual(data["num_pages"], 1)
         self.assertEqual(data["total"], 1)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["unfiltered_total"], 5)
 
         # Check the number of domain requests
         self.assertEqual(len(data["domains"]), 1)
@@ -384,31 +384,8 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         states = [domain["state_display"] for domain in data["domains"]]
         self.assertEqual(states, sorted(states, reverse=True))
 
-    @override_flag("domain_renewal", active=False)
     @less_console_noise_decorator
-    def test_state_filtering_domain_renewal_flag_off(self):
-        """Test that different states in request get expected responses."""
-        expected_values = [
-            ("unknown", 1),
-            ("ready", 0),
-            ("expired", 2),
-            ("ready,expired", 2),
-            ("unknown,expired", 3),
-            ("expiring", 0),
-        ]
-        for state, num_domains in expected_values:
-            print("state, num_domains is ", state, num_domains)
-            with self.subTest(state=state, num_domains=num_domains):
-                response = self.app.get(reverse("get_domains_json"), {"status": state})
-                self.assertEqual(response.status_code, 200)
-                data = response.json
-                print("data['domains'] is", data["domains"])
-                print("len(data['domains'])", len(data["domains"]))
-                self.assertEqual(len(data["domains"]), num_domains)
-
-    @override_flag("domain_renewal", active=True)
-    @less_console_noise_decorator
-    def test_state_filtering_domain_renewal_flag_on(self):
+    def test_state_filtering(self):
         """Test that different states in request get expected responses."""
         expected_values = [
             ("unknown", 1),
@@ -418,12 +395,13 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             ("unknown,expired", 3),
             ("expiring", 2),
         ]
+
         for state, num_domains in expected_values:
             print("state, num_domains is ", state, num_domains)
             with self.subTest(state=state, num_domains=num_domains):
                 response = self.app.get(reverse("get_domains_json"), {"status": state})
+                # print("response is ", response)
                 self.assertEqual(response.status_code, 200)
                 data = response.json
                 print("data['domains'] is", data["domains"])
-                print("len(data['domains'])", len(data["domains"]))
                 self.assertEqual(len(data["domains"]), num_domains)
