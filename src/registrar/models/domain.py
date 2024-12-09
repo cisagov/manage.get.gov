@@ -1074,8 +1074,9 @@ class Domain(TimeStampedModel, DomainHelper):
         hostsToDelete, _ = self.createDeleteHostList(nameservers)
         logger.debug("HostsToDelete from %s inside _delete_subdomains -> %s", self.name, hostsToDelete)
 
-        for objSet in hostsToDelete:
-            self._delete_hosts_if_not_used(objSet.hosts)
+        self.addAndRemoveHostsFromDomain(None, hostsToDelete=nameservers)
+        # for objSet in hostsToDelete:
+        #     self._delete_hosts_if_not_used(objSet.hosts)
 
     def _delete_domain(self):
         """This domain should be deleted from the registry
