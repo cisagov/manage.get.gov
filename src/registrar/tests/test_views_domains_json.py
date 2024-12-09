@@ -8,19 +8,24 @@ from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_date
 from api.tests.common import less_console_noise_decorator
 from waffle.testutils import override_flag
+from datetime import datetime,timedelta
 
 
 class GetDomainsJsonTest(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        today= datetime.now()
+        expiring_date = today - timedelta(days=58)
+        expiring_date_2 = today - timedelta(days=57)
 
         # Create test domains
         self.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-01-01", state="unknown")
         self.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-02-01", state="dns needed")
         self.domain3 = Domain.objects.create(name="example3.com", expiration_date="2024-03-01", state="ready")
         self.domain4 = Domain.objects.create(name="example4.com", expiration_date="2024-03-01", state="ready")
-
+        self.domain5 = Domain.objects.create(name="example5.com", expiration_date=expiring_date)
+        self.domain6 = Domain.objects.create(name="example6.com", expiration_date=expiring_date_2)
         # Create UserDomainRoles
         UserDomainRole.objects.create(user=self.user, domain=self.domain1)
         UserDomainRole.objects.create(user=self.user, domain=self.domain2)
@@ -385,10 +390,14 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             ("expired", 2),
             ("ready,expired", 2),
             ("unknown,expired", 3),
+            ("expiring",2)
         ]
         for state, num_domains in expected_values:
+            print(num_domains, state)
             with self.subTest(state=state, num_domains=num_domains):
                 response = self.app.get(reverse("get_domains_json"), {"status": state})
                 self.assertEqual(response.status_code, 200)
                 data = response.json
+                print(data["domains"])
+                print(len(data["domains"]))
                 self.assertEqual(len(data["domains"]), num_domains)
