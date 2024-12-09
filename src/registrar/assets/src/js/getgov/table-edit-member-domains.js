@@ -100,7 +100,7 @@ export class EditMemberDomainsTable extends BaseTable {
     }
     
     row.innerHTML = `
-        <td data-label="Selection" data-sort-value="0">
+        <td data-label="Selection" data-sort-value="0" class="padding-right-105">
             <div class="usa-checkbox">
                 <input
                     class="usa-checkbox__input"
@@ -111,7 +111,7 @@ export class EditMemberDomainsTable extends BaseTable {
                     ${checked ? 'checked' : ''}
                     ${disabled ? 'disabled' : ''}
                 />
-                <label class="usa-checkbox__label" for="${domain.id}">
+                <label class="usa-checkbox__label margin-top-0" for="${domain.id}">
                     <span class="sr-only">${domain.id}</span>
                 </label>
             </div>
