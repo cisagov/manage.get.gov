@@ -5,7 +5,6 @@ from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
-from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 

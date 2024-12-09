@@ -2389,7 +2389,7 @@ class TestDomainRenewal(TestWithUser):
     @override_flag("domain_renewal", active=False)
     def test_without_domain_renewal_flag(self):
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
         self.assertNotContains(domains_page, "Expiring soon")
 
@@ -2397,13 +2397,13 @@ class TestDomainRenewal(TestWithUser):
     @override_flag("domain_renewal", active=True)
     def test_with_domain_renewal_flag_single_domain(self):
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=True)
-    def test_with_domain_renewal_flag_single_domain(self):
+    def test_with_domain_renewal_flag_mulitple_domains(self):
         self.domain_with_another_expiring, _ = Domain.objects.get_or_create(
             name="domainwithanotherexpiringdate.com", expiration_date=date(2025, 1, 14)
         )
@@ -2412,7 +2412,7 @@ class TestDomainRenewal(TestWithUser):
             user=self.user, domain=self.domain_with_another_expiring, role=UserDomainRole.Roles.MANAGER
         )
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
@@ -2422,7 +2422,7 @@ class TestDomainRenewal(TestWithUser):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
 
@@ -2431,7 +2431,7 @@ class TestDomainRenewal(TestWithUser):
     @override_flag("organization_feature", active=True)
     def test_with_domain_renewal_flag_single_domain_w_org_feature_flag(self):
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         print("domains_page is", domains_page)
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
@@ -2439,7 +2439,7 @@ class TestDomainRenewal(TestWithUser):
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
-    def test_with_domain_renewal_flag_single_domain_w_org_feature_flag(self):
+    def test_with_domain_renewal_flag_mulitple_domains_w_org_feature_flag(self):
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
             name="domainwithanotherexpiringdate_orgmodel.com", expiration_date=date(2025, 1, 14)
         )
@@ -2448,7 +2448,7 @@ class TestDomainRenewal(TestWithUser):
             user=self.user, domain=self.domain_with_another_expiring_org_model, role=UserDomainRole.Roles.MANAGER
         )
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
@@ -2459,6 +2459,6 @@ class TestDomainRenewal(TestWithUser):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
-        domains_page = self.client.get(f"/")
+        domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
