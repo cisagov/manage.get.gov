@@ -6,9 +6,15 @@
 {% endblock %}
 
 {% block form_fields %}
+
+    <fieldset class="usa-fieldset">          
+            <h2 class="margin-top-0 margin-bottom-0">Is there anything else you’d like us to know about your domain request?</h2> 
+        </legend>
+    </fieldset>
+
     <div id="anything-else">
         <p><em>This question is optional.</em></p>
-        {% with attr_maxlength=2000 add_legend_heading="Is there anything else you’d like us to know about your domain request?" add_aria_label="This question is optional." %}
+        {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
             {% input_with_errors forms.0.anything_else %}
         {% endwith %}
     </div>
