@@ -1118,20 +1118,23 @@ class Domain(TimeStampedModel, DomainHelper):
         print(
             f"Checking if expiring: now={now}, expiration_date={self.expiration_date}, threshold_date={threshold_date}"
         )
+        print("now <= self.expiration_date <= threshold_date is ", now <= self.expiration_date <= threshold_date)
         return now <= self.expiration_date <= threshold_date
 
     def state_display(self):
         """Return the display status of the domain."""
         print(f"Domain: {self.name}, State: {self.state}, Expiration Date: {self.expiration_date}")
-        if self.is_expiring() and (self.state == self.State.UNKNOWN):
-            print(f"Domain {self.name} is marked as 'Expiring soon'")
-            return "Expiring soon"
-        if self.is_expired() and (self.state == self.State.UNKNOWN):
-            print(f"Domain {self.name} is marked as 'Expired'")
+        if flag_is_active(self, "domain_renewal"):
+            if self.is_expiring() and (self.state == self.State.UNKNOWN):
+                print(f"Domain {self.name} is marked as EXPIRING SOON")
+                return "Expiring soon"
+        if self.is_expired() and (self.state != self.State.UNKNOWN):
+            print(f"Domain {self.name} is marked as EXPIRED")
             return "Expired"
-        if self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
-            print(f"Domain {self.name} is marked as 'Unknown or Dns needed'")
+        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+            print(f"Domain {self.name} is marked as UNKNOWN OR DNS NEEDED")
             return "DNS needed"
+        print("self.state.capitalize() is", self.state.capitalize())
         return self.state.capitalize()
 
         # # if self.is_expiring() and self.state == self.State.UNKNOWN:
