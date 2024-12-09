@@ -2102,6 +2102,126 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 404)
 
 
+class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_authenticated(self):
+        """Tests that the portfolio member domains edit view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user_member.email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_no_perms(self):
+        """Tests that the portfolio member domains edit view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_unauthenticated(self):
+        """Tests that the portfolio member domains edit view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_not_found(self):
+        """Tests that the portfolio member domains edit view returns not found if user portfolio permission not found."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
+
+
+class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_authenticated(self):
+        """Tests that the portfolio invited member domains edit view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.invited_member_email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_no_perms(self):
+        """Tests that the portfolio invited member domains edit view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_unauthenticated(self):
+        """Tests that the portfolio invited member domains edit view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_not_found(self):
+        """Tests that the portfolio invited member domains edit view returns not found if user is not a member."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
+
+
 class TestRequestingEntity(WebTest):
     """The requesting entity page is a domain request form that only exists
     within the context of a portfolio."""
