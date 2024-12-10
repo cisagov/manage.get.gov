@@ -24,13 +24,13 @@ export function handleSuborganizationFields(
 
     function toggleSuborganizationFields() {
         if (portfolioDropdown.val() && !suborganizationDropdown.val()) {
-            showElement(requestedSuborgField);
-            showElement(suborgCity);
-            showElement(suborgStateTerritory);
+            if (requestedSuborgField) showElement(requestedSuborgField);
+            if (suborgCity) showElement(suborgCity);
+            if (suborgStateTerritory) showElement(suborgStateTerritory);
         }else {
-            hideElement(requestedSuborgField);
-            hideElement(suborgCity);
-            hideElement(suborgStateTerritory);
+            if (requestedSuborgField) hideElement(requestedSuborgField);
+            if (suborgCity) hideElement(suborgCity);
+            if (suborgStateTerritory) hideElement(suborgStateTerritory);
         }
     }
 
@@ -504,14 +504,14 @@ export function handlePortfolioSelection() {
 
         if (portfolio_id && !suborganization_id) {
             // Show suborganization request fields
-            showElement(requestedSuborganizationField);
-            showElement(suborganizationCity);
-            showElement(suborganizationStateTerritory);
+            if (requestedSuborganizationField) showElement(requestedSuborganizationField);
+            if (suborganizationCity) showElement(suborganizationCity);
+            if (suborganizationStateTerritory) showElement(suborganizationStateTerritory);
         } else {
             // Hide suborganization request fields if suborganization is selected
-            hideElement(requestedSuborganizationField);
-            hideElement(suborganizationCity);
-            hideElement(suborganizationStateTerritory);  
+            if (requestedSuborganizationField) hideElement(requestedSuborganizationField);
+            if (suborganizationCity) hideElement(suborganizationCity);
+            if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);  
         }
     }
 
