@@ -295,7 +295,6 @@ class Command(BaseCommand):
         except Exception as err:
             logger.error(f"Could not load additional TransitionDomain data. {err}")
             raise err
-            # TODO: handle this better...needs more logging
 
     def handle(  # noqa: C901
         self,

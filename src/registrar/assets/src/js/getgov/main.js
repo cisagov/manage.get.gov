@@ -10,6 +10,7 @@ import { initDomainRequestsTable } from './table-domain-requests.js';
 import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
 import { initPortfolioMemberPageToggle } from './portfolio-member-page.js';
+import { initAddNewMemberPageListeners } from './portfolio-member-page.js';
 
 initDomainValidators();
 
@@ -42,3 +43,4 @@ initMembersTable();
 initMemberDomainsTable();
 
 initPortfolioMemberPageToggle();
+initAddNewMemberPageListeners();

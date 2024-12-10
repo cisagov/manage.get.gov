@@ -3,7 +3,14 @@ import logging
 import copy
 from typing import Optional
 from django import forms
-from django.db.models import Value, CharField, Q
+from django.db.models import (
+    Case,
+    CharField,
+    F,
+    Q,
+    Value,
+    When,
+)
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
@@ -1467,21 +1474,57 @@ class DomainInformationResource(resources.ModelResource):
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Customize domain information admin class."""
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Information object."""
+
+        title = "generic organization"
+        parameter_name = "converted_generic_orgs"
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            # Populate the set with tuples of (value, display value)
+            for domain_info in DomainInformation.objects.all():
+                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
+                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
+
+                if converted_generic_org:
+                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
+
+            # Sort the set by display value
+            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    Q(portfolio__organization_type=self.value())
+                    | Q(portfolio__isnull=True, generic_org_type=self.value())
+                )
+            return queryset
+
     resource_classes = [DomainInformationResource]
 
     form = DomainInformationAdminForm
 
+    # Customize column header text
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.converted_generic_org_type_display
+
     # Columns
     list_display = [
         "domain",
-        "generic_org_type",
+        "converted_generic_org_type",
         "created_at",
     ]
 
     orderable_fk_fields = [("domain", "name")]
 
     # Filters
-    list_filter = ["generic_org_type"]
+    list_filter = [GenericOrgFilter]
 
     # Search
     search_fields = [
@@ -1661,24 +1704,23 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def lookups(self, request, model_admin):
             converted_generic_orgs = set()
 
+            # Populate the set with tuples of (value, display value)
             for domain_request in DomainRequest.objects.all():
-                converted_generic_org = domain_request.converted_generic_org_type
-                if converted_generic_org:
-                    converted_generic_orgs.add(converted_generic_org)
+                converted_generic_org = domain_request.converted_generic_org_type  # Actual value
+                converted_generic_org_display = domain_request.converted_generic_org_type_display  # Display value
 
-            return sorted((org, org) for org in converted_generic_orgs)
+                if converted_generic_org:
+                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
+
+            # Sort the set by display value
+            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
 
         # Filter queryset
         def queryset(self, request, queryset):
             if self.value():  # Check if a generic org is selected in the filter
                 return queryset.filter(
-                    # Filter based on the generic org value returned by converted_generic_org_type
-                    id__in=[
-                        domain_request.id
-                        for domain_request in queryset
-                        if domain_request.converted_generic_org_type
-                        and domain_request.converted_generic_org_type == self.value()
-                    ]
+                    Q(portfolio__organization_type=self.value())
+                    | Q(portfolio__isnull=True, generic_org_type=self.value())
                 )
             return queryset
 
@@ -1693,24 +1735,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def lookups(self, request, model_admin):
             converted_federal_types = set()
 
+            # Populate the set with tuples of (value, display value)
             for domain_request in DomainRequest.objects.all():
-                converted_federal_type = domain_request.converted_federal_type
-                if converted_federal_type:
-                    converted_federal_types.add(converted_federal_type)
+                converted_federal_type = domain_request.converted_federal_type  # Actual value
+                converted_federal_type_display = domain_request.converted_federal_type_display  # Display value
 
-            return sorted((type, type) for type in converted_federal_types)
+                if converted_federal_type:
+                    converted_federal_types.add(
+                        (converted_federal_type, converted_federal_type_display)  # Value, Display
+                    )
+
+            # Sort the set by display value
+            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
 
         # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if federal Type is selected in the filter
+            if self.value():  # Check if a federal type is selected in the filter
                 return queryset.filter(
-                    # Filter based on the federal type returned by converted_federal_type
-                    id__in=[
-                        domain_request.id
-                        for domain_request in queryset
-                        if domain_request.converted_federal_type
-                        and domain_request.converted_federal_type == self.value()
-                    ]
+                    Q(portfolio__federal_agency__federal_type=self.value())
+                    | Q(portfolio__isnull=True, federal_type=self.value())
                 )
             return queryset
 
@@ -1776,7 +1819,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
-        return obj.converted_generic_org_type
+        return obj.converted_generic_org_type_display
 
     @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
@@ -1788,7 +1831,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     @admin.display(description=_("Federal Type"))
     def converted_federal_type(self, obj):
-        return obj.converted_federal_type
+        return obj.converted_federal_type_display
 
     @admin.display(description=_("City"))
     def converted_city(self, obj):
@@ -2679,6 +2722,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     resource_classes = [DomainResource]
 
+    # ------- FILTERS
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
 
@@ -2697,18 +2741,135 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
 
+    class GenericOrgFilter(admin.SimpleListFilter):
+        """Custom Generic Organization filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's organization.  If not, use the
+        organization in the Domain Information object."""
+
+        title = "generic organization"
+        parameter_name = "converted_generic_orgs"
+
+        def lookups(self, request, model_admin):
+            converted_generic_orgs = set()
+
+            # Populate the set with tuples of (value, display value)
+            for domain_info in DomainInformation.objects.all():
+                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
+                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
+
+                if converted_generic_org:
+                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
+
+            # Sort the set by display value
+            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a generic org is selected in the filter
+                return queryset.filter(
+                    Q(domain_info__portfolio__organization_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())
+                )
+
+            return queryset
+
+    class FederalTypeFilter(admin.SimpleListFilter):
+        """Custom Federal Type filter that accomodates portfolio feature.
+        If we have a portfolio, use the portfolio's federal type.  If not, use the
+        federal type in the Domain Information object."""
+
+        title = "federal type"
+        parameter_name = "converted_federal_types"
+
+        def lookups(self, request, model_admin):
+            converted_federal_types = set()
+
+            # Populate the set with tuples of (value, display value)
+            for domain_info in DomainInformation.objects.all():
+                converted_federal_type = domain_info.converted_federal_type  # Actual value
+                converted_federal_type_display = domain_info.converted_federal_type_display  # Display value
+
+                if converted_federal_type:
+                    converted_federal_types.add(
+                        (converted_federal_type, converted_federal_type_display)  # Value, Display
+                    )
+
+            # Sort the set by display value
+            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
+
+        # Filter queryset
+        def queryset(self, request, queryset):
+            if self.value():  # Check if a federal type is selected in the filter
+                return queryset.filter(
+                    Q(domain_info__portfolio__federal_agency__federal_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+                )
+            return queryset
+
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__generic_org_type"),
+            ),
+            converted_federal_agency=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
+                    then=F("domain_info__portfolio__federal_agency__agency"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__federal_agency__agency"),
+            ),
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
+                    then=F("domain_info__portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__federal_agency__federal_type"),
+            ),
+            converted_organization_name=Case(
+                # When portfolio is present, use its value instead
+                When(domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__organization_name")),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__organization_name"),
+            ),
+            converted_city=Case(
+                # When portfolio is present, use its value instead
+                When(domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__city")),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__city"),
+            ),
+            converted_state_territory=Case(
+                # When portfolio is present, use its value instead
+                When(domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__state_territory")),
+                # Otherwise, return the natively assigned value
+                default=F("domain_info__state_territory"),
+            ),
+        )
+
+    # Filters
+    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
+
+    # ------- END FILTERS
+
+    # Inlines
     inlines = [DomainInformationInline]
 
     # Columns
     list_display = [
         "name",
-        "generic_org_type",
-        "federal_type",
-        "federal_agency",
-        "organization_name",
+        "converted_generic_org_type",
+        "converted_federal_type",
+        "converted_federal_agency",
+        "converted_organization_name",
         "custom_election_board",
-        "city",
-        "state_territory",
+        "converted_city",
+        "converted_state_territory",
         "state",
         "expiration_date",
         "created_at",
@@ -2723,28 +2884,81 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
     )
 
+    # ------- Domain Information Fields
+
+    # --- Generic Org Type
+    # Use converted value in the table
+    @admin.display(description=_("Generic Org Type"))
+    def converted_generic_org_type(self, obj):
+        return obj.domain_info.converted_generic_org_type_display
+
+    converted_generic_org_type.admin_order_field = "converted_generic_org_type"  # type: ignore
+
+    # Use native value for the change form
     def generic_org_type(self, obj):
         return obj.domain_info.get_generic_org_type_display()
 
-    generic_org_type.admin_order_field = "domain_info__generic_org_type"  # type: ignore
+    # --- Federal Agency
+    @admin.display(description=_("Federal Agency"))
+    def converted_federal_agency(self, obj):
+        return obj.domain_info.converted_federal_agency
 
+    converted_federal_agency.admin_order_field = "converted_federal_agency"  # type: ignore
+
+    # Use native value for the change form
     def federal_agency(self, obj):
         if obj.domain_info:
             return obj.domain_info.federal_agency
         else:
             return None
 
-    federal_agency.admin_order_field = "domain_info__federal_agency"  # type: ignore
+    # --- Federal Type
+    # Use converted value in the table
+    @admin.display(description=_("Federal Type"))
+    def converted_federal_type(self, obj):
+        return obj.domain_info.converted_federal_type_display
 
+    converted_federal_type.admin_order_field = "converted_federal_type"  # type: ignore
+
+    # Use native value for the change form
     def federal_type(self, obj):
         return obj.domain_info.federal_type if obj.domain_info else None
 
-    federal_type.admin_order_field = "domain_info__federal_type"  # type: ignore
+    # --- Organization Name
+    # Use converted value in the table
+    @admin.display(description=_("Organization Name"))
+    def converted_organization_name(self, obj):
+        return obj.domain_info.converted_organization_name
 
+    converted_organization_name.admin_order_field = "converted_organization_name"  # type: ignore
+
+    # Use native value for the change form
     def organization_name(self, obj):
         return obj.domain_info.organization_name if obj.domain_info else None
 
-    organization_name.admin_order_field = "domain_info__organization_name"  # type: ignore
+    # --- City
+    # Use converted value in the table
+    @admin.display(description=_("City"))
+    def converted_city(self, obj):
+        return obj.domain_info.converted_city
+
+    converted_city.admin_order_field = "converted_city"  # type: ignore
+
+    # Use native value for the change form
+    def city(self, obj):
+        return obj.domain_info.city if obj.domain_info else None
+
+    # --- State
+    # Use converted value in the table
+    @admin.display(description=_("State / territory"))
+    def converted_state_territory(self, obj):
+        return obj.domain_info.converted_state_territory
+
+    converted_state_territory.admin_order_field = "converted_state_territory"  # type: ignore
+
+    # Use native value for the change form
+    def state_territory(self, obj):
+        return obj.domain_info.state_territory if obj.domain_info else None
 
     def dnssecdata(self, obj):
         return "Yes" if obj.dnssecdata else "No"
@@ -2777,23 +2991,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
-    def city(self, obj):
-        return obj.domain_info.city if obj.domain_info else None
-
-    city.admin_order_field = "domain_info__city"  # type: ignore
-
-    @admin.display(description=_("State / territory"))
-    def state_territory(self, obj):
-        return obj.domain_info.state_territory if obj.domain_info else None
-
-    state_territory.admin_order_field = "domain_info__state_territory"  # type: ignore
-
-    # Filters
-    list_filter = ["domain_info__generic_org_type", "domain_info__federal_type", ElectionOfficeFilter, "state"]
-
+    # Search
     search_fields = ["name"]
     search_help_text = "Search by domain name."
+
+    # Change Form
     change_form_template = "django/admin/domain_change_form.html"
+
+    # Readonly Fields
     readonly_fields = (
         "state",
         "expiration_date",
@@ -3058,7 +3263,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
-        qs = super().get_queryset(request)
+        initial_qs = super().get_queryset(request)
+        qs = self.get_annotated_queryset(initial_qs)
         # Check if a 'portfolio' parameter is passed in the request
         portfolio_id = request.GET.get("portfolio")
         if portfolio_id:
@@ -3578,6 +3784,14 @@ class WaffleFlagAdmin(FlagAdmin):
 
         model = models.WaffleFlag
         fields = "__all__"
+
+    # Hack to get the dns_prototype_flag to auto populate when you navigate to
+    # the waffle flag page.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
