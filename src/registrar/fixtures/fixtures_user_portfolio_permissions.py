@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class UserPortfolioPermissionFixture:
     """Create user portfolio permissions for each user.
-    Each user will be admin on 2 portfolios.
+    Each user will be admin on only one portfolio.
 
     Depends on fixture_portfolios"""
 
