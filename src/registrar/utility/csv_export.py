@@ -414,7 +414,9 @@ class MemberExport(BaseExport):
             )
             .values(*shared_columns)
         )
-
+        # Adding a order_by increases output predictability.
+        # Doesn't matter as much for normal use, but makes tests easier.
+        # We should also just be ordering by default anyway.
         members = permissions.union(invitations).order_by("email_display")
         return convert_queryset_to_dict(members, is_model=False)
 
