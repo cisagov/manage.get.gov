@@ -23,6 +23,7 @@ export class DomainRequestsTable extends BaseTable {
 
   constructor() {
     super('domain-request');
+    this.displayName = "domain request";
   }
 
   getBaseUrl() {
