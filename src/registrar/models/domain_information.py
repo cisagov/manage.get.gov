@@ -442,9 +442,11 @@ class DomainInformation(TimeStampedModel):
 
     @property
     def converted_federal_agency(self):
-        if self.portfolio:
+        if self.portfolio and self.portfolio.federal_agency:
             return self.portfolio.federal_agency.agency
-        return self.federal_agency.agency
+        if self.federal_agency:
+            return self.federal_agency.agency
+        return None
 
     @property
     def converted_federal_type(self):
