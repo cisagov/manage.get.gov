@@ -57,6 +57,7 @@ def input_with_errors(context, field=None):  # noqa: C901
     legend_classes = []
     group_classes = []
     aria_labels = []
+    legend_headings = []
 
     # this will be converted to an attribute string
     described_by = []
@@ -90,6 +91,8 @@ def input_with_errors(context, field=None):  # noqa: C901
             label_classes.append(value)
         elif key == "add_legend_class":
             legend_classes.append(value)
+        elif key == "add_legend_heading":
+            legend_headings.append(value)
 
         elif key == "add_group_class":
             group_classes.append(value)
@@ -115,9 +118,6 @@ def input_with_errors(context, field=None):  # noqa: C901
         context["label_tag"] = "legend"
     else:
         context["label_tag"] = "label"
-
-    if field.use_fieldset:
-        label_classes.append("usa-legend")
 
     if field.widget_type == "checkbox":
         label_classes.append("usa-checkbox__label")
@@ -148,6 +148,9 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     if legend_classes:
         context["legend_classes"] = " ".join(legend_classes)
+
+    if legend_headings:
+        context["legend_heading"] = " ".join(legend_headings)
 
     if group_classes:
         context["group_classes"] = " ".join(group_classes)
