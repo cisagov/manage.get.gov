@@ -3533,10 +3533,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
-    analyst_readonly_fields = [
-        "organization_name",
-    ]
-
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
         admin_permissions = self.get_user_portfolio_permission_admins(obj)
