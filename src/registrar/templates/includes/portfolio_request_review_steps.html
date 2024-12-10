@@ -62,7 +62,7 @@
     {% endif %}
 
     {% if step == Step.ADDITIONAL_DETAILS %}
-        {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+        {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"None" %}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
     {% endif %}

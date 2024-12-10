@@ -893,22 +893,28 @@ Example: `cf ssh getgov-za`
 [Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
 
 #### Step 5: Running the script
-```./manage.py create_federal_portfolio "{federal_agency_name}" --both```
-
+To create a specific portfolio: 
+```./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
 Example (only requests): `./manage.py create_federal_portfolio "AMTRAK" --parse_requests`
+
+To create a portfolios for all federal agencies in a branch: 
+```./manage.py create_federal_portfolio --branch "{executive|legislative|judicial}" --both```
+Example (only requests): `./manage.py create_federal_portfolio --branch "executive" --parse_requests`
 
 ### Running locally
 
 #### Step 1: Running the script
-```docker-compose exec app ./manage.py create_federal_portfolio "{federal_agency_name}" --both```
+```docker-compose exec app ./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
 
 ##### Parameters
 |   | Parameter                  | Description                                                                                |
 |:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
-| 1 | **federal_agency_name**    | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
-| 2 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
-| 3 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
-| 4 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
+| 1 | **agency_name**            | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
+| 2 | **branch**                 | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
+| 3 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
+| 4 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
+| 5 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
 
-Note: Regarding parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
+- Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
+- Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
 you must specify at least one to run this script.

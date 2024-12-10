@@ -626,34 +626,3 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             if permission_exists:
                 messages.warning(self.request, "User is already a member of this portfolio.")
         return redirect(self.get_success_url())
-
-        # look up a user with that email
-        try:
-            requested_user = User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            # no matching user, go make an invitation
-            return self._make_invitation(requested_email, requestor)
-        else:
-            # If user already exists, check to see if they are part of the portfolio already
-            # If they are already part of the portfolio, raise an error.  Otherwise, send an invite.
-            existing_user = UserPortfolioPermission.objects.get(user=requested_user, portfolio=self.object)
-            if existing_user:
-                messages.warning(self.request, "User is already a member of this portfolio.")
-            else:
-                try:
-                    self._send_portfolio_invitation_email(requested_email, requestor, add_success=False)
-                except EmailSendingError:
-                    logger.warn(
-                        "Could not send email invitation (EmailSendingError)",
-                        self.object,
-                        exc_info=True,
-                    )
-                    messages.warning(self.request, "Could not send email invitation.")
-                except Exception:
-                    logger.warn(
-                        "Could not send email invitation (Other Exception)",
-                        self.object,
-                        exc_info=True,
-                    )
-                    messages.warning(self.request, "Could not send email invitation.")
-        return redirect(self.get_success_url())
