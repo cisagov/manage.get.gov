@@ -221,10 +221,10 @@ class DomainInformationAdminForm(forms.ModelForm):
         widgets = {
             "other_contacts": NoAutocompleteFilteredSelectMultiple("other_contacts", False),
             "portfolio": AutocompleteSelectWithPlaceholder(
-                DomainRequest._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
+                DomainInformation._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
             ),
             "sub_organization": AutocompleteSelectWithPlaceholder(
-                DomainRequest._meta.get_field("sub_organization"),
+                DomainInformation._meta.get_field("sub_organization"),
                 admin.site,
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
