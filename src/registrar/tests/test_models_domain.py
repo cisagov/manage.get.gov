@@ -7,7 +7,7 @@ This file tests the various ways in which the registrar interacts with the regis
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from django.utils.timezone import make_aware
 from registrar.models import Domain, Host, HostIP
 
@@ -2265,13 +2265,13 @@ class TestExpirationDate(MockEppLib):
         """assert that the setter for expiration date is not implemented and will raise error"""
         with less_console_noise():
             with self.assertRaises(NotImplementedError):
-                self.domain.registry_expiration_date = datetime.date.today()
+                self.domain.registry_expiration_date = datetime.today()
 
     def test_renew_domain(self):
         """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
         with less_console_noise():
             self.domain.renew_domain()
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain._cache["ex_date"], test_date)
             self.assertEquals(self.domain.expiration_date, test_date)
 
@@ -2328,7 +2328,7 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             # force fetch_cache to be called
             self.domain.statuses
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain.expiration_date, test_date)
 
 
