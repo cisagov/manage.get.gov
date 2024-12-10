@@ -1120,6 +1120,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if flag_is_active(self, "domain_renewal"):
             if self.is_expiring() and (self.state == self.State.UNKNOWN):
                 return "Expiring soon"
+            if self.is_expired() and (self.state == self.State.UNKNOWN):
+                return "Expired"
         if self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
