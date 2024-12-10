@@ -977,6 +977,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
             if flag_is_active(request, "organization_feature"):
                 return self.analyst_readonly_fields
             else:
+                # TODO: delete after we merge organization feature
                 return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
