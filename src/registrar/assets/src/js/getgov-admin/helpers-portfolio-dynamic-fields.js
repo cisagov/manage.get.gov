@@ -48,10 +48,13 @@ export function handleSuborganizationFields(
  * 
  * IMPORTANT NOTE: The logic in this method is paired dynamicPortfolioFields
 */
-export function handlePortfolioSelection() {
+export function handlePortfolioSelection(
+    portfolioDropdownSelector="#id_portfolio",
+    suborgDropdownSelector="#id_sub_organization"
+) {
     // These dropdown are select2 fields so they must be interacted with via jquery
-    const portfolioDropdown = django.jQuery("#id_portfolio");
-    const suborganizationDropdown = django.jQuery("#id_sub_organization");
+    const portfolioDropdown = django.jQuery(portfolioDropdownSelector);
+    const suborganizationDropdown = django.jQuery(suborgDropdownSelector);
     const suborganizationField = document.querySelector(".field-sub_organization");
     const requestedSuborganizationField = document.querySelector(".field-requested_suborganization");
     const suborganizationCity = document.querySelector(".field-suborganization_city");
@@ -440,8 +443,8 @@ export function handlePortfolioSelection() {
             showElement(portfolioSeniorOfficialField);
 
             // Hide fields not applicable when a portfolio is selected
-            hideElement(otherEmployeesField);
-            hideElement(noOtherContactsRationaleField);
+            if (otherEmployeesField) hideElement(otherEmployeesField);
+            if (noOtherContactsRationaleField) hideElement(noOtherContactsRationaleField);
             hideElement(cisaRepresentativeFirstNameField);
             hideElement(cisaRepresentativeLastNameField);
             hideElement(cisaRepresentativeEmailField);
@@ -463,8 +466,8 @@ export function handlePortfolioSelection() {
             // Show fields that are relevant when no portfolio is selected
             showElement(seniorOfficialField);
             hideElement(portfolioSeniorOfficialField);
-            showElement(otherEmployeesField);
-            showElement(noOtherContactsRationaleField);
+            if (otherEmployeesField) showElement(otherEmployeesField);
+            if (noOtherContactsRationaleField) showElement(noOtherContactsRationaleField);
             showElement(cisaRepresentativeFirstNameField);
             showElement(cisaRepresentativeLastNameField);
             showElement(cisaRepresentativeEmailField);
