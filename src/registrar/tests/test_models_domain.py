@@ -2265,7 +2265,7 @@ class TestExpirationDate(MockEppLib):
         """assert that the setter for expiration date is not implemented and will raise error"""
         with less_console_noise():
             with self.assertRaises(NotImplementedError):
-                self.domain.registry_expiration_date = datetime.today()
+                self.domain.registry_expiration_date = date.today()
 
     def test_renew_domain(self):
         """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
@@ -2353,7 +2353,7 @@ class TestCreationDate(MockEppLib):
     def test_creation_date_setter_not_implemented(self):
         """assert that the setter for creation date is not implemented and will raise error"""
         with self.assertRaises(NotImplementedError):
-            self.domain.creation_date = datetime.today()
+            self.domain.creation_date = date.today()
 
     def test_creation_date_updated_on_info_domain_call(self):
         """assert that creation date in db is updated on info domain call"""
