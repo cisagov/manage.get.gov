@@ -4,7 +4,7 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
-
+from django.utils.safestring import mark_safe
 from registrar.models import (
     PortfolioInvitation,
     UserPortfolioPermission,
@@ -109,13 +109,13 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data.pop("full_name", None)
         return cleaned_data
 
-
-class BasePortfolioMemberForm(forms.ModelForm):
+class BasePortfolioMemberForm(forms.Form):
+    required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
+    
     role = forms.ChoiceField(
-        label="Select permission",
         choices=[
-            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin Access"),
-            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic Access")
+            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin access"),
+            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access")
         ],
         widget=forms.RadioSelect,
         required=True,
@@ -123,12 +123,12 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "required": "Member access level is required",
         },
     )
-    # Permissions for admins
+
     domain_request_permissions_admin = forms.ChoiceField(
-        label="Select permission",
+        label=mark_safe(f"Select permission {required_star}"),
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
-            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "Create and edit requests")
+            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -136,11 +136,12 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "required": "Admin domain request permission is required",
         },
     )
+
     member_permissions_admin = forms.ChoiceField(
-        label="Select permission",
+        label=mark_safe(f"Select permission {required_star}"),
         choices=[
             (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
-            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "Create and edit members")
+            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "View all members plus manage members"),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -148,11 +149,13 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "required": "Admin member permission is required",
         },
     )
+
     domain_request_permissions_member = forms.ChoiceField(
-        label="Select permission",
+        label=mark_safe(f"Select permission {required_star}"),
         choices=[
-            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
-            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "Create and edit members")
+            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
+            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
+            ("no_access", "No access"),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -161,8 +164,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
         },
     )
 
-    # this form dynamically shows/hides some fields, depending on what
-    # was selected prior. This toggles which field is required or not.
     ROLE_REQUIRED_FIELDS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             "domain_request_permissions_admin",
@@ -173,10 +174,19 @@ class BasePortfolioMemberForm(forms.ModelForm):
         ],
     }
 
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
+        # If we have an instance, set initial
+        if instance:
+            kwargs['initial'] = self._map_instance_to_form(instance)
+
+        super().__init__(*args, **kwargs)
+
     def _map_instance_to_form(self, instance):
         """Maps model instance data to form fields"""
         if not instance:
             return {}
+        
         mapped_data = {}
         # Map roles with priority for admin
         if instance.roles:
@@ -192,36 +202,15 @@ class BasePortfolioMemberForm(forms.ModelForm):
                 mapped_data['domain_request_permissions_admin'] = UserPortfolioPermissionChoices.EDIT_REQUESTS.value
             elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value in perms:
                 mapped_data['domain_request_permissions_admin'] = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
+            else:
+                mapped_data["member_permissions_admin"] = "no_access"
 
             if UserPortfolioPermissionChoices.EDIT_MEMBERS.value in perms:
                 mapped_data['member_permissions_admin'] = UserPortfolioPermissionChoices.EDIT_MEMBERS.value
             elif UserPortfolioPermissionChoices.VIEW_MEMBERS.value in perms:
                 mapped_data['member_permissions_admin'] = UserPortfolioPermissionChoices.VIEW_MEMBERS.value
-                
+
         return mapped_data
-
-    def _map_form_to_instance(self, instance):
-        """Maps form data to model instance"""
-        if not self.is_valid():
-            return
-
-        role = self.cleaned_data.get("role")
-        domain_request_permissions_member = self.cleaned_data.get("domain_request_permissions_member")
-        domain_request_permissions_admin = self.cleaned_data.get('domain_request_permissions_admin')
-        member_permissions_admin = self.cleaned_data.get('member_permissions_admin')
-
-        instance.roles = [role]
-        additional_permissions = []
-        if domain_request_permissions_member:
-            additional_permissions.append(domain_request_permissions_member)
-        elif domain_request_permissions_admin:
-            additional_permissions.append(domain_request_permissions_admin)
-        
-        if member_permissions_admin:
-            additional_permissions.append(member_permissions_admin)
-
-        instance.additional_permissions = additional_permissions
-        return instance
 
     def clean(self):
         cleaned_data = super().clean()
@@ -239,6 +228,27 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
         return cleaned_data
 
+    def save(self):
+        """Save the form data to the instance"""
+        if not self.instance:
+            raise ValueError("Cannot save form without instance")
+
+        role = self.cleaned_data.get("role")
+        self.instance.roles = [self.cleaned_data["role"]]
+        
+        additional_permissions = []
+        if self.cleaned_data.get("domain_request_permissions_member") and self.cleaned_data["domain_request_permissions_member"] != "no_access":
+            additional_permissions.append(self.cleaned_data["domain_request_permissions_member"])
+        elif self.cleaned_data.get("domain_request_permissions_admin"):
+            additional_permissions.append(self.cleaned_data["domain_request_permissions_admin"])
+        
+        if self.cleaned_data.get("member_permissions_admin"):
+            additional_permissions.append(self.cleaned_data["member_permissions_admin"])
+        self.instance.additional_permissions = additional_permissions
+
+        self.instance.save()
+        return self.instance
+
 
 class PortfolioMemberForm(BasePortfolioMemberForm):
     """
@@ -250,6 +260,7 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
             "roles",
             "additional_permissions",
         ]
+
     def __init__(self, *args, instance=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['role'].descriptions = {
@@ -258,14 +269,6 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
         }
         self.instance = instance
         self.initial = self._map_instance_to_form(self.instance)
-    
-    def save(self):
-        """Save form data to instance"""
-        if not self.instance:
-            self.instance = self.Meta.model()
-        self._map_form_to_instance(self.instance)
-        self.instance.save()
-        return self.instance
 
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):

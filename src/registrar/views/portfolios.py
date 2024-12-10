@@ -165,7 +165,7 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
         user = portfolio_permission.user
 
         form = self.form_class(request.POST, instance=portfolio_permission)
-
+        print(f"form valid: {form.is_valid()}")
         if form.is_valid():
             form.save()
             return redirect("member", pk=pk)

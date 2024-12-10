@@ -107,6 +107,8 @@ def is_widescreen_mode(request):
         "/no-organization-requests/",
         "/no-organization-domains/",
         "/domain-request/",
+        # "/members/",
+        # "/member/"
     ]
     is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
     is_portfolio_widescreen = bool(
