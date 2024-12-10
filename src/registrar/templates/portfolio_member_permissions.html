@@ -76,7 +76,7 @@
     text-primary-dark
     margin-bottom-0">Organization domain requests</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.domain_request_permissions_admin %}
+      {% input_with_errors form.domain_request_permission_admin %}
     {% endwith %}
 
     <h3 class="summary-item__title
@@ -84,7 +84,7 @@
     margin-bottom-0
     margin-top-3">Organization members</h3>
     {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.member_permissions_admin %}
+      {% input_with_errors form.member_permission_admin %}
     {% endwith %}
   </div>
 
@@ -95,7 +95,7 @@
 
       <h3 class="margin-bottom-0 summary-item__title text-primary-dark">Organization domain requests</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-        {% input_with_errors form.domain_request_permissions_member %}
+        {% input_with_errors form.domain_request_permission_member %}
       {% endwith %}
   </div>
 
