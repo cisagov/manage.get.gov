@@ -190,43 +190,12 @@ export function initPortfolioMemberPage() {
       if (!memberForm) {
         return;
       }
-
-      // console.log("test")
-      // hookupRadioTogglerListener(
-      //   'role', 
-      //   {
-      //     'organization_admin': 'new-member-admin-permissions',
-      //     'organization_member': 'new-member-basic-permissions'
-      //   }
-      // )
-
-      let memberAdminContainer = document.getElementById("member-admin-permissions");
-      let memberBasicContainer = document.getElementById("member-basic-permissions");
-      let roleRadios = document.querySelectorAll('input[name="role"]');
-
-      function toggleContainers() {
-        let selectedRole = document.querySelector('input[name="role"]:checked');
-        if (!selectedRole) {
-          hideElement(memberAdminContainer);
-          hideElement(memberBasicContainer);
-          return;
+      hookupRadioTogglerListener(
+        'role', 
+        {
+          'organization_admin': 'member-admin-permissions',
+          'organization_member': 'member-basic-permissions'
         }
-
-        if (selectedRole.value === "organization_admin") {
-          showElement(memberAdminContainer);
-          hideElement(memberBasicContainer);
-        } else if (selectedRole.value === "organization_member") {
-          hideElement(memberAdminContainer);
-          showElement(memberBasicContainer);
-        }
-      }
-
-      // Initial state
-      toggleContainers();
-
-      // Add change listener to all radio buttons
-      roleRadios.forEach(radio => {
-        radio.addEventListener("change", toggleContainers);
-      });
+      )
   });
 }
