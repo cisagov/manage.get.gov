@@ -8,7 +8,7 @@ function handlePortfolioFields(){
 
     let isPageLoading = true
     // $ symbolically denotes that this is using jQuery
-    const $seniorOfficial = django.jQuery("#id_senior_official");
+    const $seniorOfficialDropdown = django.jQuery("#id_senior_official");
     const seniorOfficialField = document.querySelector(".field-senior_official");
     const seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
     const seniorOfficialReadonly = seniorOfficialField.querySelector(".readonly");
@@ -22,6 +22,8 @@ function handlePortfolioFields(){
     const urbanizationField = document.querySelector(".field-urbanization");
     const stateTerritoryDropdown = document.getElementById("id_state_territory");
     const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
+    const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
+    const federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
 
     /**
      * Fetches federal type data based on a selected agency using an AJAX call.
@@ -31,7 +33,6 @@ function handlePortfolioFields(){
      *                                   or null if there was an error.
      */
     function getFederalTypeFromAgency(agency) {
-        let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
         return fetch(`${federalPortfolioApi}?&agency_name=${agency}`)
             .then(response => {
                 const statusCode = response.status;
@@ -58,8 +59,6 @@ function handlePortfolioFields(){
      *                                   or null if there was an error.
      */
     function getSeniorOfficialFromAgency(agency) {
-        const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
-    
         return fetch(`${seniorOfficialApi}?agency_name=${agency}`)
             .then(response => {
                 const statusCode = response.status;
@@ -148,16 +147,16 @@ function handlePortfolioFields(){
             
             // 4. Handle senior official
             hideElement(seniorOfficialAddress.parentElement);
-            getSeniorOfficialFromAgency(selectedFederalAgency).then((data) => {
+            getSeniorOfficialFromAgency(selectedFederalAgency).then((senior_official) => {
                 // Update the "contact details" blurb beneath senior official
-                updateSeniorOfficialContactInfo(data);
+                updateSeniorOfficialContactInfo(senior_official);
                 showElement(seniorOfficialAddress.parentElement);
                 // Get the associated senior official with this federal agency
-                let seniorOfficialId = data.id;
-                let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-                if ($seniorOfficial && $seniorOfficial.length > 0) {
+                let seniorOfficialId = senior_official.id;
+                let seniorOfficialName = [senior_official.first_name, senior_official.last_name].join(" ");
+                if ($seniorOfficialDropdown && $seniorOfficialDropdown.length > 0) {
                     // If the senior official is a dropdown field, edit that
-                    updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
+                    updateSeniorOfficialDropdown(seniorOfficialId, seniorOfficialName);
                 } else {
                     if (seniorOfficialReadonly) {
                         let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
@@ -168,8 +167,8 @@ function handlePortfolioFields(){
             .catch(error => {
                 if (error.statusCode === 404) {
                     // Handle "not found" senior official
-                    if ($seniorOfficial && $seniorOfficial.length > 0) {
-                        $seniorOfficial.val("").trigger("change");
+                    if ($seniorOfficialDropdown && $seniorOfficialDropdown.length > 0) {
+                        $seniorOfficialDropdown.val("").trigger("change");
                     } else {
                         seniorOfficialReadonly.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
                     }
@@ -177,32 +176,30 @@ function handlePortfolioFields(){
                     // Handle other errors
                     console.error("An error occurred:", error.message);
                 }
-            });
-            
+            }); 
         } else {
             isPageLoading = false;
         }
-
     }
 
     /**
      * Helper for updating federal type field
      */
-    function updateSeniorOfficialDropdown(dropdown, seniorOfficialId, seniorOfficialName) {
+    function updateSeniorOfficialDropdown(seniorOfficialId, seniorOfficialName) {
         if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
             // Clear the field if the SO doesn't exist
-            dropdown.val("").trigger("change");
+            $seniorOfficialDropdown.val("").trigger("change");
             return;
         }
         // Add the senior official to the dropdown.
         // This format supports select2 - if we decide to convert this field in the future.
-        if (dropdown.find(`option[value='${seniorOfficialId}']`).length) {
+        if ($seniorOfficialDropdown.find(`option[value='${seniorOfficialId}']`).length) {
             // Select the value that is associated with the current Senior Official.
-            dropdown.val(seniorOfficialId).trigger("change");
+            $seniorOfficialDropdown.val(seniorOfficialId).trigger("change");
         } else { 
             // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
             let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
-            dropdown.append(userOption).trigger("change");
+            $seniorOfficialDropdown.append(userOption).trigger("change");
         }
     }
 
@@ -237,34 +234,30 @@ function handlePortfolioFields(){
     /**
      * Helper for updating senior official contact info
      */
-    function updateSeniorOfficialContactInfo(data) {
+    function updateSeniorOfficialContactInfo(senior_official) {
         if (!seniorOfficialAddress) return;
-    
         const titleSpan = seniorOfficialAddress.querySelector(".contact_info_title");
         const emailSpan = seniorOfficialAddress.querySelector(".contact_info_email");
         const phoneSpan = seniorOfficialAddress.querySelector(".contact_info_phone");
-    
         if (titleSpan) { 
-            titleSpan.textContent = data.title || "None";
+            titleSpan.textContent = senior_official.title || "None";
         };
-
         // Update the email field and the content for the clipboard
         if (emailSpan) {
             let copyButton = seniorOfficialAddress.querySelector(".admin-icon-group");
-            emailSpan.textContent = data.email || "None";
-            if (data.email) {
+            emailSpan.textContent = senior_official.email || "None";
+            if (senior_official.email) {
                 const clipboardInput = seniorOfficialAddress.querySelector(".admin-icon-group input");
                 if (clipboardInput) {
-                    clipboardInput.value = data.email;
+                    clipboardInput.value = senior_official.email;
                 };
                 showElement(copyButton);
             }else {
                 hideElement(copyButton);
             }
         }
-
         if (phoneSpan) {
-            phoneSpan.textContent = data.phone || "None";
+            phoneSpan.textContent = senior_official.phone || "None";
         };
     }
 

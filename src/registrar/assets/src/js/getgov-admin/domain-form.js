@@ -37,7 +37,6 @@ export function initDomainFormTargetBlankButtons() {
 export function initDynamicDomainFields(){
     const domainPage = document.getElementById("domain_form");
     if (domainPage) {
-        console.log("handling domain page");
         handlePortfolioSelection("#id_domain_info-0-portfolio",
             "#id_domain_info-0-sub_organization");
     }
