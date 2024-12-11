@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 

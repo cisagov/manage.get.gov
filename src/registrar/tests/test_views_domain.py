@@ -241,7 +241,8 @@ class TestDomainDetail(TestDomainOverview):
 
     # Uncomment skip for ticket #3211
     @skip(
-        "Currently the logic ind domain_detail.html is incorrect for IRL state, but is set for local/sandbox testing purposes"
+        "Currently the logic ind domain_detail.html is incorrect for IRL state"
+        "but is set for local/sandbox testing purposes"
     )
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
         """An UNKNOWN domain should not exist on the detail_page anymore.
@@ -463,7 +464,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     # Uncomment skip for ticket #3211
     @skip(
-        "Currently the logic ind domain_detail.html is incorrect for IRL state, but is set for local/sandbox testing purposes"
+        "Currently the logic ind domain_detail.html is incorrect for IRL state,"
+        "but is set for local/sandbox testing purposes"
     )
     @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
