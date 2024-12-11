@@ -1115,28 +1115,6 @@ class Domain(TimeStampedModel, DomainHelper):
         threshold_date = now + timedelta(days=60)
         return now <= self.expiration_date <= threshold_date
 
-    def get_default_expiring_date():
-        """Default to a date that's prior to our first deployment"""
-        return timezone.make_aware(datetime.now() + timedelta(days=30))
-
-    def get_default_current_date(self):
-        """Default to now()"""
-        return timezone.now(self)
-
-    def format_expiring_date(self, start_date):
-        return (
-            timezone.make_aware(datetime.strptime(start_date, "%Y-%m-%d"))
-            if start_date
-            else self.get_default_expiring_date()
-        )
-
-    def format_current_date(self, end_date):
-        return (
-            timezone.make_aware(datetime.strptime(end_date, "%Y-%m-%d"))
-            if end_date
-            else self.get_default_current_date()
-        )
-
     def state_display(self):
         """Return the display status of the domain."""
         if flag_is_active(self, "domain_renewal"):
