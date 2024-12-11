@@ -1603,7 +1603,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
-
     # Filters
     list_filter = [GenericOrgFilter]
 
@@ -1635,7 +1634,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ),
         (".gov domain", {"fields": ["domain"]}),
         (
-            "Contacts", 
+            "Contacts",
             {
                 "fields": [
                     "senior_official",
@@ -1746,7 +1745,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "portfolio_zipcode",
         "portfolio_urbanization",
         "other_contacts",
-        "is_election_board"
+        "is_election_board",
     )
 
     # Read only that we'll leverage for CISA Analysts
