@@ -7,18 +7,21 @@ import { hideElement, showElement } from './helpers-admin.js';
 function handlePortfolioFields(){
 
     let isPageLoading = true
-    let seniorOfficialContactList = document.querySelector(".field-senior_official .dja-address-contact-list");
-    const federalAgency = document.querySelector(".field-federal_agency");
     // $ symbolically denotes that this is using jQuery
-    let $federalAgency = django.jQuery("#id_federal_agency");
+    const $seniorOfficial = django.jQuery("#id_senior_official");
+    const seniorOfficialField = document.querySelector(".field-senior_official");
+    const seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
+    const seniorOfficialReadonly = seniorOfficialField.querySelector(".readonly");
+    const $federalAgency = django.jQuery("#id_federal_agency");
+    const federalAgencyField = document.querySelector(".field-federal_agency");
     let organizationType = document.getElementById("id_organization_type");
     let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
     let organizationName = document.querySelector(".field-organization_name");
     let federalType = document.querySelector(".field-federal_type");
     let urbanization = document.querySelector(".field-urbanization");
     let stateTerritory = document.getElementById("id_state_territory");
-    let $seniorOfficial = django.jQuery("#id_senior_official");
-    let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
+    
+    const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
 
     function getFederalTypeFromAgency(agency) {
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
@@ -40,8 +43,9 @@ function handlePortfolioFields(){
             });
     }
 
-    function getSeniorOfficialFromAgency(agency, seniorOfficialAddUrl) {
-        let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
+    function getSeniorOfficialFromAgency(agency) {
+        const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
+    
         return fetch(`${seniorOfficialApi}?agency_name=${agency}`)
             .then(response => {
                 const statusCode = response.status;
@@ -49,27 +53,15 @@ function handlePortfolioFields(){
             })
             .then(({ statusCode, data }) => {
                 if (data.error) {
-                    if (statusCode === 404) {
-
-                        if ($seniorOfficial && $seniorOfficial.length > 0) {
-                            $seniorOfficial.val("").trigger("change");
-                        } else {
-                            // Show the "create one now" text if this field is none in readonly mode.
-                            readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
-                        }
-
-                        console.warn("Record not found: " + data.error);
-                    } else {
-                        console.error("Error in AJAX call: " + data.error);
-                    }
-                    return null;
+                    // Throw an error with status code and message
+                    throw { statusCode, message: data.error };
                 } else {
                     return data;
                 }
             })
             .catch(error => {
-                console.error("Error fetching senior official: ", error)
-                return null;
+                console.error("Error fetching senior official: ", error);
+                throw error; // Re-throw for external handling
             });
     }
     
@@ -78,13 +70,13 @@ function handlePortfolioFields(){
             let selectedValue = organizationType.value;
             if (selectedValue === "federal") {
                 hideElement(organizationNameContainer);
-                showElement(federalAgency);
+                showElement(federalAgencyField);
                 if (federalType) {
                     showElement(federalType);
                 }
             } else {
                 showElement(organizationNameContainer);
-                hideElement(federalAgency);
+                hideElement(federalAgencyField);
                 if (federalType) {
                     hideElement(federalType);
                 }
@@ -126,12 +118,12 @@ function handlePortfolioFields(){
             // based on changes to the Federal Agency
             getFederalTypeFromAgency(selectedFederalAgency).then((federalType) => updateReadOnly(federalType, '.field-federal_type'));
             
-            hideElement(seniorOfficialContactList.parentElement);
-            let seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
-            getSeniorOfficialFromAgency(selectedFederalAgency, seniorOfficialAddUrl).then((data) => {
+            hideElement(seniorOfficialAddress.parentElement);
+            
+            getSeniorOfficialFromAgency(selectedFederalAgency).then((data) => {
                 // Update the "contact details" blurb beneath senior official
                 updateContactInfo(data);
-                showElement(seniorOfficialContactList.parentElement);
+                showElement(seniorOfficialAddress.parentElement);
                 // Get the associated senior official with this federal agency
                 let seniorOfficialId = data.id;
                 let seniorOfficialName = [data.first_name, data.last_name].join(" ");
@@ -139,10 +131,23 @@ function handlePortfolioFields(){
                     // If the senior official is a dropdown field, edit that
                     updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
                 }else {
-                    if (readonlySeniorOfficial) {
+                    if (seniorOfficialReadonly) {
                         let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
-                        readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+                        seniorOfficialReadonly.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
                     }
+                }
+            })
+            .catch(error => {
+                if (error.statusCode === 404) {
+                    // Handle "not found" senior official
+                    if ($seniorOfficial && $seniorOfficial.length > 0) {
+                        $seniorOfficial.val("").trigger("change");
+                    } else {
+                        seniorOfficialReadonly.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
+                    }
+                } else {
+                    // Handle other errors
+                    console.error("An error occurred:", error.message);
                 }
             });
             
@@ -200,11 +205,11 @@ function handlePortfolioFields(){
     }
 
     function updateContactInfo(data) {
-        if (!seniorOfficialContactList) return;
+        if (!seniorOfficialAddress) return;
     
-        const titleSpan = seniorOfficialContactList.querySelector(".contact_info_title");
-        const emailSpan = seniorOfficialContactList.querySelector(".contact_info_email");
-        const phoneSpan = seniorOfficialContactList.querySelector(".contact_info_phone");
+        const titleSpan = seniorOfficialAddress.querySelector(".contact_info_title");
+        const emailSpan = seniorOfficialAddress.querySelector(".contact_info_email");
+        const phoneSpan = seniorOfficialAddress.querySelector(".contact_info_phone");
     
         if (titleSpan) { 
             titleSpan.textContent = data.title || "None";
@@ -212,10 +217,10 @@ function handlePortfolioFields(){
 
         // Update the email field and the content for the clipboard
         if (emailSpan) {
-            let copyButton = seniorOfficialContactList.querySelector(".admin-icon-group");
+            let copyButton = seniorOfficialAddress.querySelector(".admin-icon-group");
             emailSpan.textContent = data.email || "None";
             if (data.email) {
-                const clipboardInput = seniorOfficialContactList.querySelector(".admin-icon-group input");
+                const clipboardInput = seniorOfficialAddress.querySelector(".admin-icon-group input");
                 if (clipboardInput) {
                     clipboardInput.value = data.email;
                 };
@@ -258,7 +263,7 @@ function handlePortfolioFields(){
     setEventListeners();
 }
 
-export function initPortfolioFields() {
+export function initDynamicPortfolioFields() {
     document.addEventListener('DOMContentLoaded', function() {
         let isPortfolioPage = document.getElementById("portfolio_form");
         if (isPortfolioPage) {
