@@ -64,8 +64,8 @@ export function hookupRadioTogglerListener(radioButtonName, valueToElementMap) {
             }
         }
     }
-  
-    if (radioButtons.length) {
+
+    if (radioButtons && radioButtons.length) {
         // Add event listener to each radio button
         radioButtons.forEach(function (radioButton) {
             radioButton.addEventListener('change', handleRadioButtonChange);

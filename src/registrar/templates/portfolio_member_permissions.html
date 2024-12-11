@@ -18,7 +18,12 @@
       <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
     </li>
     <li class="usa-breadcrumb__list-item">
-      <a href="{% url 'member' pk=member.pk %}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+      {% if member %}
+        {% url 'member' pk=member.pk as back_url %}
+      {% elif invitation %}
+        {% url 'invitedmember' pk=invitation.pk as back_url %}
+      {% endif %}
+      <a href="{{back_url}}" class="usa-breadcrumb__link"><span>Manage member</span></a>
     </li>
     {% comment %} Manage members {% endcomment %}
     <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
@@ -36,13 +41,29 @@
   {% csrf_token %}
   <fieldset class="usa-fieldset">
     <legend>
-      <h2 class="margin-top-1">Member email</h2>
+      {% if member and member.email or invitation and invitation.email %}
+        <h2 class="margin-top-1">Member email</h2>
+      {% else %}
+        <h2 class="margin-top-1">Member</h2>
+      {% endif %}
     </legend>
     <p class="margin-top-0">
+      {% comment %} 
+      Show member email if possible, then invitation email.
+      If neither of these are true, show the name or as a last resort just "None".
+      {% endcomment %}
       {% if member %}
-        {{ member.email }}
+        {% if member.email %}
+          {{ member.email }}
+        {% else %}
+          {{ member.get_formatted_name }}
+        {% endif %}
       {% elif invitation %}
-        {{ invitation.email }}
+        {% if invitation.email %}
+          {{ invitation.email }}
+        {% else %}
+          None
+        {% endif %}
       {% endif %}
     </p>
     <!-- Member email -->

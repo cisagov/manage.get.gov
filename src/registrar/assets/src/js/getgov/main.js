@@ -9,7 +9,7 @@ import { initDomainsTable } from './table-domains.js';
 import { initDomainRequestsTable } from './table-domain-requests.js';
 import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
-import { initPortfolioMemberPageToggle } from './portfolio-member-page.js';
+import { initPortfolioNewMemberPageToggle } from './portfolio-member-page.js';
 import { initAddNewMemberPageListeners } from './portfolio-member-page.js';
 
 initDomainValidators();
@@ -20,13 +20,6 @@ nameserversFormListener();
 
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
-hookupRadioTogglerListener(
-  'member_access_level', 
-  {
-    'admin': 'new-member-admin-permissions',
-    'basic': 'new-member-basic-permissions'
-  }
-);
 hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);
 initializeUrbanizationToggle();
 
@@ -42,5 +35,9 @@ initDomainRequestsTable();
 initMembersTable();
 initMemberDomainsTable();
 
-initPortfolioMemberPageToggle();
+// Init the portfolio new member page
+initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
+
+// Init all other portfolio member pages
+initPortfolioMemberPage();

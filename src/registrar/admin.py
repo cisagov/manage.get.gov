@@ -3791,7 +3791,7 @@ class WaffleFlagAdmin(FlagAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
-        extra_context["organization_member"] = flag_is_active_for_user(request.user, "organization_member")
+        extra_context["organization_members"] = flag_is_active_for_user(request.user, "organization_members")
         return super().changelist_view(request, extra_context=extra_context)
 
 

@@ -2,9 +2,10 @@ import { uswdsInitializeModals } from './helpers-uswds.js';
 import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
+import { hookupRadioTogglerListener } from './radios.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
-export function initPortfolioMemberPageToggle() {
+export function initPortfolioNewMemberPageToggle() {
     document.addEventListener("DOMContentLoaded", () => {
         const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
         if (wrapperDeleteAction) {
@@ -53,6 +54,16 @@ export function initAddNewMemberPageListeners() {
   if (!add_member_form){
      return;
   }
+  // Hookup the radio elements
+  hookupRadioTogglerListener(
+    'member_access_level', 
+    {
+      'admin': 'new-member-admin-permissions',
+      'basic': 'new-member-basic-permissions'
+    }
+  );
+
+  // Hookup the submission buttons
   document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
     // Upon confirmation, submit the form
     document.getElementById("add_member_form").submit();
@@ -168,5 +179,50 @@ export function initAddNewMemberPageListeners() {
           modalTrigger.click();
         }
   }
+}
 
+// Export for the rest of the portfolio pages (not add)
+export function initPortfolioMemberPage() {
+  document.addEventListener("DOMContentLoaded", () => {
+      hookupRadioTogglerListener(
+        'role', 
+        {
+          'organization_admin': 'new-member-admin-permissions',
+          'organization_member': 'new-member-basic-permissions'
+        }
+      );
+      // let memberForm = document.getElementById("member_form");
+      // if (!memberForm) {
+      //   return;
+      // }
+
+      // let memberAdminContainer = document.getElementById("member-admin-permissions");
+      // let memberBasicContainer = document.getElementById("member-basic-permissions");
+      // let roleRadios = document.querySelectorAll('input[name="role"]');
+
+      // function toggleContainers() {
+      //   let selectedRole = document.querySelector('input[name="role"]:checked');
+      //   if (!selectedRole) {
+      //     hideElement(memberAdminContainer);
+      //     hideElement(memberBasicContainer);
+      //     return;
+      //   }
+
+      //   if (selectedRole.value === "organization_admin") {
+      //     showElement(memberAdminContainer);
+      //     hideElement(memberBasicContainer);
+      //   } else if (selectedRole.value === "organization_member") {
+      //     hideElement(memberAdminContainer);
+      //     showElement(memberBasicContainer);
+      //   }
+      // }
+
+      // // Initial state
+      // toggleContainers();
+
+      // // Add change listener to all radio buttons
+      // roleRadios.forEach(radio => {
+      //   radio.addEventListener("change", toggleContainers);
+      // });
+  });
 }

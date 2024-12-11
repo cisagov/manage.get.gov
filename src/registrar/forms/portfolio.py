@@ -109,12 +109,13 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         cleaned_data.pop("full_name", None)
         return cleaned_data
 
+
 class BasePortfolioMemberForm(forms.Form):
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
         choices=[
             (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin access"),
-            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access")
+            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access"),
         ],
         widget=forms.RadioSelect,
         required=True,
@@ -175,12 +176,18 @@ class BasePortfolioMemberForm(forms.Form):
     }
 
     def __init__(self, *args, instance=None, **kwargs):
-        self.instance = instance
-        # If we have an instance, set initial
-        if instance:
-            kwargs['initial'] = self._map_instance_to_form(instance)
-
         super().__init__(*args, **kwargs)
+        self.instance = instance
+        self.initial = self._map_instance_to_form(self.instance)
+        # Adds a <p> description beneath each role option
+        self.fields["role"].descriptions = {
+            "organization_admin": UserPortfolioRoleChoices.get_role_description(
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+            ),
+            "organization_member": UserPortfolioRoleChoices.get_role_description(
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+            ),
+        }
 
     def _map_instance_to_form(self, instance):
         """Maps model instance data to form fields"""
@@ -235,10 +242,7 @@ class BasePortfolioMemberForm(forms.Form):
                 raise ValueError(f"ROLE_REQUIRED_FIELDS referenced a non-existent field: {field_name}.")
 
             if not cleaned_data.get(field_name):
-                self.add_error(
-                    field_name,
-                    self.fields.get(field_name).error_messages.get("required")
-                )
+                self.add_error(field_name, self.fields.get(field_name).error_messages.get("required"))
 
         return cleaned_data
 
@@ -259,7 +263,7 @@ class BasePortfolioMemberForm(forms.Form):
         if role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN:
             if domain_request_permission_admin:
                 additional_permissions.add(domain_request_permission_admin)
-            
+
             if member_permission_admin:
                 additional_permissions.add(member_permission_admin)
         else:
@@ -285,34 +289,12 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
     """
     Form for updating a portfolio member.
     """
-    class Meta:
-        model = UserPortfolioPermission
-        fields = [
-            "roles",
-            "additional_permissions",
-        ]
-
-    def __init__(self, *args, instance=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['role'].descriptions = {
-            "organization_admin": UserPortfolioRoleChoices.get_role_description(UserPortfolioRoleChoices.ORGANIZATION_ADMIN),
-            "organization_member": UserPortfolioRoleChoices.get_role_description(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
-        }
-        self.instance = instance
-        self.initial = self._map_instance_to_form(self.instance)
 
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
     """
     Form for updating a portfolio invited member.
     """
-
-    class Meta:
-        model = PortfolioInvitation
-        fields = [
-            "roles",
-            "additional_permissions",
-        ]
 
 
 class NewMemberForm(forms.ModelForm):
