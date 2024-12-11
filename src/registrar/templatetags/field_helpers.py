@@ -58,6 +58,7 @@ def input_with_errors(context, field=None):  # noqa: C901
     group_classes = []
     aria_labels = []
     legend_headings = []
+    sublabel_text = []
 
     # this will be converted to an attribute string
     described_by = []
@@ -105,6 +106,9 @@ def input_with_errors(context, field=None):  # noqa: C901
 
         elif key == "add_aria_label":
             aria_labels.append(value)
+
+        elif key == "sublabel_text":
+            sublabel_text.append(value)
 
     attrs["id"] = field.auto_id
 
@@ -155,11 +159,16 @@ def input_with_errors(context, field=None):  # noqa: C901
     if group_classes:
         context["group_classes"] = " ".join(group_classes)
 
+    # We handle sublabel_text here instead of directy in the template to avoid conflicts
+    if sublabel_text:
+        sublabel_div_id = f"{attrs['id']}__sublabel"
+        described_by.insert(0, sublabel_div_id)
+
     if described_by:
         # ensure we don't overwrite existing attribute value
         if "aria-describedby" in attrs:
             described_by.append(attrs["aria-describedby"])
-        attrs["aria_describedby"] = " ".join(described_by)
+        attrs["aria-describedby"] = " ".join(described_by)
 
     if aria_labels:
         context["aria_label"] = " ".join(aria_labels)
