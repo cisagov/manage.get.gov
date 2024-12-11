@@ -184,6 +184,7 @@ export function initAddNewMemberPageListeners() {
 // Export for the rest of the portfolio pages (not add)
 export function initPortfolioMemberPage() {
   document.addEventListener("DOMContentLoaded", () => {
+      console.log("test")
       hookupRadioTogglerListener(
         'role', 
         {

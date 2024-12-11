@@ -143,7 +143,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.PortfolioMemberForm
+    form_class = portfolioForms.BasePortfolioMemberForm
 
     def get(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
@@ -258,7 +258,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.PortfolioInvitedMemberForm
+    form_class = portfolioForms.BasePortfolioMemberForm
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)

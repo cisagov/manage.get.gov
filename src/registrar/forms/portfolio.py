@@ -285,18 +285,6 @@ class BasePortfolioMemberForm(forms.Form):
         return self.instance
 
 
-class PortfolioMemberForm(BasePortfolioMemberForm):
-    """
-    Form for updating a portfolio member.
-    """
-
-
-class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
-    """
-    Form for updating a portfolio invited member.
-    """
-
-
 class NewMemberForm(forms.ModelForm):
     member_access_level = forms.ChoiceField(
         label="Select permission",
