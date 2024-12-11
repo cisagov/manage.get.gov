@@ -2,7 +2,7 @@ import { hideElement, showElement } from './helpers-admin.js';
 
 /**
  * A function for dynamically changing some fields on the portfolio admin model
- * IMPORTANT NOTE: The logic in this function is paired handlePortfolioSelection and should be refactored once we solidify our requirements.
+ * IMPORTANT NOTE: The business logic in this function is related to handlePortfolioSelection
 */
 function handlePortfolioFields(){
 
@@ -21,9 +21,15 @@ function handlePortfolioFields(){
     const federalTypeField = document.querySelector(".field-federal_type");
     const urbanizationField = document.querySelector(".field-urbanization");
     const stateTerritoryDropdown = document.getElementById("id_state_territory");
-    // consts for different urls
     const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
 
+    /**
+     * Fetches federal type data based on a selected agency using an AJAX call.
+     *
+     * @param {string} agency
+     * @returns {Promise<Object|null>} - A promise that resolves to the portfolio data object if successful,
+     *                                   or null if there was an error.
+     */
     function getFederalTypeFromAgency(agency) {
         let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
         return fetch(`${federalPortfolioApi}?&agency_name=${agency}`)
@@ -44,6 +50,13 @@ function handlePortfolioFields(){
             });
     }
 
+    /**
+     * Fetches senior official contact data based on a selected agency using an AJAX call.
+     *
+     * @param {string} agency
+     * @returns {Promise<Object|null>} - A promise that resolves to the portfolio data object if successful,
+     *                                   or null if there was an error.
+     */
     function getSeniorOfficialFromAgency(agency) {
         const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
     
@@ -66,6 +79,12 @@ function handlePortfolioFields(){
             });
     }
     
+    /**
+     * Handles the side effects of change on the organization type field
+     * 
+     * 1. If selection is federal, hide org name, show federal agency, show federal type if applicable
+     * 2. else show org name, hide federal agency, hide federal type if applicable
+     */
     function handleOrganizationTypeChange() {
         if (organizationTypeDropdown && organizationNameField) {
             let selectedValue = organizationTypeDropdown.value;
@@ -85,6 +104,14 @@ function handlePortfolioFields(){
         }
     }
 
+    /**
+     * Handles the side effects of change on the federal agency field
+     * 
+     * 1. handle org type dropdown or readonly
+     * 2. call handleOrganizationTypeChange
+     * 3. call getFederalTypeFromAgency and update federal type
+     * 4. call getSeniorOfficialFromAgency and update the SO fieldset
+     */
     function handleFederalAgencyChange() {
         if (!isPageLoading) {
 
@@ -123,7 +150,7 @@ function handlePortfolioFields(){
             hideElement(seniorOfficialAddress.parentElement);
             getSeniorOfficialFromAgency(selectedFederalAgency).then((data) => {
                 // Update the "contact details" blurb beneath senior official
-                updateContactInfo(data);
+                updateSeniorOfficialContactInfo(data);
                 showElement(seniorOfficialAddress.parentElement);
                 // Get the associated senior official with this federal agency
                 let seniorOfficialId = data.id;
@@ -158,6 +185,9 @@ function handlePortfolioFields(){
 
     }
 
+    /**
+     * Helper for updating federal type field
+     */
     function updateSeniorOfficialDropdown(dropdown, seniorOfficialId, seniorOfficialName) {
         if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
             // Clear the field if the SO doesn't exist
@@ -176,6 +206,9 @@ function handlePortfolioFields(){
         }
     }
 
+    /**
+     * Handle urbanization
+     */
     function handleStateTerritoryChange() {
         let selectedValue = stateTerritoryDropdown.value;
         if (selectedValue === "PR") {
@@ -186,11 +219,7 @@ function handlePortfolioFields(){
     }
 
     /**
-     * Utility that selects a div from the DOM using selectorString,
-     * and updates a div within that div which has class of 'readonly'
-     * so that the text of the div is updated to updateText
-     * @param {*} updateText 
-     * @param {*} selectorString 
+     * Helper for updating senior official dropdown
      */
     function updateReadOnly(updateText, selectorString) {
         // find the div by selectorString
@@ -205,7 +234,10 @@ function handlePortfolioFields(){
         }
     }
 
-    function updateContactInfo(data) {
+    /**
+     * Helper for updating senior official contact info
+     */
+    function updateSeniorOfficialContactInfo(data) {
         if (!seniorOfficialAddress) return;
     
         const titleSpan = seniorOfficialAddress.querySelector(".contact_info_title");
@@ -236,6 +268,9 @@ function handlePortfolioFields(){
         };
     }
 
+    /**
+     * Initializes necessary data and display configurations for the portfolio fields.
+     */
     function initializePortfolioSettings() {
         if (urbanizationField && stateTerritoryDropdown) {
             handleStateTerritoryChange();
@@ -243,6 +278,9 @@ function handlePortfolioFields(){
         handleOrganizationTypeChange();
     }
 
+    /**
+     * Sets event listeners for key UI elements.
+     */
     function setEventListeners() {
         if ($federalAgencyDropdown && (organizationTypeDropdown || organizationTypeReadonly)) {
             $federalAgencyDropdown.on("change", function() {

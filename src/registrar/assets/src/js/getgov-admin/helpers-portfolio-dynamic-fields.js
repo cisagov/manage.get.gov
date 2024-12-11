@@ -1,52 +1,11 @@
 import { hideElement, showElement } from './helpers-admin.js';
 
 /**
- * Helper function that handles business logic for the suborganization field.
- * Can be used anywhere the suborganization dropdown exists
-*/
-// export function handleSuborganizationFields(
-//     portfolioDropdownSelector="#id_portfolio",
-//     suborgDropdownSelector="#id_sub_organization", 
-//     requestedSuborgFieldSelector=".field-requested_suborganization", 
-//     suborgCitySelector=".field-suborganization_city", 
-//     suborgStateTerritorySelector=".field-suborganization_state_territory"
-// ) {
-//     // These dropdown are select2 fields so they must be interacted with via jquery
-//     const portfolioDropdown = django.jQuery(portfolioDropdownSelector)
-//     const suborganizationDropdown = django.jQuery(suborgDropdownSelector)
-//     const requestedSuborgField = document.querySelector(requestedSuborgFieldSelector);
-//     const suborgCity = document.querySelector(suborgCitySelector);
-//     const suborgStateTerritory = document.querySelector(suborgStateTerritorySelector);
-//     if (!suborganizationDropdown || !requestedSuborgField || !suborgCity || !suborgStateTerritory) {
-//         console.error("Requested suborg fields not found.");
-//         return;
-//     }
-
-//     function toggleSuborganizationFields() {
-//         if (portfolioDropdown.val() && !suborganizationDropdown.val()) {
-//             if (requestedSuborgField) showElement(requestedSuborgField);
-//             if (suborgCity) showElement(suborgCity);
-//             if (suborgStateTerritory) showElement(suborgStateTerritory);
-//         }else {
-//             if (requestedSuborgField) hideElement(requestedSuborgField);
-//             if (suborgCity) hideElement(suborgCity);
-//             if (suborgStateTerritory) hideElement(suborgStateTerritory);
-//         }
-//     }
-
-//     // Run the function once on page startup, then attach an event listener
-//     toggleSuborganizationFields();
-//     suborganizationDropdown.on("change", toggleSuborganizationFields);
-//     portfolioDropdown.on("change", toggleSuborganizationFields);
-// }
-
-
-/**
  *
  * This function handles the portfolio selection as well as display of
  * portfolio-related fields in the DomainRequest Form.
  * 
- * IMPORTANT NOTE: The logic in this method is paired dynamicPortfolioFields
+ * IMPORTANT NOTE: The business logic in this method is based on dynamicPortfolioFields
 */
 export function handlePortfolioSelection(
     portfolioDropdownSelector="#id_portfolio",
