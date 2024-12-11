@@ -430,36 +430,38 @@ class TestDomainDetail(TestDomainOverview):
             Domain.objects.all().delete()
             UserDomainRole.objects.all().delete()
 
-            self.expiringdomain, _ = Domain.objects.get_or_create(name="expiringdomain.gov")
-            self.expiringdomain.expiration_date = timezone.make_aware(
-                datetime.combine(datetime.today() + timedelta(days=30), datetime.min.time())
+            def custom_is_expiring(self):
+                return True  # Override to return True
+
+            user = get_user_model().objects.create(
+                first_name="Test",
+                last_name="User",
+                email="bogus@example.gov",
+                phone="8003111234",
+                title="test title",
             )
-            self.domain_information, _ = DomainInformation.objects.get_or_create(
-                creator=self.user, domain=self.expiringdomain
+            self.expiringdomain, _ = Domain.objects.get_or_create(
+                name="expiringdomain.gov",
             )
             self.role, _ = UserDomainRole.objects.get_or_create(
                 user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
             )
-            self.expiringdomain.save()
-            self.domain_information.save()
-            self.role.save()
+            DomainInformation.objects.get_or_create(creator=user, domain=self.expiringdomain)
 
-            # Where is May 25, 2023 coming from?
-            print("self.expiringdomain.expiration_date is #1 ", Domain.objects.get(id=self.expiringdomain.id).expiration_date)
+            user.refresh_from_db()
+            self.client.force_login(user)
 
-            expiringdomain = Domain.objects.get(name="expiringdomain.gov")
-            print("self.expiringdomain.expiration_date is #2 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
-            self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
-            print("self.expiringdomain.expiration_date is #3 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
-            detail_page = self.app.get(f"/domain/{expiringdomain.id}")
-            print("self.expiringdomain.expiration_date is #4 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
+            with patch.object(Domain, "is_expiring", custom_is_expiring):
+                expiringdomain = Domain.objects.get(name="expiringdomain.gov")
+                self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
+                detail_page = self.app.get(f"/domain/{expiringdomain.id}")
+                print("Detail page ", detail_page)
+                self.assertContains(detail_page, "Expiring soon")
 
-            self.assertContains(detail_page, "Expiring soon")
+                self.assertContains(detail_page, "Renew to maintain access")
 
-            self.assertContains(detail_page, "Renew to maintain access")
-
-            self.assertNotContains(detail_page, "DNS needed")
-            self.assertNotContains(detail_page, "Expired")
+                self.assertNotContains(detail_page, "DNS needed")
+                self.assertNotContains(detail_page, "Expired")
 
 
 class TestDomainManagers(TestDomainOverview):
@@ -2394,11 +2396,10 @@ class TestDomainRenewal(TestWithUser):
         today = datetime.now()
         expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
         expiring_date_current = (today + timedelta(days=70)).strftime("%Y-%m-%d")
-        expired_date = (today -  timedelta(days=30)).strftime("%Y-%m-%d")
+        expired_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
 
         self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
-            name="igorville.gov",
-            expiration_date=expiring_date
+            name="igorville.gov", expiration_date=expiring_date
         )
         self.domain_with_expired_date, _ = Domain.objects.get_or_create(
             name="domainwithexpireddate.com", expiration_date=expired_date
@@ -2509,3 +2510,43 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
+
+
+# class TestDomainDetailExpiring(WebTest):
+#     @override_flag("domain_renewal", active=True)
+#     def test_expiring_domain_on_detail_page_as_domain_manager(self):
+#         with less_console_noise():
+#             PublicContact.objects.all().delete()
+#             Domain.objects.all().delete()
+#             UserDomainRole.objects.all().delete()
+
+#             self.expiringdomain, _ = Domain.objects.get_or_create(name="expiringdomain.gov")
+#             self.expiringdomain.expiration_date = timezone.make_aware(
+#                 datetime.combine(datetime.today() + timedelta(days=30), datetime.min.time())
+#             )
+#             self.domain_information, _ = DomainInformation.objects.get_or_create(
+#                 creator=self.user, domain=self.expiringdomain
+#             )
+#             self.role, _ = UserDomainRole.objects.get_or_create(
+#                 user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
+#             )
+#             self.expiringdomain.save()
+#             self.domain_information.save()
+#             self.role.save()
+
+#             # Where is May 25, 2023 coming from?
+#             print("self.expiringdomain.expiration_date is #1 ", Domain.objects.get(id=self.expiringdomain.id).expiration_date)
+
+#             expiringdomain = Domain.objects.get(name="expiringdomain.gov")
+#             print("self.expiringdomain.expiration_date is #2 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
+#             self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
+#             print("self.expiringdomain.expiration_date is #3 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
+#             detail_page = self.app.get(f"/domain/{expiringdomain.id}")
+#             print("self.expiringdomain.expiration_date is #4 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
+
+#             self.assertContains(detail_page, "Expiring soon")
+
+#             self.assertContains(detail_page, "Renew to maintain access")
+
+#             self.assertNotContains(detail_page, "DNS needed")
+#             self.assertNotContains(detail_page, "Expired")

@@ -79,10 +79,6 @@ class DomainBaseView(DomainPermissionView):
     def get(self, request, *args, **kwargs):
         self._get_domain(request)
         context = self.get_context_data(object=self.object)
-        print(self.object.expiration_date)
-        print(context["domain"].expiration_date)
-        print(context["object"].expiration_date)
-        print(context)
         return self.render_to_response(context)
 
     def _get_domain(self, request):

@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
@@ -1114,6 +1114,28 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
         threshold_date = now + timedelta(days=60)
         return now <= self.expiration_date <= threshold_date
+
+    def get_default_expiring_date():
+        """Default to a date that's prior to our first deployment"""
+        return timezone.make_aware(datetime.now() + timedelta(days=30))
+
+    def get_default_current_date(self):
+        """Default to now()"""
+        return timezone.now(self)
+
+    def format_expiring_date(self, start_date):
+        return (
+            timezone.make_aware(datetime.strptime(start_date, "%Y-%m-%d"))
+            if start_date
+            else self.get_default_expiring_date()
+        )
+
+    def format_current_date(self, end_date):
+        return (
+            timezone.make_aware(datetime.strptime(end_date, "%Y-%m-%d"))
+            if end_date
+            else self.get_default_current_date()
+        )
 
     def state_display(self):
         """Return the display status of the domain."""

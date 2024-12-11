@@ -45,7 +45,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        print("beginning of context data method",self.object.expiration_date)
         context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
             "registrar.full_access_permission"
         )
@@ -53,17 +52,14 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
         # Stored in a variable for the linter
-        print("middle of context", self.object.expiration_date)
         action = "analyst_action"
         action_location = "analyst_action_location"
         # Flag to see if an analyst is attempting to make edits
-        print("second middle of context data method", self.object.expiration_date)
         if action in self.request.session:
             context[action] = self.request.session[action]
         if action_location in self.request.session:
             context[action_location] = self.request.session[action_location]
-        
-        print("ending of context data method", self.object.expiration_date)
+
         return context
 
     def is_editable(self):
