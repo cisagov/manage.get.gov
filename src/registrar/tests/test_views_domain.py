@@ -423,6 +423,7 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
+    @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
         with less_console_noise():
             PublicContact.objects.all().delete()
@@ -444,14 +445,15 @@ class TestDomainDetail(TestDomainOverview):
             self.role.save()
 
             # Where is May 25, 2023 coming from?
-            print("self.expiringdomain.expiration_date is #1 ", self.expiringdomain.expiration_date)
+            print("self.expiringdomain.expiration_date is #1 ", Domain.objects.get(id=self.expiringdomain.id).expiration_date)
 
             expiringdomain = Domain.objects.get(name="expiringdomain.gov")
+            print("self.expiringdomain.expiration_date is #2 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
             self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
+            print("self.expiringdomain.expiration_date is #3 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
             detail_page = self.app.get(f"/domain/{expiringdomain.id}")
-            # print("self.expiringdomain.expiration_date is #2 ", self.expiringdomain.expiration_date)
+            print("self.expiringdomain.expiration_date is #4 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
 
-            # print("detail page is, ", detail_page)
             self.assertContains(detail_page, "Expiring soon")
 
             self.assertContains(detail_page, "Renew to maintain access")
@@ -2389,16 +2391,21 @@ class TestDomainChangeNotifications(TestDomainOverview):
 class TestDomainRenewal(TestWithUser):
     def setUp(self):
         super().setUp()
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        expiring_date_current = (today + timedelta(days=70)).strftime("%Y-%m-%d")
+        expired_date = (today -  timedelta(days=30)).strftime("%Y-%m-%d")
+
         self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
             name="igorville.gov",
-            expiration_date=date(2024, 12, 25),
+            expiration_date=expiring_date
         )
         self.domain_with_expired_date, _ = Domain.objects.get_or_create(
-            name="domainwithexpireddate.com", expiration_date=date(2022, 12, 25)
+            name="domainwithexpireddate.com", expiration_date=expired_date
         )
 
         self.domain_with_current_date, _ = Domain.objects.get_or_create(
-            name="domainwithfarexpireddate.com", expiration_date=date(2025, 7, 14)
+            name="domainwithfarexpireddate.com", expiration_date=expiring_date_current
         )
 
         UserDomainRole.objects.get_or_create(
@@ -2440,8 +2447,10 @@ class TestDomainRenewal(TestWithUser):
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=True)
     def test_with_domain_renewal_flag_mulitple_domains(self):
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring, _ = Domain.objects.get_or_create(
-            name="domainwithanotherexpiringdate.com", expiration_date=date(2025, 1, 14)
+            name="domainwithanotherexpiringdate.com", expiration_date=expiring_date
         )
 
         UserDomainRole.objects.get_or_create(
@@ -2476,8 +2485,10 @@ class TestDomainRenewal(TestWithUser):
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_with_domain_renewal_flag_mulitple_domains_w_org_feature_flag(self):
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
-            name="domainwithanotherexpiringdate_orgmodel.com", expiration_date=date(2025, 1, 14)
+            name="domainwithanotherexpiringdate_orgmodel.com", expiration_date=expiring_date
         )
 
         UserDomainRole.objects.get_or_create(
