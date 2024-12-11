@@ -85,7 +85,7 @@ function handlePortfolioFields(){
         }
     }
 
-    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType) {
+    function handleFederalAgencyChange() {
         if (!isPageLoading) {
 
             let selectedFederalAgency = federalAgency.find("option:selected").text();
@@ -99,7 +99,7 @@ function handlePortfolioFields(){
                 if (organizationTypeValue !== "federal") {
                     if (organizationType){
                         organizationType.value = "federal";
-                    }else {
+                    } else {
                         readonlyOrganizationType.innerText = "Federal"
                     }
                 }
@@ -107,7 +107,7 @@ function handlePortfolioFields(){
                 if (organizationTypeValue === "federal") {
                     if (organizationType){
                         organizationType.value =  "";
-                    }else {
+                    } else {
                         readonlyOrganizationType.innerText =  "-"
                     }
                 }
@@ -131,7 +131,7 @@ function handlePortfolioFields(){
                 if ($seniorOfficial && $seniorOfficial.length > 0) {
                     // If the senior official is a dropdown field, edit that
                     updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
-                }else {
+                } else {
                     if (seniorOfficialReadonly) {
                         let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
                         seniorOfficialReadonly.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
@@ -246,7 +246,7 @@ function handlePortfolioFields(){
     function setEventListeners() {
         if ($federalAgency && (organizationTypeDropdown || organizationTypeReadonly)) {
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationTypeDropdown, organizationTypeReadonly);
+                handleFederalAgencyChange();
             });
         }
         if (urbanizationField && stateTerritoryDropdown) {
