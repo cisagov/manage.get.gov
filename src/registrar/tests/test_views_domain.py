@@ -443,7 +443,7 @@ class TestDomainDetail(TestDomainOverview):
             self.domain_information.save()
             self.role.save()
 
-            # Where is May 25, 2023 coming from???
+            # Where is May 25, 2023 coming from?
             print("self.expiringdomain.expiration_date is #1 ", self.expiringdomain.expiration_date)
 
             expiringdomain = Domain.objects.get(name="expiringdomain.gov")
@@ -452,13 +452,10 @@ class TestDomainDetail(TestDomainOverview):
             # print("self.expiringdomain.expiration_date is #2 ", self.expiringdomain.expiration_date)
 
             # print("detail page is, ", detail_page)
-            # Check that the page contains the message for expiring soon
             self.assertContains(detail_page, "Expiring soon")
 
-            # Check that the page contains the message to renew the domain
             self.assertContains(detail_page, "Renew to maintain access")
 
-            # Optionally, check that other text is NOT shown, depending on your logic
             self.assertNotContains(detail_page, "DNS needed")
             self.assertNotContains(detail_page, "Expired")
 
