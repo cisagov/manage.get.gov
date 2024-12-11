@@ -12,7 +12,7 @@ function handlePortfolioFields(){
     const seniorOfficialField = document.querySelector(".field-senior_official");
     const seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
     const seniorOfficialReadonly = seniorOfficialField.querySelector(".readonly");
-    const $federalAgency = django.jQuery("#id_federal_agency");
+    const $federalAgencyDropdown = django.jQuery("#id_federal_agency");
     const federalAgencyField = document.querySelector(".field-federal_agency");
     const organizationTypeField = document.querySelector(".field-organization_type");
     const organizationTypeReadonly = organizationTypeField.querySelector(".readonly");
@@ -88,39 +88,39 @@ function handlePortfolioFields(){
     function handleFederalAgencyChange() {
         if (!isPageLoading) {
 
-            let selectedFederalAgency = federalAgency.find("option:selected").text();
-            // There isn't a federal senior official associated with null records
+            let selectedFederalAgency = $federalAgencyDropdown.find("option:selected").text();
             if (!selectedFederalAgency) {
                 return;
             }
 
-            let organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
+            // 1. Handle organization type
+            let organizationTypeValue = organizationTypeDropdown ? organizationTypeDropdown.value : organizationTypeReadonly.innerText.toLowerCase();
             if (selectedFederalAgency !== "Non-Federal Agency") {
                 if (organizationTypeValue !== "federal") {
-                    if (organizationType){
-                        organizationType.value = "federal";
+                    if (organizationTypeDropdown){
+                        organizationTypeDropdown.value = "federal";
                     } else {
-                        readonlyOrganizationType.innerText = "Federal"
+                        organizationTypeReadonly.innerText = "Federal"
                     }
                 }
             } else {
                 if (organizationTypeValue === "federal") {
-                    if (organizationType){
-                        organizationType.value =  "";
+                    if (organizationTypeDropdown){
+                        organizationTypeDropdown.value =  "";
                     } else {
-                        readonlyOrganizationType.innerText =  "-"
+                        organizationTypeReadonly.innerText =  "-"
                     }
                 }
             }
 
+            // 2. Handle organization type change side effects
             handleOrganizationTypeChange();
 
-            // Determine if any changes are necessary to the display of portfolio type or federal type
-            // based on changes to the Federal Agency
+            // 3. Handle federal type
             getFederalTypeFromAgency(selectedFederalAgency).then((federalType) => updateReadOnly(federalType, '.field-federal_type'));
             
+            // 4. Handle senior official
             hideElement(seniorOfficialAddress.parentElement);
-            
             getSeniorOfficialFromAgency(selectedFederalAgency).then((data) => {
                 // Update the "contact details" blurb beneath senior official
                 updateContactInfo(data);
@@ -244,8 +244,8 @@ function handlePortfolioFields(){
     }
 
     function setEventListeners() {
-        if ($federalAgency && (organizationTypeDropdown || organizationTypeReadonly)) {
-            $federalAgency.on("change", function() {
+        if ($federalAgencyDropdown && (organizationTypeDropdown || organizationTypeReadonly)) {
+            $federalAgencyDropdown.on("change", function() {
                 handleFederalAgencyChange();
             });
         }
