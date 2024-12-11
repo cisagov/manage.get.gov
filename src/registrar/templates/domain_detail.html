@@ -36,9 +36,9 @@
           </span>
           <span class="text-primary-darker">
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
-            {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
+            {% if domain.is_expired and domain.state == domain.State.UNKNOWN %}
               Expired
-            {% elif domain.is_expiring and domain.state != domain.State.UNKNOWN %}
+            {% elif domain.is_expiring and domain.state == domain.State.UNKNOWN %}
               Expiring soon
             {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
               DNS needed
