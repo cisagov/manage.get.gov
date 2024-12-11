@@ -1038,27 +1038,18 @@ class Domain(TimeStampedModel, DomainHelper):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
 
-        # logger.info("Deleting subdomains for %s", self.name)
-        # # check if any subdomains are in use by another domain
-        # hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
-        # logger.debug("Checking if any subdomains are in use by another domain")    
-        # for host in hosts:
-        #     if host.domain != self:
-        #         logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
-        #         raise RegistryError(
-        #             code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
-        #             note=f"Host {host.name} is in use by {host.domain}",
-        #         )
-        # logger.debug("No subdomains are in use by another domain")
-
-        # nameservers = [host.name for host in hosts]
-        # hosts = self.createDeleteHostList(hostsToDelete=nameservers)
-        # response_code = self.addAndRemoveHostsFromDomain(hostsToAdd=[], hostsToDelete=hosts)
-        # if response_code != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-        #     raise RegistryError(code=response_code)
-        
-        # logger.debug("Deleting subordinate hosts for %s", self.name)
-        # self._delete_hosts_if_not_used(nameservers)
+        logger.info("Deleting subdomains for %s", self.name)
+        # check if any subdomains are in use by another domain
+        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
+        logger.debug("Checking if any subdomains are in use by another domain")    
+        for host in hosts:
+            if host.domain != self:
+                logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
+                    note=f"Host {host.name} is in use by {host.domain}",
+                )
+        logger.debug("No subdomains are in use by another domain")
         
         (
             deleted_values,
@@ -1068,8 +1059,8 @@ class Domain(TimeStampedModel, DomainHelper):
         ) = self.getNameserverChanges(hosts=[])
 
         _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
-        addToDomainList, addToDomainCount = self.createNewHostList(new_values)
-        deleteHostList, deleteCount = self.createDeleteHostList(deleted_values)
+        addToDomainList, _ = self.createNewHostList(new_values)
+        deleteHostList, _ = self.createDeleteHostList(deleted_values)
         responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
 
         # if unable to update domain raise error and stop
