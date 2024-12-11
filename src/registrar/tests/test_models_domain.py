@@ -9,6 +9,7 @@ from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 import datetime
 from django.utils.timezone import make_aware
+from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
 
 from unittest import skip
@@ -2592,6 +2593,7 @@ class TestAnalystDelete(MockEppLib):
         Domain.objects.all().delete()
         super().tearDown()
 
+    @less_console_noise_decorator
     def test_analyst_deletes_domain(self):
         """
         Scenario: Analyst permanently deletes a domain
@@ -2601,29 +2603,29 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is set.
         """
-        with less_console_noise():
-            # Put the domain in client hold
-            self.domain.place_client_hold()
-            # Delete it...
-            self.domain.deletedInEpp()
-            self.domain.save()
-            self.mockedSendFunction.assert_has_calls(
-                [
-                    call(
-                        commands.DeleteDomain(name="fake.gov"),
-                        cleaned=True,
-                    )
-                ]
-            )
-            # Domain itself should not be deleted
-            self.assertNotEqual(self.domain, None)
-            # Domain should have the right state
-            self.assertEqual(self.domain.state, Domain.State.DELETED)
-            # Domain should have a deleted
-            self.assertNotEqual(self.domain.deleted, None)
-            # Cache should be invalidated
-            self.assertEqual(self.domain._cache, {})
+        # Put the domain in client hold
+        self.domain.place_client_hold()
+        # Delete it...
+        self.domain.deletedInEpp()
+        self.domain.save()
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="fake.gov"),
+                    cleaned=True,
+                )
+            ]
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.DELETED)
+        # Domain should have a deleted
+        self.assertNotEqual(self.domain.deleted, None)
+        # Cache should be invalidated
+        self.assertEqual(self.domain._cache, {})
 
+    # @less_console_noise_decorator
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
@@ -2631,23 +2633,23 @@ class TestAnalystDelete(MockEppLib):
             Then a client error is returned of code 2305
             And `state` is not set to `DELETED`
         """
-        with less_console_noise():
-            # Desired domain
-            domain, _ = Domain.objects.get_or_create(name="sharingiscaring.gov", state=Domain.State.ON_HOLD)
-            # Put the domain in client hold
-            domain.place_client_hold()
-            # Delete it
-            with self.assertRaises(RegistryError) as err:
-                domain.deletedInEpp()
-                domain.save()
+        # Desired domain
+        domain, _ = Domain.objects.get_or_create(name="sharingiscaring.gov", state=Domain.State.ON_HOLD)
+        # Put the domain in client hold
+        domain.place_client_hold()
+        # Delete it
+        with self.assertRaises(RegistryError) as err:
+            domain.deletedInEpp()
+            domain.save()
 
-                self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
-                self.assertEqual(err.msg, "Host in use by another domain: fake-on-hold.gov")
-            # Domain itself should not be deleted
-            self.assertNotEqual(domain, None)
-            # State should not have changed
-            self.assertEqual(domain.state, Domain.State.ON_HOLD)
+        self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
+        self.assertEqual(err.msg, "Host in use by another domain: fake-on-hold.gov")
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should not have changed
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
+    # @less_console_noise_decorator
     def test_deletion_with_host_and_contacts(self):
         """
         Scenario: Domain with related Host and Contacts is Deleted
@@ -2658,44 +2660,59 @@ class TestAnalystDelete(MockEppLib):
             Then `commands.DeleteContact` is sent to the registry for the registrant contact
             And `state` is set to `DELETED`
         """
-        with less_console_noise():
-            # Desired domain
-            domain, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.ON_HOLD)
-            # Put the domain in client hold
-            domain.place_client_hold()
-            # Delete it
-            domain.deletedInEpp()
-            domain.save()
+        # Desired domain
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.ON_HOLD)
+        # Put the domain in client hold
+        domain.place_client_hold()
+        # Delete it
+        domain.deletedInEpp()
+        domain.save()
 
-            # Check that the host and contacts are deleted, order doesn't matter
-            self.mockedSendFunction.assert_has_calls(
-                [
-                    call(commands.DeleteHost(name="fake.host.com"), cleaned=True),
-                    call(commands.DeleteContact(id="securityContact"), cleaned=True),
-                    call(commands.DeleteContact(id="technicalContact"), cleaned=True),
-                    call(
-                        commands.DeleteContact(id="adminContact"),
-                        cleaned=True,
+        # Check that the host and contacts are deleted, order doesn't matter
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(
+                        name="freeman.gov",
+                        add=[
+                            common.Status(
+                                state=Domain.Status.CLIENT_HOLD,
+                                description="",
+                                lang="en",
+                            )
+                        ],
+                        rem=[],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
                     ),
-                ],
-                any_order=True,
-            )
-            actual_calls = self.mockedSendFunction.call_args_list
-            print("actual_calls", actual_calls)
+                    cleaned=True,
+                ),
+                call(commands.DeleteHost(name="fake.host.com"), cleaned=True),
+                call(commands.DeleteContact(id="securityContact"), cleaned=True),
+                call(commands.DeleteContact(id="technicalContact"), cleaned=True),
+                call(commands.DeleteContact(id="adminContact"), cleaned=True),
+            ],
+            any_order=True,
+        )
+        actual_calls = self.mockedSendFunction.call_args_list
+        print("actual_calls", actual_calls)
 
-            # These calls need to be in order
-            self.mockedSendFunction.assert_has_calls(
-                [
-                    call(commands.DeleteDomain(name="freeman.gov"), cleaned=True),
-                    call(commands.InfoContact(id="regContact"), cleaned=True),
-                    call(commands.DeleteContact(id="regContact"), cleaned=True),
-                ],
-            )
-            # Domain itself should not be deleted
-            self.assertNotEqual(domain, None)
-            # State should have changed
-            self.assertEqual(domain.state, Domain.State.DELETED)
+        # These calls need to be in order
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(commands.DeleteDomain(name="freeman.gov"), cleaned=True),
+                call(commands.InfoContact(id="regContact"), cleaned=True),
+                call(commands.DeleteContact(id="regContact"), cleaned=True),
+            ],
+        )
+        # Domain itself should not be deleted
+        self.assertNotEqual(domain, None)
+        # State should have changed
+        self.assertEqual(domain.state, Domain.State.DELETED)
 
+    # @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
         """
         Scenario: Domain deletion is unsuccessful due to FSM rules
@@ -2707,15 +2724,14 @@ class TestAnalystDelete(MockEppLib):
 
             The deleted date is still null.
         """
-        with less_console_noise():
-            self.assertEqual(self.domain.state, Domain.State.READY)
-            with self.assertRaises(TransitionNotAllowed) as err:
-                self.domain.deletedInEpp()
-                self.domain.save()
-                self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
-            # Domain should not be deleted
-            self.assertNotEqual(self.domain, None)
-            # Domain should have the right state
-            self.assertEqual(self.domain.state, Domain.State.READY)
-            # deleted should be null
-            self.assertEqual(self.domain.deleted, None)
+        self.assertEqual(self.domain.state, Domain.State.READY)
+        with self.assertRaises(TransitionNotAllowed) as err:
+            self.domain.deletedInEpp()
+            self.domain.save()
+            self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
+        # Domain should not be deleted
+        self.assertNotEqual(self.domain, None)
+        # Domain should have the right state
+        self.assertEqual(self.domain.state, Domain.State.READY)
+        # deleted should be null
+        self.assertEqual(self.domain.deleted, None)

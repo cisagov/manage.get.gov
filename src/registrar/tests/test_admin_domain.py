@@ -228,7 +228,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         """
         Scenario: Domain deletion is unsuccessful
             When the domain is deleted and has shared subdomains
-            Then a user-friendly error message is returned for displaying on the web
+            Then a user-friendly success message is returned for displaying on the web
             And `state` is not set to `DELETED`
         """
         domain, _ = Domain.objects.get_or_create(name="sharingiscaring.gov", state=Domain.State.ON_HOLD)

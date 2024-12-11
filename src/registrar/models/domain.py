@@ -269,10 +269,7 @@ class Domain(TimeStampedModel, DomainHelper):
             { PublicContact.ContactTypeChoices.REGISTRANT: "jd1234",
               PublicContact.ContactTypeChoices.ADMINISTRATIVE: "sh8013",...}
         """
-        if self._cache.get("contacts"):
-            return self._cache.get("contacts")
-        else:
-            return self._get_property("contacts")
+        raise NotImplementedError()
 
     @Cache
     def creation_date(self) -> date:
@@ -1036,61 +1033,51 @@ class Domain(TimeStampedModel, DomainHelper):
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
-
-    def _delete_nonregistrant_contacts(self):
-        """Non-registrant contacts associated with this domain will be deleted.
-        RegistryErrors will be logged and raised. Error
-        handling should be provided by the caller.
-        """
-        logger.info("Deleting contacts for %s", self.name)
-        contacts = self.registry_contacts
-        logger.debug("Contacts to delete for %s inside _delete_contacts -> %s", self.name, contacts)
-        if contacts:
-            for contact, id in contacts.items():
-                # registrants have to be deleted after the domain
-                if contact != PublicContact.ContactTypeChoices.REGISTRANT:
-                    self._delete_contact(contact, id)
-
-    def _delete_subdomains(self):
-        """Subdomains of this domain should be deleted from the registry.
-        Subdomains which are used by other domains (eg as a hostname) will
-        not be deleted.
-
-        raises:
-            RegistryError: if any subdomain cannot be deleted
-        """
-        logger.info("Deleting nameservers for %s", self.name)
-        # check if any nameservers are in use by another domain
-        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
-        for host in hosts:
-            if host.domain != self:
-                logger.error("Host %s in use by another domain: %s", host.name, host.domain)
-                raise RegistryError(
-                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
-                    note=host.domain,
-                )
-
-        nameservers = [n[0] for n in self.nameservers]
-        hostsToDelete, _ = self.createDeleteHostList(nameservers)
-        logger.debug("HostsToDelete from %s inside _delete_subdomains -> %s", self.name, hostsToDelete)
-
-        self.addAndRemoveHostsFromDomain(None, hostsToDelete=nameservers)
-        # for objSet in hostsToDelete:
-        #     self._delete_hosts_if_not_used(objSet.hosts)
-
+        
     def _delete_domain(self):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
+
+        logger.info("Deleting subdomains for %s", self.name)
+        # check if any subdomains are in use by another domain
+        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
+        logger.debug("Checking if any subdomains are in use by another domain")    
+        for host in hosts:
+            if host.domain != self:
+                logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
+                raise RegistryError(
+                    code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
+                    note=f"Host {host.name} is in use by {host.domain}",
+                )
+        logger.debug("No subdomains are in use by another domain")
+
+        nameservers = [host.name for host in hosts]
+        hosts = self.createDeleteHostList(hostsToDelete=nameservers)
+        response_code = self.addAndRemoveHostsFromDomain(hostsToAdd=None, hostsToDelete=hosts)
+        if response_code != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
+            raise RegistryError(code=response_code)
+        
+        logger.debug("Deleting subordinate hosts for %s", self.name)
+        self._delete_hosts_if_not_used(nameservers)
+        
+        logger.debug("Deleting non-registrant contacts for %s", self.name)
+        contacts = PublicContact.objects.filter(domain=self)
+        for contact in contacts:
+            if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
+                logger.debug("removing contact %s from domain %s", contact.registry_id, self.name)
+                self._update_domain_with_contact(contact, rem=True)
+                logger.debug("deleting contact %s from registry", contact.registry_id)
+                request = commands.DeleteContact(contact.registry_id)
+                registry.send(request, cleaned=True)
+
+        logger.info("Deleting domain %s", self.name)
         request = commands.DeleteDomain(name=self.name)
         registry.send(request, cleaned=True)
 
-    def _delete_domain_registrant(self):
-        """This domain's registrant should be deleted from the registry
-        may raises RegistryError, should be caught or handled correctly by caller"""
-        if self.registrant_contact:
-            registrantID = self.registrant_contact.registry_id
-            request = commands.DeleteContact(id=registrantID)
-            registry.send(request, cleaned=True)
+        logger.debug("Deleting registrant contact for %s", self.name)
+        registrant_id = self.registrant_contact.registry_id
+        deleteRegistrant = commands.DeleteContact(id=registrant_id)
+        registry.send(deleteRegistrant, cleaned=True)
 
     def __str__(self) -> str:
         return self.name
@@ -1487,7 +1474,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN], target=State.DELETED)
+    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
@@ -1499,14 +1486,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # as doing everything here would reduce reliablity.
         try:
             logger.info("deletedInEpp()-> inside _delete_domain")
-            self._delete_subdomains()
-            self._delete_nonregistrant_contacts()
             self._delete_domain()
-            self._delete_domain_registrant()
             self.deleted = timezone.now()
             self.expiration_date = None
         except RegistryError as err:
-            logger.error(f"Could not delete domain. Registry returned error: {err}. Additional context: {err.note}")
+            logger.error(f"Could not delete domain. Registry returned error: {err}. {err.note}")
             raise err
         except TransitionNotAllowed as err:
             logger.error("Could not delete domain. FSM failure: {err}")
@@ -1704,24 +1688,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
                 raise e
-
-    def _delete_contact(self, contact_name: str, registry_id: str):
-        """Try to delete a contact from the registry.
-
-        raises:
-            RegistryError: if the registry is unable to delete the contact
-        """
-        logger.info("_delete_contact() -> Attempting to delete contact for %s from domain %s", contact_name, self.name)
-        try:
-            req = commands.DeleteContact(id=registry_id)
-            return registry.send(req, cleaned=True).res_data[0]
-        except RegistryError as error:
-            logger.error(
-                "Registry threw error when trying to delete contact %s, error: %s",  # noqa
-                contact_name,
-                error,
-            )
-            raise error
 
     def is_ipv6(self, ip: str):
         ip_addr = ipaddress.ip_address(ip)
