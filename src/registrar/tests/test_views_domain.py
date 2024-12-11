@@ -423,6 +423,42 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
+    def test_expiring_domain_on_detail_page_as_domain_manager(self):
+        with less_console_noise():
+            PublicContact.objects.all().delete()
+            Domain.objects.all().delete()
+            UserDomainRole.objects.all().delete()
+
+            self.expiringdomain, _ = Domain.objects.get_or_create(name="expiringdomain.gov")
+            self.expiringdomain.expiration_date = timezone.make_aware(
+                datetime.combine(datetime.today() + timedelta(days=30), datetime.min.time())
+            )
+            self.domain_information, _ = DomainInformation.objects.get_or_create(
+                creator=self.user, domain=self.expiringdomain
+            )
+            self.role, _ = UserDomainRole.objects.get_or_create(
+                user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
+            )
+            self.expiringdomain.save()
+            self.domain_information.save()
+            self.role.save()
+
+            # Where is May 25, 2023 coming from?
+            print("self.expiringdomain.expiration_date is #1 ", self.expiringdomain.expiration_date)
+
+            expiringdomain = Domain.objects.get(name="expiringdomain.gov")
+            self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
+            detail_page = self.app.get(f"/domain/{expiringdomain.id}")
+            # print("self.expiringdomain.expiration_date is #2 ", self.expiringdomain.expiration_date)
+
+            # print("detail page is, ", detail_page)
+            self.assertContains(detail_page, "Expiring soon")
+
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            self.assertNotContains(detail_page, "DNS needed")
+            self.assertNotContains(detail_page, "Expired")
+
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod
@@ -2348,3 +2384,117 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+
+class TestDomainRenewal(TestWithUser):
+    def setUp(self):
+        super().setUp()
+        self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
+            name="igorville.gov",
+            expiration_date=date(2024, 12, 25),
+        )
+        self.domain_with_expired_date, _ = Domain.objects.get_or_create(
+            name="domainwithexpireddate.com", expiration_date=date(2022, 12, 25)
+        )
+
+        self.domain_with_current_date, _ = Domain.objects.get_or_create(
+            name="domainwithfarexpireddate.com", expiration_date=date(2025, 7, 14)
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_current_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expired_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        try:
+            UserDomainRole.objects.all().delete()
+            Domain.objects.all().delete()
+        except ValueError:
+            pass
+        super().tearDown()
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=False)
+    def test_without_domain_renewal_flag(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "will expire soon")
+        self.assertNotContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_with_domain_renewal_flag_single_domain(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "One domain will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_with_domain_renewal_flag_mulitple_domains(self):
+        self.domain_with_another_expiring, _ = Domain.objects.get_or_create(
+            name="domainwithanotherexpiringdate.com", expiration_date=date(2025, 1, 14)
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_another_expiring, role=UserDomainRole.Roles.MANAGER
+        )
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "Multiple domains will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_with_domain_renewal_flag_no_expiring_domains(self):
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "Expiring soon")
+        self.assertNotContains(domains_page, "will expire soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_with_domain_renewal_flag_single_domain_w_org_feature_flag(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        print("domains_page is", domains_page)
+        self.assertContains(domains_page, "One domain will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_with_domain_renewal_flag_mulitple_domains_w_org_feature_flag(self):
+        self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
+            name="domainwithanotherexpiringdate_orgmodel.com", expiration_date=date(2025, 1, 14)
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_another_expiring_org_model, role=UserDomainRole.Roles.MANAGER
+        )
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "Multiple domains will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_with_domain_renewal_flag_no_expiring_domains_w_org_feature_flag(self):
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "Expiring soon")
+        self.assertNotContains(domains_page, "will expire soon")
