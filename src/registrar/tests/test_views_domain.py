@@ -423,27 +423,28 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
+
 class TestDomainDetailDomainRenewal(TestDomainOverview):
     def setUp(self):
         super().setUp()
 
         self.user = get_user_model().objects.create(
-                first_name="User",
-                last_name="Test",
-                email="bogus@example.gov",
-                phone="8003111234",
-                title="test title",
-                username="usertest"
-            )
-        
+            first_name="User",
+            last_name="Test",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            username="usertest",
+        )
+
         self.expiringdomain, _ = Domain.objects.get_or_create(
-                name="expiringdomain.gov",
-            )
-        
+            name="expiringdomain.gov",
+        )
+
         UserDomainRole.objects.get_or_create(
-                user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
-            )
-        
+            user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
+        )
+
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.expiringdomain)
 
         self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
@@ -452,17 +453,19 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     def custom_is_expired(self):
         return False
-    
+
     def custom_is_expiring(self):
         return True
 
     @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
         self.client.force_login(self.user)
-        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(Domain, "is_expired", self.custom_is_expired):
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired
+        ):
             self.assertEquals(self.expiringdomain.state, Domain.State.UNKNOWN)
             detail_page = self.client.get(
-                    reverse("domain", kwargs={"pk": self.expiringdomain.id}),
+                reverse("domain", kwargs={"pk": self.expiringdomain.id}),
             )
             self.assertContains(detail_page, "Expiring soon")
 
@@ -470,44 +473,62 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
             self.assertNotContains(detail_page, "DNS needed")
             self.assertNotContains(detail_page, "Expired")
-    
+
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
         non_dom_manage_user = get_user_model().objects.create(
-                first_name="Non Domain",
-                last_name="Manager",
-                email="verybogus@example.gov",
-                phone="8003111234",
-                title="test title again",
-                username="nondomain"
-            )
-        
+            first_name="Non Domain",
+            last_name="Manager",
+            email="verybogus@example.gov",
+            phone="8003111234",
+            title="test title again",
+            username="nondomain",
+        )
+
         non_dom_manage_user.save()
         UserPortfolioPermission.objects.get_or_create(
-            user=non_dom_manage_user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+            user=non_dom_manage_user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
         )
-        expiringdomain2,_= Domain.objects.get_or_create(name="bogusdomain2.gov")
-        DomainInformation.objects.get_or_create(creator=non_dom_manage_user, domain=expiringdomain2, portfolio=self.portfolio)
+        expiringdomain2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
+        DomainInformation.objects.get_or_create(
+            creator=non_dom_manage_user, domain=expiringdomain2, portfolio=self.portfolio
+        )
+        non_dom_manage_user.refresh_from_db()
         self.client.force_login(non_dom_manage_user)
-        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(Domain, "is_expired", self.custom_is_expired):
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired
+        ):
             detail_page = self.client.get(
-                        reverse("domain", kwargs={"pk": expiringdomain2.id}),
+                reverse("domain", kwargs={"pk": expiringdomain2.id}),
             )
-            self.assertContains(detail_page,"Contact one of the listed domain managers to renew the domain.")
-    
+            self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
+
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
-        expiringdomain3,_ = Domain.objects.get_or_create(name="bogusdomain2.gov")
-        DomainInformation.objects.get_or_create(creator=self.user, domain=expiringdomain3, portfolio=self.portfolio)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
+
+        expiringdomain3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=expiringdomain3, role=UserDomainRole.Roles.MANAGER)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=expiringdomain3, portfolio=portfolio)
+        self.user.refresh_from_db()
         self.client.force_login(self.user)
-        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(Domain, "is_expired", self.custom_is_expired):
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired
+        ):
             detail_page = self.client.get(
-                        reverse("domain", kwargs={"pk": expiringdomain3.id}),
+                reverse("domain", kwargs={"pk": expiringdomain3.id}),
             )
-            self.assertContains(detail_page,"Renew to maintain access")
+            self.assertContains(detail_page, "Renew to maintain access")
+
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod
@@ -2523,7 +2544,6 @@ class TestDomainRenewal(TestWithUser):
     def test_with_domain_renewal_flag_single_domain_w_org_feature_flag(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
-        print("domains_page is", domains_page)
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
@@ -2555,43 +2575,3 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
-
-
-# class TestDomainDetailExpiring(WebTest):
-#     @override_flag("domain_renewal", active=True)
-#     def test_expiring_domain_on_detail_page_as_domain_manager(self):
-#         with less_console_noise():
-#             PublicContact.objects.all().delete()
-#             Domain.objects.all().delete()
-#             UserDomainRole.objects.all().delete()
-
-#             self.expiringdomain, _ = Domain.objects.get_or_create(name="expiringdomain.gov")
-#             self.expiringdomain.expiration_date = timezone.make_aware(
-#                 datetime.combine(datetime.today() + timedelta(days=30), datetime.min.time())
-#             )
-#             self.domain_information, _ = DomainInformation.objects.get_or_create(
-#                 creator=self.user, domain=self.expiringdomain
-#             )
-#             self.role, _ = UserDomainRole.objects.get_or_create(
-#                 user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
-#             )
-#             self.expiringdomain.save()
-#             self.domain_information.save()
-#             self.role.save()
-
-#             # Where is May 25, 2023 coming from?
-#             print("self.expiringdomain.expiration_date is #1 ", Domain.objects.get(id=self.expiringdomain.id).expiration_date)
-
-#             expiringdomain = Domain.objects.get(name="expiringdomain.gov")
-#             print("self.expiringdomain.expiration_date is #2 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
-#             self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
-#             print("self.expiringdomain.expiration_date is #3 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
-#             detail_page = self.app.get(f"/domain/{expiringdomain.id}")
-#             print("self.expiringdomain.expiration_date is #4 ", Domain.objects.get(id=expiringdomain.id).expiration_date)
-
-#             self.assertContains(detail_page, "Expiring soon")
-
-#             self.assertContains(detail_page, "Renew to maintain access")
-
-#             self.assertNotContains(detail_page, "DNS needed")
-#             self.assertNotContains(detail_page, "Expired")
