@@ -423,6 +423,45 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
+    def test_expiring_domain_on_detail_page_as_domain_manager(self):
+        with less_console_noise():
+            PublicContact.objects.all().delete()
+            Domain.objects.all().delete()
+            UserDomainRole.objects.all().delete()
+
+            self.expiringdomain, _ = Domain.objects.get_or_create(name="expiringdomain.gov")
+            self.expiringdomain.expiration_date = timezone.make_aware(
+                datetime.combine(datetime.today() + timedelta(days=30), datetime.min.time())
+            )
+            self.domain_information, _ = DomainInformation.objects.get_or_create(
+                creator=self.user, domain=self.expiringdomain
+            )
+            self.role, _ = UserDomainRole.objects.get_or_create(
+                user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
+            )
+            self.expiringdomain.save()
+            self.domain_information.save()
+            self.role.save()
+
+            # Where is May 25, 2023 coming from???
+            print("self.expiringdomain.expiration_date is #1 ", self.expiringdomain.expiration_date)
+
+            expiringdomain = Domain.objects.get(name="expiringdomain.gov")
+            self.assertEquals(expiringdomain.state, Domain.State.UNKNOWN)
+            detail_page = self.app.get(f"/domain/{expiringdomain.id}")
+            # print("self.expiringdomain.expiration_date is #2 ", self.expiringdomain.expiration_date)
+
+            # print("detail page is, ", detail_page)
+            # Check that the page contains the message for expiring soon
+            self.assertContains(detail_page, "Expiring soon")
+
+            # Check that the page contains the message to renew the domain
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            # Optionally, check that other text is NOT shown, depending on your logic
+            self.assertNotContains(detail_page, "DNS needed")
+            self.assertNotContains(detail_page, "Expired")
+
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod

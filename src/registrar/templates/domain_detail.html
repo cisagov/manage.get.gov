@@ -36,19 +36,25 @@
           </span>
           <span class="text-primary-darker">
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
-              {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
-                Expired
-              {%elif domain.is_expiring == True %}
-              Expiring Soon
-              {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
-                DNS needed
-              {% else %}
-                  {{ domain.state|title }}
-              {% endif %}
+            {% if domain.is_expired and domain.state == domain.State.UNKNOWN %}
+              Expired
+            {% elif domain.is_expiring and domain.state == domain.State.UNKNOWN %}
+              Expiring
+            {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
+              DNS needed
+            {% else %}
+                {{ domain.state|title }}
+            {% endif %}
           </span>
           {% if domain.get_state_help_text %}
             <div class="padding-top-1 text-primary-darker">
-              {{ domain.get_state_help_text }}
+              {% if domain.is_expiring and is_domain_manager %}
+                This domain will expire soon. <a href="/not-available-yet">Renew to maintain access.</a>
+              {% elif domain.is_expiring and is_portfolio_user %}
+                This domain will expire soon. Contact one of the listed domain managers to renew the domain.
+              {% else %}
+                {{ domain.get_state_help_text }}
+              {% endif %}
             </div>
           {% endif %}
         </p>
