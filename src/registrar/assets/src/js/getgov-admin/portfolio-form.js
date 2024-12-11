@@ -14,13 +14,14 @@ function handlePortfolioFields(){
     const seniorOfficialReadonly = seniorOfficialField.querySelector(".readonly");
     const $federalAgency = django.jQuery("#id_federal_agency");
     const federalAgencyField = document.querySelector(".field-federal_agency");
-    let organizationType = document.getElementById("id_organization_type");
-    let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
-    let organizationName = document.querySelector(".field-organization_name");
-    let federalType = document.querySelector(".field-federal_type");
-    let urbanization = document.querySelector(".field-urbanization");
-    let stateTerritory = document.getElementById("id_state_territory");
-    
+    const organizationTypeField = document.querySelector(".field-organization_type");
+    const organizationTypeReadonly = organizationTypeField.querySelector(".readonly");
+    const organizationTypeDropdown = document.getElementById("id_organization_type");
+    const organizationNameField = document.querySelector(".field-organization_name");
+    const federalTypeField = document.querySelector(".field-federal_type");
+    const urbanizationField = document.querySelector(".field-urbanization");
+    const stateTerritoryDropdown = document.getElementById("id_state_territory");
+    // consts for different urls
     const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
 
     function getFederalTypeFromAgency(agency) {
@@ -65,26 +66,26 @@ function handlePortfolioFields(){
             });
     }
     
-    function handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType) {
-        if (organizationType && organizationNameContainer) {
-            let selectedValue = organizationType.value;
+    function handleOrganizationTypeChange() {
+        if (organizationTypeDropdown && organizationNameField) {
+            let selectedValue = organizationTypeDropdown.value;
             if (selectedValue === "federal") {
-                hideElement(organizationNameContainer);
+                hideElement(organizationNameField);
                 showElement(federalAgencyField);
-                if (federalType) {
-                    showElement(federalType);
+                if (federalTypeField) {
+                    showElement(federalTypeField);
                 }
             } else {
-                showElement(organizationNameContainer);
+                showElement(organizationNameField);
                 hideElement(federalAgencyField);
-                if (federalType) {
-                    hideElement(federalType);
+                if (federalTypeField) {
+                    hideElement(federalTypeField);
                 }
             }
         }
     }
 
-    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType) {
+    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType) {
         if (!isPageLoading) {
 
             let selectedFederalAgency = federalAgency.find("option:selected").text();
@@ -112,7 +113,7 @@ function handlePortfolioFields(){
                 }
             }
 
-            handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
+            handleOrganizationTypeChange();
 
             // Determine if any changes are necessary to the display of portfolio type or federal type
             // based on changes to the Federal Agency
@@ -175,8 +176,8 @@ function handlePortfolioFields(){
         }
     }
 
-    function handleStateTerritoryChange(stateTerritory, urbanizationField) {
-        let selectedValue = stateTerritory.value;
+    function handleStateTerritoryChange() {
+        let selectedValue = stateTerritoryDropdown.value;
         if (selectedValue === "PR") {
             showElement(urbanizationField)
         } else {
@@ -236,25 +237,25 @@ function handlePortfolioFields(){
     }
 
     function initializePortfolioSettings() {
-        if (urbanization && stateTerritory) {
-            handleStateTerritoryChange(stateTerritory, urbanization);
+        if (urbanizationField && stateTerritoryDropdown) {
+            handleStateTerritoryChange();
         }
-        handleOrganizationTypeChange(organizationType, organizationName, federalType);
+        handleOrganizationTypeChange();
     }
 
     function setEventListeners() {
-        if ($federalAgency && (organizationType || readonlyOrganizationType)) {
+        if ($federalAgency && (organizationTypeDropdown || organizationTypeReadonly)) {
             $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, organizationName, federalType);
+                handleFederalAgencyChange($federalAgency, organizationTypeDropdown, organizationTypeReadonly);
             });
         }
-        if (urbanization && stateTerritory) {
-            stateTerritory.addEventListener("change", function() {
-                handleStateTerritoryChange(stateTerritory, urbanization);
+        if (urbanizationField && stateTerritoryDropdown) {
+            stateTerritoryDropdown.addEventListener("change", function() {
+                handleStateTerritoryChange();
             });
         }
-        organizationType.addEventListener("change", function() {
-            handleOrganizationTypeChange(organizationType, organizationName, federalType);
+        organizationTypeDropdown.addEventListener("change", function() {
+            handleOrganizationTypeChange();
         });
     }
 
