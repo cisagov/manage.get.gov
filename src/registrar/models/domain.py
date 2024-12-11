@@ -1533,10 +1533,6 @@ class Domain(TimeStampedModel, DomainHelper):
             help_text = (
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
-        # elif self.is_expiring() and self.state == self.State.UNKNOWN:
-        #     help_text = (
-        #         "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-        #     )
         else:
             help_text = Domain.State.get_help_text(self.state)
 
