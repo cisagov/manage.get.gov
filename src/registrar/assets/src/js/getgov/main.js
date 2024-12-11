@@ -9,8 +9,7 @@ import { initDomainsTable } from './table-domains.js';
 import { initDomainRequestsTable } from './table-domain-requests.js';
 import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
-import { initPortfolioNewMemberPageToggle } from './portfolio-member-page.js';
-import { initAddNewMemberPageListeners } from './portfolio-member-page.js';
+import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPage } from './portfolio-member-page.js';
 
 initDomainValidators();
 

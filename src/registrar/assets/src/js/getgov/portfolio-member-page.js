@@ -52,7 +52,7 @@ export function initPortfolioNewMemberPageToggle() {
 export function initAddNewMemberPageListeners() {
   let add_member_form = document.getElementById("add_member_form")
   if (!add_member_form){
-     return;
+    return;
   }
   // Hookup the radio elements
   hookupRadioTogglerListener(
