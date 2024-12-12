@@ -1184,11 +1184,13 @@ class DomainAddUserView(DomainFormBaseView):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
     def _domain_abs_url(self):
-        """Get an absolute URL for this domain."""
+        """Get an absolute URL for this domain.
+        Used by the email helper."""
         return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
 
     def _is_member_of_different_org(self, email, requestor, requested_user):
-        """Verifies if an email belongs to a different organization as a member or invited member."""
+        """Verifies if an email belongs to a different organization as a member or invited member.
+        Used by the email helper."""
         # Check if user is a already member of a different organization than the requestor's org
         requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
         existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
@@ -1225,22 +1227,27 @@ class DomainAddUserView(DomainFormBaseView):
         raises EmailSendingError
         """
 
-        # Set a default email address to send to for staff
+        print('_send_domain_invitation_email')
+
+        # FROM email for staff
         requestor_email = settings.DEFAULT_FROM_EMAIL
 
-        # Check if the email requestor has a valid email address
-        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
-            requestor_email = requestor.email
-        elif not requestor.is_staff:
-            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requestor '{requestor.username}'.",
-                exc_info=True,
-            )
-            return None
+        # FROM email for users
+        if not requestor.is_staff:
+            if requestor.email is not None and requestor.email.strip() != "":
+                requestor_email = requestor.email
+            else:
+                # The user is not staff and does not have an email
+                logger.error(
+                    f"Can't send email to '{email}' on domain '{self.object}'."
+                    f"No email exists for the requestor '{requestor.username}'.",
+                    exc_info=True,
+                )
+                # The None returned here will trigger a specific error alert
+                return None
 
-        # Check is user is a member or invited member of a different org from this domain's org
+
+        # Check is user is a member or invited member of a different org
         if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
             email, requestor, requested_user
         ):
@@ -1252,8 +1259,8 @@ class DomainAddUserView(DomainFormBaseView):
             invite = DomainInvitation.objects.get(email=email, domain=self.object)
             # check if the invite has already been accepted or has a canceled invite
             add_success = self._check_invite_status(invite, email)
-        except Exception:
-            logger.error("An error occured")
+        except Exception as exeption:
+            logger.error(f"Invite does not exist: {exeption}")
 
         try:
             send_templated_email(
@@ -1275,14 +1282,25 @@ class DomainAddUserView(DomainFormBaseView):
             )
             logger.info(exc)
             raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
+        # else:
+        #     if add_success:
+        #         messages.success(self.request, f"{email} has been invited to this domain.")
+
+        return add_success
 
     def _make_invitation(self, email_address: str, requestor: User):
         """Make a Domain invitation for this email and redirect with a message."""
         try:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
+            print('_make_invitation')
+            add_success = self._send_domain_invitation_email(email=email_address, requestor=requestor)
+
+            if add_success is None:
+                messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
+            elif add_success == True:
+                messages.success(self.request, f"{email_address} has been invited to this domain.")
+
+
+
         except EmailSendingError:
             messages.warning(self.request, "Could not send email invitation.")
         else:
@@ -1295,21 +1313,28 @@ class DomainAddUserView(DomainFormBaseView):
         Throws EmailSendingError."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
-        email_success = False
+        should_add_user_domain_role = False
         # look up a user with that email
         try:
             requested_user = User.objects.get(email=requested_email)
         except User.DoesNotExist:
             # no matching user, go make an invitation
-            email_success = True
+            print('User.DoesNotExist')
             return self._make_invitation(requested_email, requestor)
         else:
             # if user already exists then just send an email
             try:
-                self._send_domain_invitation_email(
+                print('else block after User.DoesNotExist - user already exists then just send an email')
+                add_success = self._send_domain_invitation_email(
                     requested_email, requestor, requested_user=requested_user, add_success=False
                 )
-                email_success = True
+
+                if add_success is None:
+                    messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
+                elif add_success == True:
+                    messages.success(self.request, f"{requested_email} has been invited to this domain.")
+            
+                should_add_user_domain_role = True
             except EmailSendingError:
                 logger.warn(
                     "Could not send email invitation (EmailSendingError)",
@@ -1317,7 +1342,7 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-                email_success = True
+                should_add_user_domain_role = True
             except OutsideOrgMemberError:
                 logger.warn(
                     "Could not send email. Can not invite member of a .gov organization to a different organization.",
@@ -1335,8 +1360,9 @@ class DomainAddUserView(DomainFormBaseView):
                     exc_info=True,
                 )
                 messages.warning(self.request, "Could not send email invitation.")
-        if email_success:
+        if should_add_user_domain_role:
             try:
+                print('will add domain role')
                 UserDomainRole.objects.create(
                     user=requested_user,
                     domain=self.object,
