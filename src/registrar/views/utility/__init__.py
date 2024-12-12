@@ -9,5 +9,6 @@ from .permission_views import (
     PortfolioMembersPermission,
     DomainRequestPortfolioViewonlyView,
     DomainInvitationPermissionCancelView,
+    PortfolioInvitationCreatePermissionView,
 )
 from .api_views import get_senior_official_from_federal_agency_json

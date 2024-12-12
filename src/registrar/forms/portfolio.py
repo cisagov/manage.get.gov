@@ -6,13 +6,13 @@ from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
 from django.utils.safestring import mark_safe
 from registrar.models import (
-    PortfolioInvitation,
     UserPortfolioPermission,
     DomainInformation,
     Portfolio,
     SeniorOfficial,
     User,
 )
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 logger = logging.getLogger(__name__)
@@ -177,8 +177,9 @@ class BasePortfolioMemberForm(forms.Form):
 
     def __init__(self, *args, instance=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.instance = instance
-        self.initial = self._map_instance_to_form(self.instance)
+        if instance:
+            self.instance = instance
+            self.initial = self.map_instance_to_form(self.instance)
         # Adds a <p> description beneath each role option
         self.fields["role"].descriptions = {
             "organization_admin": UserPortfolioRoleChoices.get_role_description(
@@ -189,47 +190,21 @@ class BasePortfolioMemberForm(forms.Form):
             ),
         }
 
-    def _map_instance_to_form(self, instance):
-        """Maps model instance data to form fields"""
-        if not instance:
-            return {}
-
-        # Function variables
-        form_data = {}
-        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in instance.roles if instance.roles else False
-        perms = UserPortfolioPermission.get_portfolio_permissions(instance.roles, instance.additional_permissions)
-
-        # Get role
-        role = UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value
-        if is_admin:
-            role = UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value
-
-        # Get domain request permission level
-        domain_request_permission = None
-        if UserPortfolioPermissionChoices.EDIT_REQUESTS.value in perms:
-            domain_request_permission = UserPortfolioPermissionChoices.EDIT_REQUESTS.value
-        elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value in perms:
-            domain_request_permission = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
-        elif not is_admin:
-            domain_request_permission = "no_access"
-
-        # Get member permission level
-        member_permission = None
-        if UserPortfolioPermissionChoices.EDIT_MEMBERS.value in perms:
-            member_permission = UserPortfolioPermissionChoices.EDIT_MEMBERS.value
-        elif UserPortfolioPermissionChoices.VIEW_MEMBERS.value in perms:
-            member_permission = UserPortfolioPermissionChoices.VIEW_MEMBERS.value
-
-        # Build form data based on role
-        form_data = {
-            "role": role,
-            "member_permission_admin": member_permission if is_admin else None,
-            "domain_request_permission_admin": domain_request_permission if is_admin else None,
-            "domain_request_permission_member": domain_request_permission if not is_admin else None,
-        }
-        return form_data
-
     def clean(self):
+        """
+        Validates form data based on selected role and its required fields.
+        
+        Since form fields are dynamically shown/hidden via JavaScript based on role selection,
+        we only validate fields that are relevant to the selected role:
+        - organization_admin: ["member_permission_admin", "domain_request_permission_admin"]
+        - organization_member: ["domain_request_permission_member"]
+        This ensures users aren't required to fill out hidden fields and maintains
+        proper validation based on their role selection.
+
+        NOTE: This page uses ROLE_REQUIRED_FIELDS for the aforementioned mapping.
+        Raises:
+            ValueError: If ROLE_REQUIRED_FIELDS references a non-existent form field
+        """
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
 
@@ -248,16 +223,93 @@ class BasePortfolioMemberForm(forms.Form):
 
     def save(self):
         """Save the form data to the instance"""
-        # TODO - we need to add view AND create in some circumstances...
-        role = self.cleaned_data.get("role")
-        member_permission_admin = self.cleaned_data.get("member_permission_admin")
-        domain_request_permission_admin = self.cleaned_data.get("domain_request_permission_admin")
-        domain_request_permission_member = self.cleaned_data.get("domain_request_permission_member")
+        self.instance = self.map_cleaned_data_to_instance(self.cleaned_data, self.instance)
+        self.instance.save()
+        return self.instance
+
+    def map_instance_to_form(self, instance):
+        """
+        Maps user instance to form fields, handling roles and permissions.
+
+        Determines:
+        - User's role (admin vs member)
+        - Domain request permissions (EDIT_REQUESTS, VIEW_ALL_REQUESTS, or "no_access")
+        - Member management permissions (EDIT_MEMBERS or VIEW_MEMBERS)
+
+        Returns form data dictionary with appropriate permission levels based on user role:
+        {
+            "role": "organization_admin" or "organization_member",
+            "member_permission_admin": permission level if admin,
+            "domain_request_permission_admin": permission level if admin,
+            "domain_request_permission_member": permission level if member
+        }
+        """
+        if not instance:
+            return {}
+
+        # Function variables
+        form_data = {}
+        is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in instance.roles if instance.roles else False
+        perms = UserPortfolioPermission.get_portfolio_permissions(instance.roles, instance.additional_permissions)
+
+        # Get role
+        role = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        if is_admin:
+            role = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+
+        # Get domain request permission level
+        domain_request_permission = None
+        if UserPortfolioPermissionChoices.EDIT_REQUESTS in perms:
+            domain_request_permission = UserPortfolioPermissionChoices.EDIT_REQUESTS
+        elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in perms:
+            domain_request_permission = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+
+        # Get member permission level
+        member_permission = None
+        if UserPortfolioPermissionChoices.EDIT_MEMBERS in perms:
+            member_permission = UserPortfolioPermissionChoices.EDIT_MEMBERS
+        elif UserPortfolioPermissionChoices.VIEW_MEMBERS in perms:
+            member_permission = UserPortfolioPermissionChoices.VIEW_MEMBERS
+
+        # Build form data based on role.
+        form_data = {
+            "role": role,
+            "member_permission_admin": member_permission.value if is_admin else None,
+            "domain_request_permission_admin": domain_request_permission.value if is_admin else None,
+            "domain_request_permission_member": domain_request_permission.value if not is_admin else None,
+        }
+
+        # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
+        if domain_request_permission is None and not is_admin:
+            form_data["domain_request_permission_member"] = "no_access"
+
+        return form_data
+
+    def map_cleaned_data_to_instance(self, cleaned_data, instance):
+        """
+        Maps cleaned data to a member instance, setting roles and permissions.
+        
+        Additional permissions logic:
+        - For org admins: Adds domain request and member admin permissions if selected
+        - For other roles: Adds domain request member permissions if not 'no_access'
+        - Automatically adds VIEW permissions when EDIT permissions are granted
+        - Filters out permissions already granted by base role
+        
+        Args:
+            cleaned_data (dict): Cleaned data containing role and permission choices
+            instance: Instance to update
+            
+        Returns:
+            instance: Updated instance
+        """
+        role = cleaned_data.get("role")
+        member_permission_admin = cleaned_data.get("member_permission_admin")
+        domain_request_permission_admin = cleaned_data.get("domain_request_permission_admin")
+        domain_request_permission_member = cleaned_data.get("domain_request_permission_member")
 
         # Handle roles
-        self.instance.roles = [role]
+        instance.roles = [role]
 
-        # TODO - do we want to be clearing everything or be selective?
         # Handle additional_permissions
         additional_permissions = set()
         if role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN:
@@ -270,7 +322,6 @@ class BasePortfolioMemberForm(forms.Form):
             if domain_request_permission_member and domain_request_permission_member != "no_access":
                 additional_permissions.add(domain_request_permission_member)
 
-        # TODO - might need a rework. Maybe just a special perm?
         # Handle EDIT permissions (should be accompanied with a view permission)
         if UserPortfolioPermissionChoices.EDIT_MEMBERS in additional_permissions:
             additional_permissions.add(UserPortfolioPermissionChoices.VIEW_MEMBERS)
@@ -279,54 +330,12 @@ class BasePortfolioMemberForm(forms.Form):
             additional_permissions.add(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
 
         # Only set unique permissions not already defined in the base role
-        role_permissions = UserPortfolioPermission.get_portfolio_permissions(self.instance.roles, [], get_list=False)
-        self.instance.additional_permissions = list(additional_permissions - role_permissions)
-        self.instance.save()
-        return self.instance
+        role_permissions = UserPortfolioPermission.get_portfolio_permissions(instance.roles, [], get_list=False)
+        instance.additional_permissions = list(additional_permissions - role_permissions)
+        return instance
 
 
-class NewMemberForm(forms.ModelForm):
-    member_access_level = forms.ChoiceField(
-        label="Select permission",
-        choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
-        widget=forms.RadioSelect(attrs={"class": "usa-radio__input  usa-radio__input--tile"}),
-        required=True,
-        error_messages={
-            "required": "Member access level is required",
-        },
-    )
-    admin_org_domain_request_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Admin domain request permission is required",
-        },
-    )
-    admin_org_members_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Admin member permission is required",
-        },
-    )
-    basic_org_domain_request_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[
-            ("view_only", "View all requests"),
-            ("view_and_create", "View all requests plus create requests"),
-            ("no_access", "No access"),
-        ],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Basic member permission is required",
-        },
-    )
-
+class NewMemberForm(BasePortfolioMemberForm):
     email = forms.EmailField(
         label="Enter the email of the member you'd like to invite",
         max_length=None,
@@ -343,18 +352,26 @@ class NewMemberForm(forms.ModelForm):
         required=True,
     )
 
-    class Meta:
-        model = User
-        fields = ["email"]
+    def __init__(self, *args, **kwargs):
+        self.portfolio = kwargs.pop('portfolio', None)
+        super().__init__(*args, **kwargs)
 
     def clean(self):
         cleaned_data = super().clean()
-
         # Lowercase the value of the 'email' field
         email_value = cleaned_data.get("email")
         if email_value:
             cleaned_data["email"] = email_value.lower()
 
+        if email_value:
+            # Check if user exists
+            requested_user = User.objects.filter(email=email_value, email__isnull=False).first()
+            if not requested_user:
+                raise forms.ValidationError("User does not exist.")
+
+            # Check if user is already a member
+            if UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.portfolio).exists():
+                raise forms.ValidationError("User is already a member of this portfolio.")
         ##########################################
         # TODO: future ticket
         # (invite new member)
@@ -365,30 +382,4 @@ class NewMemberForm(forms.ModelForm):
         #         existingUser = User.objects.get(email=email_value)
         #     except User.DoesNotExist:
         #         raise forms.ValidationError("User with this email does not exist.")
-
-        member_access_level = cleaned_data.get("member_access_level")
-
-        # Intercept the error messages so that we don't validate hidden inputs
-        if not member_access_level:
-            # If no member access level has been selected, delete error messages
-            # for all hidden inputs (which is everything except the e-mail input
-            # and member access selection)
-            for field in self.fields:
-                if field in self.errors and field != "email" and field != "member_access_level":
-                    del self.errors[field]
-            return cleaned_data
-
-        basic_dom_req_error = "basic_org_domain_request_permissions"
-        admin_dom_req_error = "admin_org_domain_request_permissions"
-        admin_member_error = "admin_org_members_permissions"
-
-        if member_access_level == "admin" and basic_dom_req_error in self.errors:
-            # remove the error messages pertaining to basic permission inputs
-            del self.errors[basic_dom_req_error]
-        elif member_access_level == "basic":
-            # remove the error messages pertaining to admin permission inputs
-            if admin_dom_req_error in self.errors:
-                del self.errors[admin_dom_req_error]
-            if admin_member_error in self.errors:
-                del self.errors[admin_member_error]
         return cleaned_data

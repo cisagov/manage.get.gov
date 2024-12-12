@@ -23,7 +23,7 @@
       {% elif invitation %}
         {% url 'invitedmember' pk=invitation.pk as back_url %}
       {% endif %}
-      <a href="{{back_url}}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+      <a href="{{ back_url }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
     </li>
     {% comment %} Manage members {% endcomment %}
     <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
@@ -124,7 +124,7 @@
   <div class="margin-top-3">
     <a
       type="button"
-      href="{% url 'members' %}"
+      href="{{ back_url }}"
       class="usa-button usa-button--outline"
       name="btn-cancel-click"
       aria-label="Cancel editing member"
