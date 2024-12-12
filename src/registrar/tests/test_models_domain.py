@@ -2641,7 +2641,7 @@ class TestAnalystDelete(MockEppLib):
         # Cache should be invalidated
         self.assertEqual(self.domain._cache, {})
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
@@ -2665,7 +2665,7 @@ class TestAnalystDelete(MockEppLib):
         # State should not have changed
         self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_deletion_with_host_and_contacts(self):
         """
         Scenario: Domain with related Host and Contacts is Deleted
@@ -2763,7 +2763,7 @@ class TestAnalystDelete(MockEppLib):
         # State should have changed
         self.assertEqual(self.domain_with_contacts.state, Domain.State.DELETED)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
         """
         Scenario: Domain deletion is unsuccessful due to FSM rules

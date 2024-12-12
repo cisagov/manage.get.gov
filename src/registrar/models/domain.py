@@ -1041,7 +1041,6 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Deleting subdomains for %s", self.name)
         # check if any subdomains are in use by another domain
         hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
-        logger.debug("Checking if any subdomains are in use by another domain")    
         for host in hosts:
             if host.domain != self:
                 logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
@@ -1049,7 +1048,6 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-        logger.debug("No subdomains are in use by another domain")
         
         (
             deleted_values,
@@ -1071,12 +1069,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
-        logger.debug("contacts %s", contacts)
         for contact in contacts:
             if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-                logger.debug("removing contact %s from domain %s", contact.registry_id, self.name)
                 self._update_domain_with_contact(contact, rem=True)
-                logger.debug("deleting contact %s from registry", contact.registry_id)
                 request = commands.DeleteContact(contact.registry_id)
                 registry.send(request, cleaned=True)
 
