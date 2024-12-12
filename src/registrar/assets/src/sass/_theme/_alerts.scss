@@ -29,6 +29,8 @@
 // NOTE: !important is used because _font.scss overrides this
 .usa-alert__body--widescreen {
   max-width: $widescreen-max-width !important;
+  margin-left: $widescreen-left-margin !important;
+  margin-right: $widescreen-right-margin !important;
 }
 
 .usa-site-alert--hot-pink {

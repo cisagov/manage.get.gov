@@ -2,6 +2,9 @@
 @use "cisa_colors" as *;
 
 $widescreen-max-width: 1920px;
+$widescreen-left-margin: 48px;
+$widescreen-right-margin: 48px;
+
 $hot-pink: #FFC3F9;
 
 /* Styles for making visible to screen reader / AT users only. */
@@ -245,6 +248,14 @@ abbr[title] {
 
 .usa-banner__inner--widescreen  {
   max-width: $widescreen-max-width;
+  margin-left: $widescreen-left-margin !important;
+  margin-right: $widescreen-right-margin !important;
+}
+
+// This is used in cases where we want to align content to widescreen margins
+// but we don't want the content itself to have widescreen widths
+.margin-left--widescreen {
+  margin-left: $widescreen-left-margin !important;
 }
 
 .margin-right-neg-4px {
