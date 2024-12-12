@@ -364,16 +364,14 @@ class NewMemberForm(BasePortfolioMemberForm):
             cleaned_data["email"] = email_value.lower()
 
         if email_value:
-            # Check if user exists
-            requested_user = User.objects.filter(email=email_value, email__isnull=False).first()
-            if not requested_user:
-                raise forms.ValidationError("User does not exist.")
-
             # Check if user is already a member
-            if UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.portfolio).exists():
-                raise forms.ValidationError("User is already a member of this portfolio.")
+            if UserPortfolioPermission.objects.filter(user__email=email_value, portfolio=self.portfolio).exists():
+                self.add_error("email", "User is already a member of this portfolio.")
+            
+            if PortfolioInvitation.objects.filter(email=email_value, portfolio=self.portfolio).exists():
+                self.add_error("email", "An invitation already exists for this user.")
         ##########################################
-        # TODO: future ticket
+        # TODO: #3019
         # (invite new member)
         ##########################################
         # Check for an existing user (if there isn't any, send an invite)

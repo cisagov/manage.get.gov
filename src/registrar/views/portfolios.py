@@ -493,10 +493,11 @@ class NewMemberView(PortfolioInvitationCreatePermissionView):
         """Create portfolio invitation from form data."""
         if self.is_ajax():
             return JsonResponse({"is_valid": True})
-        
-        requested_email = form.cleaned_data.get("email")
-        messages.success(self.request, f"{requested_email} has been invited.")
-        
+
+        # TODO: #3019
+        # requested_email = form.cleaned_data.get("email")
+        # self.send_portfolio_invitation_email(requested_email)
+
         # Create instance using form's mapping method
         self.object = form.map_cleaned_data_to_instance(
             form.cleaned_data, 
@@ -506,9 +507,12 @@ class NewMemberView(PortfolioInvitationCreatePermissionView):
             )
         )
         self.object.save()
-        
         messages.success(self.request, f"{self.object.email} has been invited.")
         return redirect(self.get_success_url())
+
+    # TODO: #3019
+    # def send_portfolio_invitation_email(self, email):
+    #     pass
 
     def form_invalid(self, form):
         if self.is_ajax():
