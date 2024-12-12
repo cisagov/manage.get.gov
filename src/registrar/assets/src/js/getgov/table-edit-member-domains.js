@@ -15,8 +15,7 @@ export class EditMemberDomainsTable extends BaseTable {
     this.displayName = "domain";
     this.currentSortBy = 'name';
     this.initialDomainAssignments = []; // list of initially assigned domains
-    this.initialDomainAssignmentsOnlyMember = []; // list of initially assigned domains
-        // which are readonly
+    this.initialDomainAssignmentsOnlyMember = []; // list of initially assigned domains which are readonly
     this.addedDomains = []; // list of domains added to member
     this.removedDomains = []; // list of domains removed from member
     this.initializeDomainAssignments();
