@@ -5,6 +5,7 @@ export class MemberDomainsTable extends BaseTable {
 
   constructor() {
     super('member-domain');
+    this.displayName = "domain";
     this.currentSortBy = 'name';
   }
   getBaseUrl() {
