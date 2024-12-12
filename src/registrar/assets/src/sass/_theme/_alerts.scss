@@ -1,6 +1,31 @@
 @use "uswds-core" as *;
 @use "base" as *;
 
+
+/*----------------
+   Alert Layout
+-----------------*/
+// NOTE: !important is used because _font.scss overrides this
+@media (min-width: 64em) {
+  .usa-alert__body--widescreen {
+    max-width: $widescreen-max-width !important;
+  }
+}
+
+// The icon was off center for some reason
+// Fixes that issue
+@media (min-width: 64em){
+  .usa-alert__body::before {
+    left: 2.5rem !important;
+  }
+  .usa-alert__body {
+    padding-left: 5rem!important;
+  }
+}
+
+/*----------------
+   Alert Fonts
+-----------------*/
 // Fixes some font size disparities with the Figma
 // for usa-alert alert elements
 .usa-alert {
@@ -13,27 +38,9 @@
   max-width: measure(none);
 }
 
-// The icon was off center for some reason
-// Fixes that issue
-@media (min-width: 64em){
-  .usa-alert--warning{
-    .usa-alert__body::before {
-      left: 1rem !important;
-    }
-  }
-  .usa-alert__body.margin-left-1 {
-    margin-left: 0.5rem!important;
-  }
-}
-
-// NOTE: !important is used because _font.scss overrides this
-@media (min-width: 64em) {
-  .usa-alert__body--widescreen {
-    max-width: $widescreen-max-width !important;
-    margin-left: 1rem !important;
-  }
-}
-
+/*----------------
+  Alert Coloring
+-----------------*/
 .usa-site-alert--hot-pink {
   .usa-alert {
     background-color: $hot-pink;
@@ -50,3 +57,4 @@
     background-color: color('base-darkest');
   }
 }
+

@@ -6,3 +6,12 @@
 .usa-identifier__container--widescreen {
     max-width: $widescreen-max-width !important;
 }
+
+
+// NOTE: !important is used because _font.scss overrides this
+@media (min-width: 64em) {
+    .usa-footer__secondary-section .grid-container--widescreen {
+      padding-left: $widescreen-left-padding !important;
+      padding-right: $widescreen-right-padding !important;
+    }
+}
