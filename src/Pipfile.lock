@@ -1793,7 +1793,7 @@
                 "sha256:2a06f242f4ba0cc563444ca3d1998959447477363a2d7e9b8b4d75d35cfd1669"
             ],
             "markers": "python_full_version >= '3.8.0'",
-            "version": "==3.0.0"
+            "version": "==3.0.1"
         },
         "webob": {
             "hashes": [
