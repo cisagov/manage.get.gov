@@ -265,7 +265,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             mock_add_message.assert_called_once_with(
                 request,
                 messages.ERROR,
-                "Error deleting this Domain: This subdomain is being used as a hostname on another domain: otherdomain.gov",
+                "Error deleting this Domain: This subdomain is being used as a hostname on another domain: ns1.sharedhost.com",
                 extra_tags="",
                 fail_silently=False,
             )

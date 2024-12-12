@@ -1071,6 +1071,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
+        logger.debug("contacts %s", contacts)
         for contact in contacts:
             if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
                 logger.debug("removing contact %s from domain %s", contact.registry_id, self.name)
@@ -1085,6 +1086,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.debug("Deleting registrant contact for %s", self.name)
         registrant_id = self.registrant_contact.registry_id
+        logger.debug("setting default registrant contact")
+        self._add_registrant_to_existing_domain(self.get_default_registrant_contact())
+        logger.debug("deleting registrant contact %s from registry", registrant_id)
         deleteRegistrant = commands.DeleteContact(id=registrant_id)
         registry.send(deleteRegistrant, cleaned=True)
 
