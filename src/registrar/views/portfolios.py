@@ -494,9 +494,11 @@ class NewMemberView(PortfolioInvitationCreatePermissionView):
         if self.is_ajax():
             return JsonResponse({"is_valid": True})
 
-        # TODO: #3019
+        # TODO: #3019 - this will probably have to be a small try/catch. Stub for posterity.
         # requested_email = form.cleaned_data.get("email")
-        # self.send_portfolio_invitation_email(requested_email)
+        # send_success = self.send_portfolio_invitation_email(requested_email)
+        # if not send_success:
+        #     return
 
         # Create instance using form's mapping method
         self.object = form.map_cleaned_data_to_instance(
