@@ -1084,14 +1084,6 @@ class Domain(TimeStampedModel, DomainHelper):
         request = commands.DeleteDomain(name=self.name)
         registry.send(request, cleaned=True)
 
-        logger.debug("Deleting registrant contact for %s", self.name)
-        registrant_id = self.registrant_contact.registry_id
-        logger.debug("setting default registrant contact")
-        self._add_registrant_to_existing_domain(self.get_default_registrant_contact())
-        logger.debug("deleting registrant contact %s from registry", registrant_id)
-        deleteRegistrant = commands.DeleteContact(id=registrant_id)
-        registry.send(deleteRegistrant, cleaned=True)
-
     def __str__(self) -> str:
         return self.name
 

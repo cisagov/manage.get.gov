@@ -2754,10 +2754,6 @@ class TestAnalystDelete(MockEppLib):
                     commands.DeleteDomain(name='freeman.gov'),
                     cleaned=True,
                 ),
-                call(
-                    commands.DeleteContact(id='regContact'),
-                    cleaned=True,
-                ),
             ],
             any_order=True,
         )
