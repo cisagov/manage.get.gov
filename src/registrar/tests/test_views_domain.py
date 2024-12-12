@@ -239,11 +239,6 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "igorville.gov")
         self.assertContains(detail_page, "Status")
 
-    # Uncomment skip for ticket #3211
-    @skip(
-        "Currently the logic ind domain_detail.html is incorrect for IRL state"
-        "but is set for local/sandbox testing purposes"
-    )
     def test_unknown_domain_does_not_show_as_expired_on_detail_page(self):
         """An UNKNOWN domain should not exist on the detail_page anymore.
         It shows as 'DNS needed'"""
@@ -462,11 +457,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     def custom_is_expiring(self):
         return True
 
-    # Uncomment skip for ticket #3211
-    @skip(
-        "Currently the logic ind domain_detail.html is incorrect for IRL state,"
-        "but is set for local/sandbox testing purposes"
-    )
     @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
         self.client.force_login(self.user)
