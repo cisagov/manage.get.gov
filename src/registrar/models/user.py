@@ -270,7 +270,7 @@ class User(AbstractUser):
         return "Admin" in self.portfolio_role_summary(portfolio)
 
     def has_domain_renewal_flag(self):
-        return flag_is_active(self, "domain_renewal")
+        return flag_is_active_for_user(self, "domain_renewal")
 
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
