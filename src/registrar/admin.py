@@ -1681,7 +1681,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
-
+    
+    # ------ Filters ------
+    # Define custom filters
     class StatusListFilter(MultipleChoiceListFilter):
         """Custom status filter which is a multiple choice filter"""
 
@@ -1817,6 +1819,35 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    # ------ Custom fields ------
+    def custom_election_board(self, obj):
+        return "Yes" if obj.is_election_board else "No"
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
+
+    @admin.display(description=_("Requested Domain"))
+    def custom_requested_domain(self, obj):
+        # Example: Show different icons based on `status`
+        url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
+        text = obj.requested_domain
+        icon = ''
+        if obj.portfolio:
+            return format_html(
+                '<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>',
+                url,
+                text
+            )
+        return format_html(
+            '<a href="{}">{}</a>',
+            url,
+            text
+        )
+
+    # ------ Converted fields ------
+    # These fields map to @Property methods and
+    # require these custom definitions to work properly
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
@@ -1851,12 +1882,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
 
-    def custom_election_board(self, obj):
-        return "Yes" if obj.is_election_board else "No"
 
-    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
-
+    # ------ Portfolio fields ------
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
@@ -1930,7 +1957,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     # Columns
     list_display = [
-        "requested_domain",
+        "custom_requested_domain",
         "first_submitted_date",
         "last_submitted_date",
         "last_status_update",
@@ -1962,13 +1989,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     )
 
     # Search
+    # NOTE: converted fields are included in the override for get_search_results
     search_fields = [
         "requested_domain__name",
         "creator__email",
         "creator__first_name",
         "creator__last_name",
-        "converted_organization_name"
-
     ]
     search_help_text = "Search by domain, creator, or organization name."
 
@@ -2553,6 +2579,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
+    
+    def get_search_results(self, request, queryset, search_term):
+        # Call the parent's method to apply default search logic
+        base_queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # Add custom search logic for the annotated field
+        if search_term:
+            annotated_queryset = queryset.filter(
+                # converted_organization_name
+                Q(portfolio__organization_name__icontains=search_term)
+                | Q(portfolio__isnull=True, organization_name__icontains=search_term)
+            )
+
+            # Combine the two querysets using union
+            combined_queryset = base_queryset | annotated_queryset
+        else:
+            combined_queryset = base_queryset
+
+        return combined_queryset, use_distinct
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
