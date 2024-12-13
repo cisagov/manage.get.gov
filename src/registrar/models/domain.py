@@ -752,10 +752,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         try: 
             self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        except:
-            # the error will be logged in the erring function and we don't 
-            # need this part to succeed in order to continue.s
-            pass
+        except Exception as e:
+            # we don't need this part to succeed in order to continue.
+            logger.error("Failed to delete nameserver hosts: %s", e)
 
         if successTotalNameservers < 2:
             try:
