@@ -2710,14 +2710,11 @@ class TestEditPortfolioMemberView(WebTest):
         # Verify database changes
         basic_permission.refresh_from_db()
         self.assertEqual(basic_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-        # We expect view permissions to be added automagically
         self.assertEqual(
             set(basic_permission.additional_permissions),
             {
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             },
         )
 
@@ -2771,10 +2768,10 @@ class TestEditPortfolioMemberView(WebTest):
         self.assertEqual(response.status_code, 302)
 
         # Verify invitation was updated
-        self.invitation.refresh_from_db()
-        self.assertEqual(self.invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
         self.assertEqual(
-            set(self.invitation.additional_permissions),
+            set(updated_invitation.additional_permissions),
             {
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,

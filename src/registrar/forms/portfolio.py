@@ -362,9 +362,6 @@ class NewMemberForm(BasePortfolioMemberForm):
         # Lowercase the value of the 'email' field
         email_value = cleaned_data.get("email")
         if email_value:
-            cleaned_data["email"] = email_value.lower()
-
-        if email_value:
             # Check if user is already a member
             if UserPortfolioPermission.objects.filter(user__email=email_value, portfolio=self.portfolio).exists():
                 self.add_error("email", "User is already a member of this portfolio.")
