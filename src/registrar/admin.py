@@ -1823,7 +1823,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
-        return obj.converted_organization_name
+        # Example: Show different icons based on `status`
+        if obj.portfolio:
+            url = reverse("admin:registrar_portfolio_changelist") + f"{obj.portfolio.id}"
+            text = obj.converted_organization_name
+            return format_html(
+                '<a href="{}">{}</a>',
+                url,
+                text
+            )
+        else:
+            return obj.converted_organization_name
 
     @admin.display(description=_("Federal Agency"))
     def converted_federal_agency(self, obj):
@@ -1840,28 +1850,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("State/Territory"))
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
-
-    # Columns
-    list_display = [
-        "requested_domain",
-        "first_submitted_date",
-        "last_submitted_date",
-        "last_status_update",
-        "status",
-        "custom_election_board",
-        "converted_generic_org_type",
-        "converted_organization_name",
-        "converted_federal_agency",
-        "converted_federal_type",
-        "converted_city",
-        "converted_state_territory",
-        "investigator",
-    ]
-
-    orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
-    ]
 
     def custom_election_board(self, obj):
         return "Yes" if obj.is_election_board else "No"
@@ -1938,7 +1926,29 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def status_history(self, obj):
         return "No changelog to display."
 
-    status_history.short_description = "Status History"  # type: ignore
+    status_history.short_description = "Status history"  # type: ignore
+
+    # Columns
+    list_display = [
+        "requested_domain",
+        "first_submitted_date",
+        "last_submitted_date",
+        "last_status_update",
+        "status",
+        "custom_election_board",
+        "converted_generic_org_type",
+        "converted_organization_name",
+        "converted_federal_agency",
+        "converted_federal_type",
+        "converted_city",
+        "converted_state_territory",
+        "investigator",
+    ]
+
+    orderable_fk_fields = [
+        ("requested_domain", "name"),
+        ("investigator", ["first_name", "last_name"]),
+    ]
 
     # Filters
     list_filter = (
