@@ -750,7 +750,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
-        self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
+        try: 
+            self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
+        except:
+            # the error will be logged in the erring function and we don't 
+            # need this part to succeed in order to continue.s
+            pass
 
         if successTotalNameservers < 2:
             try:
@@ -1065,6 +1070,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
 
+        # addAndRemoveHostsFromDomain removes the hosts from the domain object, 
+        # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
         logger.debug("Deleting non-registrant contacts for %s", self.name)

@@ -1676,7 +1676,6 @@ class MockEppLib(TestCase):
     def mockDeleteHostCommands(self, _request, cleaned):
         host = getattr(_request, "name", None)
         if "sharedhost.com" in host:
-            print("raising registry error")
             raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION, note="ns1.sharedhost.com")
         return MagicMock(
             res_data=[self.mockDataHostChange],

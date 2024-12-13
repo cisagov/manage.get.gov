@@ -2927,7 +2927,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             message = "Cannot connect to the registry"
             if not err.is_connection_error():
                 # If nothing is found, will default to returned err
-                message = error_messages[err.code]
+                message = error_messages.get(err.code, err)
             self.message_user(request, f"Error deleting this Domain: {message}", messages.ERROR)
         except TransitionNotAllowed:
             if obj.state == Domain.State.DELETED:
