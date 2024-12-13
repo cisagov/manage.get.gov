@@ -30,8 +30,8 @@ from registrar.models import (
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
-    AlreadyInvitedError,
-    AlreadyManagerError,
+    AlreadyDomainInvitedError,
+    AlreadyDomainManagerError,
     GenericError,
     GenericErrorCodes,
     MissingEmailError,
@@ -1251,9 +1251,9 @@ class DomainAddUserView(DomainFormBaseView):
                 self.request,
                 f"{email} is already a member of another .gov organization.",
             )
-        elif isinstance(exception, AlreadyManagerError):
+        elif isinstance(exception, AlreadyDomainManagerError):
             messages.warning(self.request, str(exception))
-        elif isinstance(exception, AlreadyInvitedError):
+        elif isinstance(exception, AlreadyDomainInvitedError):
             messages.warning(self.request, str(exception))
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))

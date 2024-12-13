@@ -29,18 +29,32 @@ class InvitationError(Exception):
     pass
 
 
-class AlreadyManagerError(InvitationError):
+class AlreadyDomainManagerError(InvitationError):
     """Raised when the user is already a manager for the domain."""
 
     def __init__(self, email):
         super().__init__(f"{email} is already a manager for this domain.")
 
 
-class AlreadyInvitedError(InvitationError):
+class AlreadyDomainInvitedError(InvitationError):
     """Raised when the user has already been invited to the domain."""
 
     def __init__(self, email):
         super().__init__(f"{email} has already been invited to this domain.")
+
+
+class AlreadyPortfolioMemberError(InvitationError):
+    """Raised when the user is already a member of the portfolio."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} is already a manager for this portfolio.")
+
+
+class AlreadyPortfolioInvitedError(InvitationError):
+    """Raised when the user has already been invited to the portfolio."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} has already been invited to this portfolio.")
 
 
 class MissingEmailError(InvitationError):
