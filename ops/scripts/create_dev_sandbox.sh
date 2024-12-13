@@ -136,6 +136,7 @@ then
 fi
 
 cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.username, .password]|@tsv' | 
+
 while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
     gh secret --repo cisagov/getgov set CF_${upcase_name}_PASSWORD --body $password
