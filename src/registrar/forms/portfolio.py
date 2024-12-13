@@ -6,13 +6,12 @@ from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
 from django.utils.safestring import mark_safe
 from registrar.models import (
+    PortfolioInvitation,
     UserPortfolioPermission,
     DomainInformation,
     Portfolio,
     SeniorOfficial,
-    User,
 )
-from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 logger = logging.getLogger(__name__)
