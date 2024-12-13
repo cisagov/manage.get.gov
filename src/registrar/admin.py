@@ -1971,7 +1971,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         """Define a custom filter for portfolio"""
 
         title = _("portfolio")
-        parameter_name = "portfolio"
+        parameter_name = "portfolio__isnull"
 
         def lookups(self, request, model_admin):
             return (
