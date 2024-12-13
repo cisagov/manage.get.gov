@@ -1948,6 +1948,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
+        "portfolio"
     )
 
     # Search
@@ -1956,8 +1957,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "creator__email",
         "creator__first_name",
         "creator__last_name",
+        "converted_organization_name"
+
     ]
-    search_help_text = "Search by domain or creator."
+    search_help_text = "Search by domain, creator, or organization name."
 
     fieldsets = [
         (
@@ -2123,9 +2126,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
-        "requested_suborganization",
-        "suborganization_city",
-        "suborganization_state_territory",
     ]
 
     autocomplete_fields = [
