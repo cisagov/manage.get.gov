@@ -1187,49 +1187,61 @@ class DomainAddUserView(DomainFormBaseView):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
-        """Add the specified user on this domain."""
+        """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
 
-        # look up a user with that email
-        requested_user = None
-        try:
-            requested_user = User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            pass
+        # Look up a user with that email
+        requested_user = self._get_requested_user(requested_email)
 
         try:
             if requested_user is None:
-                # no user exists, send an email and make an invitation
-                send_domain_invitation_email(
-                    email=requested_email,
-                    requestor=requestor,
-                    domain=self.object,
-                )
-                DomainInvitation.objects.get_or_create(email=requested_email, domain=self.object)
-                messages.success(self.request, f"{requested_email} has been invited to this domain.")
+                self._handle_new_user_invitation(requested_email, requestor)
             else:
-                # user exists, send email and make user domain role
-                send_domain_invitation_email(
-                    email=requested_email,
-                    requestor=requestor,
-                    requested_user=requested_user,
-                    domain=self.object,
-                )
-                UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=self.object,
-                    role=UserDomainRole.Roles.MANAGER,
-                )
-                messages.success(self.request, f"Added user {requested_email}.")
-        except EmailSendingError:
-            logger.warn(
-                "Could not send email invitation (EmailSendingError)",
-                self.object,
-                exc_info=True,
-            )
+                self._handle_existing_user(requested_email, requestor, requested_user)
+        except Exception as e:
+            self._handle_exceptions(e, requested_email)
+
+        return redirect(self.get_success_url())
+
+    def _get_requested_user(self, email):
+        """Retrieve a user by email or return None if the user doesn't exist."""
+        try:
+            return User.objects.get(email=email)
+        except User.DoesNotExist:
+            return None
+
+    def _handle_new_user_invitation(self, email, requestor):
+        """Handle invitation for a new user who does not exist in the system."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            domain=self.object,
+        )
+        DomainInvitation.objects.get_or_create(email=email, domain=self.object)
+        messages.success(self.request, f"{email} has been invited to this domain.")
+
+    def _handle_existing_user(self, email, requestor, requested_user):
+        """Handle adding an existing user to the domain."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            requested_user=requested_user,
+            domain=self.object,
+        )
+        UserDomainRole.objects.create(
+            user=requested_user,
+            domain=self.object,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        messages.success(self.request, f"Added user {email}.")
+
+    def _handle_exceptions(self, exception, email):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warn("Could not send email invitation (EmailSendingError)", self.object, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
-        except OutsideOrgMemberError:
+        elif isinstance(exception, OutsideOrgMemberError):
             logger.warn(
                 "Could not send email. Can not invite member of a .gov organization to a different organization.",
                 self.object,
@@ -1237,30 +1249,23 @@ class DomainAddUserView(DomainFormBaseView):
             )
             messages.error(
                 self.request,
-                f"{requested_email} is already a member of another .gov organization.",
+                f"{email} is already a member of another .gov organization.",
             )
-        except AlreadyManagerError as e:
-            messages.warning(self.request, str(e))
-        except AlreadyInvitedError as e:
-            messages.warning(self.request, str(e))
-        except MissingEmailError as e:
-            messages.error(self.request, str(e))
+        elif isinstance(exception, AlreadyManagerError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, AlreadyInvitedError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
             logger.error(
-                f"Can't send email to '{requested_email}' on domain '{self.object}'. "
-                f"No email exists for the requestor '{e.username}'.",
+                f"Can't send email to '{email}' on domain '{self.object}'. No email exists for the requestor.",
                 exc_info=True,
             )
-        except IntegrityError:
-            messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-        except Exception:
-            logger.warn(
-                "Could not send email invitation (Other Exception)",
-                self.object,
-                exc_info=True,
-            )
+        elif isinstance(exception, IntegrityError):
+            messages.warning(self.request, f"{email} is already a manager for this domain")
+        else:
+            logger.warn("Could not send email invitation (Other Exception)", self.object, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
-
-        return redirect(self.get_success_url())
 
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
