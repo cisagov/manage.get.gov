@@ -2774,9 +2774,7 @@ class TestEditPortfolioMemberView(WebTest):
             set(updated_invitation.additional_permissions),
             {
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             },
         )
 
