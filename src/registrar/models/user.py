@@ -169,7 +169,7 @@ class User(AbstractUser):
         domains = Domain.objects.filter(id__in=domain_ids)
         how_many_expired_domains = 0
         for domain in domains:
-            if domain.is_expiring() is True:
+            if flag_is_active(request, "domain_renewal") and domain.is_expiring():
                 how_many_expired_domains += 1
         return how_many_expired_domains
 
