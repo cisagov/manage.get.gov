@@ -126,6 +126,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
 export class BaseTable {
   constructor(itemName) {
     this.itemName = itemName;
+    this.displayName = itemName;
     this.sectionSelector = itemName + 's';
     this.tableWrapper = document.getElementById(`${this.sectionSelector}__table-wrapper`);
     this.tableHeaders = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable]`);
@@ -183,7 +184,7 @@ export class BaseTable {
     // Counter should only be displayed if there is more than 1 item
     paginationSelectorEl.classList.toggle('display-none', totalItems < 1);
 
-    counterSelectorEl.innerHTML = `${totalItems} ${this.itemName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
+    counterSelectorEl.innerHTML = `${totalItems} ${this.displayName}${totalItems > 1 ? 's' : ''}${this.currentSearchTerm ? ' for ' + '"' + this.currentSearchTerm + '"' : ''}`;
 
     // Helper function to create a pagination item
     const createPaginationItem = (page) => {
@@ -417,6 +418,11 @@ export class BaseTable {
   initShowMoreButtons(){}
 
   /**
+   * See function for more details
+   */
+  initCheckboxListeners(){}
+
+  /**
    * Loads rows in the members list, as well as updates pagination around the members list
    * based on the supplied attributes.
    * @param {*} page - The page number of the results (starts with 1)
@@ -431,7 +437,7 @@ export class BaseTable {
     let searchParams = this.getSearchParams(page, sortBy, order, searchTerm, status, portfolio); 
 
     // --------- FETCH DATA
-    // fetch json of page of domains, given params
+    // fetch json of page of objects, given params
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
 
@@ -462,6 +468,7 @@ export class BaseTable {
         });
 
         this.initShowMoreButtons();
+        this.initCheckboxListeners();
 
         this.loadModals(data.page, data.total, data.unfiltered_total);
 

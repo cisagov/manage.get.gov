@@ -51,7 +51,7 @@ export function initPortfolioNewMemberPageToggle() {
  * on the Add New Member page.
  */
 export function initAddNewMemberPageListeners() {
-  let add_member_form = document.getElementById("add_member_form")
+  let add_member_form = document.getElementById("add_member_form");
   if (!add_member_form){
     return;
   }
