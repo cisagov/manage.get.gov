@@ -10,7 +10,7 @@ import { initDomainRequestsTable } from './table-domain-requests.js';
 import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
 import { initEditMemberDomainsTable } from './table-edit-member-domains.js';
-import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPage } from './portfolio-member-page.js';
+import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPageRadio } from './portfolio-member-page.js';
 
 initDomainValidators();
 
@@ -37,8 +37,6 @@ initMemberDomainsTable();
 initEditMemberDomainsTable();
 
 // Init the portfolio new member page
+initPortfolioMemberPageRadio();
 initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
-
-// Init all other portfolio member pages
-initPortfolioMemberPage();

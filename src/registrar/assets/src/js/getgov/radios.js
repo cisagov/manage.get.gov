@@ -38,19 +38,22 @@ export function hookupYesNoListener(radioButtonName, elementIdToShowIfYes, eleme
  **/
 export function hookupRadioTogglerListener(radioButtonName, valueToElementMap) {
     // Get the radio buttons
-    let radioButtons = document.querySelectorAll('input[name="'+radioButtonName+'"]');
+    let radioButtons = document.querySelectorAll(`input[name="${radioButtonName}"]`);
+    console.log(`what are the radio buttons? ${radioButtons} vs name: ${radioButtonName}`)
     
     // Extract the list of all element IDs from the valueToElementMap
     let allElementIds = Object.values(valueToElementMap);
-  
+
     function handleRadioButtonChange() {
         // Find the checked radio button
-        let radioButtonChecked = document.querySelector('input[name="'+radioButtonName+'"]:checked');
+        let radioButtonChecked = document.querySelector(`input[name="${radioButtonName}"]:checked`);
         let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
     
         // Hide all elements by default
+        console.log(`what are the elementids? ${allElementIds}`)
         allElementIds.forEach(function (elementId) {
             let element = document.getElementById(elementId);
+            console.log(`id? ${elementId} what is the element? ${element}`)
             if (element) {
             hideElement(element);
             }

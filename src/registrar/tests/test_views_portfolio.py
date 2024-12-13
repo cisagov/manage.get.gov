@@ -2567,7 +2567,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         final_response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
+                "role": "organization_member",
                 "basic_org_domain_request_permissions": "view_only",
                 "email": self.new_member_email,
             },
@@ -2600,7 +2600,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
+                "role": "organization_member",
                 "basic_org_domain_request_permissions": "view_only",
                 "email": self.invited_member_email,
             },
@@ -2630,7 +2630,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
+                "role": "organization_member",
                 "basic_org_domain_request_permissions": "view_only",
                 "email": self.user.email,
             },

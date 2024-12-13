@@ -3,7 +3,6 @@ import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
 import { hookupRadioTogglerListener } from './radios.js';
-import { hideElement, showElement } from './helpers.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
 export function initPortfolioNewMemberPageToggle() {
@@ -55,14 +54,6 @@ export function initAddNewMemberPageListeners() {
   if (!add_member_form){
     return;
   }
-  // Hookup the radio elements
-  hookupRadioTogglerListener(
-    'role',
-    {
-      'organization_admin': 'new-member-admin-permissions',
-      'organization_basic': 'new-member-basic-permissions'
-    }
-  );
 
   // Hookup the submission buttons
   document.getElementById("confirm_new_member_submit").addEventListener("click", function() {
@@ -99,14 +90,6 @@ export function initAddNewMemberPageListeners() {
   });
 
   /*
-    Helper function to capitalize the first letter in a string (for display purposes)
-  */
-  function capitalizeFirstLetter(text) {
-    if (!text) return ''; // Return empty string if input is falsy
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
-
-  /*
     Populates contents of the "Add Member" confirmation modal
   */
   function populatePermissionDetails(permission_details_div_id) {
@@ -119,6 +102,7 @@ export function initAddNewMemberPageListeners() {
     console.log(`what is the permissionSections? ${permissionSections}`)
 
     permissionSections.forEach(section => {
+        console.log(`what is the section? ${section}`)
         // Find the <h3> element text
         const sectionTitle = section.textContent;
 
@@ -128,7 +112,7 @@ export function initAddNewMemberPageListeners() {
         if (fieldset && fieldset.tagName.toLowerCase() === 'fieldset') {
             // Get the selected radio button within this fieldset
             const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
-            console.log(`what is the selectedRadio? ${selectedRadio}`)
+            console.log(`what is the selectedRadio? ${selectedRadio.id}`)
             // If a radio button is selected, get its label text
             let selectedPermission = "No permission selected";
             if (selectedRadio) {
@@ -164,18 +148,22 @@ export function initAddNewMemberPageListeners() {
       document.getElementById('modalEmail').textContent = emailValue;
 
       // Get selected radio button for access level
-      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
+      let selectedAccess = document.querySelector('input[name="role"]:checked');
+      console.log(`selectedAccess" ${selectedAccess} vs value ${selectedAccess.value}`)
       // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
       // This value does not have the first letter capitalized so let's capitalize it
-      let accessText = selectedAccess ? capitalizeFirstLetter(selectedAccess.value) : "No access level selected";
-      document.getElementById('modalAccessLevel').textContent = accessText;
+      let accessText = "No access level selected";
 
       // Populate permission details based on access level
-      if (selectedAccess && selectedAccess.value === 'admin') {
-        populatePermissionDetails('new-member-admin-permissions');
-      } else {
-        populatePermissionDetails('new-member-basic-permissions');
+      if (selectedAccess && selectedAccess.value === 'organization_admin') {
+        populatePermissionDetails('member-admin-permissions');
+        accessText = "Admin"
+      } else if (selectedAccess && selectedAccess.value === 'organization_member') {
+        populatePermissionDetails('member-basic-permissions');
+        accessText = "Member"
       }
+
+      document.getElementById('modalAccessLevel').textContent = accessText;
 
       //------- Show the modal
       let modalTrigger = document.querySelector("#invite_member_trigger");
@@ -185,12 +173,12 @@ export function initAddNewMemberPageListeners() {
   }
 }
 
-// Export for the rest of the portfolio pages (not add)
-// Not using the 
-export function initPortfolioMemberPage() {
+// Initalize the radio for the member pages
+export function initPortfolioMemberPageRadio() {
   document.addEventListener("DOMContentLoaded", () => {
       let memberForm = document.getElementById("member_form");
-      if (!memberForm) {
+      let newMemberForm = document.getElementById("add_member_form")
+      if (!memberForm && !newMemberForm) {
         return;
       }
       hookupRadioTogglerListener(
