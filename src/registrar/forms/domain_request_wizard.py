@@ -530,7 +530,7 @@ class PurposeForm(RegistrarForm):
         widget=forms.Textarea(
             attrs={
                 "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else? You can enter up to 2000 characters."
+                Will it be used for a website, email, or something else?"
             }
         ),
         validators=[
