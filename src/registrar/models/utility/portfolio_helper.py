@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class UserPortfolioRoleChoices(models.TextChoices):
     """
     Roles make it easier for admins to look at
@@ -23,7 +24,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
         except ValueError:
             logger.warning(f"Invalid portfolio role: {user_portfolio_role}")
             return f"Unknown ({user_portfolio_role})"
-    
+
     @classmethod
     def get_role_description(cls, user_portfolio_role):
         """Returns a detailed description for a given role."""
@@ -37,7 +38,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
                 "organization domain requests and submit domain requests on behalf of the organization. Basic access "
                 "members can’t view all members of an organization or manage them. "
                 "Domain management can be assigned separately."
-            )
+            ),
         }
         return descriptions.get(user_portfolio_role)
 

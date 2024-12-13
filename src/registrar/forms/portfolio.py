@@ -274,9 +274,9 @@ class BasePortfolioMemberForm(forms.Form):
         # Build form data based on role.
         form_data = {
             "role": role,
-            "member_permission_admin": member_permission.value if is_admin else None,
-            "domain_request_permission_admin": domain_request_permission.value if is_admin else None,
-            "domain_request_permission_member": domain_request_permission.value if not is_admin else None,
+            "member_permission_admin": getattr(member_permission, "value", None) if is_admin else None,
+            "domain_request_permission_admin": getattr(domain_request_permission, "value", None) if is_admin else None,
+            "domain_request_permission_member": getattr(domain_request_permission, "value", None) if not is_admin else None,
         }
 
         # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.

@@ -10,7 +10,6 @@ from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email import EmailSendingError
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
