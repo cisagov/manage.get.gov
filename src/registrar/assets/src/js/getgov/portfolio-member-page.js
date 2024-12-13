@@ -98,28 +98,21 @@ export function initAddNewMemberPageListeners() {
 
     // Get all permission sections (divs with h3 and radio inputs)
     const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
-    console.log(`what is the id? ${permission_details_div_id}`)
-    console.log(`what is the permissionSections? ${permissionSections}`)
-
     permissionSections.forEach(section => {
-        console.log(`what is the section? ${section}`)
         // Find the <h3> element text
         const sectionTitle = section.textContent;
 
         // Find the associated radio buttons container (next fieldset)
         const fieldset = section.nextElementSibling;
-        console.log(`what is the fieldset? ${fieldset}`)
         if (fieldset && fieldset.tagName.toLowerCase() === 'fieldset') {
             // Get the selected radio button within this fieldset
             const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
-            console.log(`what is the selectedRadio? ${selectedRadio.id}`)
             // If a radio button is selected, get its label text
             let selectedPermission = "No permission selected";
             if (selectedRadio) {
                 const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
                 selectedPermission = label ? label.textContent : "No permission selected";
             }
-            console.log(`what is the selectedPermission? ${selectedPermission}`)
 
             // Create new elements for the modal content
             const titleElement = document.createElement("h4");
@@ -149,7 +142,7 @@ export function initAddNewMemberPageListeners() {
 
       // Get selected radio button for access level
       let selectedAccess = document.querySelector('input[name="role"]:checked');
-      console.log(`selectedAccess" ${selectedAccess} vs value ${selectedAccess.value}`)
+
       // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
       // This value does not have the first letter capitalized so let's capitalize it
       let accessText = "No access level selected";

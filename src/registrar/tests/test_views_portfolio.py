@@ -2568,17 +2568,19 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             reverse("new-member"),
             {
                 "role": "organization_member",
-                "basic_org_domain_request_permissions": "view_only",
+                "domain_request_permission_member": "view_all_requests",
                 "email": self.new_member_email,
             },
         )
 
         # Ensure the final submission is successful
         self.assertEqual(final_response.status_code, 302)  # redirects after success
-
         # Validate Database Changes
         portfolio_invite = PortfolioInvitation.objects.filter(
-            email=self.new_member_email, portfolio=self.portfolio
+            email=self.new_member_email,
+            portfolio=self.portfolio,
+            roles__exact=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions__exact=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         ).first()
         self.assertIsNotNone(portfolio_invite)
         self.assertEqual(portfolio_invite.email, self.new_member_email)
@@ -2601,14 +2603,13 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             reverse("new-member"),
             {
                 "role": "organization_member",
-                "basic_org_domain_request_permissions": "view_only",
+                "domain_request_permission_member": "view_all_requests",
                 "email": self.invited_member_email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
-
-        # TODO: verify messages
-
+        # Unsucessful form submissions return the same page with a 200
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["form"].errors["email"][0], "An invitation already exists for this user.")
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
@@ -2631,13 +2632,12 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             reverse("new-member"),
             {
                 "role": "organization_member",
-                "basic_org_domain_request_permissions": "view_only",
+                "domain_request_permissions_member": "view_all_requests",
                 "email": self.user.email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
-
-        # TODO: verify messages
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["form"].errors["email"][0], "User is already a member of this portfolio.")
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()

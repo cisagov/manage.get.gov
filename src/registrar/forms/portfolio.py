@@ -124,6 +124,7 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     domain_request_permission_admin = forms.ChoiceField(
+        # nosec B308 - required_star is a hardcoded HTML string
         label=mark_safe(f"Select permission {required_star}"),
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
@@ -137,6 +138,7 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     member_permission_admin = forms.ChoiceField(
+        # nosec B308 - required_star is a hardcoded HTML string
         label=mark_safe(f"Select permission {required_star}"),
         choices=[
             (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
@@ -150,6 +152,7 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     domain_request_permission_member = forms.ChoiceField(
+        # nosec B308 - required_star is a hardcoded HTML string
         label=mark_safe(f"Select permission {required_star}"),
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
