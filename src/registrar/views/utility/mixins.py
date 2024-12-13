@@ -483,6 +483,7 @@ class PortfolioInvitationCreatePermission(PortfolioBasePermission):
         portfolio = self.request.session.get("portfolio")
         return self.request.user.has_edit_members_portfolio_permission(portfolio)
 
+
 class PortfolioDomainsPermission(PortfolioBasePermission):
     """Permission mixin that allows access to portfolio domain pages if user
     has access, otherwise 403"""

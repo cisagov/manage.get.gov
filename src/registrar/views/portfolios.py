@@ -163,21 +163,17 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         user = portfolio_permission.user
-        is_editing_self = request.user == user
-
         form = self.form_class(request.POST, instance=portfolio_permission)
         if form.is_valid():
             # Check if user is removing their own admin or edit role
-            old_roles = set(portfolio_permission.roles)
-            new_roles = set(form.cleaned_data.get("role", []))
-            removing_admin_role = (
-                is_editing_self 
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in old_roles
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in new_roles
+            removing_admin_role_on_self = (
+                request.user == user
+                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in form.cleaned_data.get("role", [])
             )
             form.save()
             messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("member", pk=pk) if not removing_admin_role else redirect("home")
+            return redirect("member", pk=pk) if not removing_admin_role_on_self else redirect("home")
 
         return render(
             request,
@@ -518,7 +514,7 @@ class NewMemberView(PortfolioInvitationCreatePermissionView):
     def get_form_kwargs(self):
         """Pass request and portfolio to form."""
         kwargs = super().get_form_kwargs()
-        kwargs['portfolio'] = self.request.session.get("portfolio")
+        kwargs["portfolio"] = self.request.session.get("portfolio")
         return kwargs
 
     def get_success_url(self):
@@ -535,14 +531,9 @@ class NewMemberView(PortfolioInvitationCreatePermissionView):
         # if not send_success:
         #     return
 
-        # Create instance using form's mapping method
-        self.object = form.map_cleaned_data_to_instance(
-            form.cleaned_data, 
-            PortfolioInvitation(
-                email=form.cleaned_data.get("email"),
-                portfolio=self.request.session.get("portfolio")
-            )
-        )
+        # Create instance using form's mapping method.
+        # Pass in a new object since we are adding a new record.
+        self.object = form.map_cleaned_data_to_instance(form.cleaned_data, PortfolioInvitation())
         self.object.save()
         messages.success(self.request, f"{self.object.email} has been invited.")
         return redirect(self.get_success_url())

@@ -124,8 +124,7 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     domain_request_permission_admin = forms.ChoiceField(
-        # nosec B308 - required_star is a hardcoded HTML string
-        label=mark_safe(f"Select permission {required_star}"),
+        label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
             (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
@@ -138,8 +137,7 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     member_permission_admin = forms.ChoiceField(
-        # nosec B308 - required_star is a hardcoded HTML string
-        label=mark_safe(f"Select permission {required_star}"),
+        label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
             (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
             (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "View all members plus manage members"),
@@ -153,7 +151,7 @@ class BasePortfolioMemberForm(forms.Form):
 
     domain_request_permission_member = forms.ChoiceField(
         # nosec B308 - required_star is a hardcoded HTML string
-        label=mark_safe(f"Select permission {required_star}"),
+        label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
             (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
@@ -195,7 +193,7 @@ class BasePortfolioMemberForm(forms.Form):
     def clean(self):
         """
         Validates form data based on selected role and its required fields.
-        
+
         Since form fields are dynamically shown/hidden via JavaScript based on role selection,
         we only validate fields that are relevant to the selected role:
         - organization_admin: ["member_permission_admin", "domain_request_permission_admin"]
@@ -290,17 +288,17 @@ class BasePortfolioMemberForm(forms.Form):
     def map_cleaned_data_to_instance(self, cleaned_data, instance):
         """
         Maps cleaned data to a member instance, setting roles and permissions.
-        
+
         Additional permissions logic:
         - For org admins: Adds domain request and member admin permissions if selected
         - For other roles: Adds domain request member permissions if not 'no_access'
         - Automatically adds VIEW permissions when EDIT permissions are granted
         - Filters out permissions already granted by base role
-        
+
         Args:
             cleaned_data (dict): Cleaned data containing role and permission choices
             instance: Instance to update
-            
+
         Returns:
             instance: Updated instance
         """
@@ -355,7 +353,7 @@ class NewMemberForm(BasePortfolioMemberForm):
     )
 
     def __init__(self, *args, **kwargs):
-        self.portfolio = kwargs.pop('portfolio', None)
+        self.portfolio = kwargs.pop("portfolio", None)
         super().__init__(*args, **kwargs)
 
     def clean(self):
@@ -369,7 +367,7 @@ class NewMemberForm(BasePortfolioMemberForm):
             # Check if user is already a member
             if UserPortfolioPermission.objects.filter(user__email=email_value, portfolio=self.portfolio).exists():
                 self.add_error("email", "User is already a member of this portfolio.")
-            
+
             if PortfolioInvitation.objects.filter(email=email_value, portfolio=self.portfolio).exists():
                 self.add_error("email", "An invitation already exists for this user.")
         ##########################################
@@ -383,3 +381,13 @@ class NewMemberForm(BasePortfolioMemberForm):
         #     except User.DoesNotExist:
         #         raise forms.ValidationError("User with this email does not exist.")
         return cleaned_data
+
+    def map_cleaned_data_to_instance(self, cleaned_data, instance):
+        """Override of the base class to add portfolio and email."""
+        instance = super().map_cleaned_data_to_instance(cleaned_data, instance)
+        email = cleaned_data.get("email")
+        if email and isinstance(email, str):
+            email = email.lower()
+        instance.email = email
+        instance.portfolio = self.portfolio
+        return instance
