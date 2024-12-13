@@ -740,8 +740,7 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
             attrs={
                 "aria-label": "You don’t need to provide names of other employees now, \
                 but it may slow down our assessment of your eligibility. Describe \
-                why there are no other employees who can help verify your request. \
-                You can enter up to 1000 characters."
+                why there are no other employees who can help verify your request."
             }
         ),
         validators=[
