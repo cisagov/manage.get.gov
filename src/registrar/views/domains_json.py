@@ -27,7 +27,7 @@ def get_domains_json(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    domains = [serialize_domain(domain, request.user) for domain in page_obj.object_list]
+    domains = [serialize_domain(domain, request) for domain in page_obj.object_list]
 
     return JsonResponse(
         {
@@ -87,20 +87,20 @@ def apply_state_filter(queryset, request):
             state_query |= Q(state__in=normal_states)
         # Handle custom states in Python, as expired can not be queried through ORM
         if "expired" in custom_states:
-            expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
+            expired_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Expired"]
             state_query |= Q(id__in=expired_domain_ids)
         if "expiring" in custom_states:
-            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
+            expiring_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Expiring soon"]
             state_query |= Q(id__in=expiring_domain_ids)
         # Apply the combined query
         queryset = queryset.filter(state_query)
         # If there are filtered states, and expired is not one of them, domains with
         # state_display of 'Expired' must be removed
         if "expired" not in custom_states:
-            expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expired"]
+            expired_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Expired"]
             queryset = queryset.exclude(id__in=expired_domain_ids)
         if "expiring" not in custom_states:
-            expired_domain_ids = [domain.id for domain in queryset if domain.state_display() == "Expiring soon"]
+            expired_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Expiring soon"]
             queryset = queryset.exclude(id__in=expired_domain_ids)
 
     return queryset
@@ -111,7 +111,7 @@ def apply_sorting(queryset, request):
     order = request.GET.get("order", "asc")
     if sort_by == "state_display":
         objects = list(queryset)
-        objects.sort(key=lambda domain: domain.state_display(), reverse=(order == "desc"))
+        objects.sort(key=lambda domain: domain.state_display(request), reverse=(order == "desc"))
         return objects
     else:
         if order == "desc":
@@ -119,7 +119,8 @@ def apply_sorting(queryset, request):
         return queryset.order_by(sort_by)
 
 
-def serialize_domain(domain, user):
+def serialize_domain(domain, request):
+    user = request.user
     suborganization_name = None
     try:
         domain_info = domain.domain_info
@@ -139,7 +140,7 @@ def serialize_domain(domain, user):
         "name": domain.name,
         "expiration_date": domain.expiration_date,
         "state": domain.state,
-        "state_display": domain.state_display(),
+        "state_display": domain.state_display(request),
         "get_state_help_text": domain.get_state_help_text(),
         "action_url": reverse("domain", kwargs={"pk": domain.id}),
         "action_label": ("View" if view_only else "Manage"),
