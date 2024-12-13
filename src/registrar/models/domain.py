@@ -1033,7 +1033,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
-        
+
     def _delete_domain(self):
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
@@ -1048,7 +1048,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-        
+
         (
             deleted_values,
             updated_values,
