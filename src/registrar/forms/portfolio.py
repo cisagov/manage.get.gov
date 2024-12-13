@@ -150,7 +150,6 @@ class BasePortfolioMemberForm(forms.Form):
     )
 
     domain_request_permission_member = forms.ChoiceField(
-        # nosec B308 - required_star is a hardcoded HTML string
         label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
@@ -276,7 +275,9 @@ class BasePortfolioMemberForm(forms.Form):
             "role": role,
             "member_permission_admin": getattr(member_permission, "value", None) if is_admin else None,
             "domain_request_permission_admin": getattr(domain_request_permission, "value", None) if is_admin else None,
-            "domain_request_permission_member": getattr(domain_request_permission, "value", None) if not is_admin else None,
+            "domain_request_permission_member": (
+                getattr(domain_request_permission, "value", None) if not is_admin else None
+            ),
         }
 
         # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.

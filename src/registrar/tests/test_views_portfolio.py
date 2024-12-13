@@ -2685,14 +2685,14 @@ class TestEditPortfolioMemberView(WebTest):
     def test_edit_member_permissions_basic_to_admin(self):
         """Tests converting a basic member to admin with full permissions."""
         self.client.force_login(self.user)
-        
+
         # Create a basic member to edit
         basic_member = create_test_user()
         basic_permission = UserPortfolioPermission.objects.create(
             user=basic_member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
 
         response = self.client.post(
@@ -2701,12 +2701,12 @@ class TestEditPortfolioMemberView(WebTest):
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            }
+            },
         )
 
         # Verify redirect and success message
         self.assertEqual(response.status_code, 302)
-        
+
         # Verify database changes
         basic_permission.refresh_from_db()
         self.assertEqual(basic_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
@@ -2718,7 +2718,7 @@ class TestEditPortfolioMemberView(WebTest):
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            }
+            },
         )
 
     @less_console_noise_decorator
@@ -2727,12 +2727,10 @@ class TestEditPortfolioMemberView(WebTest):
     def test_edit_member_permissions_validation(self):
         """Tests form validation for required fields based on role."""
         self.client.force_login(self.user)
-        
+
         member = create_test_user()
         permission = UserPortfolioPermission.objects.create(
-            user=member,
-            portfolio=self.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+            user=member, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
 
         # Test missing required admin permissions
@@ -2741,17 +2739,16 @@ class TestEditPortfolioMemberView(WebTest):
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 # Missing required admin fields
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.context["form"].errors["domain_request_permission_admin"][0],
-            "Admin domain request permission is required"
+            "Admin domain request permission is required",
         )
         self.assertEqual(
-            response.context["form"].errors["member_permission_admin"][0],
-            "Admin member permission is required"
+            response.context["form"].errors["member_permission_admin"][0], "Admin member permission is required"
         )
 
     @less_console_noise_decorator
@@ -2760,7 +2757,7 @@ class TestEditPortfolioMemberView(WebTest):
     def test_edit_invited_member_permissions(self):
         """Tests editing permissions for an invited (but not yet joined) member."""
         self.client.force_login(self.user)
-        
+
         # Test updating invitation permissions
         response = self.client.post(
             reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
@@ -2768,11 +2765,11 @@ class TestEditPortfolioMemberView(WebTest):
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 302)
-        
+
         # Verify invitation was updated
         self.invitation.refresh_from_db()
         self.assertEqual(self.invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
@@ -2783,7 +2780,7 @@ class TestEditPortfolioMemberView(WebTest):
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            }
+            },
         )
 
     @less_console_noise_decorator
@@ -2792,19 +2789,16 @@ class TestEditPortfolioMemberView(WebTest):
     def test_admin_removing_own_admin_role(self):
         """Tests an admin removing their own admin role redirects to home."""
         self.client.force_login(self.user)
-        
+
         # Get the user's admin permission
-        admin_permission = UserPortfolioPermission.objects.get(
-            user=self.user,
-            portfolio=self.portfolio
-        )
+        admin_permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": admin_permission.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
                 "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 302)
