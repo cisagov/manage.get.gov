@@ -2684,8 +2684,8 @@ class TestAnalystDelete(MockEppLib):
             [
                 call(
                     commands.UpdateDomain(
-                        name='freeman.gov',
-                        add=[common.Status(state=Domain.Status.CLIENT_HOLD, description='', lang='en')],
+                        name="freeman.gov",
+                        add=[common.Status(state=Domain.Status.CLIENT_HOLD, description="", lang="en")],
                         rem=[],
                         nsset=None,
                         keyset=None,
@@ -2694,19 +2694,43 @@ class TestAnalystDelete(MockEppLib):
                     ),
                     cleaned=True,
                 ),
+            ]
+        )
+        self.mockedSendFunction.assert_has_calls(
+            [
                 call(
-                    commands.InfoDomain(name='freeman.gov', auth_info=None),
+                    commands.InfoDomain(name="freeman.gov", auth_info=None),
                     cleaned=True,
                 ),
                 call(
-                    commands.InfoHost(name='fake.host.com'),
+                    commands.InfoHost(name="fake.host.com"),
                     cleaned=True,
                 ),
                 call(
                     commands.UpdateDomain(
-                        name='freeman.gov',
+                        name="freeman.gov",
                         add=[],
-                        rem=[common.HostObjSet(hosts=['fake.host.com'])],
+                        rem=[common.HostObjSet(hosts=["fake.host.com"])],
+                        nsset=None,
+                        keyset=None,
+                        registrant=None,
+                        auth_info=None,
+                    ),
+                    cleaned=True,
+                ),
+            ]
+        )
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteHost(name="fake.host.com"),
+                    cleaned=True,
+                ),
+                call(
+                    commands.UpdateDomain(
+                        name="freeman.gov",
+                        add=[],
+                        rem=[common.DomainContact(contact="adminContact", type="admin")],
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -2715,14 +2739,14 @@ class TestAnalystDelete(MockEppLib):
                     cleaned=True,
                 ),
                 call(
-                    commands.DeleteHost(name='fake.host.com'),
+                    commands.DeleteContact(id="adminContact"),
                     cleaned=True,
                 ),
                 call(
                     commands.UpdateDomain(
-                        name='freeman.gov',
+                        name="freeman.gov",
                         add=[],
-                        rem=[common.DomainContact(contact='adminContact', type='admin')],
+                        rem=[common.DomainContact(contact="techContact", type="tech")],
                         nsset=None,
                         keyset=None,
                         registrant=None,
@@ -2731,31 +2755,19 @@ class TestAnalystDelete(MockEppLib):
                     cleaned=True,
                 ),
                 call(
-                    commands.DeleteContact(id='adminContact'),
-                    cleaned=True,
-                ),
-                call(
-                    commands.UpdateDomain(
-                        name='freeman.gov',
-                        add=[],
-                        rem=[common.DomainContact(contact='techContact', type='tech')],
-                        nsset=None,
-                        keyset=None,
-                        registrant=None,
-                        auth_info=None,
-                    ),
-                    cleaned=True,
-                ),
-                call(
-                    commands.DeleteContact(id='techContact'),
-                    cleaned=True,
-                ),
-                call(
-                    commands.DeleteDomain(name='freeman.gov'),
+                    commands.DeleteContact(id="techContact"),
                     cleaned=True,
                 ),
             ],
             any_order=True,
+        )
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.DeleteDomain(name="freeman.gov"),
+                    cleaned=True,
+                ),
+            ],
         )
 
         # Domain itself should not be deleted
