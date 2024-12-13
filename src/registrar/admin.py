@@ -1835,7 +1835,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     class StatusListFilter(MultipleChoiceListFilter):
         """Custom status filter which is a multiple choice filter"""
 
-        title = "Status"
+        title = "status"
         parameter_name = "status__in"
 
         template = "django/admin/multiple_choice_list_filter.html"
@@ -1879,7 +1879,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         If we have a portfolio, use the portfolio's federal type.  If not, use the
         organization in the Domain Request object."""
 
-        title = "federal Type"
+        title = "federal type"
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
@@ -1966,6 +1966,24 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 return queryset.filter(is_election_board=True)
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
+    
+    class PortfolioFilter(admin.SimpleListFilter):
+        """Define a custom filter for portfolio"""
+
+        title = _("portfolio")
+        parameter_name = "portfolio"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+        
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(Q(portfolio__isnull=False))
+            if self.value() == "0":
+                return queryset.filter(Q(portfolio__isnull=True))
 
     # ------ Custom fields ------
     def custom_election_board(self, obj):
@@ -2132,9 +2150,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         GenericOrgFilter,
         FederalTypeFilter,
         ElectionOfficeFilter,
+        PortfolioFilter,
         "rejection_reason",
         InvestigatorFilter,
-        "portfolio"
     )
 
     # Search
