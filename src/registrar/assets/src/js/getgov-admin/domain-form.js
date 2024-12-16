@@ -1,3 +1,5 @@
+import { handlePortfolioSelection } from './helpers-portfolio-dynamic-fields.js';
+
 /**
  * A function that appends target="_blank" to the domain_form buttons
 */
@@ -26,5 +28,16 @@ export function initDomainFormTargetBlankButtons() {
     if(domainSubmitButton && domainFormElement){
         domainSubmitButton.addEventListener("mouseover", () => openInNewTab(domainFormElement, true));
         domainSubmitButton.addEventListener("mouseout", () => openInNewTab(domainFormElement, false));
+    }
+}
+
+/**
+ * A function for dynamic Domain fields
+*/
+export function initDynamicDomainFields(){
+    const domainPage = document.getElementById("domain_form");
+    if (domainPage) {
+        handlePortfolioSelection("#id_domain_info-0-portfolio",
+            "#id_domain_info-0-sub_organization");
     }
 }
