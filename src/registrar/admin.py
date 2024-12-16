@@ -3334,7 +3334,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
-            message2 = "This subdomain is being used as a hostname on another domain"
+            message2 = f"This subdomain is being used as a hostname on another domain: {err.note}"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
