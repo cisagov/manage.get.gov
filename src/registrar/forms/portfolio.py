@@ -223,7 +223,7 @@ class NewMemberForm(forms.ModelForm):
     )
 
     class Meta:
-        model = User
+        model = PortfolioInvitation
         fields = ["email"]
 
     def clean(self):

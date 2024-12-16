@@ -14,6 +14,7 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -21,10 +22,14 @@ from registrar.utility.admin_helpers import (
     get_field_links_as_list,
 )
 from django.conf import settings
+from django.contrib.messages import get_messages
+from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.email import EmailSendingError
+from registrar.utility.email_invitations import send_portfolio_invitation_email
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -37,7 +42,7 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import AlreadyPortfolioInvitedError, AlreadyPortfolioMemberError, FSMDomainRequestError, FSMErrorCodes, MissingEmailError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1461,6 +1466,104 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method to send an email only on creation of the PortfolioInvitation object.
+        """
+        if not change:  # Only send email if this is a new PortfolioInvitation(creation)
+            portfolio = obj.portfolio
+            requested_email = obj.email
+            requestor = request.user
+
+            requested_user = User.objects.filter(email=requested_email).first()
+            permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
+            try:
+                if not requested_user or not permission_exists:
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    messages.success(request, f"{requested_email} has been invited.")
+                else:
+                    if permission_exists:
+                        messages.warning(request, "User is already a member of this portfolio.")
+            except Exception as e:
+                self._handle_exceptions(e, request, obj)
+                return
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
+
+    def _handle_exceptions(self, exception, request, obj):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", obj.email, obj.portfolio, exc_info=True)
+            messages.warning(request, "Could not send email invitation.")
+        elif isinstance(exception, AlreadyPortfolioMemberError):
+            messages.warning(request, str(exception))
+        elif isinstance(exception, AlreadyPortfolioInvitedError):
+            messages.warning(request, str(exception))
+        elif isinstance(exception, MissingEmailError):
+            messages.error(request, str(exception))
+            logger.error(
+                f"Can't send email to '{obj.email}' for portfolio '{obj.portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email invitation (Other Exception)", obj.portfolio, exc_info=True)
+            messages.warning(request, "Could not send email invitation.")
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Override response_add to handle redirection when exceptions are raised.
+        """
+        # Check if there are any error or warning messages in the `messages` framework
+        storage = get_messages(request)
+        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
+
+        if has_errors:
+            # Re-render the change form if there are errors or warnings
+            # Prepare context for rendering the change form
+            opts = self.model._meta
+            app_label = opts.app_label
+
+            # Get the model form
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+
+            # Create an AdminForm instance
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.prepopulated_fields,
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),  # Add admin context
+                "title": f"Change {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": False,  # Indicate this is not an "Add" form
+                "change": True,  # Indicate this is a "Change" form
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,  # Pass the AdminForm instance
+                "errors": None,  # You can use this to pass custom form errors
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=False,
+                change=True,
+                obj=obj,
+            )
+
+        return super().response_add(request, obj, post_url_continue)
 
 
 class DomainInformationResource(resources.ModelResource):
