@@ -3607,6 +3607,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = [
+    ]
+
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
         admin_permissions = self.get_user_portfolio_permission_admins(obj)
