@@ -224,9 +224,30 @@ class PortfolioNewMemberForm(forms.ModelForm):
 
     class Meta:
         model = PortfolioInvitation
-        fields = ["email"]
+        fields = ["portfolio", "email", "roles", "additional_permissions"]
+
+    def is_valid(self):
+        logger.info("is valid()")
+        return super().is_valid()
+    
+    def full_clean(self):
+        logger.info("full_clean()")
+        super().full_clean()
+
+    def _clean_fields(self):
+        logger.info("clean fields")
+        logger.info(self.fields)
+        super()._clean_fields()
+
+    def _post_clean(self):
+        logger.info("post clean")
+        logger.info(self.cleaned_data)
+        super()._post_clean()
+        logger.info(self.instance)
 
     def clean(self):
+        logger.info(self.cleaned_data)
+        logger.info(self.initial)
         # Lowercase the value of the 'email' field
         email_value = self.cleaned_data.get("email")
         if email_value:

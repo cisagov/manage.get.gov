@@ -499,7 +499,17 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
         self.object = None  # For a new invitation, there's no existing model instance
-        form = self.get_form()
+
+        data = request.POST.copy()
+
+        # Override the 'portfolio' field value
+        if not data.get("portfolio"):
+            data["portfolio"] = self.request.session.get("portfolio").id
+
+        # Pass the modified data to the form
+        form = portfolioForms.PortfolioNewMemberForm(data)
+        #form = self.get_form()
+        #logger.info(form.fields["portfolio"])
 
         print('before is_valid')
         if form.is_valid():
