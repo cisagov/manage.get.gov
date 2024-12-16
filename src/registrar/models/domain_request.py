@@ -690,6 +690,18 @@ class DomainRequest(TimeStampedModel):
         # Update the cached values after saving
         self._cache_status_and_status_reasons()
 
+    def create_requested_suborganization(self):
+        """Creates the requested suborganization.
+        Adds the name, portfolio, city, and state_territory fields.
+        Returns the created suborganization."""
+        Suborganization = apps.get_model("registrar.Suborganization")
+        return Suborganization.objects.create(
+            name=self.requested_suborganization,
+            portfolio=self.portfolio,
+            city=self.suborganization_city,
+            state_territory=self.suborganization_state_territory,
+        )
+
     def send_custom_status_update_email(self, status):
         """Helper function to send out a second status email when the status remains the same,
         but the reason has changed."""
@@ -785,6 +797,7 @@ class DomainRequest(TimeStampedModel):
 
     def delete_and_clean_up_domain(self, called_from):
         try:
+            # Clean up the approved domain
             domain_state = self.approved_domain.state
             # Only reject if it exists on EPP
             if domain_state != Domain.State.UNKNOWN:
@@ -795,6 +808,19 @@ class DomainRequest(TimeStampedModel):
         except Exception as err:
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
+
+        # Clean up any created suborgs, assuming its for this record only
+        if self.sub_organization is not None:
+            request_suborg_count = self.request_sub_organization.count()
+            domain_suborgs = self.DomainRequest_info.filter(
+                sub_organization=self.sub_organization
+            ).count()
+            if request_suborg_count == 1 and domain_suborgs.count() <= 1:
+                # if domain_suborgs.count() == 1:
+                #     domain_info = domain_suborgs.first()
+                #     domain_info.sub_organization = None
+                #     domain_info.save()
+                self.sub_organization.delete()
 
     def _send_status_update_email(
         self,
@@ -984,6 +1010,7 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("action_needed")
+
         elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
@@ -1014,8 +1041,16 @@ class DomainRequest(TimeStampedModel):
         domain request into an admin on that domain. It also triggers an email
         notification."""
 
+        should_save = False
         if self.federal_agency is None:
             self.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+            should_save = True
+
+        if self.is_requesting_new_suborganization():
+            self.sub_organization = self.create_requested_suborganization()
+            should_save = True
+
+        if should_save:
             self.save()
 
         # create the domain
@@ -1148,7 +1183,7 @@ class DomainRequest(TimeStampedModel):
     def is_requesting_new_suborganization(self) -> bool:
         """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
-        Used for the RequestingEntity page.
+        Used for the RequestingEntity page and on DomainInformation.create_from_da().
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.

@@ -629,6 +629,10 @@ export function initRejectedEmail() {
     });
 }
 
+function handleSuborganizationSelection() {
+    console.log("cats are cool")
+}
+
 /**
  * A function for dynamic DomainRequest fields
 */
@@ -636,5 +640,6 @@ export function initDynamicDomainRequestFields(){
     const domainRequestPage = document.getElementById("domainrequest_form");
     if (domainRequestPage) {
         handlePortfolioSelection();
+        handleSuborganizationSelection();
     }
 }
