@@ -27,11 +27,14 @@ from registrar.models import (
     UserDomainRole,
     PublicContact,
 )
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
+    AlreadyPortfolioInvitedError,
+    AlreadyPortfolioMemberError,
     GenericError,
     GenericErrorCodes,
     MissingEmailError,
@@ -65,7 +68,7 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from ..utility.email_invitations import send_domain_invitation_email
+from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
 from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 from django import forms
 
@@ -1117,6 +1120,7 @@ class DomainUsersView(DomainBaseView):
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
+            logger.info(domain_invitation)
             # Query PortfolioInvitations linked to the same portfolio and check roles
             portfolio_invitations = PortfolioInvitation.objects.filter(
                 portfolio=portfolio, email=domain_invitation.email
@@ -1124,7 +1128,9 @@ class DomainUsersView(DomainBaseView):
 
             # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
             for portfolio_invitation in portfolio_invitations:
-                if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+                logger.info(portfolio_invitation)
+                logger.info(portfolio_invitation.roles)
+                if portfolio_invitation.roles and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
@@ -1186,6 +1192,38 @@ class DomainAddUserView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
+    def _get_org_membership(self, requestor_org, requested_email, requested_user):
+        """
+        Verifies if an email belongs to a different organization as a member or invited member.
+        Verifies if an email belongs to this organization as a member or invited member.
+        User does not belong to any org can be deduced from the tuple returned.
+
+        Returns a tuple (member_of_a_different_org, member_of_this_org).
+        """
+
+        # COMMENT: this code does not take into account multiple portfolios flag
+
+        # COMMENT: shouldn't this code be based on the organization of the domain, not the org
+        # of the requestor? requestor could have multiple portfolios
+
+        # Check for existing permissions or invitations for the requested user
+        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+        existing_org_invitation = PortfolioInvitation.objects.filter(email=requested_email).first()
+
+        # Determine membership in a different organization
+        member_of_a_different_org = (
+            (existing_org_permission and existing_org_permission.portfolio != requestor_org) or
+            (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
+        )
+
+        # Determine membership in the same organization
+        member_of_this_org = (
+            (existing_org_permission and existing_org_permission.portfolio == requestor_org) or
+            (existing_org_invitation and existing_org_invitation.portfolio == requestor_org)
+        )
+
+        return member_of_a_different_org, member_of_this_org
+    
     def form_valid(self, form):
         """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
@@ -1193,12 +1231,34 @@ class DomainAddUserView(DomainFormBaseView):
 
         # Look up a user with that email
         requested_user = self._get_requested_user(requested_email)
+        # Get the requestor's organization
+        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
+
+        member_of_a_different_org, member_of_this_org = self._get_org_membership(requestor_org, requested_email, requested_user)
+
+        # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+        # if requested_email/user is not member or invited member of this portfolio
+        # COMMENT: this code does not take into account multiple portfolios flag
+        #   send portfolio invitation email
+        #   create portfolio invitation
+        #   create message to view
+        if (
+            flag_is_active_for_user(requestor, "organization_feature")
+            and not flag_is_active_for_user(requestor, "multiple_portfolios")
+            and not member_of_this_org
+        ):
+            try:
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=requestor_org)
+                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=requestor_org)
+                messages.success(self.request, f"{requested_email} has been invited.")
+            except Exception as e:
+                self._handle_portfolio_exceptions(e, requested_email, requestor_org)
 
         try:
             if requested_user is None:
-                self._handle_new_user_invitation(requested_email, requestor)
+                self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
-                self._handle_existing_user(requested_email, requestor, requested_user)
+                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
         except Exception as e:
             self._handle_exceptions(e, requested_email)
 
@@ -1211,23 +1271,25 @@ class DomainAddUserView(DomainFormBaseView):
         except User.DoesNotExist:
             return None
 
-    def _handle_new_user_invitation(self, email, requestor):
+    def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
         """Handle invitation for a new user who does not exist in the system."""
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
             domain=self.object,
+            is_member_of_different_org=member_of_different_org,
         )
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to this domain.")
 
-    def _handle_existing_user(self, email, requestor, requested_user):
+    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
             requested_user=requested_user,
             domain=self.object,
+            is_member_of_different_org=member_of_different_org,
         )
         UserDomainRole.objects.create(
             user=requested_user,
@@ -1239,10 +1301,10 @@ class DomainAddUserView(DomainFormBaseView):
     def _handle_exceptions(self, exception, email):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warn("Could not send email invitation (EmailSendingError)", self.object, exc_info=True)
+            logger.warning("Could not send email invitation to %s for domain %s (EmailSendingError)", email, self.object, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, OutsideOrgMemberError):
-            logger.warn(
+            logger.warning(
                 "Could not send email. Can not invite member of a .gov organization to a different organization.",
                 self.object,
                 exc_info=True,
@@ -1264,9 +1326,27 @@ class DomainAddUserView(DomainFormBaseView):
         elif isinstance(exception, IntegrityError):
             messages.warning(self.request, f"{email} is already a manager for this domain")
         else:
-            logger.warn("Could not send email invitation (Other Exception)", self.object, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", self.object, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
 
+    def _handle_portfolio_exceptions(self, exception, email, portfolio):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning("Could not send email invitation (EmailSendingError)", portfolio, exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, AlreadyPortfolioMemberError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, AlreadyPortfolioInvitedError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email invitation (Other Exception)", portfolio, exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
     object: DomainInvitation

@@ -17,19 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _is_member_of_different_org(email, requestor, requested_user):
-    """Verifies if an email belongs to a different organization as a member or invited member."""
-    # Check if requested_user is a already member of a different organization than the requestor's org
-    requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
-    existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
-
-    return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
-        existing_org_invitation and existing_org_invitation.portfolio != requestor_org
-    )
-
-
-def send_domain_invitation_email(email: str, requestor, domain, requested_user=None):
+def send_domain_invitation_email(email: str, requestor, domain, is_member_of_different_org):
     """
     Sends a domain invitation email to the specified address.
 
@@ -39,7 +27,7 @@ def send_domain_invitation_email(email: str, requestor, domain, requested_user=N
         email (str): Email address of the recipient.
         requestor (User): The user initiating the invitation.
         domain (Domain): The domain object for which the invitation is being sent.
-        requested_user (User): The user of the recipient, if exists; defaults to None
+        is_member_of_different_org (bool): if an email belongs to a different org
 
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
@@ -59,8 +47,11 @@ def send_domain_invitation_email(email: str, requestor, domain, requested_user=N
             requestor_email = requestor.email
 
     # Check if the recipient is part of a different organization
-    if flag_is_active_for_user(requestor, "organization_feature") and _is_member_of_different_org(
-        email, requestor, requested_user
+    # COMMENT: this does not account for multiple_portfolios flag being active
+    if (
+        flag_is_active_for_user(requestor, "organization_feature")
+        and not flag_is_active_for_user(requestor, "multiple_portfolios")
+        and is_member_of_different_org
     ):
         raise OutsideOrgMemberError
 
@@ -78,24 +69,15 @@ def send_domain_invitation_email(email: str, requestor, domain, requested_user=N
         pass
 
     # Send the email
-    try:
-        send_templated_email(
-            "emails/domain_invitation.txt",
-            "emails/domain_invitation_subject.txt",
-            to_address=email,
-            context={
-                "domain": domain,
-                "requestor_email": requestor_email,
-            },
-        )
-    except EmailSendingError as exc:
-        logger.warning(
-            "Could not send email invitation to %s for domain %s",
-            email,
-            domain,
-            exc_info=True,
-        )
-        raise EmailSendingError("Could not send email invitation.") from exc
+    send_templated_email(
+        "emails/domain_invitation.txt",
+        "emails/domain_invitation_subject.txt",
+        to_address=email,
+        context={
+            "domain": domain,
+            "requestor_email": requestor_email,
+        },
+    )
 
 
 def send_portfolio_invitation_email(email: str, requestor, portfolio):
@@ -136,23 +118,13 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
     except PortfolioInvitation.DoesNotExist:
         pass
 
-    try:
-        send_templated_email(
-            "emails/portfolio_invitation.txt",
-            "emails/portfolio_invitation_subject.txt",
-            to_address=email,
-            context={
-                "portfolio": portfolio,
-                "requestor_email": requestor_email,
-                "email": email,
-            },
-        )
-    except EmailSendingError as exc:
-        logger.warning(
-            "Could not sent email invitation to %s for portfolio %s",
-            email,
-            portfolio,
-            exc_info=True,
-        )
-        raise EmailSendingError("Could not send email invitation.") from exc
-
+    send_templated_email(
+        "emails/portfolio_invitation.txt",
+        "emails/portfolio_invitation_subject.txt",
+        to_address=email,
+        context={
+            "portfolio": portfolio,
+            "requestor_email": requestor_email,
+            "email": email,
+        },
+    )

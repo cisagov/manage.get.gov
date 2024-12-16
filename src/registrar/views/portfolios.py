@@ -530,10 +530,10 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
 
         requested_user = User.objects.filter(email=requested_email).first()
         permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
-        # invitation_exists = PortfolioInvitation.objects.filter(email=requested_email, portfolio=self.object).exists()
         try:
             if not requested_user or not permission_exists:
                 send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=self.object)
+                ## NOTE : this is not yet accounting properly for roles and permissions
                 PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=self.object)
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
@@ -546,7 +546,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
     def _handle_exceptions(self, exception, email):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not send email invitation (EmailSendingError)", self.object, exc_info=True)
+            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", email, self.object, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, AlreadyPortfolioMemberError):
             messages.warning(self.request, str(exception))
