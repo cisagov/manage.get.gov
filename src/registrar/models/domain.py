@@ -712,7 +712,7 @@ class Domain(TimeStampedModel, DomainHelper):
             raise e
 
     @nameservers.setter  # type: ignore
-    def nameservers(self, hosts: list[tuple[str, list]]): # noqa
+    def nameservers(self, hosts: list[tuple[str, list]]):  # noqa
         """Host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, [127.0.0.1, others ips])]"""
