@@ -1844,7 +1844,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_warning.assert_called_once_with(
                     ANY,  # don't care about the request argument
-                    "<li>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: <a href='/admin/registrar/domain/1/change/'>city.gov</a></li>"  # care about this message
+                    f"<li>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: <a href='/admin/registrar/domain/{domain_request.approved_domain.id}/change/'>{domain_request.approved_domain.name}</a></li>",  # noqa
                 )
 
     def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
