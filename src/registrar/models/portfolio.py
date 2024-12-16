@@ -6,7 +6,9 @@ from registrar.models.user import User
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 from .utility.time_stamped_model import TimeStampedModel
+import logging
 
+logger = logging.getLogger(__name__)
 
 class Portfolio(TimeStampedModel):
     """
@@ -163,3 +165,7 @@ class Portfolio(TimeStampedModel):
     def get_suborganizations(self):
         """Returns all suborganizations associated with this portfolio"""
         return self.portfolio_suborganizations.all()
+    
+    def full_clean(self, exclude=None, validate_unique=True):
+        logger.info("portfolio full clean")
+        super().full_clean(exclude, validate_unique)

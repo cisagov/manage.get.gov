@@ -469,33 +469,34 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         return render(request, "portfolio_members.html")
 
 
-class NewMemberView(PortfolioMembersPermissionView, FormMixin):
+class PortfolioNewMemberView(PortfolioMembersPermissionView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
-    form_class = portfolioForms.NewMemberForm
+    form_class = portfolioForms.PortfolioNewMemberForm
 
-    def get_object(self, queryset=None):
-        """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
-        if portfolio is None:
-            raise Http404("No organization found for this user")
-        return portfolio
+    # def get_object(self, queryset=None):
+    #     """Get the portfolio object based on the session."""
+    #     portfolio = self.request.session.get("portfolio")
+    #     if portfolio is None:
+    #         raise Http404("No organization found for this user")
+    #     return portfolio
 
-    def get_form_kwargs(self):
-        """Include the instance in the form kwargs."""
-        kwargs = super().get_form_kwargs()
-        kwargs["instance"] = self.get_object()
-        return kwargs
+    # def get_form_kwargs(self):
+    #     """Include the instance in the form kwargs."""
+    #     kwargs = super().get_form_kwargs()
+    #     kwargs["instance"] = self.get_object()
+    #     return kwargs
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests to display the form."""
-        self.object = self.get_object()
+        self.object = self.request.session.get("portfolio")
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
-        self.object = self.get_object()
+        
+        # self.object = self.get_object()
         form = self.get_form()
 
         if form.is_valid():
@@ -503,50 +504,51 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         else:
             return self.form_invalid(form)
 
-    def is_ajax(self):
-        return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    # def is_ajax(self):
+    #     return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
-    def form_invalid(self, form):
-        if self.is_ajax():
-            return JsonResponse({"is_valid": False})  # Return a JSON response
-        else:
-            return super().form_invalid(form)  # Handle non-AJAX requests normally
+    # def form_invalid(self, form):
+    #     if self.is_ajax():
+    #         return JsonResponse({"is_valid": False})  # Return a JSON response
+    #     else:
+    #         return super().form_invalid(form)  # Handle non-AJAX requests normally
 
-    def form_valid(self, form):
+    # def form_valid(self, form):
 
-        if self.is_ajax():
-            return JsonResponse({"is_valid": True})  # Return a JSON response
-        else:
-            return self.submit_new_member(form)
+    #     if self.is_ajax():
+    #         return JsonResponse({"is_valid": True})  # Return a JSON response
+    #     else:
+    #         return self.submit_new_member(form)
 
     def get_success_url(self):
         """Redirect to members table."""
         return reverse("members")
 
-    def submit_new_member(self, form):
+    def form_valid(self, form):
         """Add the specified user as a member for this portfolio."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+        portfolio = self.request.session.get("portfolio")
 
         requested_user = User.objects.filter(email=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
+        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
             if not requested_user or not permission_exists:
-                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=self.object)
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
                 ## NOTE : this is not yet accounting properly for roles and permissions
-                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=self.object)
+                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=portfolio)
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
                 if permission_exists:
                     messages.warning(self.request, "User is already a member of this portfolio.")
         except Exception as e:
-            self._handle_exceptions(e, requested_email)
+            self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
 
-    def _handle_exceptions(self, exception, email):
+    def _handle_exceptions(self, exception, portfolio, email):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", email, self.object, exc_info=True)
+            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", email, portfolio, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, AlreadyPortfolioMemberError):
             messages.warning(self.request, str(exception))
@@ -555,9 +557,9 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
-                f"Can't send email to '{email}' for portfolio '{self.object}'. No email exists for the requestor.",
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
                 exc_info=True,
             )
         else:
-            logger.warning("Could not send email invitation (Other Exception)", self.object, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", portfolio, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")

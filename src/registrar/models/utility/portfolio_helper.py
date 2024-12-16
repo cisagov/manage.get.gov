@@ -4,7 +4,9 @@ from django.apps import apps
 from django.forms import ValidationError
 from registrar.utility.waffle import flag_is_active_for_user
 from django.contrib.auth import get_user_model
+import logging
 
+logger = logging.getLogger(__name__)
 
 class UserPortfolioRoleChoices(models.TextChoices):
     """
@@ -153,6 +155,7 @@ def validate_portfolio_invitation(portfolio_invitation):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
+    logger.info("portfolio invitataion validation")
     PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     User = get_user_model()

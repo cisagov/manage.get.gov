@@ -164,7 +164,7 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
         ]
 
 
-class NewMemberForm(forms.ModelForm):
+class PortfolioNewMemberForm(forms.ModelForm):
     member_access_level = forms.ChoiceField(
         label="Select permission",
         choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
@@ -225,6 +225,10 @@ class NewMemberForm(forms.ModelForm):
     class Meta:
         model = PortfolioInvitation
         fields = ["email"]
+
+    def _post_clean(self):
+        logger.info("in _post_clean")
+        super()._post_clean()
 
     def clean(self):
         cleaned_data = super().clean()

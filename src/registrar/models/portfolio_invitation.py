@@ -111,6 +111,10 @@ class PortfolioInvitation(TimeStampedModel):
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
 
+    def full_clean(self, exclude=None, validate_unique=True):
+        logger.info("portfolio invitation full clean")
+        super().full_clean(exclude, validate_unique)
+
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
