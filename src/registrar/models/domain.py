@@ -712,7 +712,7 @@ class Domain(TimeStampedModel, DomainHelper):
             raise e
 
     @nameservers.setter  # type: ignore
-    def nameservers(self, hosts: list[tuple[str, list]]):
+    def nameservers(self, hosts: list[tuple[str, list]]): # noqa
         """Host should be a tuple of type str, str,... where the elements are
         Fully qualified host name, addresses associated with the host
         example: [(ns1.okay.gov, [127.0.0.1, others ips])]"""
@@ -749,7 +749,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
-        try: 
+        try:
             self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
         except Exception as e:
             # we don't need this part to succeed in order to continue.
@@ -1068,7 +1068,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
 
-        # addAndRemoveHostsFromDomain removes the hosts from the domain object, 
+        # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
