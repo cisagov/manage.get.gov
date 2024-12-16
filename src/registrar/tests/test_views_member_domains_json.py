@@ -58,10 +58,13 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         cls.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-03-01", state="ready")
         cls.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-03-01", state="ready")
         cls.domain3 = Domain.objects.create(name="example3.com", expiration_date="2024-03-01", state="ready")
+        cls.domain4 = Domain.objects.create(name="example4.com", expiration_date="2024-03-01", state="ready")
+
         # Add domain1 and domain2 to portfolio
         DomainInformation.objects.create(creator=cls.user, domain=cls.domain1, portfolio=cls.portfolio)
         DomainInformation.objects.create(creator=cls.user, domain=cls.domain2, portfolio=cls.portfolio)
         DomainInformation.objects.create(creator=cls.user, domain=cls.domain3, portfolio=cls.portfolio)
+        DomainInformation.objects.create(creator=cls.user, domain=cls.domain4, portfolio=cls.portfolio)
 
         # Assign user_member to view all domains
         UserPortfolioPermission.objects.create(
@@ -70,8 +73,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
         # Add user_member as manager of domains
-        UserDomainRole.objects.create(user=cls.user_member, domain=cls.domain1)
-        UserDomainRole.objects.create(user=cls.user_member, domain=cls.domain2)
+        UserDomainRole.objects.create(user=cls.user_member, domain=cls.domain1, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=cls.user_member, domain=cls.domain2, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=cls.user_member, domain=cls.domain3, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=cls.user_no_perms, domain=cls.domain3, role=UserDomainRole.Roles.MANAGER)
 
         # Add an invited member who has been invited to manage domains
         cls.invited_member_email = "invited@example.com"
@@ -123,11 +128,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 2)
-        self.assertEqual(data["unfiltered_total"], 2)
+        self.assertEqual(data["total"], 3)
+        self.assertEqual(data["unfiltered_total"], 3)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 2)
+        self.assertEqual(len(data["domains"]), 3)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -169,11 +174,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -192,11 +197,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -221,7 +226,7 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
         self.assertEqual(data["total"], 1)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
         self.assertEqual(len(data["domains"]), 1)
@@ -249,7 +254,7 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
         self.assertEqual(data["total"], 1)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
         self.assertEqual(len(data["domains"]), 1)
@@ -278,11 +283,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
         # Check the name of the first domain is example1.com
         self.assertEqual(data["domains"][0]["name"], "example1.com")
@@ -306,14 +311,121 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
         # Check the name of the first domain is example1.com
-        self.assertEqual(data["domains"][0]["name"], "example3.com")
+        self.assertEqual(data["domains"][0]["name"], "example4.com")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_get_portfolio_member_domains_json_authenticated_sort_by_checked(self):
+        """Test that sort returns results in correct order."""
+        # Test by checked in ascending order
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.user_member.id,
+                "member_only": "false",
+                "checkedDomainIds": f"{self.domain2.id},{self.domain3.id}",
+                "sort_by": "checked",
+                "order": "asc",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_previous"])
+        self.assertFalse(data["has_next"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
+
+        # Check the number of domains
+        self.assertEqual(len(data["domains"]), 4)
+
+        # Check the name of the first domain is the first unchecked domain sorted alphabetically
+        self.assertEqual(data["domains"][0]["name"], "example1.com")
+        self.assertEqual(data["domains"][1]["name"], "example4.com")
+
+        # Test by checked in descending order
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.user_member.id,
+                "member_only": "false",
+                "checkedDomainIds": f"{self.domain2.id},{self.domain3.id}",
+                "sort_by": "checked",
+                "order": "desc",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_previous"])
+        self.assertFalse(data["has_next"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
+
+        # Check the number of domains
+        self.assertEqual(len(data["domains"]), 4)
+
+        # Check the name of the first domain is the first checked domain sorted alphabetically
+        self.assertEqual(data["domains"][0]["name"], "example2.com")
+        self.assertEqual(data["domains"][1]["name"], "example3.com")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_get_portfolio_member_domains_json_authenticated_member_is_only_manager(self):
+        """Test that sort returns member_is_only_manager when member_domain_role_exists
+        and member_domain_role_count == 1"""
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "member_id": self.user_member.id,
+                "member_only": "false",
+                "sort_by": "name",
+                "order": "asc",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_previous"])
+        self.assertFalse(data["has_next"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
+
+        # Check the number of domains
+        self.assertEqual(len(data["domains"]), 4)
+
+        self.assertEqual(data["domains"][0]["name"], "example1.com")
+        self.assertEqual(data["domains"][1]["name"], "example2.com")
+        self.assertEqual(data["domains"][2]["name"], "example3.com")
+        self.assertEqual(data["domains"][3]["name"], "example4.com")
+
+        self.assertEqual(data["domains"][0]["member_is_only_manager"], True)
+        self.assertEqual(data["domains"][1]["member_is_only_manager"], True)
+        # domain3 has 2 managers
+        self.assertEqual(data["domains"][2]["member_is_only_manager"], False)
+        # no managers on this one
+        self.assertEqual(data["domains"][3]["member_is_only_manager"], False)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -339,11 +451,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
         # Check the name of the first domain is example1.com
         self.assertEqual(data["domains"][0]["name"], "example1.com")
@@ -367,14 +479,79 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertFalse(data["has_next"])
         self.assertEqual(data["num_pages"], 1)
-        self.assertEqual(data["total"], 3)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 4)
 
         # Check the name of the first domain is example1.com
-        self.assertEqual(data["domains"][0]["name"], "example3.com")
+        self.assertEqual(data["domains"][0]["name"], "example4.com")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_get_portfolio_invitedmember_domains_json_authenticated_sort_by_checked(self):
+        """Test that sort returns results in correct order."""
+        # Test by checked in ascending order
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.invited_member_email,
+                "member_only": "false",
+                "checkedDomainIds": f"{self.domain2.id},{self.domain3.id}",
+                "sort_by": "checked",
+                "order": "asc",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_previous"])
+        self.assertFalse(data["has_next"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
+
+        # Check the number of domains
+        self.assertEqual(len(data["domains"]), 4)
+
+        # Check the name of the first domain is the first unchecked domain sorted alphabetically
+        self.assertEqual(data["domains"][0]["name"], "example1.com")
+        self.assertEqual(data["domains"][1]["name"], "example4.com")
+
+        # Test by checked in descending order
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "email": self.invited_member_email,
+                "member_only": "false",
+                "checkedDomainIds": f"{self.domain2.id},{self.domain3.id}",
+                "sort_by": "checked",
+                "order": "desc",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        # Check pagination info
+        self.assertEqual(data["page"], 1)
+        self.assertFalse(data["has_previous"])
+        self.assertFalse(data["has_next"])
+        self.assertEqual(data["num_pages"], 1)
+        self.assertEqual(data["total"], 4)
+        self.assertEqual(data["unfiltered_total"], 4)
+
+        # Check the number of domains
+        self.assertEqual(len(data["domains"]), 4)
+
+        # Check the name of the first domain is the first checked domain sorted alphabetically
+        self.assertEqual(data["domains"][0]["name"], "example2.com")
+        self.assertEqual(data["domains"][1]["name"], "example3.com")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
