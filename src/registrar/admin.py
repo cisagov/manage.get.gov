@@ -2543,6 +2543,31 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
+    
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Extend the change_view for DomainRequest objects in django admin.
+        Customize to display notification that statu cannot be changed from 'Approved'."""
+
+        # Fetch the Contact instance
+        domain_request: models.DomainRequest = models.DomainRequest.objects.get(pk=object_id)
+        if domain_request.approved_domain and domain_request.approved_domain.state == models.Domain.State.READY:
+            domain = domain_request.approved_domain
+            # get change url for domain
+            app_label = domain_request.approved_domain._meta.app_label
+            model_name = domain._meta.model_name
+            obj_id = domain.id
+            change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
+
+            message += f"<p>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: " # noqa
+            message += f"<a href='{change_url}'>{domain}</a></p>"
+
+            message_html = mark_safe(message)  # nosec
+            messages.warning(
+                request,
+                message_html,
+            )
+
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
