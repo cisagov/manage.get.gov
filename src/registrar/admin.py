@@ -2010,7 +2010,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             url,
             text
         )
-    custom_requested_domain.admin_order_field = "requested_domain"  # type: ignore
+    custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
     # ------ Converted fields ------
     # These fields map to @Property methods and
@@ -2146,11 +2146,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     # Filters
     list_filter = (
+        PortfolioFilter,
         StatusListFilter,
         GenericOrgFilter,
         FederalTypeFilter,
         ElectionOfficeFilter,
-        PortfolioFilter,
         "rejection_reason",
         InvestigatorFilter,
     )
