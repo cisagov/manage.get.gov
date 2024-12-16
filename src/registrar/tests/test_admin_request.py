@@ -25,6 +25,8 @@ from registrar.models import (
     Portfolio,
     AllowedEmail,
 )
+from registrar.models.host import Host
+from registrar.models.public_contact import PublicContact
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -36,7 +38,7 @@ from .common import (
     MockEppLib,
     GenericTestHelper,
 )
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -76,6 +78,8 @@ class TestDomainRequestAdmin(MockEppLib):
 
     def tearDown(self):
         super().tearDown()
+        Host.objects.all().delete()
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -90,6 +94,7 @@ class TestDomainRequestAdmin(MockEppLib):
         super().tearDownClass()
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
+
 
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
@@ -1809,6 +1814,37 @@ class TestDomainRequestAdmin(MockEppLib):
                 mock_warning.assert_called_once_with(
                     request,
                     "Cannot edit a domain request with a restricted creator.",
+                )
+    
+    # @less_console_noise_decorator
+    def test_approved_domain_request_with_ready_domain_has_warning_message(self):
+        """Tests if the domain request has a warning message when the approved domain is in Ready state"""
+        # Create an instance of the model
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Approve the domain request
+        domain_request.approve()
+        domain_request.save()
+
+        # Add nameservers to get to Ready state
+        domain_request.approved_domain.nameservers = [
+            ("ns1.city.gov", ["1.1.1.1"]),
+            ("ns2.city.gov", ["1.1.1.2"]),
+        ]
+        domain_request.approved_domain.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with patch("django.contrib.messages.warning") as mock_warning:
+                # Create a request object                
+                self.client.force_login(self.superuser)
+                self.client.get(
+                    "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+                    follow=True,
+                )
+
+                # Assert that the error message was called with the correct argument
+                mock_warning.assert_called_once_with(
+                    ANY,  # don't care about the request argument
+                    "<li>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: <a href='/admin/registrar/domain/1/change/'>city.gov</a></li>"  # care about this message
                 )
 
     def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
