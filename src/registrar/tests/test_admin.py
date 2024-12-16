@@ -853,9 +853,9 @@ class TestDomainInformationAdmin(TestCase):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        # We expect 3 in the form + 2 from the js module copy-to-clipboard.js
+        # We expect 4 in the form + 2 from the js module copy-to-clipboard.js
         # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
-        self.assertContains(response, "copy-to-clipboard", count=5)
+        self.assertContains(response, "copy-to-clipboard", count=6)
 
         # cleanup this test
         domain_info.delete()
@@ -871,6 +871,17 @@ class TestDomainInformationAdmin(TestCase):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
                 "other_contacts",
                 "is_election_board",
                 "federal_agency",
