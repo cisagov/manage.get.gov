@@ -53,8 +53,8 @@ class AlreadyPortfolioMemberError(InvitationError):
 class AlreadyPortfolioInvitedError(InvitationError):
     """Raised when the user has already been invited to the portfolio."""
 
-    def __init__(self, email):
-        super().__init__(f"{email} has already been invited to this portfolio.")
+    def __init__(self, email, portfolio):
+        super().__init__(f"{email} has already been invited to {portfolio}.")
 
 
 class MissingEmailError(InvitationError):

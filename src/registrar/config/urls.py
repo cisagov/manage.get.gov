@@ -136,7 +136,7 @@ urlpatterns = [
     # ),
     path(
         "members/new-member/",
-        views.PortfolioNewMemberView.as_view(),
+        views.PortfolioAddMemberView.as_view(),
         name="new-member",
     ),
     path(

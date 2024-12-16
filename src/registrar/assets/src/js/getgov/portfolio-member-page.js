@@ -49,7 +49,7 @@ export function initPortfolioMemberPageToggle() {
  * on the Add New Member page.
  */
 export function initAddNewMemberPageListeners() {
-  add_member_form = document.getElementById("add_member_form")
+  let add_member_form = document.getElementById("add_member_form")
   if (!add_member_form){
      return;
   }
@@ -156,7 +156,7 @@ export function initAddNewMemberPageListeners() {
       document.getElementById('modalAccessLevel').textContent = accessText;
 
       // Populate permission details based on access level
-      if (selectedAccess && selectedAccess.value === 'admin') {
+      if (selectedAccess && selectedAccess.value === 'organization_admin') {
         populatePermissionDetails('new-member-admin-permissions');
       } else {
         populatePermissionDetails('new-member-basic-permissions');

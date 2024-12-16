@@ -155,7 +155,6 @@ def validate_portfolio_invitation(portfolio_invitation):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
-    logger.info("portfolio invitataion validation")
     PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     User = get_user_model()
@@ -163,11 +162,21 @@ def validate_portfolio_invitation(portfolio_invitation):
     has_portfolio = bool(portfolio_invitation.portfolio_id)
     portfolio_permissions = set(portfolio_invitation.get_portfolio_permissions())
 
+    print(f"has_portfolio {has_portfolio}")
+
+    print(f"portfolio_permissions {portfolio_permissions}")
+
+    print(f"roles {portfolio_invitation.roles}")
+
+    print(f"additional permissions {portfolio_invitation.additional_permissions}")
+
     # == Validate required fields == #
     if not has_portfolio and portfolio_permissions:
+        print(f"not has_portfolio and portfolio_permissions {portfolio_permissions}")
         raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
     if has_portfolio and not portfolio_permissions:
+        print(f"has_portfolio and not portfolio_permissions {portfolio_permissions}")
         raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
     # == Validate role permissions. Compares existing permissions to forbidden ones. == #

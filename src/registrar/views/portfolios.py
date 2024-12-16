@@ -469,81 +469,81 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         return render(request, "portfolio_members.html")
 
 
-class PortfolioNewMemberView(PortfolioMembersPermissionView, FormMixin):
+class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
     form_class = portfolioForms.PortfolioNewMemberForm
 
-    # def get_object(self, queryset=None):
-    #     """Get the portfolio object based on the session."""
-    #     portfolio = self.request.session.get("portfolio")
-    #     if portfolio is None:
-    #         raise Http404("No organization found for this user")
-    #     return portfolio
-
-    # def get_form_kwargs(self):
-    #     """Include the instance in the form kwargs."""
-    #     kwargs = super().get_form_kwargs()
-    #     kwargs["instance"] = self.get_object()
-    #     return kwargs
-
     def get(self, request, *args, **kwargs):
         """Handle GET requests to display the form."""
-        self.object = self.request.session.get("portfolio")
+        self.object = None  # No existing PortfolioInvitation instance
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
+    
+    def is_ajax(self):
+        return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    
+    def form_invalid(self, form):
+        if self.is_ajax():
+            return JsonResponse({"is_valid": False})  # Return a JSON response
+        else:
+            return super().form_invalid(form)  # Handle non-AJAX requests normally
+        
+    def form_valid(self, form):
+
+        if self.is_ajax():
+            return JsonResponse({"is_valid": True})  # Return a JSON response
+        else:
+            return self.submit_new_member(form)
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
-        
-        # self.object = self.get_object()
+        self.object = None  # For a new invitation, there's no existing model instance
         form = self.get_form()
 
+        print('before is_valid')
         if form.is_valid():
+            print('form is_valid')
             return self.form_valid(form)
         else:
+            print('form NOT is_valid')
             return self.form_invalid(form)
-
-    # def is_ajax(self):
-    #     return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
-    # def form_invalid(self, form):
-    #     if self.is_ajax():
-    #         return JsonResponse({"is_valid": False})  # Return a JSON response
-    #     else:
-    #         return super().form_invalid(form)  # Handle non-AJAX requests normally
-
-    # def form_valid(self, form):
-
-    #     if self.is_ajax():
-    #         return JsonResponse({"is_valid": True})  # Return a JSON response
-    #     else:
-    #         return self.submit_new_member(form)
 
     def get_success_url(self):
         """Redirect to members table."""
         return reverse("members")
 
-    def form_valid(self, form):
+    def submit_new_member(self, form):
         """Add the specified user as a member for this portfolio."""
-        requested_email = form.cleaned_data["email"]
-        requestor = self.request.user
+        # Retrieve the portfolio from the session
         portfolio = self.request.session.get("portfolio")
+        if not portfolio:
+            messages.error(self.request, "No portfolio found in session.")
+            return self.form_invalid(form)
+        
+        # Save the invitation instance
+        invitation = form.save(commit=False)
+        invitation.portfolio = portfolio
 
-        requested_user = User.objects.filter(email=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
-        try:
-            if not requested_user or not permission_exists:
-                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
-                ## NOTE : this is not yet accounting properly for roles and permissions
-                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=portfolio)
-                messages.success(self.request, f"{requested_email} has been invited.")
-            else:
-                if permission_exists:
-                    messages.warning(self.request, "User is already a member of this portfolio.")
-        except Exception as e:
-            self._handle_exceptions(e, portfolio, requested_email)
+        # Send invitation email and show a success message
+        send_portfolio_invitation_email(
+            email=invitation.email,
+            requestor=self.request.user,
+            portfolio=portfolio,
+        )
+
+       # Use processed data from the form
+        invitation.roles = form.cleaned_data["roles"]
+        invitation.additional_permissions = form.cleaned_data["additional_permissions"]
+        invitation.save()
+
+        messages.success(self.request, f"{invitation.email} has been invited.")
+
         return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        """Redirect to the members page."""
+        return reverse("members")
 
     def _handle_exceptions(self, exception, portfolio, email):
         """Handle exceptions raised during the process."""

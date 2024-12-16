@@ -167,7 +167,7 @@ class PortfolioInvitedMemberForm(forms.ModelForm):
 class PortfolioNewMemberForm(forms.ModelForm):
     member_access_level = forms.ChoiceField(
         label="Select permission",
-        choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
+        choices=[("organization_admin", "Admin Access"), ("organization_member", "Basic Access")],
         widget=forms.RadioSelect(attrs={"class": "usa-radio__input  usa-radio__input--tile"}),
         required=True,
         error_messages={
@@ -176,7 +176,7 @@ class PortfolioNewMemberForm(forms.ModelForm):
     )
     admin_org_domain_request_permissions = forms.ChoiceField(
         label="Select permission",
-        choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
+        choices=[("view_all_requests", "View all requests"), ("edit_requests", "View all requests plus create requests")],
         widget=forms.RadioSelect,
         required=True,
         error_messages={
@@ -185,7 +185,7 @@ class PortfolioNewMemberForm(forms.ModelForm):
     )
     admin_org_members_permissions = forms.ChoiceField(
         label="Select permission",
-        choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
+        choices=[("view_members", "View all members"), ("edit_members", "View all members plus manage members")],
         widget=forms.RadioSelect,
         required=True,
         error_messages={
@@ -195,9 +195,9 @@ class PortfolioNewMemberForm(forms.ModelForm):
     basic_org_domain_request_permissions = forms.ChoiceField(
         label="Select permission",
         choices=[
-            ("view_only", "View all requests"),
-            ("view_and_create", "View all requests plus create requests"),
-            ("no_access", "No access"),
+            ("view_all_requests", "View all requests"),
+            ("edit_requests", "View all requests plus create requests"),
+            ("", "No access"),
         ],
         widget=forms.RadioSelect,
         required=True,
@@ -226,52 +226,52 @@ class PortfolioNewMemberForm(forms.ModelForm):
         model = PortfolioInvitation
         fields = ["email"]
 
-    def _post_clean(self):
-        logger.info("in _post_clean")
-        super()._post_clean()
-
     def clean(self):
-        cleaned_data = super().clean()
-
         # Lowercase the value of the 'email' field
-        email_value = cleaned_data.get("email")
+        email_value = self.cleaned_data.get("email")
         if email_value:
-            cleaned_data["email"] = email_value.lower()
+            self.cleaned_data["email"] = email_value.lower()
 
-        ##########################################
-        # TODO: future ticket
-        # (invite new member)
-        ##########################################
-        # Check for an existing user (if there isn't any, send an invite)
-        # if email_value:
-        #     try:
-        #         existingUser = User.objects.get(email=email_value)
-        #     except User.DoesNotExist:
-        #         raise forms.ValidationError("User with this email does not exist.")
+        # Get the selected member access level
+        member_access_level = self.cleaned_data.get("member_access_level")
 
-        member_access_level = cleaned_data.get("member_access_level")
-
-        # Intercept the error messages so that we don't validate hidden inputs
+        # If no member access level is selected, remove errors for hidden inputs
         if not member_access_level:
-            # If no member access level has been selected, delete error messages
-            # for all hidden inputs (which is everything except the e-mail input
-            # and member access selection)
-            for field in self.fields:
-                if field in self.errors and field != "email" and field != "member_access_level":
-                    del self.errors[field]
-            return cleaned_data
+            self._remove_hidden_field_errors(exclude_fields=["email", "member_access_level"])
+            return self.cleaned_data
 
-        basic_dom_req_error = "basic_org_domain_request_permissions"
-        admin_dom_req_error = "admin_org_domain_request_permissions"
-        admin_member_error = "admin_org_members_permissions"
+        # Define field names for validation cleanup
+        field_error_map = {
+            "organization_admin": ["basic_org_domain_request_permissions"],  # Fields irrelevant to "admin"
+            "organization_member": ["admin_org_domain_request_permissions", "admin_org_members_permissions"],  # Fields irrelevant to "basic"
+        }
 
-        if member_access_level == "admin" and basic_dom_req_error in self.errors:
-            # remove the error messages pertaining to basic permission inputs
-            del self.errors[basic_dom_req_error]
-        elif member_access_level == "basic":
-            # remove the error messages pertaining to admin permission inputs
-            if admin_dom_req_error in self.errors:
-                del self.errors[admin_dom_req_error]
-            if admin_member_error in self.errors:
-                del self.errors[admin_member_error]
-        return cleaned_data
+        # Remove errors for irrelevant fields based on the selected access level
+        irrelevant_fields = field_error_map.get(member_access_level, [])
+        for field in irrelevant_fields:
+            if field in self.errors:
+                del self.errors[field]
+
+        # Map roles and additional permissions to cleaned_data
+        self.cleaned_data["roles"] = [member_access_level]
+        additional_permissions = [
+            self.cleaned_data.get("admin_org_domain_request_permissions"),
+            self.cleaned_data.get("basic_org_domain_request_permissions"),
+            self.cleaned_data.get("admin_org_members_permissions"),
+        ]
+        # Filter out None values
+        self.cleaned_data["additional_permissions"] = [perm for perm in additional_permissions if perm]
+
+        return super().clean()
+
+    def _remove_hidden_field_errors(self, exclude_fields=None):
+        """
+        Helper method to remove errors for fields that are not relevant
+        (e.g., hidden inputs), except for explicitly excluded fields.
+        """
+        exclude_fields = exclude_fields or []
+        hidden_fields = [field for field in self.fields if field not in exclude_fields]
+        for field in hidden_fields:
+            if field in self.errors:
+                del self.errors[field]
+

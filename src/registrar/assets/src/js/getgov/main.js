@@ -23,8 +23,8 @@ hookupYesNoListener("additional_details-has_anything_else_text",'anything-else',
 hookupRadioTogglerListener(
   'member_access_level', 
   {
-    'admin': 'new-member-admin-permissions',
-    'basic': 'new-member-basic-permissions'
+    'organization_admin': 'new-member-admin-permissions',
+    'organization_member': 'new-member-basic-permissions'
   }
 );
 hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);

@@ -114,7 +114,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
         if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
             raise AlreadyPortfolioMemberError(email)
         else:
-            raise AlreadyPortfolioInvitedError(email)
+            raise AlreadyPortfolioInvitedError(email, portfolio)
     except PortfolioInvitation.DoesNotExist:
         pass
 
