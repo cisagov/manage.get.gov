@@ -9,9 +9,6 @@ class Suborganization(TimeStampedModel):
     Suborganization under an organization (portfolio)
     """
 
-    class Meta:
-        unique_together = ["name", "portfolio"]
-
     name = models.CharField(
         unique=True,
         max_length=1000,

@@ -12,6 +12,7 @@ from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTy
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
+from django.core.exceptions import ValidationError
 
 from registrar.utility.waffle import flag_is_active_for_user
 
@@ -796,6 +797,7 @@ class DomainRequest(TimeStampedModel):
         return True
 
     def delete_and_clean_up_domain(self, called_from):
+        # Delete the approved domain
         try:
             # Clean up the approved domain
             domain_state = self.approved_domain.state
@@ -808,19 +810,39 @@ class DomainRequest(TimeStampedModel):
         except Exception as err:
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
+        
+        # Delete the suborg as long as this is the only place it is used
+        self._cleanup_dangling_suborg()
 
-        # Clean up any created suborgs, assuming its for this record only
-        if self.sub_organization is not None:
-            request_suborg_count = self.request_sub_organization.count()
-            domain_suborgs = self.DomainRequest_info.filter(
-                sub_organization=self.sub_organization
-            ).count()
-            if request_suborg_count == 1 and domain_suborgs.count() <= 1:
-                # if domain_suborgs.count() == 1:
-                #     domain_info = domain_suborgs.first()
-                #     domain_info.sub_organization = None
-                #     domain_info.save()
-                self.sub_organization.delete()
+    def _cleanup_dangling_suborg(self):
+        """Deletes the existing suborg if its only being used by the deleted record"""
+        # Nothing to delete, so we just smile and walk away
+        if self.sub_organization is None:
+            return
+
+        Suborganization = apps.get_model("registrar.Suborganization")
+
+        # Stored as so because we need to set the reference to none first,
+        # so we can't just use the self.sub_organization property
+        suborg = Suborganization.objects.get(id=self.sub_organization.id)
+        requests = suborg.request_sub_organization
+        domain_infos = suborg.information_sub_organization
+
+        # Check if this is the only reference to the suborganization
+        if requests.count() != 1 or domain_infos.count() > 1:
+            return
+
+        # Remove the suborganization reference from request.
+        self.sub_organization = None
+        self.save()
+
+        # Remove the suborganization reference from domain if it exists.
+        if domain_infos.count() == 1:
+            domain_infos.update(sub_organization=None)
+
+        # Delete the now-orphaned suborganization
+        logger.info(f"_cleanup_dangling_suborg() -> Deleting orphan suborganization: {suborg}")
+        suborg.delete()
 
     def _send_status_update_email(
         self,
