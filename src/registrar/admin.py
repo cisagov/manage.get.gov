@@ -14,7 +14,6 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -42,7 +41,7 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import AlreadyPortfolioInvitedError, AlreadyPortfolioMemberError, FSMDomainRequestError, FSMErrorCodes, MissingEmailError
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes, MissingEmailError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1495,11 +1494,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
             logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", obj.email, obj.portfolio, exc_info=True)
-            messages.warning(request, "Could not send email invitation.")
-        elif isinstance(exception, AlreadyPortfolioMemberError):
-            messages.warning(request, str(exception))
-        elif isinstance(exception, AlreadyPortfolioInvitedError):
-            messages.warning(request, str(exception))
+            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
         elif isinstance(exception, MissingEmailError):
             messages.error(request, str(exception))
             logger.error(
@@ -1508,7 +1503,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", obj.portfolio, exc_info=True)
-            messages.warning(request, "Could not send email invitation.")
+            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
 
     def response_add(self, request, obj, post_url_continue=None):
         """
@@ -1522,7 +1517,6 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             # Re-render the change form if there are errors or warnings
             # Prepare context for rendering the change form
             opts = self.model._meta
-            app_label = opts.app_label
 
             # Get the model form
             ModelForm = self.get_form(request, obj=obj)
@@ -1532,37 +1526,38 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             admin_form = AdminForm(
                 form,
                 list(self.get_fieldsets(request, obj)),
-                self.prepopulated_fields,
+                self.get_prepopulated_fields(request, obj),
                 self.get_readonly_fields(request, obj),
                 model_admin=self,
             )
+            media = self.media + form.media
 
             opts = obj._meta
             change_form_context = {
                 **self.admin_site.each_context(request),  # Add admin context
-                "title": f"Change {opts.verbose_name}",
+                "title": f"Add {opts.verbose_name}",
                 "opts": opts,
                 "original": obj,
                 "save_as": self.save_as,
                 "has_change_permission": self.has_change_permission(request, obj),
-                "add": False,  # Indicate this is not an "Add" form
-                "change": True,  # Indicate this is a "Change" form
+                "add": True,  # Indicate this is an "Add" form
+                "change": False,  # Indicate this is not a "Change" form
                 "is_popup": False,
                 "inline_admin_formsets": [],
                 "save_on_top": self.save_on_top,
                 "show_delete": self.has_delete_permission(request, obj),
                 "obj": obj,
                 "adminform": admin_form,  # Pass the AdminForm instance
+                "media": media,
                 "errors": None,  # You can use this to pass custom form errors
             }
             return self.render_change_form(
                 request,
                 context=change_form_context,
-                add=False,
-                change=True,
+                add=True,
+                change=False,
                 obj=obj,
             )
-
         return super().response_add(request, obj, post_url_continue)
 
 

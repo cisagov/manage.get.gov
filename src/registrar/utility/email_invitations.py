@@ -93,8 +93,6 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
 
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
-        AlreadyPortfolioMemberError: If the email corresponds to an existing portfolio member.
-        AlreadyPortfolioInvitedError: If an invitation has already been sent.
         EmailSendingError: If there is an error while sending the email.
     """
 
@@ -107,16 +105,6 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
             raise MissingEmailError(requestor.username)
         else:
             requestor_email = requestor.email
-
-    # Check to see if an invite has already been sent
-    try:
-        invite = PortfolioInvitation.objects.get(email=email, portfolio=portfolio)
-        if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
-            raise AlreadyPortfolioMemberError(email)
-        else:
-            raise AlreadyPortfolioInvitedError(email, portfolio)
-    except PortfolioInvitation.DoesNotExist:
-        pass
 
     send_templated_email(
         "emails/portfolio_invitation.txt",
