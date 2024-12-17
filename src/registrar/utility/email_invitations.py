@@ -5,8 +5,6 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
-    AlreadyPortfolioInvitedError,
-    AlreadyPortfolioMemberError,
     MissingEmailError,
     OutsideOrgMemberError,
 )

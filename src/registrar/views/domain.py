@@ -33,8 +33,6 @@ from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
-    AlreadyPortfolioInvitedError,
-    AlreadyPortfolioMemberError,
     GenericError,
     GenericErrorCodes,
     MissingEmailError,
@@ -1334,10 +1332,6 @@ class DomainAddUserView(DomainFormBaseView):
         if isinstance(exception, EmailSendingError):
             logger.warning("Could not send email invitation (EmailSendingError)", portfolio, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
-        elif isinstance(exception, AlreadyPortfolioMemberError):
-            messages.warning(self.request, str(exception))
-        elif isinstance(exception, AlreadyPortfolioInvitedError):
-            messages.warning(self.request, str(exception))
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
