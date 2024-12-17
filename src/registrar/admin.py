@@ -1300,6 +1300,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
     search_help_text = "Search by first name, last name, email, or portfolio."
 
+    change_form_template = "django/admin/user_portfolio_permission_change_form.html"
+
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
@@ -1456,7 +1458,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = ["portfolio"]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/portfolio_invitation_change_form.html"
 
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):
