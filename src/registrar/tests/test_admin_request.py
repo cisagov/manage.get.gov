@@ -95,7 +95,6 @@ class TestDomainRequestAdmin(MockEppLib):
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
 
-
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
         """Tests if the senior offical dropdown is alphanetically sorted in the django admin display"""
@@ -1815,7 +1814,7 @@ class TestDomainRequestAdmin(MockEppLib):
                     request,
                     "Cannot edit a domain request with a restricted creator.",
                 )
-    
+
     # @less_console_noise_decorator
     def test_approved_domain_request_with_ready_domain_has_warning_message(self):
         """Tests if the domain request has a warning message when the approved domain is in Ready state"""
@@ -1834,7 +1833,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with patch("django.contrib.messages.warning") as mock_warning:
-                # Create a request object                
+                # Create a request object
                 self.client.force_login(self.superuser)
                 self.client.get(
                     "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),

@@ -2442,7 +2442,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             obj_id = domain.id
             change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
 
-            message = f"<li>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: " # noqa
+            message = f"<li>The status of this domain request cannot be changed because it has been joined to a domain in Ready status: "  # noqa
             message += f"<a href='{change_url}'>{domain}</a></li>"
 
             message_html = mark_safe(message)  # nosec
@@ -2450,7 +2450,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 request,
                 message_html,
             )
-        
+
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
 
@@ -2563,6 +2563,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
+
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
