@@ -20,7 +20,7 @@
   {% endblock breadcrumb %}
 
   {{ block.super }}
-  <div class="margin-top-4 tablet:grid-col-10">
+  <div class="margin-top-4 tablet:grid-col-10 maxw-fit-content">
     <h2 class="text-bold text-primary-dark domain-name-wrap">{{ domain.name }}</h2>
     <div
         class="usa-summary-box dotgov-status-box padding-bottom-0 margin-top-3 padding-left-2{% if not domain.is_expired %}{% if domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %} dotgov-status-box--action-need{% endif %}{% endif %}"
