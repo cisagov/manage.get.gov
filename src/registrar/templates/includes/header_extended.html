@@ -2,13 +2,13 @@
 {% load custom_filters %}
 
 <header class="usa-header usa-header--extended">
-    <div class="usa-navbar usa-navbar--widescreen desktop:padding-right-6 desktop:padding-left-6">
+    <div class="usa-navbar usa-navbar--widescreen padding-left--widescreen padding-right--widescreen">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
     <button type="button" class="usa-menu-btn">Menu</button>
     </div>
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
-    <div class="usa-nav__inner usa-nav__inner--widescreen desktop:padding-right-6 desktop:padding-left-6">
+    <div class="usa-nav__inner usa-nav__inner--widescreen padding-left--widescreen padding-right--widescreen">
         <button type="button" class="usa-nav__close">
             <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
         </button>
