@@ -2294,12 +2294,12 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        
+
     def setUp(self):
         super().setUp()
         names = ["1.gov", "2.gov", "3.gov"]
         Domain.objects.bulk_create([Domain(name=name) for name in names])
-    
+
     def tearDown(self):
         super().tearDown()
         Domain.objects.all().delete()
