@@ -331,7 +331,9 @@ class BasePortfolioMemberForm(forms.Form):
         },
     )
 
-    # Tracks what form elements are required for a given role choice
+    # Tracks what form elements are required for a given role choice.
+    # All of the fields included here have "required=False" by default as they are conditionally required.
+    # see def clean() for more details.
     ROLE_REQUIRED_FIELDS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             "domain_request_permission_admin",
