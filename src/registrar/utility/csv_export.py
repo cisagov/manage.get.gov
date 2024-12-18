@@ -744,30 +744,41 @@ class DomainExport(BaseExport):
         ):
             security_contact_email = "(blank)"
 
+        model["status"] = human_readable_status
+        model["first_ready_on"] = first_ready_on
+        model["expiration_date"] = expiration_date
+        model["domain_type"] = domain_type
+        model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
+        FIELDS = cls.get_fields(model)
+
+        row = [FIELDS.get(column, "") for column in columns]
+
+        return row
+
+    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    @classmethod
+    def get_fields(cls, model):
         FIELDS = {
             "Domain name": model.get("domain__name"),
-            "Status": human_readable_status,
-            "First ready on": first_ready_on,
-            "Expiration date": expiration_date,
-            "Domain type": domain_type,
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
             "Agency": model.get("converted_federal_agency"),
             "Organization name": model.get("converted_organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
             "SO": model.get("converted_so_name"),
             "SO email": model.get("converted_so_email"),
-            "Security contact email": security_contact_email,
+            "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
         }
-
-        row = [FIELDS.get(column, "") for column in columns]
-
-        return row
+        return FIELDS
 
     def get_filtered_domain_infos_by_org(domain_infos_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value."""
@@ -1079,64 +1090,26 @@ class DomainDataFull(DomainExport):
 
     # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
     @classmethod
-    def parse_row(cls, columns, model):
-        """
-        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
-        """
-
-        status = model.get("domain__state")
-        human_readable_status = Domain.State.get_state_label(status)
-
-        expiration_date = model.get("domain__expiration_date")
-        if expiration_date is None:
-            expiration_date = "(blank)"
-
-        first_ready_on = model.get("domain__first_ready")
-        if first_ready_on is None:
-            first_ready_on = "(blank)"
-
-        # organization_type has organization_type AND is_election
-        domain_org_type = model.get("converted_generic_org_type")
-        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
-        domain_federal_type = model.get("converted_federal_type")
-        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
-        domain_type = human_readable_domain_org_type
-        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
-            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
-
-        security_contact_email = model.get("security_contact_email")
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
-        if (
-            not security_contact_email
-            or not isinstance(security_contact_email, str)
-            or security_contact_email.lower().strip() in invalid_emails
-        ):
-            security_contact_email = "(blank)"
-
-        # create a dictionary of fields which can be included in output.
-        # "extra_fields" are precomputed fields (generated in the DB or parsed).
+    def get_fields(cls, model):
         FIELDS = {
             "Domain name": model.get("domain__name"),
-            "Status": human_readable_status,
-            "First ready on": first_ready_on,
-            "Expiration date": expiration_date,
-            "Domain type": domain_type,
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
             "Agency": model.get("federal_agency"),
             "Organization name": model.get("organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("so_email"),
-            "Security contact email": security_contact_email,
+            "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
         }
-
-        row = [FIELDS.get(column, "") for column in columns]
-
-        return row
+        return FIELDS
 
     @classmethod
     def get_columns(cls):
@@ -1227,64 +1200,26 @@ class DomainDataFederal(DomainExport):
 
     # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
     @classmethod
-    def parse_row(cls, columns, model):
-        """
-        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
-        """
-
-        status = model.get("domain__state")
-        human_readable_status = Domain.State.get_state_label(status)
-
-        expiration_date = model.get("domain__expiration_date")
-        if expiration_date is None:
-            expiration_date = "(blank)"
-
-        first_ready_on = model.get("domain__first_ready")
-        if first_ready_on is None:
-            first_ready_on = "(blank)"
-
-        # organization_type has organization_type AND is_election
-        domain_org_type = model.get("converted_generic_org_type")
-        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
-        domain_federal_type = model.get("converted_federal_type")
-        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
-        domain_type = human_readable_domain_org_type
-        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
-            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
-
-        security_contact_email = model.get("security_contact_email")
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
-        if (
-            not security_contact_email
-            or not isinstance(security_contact_email, str)
-            or security_contact_email.lower().strip() in invalid_emails
-        ):
-            security_contact_email = "(blank)"
-
-        # create a dictionary of fields which can be included in output.
-        # "extra_fields" are precomputed fields (generated in the DB or parsed).
+    def get_fields(cls, model):
         FIELDS = {
             "Domain name": model.get("domain__name"),
-            "Status": human_readable_status,
-            "First ready on": first_ready_on,
-            "Expiration date": expiration_date,
-            "Domain type": domain_type,
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
             "Agency": model.get("federal_agency"),
             "Organization name": model.get("organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("so_email"),
-            "Security contact email": security_contact_email,
+            "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
         }
-
-        row = [FIELDS.get(column, "") for column in columns]
-
-        return row
+        return FIELDS
 
     @classmethod
     def get_columns(cls):
