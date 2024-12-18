@@ -111,7 +111,12 @@ class UserPortfolioPermission(TimeStampedModel):
 
     @classmethod
     def get_portfolio_permissions(cls, roles, additional_permissions, get_list=True):
-        """Class method to return a list of permissions based on roles and addtl permissions"""
+        """Class method to return a list of permissions based on roles and addtl permissions.
+        Params:
+            roles => An array of roles
+            additional_permissions => An array of additional_permissions
+            get_list => If true, returns a list of perms. If false, returns a set of perms.
+        """
         # Use a set to avoid duplicate permissions
         portfolio_permissions = set()
         if roles:

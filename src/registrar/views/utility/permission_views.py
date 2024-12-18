@@ -1,6 +1,7 @@
 """View classes that enforce authorization."""
 
 import abc  # abstract base class
+
 from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
 from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User

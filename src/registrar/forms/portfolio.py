@@ -273,7 +273,11 @@ class NewMemberForm(forms.ModelForm):
                 del self.errors[admin_member_error]
         return cleaned_data
 
+
 class BasePortfolioMemberForm(forms.Form):
+    """Base form for the PortfolioMemberForm and PortfolioInvitedMemberForm"""
+
+    # The label for each of these has a red "required" star. We can just embed that here for simplicity.
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
         choices=[
@@ -354,25 +358,11 @@ class BasePortfolioMemberForm(forms.Form):
         }
 
     def clean(self):
-        """
-        Validates form data based on selected role and its required fields.
-
-        Since form fields are dynamically shown/hidden via JavaScript based on role selection,
-        we only validate fields that are relevant to the selected role:
-        - organization_admin: ["member_permission_admin", "domain_request_permission_admin"]
-        - organization_member: ["domain_request_permission_member"]
-        This ensures users aren't required to fill out hidden fields and maintains
-        proper validation based on their role selection.
-
-        NOTE: This page uses ROLE_REQUIRED_FIELDS for the aforementioned mapping.
-        Raises:
-            ValueError: If ROLE_REQUIRED_FIELDS references a non-existent form field
-        """
+        """Validates form data based on selected role and its required fields."""
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
 
-        # Get required fields for the selected role.
-        # Then validate all required fields for the role.
+        # Get required fields for the selected role. Then validate all required fields for the role.
         required_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
         for field_name in required_fields:
             # Helpful error for if this breaks
@@ -394,15 +384,17 @@ class BasePortfolioMemberForm(forms.Form):
         self.instance.save()
         return self.instance
 
+    # Explanation of how map_instance_to_form / map_cleaned_data_to_instance work:
+    # map_instance_to_form => called on init to set self.instance.
+    # Converts the incoming object (usually PortfolioInvitation or UserPortfolioPermission)
+    # into a dictionary representation for the form to use automatically.
+
+    # map_cleaned_data_to_instance => called on save() to save the instance to the db.
+    # Takes the self.cleaned_data dict, and converts this dict back to the object.
+
     def map_instance_to_form(self, instance):
         """
         Maps user instance to form fields, handling roles and permissions.
-
-        Determines:
-        - User's role (admin vs member)
-        - Domain request permissions (EDIT_REQUESTS, VIEW_ALL_REQUESTS, or "no_access")
-        - Member management permissions (EDIT_MEMBERS or VIEW_MEMBERS)
-
         Returns form data dictionary with appropriate permission levels based on user role:
         {
             "role": "organization_admin" or "organization_member",
@@ -462,13 +454,6 @@ class BasePortfolioMemberForm(forms.Form):
     def map_cleaned_data_to_instance(self, cleaned_data, instance):
         """
         Maps cleaned data to a member instance, setting roles and permissions.
-
-        Additional permissions logic:
-        - For org admins: Adds domain request and member admin permissions if selected
-        - For other roles: Adds domain request member permissions if not 'no_access'
-        - Automatically adds VIEW permissions when EDIT permissions are granted
-        - Filters out permissions already granted by base role
-
         Args:
             cleaned_data (dict): Cleaned data containing role and permission choices
             instance: Instance to update

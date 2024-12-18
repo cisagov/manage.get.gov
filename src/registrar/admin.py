@@ -4004,10 +4004,6 @@ class WaffleFlagAdmin(FlagAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
-        # Normally you have to first enable the org feature then navigate to an org before you see these.
-        # Lets just auto-populate it on page load to make development easier.
-        extra_context["organization_members"] = flag_is_active_for_user(request.user, "organization_members")
-        extra_context["organization_requests"] = flag_is_active_for_user(request.user, "organization_requests")
         return super().changelist_view(request, extra_context=extra_context)
 
 
