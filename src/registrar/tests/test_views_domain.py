@@ -2494,7 +2494,8 @@ class TestDomainRenewal(TestWithUser):
         except ValueError:
             pass
         super().tearDown()
-
+    
+    # Remove test_without_domain_renewal_flag when domain renewal is released as a feature
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=False)
     def test_without_domain_renewal_flag(self):
@@ -2505,7 +2506,7 @@ class TestDomainRenewal(TestWithUser):
 
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=True)
-    def test_with_domain_renewal_flag_single_domain(self):
+    def test_domain_renewal_flag_single_domain(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
@@ -2541,7 +2542,7 @@ class TestDomainRenewal(TestWithUser):
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
-    def test_with_domain_renewal_flag_single_domain_w_org_feature_flag(self):
+    def test_domain_renewal_flag_single_domain_w_org_feature_flag(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
