@@ -167,11 +167,11 @@ class User(AbstractUser):
         """Return number of expiring domains"""
         domain_ids = self.get_user_domain_ids(request)
         domains = Domain.objects.filter(id__in=domain_ids)
-        how_many_expired_domains = 0
+        how_many_expiring_domains = 0
         for domain in domains:
             if domain.is_expiring():
-                how_many_expired_domains += 1
-        return how_many_expired_domains
+                how_many_expiring_domains += 1
+        return how_many_expiring_domains
 
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""

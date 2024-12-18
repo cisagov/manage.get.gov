@@ -8,7 +8,7 @@
 
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
-<!-- Banner for when it's org model (org manager can view, domain manager can edit)  -->
+<!-- Org model banner (org manager can view, domain manager can edit)  -->
 {% if has_domain_renewal_flag and num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
 <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
@@ -74,7 +74,7 @@
     {% endif %}
   </div>
 
-  <!-- Banner for when it's not org model bc placement in the table -->
+  <!-- Non org model banner -->
   {% if has_domain_renewal_flag and num_expiring_domains > 0 and not portfolio %}
   <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
