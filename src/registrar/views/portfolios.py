@@ -1,15 +1,17 @@
 import logging
+from django.conf import settings
+
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
-from django.conf import settings
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.email import EmailSendingError
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
@@ -503,7 +505,6 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
     def get(self, request):
         """Add additional context data to the template."""
         return render(request, "portfolio_members.html")
-
 
 
 class NewMemberView(PortfolioMembersPermissionView, FormMixin):
