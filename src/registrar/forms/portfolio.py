@@ -281,6 +281,7 @@ class BasePortfolioMemberForm(forms.Form):
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
         choices=[
+            # Uses .value because the choice has a different label (on /admin)
             (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin access"),
             (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access"),
         ],
@@ -345,10 +346,12 @@ class BasePortfolioMemberForm(forms.Form):
     }
 
     def __init__(self, *args, instance=None, **kwargs):
+        """Initialize self.instance, self.initial, and descriptions under each radio button.
+        Uses map_instance_to_initial to set the initial dictionary."""
         super().__init__(*args, **kwargs)
         if instance:
             self.instance = instance
-            self.initial = self.map_instance_to_form(self.instance)
+            self.initial = self.map_instance_to_initial(self.instance)
         # Adds a <p> description beneath each role option
         self.fields["role"].descriptions = {
             "organization_admin": UserPortfolioRoleChoices.get_role_description(
@@ -358,6 +361,14 @@ class BasePortfolioMemberForm(forms.Form):
                 UserPortfolioRoleChoices.ORGANIZATION_MEMBER
             ),
         }
+
+    def save(self):
+        """Saves self.instance by grabbing data from self.cleaned_data.
+        Uses map_cleaned_data_to_instance.
+        """
+        self.instance = self.map_cleaned_data_to_instance(self.cleaned_data, self.instance)
+        self.instance.save()
+        return self.instance
 
     def clean(self):
         """Validates form data based on selected role and its required fields."""
@@ -380,23 +391,17 @@ class BasePortfolioMemberForm(forms.Form):
 
         return cleaned_data
 
-    def save(self):
-        """Save the form data to the instance"""
-        self.instance = self.map_cleaned_data_to_instance(self.cleaned_data, self.instance)
-        self.instance.save()
-        return self.instance
-
-    # Explanation of how map_instance_to_form / map_cleaned_data_to_instance work:
-    # map_instance_to_form => called on init to set self.initial.
+    # Explanation of how map_instance_to_initial / map_cleaned_data_to_instance work:
+    # map_instance_to_initial => called on init to set self.initial.
     # Converts the incoming object (usually PortfolioInvitation or UserPortfolioPermission)
     # into a dictionary representation for the form to use automatically.
 
     # map_cleaned_data_to_instance => called on save() to save the instance to the db.
     # Takes the self.cleaned_data dict, and converts this dict back to the object.
 
-    def map_instance_to_form(self, instance):
+    def map_instance_to_initial(self, instance):
         """
-        Maps user instance to form fields, handling roles and permissions.
+        Maps self.instance to self.initial, handling roles and permissions.
         Returns form data dictionary with appropriate permission levels based on user role:
         {
             "role": "organization_admin" or "organization_member",
@@ -405,57 +410,47 @@ class BasePortfolioMemberForm(forms.Form):
             "domain_request_permission_member": permission level if member
         }
         """
-        if not instance:
-            return {}
-
         # Function variables
         form_data = {}
         perms = UserPortfolioPermission.get_portfolio_permissions(
             instance.roles, instance.additional_permissions, get_list=False
         )
 
-        # Explanation of this logic pattern: we can only display one item in the list at a time.
-        # But how do we determine what is most important to display in a list? Order-based hierarchy.
-        # Example: print(instance.roles) => (output) ["organization_admin", "organization_member"]
-        # If we can only pick one item in this list, we should pick organization_admin.
-
-        # Get role
-        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN, UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        role = next((role for role in roles if role in instance.roles), None)
-        is_admin = role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-
-        # Get domain request permission level
-        # First we get permissions we expect to display (ordered hierarchically).
-        # Then we check if this item exists in the list and return the first instance of it.
-        domain_permissions = [
+        # Get the available options for roles, domains, and member.
+        roles = [
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+        ]
+        domain_perms = [
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
-        domain_request_permission = next((perm for perm in domain_permissions if perm in perms), None)
+        member_perms = [
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+        ]
 
-        # Get member permission level.
-        member_permissions = [UserPortfolioPermissionChoices.EDIT_MEMBERS, UserPortfolioPermissionChoices.VIEW_MEMBERS]
-        member_permission = next((perm for perm in member_permissions if perm in perms), None)
-
-        # Build form data based on role.
-        form_data = {
-            "role": role,
-            "member_permission_admin": getattr(member_permission, "value", None) if is_admin else None,
-            "domain_request_permission_admin": getattr(domain_request_permission, "value", None) if is_admin else None,
-            "domain_request_permission_member": (
-                getattr(domain_request_permission, "value", None) if not is_admin else None
-            ),
-        }
-
-        # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
-        if domain_request_permission is None and not is_admin:
-            form_data["domain_request_permission_member"] = "no_access"
+        # Build form data based on role (which options are available).
+        # Get which one should be "selected" by assuming that EDIT takes precedence over view,
+        # and ADMIN takes precedence over MEMBER.
+        selected_role = next((role for role in roles if role in instance.roles), None)
+        form_data = {"role": selected_role}
+        is_admin = selected_role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+        if is_admin:
+            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), None)
+            selected_member_permission = next((perm for perm in member_perms if perm in perms), None)
+            form_data["domain_request_permission_admin"] = selected_domain_permission
+            form_data["member_permission_admin"] = selected_member_permission
+        else:
+            # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
+            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), "no_access")
+            form_data["domain_request_permission_member"] = selected_domain_permission
 
         return form_data
 
     def map_cleaned_data_to_instance(self, cleaned_data, instance):
         """
-        Maps cleaned data to a member instance, setting roles and permissions.
+        Maps self.cleaned_data to self.instance, setting roles and permissions.
         Args:
             cleaned_data (dict): Cleaned data containing role and permission choices
             instance: Instance to update
