@@ -175,7 +175,6 @@ export function initAddNewMemberPageListeners() {
 // Initalize the radio for the member pages
 export function initPortfolioMemberPageRadio() {
   document.addEventListener("DOMContentLoaded", () => {
-      console.log("new content 2")
       let memberForm = document.getElementById("member_form");
       let newMemberForm = document.getElementById("add_member_form")
       if (memberForm) {

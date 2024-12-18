@@ -433,7 +433,8 @@ class BasePortfolioMemberForm(forms.Form):
         # Build form data based on role (which options are available).
         # Get which one should be "selected" by assuming that EDIT takes precedence over view,
         # and ADMIN takes precedence over MEMBER.
-        selected_role = next((role for role in roles if role in instance.roles), None)
+        roles = instance.roles or []
+        selected_role = next((role for role in roles if role in roles), None)
         form_data = {"role": selected_role}
         is_admin = selected_role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN
         if is_admin:
