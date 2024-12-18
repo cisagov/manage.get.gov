@@ -387,7 +387,7 @@ class BasePortfolioMemberForm(forms.Form):
         return self.instance
 
     # Explanation of how map_instance_to_form / map_cleaned_data_to_instance work:
-    # map_instance_to_form => called on init to set self.instance.
+    # map_instance_to_form => called on init to set self.initial.
     # Converts the incoming object (usually PortfolioInvitation or UserPortfolioPermission)
     # into a dictionary representation for the form to use automatically.
 
