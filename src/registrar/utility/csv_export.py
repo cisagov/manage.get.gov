@@ -1077,6 +1077,67 @@ class DomainDataFull(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
+    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    @classmethod
+    def parse_row(cls, columns, model):
+        """
+        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
+        """
+
+        status = model.get("domain__state")
+        human_readable_status = Domain.State.get_state_label(status)
+
+        expiration_date = model.get("domain__expiration_date")
+        if expiration_date is None:
+            expiration_date = "(blank)"
+
+        first_ready_on = model.get("domain__first_ready")
+        if first_ready_on is None:
+            first_ready_on = "(blank)"
+
+        # organization_type has organization_type AND is_election
+        domain_org_type = model.get("converted_generic_org_type")
+        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
+        domain_federal_type = model.get("converted_federal_type")
+        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
+        domain_type = human_readable_domain_org_type
+        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
+
+        security_contact_email = model.get("security_contact_email")
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        if (
+            not security_contact_email
+            or not isinstance(security_contact_email, str)
+            or security_contact_email.lower().strip() in invalid_emails
+        ):
+            security_contact_email = "(blank)"
+
+        # create a dictionary of fields which can be included in output.
+        # "extra_fields" are precomputed fields (generated in the DB or parsed).
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": human_readable_status,
+            "First ready on": first_ready_on,
+            "Expiration date": expiration_date,
+            "Domain type": domain_type,
+            "Agency": model.get("federal_agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("so_email"),
+            "Security contact email": security_contact_email,
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+
+        row = [FIELDS.get(column, "") for column in columns]
+
+        return row
+
     @classmethod
     def get_columns(cls):
         """
@@ -1163,6 +1224,67 @@ class DomainDataFederal(DomainExport):
     Shows security contacts, filtered by state and org type
     Inherits from BaseExport -> DomainExport
     """
+
+    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    @classmethod
+    def parse_row(cls, columns, model):
+        """
+        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
+        """
+
+        status = model.get("domain__state")
+        human_readable_status = Domain.State.get_state_label(status)
+
+        expiration_date = model.get("domain__expiration_date")
+        if expiration_date is None:
+            expiration_date = "(blank)"
+
+        first_ready_on = model.get("domain__first_ready")
+        if first_ready_on is None:
+            first_ready_on = "(blank)"
+
+        # organization_type has organization_type AND is_election
+        domain_org_type = model.get("converted_generic_org_type")
+        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
+        domain_federal_type = model.get("converted_federal_type")
+        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
+        domain_type = human_readable_domain_org_type
+        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
+
+        security_contact_email = model.get("security_contact_email")
+        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        if (
+            not security_contact_email
+            or not isinstance(security_contact_email, str)
+            or security_contact_email.lower().strip() in invalid_emails
+        ):
+            security_contact_email = "(blank)"
+
+        # create a dictionary of fields which can be included in output.
+        # "extra_fields" are precomputed fields (generated in the DB or parsed).
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": human_readable_status,
+            "First ready on": first_ready_on,
+            "Expiration date": expiration_date,
+            "Domain type": domain_type,
+            "Agency": model.get("federal_agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("so_email"),
+            "Security contact email": security_contact_email,
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+
+        row = [FIELDS.get(column, "") for column in columns]
+
+        return row
 
     @classmethod
     def get_columns(cls):
