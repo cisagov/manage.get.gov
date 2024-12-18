@@ -2303,6 +2303,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     def tearDown(self):
         super().tearDown()
         Domain.objects.all().delete()
+        DomainInvitation.objects.all().delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
