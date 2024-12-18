@@ -3,7 +3,6 @@
 import abc  # abstract base class
 from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
 from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
-from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -15,7 +14,6 @@ from .mixins import (
     DomainRequestWizardPermission,
     PortfolioDomainRequestsPermission,
     PortfolioDomainsPermission,
-    PortfolioInvitationCreatePermission,
     PortfolioMemberDomainsPermission,
     PortfolioMemberDomainsEditPermission,
     PortfolioMemberEditPermission,
