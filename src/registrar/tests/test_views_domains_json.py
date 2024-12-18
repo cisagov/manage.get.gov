@@ -8,23 +8,33 @@ from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_date
 from api.tests.common import less_console_noise_decorator
 from waffle.testutils import override_flag
+from datetime import datetime, timedelta
 
 
 class GetDomainsJsonTest(TestWithUser, WebTest):
     def setUp(self):
         super().setUp()
         self.app.set_user(self.user.username)
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        expiring_date_2 = (today + timedelta(days=31)).strftime("%Y-%m-%d")
 
         # Create test domains
         self.domain1 = Domain.objects.create(name="example1.com", expiration_date="2024-01-01", state="unknown")
         self.domain2 = Domain.objects.create(name="example2.com", expiration_date="2024-02-01", state="dns needed")
         self.domain3 = Domain.objects.create(name="example3.com", expiration_date="2024-03-01", state="ready")
         self.domain4 = Domain.objects.create(name="example4.com", expiration_date="2024-03-01", state="ready")
-
+        self.domain5 = Domain.objects.create(name="example5.com", expiration_date=expiring_date, state="expiring soon")
+        self.domain6 = Domain.objects.create(
+            name="example6.com", expiration_date=expiring_date_2, state="expiring soon"
+        )
         # Create UserDomainRoles
         UserDomainRole.objects.create(user=self.user, domain=self.domain1)
         UserDomainRole.objects.create(user=self.user, domain=self.domain2)
         UserDomainRole.objects.create(user=self.user, domain=self.domain3)
+
+        UserDomainRole.objects.create(user=self.user, domain=self.domain5)
+        UserDomainRole.objects.create(user=self.user, domain=self.domain6)
 
         # Create Portfolio
         self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Example org")
@@ -63,7 +73,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["num_pages"], 1)
 
         # Check the number of domains
-        self.assertEqual(len(data["domains"]), 3)
+        self.assertEqual(len(data["domains"]), 5)
 
         # Expected domains
         expected_domains = [self.domain1, self.domain2, self.domain3]
@@ -310,7 +320,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         self.assertFalse(data["has_previous"])
         self.assertEqual(data["num_pages"], 1)
         self.assertEqual(data["total"], 1)
-        self.assertEqual(data["unfiltered_total"], 3)
+        self.assertEqual(data["unfiltered_total"], 5)
 
         # Check the number of domain requests
         self.assertEqual(len(data["domains"]), 1)
@@ -377,14 +387,15 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_state_filtering(self):
         """Test that different states in request get expected responses."""
-
         expected_values = [
             ("unknown", 1),
             ("ready", 0),
             ("expired", 2),
             ("ready,expired", 2),
             ("unknown,expired", 3),
+            ("expiring", 2),
         ]
+
         for state, num_domains in expected_values:
             with self.subTest(state=state, num_domains=num_domains):
                 response = self.app.get(reverse("get_domains_json"), {"status": state})
