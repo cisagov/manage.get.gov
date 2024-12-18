@@ -144,7 +144,8 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated(self):
-        """Test that portfolio invitedmember's domains are returned properly for an authenticated user."""
+        """Test that portfolio invitedmember's domains are returned properly for an authenticated user.
+        CANCELED and RETRIEVED invites should be ignored."""
         response = self.app.get(
             reverse("get_member_domains_json"),
             params={"portfolio": self.portfolio.id, "email": self.invited_member_email, "member_only": "true"},

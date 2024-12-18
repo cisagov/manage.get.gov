@@ -2109,12 +2109,18 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
     def setUpClass(cls):
         super().setUpClass()
         cls.url = reverse("member-domains-edit", kwargs={"pk": cls.portfolio_permission.pk})
-        names = ["1.gov", "2.gov", "3.gov"]
-        Domain.objects.bulk_create([Domain(name=name) for name in names])
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+
+    def setUp(self):
+        super().setUp()
+        names = ["1.gov", "2.gov", "3.gov"]
+        Domain.objects.bulk_create([Domain(name=name) for name in names])
+
+    def tearDown(self):
+        super().tearDown()
         UserDomainRole.objects.all().delete()
         Domain.objects.all().delete()
 
@@ -2284,17 +2290,19 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     def setUpClass(cls):
         super().setUpClass()
         cls.url = reverse("invitedmember-domains-edit", kwargs={"pk": cls.invitation.pk})
-        names = ["1.gov", "2.gov", "3.gov"]
-        Domain.objects.bulk_create([Domain(name=name) for name in names])
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        Domain.objects.all().delete()
-
+        
+    def setUp(self):
+        super().setUp()
+        names = ["1.gov", "2.gov", "3.gov"]
+        Domain.objects.bulk_create([Domain(name=name) for name in names])
+    
     def tearDown(self):
-        return super().tearDown()
-        DomainInvitation.objects.all().delete()
+        super().tearDown()
+        Domain.objects.all().delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
