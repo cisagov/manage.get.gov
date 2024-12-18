@@ -1140,9 +1140,9 @@ class DomainDataFull(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "converted_generic_org_type",
-            Coalesce("converted_federal_type", Value("ZZZZZ")),
-            "converted_federal_agency",
+            "organization_type",
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
@@ -1250,9 +1250,9 @@ class DomainDataFederal(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "converted_generic_org_type",
-            Coalesce("converted_federal_type", Value("ZZZZZ")),
-            "converted_federal_agency",
+            "organization_type",
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
