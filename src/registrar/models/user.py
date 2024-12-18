@@ -163,13 +163,13 @@ class User(AbstractUser):
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
 
-    def get_expiring_domains(self, request):
-        """Return boolean if expiring/expired domains exists"""
+    def get_num_expiring_domains(self, request):
+        """Return number of expiring domains"""
         domain_ids = self.get_user_domain_ids(request)
         domains = Domain.objects.filter(id__in=domain_ids)
         how_many_expired_domains = 0
         for domain in domains:
-            if flag_is_active(request, "domain_renewal") and domain.is_expiring():
+            if domain.is_expiring():
                 how_many_expired_domains += 1
         return how_many_expired_domains
 

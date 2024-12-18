@@ -1106,7 +1106,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         Check if the domain's expiration date is within 60 days.
         Return False bc there's no expiration date meaning so not expiring
-        Return True if the expiration date is within 60 days
+        Return True if domain expiration exists and within 60 days
         """
         if self.expiration_date is None:
             return False
