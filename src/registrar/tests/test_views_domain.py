@@ -2494,7 +2494,7 @@ class TestDomainRenewal(TestWithUser):
         except ValueError:
             pass
         super().tearDown()
-    
+
     # Remove test_without_domain_renewal_flag when domain renewal is released as a feature
     @less_console_noise_decorator
     @override_flag("domain_renewal", active=False)
