@@ -23,6 +23,14 @@ h2 {
   color: color('primary-darker');
 }
 
+.header--body {
+  margin-top: units(2);
+  font-weight: font-weight('semibold');
+  // The units mixin can only get us close, so it's between 
+  // hardcoding the value and using  in markup
+  font-size: 16.96px;
+}
+
 .h4--sm-05 {
   font-size: size('body', 'sm');
   font-weight: normal;

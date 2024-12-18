@@ -1,3 +1,4 @@
+import json
 import logging
 from django.conf import settings
 
@@ -9,7 +10,9 @@ from django.contrib import messages
 
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
@@ -27,6 +30,7 @@ from registrar.views.utility.permission_views import (
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
+from django.db import IntegrityError
 
 
 logger = logging.getLogger(__name__)
@@ -215,6 +219,58 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                 "member": member,
             },
         )
+    
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio member.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        try:
+            added_domain_ids = json.loads(added_domains) if added_domains else []
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid data for added domains.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        try:
+            removed_domain_ids = json.loads(removed_domains) if removed_domains else []
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid data for removed domains.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                if added_domain_ids:
+                    # Bulk create UserDomainRole instances for added domains
+                    UserDomainRole.objects.bulk_create(
+                        [
+                            UserDomainRole(domain_id=domain_id, user=member)
+                            for domain_id in added_domain_ids
+                        ],
+                        ignore_conflicts=True,  # Avoid duplicate entries
+                    )
+
+                if removed_domain_ids:
+                    # Delete UserDomainRole instances for removed domains
+                    UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
+
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+            except IntegrityError:
+                messages.error(request, "A database error occurred while saving changes.")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+
+            except Exception as e:
+                messages.error(request, f"An unexpected error occurred: {str(e)}")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
 
 
 class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
@@ -340,6 +396,78 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                 "portfolio_invitation": portfolio_invitation,
             },
         )
+    
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio invitee.
+
+        Instead of deleting DomainInvitations, we move their status to CANCELED.
+        Instead of adding DomainIncitations, we first do a lookup and if the invite exists
+        we change its status to INVITED, otherwise we do a create.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        email = portfolio_invitation.email
+
+        try:
+            added_domain_ids = json.loads(added_domains) if added_domains else []
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid data for added domains.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        try:
+            removed_domain_ids = json.loads(removed_domains) if removed_domains else []
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid data for removed domains.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                if added_domain_ids:
+                    # Get existing invitations for the added domains
+                    existing_invitations = DomainInvitation.objects.filter(
+                        domain_id__in=added_domain_ids, email=email
+                    )
+                    
+                    # Update existing invitations from CANCELED to INVITED
+                    existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
+
+                    # Determine which domains need new invitations
+                    existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
+                    new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
+
+                    # Bulk create new invitations for domains without existing invitations
+                    DomainInvitation.objects.bulk_create(
+                        [
+                            DomainInvitation(
+                                domain_id=domain_id,
+                                email=email,
+                                status=DomainInvitation.DomainInvitationStatus.INVITED,
+                            )
+                            for domain_id in new_domain_ids
+                        ]
+                    )
+
+                if removed_domain_ids:
+                    # Bulk update invitations for removed domains from INVITED to CANCELED
+                    DomainInvitation.objects.filter(
+                        domain_id__in=removed_domain_ids, email=email, status=DomainInvitation.DomainInvitationStatus.INVITED
+                    ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
+        
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+            except IntegrityError:
+                messages.error(request, "A database error occurred while saving changes.")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+
+            except Exception as e:
+                messages.error(request, f"An unexpected error occurred: {str(e)}")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
