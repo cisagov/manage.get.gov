@@ -94,6 +94,12 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         DomainInvitation.objects.create(
             email=cls.invited_member_email, domain=cls.domain2, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
+        DomainInvitation.objects.create(
+            email=cls.invited_member_email, domain=cls.domain3, status=DomainInvitation.DomainInvitationStatus.CANCELED
+        )
+        DomainInvitation.objects.create(
+            email=cls.invited_member_email, domain=cls.domain4, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
+        )
 
     @classmethod
     def tearDownClass(cls):
