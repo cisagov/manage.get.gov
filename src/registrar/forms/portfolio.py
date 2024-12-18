@@ -273,7 +273,6 @@ class NewMemberForm(forms.ModelForm):
                 del self.errors[admin_member_error]
         return cleaned_data
 
-
 class BasePortfolioMemberForm(forms.Form):
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
