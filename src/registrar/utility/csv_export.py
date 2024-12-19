@@ -757,7 +757,10 @@ class DomainExport(BaseExport):
 
         return row
 
-    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull and DomainDataFederal are
+    # pulling the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1088,7 +1091,10 @@ class DomainDataFull(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull is
+    # pulling the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1198,7 +1204,10 @@ class DomainDataFederal(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary. Delete this after we consolidate these @property fields.
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFederal is
+    # pulling the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
