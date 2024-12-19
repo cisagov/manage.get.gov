@@ -29,12 +29,9 @@
     </div>
     <br>
 
-    {% url 'domain-edit-contact' pk=domain.id as url %}
-    {% include "includes/summary_item.html" with title='Full Name' value=full_name edit_link=url editable=is_editable %}
-    {% include "includes/summary_item.html" with title='Organization Email' value=email edit_link=url editable=is_editable %}
-    {% include "includes/summary_item.html" with title='Title or Role within your organization' value=title edit_link=url editable=is_editable %}
-    {% include "includes/summary_item.html" with title='Phone' value=phone edit_link=url editable=is_editable %}
-
+    {% url 'user-profile' as url %}
+    {% include "includes/summary_item.html" with title='Your Contact Information' value=user edit_link=url editable=is_editable  contact='true' %}
+  
 
 
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}

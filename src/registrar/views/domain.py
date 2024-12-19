@@ -321,16 +321,9 @@ class DomainRenewalView(DomainBaseView):
 
         security_email = self.object.get_security_email()
         user = self.request.user
-        full_name = user.first_name + user.last_name
         if security_email is None or security_email in default_emails:
             context["security_email"] = None
-            return context
-        context["security_email"] = security_email
-        context["full_name"] = full_name
-        context["email"] = user.email
-        context["phone"] = user.phone
-        context["title"] = user.title
-        print(context)
+        context["user"] = user
         return context
 
     def can_access_domain_via_portfolio(self, pk):
