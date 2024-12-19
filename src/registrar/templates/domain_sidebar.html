@@ -80,6 +80,10 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain managers" %}
       {% endwith %}
 
+      {% with url_name="domain-renewal" %}
+        {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
+      {% endwith %}
+
       {% endif %}
     </ul>
   </nav>
