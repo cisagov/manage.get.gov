@@ -744,30 +744,45 @@ class DomainExport(BaseExport):
         ):
             security_contact_email = "(blank)"
 
+        model["status"] = human_readable_status
+        model["first_ready_on"] = first_ready_on
+        model["expiration_date"] = expiration_date
+        model["domain_type"] = domain_type
+        model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
+        FIELDS = cls.get_fields(model)
+
+        row = [FIELDS.get(column, "") for column in columns]
+
+        return row
+
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull and DomainDataFederal are
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    @classmethod
+    def get_fields(cls, model):
         FIELDS = {
             "Domain name": model.get("domain__name"),
-            "Status": human_readable_status,
-            "First ready on": first_ready_on,
-            "Expiration date": expiration_date,
-            "Domain type": domain_type,
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
             "Agency": model.get("converted_federal_agency"),
             "Organization name": model.get("converted_organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
             "SO": model.get("converted_so_name"),
             "SO email": model.get("converted_so_email"),
-            "Security contact email": security_contact_email,
+            "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
         }
-
-        row = [FIELDS.get(column, "") for column in columns]
-
-        return row
+        return FIELDS
 
     def get_filtered_domain_infos_by_org(domain_infos_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value."""
@@ -1077,6 +1092,39 @@ class DomainDataFull(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull is
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
+    @classmethod
+    def get_fields(cls, model):
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
+            "Agency": model.get("federal_agency__agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("senior_official__email"),
+            "Security contact email": model.get("security_contact_email"),
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+        return FIELDS
+
     @classmethod
     def get_columns(cls):
         """
@@ -1106,9 +1154,9 @@ class DomainDataFull(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "converted_generic_org_type",
-            Coalesce("converted_federal_type", Value("ZZZZZ")),
-            "converted_federal_agency",
+            "organization_type",
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
@@ -1164,6 +1212,39 @@ class DomainDataFederal(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull is
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
+    @classmethod
+    def get_fields(cls, model):
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
+            "Agency": model.get("federal_agency__agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("senior_official__email"),
+            "Security contact email": model.get("security_contact_email"),
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+        return FIELDS
+
     @classmethod
     def get_columns(cls):
         """
@@ -1193,9 +1274,9 @@ class DomainDataFederal(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "converted_generic_org_type",
-            Coalesce("converted_federal_type", Value("ZZZZZ")),
-            "converted_federal_agency",
+            "organization_type",
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
