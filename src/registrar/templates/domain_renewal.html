@@ -29,7 +29,7 @@
     </div>
     <br>
 
-    {% include "includes/profile_form.html" %}
+    {% include "includes/profile_form.html" form=form %}
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
       {% if is_portfolio_user and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
