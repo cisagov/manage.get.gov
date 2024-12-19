@@ -810,7 +810,7 @@ class DomainRequest(TimeStampedModel):
         except Exception as err:
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
-        
+
         # Delete the suborg as long as this is the only place it is used
         self._cleanup_dangling_suborg()
 
