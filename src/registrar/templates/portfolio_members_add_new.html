@@ -17,7 +17,7 @@
 {% endblock messages%}
 
 <!-- Navigation breadcrumbs -->
-<nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+<nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Domain request breadcrumb">
   <ol class="usa-breadcrumb__list">
     <li class="usa-breadcrumb__list-item">
       <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
@@ -56,22 +56,8 @@
 
   <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
 
-  {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-  <div class="usa-radio">
-    {% for radio in form.member_access_level %}
-        {{ radio.tag }}
-        <label class="usa-radio__label usa-legend" for="{{ radio.id_for_label }}">
-          {{ radio.choice_label }}
-          <p class="margin-0 margin-top-2">
-          {% if radio.choice_label == "Admin Access" %}
-              Grants this member access to the organization-wide information on domains, domain requests, and members. Domain management can be assigned separately.
-          {% else %}
-              Grants this member access to the organization.  They can be given extra permissions to view all organization domain requests and submit domain requests on behalf of the organization. Basic access members can’t view all members of an organization or manage them. Domain management can be assigned separately.
-          {% endif %}
-        </p>
-      </label>
-    {% endfor %}
-  </div>
+  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+    {% input_with_errors form.role %}
   {% endwith %}
 
 </fieldset>
@@ -84,16 +70,16 @@
     <h3 class="summary-item__title
     text-primary-dark
     margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.admin_org_domain_request_permissions %}
+    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
+      {% input_with_errors form.domain_request_permission_admin %}
     {% endwith %}
 
     <h3 class="summary-item__title
     text-primary-dark
     margin-bottom-0
     margin-top-3">Organization members</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.admin_org_members_permissions %}
+    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
+      {% input_with_errors form.member_permission_admin %}
     {% endwith %}
   </div>
 
@@ -103,8 +89,8 @@
     <p>Member permissions available for basic-level acccess.</p>
 
     <h3 class="margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.basic_org_domain_request_permissions %}
+    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
+      {% input_with_errors form.domain_request_permission_member %}
     {% endwith %}
 </div>
 
@@ -134,7 +120,6 @@
     id="invite-member-modal"
     aria-labelledby="invite-member-heading"
     aria-describedby="confirm-invite-description"
-    style="display: none;"
 >
     <div class="usa-modal__content">
         <div class="usa-modal__main">

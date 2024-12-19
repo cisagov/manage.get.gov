@@ -8,7 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class UserPortfolioRoleChoices(models.TextChoices):
     """
     Roles make it easier for admins to look at
