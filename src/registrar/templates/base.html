@@ -97,7 +97,7 @@
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">
-        <div class="usa-banner__inner {% if is_widescreen_mode %} usa-banner__inner--widescreen {% endif %}">
+        <div class="usa-banner__inner usa-banner__inner--widescreen padding-left--widescreen padding-right--widescreen">
           <div class="grid-col-auto">
             <img class="usa-banner__header-flag" src="{% static 'img/us_flag_small.png' %}" alt="U.S. flag" />
           </div>
@@ -159,7 +159,7 @@
 
   {% block wrapper %}
   {% block wrapperdiv %}
-  <div id="wrapper">
+  <div id="wrapper" class="wrapper--padding-top-6">
   {% endblock wrapperdiv %}
     {% block messages %}
     {% if messages %}
