@@ -11,90 +11,92 @@ Edit your User Profile |
 {% endblock %}
 
 {% block content %}
-<main id="main-content" class="grid-container grid-container--widescreen tablet:padding-left-6">
-  <div class="desktop:grid-col-8">
-    {% if messages %}
-    {% for message in messages %}
-    <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
-        <div class="usa-alert__body">
-        {{ message }}
-        </div>
-    </div>
-    {% endfor %}
-    {% endif %}
-    {% include "includes/form_errors.html" with form=form %}
+<main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
+    <div class="grid-row {% if is_widescreen_left_justified %} max-width--grid-container {% endif %}">
+        <div class="desktop:grid-col-8">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+                <div class="usa-alert__body">
+                {{ message }}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% include "includes/form_errors.html" with form=form %}
 
-    {% if show_back_button %}
-      <a href="{% url form.initial.redirect %}" class="breadcrumb__back">
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-        <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
-        </svg>
-        <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
-          {{ profile_back_button_text }}
-        </p>
-      </a>
-    {% endif %}
-    
-    {% if show_confirmation_modal %}
-        <a
-            href="#toggle-confirmation-modal"
-            class="usa-button display-none show-confirmation-modal"
-            aria-controls="toggle-confirmation-modal"
-            data-open-modal
-            >Open confirmation modal</a>
-        <div
-            class="usa-modal usa-modal--lg is-visible"
-            id="toggle-confirmation-modal"
-            aria-labelledby="Add contact information"
-            aria-describedby="Add contact information"
-            data-force-action
-        >
-            <div class="usa-modal__content">
-                <div class="usa-modal__main">
-                    <h2 class="usa-modal__heading">
-                        Add contact information
-                    </h2>
-                    <div class="usa-prose">
-                        <p>
-                            .Gov domain registrants must maintain accurate contact information in the .gov registrar.
-                            Before you can manage your domain, we need you to add your contact information.
-                        </p>
-                    </div>
-                    <div class="usa-modal__footer">
-                        <ul class="usa-button-group">
-                            <li class="usa-button-group__item">
-                                <button
-                                    type="button"
-                                    class="usa-button padding-105 text-center"
-                                    data-close-modal
-                                >
+            {% if show_back_button %}
+            <a href="{% url form.initial.redirect %}" class="breadcrumb__back">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="{% static 'img/sprite.svg' %}#arrow_back"></use>
+                </svg>
+                <p class="margin-left-05 margin-top-0 margin-bottom-0 line-height-sans-1">
+                {{ profile_back_button_text }}
+                </p>
+            </a>
+            {% endif %}
+            
+            {% if show_confirmation_modal %}
+                <a
+                    href="#toggle-confirmation-modal"
+                    class="usa-button display-none show-confirmation-modal"
+                    aria-controls="toggle-confirmation-modal"
+                    data-open-modal
+                    >Open confirmation modal</a>
+                <div
+                    class="usa-modal usa-modal--lg is-visible"
+                    id="toggle-confirmation-modal"
+                    aria-labelledby="Add contact information"
+                    aria-describedby="Add contact information"
+                    data-force-action
+                >
+                    <div class="usa-modal__content">
+                        <div class="usa-modal__main">
+                            <h2 class="usa-modal__heading">
                                 Add contact information
-                                </button>
-                            </li>     
-                        </ul>
+                            </h2>
+                            <div class="usa-prose">
+                                <p>
+                                    .Gov domain registrants must maintain accurate contact information in the .gov registrar.
+                                    Before you can manage your domain, we need you to add your contact information.
+                                </p>
+                            </div>
+                            <div class="usa-modal__footer">
+                                <ul class="usa-button-group">
+                                    <li class="usa-button-group__item">
+                                        <button
+                                            type="button"
+                                            class="usa-button padding-105 text-center"
+                                            data-close-modal
+                                        >
+                                        Add contact information
+                                        </button>
+                                    </li>     
+                                </ul>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            class="usa-button usa-modal__close"
+                            aria-label="Close this window"
+                            data-close-modal
+                        >
+                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                            </svg>
+                        </button>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    class="usa-button usa-modal__close"
-                    aria-label="Close this window"
-                    data-close-modal
-                >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                    </svg>
-                </button>
-            </div>
+            {% endif %}
+
+        
+
+        {% endblock content %}
+
+        {% block content_bottom %}
+        {% include "includes/profile_form.html" with form=form %}
         </div>
-    {% endif %}
-
-   
-
-{% endblock content %}
-
-{% block content_bottom %}
-  {% include "includes/profile_form.html" with form=form %}
-  </div>
+    </div>
 </main>
 {% endblock content_bottom %}
 

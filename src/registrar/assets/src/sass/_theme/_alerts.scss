@@ -12,14 +12,24 @@
   }
 }
 
+
 // The icon was off center for some reason
 // Fixes that issue
 @media (min-width: 64em){
-  .usa-alert__body::before {
-    left: 2.5rem !important;
+  .usa-alert--warning{
+    .usa-alert__body::before {
+      left: 1rem !important;
+    }
   }
-  .usa-alert__body {
-    padding-left: 5rem!important;
+  .usa-alert__body.margin-left-1 {
+    margin-left: 0.5rem!important;
+  }
+
+  .usa-alert__body--widescreen::before {
+    left: 4rem !important;
+  }
+  .usa-alert__body--widescreen {
+    padding-left: 7rem!important;
   }
 }
 

@@ -252,6 +252,7 @@ TEMPLATES = [
                 "registrar.context_processors.add_path_to_context",
                 "registrar.context_processors.portfolio_permissions",
                 "registrar.context_processors.is_widescreen_mode",
+                "registrar.context_processors.is_widescreen_left_justified"
             ],
         },
     },

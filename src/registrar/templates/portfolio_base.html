@@ -8,22 +8,25 @@
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
             
-            <div class="tablet:grid-col-11 desktop:grid-col-10 tablet:grid-offset-1">
+            <div class="grid-row {% if is_widescreen_left_justified %} max-width--grid-container {% endif %}">
+              <div class="tablet:grid-col-11 desktop:grid-col-10 {% if not is_widescreen_left_justified %} tablet:grid-offset-1 {% endif %}">
                 {% block messages %}
                     {% include "includes/form_messages.html" %}
                 {% endblock %}
             
                 {% block portfolio_content %}{% endblock %}
             
-            </div>            
-            {% else %} {# not user.is_authenticated #}
-            {# the entire logged out page goes here #}
-            
-            <p><a class="usa-button" href="{% url 'login' %}">
-            Sign in
-            </a></p>
-            
-            {% endif %}
+              </div>            
+              {% else %} {# not user.is_authenticated #}
+              {# the entire logged out page goes here #}
+              
+              <p><a class="usa-button" href="{% url 'login' %}">
+              Sign in
+              </a></p>
+              
+              {% endif %}
+            </div>
+           
         </main>
 
       {% endblock content%}
