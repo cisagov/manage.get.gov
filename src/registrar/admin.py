@@ -1829,7 +1829,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
-    
+
     # ------ Filters ------
     # Define custom filters
     class StatusListFilter(MultipleChoiceListFilter):
@@ -1966,7 +1966,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 return queryset.filter(is_election_board=True)
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
-    
+
     class PortfolioFilter(admin.SimpleListFilter):
         """Define a custom filter for portfolio"""
 
@@ -1978,7 +1978,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 ("1", _("Yes")),
                 ("0", _("No")),
             )
-        
+
         def queryset(self, request, queryset):
             if self.value() == "1":
                 return queryset.filter(Q(portfolio__isnull=False))
@@ -1992,24 +1992,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     custom_election_board.admin_order_field = "is_election_board"  # type: ignore
     custom_election_board.short_description = "Election office"  # type: ignore
 
-
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
         # Example: Show different icons based on `status`
         url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
         text = obj.requested_domain
-        icon = ''
         if obj.portfolio:
-            return format_html(
-                '<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>',
-                url,
-                text
-            )
-        return format_html(
-            '<a href="{}">{}</a>',
-            url,
-            text
-        )
+            return format_html('<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>', url, text)
+        return format_html('<a href="{}">{}</a>', url, text)
+
     custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
     # ------ Converted fields ------
@@ -2025,11 +2016,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if obj.portfolio:
             url = reverse("admin:registrar_portfolio_changelist") + f"{obj.portfolio.id}"
             text = obj.converted_organization_name
-            return format_html(
-                '<a href="{}">{}</a>',
-                url,
-                text
-            )
+            return format_html('<a href="{}">{}</a>', url, text)
         else:
             return obj.converted_organization_name
 
@@ -2048,7 +2035,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("State/Territory"))
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
-
 
     # ------ Portfolio fields ------
     # Define methods to display fields from the related portfolio
@@ -2746,7 +2732,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
-    
+
     def get_search_results(self, request, queryset, search_term):
         # Call the parent's method to apply default search logic
         base_queryset, use_distinct = super().get_search_results(request, queryset, search_term)
@@ -3822,8 +3808,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
     # rather than strip it out of our logic.
-    analyst_readonly_fields = [
-    ]
+    analyst_readonly_fields = []  # type: ignore
 
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
