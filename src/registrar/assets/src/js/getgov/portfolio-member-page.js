@@ -7,7 +7,6 @@ import { hookupRadioTogglerListener } from './radios.js';
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
 export function initPortfolioNewMemberPageToggle() {
     document.addEventListener("DOMContentLoaded", () => {
-      console.log("initPortfolioNewMemberPageToggle");
         const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
         if (wrapperDeleteAction) {
             const member_type = wrapperDeleteAction.getAttribute("data-member-type");
@@ -51,7 +50,6 @@ export function initPortfolioNewMemberPageToggle() {
  * on the Add New Member page.
  */
 export function initAddNewMemberPageListeners() {
-  console.log("initializing add new member page listeners");
   let add_member_form = document.getElementById("add_member_form");
   if (!add_member_form){
      return;
@@ -152,7 +150,7 @@ export function initAddNewMemberPageListeners() {
       document.getElementById('modalEmail').textContent = emailValue;
 
       // Get selected radio button for access level
-      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
+      let selectedAccess = document.querySelector('input[name="role"]:checked');
       // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
       // This value does not have the first letter capitalized so let's capitalize it
       let accessText = selectedAccess ? capitalizeFirstLetter(selectedAccess.value) : "No access level selected";
@@ -188,9 +186,8 @@ export function initPortfolioMemberPageRadio() {
           }
         );
       }else if (newMemberForm){
-        console.log("initializing listeners")
         hookupRadioTogglerListener(
-          'member_access_level', 
+          'role', 
           {
               'organization_admin': 'new-member-admin-permissions',
               'organization_member': 'new-member-basic-permissions'
