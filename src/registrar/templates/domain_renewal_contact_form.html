@@ -1,0 +1,42 @@
+{% load static url_helpers %}
+{% load field_helpers %}
+
+{% block profile_blurb %}
+<h2>Your Contact Info</h2>
+{% include "includes/required_fields.html" %}
+{% endblock profile_blurb %}
+
+
+{% block profile_form %}
+
+<form class="usa-form usa-form--large" method="post" novalidate>
+    {% csrf_token %}
+
+    {# Include the hidden 'redirect' field #}
+    <input type="hidden" name="redirect" value="{{ form.initial.redirect }}">
+    
+    {% input_with_errors form.first_name %}
+
+    {% input_with_errors form.title %}
+
+    {% public_site_url "help/account-management/#email-address" as login_help_url %}
+
+    {% with link_href=login_help_url %}
+      {% with sublabel_text="We recommend using a Login.gov account that's only connected to your work email address. If you need to change your email, you'll need to make a change to your Login.gov account. Get help with updating your email address." %}
+        {% with link_text="Get help with updating your email address" %}
+          {% with target_blank=True %}
+            {% with do_not_show_max_chars=True %}
+              {% input_with_errors form.email %}
+            {% endwith %}
+          {% endwith %}
+        {% endwith %}
+      {% endwith %}
+    {% endwith %}
+
+    {% with add_class="usa-input--medium" %}
+      {% input_with_errors form.phone %}
+    {% endwith %}
+
+    <button type="submit" class="usa-button">Save</button>
+</form>
+{% endblock profile_form %}
