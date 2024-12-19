@@ -18,7 +18,28 @@ class UserPortfolioRoleChoices(models.TextChoices):
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
-        return cls(user_portfolio_role).label if user_portfolio_role else None
+        try:
+            return cls(user_portfolio_role).label if user_portfolio_role else None
+        except ValueError:
+            logger.warning(f"Invalid portfolio role: {user_portfolio_role}")
+            return f"Unknown ({user_portfolio_role})"
+
+    @classmethod
+    def get_role_description(cls, user_portfolio_role):
+        """Returns a detailed description for a given role."""
+        descriptions = {
+            cls.ORGANIZATION_ADMIN: (
+                "Grants this member access to the organization-wide information "
+                "on domains, domain requests, and members. Domain management can be assigned separately."
+            ),
+            cls.ORGANIZATION_MEMBER: (
+                "Grants this member access to the organization.  They can be given extra permissions to view all "
+                "organization domain requests and submit domain requests on behalf of the organization. Basic access "
+                "members can’t view all members of an organization or manage them. "
+                "Domain management can be assigned separately."
+            ),
+        }
+        return descriptions.get(user_portfolio_role)
 
 
 class UserPortfolioPermissionChoices(models.TextChoices):
