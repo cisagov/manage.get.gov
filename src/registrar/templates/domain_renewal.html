@@ -1,0 +1,59 @@
+{% extends "domain_base.html" %}
+{% load static url_helpers %}
+{% load custom_filters %}
+
+{% block domain_content %}
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Renewal Form</span>
+      </li>
+
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
+  {{ block.super }}
+  <div class="margin-top-4 tablet:grid-col-10">
+    <h2 class="text-bold text-primary-dark domain-name-wrap">Confirm the following information for accuracy</h2>
+    <p>Review these dets</p>
+     <p>   Required fields
+    </p>
+    </div>
+    <br>
+
+    {% include "includes/profile_form.html" %}
+    {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
+      {% if is_portfolio_user and not is_domain_manager %}
+      <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body">
+          <p class="usa-alert__text ">
+            You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    {% url 'domain-security-email' pk=domain.id as url %}
+    {% if security_email is not None and security_email not in hidden_security_emails%}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
+    {% endif %}
+    {% url 'domain-users' pk=domain.id as url %}
+    {% if portfolio %}
+      {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
+    {% endif %}
+
+  </div>
+{% endblock %}  {# domain_content #}
