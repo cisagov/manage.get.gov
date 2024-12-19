@@ -759,7 +759,8 @@ class DomainExport(BaseExport):
 
     # NOTE - this override is temporary.
     # We are running into a problem where DomainDataFull and DomainDataFederal are
-    # pulling the portfolio name, rather than the suborganization name.
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
@@ -1093,7 +1094,8 @@ class DomainDataFull(DomainExport):
 
     # NOTE - this override is temporary.
     # We are running into a problem where DomainDataFull is
-    # pulling the portfolio name, rather than the suborganization name.
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
@@ -1206,7 +1208,8 @@ class DomainDataFederal(DomainExport):
 
     # NOTE - this override is temporary.
     # We are running into a problem where DomainDataFederal is
-    # pulling the portfolio name, rather than the suborganization name.
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
