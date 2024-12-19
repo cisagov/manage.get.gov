@@ -163,6 +163,16 @@ class User(AbstractUser):
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
 
+    def get_num_expiring_domains(self, request):
+        """Return number of expiring domains"""
+        domain_ids = self.get_user_domain_ids(request)
+        domains = Domain.objects.filter(id__in=domain_ids)
+        how_many_expiring_domains = 0
+        for domain in domains:
+            if domain.is_expiring():
+                how_many_expiring_domains += 1
+        return how_many_expiring_domains
+
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.REJECTED).count()
@@ -258,6 +268,9 @@ class User(AbstractUser):
 
     def is_portfolio_admin(self, portfolio):
         return "Admin" in self.portfolio_role_summary(portfolio)
+
+    def has_domain_renewal_flag(self):
+        return flag_is_active_for_user(self, "domain_renewal")
 
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
