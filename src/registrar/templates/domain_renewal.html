@@ -12,115 +12,6 @@
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>{{ domain.name }}</span>
-      </li>
-    </ol>
-  </nav>
-  {% endif %}
-  {% endblock breadcrumb %}
-
-  {{ block.super }}
-
-    {% url 'user-profile' as user_profile_url %}
-    <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
-        <span class="text-primary">Your profile</span>
-    </a>
-
-
-    {% if portfolio %}
-      {% if has_any_domains_portfolio_permission and has_edit_suborganization_portfolio_permission %}
-        {% url 'domain-suborganization' pk=domain.id as url %}
-        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
-    {% elif has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
-        {% url 'domain-suborganization' pk=domain.id as url %}
-        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_view_suborganization_portfolio_permission view_button=True %}
-        {% endif %}
-    {% else %}
-      {% url 'domain-org-name-address' pk=domain.id as url %}
-      {% include "includes/summary_item.html" with title='Organization' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
-      {% url 'domain-senior-official' pk=domain.id as url %}
-      {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
-    {% endif %}
-
-    {% url 'domain-security-email' pk=domain.id as url %}
-    {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
-    {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
-    {% endif %}
-    {% url 'domain-users' pk=domain.id as url %}
-    {% if portfolio %}
-      {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
-    {% else %}
-      {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
-    {% endif %}
-
-    
-    <div class="border-top-1px border-primary-dark padding-top-1 margin-bottom-2">
-
-        <fieldset class="usa-fieldset">
-          <legend>
-            <h3 class="summary-item__title 
-            font-sans-md 
-            text-primary-dark 
-            text-semibold 
-            margin-top-0 
-            margin-bottom-05 
-            padding-right-1">
-            Acknowledgement of .gov domain requirements
-            </h3>          
-          </legend>
-        
-          {% if form.is_bound %}
-            {% for field in form %}
-              {% if field.name == 'is_policy_acknowledged' %}
-                {% for error in field.errors %}
-                  <p class="usa-error-message">{{ error }}</p>
-                {% endfor %}
-              {% endif %}
-            {% endfor %}
-          {% endif %}
-          
-          <div class="usa-checkbox">
-            <input 
-              class="usa-checkbox__input" 
-              id="renewal-checkbox" 
-              type="checkbox" 
-              name="is_policy_acknowledged"
-              {% if form.cleaned_data.is_policy_acknowledged %} checked {% endif %}
-            >
-            <label class="usa-checkbox__label" for="renewal-checkbox">
-              I read and agree to the 
-              <a href="https://get.gov/domains/requirements/" class="usa-link">
-                requirements for operating a .gov domain
-              </a>.
-            </label>
-          </div>
-        </fieldset>
-    </div>    
-    
-    <button
-    type="submit"
-    name="submit_button"
-    value="next"
-    class="usa-button"
-    >Submit</button>
-
-{% endblock %}  {# domain_content #}
-{% extends "domain_base.html" %}
-{% load static url_helpers %}
-{% load custom_filters %}
-
-{% block domain_content %}
-  {% block breadcrumb %}
-  {% if portfolio %}
-  <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>Renewal Form</span>
       </li>
 
@@ -163,6 +54,57 @@
     {% else %}
       {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
     {% endif %}
+
+        
+    <div class="border-top-1px border-primary-dark padding-top-1 margin-bottom-2">
+
+      <fieldset class="usa-fieldset">
+        <legend>
+          <h3 class="summary-item__title 
+          font-sans-md 
+          text-primary-dark 
+          text-semibold 
+          margin-top-0 
+          margin-bottom-05 
+          padding-right-1">
+          Acknowledgement of .gov domain requirements
+          </h3>          
+        </legend>
+      
+        {% if form.is_bound %}
+          {% for field in form %}
+            {% if field.name == 'is_policy_acknowledged' %}
+              {% for error in field.errors %}
+                <p class="usa-error-message">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        
+        <div class="usa-checkbox">
+          <input 
+            class="usa-checkbox__input" 
+            id="renewal-checkbox" 
+            type="checkbox" 
+            name="is_policy_acknowledged"
+            {% if form.cleaned_data.is_policy_acknowledged %} checked {% endif %}
+          >
+          <label class="usa-checkbox__label" for="renewal-checkbox">
+            I read and agree to the 
+            <a href="https://get.gov/domains/requirements/" class="usa-link">
+              requirements for operating a .gov domain
+            </a>.
+          </label>
+        </div>
+      </fieldset>
+  </div>    
+  
+  <button
+  type="submit"
+  name="submit_button"
+  value="next"
+  class="usa-button"
+  >Submit</button>
 
   </div>
 {% endblock %}  {# domain_content #}
