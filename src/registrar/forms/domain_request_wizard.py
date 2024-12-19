@@ -90,7 +90,7 @@ class RequestingEntityForm(RegistrarForm):
             raise ValidationError(
                 "This suborganization already exists. "
                 "Choose a new name, or select it directly if you would like to use it."
-            )
+        )
         return name
 
     def full_clean(self):

@@ -672,6 +672,46 @@ class DomainRequest(TimeStampedModel):
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
 
+    def clean(self):
+        super().clean()
+        # Validation logic for a suborganization request
+        if self.is_requesting_new_suborganization():
+            # Raise an error if this suborganization already exists
+            Suborganization = apps.get_model("registrar.Suborganization")
+            if (
+                self.requested_suborganization
+                and Suborganization.objects.filter(
+                    name__iexact=self.requested_suborganization,
+                    portfolio=self.portfolio,
+                    name__isnull=False,
+                    portfolio__isnull=False,
+                ).exists()
+            ):
+                raise ValidationError(
+                    "This suborganization already exists. "
+                    "Choose a new name, or select it directly if you would like to use it."
+                )
+        elif self.portfolio and not self.sub_organization:
+            # You cannot create a new suborganization without these fields
+            required_suborg_fields = {
+                "requested_suborganization": self.requested_suborganization,
+                "suborganization_city": self.suborganization_city,
+                "suborganization_state_territory": self.suborganization_state_territory,
+            }
+
+            if any(bool(value) for value in required_suborg_fields.values()):
+                # Find which fields are empty
+                errors_dict = {
+                    field_name: [f"This field is required when creating a new suborganization."]
+                    for field_name, value in required_suborg_fields.items()
+                    if not value
+                }
+                # Adds a validation error to each missing field
+                raise ValidationError({
+                    k: ValidationError(v, code='required')
+                    for k, v in errors_dict.items()
+                })
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
