@@ -642,16 +642,11 @@ function handleSuborganizationSelection() {
         console.warn("handleSuborganizationSelection() => Could not find required fields.")
         return;
     }
-    console.log("Test")
+
     function updateRejectButtonFieldset() {
         if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
             showElement(rejectButtonFieldset);
         }else {
-            console.log("Hiding")
-            console.log(requestedSuborganizationField)
-            console.log(requestedSuborganizationField.value)
-            console.log(suborganizationCity.value)
-            console.log(suborganizationStateTerritory.value)
             hideElement(rejectButtonFieldset)
         }
     } 

@@ -87,7 +87,7 @@ export function handlePortfolioSelection() {
     const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
     const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
-    const rejectRequestedSuborganizationButtonFieldset = document.querySelector(".field-reject_suborganization_button");
+    const rejectSuborganizationButtonFieldset = document.querySelector(".field-reject_suborganization_button");
     let isPageLoading = true;
 
    /**
@@ -508,7 +508,8 @@ export function handlePortfolioSelection() {
             showElement(requestedSuborganizationField);
             showElement(suborganizationCity);
             showElement(suborganizationStateTerritory);
-
+            
+            // Initially show / hide the clear button only if there is data to clear
             let requestedSuborganizationField = document.getElementById("id_requested_suborganization");
             let suborganizationCity = document.getElementById("id_suborganization_city");
             let suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
@@ -517,16 +518,16 @@ export function handlePortfolioSelection() {
             }
 
             if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
-                showElement(rejectRequestedSuborganizationButtonFieldset);
+                showElement(rejectSuborganizationButtonFieldset);
             }else {
-                hideElement(rejectRequestedSuborganizationButtonFieldset);
+                hideElement(rejectSuborganizationButtonFieldset);
             }
         } else {
             // Hide suborganization request fields if suborganization is selected
             hideElement(requestedSuborganizationField);
             hideElement(suborganizationCity);
             hideElement(suborganizationStateTerritory);
-            hideElement(rejectRequestedSuborganizationButtonFieldset);  
+            hideElement(rejectSuborganizationButtonFieldset);  
         }
     }
 
