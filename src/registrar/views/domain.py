@@ -65,7 +65,6 @@ from epplibwrapper import (
 from ..utility.email import send_templated_email, EmailSendingError
 from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 from django import forms
-from registrar.forms.user_profile import ContactInfoRenewalForm
 
 logger = logging.getLogger(__name__)
 
@@ -359,78 +358,6 @@ class DomainRenewalView(DomainBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
-
-class DomainRenewalContactInfo(DomainBaseView):
-    """Domain detail overview page."""
-    template_name = "domain_renewal_contact_form.html"
-    form_class = ContactInfoRenewalForm
-    
-    def get(self, request, *args, **kwargs):
-        """Handle get requests by getting user's contact object and setting object
-        and form to context before rendering."""
-        self.object = self.get_object()
-
-        # Get the redirect parameter from the query string
-        redirect = request.GET.get("redirect", "home")
-
-        form = self.form_class(user=self.request.user)
-        context = self.get_context_data(form=form)
-
-        return self.render_to_response(context)  
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        context["hidden_security_emails"] = default_emails
-
-        security_email = self.object.get_security_email()
-        user = self.request.user
-        full_name = user.first_name + user.last_name
-        if security_email is None or security_email in default_emails:
-            context["security_email"] = None
-            return context
-        context["security_email"] = security_email
-        context["full_name"] = full_name
-        context["email"] = user.email
-        context["phone"] = user.phone
-        context["title"] = user.title
-        return context
-
-    def can_access_domain_via_portfolio(self, pk):
-        """Most views should not allow permission to portfolio users.
-        If particular views allow permissions, they will need to override
-        this function."""
-        portfolio = self.request.session.get("portfolio")
-        if self.request.user.has_any_domains_portfolio_permission(portfolio):
-            if Domain.objects.filter(id=pk).exists():
-                domain = Domain.objects.get(id=pk)
-                if domain.domain_info.portfolio == portfolio:
-                    return True
-        return False
-
-    def in_editable_state(self, pk):
-        """Override in_editable_state from DomainPermission
-        Allow detail page to be viewable"""
-
-        requested_domain = None
-        if Domain.objects.filter(id=pk).exists():
-            requested_domain = Domain.objects.get(id=pk)
-
-        # return true if the domain exists, this will allow the detail page to load
-        if requested_domain:
-            return True
-        return False
-
-    def _get_domain(self, request):
-        """
-        override get_domain for this view so that domain overview
-        always resets the cache for the domain object
-        """
-        self.session = request.session
-        self.object = self.get_object()
-        self._update_session_with_domain()
-
 
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
