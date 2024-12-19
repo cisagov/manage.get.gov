@@ -87,6 +87,7 @@ export function handlePortfolioSelection() {
     const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
     const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
+    const rejectRequestedSuborganizationButtonFieldset = document.querySelector(".field-reject_suborganization_button");
     let isPageLoading = true;
 
    /**
@@ -507,11 +508,25 @@ export function handlePortfolioSelection() {
             showElement(requestedSuborganizationField);
             showElement(suborganizationCity);
             showElement(suborganizationStateTerritory);
+
+            let requestedSuborganizationField = document.getElementById("id_requested_suborganization");
+            let suborganizationCity = document.getElementById("id_suborganization_city");
+            let suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
+            if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory) {
+                return;
+            }
+
+            if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
+                showElement(rejectRequestedSuborganizationButtonFieldset);
+            }else {
+                hideElement(rejectRequestedSuborganizationButtonFieldset);
+            }
         } else {
             // Hide suborganization request fields if suborganization is selected
             hideElement(requestedSuborganizationField);
             hideElement(suborganizationCity);
-            hideElement(suborganizationStateTerritory);  
+            hideElement(suborganizationStateTerritory);
+            hideElement(rejectRequestedSuborganizationButtonFieldset);  
         }
     }
 
