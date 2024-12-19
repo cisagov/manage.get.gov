@@ -1097,6 +1097,12 @@ class DomainDataFull(DomainExport):
     # pulling the wrong data.
     # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1207,10 +1213,16 @@ class DomainDataFederal(DomainExport):
     """
 
     # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFederal is
+    # We are running into a problem where DomainDataFull is
     # pulling the wrong data.
     # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
