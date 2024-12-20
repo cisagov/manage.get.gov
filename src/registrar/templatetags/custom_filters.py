@@ -282,3 +282,11 @@ def display_requesting_entity(domain_request):
         )
 
     return display
+
+
+@register.filter
+def get_dict_value(dictionary, key):
+    """Get a value from a dictionary. Returns a string on empty."""
+    if isinstance(dictionary, dict):
+        return dictionary.get(key, "")
+    return ""
