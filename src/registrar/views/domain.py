@@ -1254,6 +1254,8 @@ class DomainAddUserView(DomainFormBaseView):
                 messages.success(self.request, f"{requested_email} has been invited.")
             except Exception as e:
                 self._handle_portfolio_exceptions(e, requested_email, requestor_org)
+                # If that first invite does not succeed take an early exit
+                return redirect(self.get_success_url())
 
         try:
             if requested_user is None:
@@ -1288,7 +1290,6 @@ class DomainAddUserView(DomainFormBaseView):
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
-            requested_user=requested_user,
             domain=self.object,
             is_member_of_different_org=member_of_different_org,
         )

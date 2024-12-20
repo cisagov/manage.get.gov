@@ -163,13 +163,14 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user_initially_is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         if form.is_valid():
             # Check if user is removing their own admin or edit role
             removing_admin_role_on_self = (
                 request.user == user
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and user_initially_is_admin
                 and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in form.cleaned_data.get("role", [])
             )
             form.save()

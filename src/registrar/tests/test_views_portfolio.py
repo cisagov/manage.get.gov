@@ -2533,6 +2533,8 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         cls.new_member_email = "new_user@example.com"
 
+        AllowedEmail.objects.get_or_create(email=cls.new_member_email)
+
         # Assign permissions to the user making requests
         UserPortfolioPermission.objects.create(
             user=cls.user,
@@ -2550,8 +2552,10 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        AllowedEmail.objects.all().delete()
         super().tearDownClass()
 
+    @boto3_mocking.patching
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -2563,25 +2567,28 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Simulate submission of member invite for new user
-        final_response = self.client.post(
-            reverse("new-member"),
-            {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
-                "email": self.new_member_email,
-            },
-        )
+        mock_client = MagicMock()
 
-        # Ensure the final submission is successful
-        self.assertEqual(final_response.status_code, 302)  # redirects after success
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            # Simulate submission of member invite for new user
+            final_response = self.client.post(
+                reverse("new-member"),
+                {
+                    "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                    "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "email": self.new_member_email,
+                },
+            )
 
-        # Validate Database Changes
-        portfolio_invite = PortfolioInvitation.objects.filter(
-            email=self.new_member_email, portfolio=self.portfolio
-        ).first()
-        self.assertIsNotNone(portfolio_invite)
-        self.assertEqual(portfolio_invite.email, self.new_member_email)
+            # Ensure the final submission is successful
+            self.assertEqual(final_response.status_code, 302) # Redirects
+
+            # Validate Database Changes
+            portfolio_invite = PortfolioInvitation.objects.filter(
+                email=self.new_member_email, portfolio=self.portfolio
+            ).first()
+            self.assertIsNotNone(portfolio_invite)
+            self.assertEqual(portfolio_invite.email, self.new_member_email)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2600,14 +2607,15 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
                 "email": self.invited_member_email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
+        self.assertEqual(response.status_code, 200)
 
-        # TODO: verify messages
+        # verify messages
+        self.assertContains(response, "This user is already assigned to a portfolio invitation. Based on current waffle flag settings, users cannot be assigned to multiple portfolios.")
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
@@ -2630,14 +2638,15 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
                 "email": self.user.email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
+        self.assertEqual(response.status_code, 200)
 
-        # TODO: verify messages
+        # Verify messages
+        self.assertContains(response, "This user is already assigned to a portfolio. Based on current waffle flag settings, users cannot be assigned to multiple portfolios.")
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
@@ -2783,7 +2792,11 @@ class TestEditPortfolioMemberView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_admin_removing_own_admin_role(self):
-        """Tests an admin removing their own admin role redirects to home."""
+        """Tests an admin removing their own admin role redirects to home.
+        
+        Removing the admin role will remove both view and edit members permissions.
+        Note: The user can remove the edit members permissions but as long as they stay in admin role, they will at least still have view members permissions."""
+
         self.client.force_login(self.user)
 
         # Get the user's admin permission
