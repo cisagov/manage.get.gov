@@ -4,12 +4,12 @@
   <div id="wrapper" class="{% block wrapper_class %}wrapper--padding-top-6{% endblock %}">
     {% block content %}
         
-        <main class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
+        <main class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
             
-            <div class="grid-row {% if not is_widescreen_centered %} max-width--grid-container {% endif %}">
-              <div class="tablet:grid-col-11 desktop:grid-col-10 {% if is_widescreen_centered %} tablet:grid-offset-1 {% endif %}">
+            <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+              <div class="tablet:grid-col-11 desktop:grid-col-10 {% if is_widescreen_centered %}tablet:grid-offset-1{% endif %}">
                 {% block messages %}
                     {% include "includes/form_messages.html" %}
                 {% endblock %}

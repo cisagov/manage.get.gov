@@ -117,6 +117,7 @@ def is_widescreen_centered(request):
     ]
     exclude_paths = [
         "/domains/edit",
+        "members/new-member/",
     ]
 
     is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)

@@ -5,8 +5,8 @@
 {% block title %}{% translate "Forbidden | " %}{% endblock %}
 
 {% block content %}
-<main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
-  <div class="grid-row grow-gap {% if not is_widescreen_centered %} max-width--grid-container {% endif %}"> 
+<main id="main-content" class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
+  <div class="grid-row grow-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}"> 
     <div class="tablet:grid-col-6 usa-prose margin-bottom-3">
       <h1>
         {% translate "You're not authorized to view this page." %}

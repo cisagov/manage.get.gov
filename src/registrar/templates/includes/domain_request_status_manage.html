@@ -1,8 +1,8 @@
 {% load custom_filters %}
 {% load static url_helpers %}
-<main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
-    <div class="grid-row {% if not is_widescreen_centered %} max-width--grid-container {% endif %}">
-        <div class="grid-col {% if is_widescreen_centered %} desktop:grid-offset-2 {% endif %} desktop:grid-col-8">
+<main id="main-content" class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
+    <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+        <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 {% endif %} desktop:grid-col-8">
             {% block breadcrumb %}
             {% if portfolio %}
                 {% url 'domain-requests' as url %}
@@ -140,7 +140,7 @@
             {% endblock modify_request %}
         </div>
 
-        <div class="grid-col {% if is_widescreen_centered %} desktop:grid-offset-2 maxw-tablet{% endif %}">
+        <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 maxw-tablet{% endif %}">
             {% block request_summary_header %}
             <h2 class="text-primary-darker"> Summary of your domain request </h2> 
             {% endblock request_summary_header%}
