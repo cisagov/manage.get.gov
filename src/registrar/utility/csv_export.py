@@ -1105,12 +1105,22 @@ class DomainDataFull(DomainExport):
     # converted_so_email => senior_official__email
     @classmethod
     def get_fields(cls, model):
+        # These vars are copied from the base class.
+        # converted_generic_org_type => generic_org_type
+        # converted_federal_type = federal_type
+        domain_org_type = model.get("generic_org_type")
+        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
+        domain_federal_type = model.get("federal_type")
+        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
+        domain_type = human_readable_domain_org_type
+        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
         FIELDS = {
             "Domain name": model.get("domain__name"),
             "Status": model.get("status"),
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
-            "Domain type": model.get("domain_type"),
+            "Domain type": domain_type,
             "Agency": model.get("federal_agency__agency"),
             "Organization name": model.get("organization_name"),
             "City": model.get("city"),
@@ -1225,12 +1235,22 @@ class DomainDataFederal(DomainExport):
     # converted_so_email => senior_official__email
     @classmethod
     def get_fields(cls, model):
+        # These vars are copied from the base class.
+        # converted_generic_org_type => generic_org_type
+        # converted_federal_type = federal_type
+        domain_org_type = model.get("generic_org_type")
+        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
+        domain_federal_type = model.get("federal_type")
+        human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
+        domain_type = human_readable_domain_org_type
+        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+            domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
         FIELDS = {
             "Domain name": model.get("domain__name"),
             "Status": model.get("status"),
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
-            "Domain type": model.get("domain_type"),
+            "Domain type": domain_type,
             "Agency": model.get("federal_agency__agency"),
             "Organization name": model.get("organization_name"),
             "City": model.get("city"),
