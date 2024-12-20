@@ -105,9 +105,8 @@ def is_widescreen_mode(request):
     is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
 
     # Return a dictionary with the widescreen mode status.
-    return {
-        "is_widescreen_mode": not is_excluded
-    }
+    return {"is_widescreen_mode": not is_excluded}
+
 
 def is_widescreen_centered(request):
     include_paths = [
@@ -123,7 +122,7 @@ def is_widescreen_centered(request):
     is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
 
     # Check if the current path matches a path in included_paths or the root path.
-    is_widescreen_centered = any(path in request.path for path in include_paths) or request.path=="/"
+    is_widescreen_centered = any(path in request.path for path in include_paths) or request.path == "/"
 
     # Return a dictionary with the widescreen mode status.
     return {"is_widescreen_centered": is_widescreen_centered and not is_excluded}
