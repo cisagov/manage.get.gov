@@ -1164,7 +1164,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return False
 
         now = timezone.now().date()
-        expiration_window=60
+        expiration_window = 60
         threshold_date = now + timedelta(days=expiration_window)
         return now <= self.expiration_date <= threshold_date
 

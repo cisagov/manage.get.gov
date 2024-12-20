@@ -311,7 +311,7 @@ class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -358,6 +358,7 @@ class DomainRenewalView(DomainBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
+
 
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
