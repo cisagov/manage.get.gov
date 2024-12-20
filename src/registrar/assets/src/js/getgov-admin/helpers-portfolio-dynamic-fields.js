@@ -1,57 +1,19 @@
 import { hideElement, showElement } from './helpers-admin.js';
 
 /**
- * Helper function that handles business logic for the suborganization field.
- * Can be used anywhere the suborganization dropdown exists
-*/
-export function handleSuborganizationFields(
-    portfolioDropdownSelector="#id_portfolio",
-    suborgDropdownSelector="#id_sub_organization", 
-    requestedSuborgFieldSelector=".field-requested_suborganization", 
-    suborgCitySelector=".field-suborganization_city", 
-    suborgStateTerritorySelector=".field-suborganization_state_territory"
-) {
-    // These dropdown are select2 fields so they must be interacted with via jquery
-    const portfolioDropdown = django.jQuery(portfolioDropdownSelector)
-    const suborganizationDropdown = django.jQuery(suborgDropdownSelector)
-    const requestedSuborgField = document.querySelector(requestedSuborgFieldSelector);
-    const suborgCity = document.querySelector(suborgCitySelector);
-    const suborgStateTerritory = document.querySelector(suborgStateTerritorySelector);
-    if (!suborganizationDropdown || !requestedSuborgField || !suborgCity || !suborgStateTerritory) {
-        console.error("Requested suborg fields not found.");
-        return;
-    }
-
-    function toggleSuborganizationFields() {
-        if (portfolioDropdown.val() && !suborganizationDropdown.val()) {
-            showElement(requestedSuborgField);
-            showElement(suborgCity);
-            showElement(suborgStateTerritory);
-        }else {
-            hideElement(requestedSuborgField);
-            hideElement(suborgCity);
-            hideElement(suborgStateTerritory);
-        }
-    }
-
-    // Run the function once on page startup, then attach an event listener
-    toggleSuborganizationFields();
-    suborganizationDropdown.on("change", toggleSuborganizationFields);
-    portfolioDropdown.on("change", toggleSuborganizationFields);
-}
-
-
-/**
  *
  * This function handles the portfolio selection as well as display of
  * portfolio-related fields in the DomainRequest Form.
  * 
- * IMPORTANT NOTE: The logic in this method is paired dynamicPortfolioFields
+ * IMPORTANT NOTE: The business logic in this method is based on dynamicPortfolioFields
 */
-export function handlePortfolioSelection() {
+export function handlePortfolioSelection(
+    portfolioDropdownSelector="#id_portfolio",
+    suborgDropdownSelector="#id_sub_organization"
+) {
     // These dropdown are select2 fields so they must be interacted with via jquery
-    const portfolioDropdown = django.jQuery("#id_portfolio");
-    const suborganizationDropdown = django.jQuery("#id_sub_organization");
+    const portfolioDropdown = django.jQuery(portfolioDropdownSelector);
+    const suborganizationDropdown = django.jQuery(suborgDropdownSelector);
     const suborganizationField = document.querySelector(".field-sub_organization");
     const requestedSuborganizationField = document.querySelector(".field-requested_suborganization");
     const suborganizationCity = document.querySelector(".field-suborganization_city");
@@ -441,8 +403,8 @@ export function handlePortfolioSelection() {
             showElement(portfolioSeniorOfficialField);
 
             // Hide fields not applicable when a portfolio is selected
-            hideElement(otherEmployeesField);
-            hideElement(noOtherContactsRationaleField);
+            if (otherEmployeesField) hideElement(otherEmployeesField);
+            if (noOtherContactsRationaleField) hideElement(noOtherContactsRationaleField);
             hideElement(cisaRepresentativeFirstNameField);
             hideElement(cisaRepresentativeLastNameField);
             hideElement(cisaRepresentativeEmailField);
@@ -464,8 +426,8 @@ export function handlePortfolioSelection() {
             // Show fields that are relevant when no portfolio is selected
             showElement(seniorOfficialField);
             hideElement(portfolioSeniorOfficialField);
-            showElement(otherEmployeesField);
-            showElement(noOtherContactsRationaleField);
+            if (otherEmployeesField) showElement(otherEmployeesField);
+            if (noOtherContactsRationaleField) showElement(noOtherContactsRationaleField);
             showElement(cisaRepresentativeFirstNameField);
             showElement(cisaRepresentativeLastNameField);
             showElement(cisaRepresentativeEmailField);
@@ -505,9 +467,9 @@ export function handlePortfolioSelection() {
 
         if (portfolio_id && !suborganization_id) {
             // Show suborganization request fields
-            showElement(requestedSuborganizationField);
-            showElement(suborganizationCity);
-            showElement(suborganizationStateTerritory);
+            if (requestedSuborganizationField) showElement(requestedSuborganizationField);
+            if (suborganizationCity) showElement(suborganizationCity);
+            if (suborganizationStateTerritory) showElement(suborganizationStateTerritory);
             
             // Initially show / hide the clear button only if there is data to clear
             let requestedSuborganizationField = document.getElementById("id_requested_suborganization");
@@ -524,9 +486,9 @@ export function handlePortfolioSelection() {
             }
         } else {
             // Hide suborganization request fields if suborganization is selected
-            hideElement(requestedSuborganizationField);
-            hideElement(suborganizationCity);
-            hideElement(suborganizationStateTerritory);
+            if (requestedSuborganizationField) hideElement(requestedSuborganizationField);
+            if (suborganizationCity) hideElement(suborganizationCity);
+            if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);
             hideElement(rejectSuborganizationButtonFieldset);  
         }
     }
