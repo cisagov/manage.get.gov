@@ -169,16 +169,15 @@ class User(AbstractUser):
         """Return number of expiring domains"""
         domain_ids = self.get_user_domain_ids(request)
         now = timezone.now().date()
-        expiration_window=60
+        expiration_window = 60
         threshold_date = now + timedelta(days=expiration_window)
-        num_of_expiring_domains= Domain.objects.filter(
+        num_of_expiring_domains = Domain.objects.filter(
             id__in=domain_ids,
             expiration_date__isnull=False,
             expiration_date__lte=threshold_date,
-            expiration_date__gt=now
-            ).count()
+            expiration_date__gt=now,
+        ).count()
         return num_of_expiring_domains
-
 
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""
