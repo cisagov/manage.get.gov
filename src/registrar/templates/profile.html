@@ -12,7 +12,7 @@ Edit your User Profile |
 
 {% block content %}
 <main id="main-content" class="grid-container {% if is_widescreen_mode %} grid-container--widescreen {% endif %}">
-    <div class="grid-row {% if is_widescreen_left_justified %} max-width--grid-container {% endif %}">
+    <div class="grid-row {% if not is_widescreen_centered %} max-width--grid-container {% endif %}">
         <div class="desktop:grid-col-8">
             {% if messages %}
             {% for message in messages %}

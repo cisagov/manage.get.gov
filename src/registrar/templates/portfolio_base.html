@@ -8,8 +8,8 @@
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
             
-            <div class="grid-row {% if is_widescreen_left_justified %} max-width--grid-container {% endif %}">
-              <div class="tablet:grid-col-11 desktop:grid-col-10 {% if not is_widescreen_left_justified %} tablet:grid-offset-1 {% endif %}">
+            <div class="grid-row {% if not is_widescreen_centered %} max-width--grid-container {% endif %}">
+              <div class="tablet:grid-col-11 desktop:grid-col-10 {% if is_widescreen_centered %} tablet:grid-offset-1 {% endif %}">
                 {% block messages %}
                     {% include "includes/form_messages.html" %}
                 {% endblock %}

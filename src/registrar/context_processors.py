@@ -99,68 +99,30 @@ def portfolio_permissions(request):
 
 
 def is_widescreen_mode(request):
-    widescreen_paths = [
-        "/domain-request/",
-    ]  # If this list is meant to include specific paths, populate it.
-    portfolio_widescreen_paths = [
-        "/domains/",
-        "/requests/",
-        "/no-organization-requests/",
-        "/no-organization-domains/",
-        "/members/",
-    ]
-    # widescreen_paths can be a bear as it trickles down sub-urls. exclude_paths gives us a way out.
-    exclude_paths = ["/domains/edit", "/admin/"]
+    exclude_paths = ["/admin/"]
 
-    # Check if the current path matches a widescreen path or the root path.
-    is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
-
-    # Check if the user is an organization user and the path matches portfolio paths.
-    is_portfolio_widescreen = (
-        hasattr(request.user, "is_org_user")
-        and request.user.is_org_user(request)
-        and any(path in request.path for path in portfolio_widescreen_paths)
-    )
-
+    # Widescreen is now global for all pages EXCEPT admin
     is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
 
     # Return a dictionary with the widescreen mode status.
     return {
-        "is_widescreen_mode": (is_widescreen or is_portfolio_widescreen or get_is_widescreen_left_justified(request))
-        and not is_excluded
+        "is_widescreen_mode": not is_excluded
     }
 
-
-def get_is_widescreen_left_justified(request):
+def is_widescreen_centered(request):
     include_paths = [
-        "/user-profile",
-        "/request/",
-        "/domain/",
+        "/domains/",
+        "/requests/",
+        "/members/",
     ]
-    portfolio_include_paths = [
-        "/organization/",
-        "/senior-official/",
-        "/member/",
-        "/members/new-member",
+    exclude_paths = [
+        "/domains/edit",
     ]
-    exclude_paths = []
 
     is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
 
     # Check if the current path matches a path in included_paths or the root path.
-    is_widescreen_left_justified = any(path in request.path for path in include_paths)
-
-    # Check if the user is an organization user and the path matches portfolio_only paths.
-    is_portfolio_widescreen_left_justified = (
-        hasattr(request.user, "is_org_user")
-        and request.user.is_org_user(request)
-        and any(path in request.path for path in portfolio_include_paths)
-    )
-
-    return (is_widescreen_left_justified or is_portfolio_widescreen_left_justified) and not is_excluded
-
-
-def is_widescreen_left_justified(request):
+    is_widescreen_centered = any(path in request.path for path in include_paths) or request.path=="/"
 
     # Return a dictionary with the widescreen mode status.
-    return {"is_widescreen_left_justified": get_is_widescreen_left_justified(request)}
+    return {"is_widescreen_centered": is_widescreen_centered and not is_excluded}
