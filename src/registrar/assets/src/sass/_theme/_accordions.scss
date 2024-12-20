@@ -41,7 +41,8 @@
 }
 
 // Special positioning for the kabob menu popup in the last row on a given page
-tr:last-of-type:not(.show-more-content) .usa-accordion--more-actions .usa-accordion__content {
+// Account for the Members table rows with the collapsed expandable content
+tr:last-of-type:not(.show-more-content.display-none) .usa-accordion--more-actions .usa-accordion__content {
     top: auto;
     bottom: -10px;
     right: 30px;
