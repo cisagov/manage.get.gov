@@ -14,6 +14,8 @@ from .domain import Domain
 from .domain_request import DomainRequest
 from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
+from django.utils import timezone
+from datetime import timedelta
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -163,6 +165,20 @@ class User(AbstractUser):
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
 
+    def get_num_expiring_domains(self, request):
+        """Return number of expiring domains"""
+        domain_ids = self.get_user_domain_ids(request)
+        now = timezone.now().date()
+        expiration_window = 60
+        threshold_date = now + timedelta(days=expiration_window)
+        num_of_expiring_domains = Domain.objects.filter(
+            id__in=domain_ids,
+            expiration_date__isnull=False,
+            expiration_date__lte=threshold_date,
+            expiration_date__gt=now,
+        ).count()
+        return num_of_expiring_domains
+
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.REJECTED).count()
@@ -258,6 +274,9 @@ class User(AbstractUser):
 
     def is_portfolio_admin(self, portfolio):
         return "Admin" in self.portfolio_role_summary(portfolio)
+
+    def has_domain_renewal_flag(self):
+        return flag_is_active_for_user(self, "domain_renewal")
 
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
