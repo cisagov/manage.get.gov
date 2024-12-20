@@ -679,9 +679,9 @@ class DomainRequest(TimeStampedModel):
         2. Partial suborganization data: Enforces a all-or-nothing rule for city/state/name fields
         when portfolio exists without selected suborganization
 
-        Add new domain request validation rules here to ensure they're 
+        Add new domain request validation rules here to ensure they're
         enforced during both model save and form submission.
-        Not presently used on the domain request wizard, though. 
+        Not presently used on the domain request wizard, though.
         """
         super().clean()
         # Validation logic for a suborganization request
@@ -717,10 +717,7 @@ class DomainRequest(TimeStampedModel):
                     if not value
                 }
                 # Adds a validation error to each missing field
-                raise ValidationError({
-                    k: ValidationError(v, code='required')
-                    for k, v in errors_dict.items()
-                })
+                raise ValidationError({k: ValidationError(v, code="required") for k, v in errors_dict.items()})
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""

@@ -80,17 +80,17 @@ class RequestingEntityForm(RegistrarForm):
         return self.cleaned_data.get("sub_organization")
 
     def clean_requested_suborganization(self):
-        name = self.cleaned_data.get('requested_suborganization')
-        if name and Suborganization.objects.filter(
-            name__iexact=name, 
-            portfolio=self.domain_request.portfolio,
-            name__isnull=False, 
-            portfolio__isnull=False
-        ).exists():
+        name = self.cleaned_data.get("requested_suborganization")
+        if (
+            name
+            and Suborganization.objects.filter(
+                name__iexact=name, portfolio=self.domain_request.portfolio, name__isnull=False, portfolio__isnull=False
+            ).exists()
+        ):
             raise ValidationError(
                 "This suborganization already exists. "
                 "Choose a new name, or select it directly if you would like to use it."
-        )
+            )
         return name
 
     def full_clean(self):
