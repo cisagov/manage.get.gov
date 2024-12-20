@@ -1980,10 +1980,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
         def queryset(self, request, queryset):
-            if self.value() == "1":
-                return queryset.filter(Q(portfolio__isnull=False))
-            if self.value() == "0":
-                return queryset.filter(Q(portfolio__isnull=True))
+            filter_for_portfolio = self.value() == "1"
+            return queryset.filter(portfolio__isnull=filter_for_portfolio)
 
     # ------ Custom fields ------
     def custom_election_board(self, obj):
