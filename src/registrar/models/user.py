@@ -163,7 +163,7 @@ class User(AbstractUser):
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
 
-    # NOTE: If this is causing performance problems,
+    # If this is causing performance problems,
     # convert the is expiring check to sum or count filter condition
     def get_num_expiring_domains(self, request):
         """Return number of expiring domains"""
