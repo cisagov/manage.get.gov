@@ -2,203 +2,212 @@ import { hideElement, showElement } from './helpers-admin.js';
 
 /**
  * A function for dynamically changing some fields on the portfolio admin model
- * IMPORTANT NOTE: The logic in this function is paired handlePortfolioSelection and should be refactored once we solidify our requirements.
+ * IMPORTANT NOTE: The business logic in this function is related to handlePortfolioSelection
 */
-export function initDynamicPortfolioFields(){
+function handlePortfolioFields(){
 
-    // the federal agency change listener fires on page load, which we don't want.
-    var isInitialPageLoad = true
+    let isPageLoading = true
+    // $ symbolically denotes that this is using jQuery
+    const $seniorOfficialDropdown = django.jQuery("#id_senior_official");
+    const seniorOfficialField = document.querySelector(".field-senior_official");
+    const seniorOfficialAddress = seniorOfficialField.querySelector(".dja-address-contact-list");
+    const seniorOfficialReadonly = seniorOfficialField.querySelector(".readonly");
+    const $federalAgencyDropdown = django.jQuery("#id_federal_agency");
+    const federalAgencyField = document.querySelector(".field-federal_agency");
+    const organizationTypeField = document.querySelector(".field-organization_type");
+    const organizationTypeReadonly = organizationTypeField.querySelector(".readonly");
+    const organizationTypeDropdown = document.getElementById("id_organization_type");
+    const organizationNameField = document.querySelector(".field-organization_name");
+    const federalTypeField = document.querySelector(".field-federal_type");
+    const urbanizationField = document.querySelector(".field-urbanization");
+    const stateTerritoryDropdown = document.getElementById("id_state_territory");
+    const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
+    const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
+    const federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
 
-    // This is the additional information that exists beneath the SO element.
-    var contactList = document.querySelector(".field-senior_official .dja-address-contact-list");
-    const federalAgencyContainer = document.querySelector(".field-federal_agency");
-    document.addEventListener('DOMContentLoaded', function() {
-
-        let isPortfolioPage = document.getElementById("portfolio_form");
-        if (!isPortfolioPage) {
-            return;
-        }
-
-        // $ symbolically denotes that this is using jQuery
-        let $federalAgency = django.jQuery("#id_federal_agency");
-        let organizationType = document.getElementById("id_organization_type");
-        let readonlyOrganizationType = document.querySelector(".field-organization_type .readonly");
-
-        let organizationNameContainer = document.querySelector(".field-organization_name");
-        let federalType = document.querySelector(".field-federal_type");
-
-        if ($federalAgency && (organizationType || readonlyOrganizationType)) {
-            // Attach the change event listener
-            $federalAgency.on("change", function() {
-                handleFederalAgencyChange($federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType);
+    /**
+     * Fetches federal type data based on a selected agency using an AJAX call.
+     *
+     * @param {string} agency
+     * @returns {Promise<Object|null>} - A promise that resolves to the portfolio data object if successful,
+     *                                   or null if there was an error.
+     */
+    function getFederalTypeFromAgency(agency) {
+        return fetch(`${federalPortfolioApi}?&agency_name=${agency}`)
+            .then(response => {
+                const statusCode = response.status;
+                return response.json().then(data => ({ statusCode, data }));
+            })
+            .then(({ statusCode, data }) => {
+                if (data.error) {
+                    console.error("Error in AJAX call: " + data.error);
+                    return;
+                }
+                return data.federal_type
+            })
+            .catch(error => {
+                console.error("Error fetching federal and portfolio types: ", error);
+                return null
             });
-        }
-        
-        // Handle dynamically hiding the urbanization field
-        let urbanizationField = document.querySelector(".field-urbanization");
-        let stateTerritory = document.getElementById("id_state_territory");
-        if (urbanizationField && stateTerritory) {
-            // Execute this function once on load
-            handleStateTerritoryChange(stateTerritory, urbanizationField);
+    }
 
-            // Attach the change event listener for state/territory
-            stateTerritory.addEventListener("change", function() {
-                handleStateTerritoryChange(stateTerritory, urbanizationField);
+    /**
+     * Fetches senior official contact data based on a selected agency using an AJAX call.
+     *
+     * @param {string} agency
+     * @returns {Promise<Object|null>} - A promise that resolves to the portfolio data object if successful,
+     *                                   or null if there was an error.
+     */
+    function getSeniorOfficialFromAgency(agency) {
+        return fetch(`${seniorOfficialApi}?agency_name=${agency}`)
+            .then(response => {
+                const statusCode = response.status;
+                return response.json().then(data => ({ statusCode, data }));
+            })
+            .then(({ statusCode, data }) => {
+                if (data.error) {
+                    // Throw an error with status code and message
+                    throw { statusCode, message: data.error };
+                } else {
+                    return data;
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching senior official: ", error);
+                throw error; // Re-throw for external handling
             });
-        }
-
-        // Handle hiding the organization name field when the organization_type is federal.
-        // Run this first one page load, then secondly on a change event.
-        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
-        organizationType.addEventListener("change", function() {
-            handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
-        });
-    });
-
-    function handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType) {
-        if (organizationType && organizationNameContainer) {
-            let selectedValue = organizationType.value;
+    }
+    
+    /**
+     * Handles the side effects of change on the organization type field
+     * 
+     * 1. If selection is federal, hide org name, show federal agency, show federal type if applicable
+     * 2. else show org name, hide federal agency, hide federal type if applicable
+     */
+    function handleOrganizationTypeChange() {
+        if (organizationTypeDropdown && organizationNameField) {
+            let selectedValue = organizationTypeDropdown.value;
             if (selectedValue === "federal") {
-                hideElement(organizationNameContainer);
-                showElement(federalAgencyContainer);
-                if (federalType) {
-                    showElement(federalType);
+                hideElement(organizationNameField);
+                showElement(federalAgencyField);
+                if (federalTypeField) {
+                    showElement(federalTypeField);
                 }
             } else {
-                showElement(organizationNameContainer);
-                hideElement(federalAgencyContainer);
-                if (federalType) {
-                    hideElement(federalType);
+                showElement(organizationNameField);
+                hideElement(federalAgencyField);
+                if (federalTypeField) {
+                    hideElement(federalTypeField);
                 }
             }
         }
     }
 
-    function handleFederalAgencyChange(federalAgency, organizationType, readonlyOrganizationType, organizationNameContainer, federalType) {
-        // Don't do anything on page load
-        if (isInitialPageLoad) {
-            isInitialPageLoad = false;
-            return;
-        }
+    /**
+     * Handles the side effects of change on the federal agency field
+     * 
+     * 1. handle org type dropdown or readonly
+     * 2. call handleOrganizationTypeChange
+     * 3. call getFederalTypeFromAgency and update federal type
+     * 4. call getSeniorOfficialFromAgency and update the SO fieldset
+     */
+    function handleFederalAgencyChange() {
+        if (!isPageLoading) {
 
-        // Set the org type to federal if an agency is selected
-        let selectedText = federalAgency.find("option:selected").text();
-
-        // There isn't a federal senior official associated with null records
-        if (!selectedText) {
-            return;
-        }
-
-        let organizationTypeValue = organizationType ? organizationType.value : readonlyOrganizationType.innerText.toLowerCase();
-        if (selectedText !== "Non-Federal Agency") {
-            if (organizationTypeValue !== "federal") {
-                if (organizationType){
-                    organizationType.value = "federal";
-                }else {
-                    readonlyOrganizationType.innerText = "Federal"
-                }
-            }
-        }else {
-            if (organizationTypeValue === "federal") {
-                if (organizationType){
-                    organizationType.value =  "";
-                }else {
-                    readonlyOrganizationType.innerText =  "-"
-                }
-            }
-        }
-
-        handleOrganizationTypeChange(organizationType, organizationNameContainer, federalType);
-
-        // Determine if any changes are necessary to the display of portfolio type or federal type
-        // based on changes to the Federal Agency
-        let federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
-        fetch(`${federalPortfolioApi}?&agency_name=${selectedText}`)
-        .then(response => {
-            const statusCode = response.status;
-            return response.json().then(data => ({ statusCode, data }));
-        })
-        .then(({ statusCode, data }) => {
-            if (data.error) {
-                console.error("Error in AJAX call: " + data.error);
+            let selectedFederalAgency = $federalAgencyDropdown.find("option:selected").text();
+            if (!selectedFederalAgency) {
                 return;
             }
-            updateReadOnly(data.federal_type, '.field-federal_type');
-        })
-        .catch(error => console.error("Error fetching federal and portfolio types: ", error));
 
-        // Hide the contactList initially. 
-        // If we can update the contact information, it'll be shown again.
-        hideElement(contactList.parentElement);
-        
-        let seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
-        let $seniorOfficial = django.jQuery("#id_senior_official");
-        let readonlySeniorOfficial = document.querySelector(".field-senior_official .readonly");
-        let seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
-        fetch(`${seniorOfficialApi}?agency_name=${selectedText}`)
-        .then(response => {
-            const statusCode = response.status;
-            return response.json().then(data => ({ statusCode, data }));
-        })
-        .then(({ statusCode, data }) => {
-            if (data.error) {
-                // Clear the field if the SO doesn't exist.
-                if (statusCode === 404) {
-                    if ($seniorOfficial && $seniorOfficial.length > 0) {
-                        $seniorOfficial.val("").trigger("change");
-                    }else {
-                        // Show the "create one now" text if this field is none in readonly mode.
-                        readonlySeniorOfficial.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
+            // 1. Handle organization type
+            let organizationTypeValue = organizationTypeDropdown ? organizationTypeDropdown.value : organizationTypeReadonly.innerText.toLowerCase();
+            if (selectedFederalAgency !== "Non-Federal Agency") {
+                if (organizationTypeValue !== "federal") {
+                    if (organizationTypeDropdown){
+                        organizationTypeDropdown.value = "federal";
+                    } else {
+                        organizationTypeReadonly.innerText = "Federal"
                     }
-                    console.warn("Record not found: " + data.error);
-                }else {
-                    console.error("Error in AJAX call: " + data.error);
                 }
-                return;
+            } else {
+                if (organizationTypeValue === "federal") {
+                    if (organizationTypeDropdown){
+                        organizationTypeDropdown.value =  "";
+                    } else {
+                        organizationTypeReadonly.innerText =  "-"
+                    }
+                }
             }
 
-            // Update the "contact details" blurb beneath senior official
-            updateContactInfo(data);
-            showElement(contactList.parentElement);
+            // 2. Handle organization type change side effects
+            handleOrganizationTypeChange();
+
+            // 3. Handle federal type
+            getFederalTypeFromAgency(selectedFederalAgency).then((federalType) => updateReadOnly(federalType, '.field-federal_type'));
             
-            // Get the associated senior official with this federal agency
-            let seniorOfficialId = data.id;
-            let seniorOfficialName = [data.first_name, data.last_name].join(" ");
-            if ($seniorOfficial && $seniorOfficial.length > 0) {
-                // If the senior official is a dropdown field, edit that
-                updateSeniorOfficialDropdown($seniorOfficial, seniorOfficialId, seniorOfficialName);
-            }else {
-                if (readonlySeniorOfficial) {
-                    let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
-                    readonlySeniorOfficial.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+            // 4. Handle senior official
+            hideElement(seniorOfficialAddress.parentElement);
+            getSeniorOfficialFromAgency(selectedFederalAgency).then((senior_official) => {
+                // Update the "contact details" blurb beneath senior official
+                updateSeniorOfficialContactInfo(senior_official);
+                showElement(seniorOfficialAddress.parentElement);
+                // Get the associated senior official with this federal agency
+                let seniorOfficialId = senior_official.id;
+                let seniorOfficialName = [senior_official.first_name, senior_official.last_name].join(" ");
+                if ($seniorOfficialDropdown && $seniorOfficialDropdown.length > 0) {
+                    // If the senior official is a dropdown field, edit that
+                    updateSeniorOfficialDropdown(seniorOfficialId, seniorOfficialName);
+                } else {
+                    if (seniorOfficialReadonly) {
+                        let seniorOfficialLink = `<a href=/admin/registrar/seniorofficial/${seniorOfficialId}/change/>${seniorOfficialName}</a>`
+                        seniorOfficialReadonly.innerHTML = seniorOfficialName ? seniorOfficialLink : "-";
+                    }
                 }
-            }
-        })
-        .catch(error => console.error("Error fetching senior official: ", error));
-
+            })
+            .catch(error => {
+                if (error.statusCode === 404) {
+                    // Handle "not found" senior official
+                    if ($seniorOfficialDropdown && $seniorOfficialDropdown.length > 0) {
+                        $seniorOfficialDropdown.val("").trigger("change");
+                    } else {
+                        seniorOfficialReadonly.innerHTML = `<a href="${seniorOfficialAddUrl}">No senior official found. Create one now.</a>`;
+                    }
+                } else {
+                    // Handle other errors
+                    console.error("An error occurred:", error.message);
+                }
+            }); 
+        } else {
+            isPageLoading = false;
+        }
     }
 
-    function updateSeniorOfficialDropdown(dropdown, seniorOfficialId, seniorOfficialName) {
+    /**
+     * Helper for updating federal type field
+     */
+    function updateSeniorOfficialDropdown(seniorOfficialId, seniorOfficialName) {
         if (!seniorOfficialId || !seniorOfficialName || !seniorOfficialName.trim()){
             // Clear the field if the SO doesn't exist
-            dropdown.val("").trigger("change");
+            $seniorOfficialDropdown.val("").trigger("change");
             return;
         }
-
         // Add the senior official to the dropdown.
         // This format supports select2 - if we decide to convert this field in the future.
-        if (dropdown.find(`option[value='${seniorOfficialId}']`).length) {
+        if ($seniorOfficialDropdown.find(`option[value='${seniorOfficialId}']`).length) {
             // Select the value that is associated with the current Senior Official.
-            dropdown.val(seniorOfficialId).trigger("change");
+            $seniorOfficialDropdown.val(seniorOfficialId).trigger("change");
         } else { 
             // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
             let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
-            dropdown.append(userOption).trigger("change");
+            $seniorOfficialDropdown.append(userOption).trigger("change");
         }
     }
 
-    function handleStateTerritoryChange(stateTerritory, urbanizationField) {
-        let selectedValue = stateTerritory.value;
+    /**
+     * Handle urbanization
+     */
+    function handleStateTerritoryChange() {
+        let selectedValue = stateTerritoryDropdown.value;
         if (selectedValue === "PR") {
             showElement(urbanizationField)
         } else {
@@ -207,11 +216,7 @@ export function initDynamicPortfolioFields(){
     }
 
     /**
-     * Utility that selects a div from the DOM using selectorString,
-     * and updates a div within that div which has class of 'readonly'
-     * so that the text of the div is updated to updateText
-     * @param {*} updateText 
-     * @param {*} selectorString 
+     * Helper for updating senior official dropdown
      */
     function updateReadOnly(updateText, selectorString) {
         // find the div by selectorString
@@ -226,34 +231,75 @@ export function initDynamicPortfolioFields(){
         }
     }
 
-    function updateContactInfo(data) {
-        if (!contactList) return;
-    
-        const titleSpan = contactList.querySelector(".contact_info_title");
-        const emailSpan = contactList.querySelector(".contact_info_email");
-        const phoneSpan = contactList.querySelector(".contact_info_phone");
-    
+    /**
+     * Helper for updating senior official contact info
+     */
+    function updateSeniorOfficialContactInfo(senior_official) {
+        if (!seniorOfficialAddress) return;
+        const titleSpan = seniorOfficialAddress.querySelector(".contact_info_title");
+        const emailSpan = seniorOfficialAddress.querySelector(".contact_info_email");
+        const phoneSpan = seniorOfficialAddress.querySelector(".contact_info_phone");
         if (titleSpan) { 
-            titleSpan.textContent = data.title || "None";
+            titleSpan.textContent = senior_official.title || "None";
         };
-
         // Update the email field and the content for the clipboard
         if (emailSpan) {
-            let copyButton = contactList.querySelector(".admin-icon-group");
-            emailSpan.textContent = data.email || "None";
-            if (data.email) {
-                const clipboardInput = contactList.querySelector(".admin-icon-group input");
+            let copyButton = seniorOfficialAddress.querySelector(".admin-icon-group");
+            emailSpan.textContent = senior_official.email || "None";
+            if (senior_official.email) {
+                const clipboardInput = seniorOfficialAddress.querySelector(".admin-icon-group input");
                 if (clipboardInput) {
-                    clipboardInput.value = data.email;
+                    clipboardInput.value = senior_official.email;
                 };
                 showElement(copyButton);
             }else {
                 hideElement(copyButton);
             }
         }
-
         if (phoneSpan) {
-            phoneSpan.textContent = data.phone || "None";
+            phoneSpan.textContent = senior_official.phone || "None";
         };
     }
+
+    /**
+     * Initializes necessary data and display configurations for the portfolio fields.
+     */
+    function initializePortfolioSettings() {
+        if (urbanizationField && stateTerritoryDropdown) {
+            handleStateTerritoryChange();
+        }
+        handleOrganizationTypeChange();
+    }
+
+    /**
+     * Sets event listeners for key UI elements.
+     */
+    function setEventListeners() {
+        if ($federalAgencyDropdown && (organizationTypeDropdown || organizationTypeReadonly)) {
+            $federalAgencyDropdown.on("change", function() {
+                handleFederalAgencyChange();
+            });
+        }
+        if (urbanizationField && stateTerritoryDropdown) {
+            stateTerritoryDropdown.addEventListener("change", function() {
+                handleStateTerritoryChange();
+            });
+        }
+        organizationTypeDropdown.addEventListener("change", function() {
+            handleOrganizationTypeChange();
+        });
+    }
+
+    // Run initial setup functions
+    initializePortfolioSettings();
+    setEventListeners();
+}
+
+export function initDynamicPortfolioFields() {
+    document.addEventListener('DOMContentLoaded', function() {
+        let isPortfolioPage = document.getElementById("portfolio_form");
+        if (isPortfolioPage) {
+            handlePortfolioFields();
+        }
+    });
 }

@@ -2,9 +2,10 @@ import { uswdsInitializeModals } from './helpers-uswds.js';
 import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
+import { hookupRadioTogglerListener } from './radios.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
-export function initPortfolioMemberPageToggle() {
+export function initPortfolioNewMemberPageToggle() {
     document.addEventListener("DOMContentLoaded", () => {
         const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
         if (wrapperDeleteAction) {
@@ -49,7 +50,7 @@ export function initPortfolioMemberPageToggle() {
  * on the Add New Member page.
  */
 export function initAddNewMemberPageListeners() {
-  add_member_form = document.getElementById("add_member_form")
+  let add_member_form = document.getElementById("add_member_form");
   if (!add_member_form){
      return;
   }
@@ -169,4 +170,29 @@ export function initAddNewMemberPageListeners() {
         }
   }
 
+}
+
+// Initalize the radio for the member pages
+export function initPortfolioMemberPageRadio() {
+  document.addEventListener("DOMContentLoaded", () => {
+      let memberForm = document.getElementById("member_form");
+      let newMemberForm = document.getElementById("add_member_form")
+      if (memberForm) {
+        hookupRadioTogglerListener(
+          'role', 
+          {
+            'organization_admin': 'member-admin-permissions',
+            'organization_member': 'member-basic-permissions'
+          }
+        );
+      }else if (newMemberForm){
+        hookupRadioTogglerListener(
+          'member_access_level', 
+          {
+              'admin': 'new-member-admin-permissions',
+              'basic': 'new-member-basic-permissions'
+          }
+        );
+      }
+  });
 }

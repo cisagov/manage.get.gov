@@ -15,8 +15,8 @@ function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, a
                 // Revert the dropdown to its previous value
                 statusDropdown.value = valueToCheck;
             });
-        }else {
-            console.log("displayModalOnDropdownClick() -> Cancel button was null");
+        } else {
+            console.warn("displayModalOnDropdownClick() -> Cancel button was null");
         }
 
         // Add a change event listener to the dropdown.

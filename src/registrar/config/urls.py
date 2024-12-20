@@ -110,6 +110,11 @@ urlpatterns = [
         name="member-domains",
     ),
     path(
+        "member/<int:pk>/domains/edit",
+        views.PortfolioMemberDomainsEditView.as_view(),
+        name="member-domains-edit",
+    ),
+    path(
         "invitedmember/<int:pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
@@ -128,6 +133,11 @@ urlpatterns = [
         "invitedmember/<int:pk>/domains",
         views.PortfolioInvitedMemberDomainsView.as_view(),
         name="invitedmember-domains",
+    ),
+    path(
+        "invitedmember/<int:pk>/domains/edit",
+        views.PortfolioInvitedMemberDomainsEditView.as_view(),
+        name="invitedmember-domains-edit",
     ),
     # path(
     #     "no-organization-members/",
