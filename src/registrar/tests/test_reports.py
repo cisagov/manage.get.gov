@@ -71,8 +71,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
@@ -93,8 +93,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -493,17 +493,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "defaultsecurity.gov,Federal - Executive,Portfolio1FederalAgency,,,,(blank)\n"
-            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
-            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
-            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -533,16 +533,16 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "defaultsecurity.gov,Federal - Executive,Portfolio1FederalAgency,,,,(blank)\n"
-            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
-            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
-            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
