@@ -7,7 +7,6 @@ from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
 from django.db import models
-from django.urls import reverse
 from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host

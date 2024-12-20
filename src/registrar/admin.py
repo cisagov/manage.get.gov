@@ -1483,7 +1483,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
-    
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method to send an email only on creation of the PortfolioInvitation object.
@@ -1494,7 +1494,9 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             requestor = request.user
 
             requested_user = User.objects.filter(email=requested_email).first()
-            permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user=requested_user, portfolio=portfolio
+            ).exists()
             try:
                 if not requested_user or not permission_exists:
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
@@ -1511,14 +1513,21 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
     def _handle_exceptions(self, exception, request, obj):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", obj.email, obj.portfolio, exc_info=True)
+            logger.warning(
+                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
+                obj.email,
+                obj.portfolio,
+                exc_info=True,
+            )
             messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
         elif isinstance(exception, MissingEmailError):
             messages.error(request, str(exception))
             logger.error(
-                f"Can't send email to '{obj.email}' for portfolio '{obj.portfolio}'. No email exists for the requestor.",
+                f"Can't send email to '{obj.email}' for portfolio '{obj.portfolio}'. "
+                f"No email exists for the requestor.",
                 exc_info=True,
             )
+
         else:
             logger.warning("Could not send email invitation (Other Exception)", obj.portfolio, exc_info=True)
             messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")

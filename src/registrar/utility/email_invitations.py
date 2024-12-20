@@ -1,7 +1,5 @@
 from django.conf import settings
 from registrar.models import DomainInvitation
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -9,7 +7,7 @@ from registrar.utility.errors import (
     OutsideOrgMemberError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.utility.email import send_templated_email, EmailSendingError
+from registrar.utility.email import send_templated_email
 import logging
 
 logger = logging.getLogger(__name__)

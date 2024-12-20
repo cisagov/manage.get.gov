@@ -12,7 +12,6 @@ from registrar.models import (
     DomainInformation,
     Portfolio,
     SeniorOfficial,
-    User,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -111,9 +110,9 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         return cleaned_data
 
 
-
 class BasePortfolioMemberForm(forms.ModelForm):
     """Base form for the PortfolioMemberForm and PortfolioInvitedMemberForm"""
+
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
         choices=[
@@ -180,7 +179,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
     class Meta:
         model = None
-        fields = ["roles", "additional_permissions" ]
+        fields = ["roles", "additional_permissions"]
 
     def __init__(self, *args, **kwargs):
         """
@@ -242,7 +241,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
         logger.info(cleaned_data)
         return cleaned_data
-     
+
     def map_instance_to_initial(self):
         """
         Maps self.instance to self.initial, handling roles and permissions.
@@ -301,7 +300,7 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
 
     class Meta:
         model = UserPortfolioPermission
-        fields = ["roles", "additional_permissions" ]
+        fields = ["roles", "additional_permissions"]
 
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
@@ -311,8 +310,7 @@ class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
 
     class Meta:
         model = PortfolioInvitation
-        fields = ["roles", "additional_permissions" ]
-
+        fields = ["roles", "additional_permissions"]
 
 
 class PortfolioNewMemberForm(BasePortfolioMemberForm):
@@ -336,4 +334,3 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
     class Meta:
         model = PortfolioInvitation
         fields = ["portfolio", "email", "roles", "additional_permissions"]
-

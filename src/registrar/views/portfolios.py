@@ -1,5 +1,4 @@
 import logging
-from django.conf import settings
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -299,7 +298,7 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
                 "invitation": portfolio_invitation,
             },
         )
-        
+
     def post(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
         form = self.form_class(request.POST, instance=portfolio_invitation)
@@ -520,7 +519,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
         self.object = None  # No existing PortfolioInvitation instance
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
-    
+
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
         self.object = None  # For a new invitation, there's no existing model instance
@@ -536,16 +535,16 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
-        
+
     def is_ajax(self):
         return self.request.headers.get("X-Requested-With") == "XMLHttpRequest"
-    
+
     def form_invalid(self, form):
         if self.is_ajax():
             return JsonResponse({"is_valid": False})  # Return a JSON response
         else:
             return super().form_invalid(form)  # Handle non-AJAX requests normally
-        
+
     def form_valid(self, form):
         super().form_valid(form)
         if self.is_ajax():
@@ -577,14 +576,15 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
 
-    def get_success_url(self):
-        """Redirect to the members page."""
-        return reverse("members")
-
     def _handle_exceptions(self, exception, portfolio, email):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not sent email invitation to %s for portfolio %s (EmailSendingError)", email, portfolio, exc_info=True)
+            logger.warning(
+                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
+                email,
+                portfolio,
+                exc_info=True,
+            )
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))

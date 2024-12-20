@@ -1128,7 +1128,10 @@ class DomainUsersView(DomainBaseView):
             for portfolio_invitation in portfolio_invitations:
                 logger.info(portfolio_invitation)
                 logger.info(portfolio_invitation.roles)
-                if portfolio_invitation.roles and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+                if (
+                    portfolio_invitation.roles
+                    and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles
+                ):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
@@ -1210,18 +1213,16 @@ class DomainAddUserView(DomainFormBaseView):
 
         # Determine membership in a different organization
         member_of_a_different_org = (
-            (existing_org_permission and existing_org_permission.portfolio != requestor_org) or
-            (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
-        )
+            existing_org_permission and existing_org_permission.portfolio != requestor_org
+        ) or (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
 
         # Determine membership in the same organization
-        member_of_this_org = (
-            (existing_org_permission and existing_org_permission.portfolio == requestor_org) or
-            (existing_org_invitation and existing_org_invitation.portfolio == requestor_org)
+        member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio == requestor_org
         )
 
         return member_of_a_different_org, member_of_this_org
-    
+
     def form_valid(self, form):
         """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
@@ -1232,7 +1233,9 @@ class DomainAddUserView(DomainFormBaseView):
         # Get the requestor's organization
         requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
 
-        member_of_a_different_org, member_of_this_org = self._get_org_membership(requestor_org, requested_email, requested_user)
+        member_of_a_different_org, member_of_this_org = self._get_org_membership(
+            requestor_org, requested_email, requested_user
+        )
 
         # determine portfolio of the domain (code currently is looking at requestor's portfolio)
         # if requested_email/user is not member or invited member of this portfolio
@@ -1299,7 +1302,12 @@ class DomainAddUserView(DomainFormBaseView):
     def _handle_exceptions(self, exception, email):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not send email invitation to %s for domain %s (EmailSendingError)", email, self.object, exc_info=True)
+            logger.warning(
+                "Could not send email invitation to %s for domain %s (EmailSendingError)",
+                email,
+                self.object,
+                exc_info=True,
+            )
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, OutsideOrgMemberError):
             logger.warning(
@@ -1341,6 +1349,7 @@ class DomainAddUserView(DomainFormBaseView):
         else:
             logger.warning("Could not send email invitation (Other Exception)", portfolio, exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
+
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
     object: DomainInvitation

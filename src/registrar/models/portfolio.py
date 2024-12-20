@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Portfolio(TimeStampedModel):
     """
     Portfolio is used for organizing domains/domain-requests into
@@ -165,7 +166,7 @@ class Portfolio(TimeStampedModel):
     def get_suborganizations(self):
         """Returns all suborganizations associated with this portfolio"""
         return self.portfolio_suborganizations.all()
-    
+
     def full_clean(self, exclude=None, validate_unique=True):
         logger.info("portfolio full clean")
         super().full_clean(exclude, validate_unique)
