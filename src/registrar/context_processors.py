@@ -109,7 +109,7 @@ def portfolio_permissions(request):
 
 
 def is_widescreen_mode(request):
-    widescreen_paths = []
+    widescreen_paths = []  # If this list is meant to include specific paths, populate it.
     portfolio_widescreen_paths = [
         "/domains/",
         "/requests/",
@@ -118,10 +118,21 @@ def is_widescreen_mode(request):
         "/no-organization-domains/",
         "/domain-request/",
     ]
+    # widescreen_paths can be a bear as it trickles down sub-urls. exclude_paths gives us a way out.
+    exclude_paths = [
+        "/domains/edit",
+    ]
+
+    # Check if the current path matches a widescreen path or the root path.
     is_widescreen = any(path in request.path for path in widescreen_paths) or request.path == "/"
-    is_portfolio_widescreen = bool(
+
+    # Check if the user is an organization user and the path matches portfolio paths.
+    is_portfolio_widescreen = (
         hasattr(request.user, "is_org_user")
         and request.user.is_org_user(request)
         and any(path in request.path for path in portfolio_widescreen_paths)
+        and not any(exclude_path in request.path for exclude_path in exclude_paths)
     )
+
+    # Return a dictionary with the widescreen mode status.
     return {"is_widescreen_mode": is_widescreen or is_portfolio_widescreen}

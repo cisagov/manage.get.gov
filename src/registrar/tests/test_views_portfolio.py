@@ -2102,6 +2102,127 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 404)
 
 
+class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_authenticated(self):
+        """Tests that the portfolio member domains edit view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user_member.email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_no_perms(self):
+        """Tests that the portfolio member domains edit view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_unauthenticated(self):
+        """Tests that the portfolio member domains edit view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": self.permission.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_not_found(self):
+        """Tests that the portfolio member domains edit view returns not found if user
+        portfolio permission not found."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("member-domains-edit", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
+
+
+class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_authenticated(self):
+        """Tests that the portfolio invited member domains edit view is accessible."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.invited_member_email)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_no_perms(self):
+        """Tests that the portfolio invited member domains edit view is not accessible to user with no perms."""
+        self.client.force_login(self.user_no_perms)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns forbidden
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_invitedmember_domains_edit_unauthenticated(self):
+        """Tests that the portfolio invited member domains edit view is not accessible when no authenticated user."""
+        self.client.logout()
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.id}))
+
+        # Make sure the request returns redirect to openid login
+        self.assertEqual(response.status_code, 302)  # Redirect to openid login
+        self.assertIn("/openid/login", response.url)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_domains_edit_not_found(self):
+        """Tests that the portfolio invited member domains edit view returns not found if user is not a member."""
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"pk": "0"}))
+
+        # Make sure the response is not found
+        self.assertEqual(response.status_code, 404)
+
+
 class TestRequestingEntity(WebTest):
     """The requesting entity page is a domain request form that only exists
     within the context of a portfolio."""
@@ -2521,3 +2642,160 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
+
+
+class TestEditPortfolioMemberView(WebTest):
+    """Tests for the edit member page on portfolios"""
+
+    def setUp(self):
+        self.user = create_user()
+        # Create Portfolio
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+
+        # Add an invited member who has been invited to manage domains
+        self.invited_member_email = "invited@example.com"
+        self.invitation = PortfolioInvitation.objects.create(
+            email=self.invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    def tearDown(self):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_edit_member_permissions_basic_to_admin(self):
+        """Tests converting a basic member to admin with full permissions."""
+        self.client.force_login(self.user)
+
+        # Create a basic member to edit
+        basic_member = create_test_user()
+        basic_permission = UserPortfolioPermission.objects.create(
+            user=basic_member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
+
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"pk": basic_permission.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            },
+        )
+
+        # Verify redirect and success message
+        self.assertEqual(response.status_code, 302)
+
+        # Verify database changes
+        basic_permission.refresh_from_db()
+        self.assertEqual(basic_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        self.assertEqual(
+            set(basic_permission.additional_permissions),
+            {
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            },
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_edit_member_permissions_validation(self):
+        """Tests form validation for required fields based on role."""
+        self.client.force_login(self.user)
+
+        member = create_test_user()
+        permission = UserPortfolioPermission.objects.create(
+            user=member, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        # Test missing required admin permissions
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"pk": permission.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                # Missing required admin fields
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["form"].errors["domain_request_permission_admin"][0],
+            "Admin domain request permission is required",
+        )
+        self.assertEqual(
+            response.context["form"].errors["member_permission_admin"][0], "Admin member permission is required"
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_edit_invited_member_permissions(self):
+        """Tests editing permissions for an invited (but not yet joined) member."""
+        self.client.force_login(self.user)
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify invitation was updated
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        self.assertEqual(
+            set(updated_invitation.additional_permissions),
+            {
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            },
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_admin_removing_own_admin_role(self):
+        """Tests an admin removing their own admin role redirects to home."""
+        self.client.force_login(self.user)
+
+        # Get the user's admin permission
+        admin_permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
+
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"pk": admin_permission.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("home"))

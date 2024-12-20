@@ -14,6 +14,7 @@ import {
 import { initDomainFormTargetBlankButtons } from './domain-form.js';
 import { initDynamicPortfolioFields } from './portfolio-form.js';
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
+import { initDynamicDomainFields } from './domain-form.js';
 
 // General
 initModals();
@@ -33,6 +34,7 @@ initDynamicDomainRequestFields();
 
 // Domain
 initDomainFormTargetBlankButtons();
+initDynamicDomainFields();
 
 // Portfolio
 initDynamicPortfolioFields();

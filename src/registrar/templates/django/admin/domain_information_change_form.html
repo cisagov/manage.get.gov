@@ -1,6 +1,13 @@
 {% extends 'admin/change_form.html' %}
 {% load i18n static %}
 
+{% block content %}
+    {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
+    {% url 'get-portfolio-json' as url %}
+    <input id="portfolio_json_url" class="display-none" value="{{url}}" />
+    {{ block.super }}
+{% endblock content %}
+
 {% block field_sets %}
     {% for fieldset in adminform %}
         {% comment %}
