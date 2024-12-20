@@ -629,7 +629,18 @@ export function initRejectedEmail() {
     });
 }
 
-function handleSuborganizationSelection() {
+
+/**
+ * A function that handles the suborganzation and requested suborganization fields and buttons.
+ * - Fieldwise: Hooks to the sub_organization, suborganization_city, and suborganization_state_territory fields.
+ *   On change, this function checks if any of these fields are not empty: 
+ *   sub_organization, suborganization_city, and suborganization_state_territory.
+ *   If they aren't, then we show the "clear" button. If they are, then we hide it because we don't need it.
+ * 
+ * - Buttonwise: Hooks to the #clear-requested-suborganization button.
+ *   On click, this will clear the input value of sub_organization, suborganization_city, and suborganization_state_territory.
+*/
+function handleSuborgFieldsAndButtons() {
     const requestedSuborganizationField = document.getElementById("id_requested_suborganization");
     const suborganizationCity = document.getElementById("id_suborganization_city");
     const suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
@@ -672,6 +683,6 @@ export function initDynamicDomainRequestFields(){
     const domainRequestPage = document.getElementById("domainrequest_form");
     if (domainRequestPage) {
         handlePortfolioSelection();
-        handleSuborganizationSelection();
+        handleSuborgFieldsAndButtons();
     }
 }

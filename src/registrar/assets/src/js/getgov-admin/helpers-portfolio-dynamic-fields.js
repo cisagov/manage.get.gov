@@ -471,6 +471,16 @@ export function handlePortfolioSelection(
             if (suborganizationCity) showElement(suborganizationCity);
             if (suborganizationStateTerritory) showElement(suborganizationStateTerritory);
             
+            // Handle rejectSuborganizationButtonFieldset (display of the clear requested suborg button).
+            // Basically, this button should only be visible when we have data for suborg, city, and state_territory.
+            // The function handleSuborgFieldsAndButtons() in domain-request-form.js handles doing this same logic
+            // but on field input for city, state_territory, and the suborg field.
+            // If it doesn't exist, don't do anything.
+            if (!rejectSuborganizationButtonFieldset){
+                console.warn("updateSuborganizationFieldsDisplay() => Could not update rejectSuborganizationButtonFieldset")
+                return;
+            }
+
             // Initially show / hide the clear button only if there is data to clear
             let requestedSuborganizationField = document.getElementById("id_requested_suborganization");
             let suborganizationCity = document.getElementById("id_suborganization_city");
@@ -489,7 +499,7 @@ export function handlePortfolioSelection(
             if (requestedSuborganizationField) hideElement(requestedSuborganizationField);
             if (suborganizationCity) hideElement(suborganizationCity);
             if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);
-            hideElement(rejectSuborganizationButtonFieldset);  
+            if (rejectSuborganizationButtonFieldset) hideElement(rejectSuborganizationButtonFieldset);  
         }
     }
 
