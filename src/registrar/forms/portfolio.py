@@ -113,6 +113,7 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
 class BasePortfolioMemberForm(forms.ModelForm):
     """Base form for the PortfolioMemberForm and PortfolioInvitedMemberForm"""
 
+    # The label for each of these has a red "required" star. We can just embed that here for simplicity.
     required_star = '<abbr class="usa-hint usa-hint--required" title="required">*</abbr>'
     role = forms.ChoiceField(
         choices=[
@@ -167,6 +168,9 @@ class BasePortfolioMemberForm(forms.ModelForm):
         },
     )
 
+    # Tracks what form elements are required for a given role choice.
+    # All of the fields included here have "required=False" by default as they are conditionally required.
+    # see def clean() for more details.
     ROLE_REQUIRED_FIELDS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             "domain_request_permission_admin",
@@ -183,10 +187,13 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         """
-        Override the form's initialization to map existing model values
-        to custom form fields.
+        Override the form's initialization.
+
+        Map existing model values to custom form fields.
+        Update field descriptions.
         """
         super().__init__(*args, **kwargs)
+        # Adds a <p> description beneath each role option
         self.fields["role"].descriptions = {
             "organization_admin": UserPortfolioRoleChoices.get_role_description(
                 UserPortfolioRoleChoices.ORGANIZATION_ADMIN
@@ -196,14 +203,14 @@ class BasePortfolioMemberForm(forms.ModelForm):
             ),
         }
         # Map model instance values to custom form fields
-        logger.info(self.instance)
-        logger.info(self.initial)
         if self.instance:
             self.map_instance_to_initial()
 
     def clean(self):
-        """Validates form data based on selected role and its required fields."""
-        logger.info("clean")
+        """Validates form data based on selected role and its required fields.
+        Updates roles and additional_permissions in cleaned_data so they can be properly
+        mapped to the model.
+        """
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
 
@@ -239,13 +246,12 @@ class BasePortfolioMemberForm(forms.ModelForm):
         role_permissions = UserPortfolioPermission.get_portfolio_permissions(cleaned_data["roles"], [], get_list=False)
         cleaned_data["additional_permissions"] = list(additional_permissions - role_permissions)
 
-        logger.info(cleaned_data)
         return cleaned_data
 
     def map_instance_to_initial(self):
         """
         Maps self.instance to self.initial, handling roles and permissions.
-        Returns form data dictionary with appropriate permission levels based on user role:
+        Updates self.initial dictionary with appropriate permission levels based on user role:
         {
             "role": "organization_admin" or "organization_member",
             "member_permission_admin": permission level if admin,
@@ -253,10 +259,9 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "domain_request_permission_member": permission level if member
         }
         """
-        logger.info(self.instance)
-        # Function variables
         if self.initial is None:
             self.initial = {}
+        # Function variables
         perms = UserPortfolioPermission.get_portfolio_permissions(
             self.instance.roles, self.instance.additional_permissions, get_list=False
         )
@@ -290,7 +295,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
             # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
             selected_domain_permission = next((perm for perm in domain_perms if perm in perms), "no_access")
             self.initial["domain_request_permission_member"] = selected_domain_permission
-        logger.info(self.initial)
 
 
 class PortfolioMemberForm(BasePortfolioMemberForm):
@@ -314,6 +318,9 @@ class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
 
 
 class PortfolioNewMemberForm(BasePortfolioMemberForm):
+    """
+    Form for adding a portfolio invited member.
+    """
 
     email = forms.EmailField(
         label="Enter the email of the member you'd like to invite",

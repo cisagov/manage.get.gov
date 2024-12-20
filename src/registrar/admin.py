@@ -1486,7 +1486,11 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
 
     def save_model(self, request, obj, form, change):
         """
-        Override the save_model method to send an email only on creation of the PortfolioInvitation object.
+        Override the save_model method.
+
+        Only send email on creation of the PortfolioInvitation object. Not on updates.
+        Emails sent to requested user / email.
+        When exceptions are raised, return without saving model.
         """
         if not change:  # Only send email if this is a new PortfolioInvitation(creation)
             portfolio = obj.portfolio
@@ -1499,19 +1503,23 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             ).exists()
             try:
                 if not requested_user or not permission_exists:
+                    # if requested user does not exist or permission does not exist, send email
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
                     messages.success(request, f"{requested_email} has been invited.")
-                else:
-                    if permission_exists:
-                        messages.warning(request, "User is already a member of this portfolio.")
+                elif permission_exists:
+                    messages.warning(request, "User is already a member of this portfolio.")
             except Exception as e:
+                # when exception is raised, handle and do not save the model
                 self._handle_exceptions(e, request, obj)
                 return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
 
     def _handle_exceptions(self, exception, request, obj):
-        """Handle exceptions raised during the process."""
+        """Handle exceptions raised during the process.
+
+        Log warnings / errors, and message errors to the user.
+        """
         if isinstance(exception, EmailSendingError):
             logger.warning(
                 "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
@@ -1534,7 +1542,10 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
 
     def response_add(self, request, obj, post_url_continue=None):
         """
-        Override response_add to handle redirection when exceptions are raised.
+        Override response_add to handle rendering when exceptions are raised during add model.
+
+        Normal flow on successful save_model on add is to redirect to changelist_view.
+        If there are errors, flow is modified to instead render change form.
         """
         # Check if there are any error or warning messages in the `messages` framework
         storage = get_messages(request)
@@ -1576,7 +1587,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
                 "obj": obj,
                 "adminform": admin_form,  # Pass the AdminForm instance
                 "media": media,
-                "errors": None,  # You can use this to pass custom form errors
+                "errors": None,
             }
             return self.render_change_form(
                 request,
