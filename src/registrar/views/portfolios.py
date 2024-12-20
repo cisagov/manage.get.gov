@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -143,7 +144,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioMemberForm
 
     def get(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
@@ -163,17 +164,12 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         user = portfolio_permission.user
+
         form = self.form_class(request.POST, instance=portfolio_permission)
+
         if form.is_valid():
-            # Check if user is removing their own admin or edit role
-            removing_admin_role_on_self = (
-                request.user == user
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in form.cleaned_data.get("role", [])
-            )
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("member", pk=pk) if not removing_admin_role_on_self else redirect("home")
+            return redirect("member", pk=pk)
 
         return render(
             request,
@@ -282,7 +278,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioInvitedMemberForm
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
@@ -302,7 +298,6 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
         form = self.form_class(request.POST, instance=portfolio_invitation)
         if form.is_valid():
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
             return redirect("invitedmember", pk=pk)
 
         return render(
