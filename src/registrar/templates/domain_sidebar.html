@@ -80,7 +80,7 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain managers" %}
       {% endwith %}
       
-      {% if has_domain_renewal_flag and is_domain_manager %}
+      {% if has_domain_renewal_flag and is_domain_manager and domain.is_expiring %}
         {% with url_name="domain-renewal" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
         {% endwith %}
