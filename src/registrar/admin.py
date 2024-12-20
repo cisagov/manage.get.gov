@@ -2012,7 +2012,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def converted_organization_name(self, obj):
         # Example: Show different icons based on `status`
         if obj.portfolio:
-            url = reverse("admin:registrar_portfolio_changelist") + f"{obj.portfolio.id}"
+            url = reverse("admin:registrar_portfolio_change", args=[obj.portfolio.id])
             text = obj.converted_organization_name
             return format_html('<a href="{}">{}</a>', url, text)
         else:
