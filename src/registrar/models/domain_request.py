@@ -673,6 +673,16 @@ class DomainRequest(TimeStampedModel):
         self._cache_status_and_status_reasons()
 
     def clean(self):
+        """
+        Validates suborganization-related fields in two scenarios:
+        1. New suborganization request: Prevents duplicate names within same portfolio
+        2. Partial suborganization data: Enforces a all-or-nothing rule for city/state/name fields
+        when portfolio exists without selected suborganization
+
+        Add new domain request validation rules here to ensure they're 
+        enforced during both model save and form submission.
+        Not presently used on the domain request wizard, though. 
+        """
         super().clean()
         # Validation logic for a suborganization request
         if self.is_requesting_new_suborganization():
