@@ -14,6 +14,8 @@ from .domain import Domain
 from .domain_request import DomainRequest
 from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
+from django.utils import timezone
+from datetime import timedelta
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -166,12 +168,18 @@ class User(AbstractUser):
     def get_num_expiring_domains(self, request):
         """Return number of expiring domains"""
         domain_ids = self.get_user_domain_ids(request)
-        domains = Domain.objects.filter(id__in=domain_ids)
-        how_many_expiring_domains = 0
-        for domain in domains:
-            if domain.is_expiring():
-                how_many_expiring_domains += 1
-        return how_many_expiring_domains
+        now = timezone.now().date()
+        expiration_window=60
+        threshold_date = now + timedelta(days=expiration_window)
+        num_of_expiring_domains= Domain.objects.filter(
+            id__in=domain_ids,
+            expiration_date__isnull=False,
+            expiration_date__lte=threshold_date,
+            expiration_date__gt=now
+            ).count()
+        print(num_of_expiring_domains)
+        return num_of_expiring_domains
+
 
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""
