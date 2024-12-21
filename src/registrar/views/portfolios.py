@@ -594,5 +594,5 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
                 exc_info=True,
             )
         else:
-            logger.warning("Could not send email invitation (Other Exception)", portfolio, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
