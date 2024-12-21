@@ -151,6 +151,27 @@ class UserFixture:
             "email": "skey@truss.works",
             "title": "Designer",
         },
+        {
+            "username": "f20b7a53-f40d-48f8-8c12-f42f35eede92",
+            "first_name": "Kimberly",
+            "last_name": "Aralar",
+            "email": "kimberly.aralar@gsa.gov",
+            "title": "Designer",
+        },
+        {
+            "username": "4aa78480-6272-42f9-ac29-a034ebdd9231",
+            "first_name": "Kaitlin",
+            "last_name": "Abbitt",
+            "email": "kaitlin.abbitt@cisa.dhs.gov",
+            "title": "Product Manager",
+        },
+        {
+            "username": "5e54fd98-6c11-4cb3-82b6-93ed8be50a61",
+            "first_name": "Gina",
+            "last_name": "Summers",
+            "email": "gina.summers@ecstech.com",
+            "title": "Scrum Master",
+        },
     ]
 
     STAFF = [
@@ -256,6 +277,18 @@ class UserFixture:
             "first_name": "Samiyah-Analyst",
             "last_name": "Key-Analyst",
             "email": "skey+1@truss.works",
+        },
+        {
+            "username": "cf2b32fe-280d-4bc0-96c2-99eec09ba4da",
+            "first_name": "Kimberly-Analyst",
+            "last_name": "Aralar-Analyst",
+            "email": "kimberly.aralar+1@gsa.gov",
+        },
+        {
+            "username": "80db923e-ac64-4128-9b6f-e54b2174a09b",
+            "first_name": "Kaitlin-Analyst",
+            "last_name": "Abbitt-Analyst",
+            "email": "kaitlin.abbitt@gwe.cisa.dhs.gov",
         },
     ]
 
