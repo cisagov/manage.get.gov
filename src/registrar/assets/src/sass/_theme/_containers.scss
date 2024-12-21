@@ -6,3 +6,20 @@
 .usa-identifier__container--widescreen {
     max-width: $widescreen-max-width !important;
 }
+
+
+// NOTE: !important is used because _font.scss overrides this
+@media (min-width: 64em) {
+    .grid-container--widescreen {
+      padding-left: $widescreen-left-padding !important;
+      padding-right: $widescreen-right-padding !important;
+    }
+}
+
+// matches max-width to equal the max-width of .grid-container
+// used to trick the eye into thinking we have left-aligned a 
+// regular grid-container within a widescreen (see instances
+// where is_widescreen_centered is used in the html).
+.max-width--grid-container {
+  max-width: 64rem;
+}
