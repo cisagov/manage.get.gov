@@ -20,7 +20,6 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
-from registrar.utility.email_invitations import send_portfolio_invitation_email
 from registrar.utility.errors import MissingEmailError
 from .common import MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
@@ -2585,7 +2584,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             )
 
             # Ensure the final submission is successful
-            self.assertEqual(final_response.status_code, 302) # Redirects
+            self.assertEqual(final_response.status_code, 302)  # Redirects
 
             # Validate Database Changes
             portfolio_invite = PortfolioInvitation.objects.filter(
@@ -2611,7 +2610,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         mock_client_class = MagicMock()
         mock_client = mock_client_class.return_value
-        
+
         with boto3_mocking.clients.handler_for("sesv2", mock_client_class):
             # Simulate submission of member invite for new user
             final_response = self.client.post(
@@ -2635,7 +2634,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "Portfolio invitation should not be created when an Exception occurs."
+                "Portfolio invitation should not be created when an Exception occurs.",
             )
 
             # Check that an email was not sent
@@ -2671,7 +2670,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         json_response = response.json()
         self.assertIn("is_valid", json_response)
         self.assertFalse(json_response["is_valid"])
-        
+
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
@@ -2686,9 +2685,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def test_submit_new_member_raises_email_sending_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises EmailSendingError."""
         mock_send_email.side_effect = EmailSendingError("Failed to send email.")
-        
+
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2698,11 +2697,11 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
             "email": self.new_member_email,
         }
-        
+
         # Act
         with patch("django.contrib.messages.warning") as mock_warning:
             response = self.client.post(reverse("new-member"), data=form_data)
-        
+
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
@@ -2711,13 +2710,11 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(
-                response.wsgi_request, "Could not send email invitation."
-            )
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "Portfolio invitation should not be created when an EmailSendingError occurs."
+                "Portfolio invitation should not be created when an EmailSendingError occurs.",
             )
 
     @less_console_noise_decorator
@@ -2727,9 +2724,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises MissingEmailError."""
         mock_send_email.side_effect = MissingEmailError(self.user.username)
-        
+
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2739,11 +2736,11 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
             "email": self.new_member_email,
         }
-        
+
         # Act
         with patch("django.contrib.messages.error") as mock_error:
             response = self.client.post(reverse("new-member"), data=form_data)
-        
+
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
@@ -2753,12 +2750,13 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
             mock_error.assert_called_once_with(
-                response.wsgi_request, "Can't send invitation email. No email is associated with the account for 'test_user'."
+                response.wsgi_request,
+                "Can't send invitation email. No email is associated with the account for 'test_user'.",
             )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "Portfolio invitation should not be created when a MissingEmailError occurs."
+                "Portfolio invitation should not be created when a MissingEmailError occurs.",
             )
 
     @less_console_noise_decorator
@@ -2768,9 +2766,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     def test_submit_new_member_raises_exception(self, mock_send_email):
         """Test when adding a new member and email_send method raises Exception."""
         mock_send_email.side_effect = Exception("Generic exception")
-        
+
         self.client.force_login(self.user)
-        
+
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2780,11 +2778,11 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
             "email": self.new_member_email,
         }
-        
+
         # Act
         with patch("django.contrib.messages.warning") as mock_warning:
             response = self.client.post(reverse("new-member"), data=form_data)
-        
+
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
@@ -2793,14 +2791,12 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(
-                response.wsgi_request, "Could not send email invitation."
-            )
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "Portfolio invitation should not be created when an Exception occurs."
-            )        
+                "Portfolio invitation should not be created when an Exception occurs.",
+            )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2828,7 +2824,14 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 200)
 
         # verify messages
-        self.assertContains(response, "This user is already assigned to a portfolio invitation. Based on current waffle flag settings, users cannot be assigned to multiple portfolios.")
+        self.assertContains(
+            response,
+            (
+                "This user is already assigned to a portfolio invitation. "
+                "Based on current waffle flag settings, users cannot be assigned "
+                "to multiple portfolios."
+            ),
+        )
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
@@ -2863,7 +2866,14 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Verify messages
-        self.assertContains(response, "This user is already assigned to a portfolio. Based on current waffle flag settings, users cannot be assigned to multiple portfolios.")
+        self.assertContains(
+            response,
+            (
+                "This user is already assigned to a portfolio. "
+                "Based on current waffle flag settings, users cannot be "
+                "assigned to multiple portfolios."
+            ),
+        )
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
@@ -3013,9 +3023,11 @@ class TestEditPortfolioMemberView(WebTest):
     @override_flag("organization_members", active=True)
     def test_admin_removing_own_admin_role(self):
         """Tests an admin removing their own admin role redirects to home.
-        
+
         Removing the admin role will remove both view and edit members permissions.
-        Note: The user can remove the edit members permissions but as long as they stay in admin role, they will at least still have view members permissions."""
+        Note: The user can remove the edit members permissions but as long as they
+        stay in admin role, they will at least still have view members permissions.
+        """
 
         self.client.force_login(self.user)
 

@@ -710,7 +710,6 @@ class TestPortfolioInvitationAdmin(TestCase):
     #     self.assertContains(response, "Simulated error message", msg_prefix="Expected error message not found.")
 
 
-
 class TestHostAdmin(TestCase):
     """Tests for the HostAdmin class as super user
 

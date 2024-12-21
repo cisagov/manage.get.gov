@@ -1333,13 +1333,13 @@ class DomainAddUserView(DomainFormBaseView):
         elif isinstance(exception, IntegrityError):
             messages.warning(self.request, f"{email} is already a manager for this domain")
         else:
-            logger.warning("Could not send email invitation (Other Exception)", self.object, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
 
     def _handle_portfolio_exceptions(self, exception, email, portfolio):
         """Handle exceptions raised during the process."""
         if isinstance(exception, EmailSendingError):
-            logger.warning("Could not send email invitation (EmailSendingError)", portfolio, exc_info=True)
+            logger.warning("Could not send email invitation (EmailSendingError)", exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
@@ -1348,7 +1348,7 @@ class DomainAddUserView(DomainFormBaseView):
                 exc_info=True,
             )
         else:
-            logger.warning("Could not send email invitation (Other Exception)", portfolio, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send email invitation.")
 
 

@@ -18,7 +18,11 @@ from registrar.forms.domain_request_wizard import (
     AboutYourOrganizationForm,
 )
 from registrar.forms.domain import ContactForm
-from registrar.forms.portfolio import BasePortfolioMemberForm, PortfolioInvitedMemberForm, PortfolioMemberForm, PortfolioNewMemberForm
+from registrar.forms.portfolio import (
+    PortfolioInvitedMemberForm,
+    PortfolioMemberForm,
+    PortfolioNewMemberForm,
+)
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -423,7 +427,9 @@ class TestBasePortfolioMemberForms(TestCase):
     def setUp(self):
         super().setUp()
         self.user = create_user()
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator_id=self.user.id, organization_name="Hotel California")
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            creator_id=self.user.id, organization_name="Hotel California"
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -433,10 +439,10 @@ class TestBasePortfolioMemberForms(TestCase):
         User.objects.all().delete()
 
     def _assert_form_is_valid(self, form_class, data, instance=None):
-        if instance != None:
+        if instance is not None:
             form = form_class(data=data, instance=instance)
         else:
-            print('no instance')
+            print("no instance")
             form = form_class(data=data)
         self.assertTrue(form.is_valid(), f"Form {form_class.__name__} failed validation with data: {data}")
         return form
@@ -491,13 +497,15 @@ class TestBasePortfolioMemberForms(TestCase):
 
     def test_clean_validates_required_fields_for_role(self):
         """Test that the `clean` method validates the correct fields for each role.
-        
+
         For PortfolioMemberForm and PortfolioInvitedMemberForm, we pass an object as the instance to the form.
         For UserPortfolioPermissionChoices, we add a portfolio and an email to the POST data.
-        
+
         These things are handled in the views."""
 
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=self.user)
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=self.user
+        )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
 
         data = {
@@ -519,7 +527,7 @@ class TestBasePortfolioMemberForms(TestCase):
 
         data = {
             "email": "hi@ho.com",
-            "portfolio": self.portfolio.id, 
+            "portfolio": self.portfolio.id,
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
             "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
             "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS.value,
@@ -534,7 +542,9 @@ class TestBasePortfolioMemberForms(TestCase):
         """Test that the clean method correctly handles the special "no_access" value for members.
         We'll need to add a portfolio, which in the app is handled by the view post."""
 
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=self.user)
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=self.user
+        )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
 
         data = {
@@ -550,7 +560,6 @@ class TestBasePortfolioMemberForms(TestCase):
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["domain_request_permission_member"], None)
 
-
     def test_map_instance_to_initial_admin_role(self):
         """Test that instance data is correctly mapped to the initial form values for an admin role."""
         user_portfolio_permission = UserPortfolioPermission(
@@ -558,7 +567,7 @@ class TestBasePortfolioMemberForms(TestCase):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
         )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-            portfolio=self.portfolio, 
+            portfolio=self.portfolio,
             email="hi@ho",
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
@@ -579,7 +588,7 @@ class TestBasePortfolioMemberForms(TestCase):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-            portfolio=self.portfolio, 
+            portfolio=self.portfolio,
             email="hi@ho",
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
@@ -595,7 +604,7 @@ class TestBasePortfolioMemberForms(TestCase):
         """Test invalid form submission for an admin role with missing permissions."""
         data = {
             "email": "hi@ho.com",
-            "portfolio": self.portfolio.id, 
+            "portfolio": self.portfolio.id,
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
             "domain_request_permission_admin": "",  # Missing field
             "member_permission_admin": "",  # Missing field

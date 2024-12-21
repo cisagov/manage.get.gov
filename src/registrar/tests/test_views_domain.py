@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, ANY, patch
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -454,6 +456,7 @@ class TestDomainManagers(TestDomainOverview):
 
     def tearDown(self):
         """Ensure that the user has its original permissions"""
+        PortfolioInvitation.objects.all().delete()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -486,7 +489,7 @@ class TestDomainManagers(TestDomainOverview):
     @less_console_noise_decorator
     def test_domain_user_add_form(self):
         """Adding an existing user works."""
-        other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -508,6 +511,148 @@ class TestDomainManagers(TestDomainOverview):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation(self, mock_send_domain_email, mock_send_portfolio_email):
+        """Adding an existing user works and sends portfolio invitation when
+        user is not member of portfolio."""
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "mayor@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domain"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that the PortfolioInvitation is created
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
+        self.assertEqual(portfolio_invitation.email, "mayor@igorville.gov")
+        self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_doesnt_send_portfolio_invitation_if_already_member(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an existing user works and sends portfolio invitation when
+        user is not member of portfolio."""
+        other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        UserPortfolioPermission.objects.get_or_create(
+            user=other_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_not_called()
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "mayor@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domain"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that no PortfolioInvitation is created
+        portfolio_invitation_exists = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(
+            portfolio_invitation_exists, "Portfolio invitation should not be created when the user is already a member."
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation_raises_email_sending_error(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an existing user works and attempts to send portfolio invitation when
+        user is not member of portfolio and send raises an error."""
+        mock_send_portfolio_email.side_effect = EmailSendingError("Failed to send email.")
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_not_called()
+
+        # Assert that no PortfolioInvitation is created
+        portfolio_invitation_exists = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(
+            portfolio_invitation_exists, "Portfolio invitation should not be created when email fails to send."
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "Could not send email invitation.")
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -757,7 +902,9 @@ class TestDomainManagers(TestDomainOverview):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
 
-            expected_message_content = f"Can't send invitation email. No email is associated with the account for 'test_user'."
+            expected_message_content = (
+                "Can't send invitation email. No email is associated with the account for 'test_user'."
+            )
 
             # Assert that the error message was called with the correct argument
             mock_error.assert_called_once_with(
