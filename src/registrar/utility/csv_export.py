@@ -417,7 +417,7 @@ class MemberExport(BaseExport):
         # Adding a order_by increases output predictability.
         # Doesn't matter as much for normal use, but makes tests easier.
         # We should also just be ordering by default anyway.
-        members = permissions.union(invitations).order_by("email_display")
+        members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
         return convert_queryset_to_dict(members, is_model=False)
 
     @classmethod
