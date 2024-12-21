@@ -18,7 +18,13 @@ from registrar.forms.domain_request_wizard import (
     AboutYourOrganizationForm,
 )
 from registrar.forms.domain import ContactForm
-from registrar.tests.common import MockEppLib
+from registrar.forms.portfolio import BasePortfolioMemberForm, PortfolioInvitedMemberForm, PortfolioMemberForm, PortfolioNewMemberForm
+from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user import User
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.tests.common import MockEppLib, create_user
 from django.contrib.auth import get_user_model
 
 
@@ -408,3 +414,191 @@ class TestContactForm(TestCase):
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
         self.assertEqual(form.errors["email"], ["Enter a valid email address."])
+
+
+class TestBasePortfolioMemberForms(TestCase):
+    """We test on the child forms instead of BasePortfolioMemberForm becasue the base form
+    is a model form with no model bound."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = create_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator_id=self.user.id, organization_name="Hotel California")
+
+    def tearDown(self):
+        super().tearDown()
+        Portfolio.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        User.objects.all().delete()
+
+    def _assert_form_is_valid(self, form_class, data, instance=None):
+        if instance != None:
+            form = form_class(data=data, instance=instance)
+        else:
+            print('no instance')
+            form = form_class(data=data)
+        self.assertTrue(form.is_valid(), f"Form {form_class.__name__} failed validation with data: {data}")
+        return form
+
+    def _assert_form_has_error(self, form_class, data, field_name):
+        form = form_class(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(field_name, form.errors)
+
+    def _assert_initial_data(self, form_class, instance, expected_initial_data):
+        """Helper to check if the instance data is correctly mapped to the initial form values."""
+        form = form_class(instance=instance)
+        for field, expected_value in expected_initial_data.items():
+            self.assertEqual(form.initial[field], expected_value)
+
+    def _assert_permission_mapping(self, form_class, data, expected_permissions):
+        """Helper to check if permissions are correctly handled and mapped."""
+        form = self._assert_form_is_valid(form_class, data)
+        cleaned_data = form.cleaned_data
+        for permission in expected_permissions:
+            self.assertIn(permission, cleaned_data["additional_permissions"])
+
+    def test_required_field_for_admin(self):
+        """Test that required fields are validated for an admin role."""
+        data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
+            "domain_request_permission_admin": "",  # Simulate missing field
+            "member_permission_admin": "",  # Simulate missing field
+        }
+
+        # Check required fields for all forms
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_admin")
+        self._assert_form_has_error(PortfolioMemberForm, data, "member_permission_admin")
+
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permission_admin")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permission_admin")
+
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permission_admin")
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "member_permission_admin")
+
+    def test_required_field_for_member(self):
+        """Test that required fields are validated for a member role."""
+        data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permission_member": "",  # Simulate missing field
+        }
+
+        # Check required fields for all forms
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_member")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permission_member")
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permission_member")
+
+    def test_clean_validates_required_fields_for_role(self):
+        """Test that the `clean` method validates the correct fields for each role.
+        
+        For PortfolioMemberForm and PortfolioInvitedMemberForm, we pass an object as the instance to the form.
+        For UserPortfolioPermissionChoices, we add a portfolio and an email to the POST data.
+        
+        These things are handled in the views."""
+
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=self.user)
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
+
+        data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
+            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS.value,
+        }
+
+        # Check form validity for all forms
+        form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
+        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
+
+        form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
+        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
+
+        data = {
+            "email": "hi@ho.com",
+            "portfolio": self.portfolio.id, 
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
+            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS.value,
+        }
+
+        form = self._assert_form_is_valid(PortfolioNewMemberForm, data)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
+        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
+
+    def test_clean_member_permission_edgecase(self):
+        """Test that the clean method correctly handles the special "no_access" value for members.
+        We'll need to add a portfolio, which in the app is handled by the view post."""
+
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=self.portfolio, user=self.user)
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
+
+        data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permission_member": "no_access",  # Simulate no access permission
+        }
+
+        form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["domain_request_permission_member"], None)
+
+        form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["domain_request_permission_member"], None)
+
+
+    def test_map_instance_to_initial_admin_role(self):
+        """Test that instance data is correctly mapped to the initial form values for an admin role."""
+        user_portfolio_permission = UserPortfolioPermission(
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+            portfolio=self.portfolio, 
+            email="hi@ho",
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+
+        expected_initial_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            "member_permission_admin": UserPortfolioPermissionChoices.VIEW_MEMBERS,
+        }
+        self._assert_initial_data(PortfolioMemberForm, user_portfolio_permission, expected_initial_data)
+        self._assert_initial_data(PortfolioInvitedMemberForm, portfolio_invitation, expected_initial_data)
+
+    def test_map_instance_to_initial_member_role(self):
+        """Test that instance data is correctly mapped to the initial form values for a member role."""
+        user_portfolio_permission = UserPortfolioPermission(
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+            portfolio=self.portfolio, 
+            email="hi@ho",
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+        )
+        expected_initial_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+        }
+        self._assert_initial_data(PortfolioMemberForm, user_portfolio_permission, expected_initial_data)
+        self._assert_initial_data(PortfolioInvitedMemberForm, portfolio_invitation, expected_initial_data)
+
+    def test_invalid_data_for_admin(self):
+        """Test invalid form submission for an admin role with missing permissions."""
+        data = {
+            "email": "hi@ho.com",
+            "portfolio": self.portfolio.id, 
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
+            "domain_request_permission_admin": "",  # Missing field
+            "member_permission_admin": "",  # Missing field
+        }
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_admin")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permission_admin")

@@ -2,6 +2,8 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from registrar.utility.email import EmailSendingError
+from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
@@ -277,6 +279,29 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Should return the forbidden permissions for member role
         self.assertEqual(member_only_permissions, set(member_forbidden))
 
+    @less_console_noise_decorator
+    def test_has_change_form_description(self):
+        """Tests if this model has a model description on the change form view"""
+        self.client.force_login(self.superuser)
+
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        response = self.client.get(
+            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response,
+            "If you add someone to a portfolio here, it will not trigger an invitation email.",
+        )
+
 
 class TestPortfolioInvitationAdmin(TestCase):
     """Tests for the PortfolioInvitationAdmin class as super user
@@ -432,6 +457,30 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
         self.assertContains(response, "Show more")
 
+    @less_console_noise_decorator
+    def test_has_change_form_description(self):
+        """Tests if this model has a model description on the change form view"""
+        self.client.force_login(self.superuser)
+
+        invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email=self.superuser.email, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        response = self.client.get(
+            "/admin/registrar/portfolioinvitation/{}/change/".format(invitation.pk),
+            follow=True,
+        )
+
+        # Make sure that the page is loaded correctly
+        self.assertEqual(response.status_code, 200)
+
+        # Test for a description snippet
+        self.assertContains(
+            response,
+            "If you add someone to a portfolio here, it will trigger an invitation email when you click",
+        )
+
+    @less_console_noise_decorator
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
         with less_console_noise():
@@ -455,6 +504,211 @@ class TestPortfolioInvitationAdmin(TestCase):
 
             self.assertContains(response, invited_html, count=1)
             self.assertContains(response, retrieved_html, count=1)
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
+    def test_save_sends_email(self, mock_messages_warning, mock_send_email):
+        """On save_model, an email is NOT sent if an invitation already exists."""
+        self.client.force_login(self.superuser)
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_called()
+
+        # Get the arguments passed to send_portfolio_invitation_email
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert that a warning message was triggered
+        mock_messages_warning.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
+    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_warning, mock_send_email):
+        """On save_model, an email is NOT sent if an the requested email belongs to an existing user.
+        It also throws a warning."""
+        self.client.force_login(self.superuser)
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Mock the UserPortfolioPermission query to simulate the invitation already existing
+        existing_user = create_user()
+        UserPortfolioPermission.objects.create(user=existing_user, portfolio=self.portfolio)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email=existing_user.email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
+
+        # Assert that a warning message was triggered
+        mock_messages_warning.assert_called_once_with(request, "User is already a member of this portfolio.")
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.error")  # Mock the `messages.error` call
+    def test_save_exception_email_sending_error(self, mock_messages_error, mock_send_email):
+        """Handle EmailSendingError correctly when sending the portfolio invitation fails."""
+        self.client.force_login(self.superuser)
+
+        # Mock the email sending function to raise EmailSendingError
+        mock_send_email.side_effect = EmailSendingError("Email service unavailable")
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that messages.error was called with the correct message
+        mock_messages_error.assert_called_once_with(
+            request, "Could not send email invitation. Portfolio invitation not saved."
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.error")  # Mock the `messages.error` call
+    def test_save_exception_missing_email_error(self, mock_messages_error, mock_send_email):
+        """Handle MissingEmailError correctly when no email exists for the requestor."""
+        self.client.force_login(self.superuser)
+
+        # Mock the email sending function to raise MissingEmailError
+        mock_send_email.side_effect = MissingEmailError("Email-less Rachid")
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that messages.error was called with the correct message
+        mock_messages_error.assert_called_once_with(
+            request,
+            "Can't send invitation email. No email is associated with the account for 'Email-less Rachid'.",
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.error")  # Mock the `messages.error` call
+    def test_save_exception_generic_error(self, mock_messages_error, mock_send_email):
+        """Handle generic exceptions correctly during portfolio invitation."""
+        self.client.force_login(self.superuser)
+
+        # Mock the email sending function to raise a generic exception
+        mock_send_email.side_effect = Exception("Unexpected error")
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that messages.error was called with the correct message
+        mock_messages_error.assert_called_once_with(
+            request, "Could not send email invitation. Portfolio invitation not saved."
+        )
+
+    # @patch("django.contrib.messages.get_messages")
+    # def test_form_rerenders_if_errors_or_warnings(self, mock_get_messages):
+    #     """Ensure the form is re-rendered when errors or warnings are present."""
+    #     self.client.force_login(self.superuser)
+
+    #     # Mock the presence of an error message
+    #     mock_message = Mock()
+    #     mock_message.level_tag = "error"
+    #     mock_message.message = "Simulated error message"
+    #     mock_get_messages.return_value = [mock_message]
+
+    #     # Create an instance of the admin class
+    #     admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=AdminSite())
+
+    #     # Create a PortfolioInvitation instance
+    #     portfolio_invitation = PortfolioInvitation(
+    #         email="james.gordon@gotham.gov",
+    #         portfolio=self.portfolio,
+    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+    #     )
+
+    #     # Create a request object
+    #     request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+    #     request.user = self.superuser
+
+    #     # Trigger response_add
+    #     response = admin_instance.response_add(request, portfolio_invitation)
+
+    #     # Assert that the response status code is 200 (indicating the form was re-rendered)
+    #     self.assertEqual(response.status_code, 200, msg="Expected form to re-render due to errors.")
+
+    #     # Assert that the mocked error message is included in the response
+    #     self.assertContains(response, "Simulated error message", msg_prefix="Expected error message not found.")
+
 
 
 class TestHostAdmin(TestCase):

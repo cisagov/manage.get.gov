@@ -1492,7 +1492,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         Emails sent to requested user / email.
         When exceptions are raised, return without saving model.
         """
-        if not change:  # Only send email if this is a new PortfolioInvitation(creation)
+        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
@@ -1537,7 +1537,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             )
 
         else:
-            logger.warning("Could not send email invitation (Other Exception)", obj.portfolio, exc_info=True)
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
 
     def response_add(self, request, obj, post_url_continue=None):
