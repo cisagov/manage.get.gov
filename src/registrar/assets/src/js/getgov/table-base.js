@@ -495,7 +495,8 @@ export class BaseTable {
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
     this.tableHeaders.forEach(header => {
-      header.addEventListener('click', () => {
+      header.addEventListener('click', event => {
+        let button = header.querySelector('.usa-table__header__button')
         const sortBy = header.getAttribute('data-sortable');
         let order = 'asc';
         // sort order will be ascending, unless the currently sorted column is ascending, and the user
@@ -505,6 +506,13 @@ export class BaseTable {
         }
         // load the results with the updated sort
         this.loadTable(1, sortBy, order);
+        // If the click occurs outside of the button, need to simulate a button click in order
+        // for USWDS listener on the button to execute.
+        // Check first to see if click occurs outside of the button
+        if (!button.contains(event.target)) {
+            // Simulate a button click
+            button.click();
+        }
       });
     });
   }
