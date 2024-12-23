@@ -1644,6 +1644,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "alternative_domains",
             "is_election_board",
             "status_history",
+            "reject_suborganization_button",
             "id",
             "created_at",
             "updated_at",
@@ -1718,6 +1719,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
+                "reject_suborganization_button",
                 "federal_agency",
                 "creator",
                 "about_your_organization",
@@ -1761,6 +1763,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
+                "reject_suborganization_button",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

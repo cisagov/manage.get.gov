@@ -17,6 +17,7 @@ from registrar.models import Contact, DomainRequest, DraftDomain, Domain, Federa
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,20 @@ class RequestingEntityForm(RegistrarForm):
         # Otherwise just return the suborg as normal
         return self.cleaned_data.get("sub_organization")
 
+    def clean_requested_suborganization(self):
+        name = self.cleaned_data.get("requested_suborganization")
+        if (
+            name
+            and Suborganization.objects.filter(
+                name__iexact=name, portfolio=self.domain_request.portfolio, name__isnull=False, portfolio__isnull=False
+            ).exists()
+        ):
+            raise ValidationError(
+                "This suborganization already exists. "
+                "Choose a new name, or select it directly if you would like to use it."
+            )
+        return name
+
     def full_clean(self):
         """Validation logic to remove the custom suborganization value before clean is triggered.
         Without this override, the form will throw an 'invalid option' error."""
@@ -114,7 +129,7 @@ class RequestingEntityForm(RegistrarForm):
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields
-                if not cleaned_data.get("requested_suborganization"):
+                if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
                     self.add_error("requested_suborganization", "Enter the name of your suborganization.")
                 if not cleaned_data.get("suborganization_city"):
                     self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
