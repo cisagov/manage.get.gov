@@ -88,16 +88,14 @@ th {
   }
 
   @include at-media(tablet-lg) {
-    th[data-sortable]:not([aria-sort]) .usa-table__header__button {
+    th[data-sortable] .usa-table__header__button {
       right: auto;
-    }
-
-    th[data-sortable][aria-sort=ascending] .usa-table__header__button {
-      right: auto;
-    }
-
-    th[data-sortable][aria-sort=descending] .usa-table__header__button {
-      right: auto;
+  
+      &[aria-sort=ascending],
+      &[aria-sort=descending],
+      &:not([aria-sort]) {
+        right: auto;
+      }
     }
   }
 }
