@@ -2,15 +2,25 @@
   class="{% if label_classes %} {{ label_classes }}{% endif %}{% if label_tag == 'legend' %} {{ legend_classes }}{% endif %}"
   {% if not field.use_fieldset %}for="{{ widget.attrs.id }}"{% endif %}
 >
-  {% if span_for_text %}
-    <span>{{ field.label }}</span>
+  {% if legend_heading %}
+    <h2 class="{{ legend_classes }}">{{ legend_heading }} </h2>
+    {% if widget.attrs.id == 'id_additional_details-has_cisa_representative' %}
+      <p>.gov is managed by the Cybersecurity and Infrastructure Security Agency. CISA has <a href="https://www.cisa.gov/about/regions" target="_blank">10 regions</a> that some organizations choose to work with. Regional representatives use titles like protective security advisors, cyber security advisors, or election security advisors.</p>
+    {% endif %}
   {% else %}
-    {{ field.label }}
+    {% if span_for_text %}
+      <span>{{ field.label }}</span>
+    {% else %}
+      {{ field.label }}
+    {% endif %}
   {% endif %}
 
   {% if widget.attrs.required %}
-  <!--Don't add asterisk to one-field forms -->
-    {% if field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." %}
+
+    {% if field.widget_type == 'radioselect' %}
+      <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+    <!--Don't add asterisk to one-field forms -->
+    {% elif field.label == "Is your organization an election office?" or field.label == "What .gov domain do you want?" or field.label == "I read and agree to the requirements for operating a .gov domain." or field.label == "Please explain why there are no other employees from your organization we can contact to help us assess your eligibility for a .gov domain." or field.label == "Has other contacts" %}
     {% else %}
       <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
     {% endif %}
