@@ -5,17 +5,14 @@
 /*----------------
    Alert Layout
 -----------------*/
-// NOTE: !important is used because _font.scss overrides this
-@media (min-width: 64em) {
-  .usa-alert__body--widescreen {
-    max-width: $widescreen-max-width !important;
-  }
-}
-
 
 // The icon was off center for some reason
 // Fixes that issue
 @media (min-width: 64em){
+  // NOTE: !important is used because _font.scss overrides this
+  .usa-alert__body--widescreen {
+    max-width: $widescreen-max-width !important;
+  }
   .usa-alert--warning{
     .usa-alert__body::before {
       left: 1rem !important;
@@ -40,12 +37,8 @@
 // for usa-alert alert elements
 .usa-alert {
   .usa-alert__heading.larger-font-sizing {
-    font-size: units(3);
+    font-size: 1.5rem;
   }
-}
-
-.usa-alert__text.measure-none {
-  max-width: measure(none);
 }
 
 /*----------------

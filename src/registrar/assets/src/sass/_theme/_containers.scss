@@ -8,7 +8,8 @@
 }
 
 
-// NOTE: !important is used because _font.scss overrides this
+// NOTE: !important is used because we are overriding default
+// USWDS paddings in a few locations
 @media (min-width: 64em) {
     .grid-container--widescreen {
       padding-left: $widescreen-left-padding !important;
