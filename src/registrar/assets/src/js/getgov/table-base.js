@@ -495,8 +495,10 @@ export class BaseTable {
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
     this.tableHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const sortBy = header.getAttribute('data-sortable');
+      const sortBy = header.getAttribute('data-sortable');
+      // add event listener to respond to clicks on the button
+      let button = header.querySelector('.usa-table__header__button')
+      button.addEventListener('click', () => {
         let order = 'asc';
         // sort order will be ascending, unless the currently sorted column is ascending, and the user
         // is selecting the same column to sort in descending order
