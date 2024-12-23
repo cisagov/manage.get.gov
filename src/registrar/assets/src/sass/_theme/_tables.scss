@@ -91,5 +91,13 @@ th {
     th[data-sortable]:not([aria-sort]) .usa-table__header__button {
       right: auto;
     }
+
+    th[data-sortable][aria-sort=ascending] .usa-table__header__button {
+      right: auto;
+    }
+
+    th[data-sortable][aria-sort=descending] .usa-table__header__button {
+      right: auto;
+    }
   }
 }
