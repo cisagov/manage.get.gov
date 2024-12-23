@@ -12,7 +12,6 @@ from registrar.models import (
     DomainInformation,
     Portfolio,
     SeniorOfficial,
-    User,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -111,170 +110,7 @@ class PortfolioSeniorOfficialForm(forms.ModelForm):
         return cleaned_data
 
 
-class PortfolioMemberForm(forms.ModelForm):
-    """
-    Form for updating a portfolio member.
-    """
-
-    roles = forms.MultipleChoiceField(
-        choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Roles",
-    )
-
-    additional_permissions = forms.MultipleChoiceField(
-        choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Additional Permissions",
-    )
-
-    class Meta:
-        model = UserPortfolioPermission
-        fields = [
-            "roles",
-            "additional_permissions",
-        ]
-
-
-class PortfolioInvitedMemberForm(forms.ModelForm):
-    """
-    Form for updating a portfolio invited member.
-    """
-
-    roles = forms.MultipleChoiceField(
-        choices=UserPortfolioRoleChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Roles",
-    )
-
-    additional_permissions = forms.MultipleChoiceField(
-        choices=UserPortfolioPermissionChoices.choices,
-        widget=forms.SelectMultiple(attrs={"class": "usa-select"}),
-        required=False,
-        label="Additional Permissions",
-    )
-
-    class Meta:
-        model = PortfolioInvitation
-        fields = [
-            "roles",
-            "additional_permissions",
-        ]
-
-
-class NewMemberForm(forms.ModelForm):
-    member_access_level = forms.ChoiceField(
-        label="Select permission",
-        choices=[("admin", "Admin Access"), ("basic", "Basic Access")],
-        widget=forms.RadioSelect(attrs={"class": "usa-radio__input  usa-radio__input--tile"}),
-        required=True,
-        error_messages={
-            "required": "Member access level is required",
-        },
-    )
-    admin_org_domain_request_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[("view_only", "View all requests"), ("view_and_create", "View all requests plus create requests")],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Admin domain request permission is required",
-        },
-    )
-    admin_org_members_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[("view_only", "View all members"), ("view_and_create", "View all members plus manage members")],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Admin member permission is required",
-        },
-    )
-    basic_org_domain_request_permissions = forms.ChoiceField(
-        label="Select permission",
-        choices=[
-            ("view_only", "View all requests"),
-            ("view_and_create", "View all requests plus create requests"),
-            ("no_access", "No access"),
-        ],
-        widget=forms.RadioSelect,
-        required=True,
-        error_messages={
-            "required": "Basic member permission is required",
-        },
-    )
-
-    email = forms.EmailField(
-        label="Enter the email of the member you'd like to invite",
-        max_length=None,
-        error_messages={
-            "invalid": ("Enter an email address in the required format, like name@example.com."),
-            "required": ("Enter an email address in the required format, like name@example.com."),
-        },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
-        required=True,
-    )
-
-    class Meta:
-        model = User
-        fields = ["email"]
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        # Lowercase the value of the 'email' field
-        email_value = cleaned_data.get("email")
-        if email_value:
-            cleaned_data["email"] = email_value.lower()
-
-        ##########################################
-        # TODO: future ticket
-        # (invite new member)
-        ##########################################
-        # Check for an existing user (if there isn't any, send an invite)
-        # if email_value:
-        #     try:
-        #         existingUser = User.objects.get(email=email_value)
-        #     except User.DoesNotExist:
-        #         raise forms.ValidationError("User with this email does not exist.")
-
-        member_access_level = cleaned_data.get("member_access_level")
-
-        # Intercept the error messages so that we don't validate hidden inputs
-        if not member_access_level:
-            # If no member access level has been selected, delete error messages
-            # for all hidden inputs (which is everything except the e-mail input
-            # and member access selection)
-            for field in self.fields:
-                if field in self.errors and field != "email" and field != "member_access_level":
-                    del self.errors[field]
-            return cleaned_data
-
-        basic_dom_req_error = "basic_org_domain_request_permissions"
-        admin_dom_req_error = "admin_org_domain_request_permissions"
-        admin_member_error = "admin_org_members_permissions"
-
-        if member_access_level == "admin" and basic_dom_req_error in self.errors:
-            # remove the error messages pertaining to basic permission inputs
-            del self.errors[basic_dom_req_error]
-        elif member_access_level == "basic":
-            # remove the error messages pertaining to admin permission inputs
-            if admin_dom_req_error in self.errors:
-                del self.errors[admin_dom_req_error]
-            if admin_member_error in self.errors:
-                del self.errors[admin_member_error]
-        return cleaned_data
-
-
-class BasePortfolioMemberForm(forms.Form):
+class BasePortfolioMemberForm(forms.ModelForm):
     """Base form for the PortfolioMemberForm and PortfolioInvitedMemberForm"""
 
     # The label for each of these has a red "required" star. We can just embed that here for simplicity.
@@ -345,13 +181,18 @@ class BasePortfolioMemberForm(forms.Form):
         ],
     }
 
-    def __init__(self, *args, instance=None, **kwargs):
-        """Initialize self.instance, self.initial, and descriptions under each radio button.
-        Uses map_instance_to_initial to set the initial dictionary."""
+    class Meta:
+        model = None
+        fields = ["roles", "additional_permissions"]
+
+    def __init__(self, *args, **kwargs):
+        """
+        Override the form's initialization.
+
+        Map existing model values to custom form fields.
+        Update field descriptions.
+        """
         super().__init__(*args, **kwargs)
-        if instance:
-            self.instance = instance
-            self.initial = self.map_instance_to_initial(self.instance)
         # Adds a <p> description beneath each role option
         self.fields["role"].descriptions = {
             "organization_admin": UserPortfolioRoleChoices.get_role_description(
@@ -361,17 +202,15 @@ class BasePortfolioMemberForm(forms.Form):
                 UserPortfolioRoleChoices.ORGANIZATION_MEMBER
             ),
         }
-
-    def save(self):
-        """Saves self.instance by grabbing data from self.cleaned_data.
-        Uses map_cleaned_data_to_instance.
-        """
-        self.instance = self.map_cleaned_data_to_instance(self.cleaned_data, self.instance)
-        self.instance.save()
-        return self.instance
+        # Map model instance values to custom form fields
+        if self.instance:
+            self.map_instance_to_initial()
 
     def clean(self):
-        """Validates form data based on selected role and its required fields."""
+        """Validates form data based on selected role and its required fields.
+        Updates roles and additional_permissions in cleaned_data so they can be properly
+        mapped to the model.
+        """
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
 
@@ -389,20 +228,30 @@ class BasePortfolioMemberForm(forms.Form):
         if cleaned_data.get("domain_request_permission_member") == "no_access":
             cleaned_data["domain_request_permission_member"] = None
 
+        # Handle roles
+        cleaned_data["roles"] = [role]
+
+        # Handle additional_permissions
+        valid_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
+        additional_permissions = {cleaned_data.get(field) for field in valid_fields if cleaned_data.get(field)}
+
+        # Handle EDIT permissions (should be accompanied with a view permission)
+        if UserPortfolioPermissionChoices.EDIT_MEMBERS in additional_permissions:
+            additional_permissions.add(UserPortfolioPermissionChoices.VIEW_MEMBERS)
+
+        if UserPortfolioPermissionChoices.EDIT_REQUESTS in additional_permissions:
+            additional_permissions.add(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
+
+        # Only set unique permissions not already defined in the base role
+        role_permissions = UserPortfolioPermission.get_portfolio_permissions(cleaned_data["roles"], [], get_list=False)
+        cleaned_data["additional_permissions"] = list(additional_permissions - role_permissions)
+
         return cleaned_data
 
-    # Explanation of how map_instance_to_initial / map_cleaned_data_to_instance work:
-    # map_instance_to_initial => called on init to set self.initial.
-    # Converts the incoming object (usually PortfolioInvitation or UserPortfolioPermission)
-    # into a dictionary representation for the form to use automatically.
-
-    # map_cleaned_data_to_instance => called on save() to save the instance to the db.
-    # Takes the self.cleaned_data dict, and converts this dict back to the object.
-
-    def map_instance_to_initial(self, instance):
+    def map_instance_to_initial(self):
         """
         Maps self.instance to self.initial, handling roles and permissions.
-        Returns form data dictionary with appropriate permission levels based on user role:
+        Updates self.initial dictionary with appropriate permission levels based on user role:
         {
             "role": "organization_admin" or "organization_member",
             "member_permission_admin": permission level if admin,
@@ -410,12 +259,12 @@ class BasePortfolioMemberForm(forms.Form):
             "domain_request_permission_member": permission level if member
         }
         """
+        if self.initial is None:
+            self.initial = {}
         # Function variables
-        form_data = {}
         perms = UserPortfolioPermission.get_portfolio_permissions(
-            instance.roles, instance.additional_permissions, get_list=False
+            self.instance.roles, self.instance.additional_permissions, get_list=False
         )
-
         # Get the available options for roles, domains, and member.
         roles = [
             UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
@@ -433,49 +282,62 @@ class BasePortfolioMemberForm(forms.Form):
         # Build form data based on role (which options are available).
         # Get which one should be "selected" by assuming that EDIT takes precedence over view,
         # and ADMIN takes precedence over MEMBER.
-        roles = instance.roles or []
+        roles = self.instance.roles or []
         selected_role = next((role for role in roles if role in roles), None)
-        form_data = {"role": selected_role}
+        self.initial["role"] = selected_role
         is_admin = selected_role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN
         if is_admin:
             selected_domain_permission = next((perm for perm in domain_perms if perm in perms), None)
             selected_member_permission = next((perm for perm in member_perms if perm in perms), None)
-            form_data["domain_request_permission_admin"] = selected_domain_permission
-            form_data["member_permission_admin"] = selected_member_permission
+            self.initial["domain_request_permission_admin"] = selected_domain_permission
+            self.initial["member_permission_admin"] = selected_member_permission
         else:
             # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
             selected_domain_permission = next((perm for perm in domain_perms if perm in perms), "no_access")
-            form_data["domain_request_permission_member"] = selected_domain_permission
+            self.initial["domain_request_permission_member"] = selected_domain_permission
 
-        return form_data
 
-    def map_cleaned_data_to_instance(self, cleaned_data, instance):
-        """
-        Maps self.cleaned_data to self.instance, setting roles and permissions.
-        Args:
-            cleaned_data (dict): Cleaned data containing role and permission choices
-            instance: Instance to update
+class PortfolioMemberForm(BasePortfolioMemberForm):
+    """
+    Form for updating a portfolio member.
+    """
 
-        Returns:
-            instance: Updated instance
-        """
-        role = cleaned_data.get("role")
+    class Meta:
+        model = UserPortfolioPermission
+        fields = ["roles", "additional_permissions"]
 
-        # Handle roles
-        instance.roles = [role]
 
-        # Handle additional_permissions
-        valid_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
-        additional_permissions = {cleaned_data.get(field) for field in valid_fields if cleaned_data.get(field)}
+class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
+    """
+    Form for updating a portfolio invited member.
+    """
 
-        # Handle EDIT permissions (should be accompanied with a view permission)
-        if UserPortfolioPermissionChoices.EDIT_MEMBERS in additional_permissions:
-            additional_permissions.add(UserPortfolioPermissionChoices.VIEW_MEMBERS)
+    class Meta:
+        model = PortfolioInvitation
+        fields = ["roles", "additional_permissions"]
 
-        if UserPortfolioPermissionChoices.EDIT_REQUESTS in additional_permissions:
-            additional_permissions.add(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
 
-        # Only set unique permissions not already defined in the base role
-        role_permissions = UserPortfolioPermission.get_portfolio_permissions(instance.roles, [], get_list=False)
-        instance.additional_permissions = list(additional_permissions - role_permissions)
-        return instance
+class PortfolioNewMemberForm(BasePortfolioMemberForm):
+    """
+    Form for adding a portfolio invited member.
+    """
+
+    email = forms.EmailField(
+        label="Enter the email of the member you'd like to invite",
+        max_length=None,
+        error_messages={
+            "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "required": ("Enter an email address in the required format, like name@example.com."),
+        },
+        validators=[
+            MaxLengthValidator(
+                320,
+                message="Response must be less than 320 characters.",
+            )
+        ],
+        required=True,
+    )
+
+    class Meta:
+        model = PortfolioInvitation
+        fields = ["portfolio", "email", "roles", "additional_permissions"]
