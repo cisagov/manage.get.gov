@@ -106,13 +106,17 @@
         </div>
       </fieldset>
   </div>    
-  
-  <button
-  type="submit"
-  name="submit_button"
-  value="next"
-  class="usa-button"
-  >Submit</button>
+  <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
+    {% csrf_token %}
+   <button
+    type="submit"
+    name="submit_button"
+    value="next"
+    class="usa-button"
+    method="post"
+    >Submit</button>
+
+  </form>
 
   </div>
 {% endblock %}  {# domain_content #}

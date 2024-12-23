@@ -42,9 +42,11 @@ class DomainFixture(DomainRequestFixture):
 
             # Approve each user associated with `in review` status domains
             cls._approve_domain_requests(users)
+    
 
+    ## to generate expiring domains
     @staticmethod
-    def _generate_fake_expiration_date(days_in_future=365):
+    def _generate_fake_expiration_date(days_in_future=40):
         """Generates a fake expiration date between 1 and 365 days in the future."""
         current_date = timezone.now().date()  # nosec
         return current_date + timedelta(days=random.randint(1, days_in_future))  # nosec

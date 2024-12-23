@@ -359,6 +359,16 @@ class DomainRenewalView(DomainBaseView):
         self.object = self.get_object()
         self._update_session_with_domain()
 
+    def post(self, request,pk):
+        if "submit_button" in request.POST:
+            domain = Domain.objects.filter(id=pk).first()
+            updated_expiration = domain.update_expiration(success=False)
+            if updated_expiration is True:
+                messages.success(request,"This domain has been renewed for one year")
+            else:
+                messages.error(request, "This domain has not been renewed")
+        return HttpResponseRedirect(reverse("domain-renewal",kwargs={'pk':pk}))
+
 
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
@@ -862,7 +872,6 @@ class DomainDNSSECView(DomainFormBaseView):
         # Create HTML for the modal button
         modal_button = (
             '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
             'name="disable_dnssec">Confirm</button>'
         )
 
