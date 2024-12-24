@@ -109,6 +109,10 @@ def apply_sorting(queryset, request):
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
 
+    # Handle special case for 'creator'
+    if sort_by == "creator":
+        sort_by = "creator__email"
+
     if order == "desc":
         sort_by = f"-{sort_by}"
     return queryset.order_by(sort_by)
