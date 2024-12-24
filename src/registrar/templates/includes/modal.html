@@ -1,4 +1,5 @@
 {% load static form_helpers url_helpers %}
+{% load custom_filters %}
 
 <div class="usa-modal__content">
     <div class="usa-modal__main">
@@ -27,7 +28,7 @@
                     {% if cancel_button_only %}
                         <button
                             type="button"
-                            class="usa-button"
+                            class="{{ modal_button_class|button_class }}"
                             data-close-modal
                         >
                         {% if modal_button_text %}
@@ -40,7 +41,7 @@
                         <button
                             id="{{ modal_button_id }}"
                             type="button"
-                            class="usa-button"
+                            class="{{ modal_button_class|button_class }}"
                         >
                             {{ modal_button_text }}
                         </button>
@@ -48,7 +49,7 @@
                         <a
                             href="{{ modal_button_url }}"
                             type="button"
-                            class="usa-button"
+                            class="{{ modal_button_class|button_class }}"
                         >
                             {{ modal_button_text }}
                         </a>
