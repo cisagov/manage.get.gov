@@ -24,8 +24,26 @@
         <div class="usa-modal__footer">
             <ul class="usa-button-group">
                 <li class="usa-button-group__item">
-                    {% if not_form and modal_button %}
-                        {{ modal_button }}
+                    {% if cancel_button_only %}
+                        <button
+                            type="button"
+                            class="usa-button"
+                            data-close-modal
+                        >
+                        {% if modal_button_text %}
+                            {{ modal_button_text }}
+                        {% else %}
+                            Cancel
+                        {% endif %}
+                    </button>
+                    {% elif modal_button_id and modal_button_text %}
+                        <button
+                            id="{{ modal_button_id }}"
+                            type="button"
+                            class="usa-button"
+                        >
+                            {{ modal_button_text }}
+                        </button>
                     {% elif modal_button_url and modal_button_text %}
                         <a
                             href="{{ modal_button_url }}"
@@ -56,7 +74,7 @@
                                 Cancel
                             </button>
                         </form>
-                    {% elif not is_domain_request_form or review_form_is_complete %}
+                    {% elif not cancel_button_only %}
                         <button
                             type="button"
                             class="usa-button usa-button--unstyled padding-105 text-center"
