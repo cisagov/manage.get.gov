@@ -482,14 +482,14 @@ export function handlePortfolioSelection(
             }
 
             // Initially show / hide the clear button only if there is data to clear
-            let requestedSuborganizationField = document.getElementById("id_requested_suborganization");
-            let suborganizationCity = document.getElementById("id_suborganization_city");
-            let suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
-            if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory) {
+            let requestedSuborganizationFieldInput = document.getElementById("id_requested_suborganization");
+            let suborganizationCityInput = document.getElementById("id_suborganization_city");
+            let suborganizationStateTerritoryInput = document.getElementById("id_suborganization_state_territory");
+            if (!requestedSuborganizationFieldInput || !suborganizationCityInput || !suborganizationStateTerritoryInput) {
                 return;
             }
 
-            if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
+            if (requestedSuborganizationFieldInput.value || suborganizationCityInput.value || suborganizationStateTerritoryInput.value) {
                 showElement(rejectSuborganizationButtonFieldset);
             }else {
                 hideElement(rejectSuborganizationButtonFieldset);
