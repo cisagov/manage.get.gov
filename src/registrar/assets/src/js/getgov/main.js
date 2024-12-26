@@ -13,6 +13,7 @@ import { initEditMemberDomainsTable } from './table-edit-member-domains.js';
 import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPageRadio } from './portfolio-member-page.js';
 import { initDomainRequestForm } from './domain-request-form.js';
 import { initDomainManagersPage } from './domain-managers.js';
+import { initDomainDSData } from './domain-dsdata.js';
 
 initDomainValidators();
 
@@ -40,6 +41,7 @@ initEditMemberDomainsTable();
 
 initDomainRequestForm();
 initDomainManagersPage();
+initDomainDSData();
 
 // Init the portfolio new member page
 initPortfolioMemberPageRadio();

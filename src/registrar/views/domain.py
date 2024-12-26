@@ -906,15 +906,6 @@ class DomainDsDataView(DomainFormBaseView):
             # to preserve the context["form"]
             context = super().get_context_data(form=formset)
             context["trigger_modal"] = True
-            # Create HTML for the modal button
-            modal_button = (
-                '<button type="submit" '
-                'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Remove all DS data</button>'
-            )
-
-            # context to back out of a broken form on all fields delete
-            context["modal_button"] = modal_button
             return self.render_to_response(context)
 
         if formset.is_valid() or override:
