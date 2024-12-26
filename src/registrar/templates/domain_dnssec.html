@@ -27,7 +27,7 @@
   {% endif %}
   {% endblock breadcrumb %}
 
-  <h1>DNSSEC</h1>
+  <h1 id="domain-dnssec">DNSSEC</h1>
 
   <p>DNSSEC, or DNS Security Extensions, is an additional security layer to protect your website. Enabling DNSSEC ensures that when someone visits your domain, they can be certain that it’s connecting to the correct server, preventing potential hijacking or tampering with your domain's records.</p>
 
@@ -78,7 +78,11 @@
     aria-labelledby="Are you sure you want to continue?"
     aria-describedby="Your DNSSEC records will be deleted from the registry."
   >
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?" modal_button=modal_button|safe %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?" modal_button_id="disable_dnssec_button" modal_button_text="Confirm" modal_button_class="usa-button--secondary" %}
   </div>
+  <form method="post" id="disable_dnssec_form">
+    {% csrf_token %}
+    <input type="hidden" name="disable_dnssec" value="1">
+  </form>
 
 {% endblock %}  {# domain_content #}

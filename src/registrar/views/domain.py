@@ -805,15 +805,6 @@ class DomainDNSSECView(DomainFormBaseView):
         context = super().get_context_data(**kwargs)
 
         has_dnssec_records = self.object.dnssecdata is not None
-
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Confirm</button>'
-        )
-
-        context["modal_button"] = modal_button
         context["has_dnssec_records"] = has_dnssec_records
         context["dnssec_enabled"] = self.request.session.pop("dnssec_enabled", False)
 

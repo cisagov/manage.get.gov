@@ -14,6 +14,7 @@ import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPo
 import { initDomainRequestForm } from './domain-request-form.js';
 import { initDomainManagersPage } from './domain-managers.js';
 import { initDomainDSData } from './domain-dsdata.js';
+import { initDomainDNSSEC } from './domain-dnssec.js';
 
 initDomainValidators();
 
@@ -42,6 +43,7 @@ initEditMemberDomainsTable();
 initDomainRequestForm();
 initDomainManagersPage();
 initDomainDSData();
+initDomainDNSSEC();
 
 // Init the portfolio new member page
 initPortfolioMemberPageRadio();
