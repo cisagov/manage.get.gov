@@ -1735,9 +1735,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "cisa_representative_first_name",
                 "cisa_representative_last_name",
                 "cisa_representative_email",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
             ]
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -2002,6 +1999,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Grab the current list of table filters
             readonly_fields = self.admin.get_list_filter(request)
             expected_fields = (
+                DomainRequestAdmin.PortfolioFilter,
                 DomainRequestAdmin.StatusListFilter,
                 DomainRequestAdmin.GenericOrgFilter,
                 DomainRequestAdmin.FederalTypeFilter,

@@ -1232,6 +1232,7 @@ class MockEppLib(TestCase):
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
         ],
+        registrant="regContact",
         ex_date=date(2023, 5, 25),
     )
 
@@ -1392,6 +1393,15 @@ class MockEppLib(TestCase):
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=["fake.host.com"],
+    )
+
+    infoDomainSharedHost = fakedEppObject(
+        "sharedHost.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.sharedhost.com",
+        ],
     )
 
     infoDomainThreeHosts = fakedEppObject(
@@ -1604,6 +1614,8 @@ class MockEppLib(TestCase):
                 return self.mockInfoContactCommands(_request, cleaned)
             case commands.CreateContact:
                 return self.mockCreateContactCommands(_request, cleaned)
+            case commands.DeleteContact:
+                return self.mockDeleteContactCommands(_request, cleaned)
             case commands.UpdateDomain:
                 return self.mockUpdateDomainCommands(_request, cleaned)
             case commands.CreateHost:
@@ -1611,10 +1623,7 @@ class MockEppLib(TestCase):
             case commands.UpdateHost:
                 return self.mockUpdateHostCommands(_request, cleaned)
             case commands.DeleteHost:
-                return MagicMock(
-                    res_data=[self.mockDataHostChange],
-                    code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
-                )
+                return self.mockDeleteHostCommands(_request, cleaned)
             case commands.CheckDomain:
                 return self.mockCheckDomainCommand(_request, cleaned)
             case commands.DeleteDomain:
@@ -1667,6 +1676,15 @@ class MockEppLib(TestCase):
                 code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
             )
 
+    def mockDeleteHostCommands(self, _request, cleaned):
+        host = getattr(_request, "name", None)
+        if "sharedhost.com" in host:
+            raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION, note="ns1.sharedhost.com")
+        return MagicMock(
+            res_data=[self.mockDataHostChange],
+            code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+        )
+
     def mockUpdateDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "dnssec-invalid.gov":
             raise RegistryError(code=ErrorCode.PARAMETER_VALUE_RANGE_ERROR)
@@ -1678,10 +1696,7 @@ class MockEppLib(TestCase):
 
     def mockDeleteDomainCommands(self, _request, cleaned):
         if getattr(_request, "name", None) == "failDelete.gov":
-            name = getattr(_request, "name", None)
-            fake_nameserver = "ns1.failDelete.gov"
-            if name in fake_nameserver:
-                raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
+            raise RegistryError(code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
         return None
 
     def mockRenewDomainCommand(self, _request, cleaned):
@@ -1721,6 +1736,7 @@ class MockEppLib(TestCase):
 
         # Define a dictionary to map request names to data and extension values
         request_mappings = {
+            "fake.gov": (self.mockDataInfoDomain, None),
             "security.gov": (self.infoDomainNoContact, None),
             "dnssec-dsdata.gov": (
                 self.mockDataInfoDomain,
@@ -1751,6 +1767,7 @@ class MockEppLib(TestCase):
             "subdomainwoip.gov": (self.mockDataInfoDomainSubdomainNoIP, None),
             "ddomain3.gov": (self.InfoDomainWithContacts, None),
             "igorville.gov": (self.InfoDomainWithContacts, None),
+            "sharingiscaring.gov": (self.infoDomainSharedHost, None),
         }
 
         # Retrieve the corresponding values from the dictionary
@@ -1800,6 +1817,15 @@ class MockEppLib(TestCase):
             # mocks a contact error on creation
             raise ContactError(code=ContactErrorCodes.CONTACT_TYPE_NONE)
         return MagicMock(res_data=[self.mockDataInfoHosts])
+
+    def mockDeleteContactCommands(self, _request, cleaned):
+        if getattr(_request, "id", None) == "fail":
+            raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
+        else:
+            return MagicMock(
+                res_data=[self.mockDataInfoContact],
+                code=ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY,
+            )
 
     def setUp(self):
         """mock epp send function as this will fail locally"""
