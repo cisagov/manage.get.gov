@@ -15,6 +15,7 @@ import { initDomainRequestForm } from './domain-request-form.js';
 import { initDomainManagersPage } from './domain-managers.js';
 import { initDomainDSData } from './domain-dsdata.js';
 import { initDomainDNSSEC } from './domain-dnssec.js';
+import { initFormErrorHandling } from './form-errors.js';
 
 initDomainValidators();
 
@@ -45,8 +46,9 @@ initDomainManagersPage();
 initDomainDSData();
 initDomainDNSSEC();
 
+initFormErrorHandling();
+
 // Init the portfolio new member page
 initPortfolioMemberPageRadio();
 initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
-//ignore, testing why test fails in pipeline
