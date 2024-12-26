@@ -75,3 +75,17 @@ export function debounce(handler, cooldown=600) {
 export function getCsrfToken() {
     return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
 }
+
+/**
+ * Helper function to submit a form
+ * @param {} form_id - the id of the form to be submitted
+ */
+export function submitForm(form_id) {
+    let form = document.getElementById(form_id);
+    if (form) {
+        console.log("submitting form");
+        form.submit();
+    } else {
+        console.error("Form '" + form_id + "' not found.");
+    }
+}

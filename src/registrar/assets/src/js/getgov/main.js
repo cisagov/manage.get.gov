@@ -11,6 +11,10 @@ import { initMembersTable } from './table-members.js';
 import { initMemberDomainsTable } from './table-member-domains.js';
 import { initEditMemberDomainsTable } from './table-edit-member-domains.js';
 import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPageRadio } from './portfolio-member-page.js';
+import { initDomainRequestForm } from './domain-request-form.js';
+import { initDomainManagersPage } from './domain-managers.js';
+import { initDomainDSData } from './domain-dsdata.js';
+import { initDomainDNSSEC } from './domain-dnssec.js';
 
 initDomainValidators();
 
@@ -35,6 +39,11 @@ initDomainRequestsTable();
 initMembersTable();
 initMemberDomainsTable();
 initEditMemberDomainsTable();
+
+initDomainRequestForm();
+initDomainManagersPage();
+initDomainDSData();
+initDomainDNSSEC();
 
 // Init the portfolio new member page
 initPortfolioMemberPageRadio();

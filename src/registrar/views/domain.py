@@ -805,15 +805,6 @@ class DomainDNSSECView(DomainFormBaseView):
         context = super().get_context_data(**kwargs)
 
         has_dnssec_records = self.object.dnssecdata is not None
-
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Confirm</button>'
-        )
-
-        context["modal_button"] = modal_button
         context["has_dnssec_records"] = has_dnssec_records
         context["dnssec_enabled"] = self.request.session.pop("dnssec_enabled", False)
 
@@ -906,15 +897,6 @@ class DomainDsDataView(DomainFormBaseView):
             # to preserve the context["form"]
             context = super().get_context_data(form=formset)
             context["trigger_modal"] = True
-            # Create HTML for the modal button
-            modal_button = (
-                '<button type="submit" '
-                'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Remove all DS data</button>'
-            )
-
-            # context to back out of a broken form on all fields delete
-            context["modal_button"] = modal_button
             return self.render_to_response(context)
 
         if formset.is_valid() or override:
@@ -1050,9 +1032,6 @@ class DomainUsersView(DomainBaseView):
         # Add conditionals to the context (such as "can_delete_users")
         context = self._add_booleans_to_context(context)
 
-        # Add modal buttons to the context (such as for delete)
-        context = self._add_modal_buttons_to_context(context)
-
         # Get portfolio from session (if set)
         portfolio = self.request.session.get("portfolio")
 
@@ -1147,26 +1126,6 @@ class DomainUsersView(DomainBaseView):
             can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
 
         context["can_delete_users"] = can_delete_users
-        return context
-
-    def _add_modal_buttons_to_context(self, context):
-        """Adds modal buttons (and their HTML) to the context"""
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="delete_domain_manager">Yes, remove domain manager</button>'
-        )
-        context["modal_button"] = modal_button
-
-        # Create HTML for the modal button when deleting yourself
-        modal_button_self = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="delete_domain_manager_self">Yes, remove myself</button>'
-        )
-        context["modal_button_self"] = modal_button_self
-
         return context
 
 
