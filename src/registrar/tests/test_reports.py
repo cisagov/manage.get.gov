@@ -16,7 +16,7 @@ from registrar.utility.csv_export import (
     DomainDataType,
     DomainDataFederal,
     DomainDataTypeUser,
-    DomainRequestsDataType,
+    DomainRequestDataType,
     DomainGrowth,
     DomainManaged,
     DomainUnmanaged,
@@ -404,7 +404,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
     def test_domain_request_data_type_user_with_portfolio(self):
-        """Tests DomainRequestsDataType export with portfolio permissions"""
+        """Tests DomainRequestDataType export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
         portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
@@ -459,11 +459,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio.delete()
 
     def _run_domain_request_data_type_user_export(self, request):
-        """Helper function to run the exporting_dr_data_to_csv function on DomainRequestsDataType"""
+        """Helper function to run the export_data_to_csv function on DomainRequestDataType"""
 
         csv_file = StringIO()
 
-        DomainRequestsDataType.exporting_dr_data_to_csv(csv_file, request=request)
+        DomainRequestDataType.export_data_to_csv(csv_file, request=request)
 
         csv_file.seek(0)
 

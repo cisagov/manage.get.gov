@@ -828,105 +828,6 @@ class DomainDataTypeUser(DomainDataType):
             return Q(domain__id__in=request.user.get_user_domain_ids(request))
 
 
-class DomainRequestsDataType:
-    """
-    The DomainRequestsDataType report, but filtered based on the current request user
-    """
-
-    @classmethod
-    def get_filter_conditions(cls, request=None, **kwargs):
-        if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
-            return Q(id__in=[])
-
-        request_ids = request.user.get_user_domain_request_ids(request)
-        return Q(id__in=request_ids)
-
-    @classmethod
-    def get_queryset(cls, request):
-        return DomainRequest.objects.filter(cls.get_filter_conditions(request))
-
-    def safe_get(attribute, default="N/A"):
-        # Return the attribute value or default if not present
-        return attribute if attribute is not None else default
-
-    @classmethod
-    def exporting_dr_data_to_csv(cls, response, request=None):
-        import csv
-
-        writer = csv.writer(response)
-
-        # CSV headers
-        writer.writerow(
-            [
-                "Domain request",
-                "Region",
-                "Status",
-                "Election office",
-                "Federal type",
-                "Domain type",
-                "Request additional details",
-                "Creator approved domains count",
-                "Creator active requests count",
-                "Alternative domains",
-                "Other contacts",
-                "Current websites",
-                "Federal agency",
-                "SO first name",
-                "SO last name",
-                "SO email",
-                "SO title/role",
-                "Creator first name",
-                "Creator last name",
-                "Creator email",
-                "Organization name",
-                "City",
-                "State/territory",
-                "Request purpose",
-                "CISA regional representative",
-                "Last submitted date",
-                "First submitted date",
-                "Last status update",
-            ]
-        )
-
-        queryset = cls.get_queryset(request)
-        for request in queryset:
-            writer.writerow(
-                [
-                    request.requested_domain,
-                    cls.safe_get(getattr(request, "region_field", None)),
-                    request.status,
-                    cls.safe_get(getattr(request, "election_office", None)),
-                    request.converted_federal_type,
-                    cls.safe_get(getattr(request, "domain_type", None)),
-                    cls.safe_get(getattr(request, "additional_details", None)),
-                    cls.safe_get(getattr(request, "creator_approved_domains_count", None)),
-                    cls.safe_get(getattr(request, "creator_active_requests_count", None)),
-                    cls.safe_get(getattr(request, "all_alternative_domains", None)),
-                    cls.safe_get(getattr(request, "all_other_contacts", None)),
-                    cls.safe_get(getattr(request, "all_current_websites", None)),
-                    cls.safe_get(getattr(request, "converted_federal_agency", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "first_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "last_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "email", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "title", None)),
-                    cls.safe_get(getattr(request.creator, "first_name", None)),
-                    cls.safe_get(getattr(request.creator, "last_name", None)),
-                    cls.safe_get(getattr(request.creator, "email", None)),
-                    cls.safe_get(getattr(request, "converted_organization_name", None)),
-                    cls.safe_get(getattr(request, "converted_city", None)),
-                    cls.safe_get(getattr(request, "converted_state_territory", None)),
-                    cls.safe_get(getattr(request, "purpose", None)),
-                    cls.safe_get(getattr(request, "cisa_representative_email", None)),
-                    cls.safe_get(getattr(request, "last_submitted_date", None)),
-                    cls.safe_get(getattr(request, "first_submitted_date", None)),
-                    cls.safe_get(getattr(request, "last_status_update", None)),
-                ]
-            )
-
-        return response
-
-
 class DomainDataFull(DomainExport):
     """
     Shows security contacts, filtered by state
@@ -1454,40 +1355,6 @@ class DomainRequestExport(BaseExport):
         return DomainRequest
 
     @classmethod
-    def get_sliced_requests(cls, filter_condition):
-        """Get filtered requests counts sliced by org type and election office."""
-        requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
-        requests_count = requests.count()
-        federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
-        interstate = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
-        state_or_territory = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
-        )
-        tribal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
-        county = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
-        city = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
-        special_district = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
-        )
-        school_district = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
-        )
-        election_board = requests.filter(is_election_board=True).distinct().count()
-
-        return [
-            requests_count,
-            federal,
-            interstate,
-            state_or_territory,
-            tribal,
-            county,
-            city,
-            special_district,
-            school_district,
-            election_board,
-        ]
-
-    @classmethod
     def parse_row(cls, columns, model):
         """
         Given a set of columns and a model dictionary, generate a new row from cleaned column data.
@@ -1568,6 +1435,92 @@ class DomainRequestExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
+
+
+class DomainRequestDataType(DomainRequestExport):
+    """
+    The DomainRequestDataType report, but filtered based on the current request user
+    """
+
+    @classmethod
+    def get_columns(cls):
+        """
+        Overrides the columns for CSV export specific to DomainRequestDataType.
+        """
+        return [
+            "Domain request",
+            "Region",
+            "Status",
+            "Election office",
+            "Federal type",
+            "Domain type",
+            "Request additional details",
+            "Creator approved domains count",
+            "Creator active requests count",
+            "Alternative domains",
+            "Other contacts",
+            "Current websites",
+            "Federal agency",
+            "SO first name",
+            "SO last name",
+            "SO email",
+            "SO title/role",
+            "Creator first name",
+            "Creator last name",
+            "Creator email",
+            "Organization name",
+            "City",
+            "State/territory",
+            "Request purpose",
+            "CISA regional representative",
+            "Last submitted date",
+            "First submitted date",
+            "Last status update",
+        ]
+    
+    @classmethod
+    def get_filter_conditions(cls, request=None, **kwargs):
+        """
+        Get a Q object of filter conditions to filter when building queryset.
+        """
+        if request is None or not hasattr(request, "user") or not request.user:
+            # Return nothing
+            return Q(id__in=[])
+        else:
+            # Get all domain requests the user is associated with
+            return Q(id__in=request.user.get_user_domain_request_ids(request))
+    
+    @classmethod
+    def get_select_related(cls):
+        """
+        Get a list of tables to pass to select_related when building queryset.
+        """
+        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
+
+    @classmethod
+    def get_prefetch_related(cls):
+        """
+        Get a list of tables to pass to prefetch_related when building queryset.
+        """
+        return ["current_websites", "other_contacts", "alternative_domains"]
+    
+    @classmethod
+    def get_related_table_fields(cls):
+        """
+        Get a list of fields from related tables.
+        """
+        return [
+            "requested_domain__name",
+            "federal_agency__agency",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
+            "creator__first_name",
+            "creator__last_name",
+            "creator__email",
+            "investigator__email",
+        ]
 
 
 class DomainRequestGrowth(DomainRequestExport):
