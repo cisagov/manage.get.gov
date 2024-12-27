@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.utils import timezone
 import logging
 import random
@@ -126,7 +126,21 @@ class DomainRequestFixture:
         # TODO for a future ticket: Allow for more than just "federal" here
         request.generic_org_type = request_dict["generic_org_type"] if "generic_org_type" in request_dict else "federal"
         if request.status != "started":
-            request.last_submitted_date = fake.date()
+            # Generate fake data for first_submitted_date and last_submitted_date
+            # First generate a random date set to be later than 2020 (or something)
+            # (if we just use fake.date() we might get years like 1970 or earlier)
+            earliest_date_allowed = datetime(2020, 1, 1).date()  
+            end_date = datetime.today().date()  # Today's date (latest allowed date)
+            days_range = (end_date - earliest_date_allowed).days
+            first_submitted_date = earliest_date_allowed + timedelta(days=random.randint(0, days_range))
+
+            # Generate a random positive offset to ensure last_submitted_date is later
+            offset_days = random.randint(1, 30)  # Ensures at least 1 day difference
+            last_submitted_date = first_submitted_date + timedelta(days=offset_days)
+
+            # Convert back to strings before assigning
+            request.first_submitted_date = first_submitted_date.strftime("%Y-%m-%d")
+            request.last_submitted_date = last_submitted_date.strftime("%Y-%m-%d")
         request.federal_type = (
             request_dict["federal_type"]
             if "federal_type" in request_dict
