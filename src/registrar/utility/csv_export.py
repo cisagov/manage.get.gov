@@ -1778,180 +1778,156 @@ class DomainRequestExport(BaseExport):
         # Return the model class that this export handles
         return DomainRequest
 
-    def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
-        """Returns a list of Domain Requests that has been filtered by the given organization value"""
-        annotated_queryset = domain_requests_to_filter.annotate(
-            converted_generic_org_type=Case(
-                # Recreate the logic of the converted_generic_org_type property
-                # here in annotations
-                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
-                default=F("generic_org_type"),
-                output_field=CharField(),
-            )
-        )
-        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
+    # def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
+    #     """Returns a list of Domain Requests that has been filtered by the given organization value"""
+    #     annotated_queryset = domain_requests_to_filter.annotate(
+    #         converted_generic_org_type=Case(
+    #             # Recreate the logic of the converted_generic_org_type property
+    #             # here in annotations
+    #             When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+    #             default=F("generic_org_type"),
+    #             output_field=CharField(),
+    #         )
+    #     )
+    #     return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
 
-        # return domain_requests_to_filter.filter(
-        #     # Filter based on the generic org value returned by converted_generic_org_type
-        #     id__in=[
-        #         domainRequest.id
-        #         for domainRequest in domain_requests_to_filter
-        #         if domainRequest.converted_generic_org_type
-        #         and domainRequest.converted_generic_org_type == org_to_filter_by
-        #     ]
-        # )
+    #     # return domain_requests_to_filter.filter(
+    #     #     # Filter based on the generic org value returned by converted_generic_org_type
+    #     #     id__in=[
+    #     #         domainRequest.id
+    #     #         for domainRequest in domain_requests_to_filter
+    #     #         if domainRequest.converted_generic_org_type
+    #     #         and domainRequest.converted_generic_org_type == org_to_filter_by
+    #     #     ]
+    #     # )
 
-    @classmethod
-    def get_computed_fields(cls, delimiter=", ", **kwargs):
-        """
-        Get a dict of computed fields.
-        """
-        # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
-        # This is for performance purposes. Since we are working with dictionary values and not
-        # model objects as we export data, trying to reinstate model objects in order to grab @property
-        # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
-        return {
-            "converted_generic_org_type": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
-                # Otherwise, return the natively assigned value
-                default=F("generic_org_type"),
-                output_field=CharField(),
-            ),
-            "converted_federal_agency": Case(
-                # When portfolio is present, use its value instead
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__agency"),
-                ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_agency__agency"),
-                output_field=CharField(),
-            ),
-            "converted_federal_type": Case(
-                # When portfolio is present, use its value instead
-                # NOTE: this is an @Property funciton in portfolio.
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__federal_type"),
-                ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
-                output_field=CharField(),
-            ),
-            "converted_organization_name": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__organization_name")),
-                # Otherwise, return the natively assigned value
-                default=F("organization_name"),
-                output_field=CharField(),
-            ),
-            "converted_city": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__city")),
-                # Otherwise, return the natively assigned value
-                default=F("city"),
-                output_field=CharField(),
-            ),
-            "converted_state_territory": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__state_territory")),
-                # Otherwise, return the natively assigned value
-                default=F("state_territory"),
-                output_field=CharField(),
-            ),
-            "converted_so_email": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__senior_official__email")),
-                # Otherwise, return the natively assigned senior official
-                default=F("senior_official__email"),
-                output_field=CharField(),
-            ),
-            "converted_senior_official_last_name": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__senior_official__last_name")),
-                # Otherwise, return the natively assigned senior official
-                default=F("senior_official__last_name"),
-                output_field=CharField(),
-            ),
-            "converted_senior_official_first_name": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__senior_official__first_name")),
-                # Otherwise, return the natively assigned senior official
-                default=F("senior_official__first_name"),
-                output_field=CharField(),
-            ),
-            "converted_senior_official_title": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__senior_official__title")),
-                # Otherwise, return the natively assigned senior official
-                default=F("senior_official__title"),
-                output_field=CharField(),
-            ),
-            "converted_so_name": Case(
-                # When portfolio is present, use that senior official instead
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
-                    then=Concat(
-                        Coalesce(F("portfolio__senior_official__first_name"), Value("")),
-                        Value(" "),
-                        Coalesce(F("portfolio__senior_official__last_name"), Value("")),
-                        output_field=CharField(),
-                    ),
-                ),
-                # Otherwise, return the natively assigned senior official
-                default=Concat(
-                    Coalesce(F("senior_official__first_name"), Value("")),
-                    Value(" "),
-                    Coalesce(F("senior_official__last_name"), Value("")),
-                    output_field=CharField(),
-                ),
-                output_field=CharField(),
-            ),
-        }
+    # @classmethod
+    # def get_computed_fields(cls, delimiter=", ", **kwargs):
+    #     """
+    #     Get a dict of computed fields.
+    #     """
+    #     # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
+    #     # This is for performance purposes. Since we are working with dictionary values and not
+    #     # model objects as we export data, trying to reinstate model objects in order to grab @property
+    #     # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
+    #     return {
+    #         "converted_generic_org_type": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("generic_org_type"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_federal_agency": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(
+    #                 Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+    #                 then=F("portfolio__federal_agency__agency"),
+    #             ),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("federal_agency__agency"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_federal_type": Case(
+    #             # When portfolio is present, use its value instead
+    #             # NOTE: this is an @Property funciton in portfolio.
+    #             When(
+    #                 Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+    #                 then=F("portfolio__federal_agency__federal_type"),
+    #             ),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("federal_type"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_organization_name": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("organization_name"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_city": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__city")),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("city"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_state_territory": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__state_territory")),
+    #             # Otherwise, return the natively assigned value
+    #             default=F("state_territory"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_so_email": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__senior_official__email")),
+    #             # Otherwise, return the natively assigned senior official
+    #             default=F("senior_official__email"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_senior_official_last_name": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__senior_official__last_name")),
+    #             # Otherwise, return the natively assigned senior official
+    #             default=F("senior_official__last_name"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_senior_official_first_name": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__senior_official__first_name")),
+    #             # Otherwise, return the natively assigned senior official
+    #             default=F("senior_official__first_name"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_senior_official_title": Case(
+    #             # When portfolio is present, use its value instead
+    #             When(portfolio__isnull=False, then=F("portfolio__senior_official__title")),
+    #             # Otherwise, return the natively assigned senior official
+    #             default=F("senior_official__title"),
+    #             output_field=CharField(),
+    #         ),
+    #         "converted_so_name": Case(
+    #             # When portfolio is present, use that senior official instead
+    #             When(
+    #                 Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
+    #                 then=Concat(
+    #                     Coalesce(F("portfolio__senior_official__first_name"), Value("")),
+    #                     Value(" "),
+    #                     Coalesce(F("portfolio__senior_official__last_name"), Value("")),
+    #                     output_field=CharField(),
+    #                 ),
+    #             ),
+    #             # Otherwise, return the natively assigned senior official
+    #             default=Concat(
+    #                 Coalesce(F("senior_official__first_name"), Value("")),
+    #                 Value(" "),
+    #                 Coalesce(F("senior_official__last_name"), Value("")),
+    #                 output_field=CharField(),
+    #             ),
+    #             output_field=CharField(),
+    #         ),
+    #     }
 
     @classmethod
     def get_sliced_requests(cls, filter_condition):
         """Get filtered requests counts sliced by org type and election office."""
         requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
         requests_count = requests.count()
-        federal = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.FEDERAL)
-            .distinct()
-            .count()
-        )
-        interstate = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.INTERSTATE)
-            .distinct()
-            .count()
-        )
+        federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
+        interstate = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
         state_or_territory = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY)
-            .distinct()
-            .count()
+            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
         )
-        tribal = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.TRIBAL)
-            .distinct()
-            .count()
-        )
-        county = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.COUNTY)
-            .distinct()
-            .count()
-        )
-        city = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.CITY).distinct().count()
-        )
+        tribal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
+        county = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
+        city = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
         special_district = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.SPECIAL_DISTRICT)
-            .distinct()
-            .count()
+            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
         )
         school_district = (
-            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.SCHOOL_DISTRICT)
-            .distinct()
-            .count()
+            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
         )
         election_board = requests.filter(is_election_board=True).distinct().count()
 
@@ -2027,19 +2003,19 @@ class DomainRequestExport(BaseExport):
             "Other contacts": model.get("all_other_contacts"),
             "Current websites": model.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
-            "Federal agency": model.get("converted_federal_agency"),
-            "SO first name": model.get("converted_senior_official_first_name"),
-            "SO last name": model.get("converted_senior_official_last_name"),
-            "SO email": model.get("converted_so_email"),
-            "SO title/role": model.get("converted_senior_official_title"),
+            "Federal agency": model.get("federal_agency__agency"),
+            "SO first name": model.get("senior_official__first_name"),
+            "SO last name": model.get("senior_official__last_name"),
+            "SO email": model.get("senior_official__email"),
+            "SO title/role": model.get("senior_official__title"),
             "Creator first name": model.get("creator__first_name"),
             "Creator last name": model.get("creator__last_name"),
             "Creator email": model.get("creator__email"),
             "Investigator": model.get("investigator__email"),
             # Untouched fields
-            "Organization name": model.get("converted_organization_name"),
-            "City": model.get("converted_city"),
-            "State/territory": model.get("converted_state_territory"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
             "CISA regional representative": model.get("cisa_representative_email"),
             "Last submitted date": model.get("last_submitted_date"),
