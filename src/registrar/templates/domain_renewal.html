@@ -26,12 +26,15 @@
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
     <h2 class="text-bold text-primary-dark domain-name-wrap">Confirm the following information for accuracy</h2>
-    <p>Review these details below and update any out-of-date information.</p>
-    <p>If you would like to retire your domain instead, please contact us</p>
-     <p>   Required fields
+    <p>Review these details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link">
+      require</a> that you maintain accurate information for the domain.
+      The details you provide will only be used to support eh administration of .gov and won't be made public.
+    </p>
+    <p>If you would like to retire your domain instead, please <a href="https://get.gov/contact/" class="usa-link">
+      contact us</a>. </p>
+    <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
     </p>
     </div>
-    <br>
 
     {% url 'user-profile' as url %}
     {% include "includes/summary_item.html" with title='Your Contact Information' value=user edit_link=url editable=is_editable  contact='true' %}
@@ -79,35 +82,37 @@
           </h3>          
         </legend>
       
-        {% if form.is_bound %}
-          {% for field in form %}
-            {% if field.name == 'is_policy_acknowledged' %}
-              {% for error in field.errors %}
-                <p class="usa-error-message">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
+        {% if messages %}
+          <ul class="messages"></ul>
+          {% for message in messages %}
+              <p class="usa-error-message">{{ message }}</p>
           {% endfor %}
+        </ul>
         {% endif %}
+      
         
-        <div class="usa-checkbox">
-          <input 
-            class="usa-checkbox__input" 
-            id="renewal-checkbox" 
-            type="checkbox" 
-            name="is_policy_acknowledged"
-            {% if form.cleaned_data.is_policy_acknowledged %} checked {% endif %}
+  <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
+    {% csrf_token %}
+    <label>
+      <div class="usa-checkbox">
+        <input 
+          class="usa-checkbox__input" 
+          id="renewal-checkbox" 
+          type="checkbox" 
+          name="is_policy_acknowledged"
+          value="on"
+          {% if request.POST.is_policy_acknowledged %} checked {% endif %}
           >
           <label class="usa-checkbox__label" for="renewal-checkbox">
             I read and agree to the 
             <a href="https://get.gov/domains/requirements/" class="usa-link">
               requirements for operating a .gov domain
             </a>.
+            <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
           </label>
-        </div>
-      </fieldset>
-  </div>    
-  <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
-    {% csrf_token %}
+      </div>
+    </fieldset>
+    </div>    
    <button
     type="submit"
     name="submit_button"

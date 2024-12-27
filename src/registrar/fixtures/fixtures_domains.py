@@ -42,7 +42,6 @@ class DomainFixture(DomainRequestFixture):
 
             # Approve each user associated with `in review` status domains
             cls._approve_domain_requests(users)
-    
 
     ## to generate expiring domains
     @staticmethod

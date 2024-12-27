@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -359,15 +359,36 @@ class DomainRenewalView(DomainBaseView):
         self.object = self.get_object()
         self._update_session_with_domain()
 
-    def post(self, request,pk):
+    def post(self, request, pk):
+        domain = Domain.objects.filter(id=pk).first()
+
+        # Check if the checkbox is checked
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", None)
+        if is_policy_acknowledged != "on":
+            print("!!! Checkbox is NOT acknowledged")
+            messages.error(
+                request, "Check the box if you read and agree to the requirements for operating a .gov domain."
+            )
+            return render(
+                request,
+                "domain_renewal.html",
+                {
+                    "domain": domain,
+                    "form": request.POST,
+                },
+            )
+
+        print("*** Checkbox is acknowledged")
         if "submit_button" in request.POST:
-            domain = Domain.objects.filter(id=pk).first()
-            updated_expiration = domain.update_expiration(success=False)
+            print("*** Submit button clicked")
+            updated_expiration = domain.update_expiration(success=True)
+            print("*** Updated expiration result:", updated_expiration)
+
             if updated_expiration is True:
-                messages.success(request,"This domain has been renewed for one year")
+                messages.success(request, "This domain has been renewed for one year")
             else:
                 messages.error(request, "This domain has not been renewed")
-        return HttpResponseRedirect(reverse("domain-renewal",kwargs={'pk':pk}))
+        return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
 
 class DomainOrgNameAddressView(DomainFormBaseView):
@@ -870,10 +891,7 @@ class DomainDNSSECView(DomainFormBaseView):
         has_dnssec_records = self.object.dnssecdata is not None
 
         # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'name="disable_dnssec">Confirm</button>'
-        )
+        modal_button = '<button type="submit" ' 'name="disable_dnssec">Confirm</button>'
 
         context["modal_button"] = modal_button
         context["has_dnssec_records"] = has_dnssec_records
