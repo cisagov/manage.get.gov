@@ -50,7 +50,9 @@
           {% if domain.get_state_help_text %}
             <div class="padding-top-1 text-primary-darker">
               {% if has_domain_renewal_flag and domain.is_expiring and is_domain_manager %}
-                This domain will expire soon. <a href="/not-available-yet">Renew to maintain access.</a>
+                This domain will expire soon. 
+                {% url 'domain-renewal' pk=domain.id as url %}
+                <a href="{{ url }}">Renew to maintain access.</a>
               {% elif has_domain_renewal_flag and domain.is_expiring and is_portfolio_user %}
                 This domain will expire soon. Contact one of the listed domain managers to renew the domain.
               {% else %}

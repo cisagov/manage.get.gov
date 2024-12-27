@@ -1167,6 +1167,11 @@ class Domain(TimeStampedModel, DomainHelper):
         threshold_date = now + timedelta(days=60)
         return now < self.expiration_date <= threshold_date
 
+    ###dummy method for testing for domain renewal form fail or success banner
+
+    def update_expiration(self, success=True):
+        return success
+
     def state_display(self, request=None):
         """Return the display status of the domain."""
         if self.is_expired() and (self.state != self.State.UNKNOWN):

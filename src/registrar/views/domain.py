@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -305,6 +305,90 @@ class DomainView(DomainBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
+
+
+class DomainRenewalView(DomainBaseView):
+    """Domain detail overview page."""
+
+    template_name = "domain_renewal.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        context["hidden_security_emails"] = default_emails
+
+        security_email = self.object.get_security_email()
+        user = self.request.user
+        if security_email is None or security_email in default_emails:
+            context["security_email"] = None
+        context["user"] = user
+        return context
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow permissions, they will need to override
+        this function."""
+        portfolio = self.request.session.get("portfolio")
+        if self.request.user.has_any_domains_portfolio_permission(portfolio):
+            if Domain.objects.filter(id=pk).exists():
+                domain = Domain.objects.get(id=pk)
+                if domain.domain_info.portfolio == portfolio:
+                    return True
+        return False
+
+    def in_editable_state(self, pk):
+        """Override in_editable_state from DomainPermission
+        Allow detail page to be viewable"""
+
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        # return true if the domain exists, this will allow the detail page to load
+        if requested_domain:
+            return True
+        return False
+
+    def _get_domain(self, request):
+        """
+        override get_domain for this view so that domain overview
+        always resets the cache for the domain object
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
+    def post(self, request, pk):
+        domain = Domain.objects.filter(id=pk).first()
+
+        # Check if the checkbox is checked
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", None)
+        if is_policy_acknowledged != "on":
+            print("!!! Checkbox is NOT acknowledged")
+            messages.error(
+                request, "Check the box if you read and agree to the requirements for operating a .gov domain."
+            )
+            return render(
+                request,
+                "domain_renewal.html",
+                {
+                    "domain": domain,
+                    "form": request.POST,
+                },
+            )
+
+        print("*** Checkbox is acknowledged")
+        if "submit_button" in request.POST:
+            print("*** Submit button clicked")
+            updated_expiration = domain.update_expiration(success=True)
+            print("*** Updated expiration result:", updated_expiration)
+
+            if updated_expiration is True:
+                messages.success(request, "This domain has been renewed for one year")
+            else:
+                messages.error(request, "This domain has not been renewed")
+        return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
 
 class DomainOrgNameAddressView(DomainFormBaseView):
@@ -807,11 +891,7 @@ class DomainDNSSECView(DomainFormBaseView):
         has_dnssec_records = self.object.dnssecdata is not None
 
         # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Confirm</button>'
-        )
+        modal_button = '<button type="submit" ' 'name="disable_dnssec">Confirm</button>'
 
         context["modal_button"] = modal_button
         context["has_dnssec_records"] = has_dnssec_records
