@@ -129,7 +129,7 @@ class DomainRequestFixture:
             # Generate fake data for first_submitted_date and last_submitted_date
             # First generate a random date set to be later than 2020 (or something)
             # (if we just use fake.date() we might get years like 1970 or earlier)
-            earliest_date_allowed = datetime(2020, 1, 1).date()  
+            earliest_date_allowed = datetime(2020, 1, 1).date()
             end_date = datetime.today().date()  # Today's date (latest allowed date)
             days_range = (end_date - earliest_date_allowed).days
             first_submitted_date = earliest_date_allowed + timedelta(days=random.randint(0, days_range))
