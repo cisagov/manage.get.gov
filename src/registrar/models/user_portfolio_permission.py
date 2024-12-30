@@ -110,8 +110,13 @@ class UserPortfolioPermission(TimeStampedModel):
         return self.get_portfolio_permissions(self.roles, self.additional_permissions)
 
     @classmethod
-    def get_portfolio_permissions(cls, roles, additional_permissions):
-        """Class method to return a list of permissions based on roles and addtl permissions"""
+    def get_portfolio_permissions(cls, roles, additional_permissions, get_list=True):
+        """Class method to return a list of permissions based on roles and addtl permissions.
+        Params:
+            roles => An array of roles
+            additional_permissions => An array of additional_permissions
+            get_list => If true, returns a list of perms. If false, returns a set of perms.
+        """
         # Use a set to avoid duplicate permissions
         portfolio_permissions = set()
         if roles:
@@ -119,7 +124,7 @@ class UserPortfolioPermission(TimeStampedModel):
                 portfolio_permissions.update(cls.PORTFOLIO_ROLE_PERMISSIONS.get(role, []))
         if additional_permissions:
             portfolio_permissions.update(additional_permissions)
-        return list(portfolio_permissions)
+        return list(portfolio_permissions) if get_list else portfolio_permissions
 
     @classmethod
     def get_domain_request_permission_display(cls, roles, additional_permissions):

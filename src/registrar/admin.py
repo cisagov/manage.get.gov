@@ -1830,10 +1830,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
 
+    # ------ Filters ------
+    # Define custom filters
     class StatusListFilter(MultipleChoiceListFilter):
         """Custom status filter which is a multiple choice filter"""
 
-        title = "Status"
+        title = "status"
         parameter_name = "status__in"
 
         template = "django/admin/multiple_choice_list_filter.html"
@@ -1877,7 +1879,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         If we have a portfolio, use the portfolio's federal type.  If not, use the
         organization in the Domain Request object."""
 
-        title = "federal Type"
+        title = "federal type"
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
@@ -1965,13 +1967,58 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    class PortfolioFilter(admin.SimpleListFilter):
+        """Define a custom filter for portfolio"""
+
+        title = _("portfolio")
+        parameter_name = "portfolio__isnull"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(Q(portfolio__isnull=False))
+            if self.value() == "0":
+                return queryset.filter(Q(portfolio__isnull=True))
+
+    # ------ Custom fields ------
+    def custom_election_board(self, obj):
+        return "Yes" if obj.is_election_board else "No"
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
+    @admin.display(description=_("Requested Domain"))
+    def custom_requested_domain(self, obj):
+        # Example: Show different icons based on `status`
+        url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
+        text = obj.requested_domain
+        if obj.portfolio:
+            return format_html('<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>', url, text)
+        return format_html('<a href="{}">{}</a>', url, text)
+
+    custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
+
+    # ------ Converted fields ------
+    # These fields map to @Property methods and
+    # require these custom definitions to work properly
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
     @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
-        return obj.converted_organization_name
+        # Example: Show different icons based on `status`
+        if obj.portfolio:
+            url = reverse("admin:registrar_portfolio_change", args=[obj.portfolio.id])
+            text = obj.converted_organization_name
+            return format_html('<a href="{}">{}</a>', url, text)
+        else:
+            return obj.converted_organization_name
 
     @admin.display(description=_("Federal Agency"))
     def converted_federal_agency(self, obj):
@@ -1989,34 +2036,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
 
-    # Columns
-    list_display = [
-        "requested_domain",
-        "first_submitted_date",
-        "last_submitted_date",
-        "last_status_update",
-        "status",
-        "custom_election_board",
-        "converted_generic_org_type",
-        "converted_organization_name",
-        "converted_federal_agency",
-        "converted_federal_type",
-        "converted_city",
-        "converted_state_territory",
-        "investigator",
-    ]
-
-    orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
-    ]
-
-    def custom_election_board(self, obj):
-        return "Yes" if obj.is_election_board else "No"
-
-    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
-
+    # ------ Portfolio fields ------
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
@@ -2086,10 +2106,33 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def status_history(self, obj):
         return "No changelog to display."
 
-    status_history.short_description = "Status History"  # type: ignore
+    status_history.short_description = "Status history"  # type: ignore
+
+    # Columns
+    list_display = [
+        "custom_requested_domain",
+        "first_submitted_date",
+        "last_submitted_date",
+        "last_status_update",
+        "status",
+        "custom_election_board",
+        "converted_generic_org_type",
+        "converted_organization_name",
+        "converted_federal_agency",
+        "converted_federal_type",
+        "converted_city",
+        "converted_state_territory",
+        "investigator",
+    ]
+
+    orderable_fk_fields = [
+        ("requested_domain", "name"),
+        ("investigator", ["first_name", "last_name"]),
+    ]
 
     # Filters
     list_filter = (
+        PortfolioFilter,
         StatusListFilter,
         GenericOrgFilter,
         FederalTypeFilter,
@@ -2099,13 +2142,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     )
 
     # Search
+    # NOTE: converted fields are included in the override for get_search_results
     search_fields = [
         "requested_domain__name",
         "creator__email",
         "creator__first_name",
         "creator__last_name",
     ]
-    search_help_text = "Search by domain or creator."
+    search_help_text = "Search by domain, creator, or organization name."
 
     fieldsets = [
         (
@@ -2271,9 +2315,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
-        "requested_suborganization",
-        "suborganization_city",
-        "suborganization_state_territory",
     ]
 
     autocomplete_fields = [
@@ -2691,6 +2732,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
+
+    def get_search_results(self, request, queryset, search_term):
+        # Call the parent's method to apply default search logic
+        base_queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # Add custom search logic for the annotated field
+        if search_term:
+            annotated_queryset = queryset.filter(
+                # converted_organization_name
+                Q(portfolio__organization_name__icontains=search_term)
+                | Q(portfolio__isnull=True, organization_name__icontains=search_term)
+            )
+
+            # Combine the two querysets using union
+            combined_queryset = base_queryset | annotated_queryset
+        else:
+            combined_queryset = base_queryset
+
+        return combined_queryset, use_distinct
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -3746,9 +3806,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
-    analyst_readonly_fields = [
-        "organization_name",
-    ]
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
 
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
