@@ -46,9 +46,8 @@ class AlreadyDomainInvitedError(InvitationError):
 class MissingEmailError(InvitationError):
     """Raised when the requestor has no email associated with their account."""
 
-    def __init__(self, username):
-        super().__init__(f"Can't send invitation email. No email is associated with the account for '{username}'.")
-        self.username = username
+    def __init__(self):
+        super().__init__("Can't send invitation email. No email is associated with your user account.")
 
 
 class OutsideOrgMemberError(ValueError):

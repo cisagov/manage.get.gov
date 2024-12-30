@@ -2723,7 +2723,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
     @patch("registrar.views.portfolios.send_portfolio_invitation_email")
     def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises MissingEmailError."""
-        mock_send_email.side_effect = MissingEmailError(self.user.username)
+        mock_send_email.side_effect = MissingEmailError()
 
         self.client.force_login(self.user)
 
@@ -2751,7 +2751,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that messages contains message, "Could not send email invitation"
             mock_error.assert_called_once_with(
                 response.wsgi_request,
-                "Can't send invitation email. No email is associated with the account for 'test_user'.",
+                "Can't send invitation email. No email is associated with your user account.",
             )
             # assert that portfolio invitation is not created
             self.assertFalse(

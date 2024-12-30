@@ -38,7 +38,7 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
     # Check if the requestor is staff and has an email
     if not requestor.is_staff:
         if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError(requestor.username)
+            raise MissingEmailError
         else:
             requestor_email = requestor.email
 
@@ -98,7 +98,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
     # Check if the requestor is staff and has an email
     if not requestor.is_staff:
         if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError(requestor.username)
+            raise MissingEmailError
         else:
             requestor_email = requestor.email
 
