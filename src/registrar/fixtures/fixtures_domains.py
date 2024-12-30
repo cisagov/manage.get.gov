@@ -39,11 +39,12 @@ class DomainFixture(DomainRequestFixture):
             except Exception as e:
                 logger.warning(e)
                 return
+
             # Approve each user associated with `in review` status domains
             cls._approve_domain_requests(users)
 
     @staticmethod
-    def _generate_fake_expiration_date(days_in_future=100):
+    def _generate_fake_expiration_date(days_in_future=365):
         """Generates a fake expiration date between 1 and 365 days in the future."""
         current_date = timezone.now().date()  # nosec
         return current_date + timedelta(days=random.randint(1, days_in_future))  # nosec
