@@ -16,7 +16,7 @@ from registrar.utility.csv_export import (
     DomainDataType,
     DomainDataFederal,
     DomainDataTypeUser,
-    DomainRequestsDataType,
+    DomainRequestDataType,
     DomainGrowth,
     DomainManaged,
     DomainUnmanaged,
@@ -456,11 +456,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio.delete()
 
     def _run_domain_request_data_type_user_export(self, request):
-        """Helper function to run the exporting_dr_data_to_csv function on DomainRequestsDataType"""
+        """Helper function to run the export_data_to_csv function on DomainRequestDataType"""
 
         csv_file = StringIO()
 
-        DomainRequestsDataType.exporting_dr_data_to_csv(csv_file, request=request)
+        DomainRequestDataType.export_data_to_csv(csv_file, request=request)
 
         csv_file.seek(0)
 
@@ -773,9 +773,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 # Content
                 "city5.gov,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"
                 "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
-                "city2.gov,In review,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,city1.gov,,,,,"
+                "city2.gov,In review,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,NY,2,,,,0,1,city1.gov,,,,,"
                 "Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
-                "city3.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,"
+                "city3.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,NY,2,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
@@ -785,7 +785,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,city1.gov,,,,,"
+                "city6.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,NY,2,,,,0,1,city1.gov,,,,,"
                 "Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
             )
@@ -794,6 +794,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+            self.maxDiff=None
             self.assertEqual(csv_content, expected_content)
 
 
