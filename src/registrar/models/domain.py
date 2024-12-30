@@ -322,28 +322,32 @@ class Domain(TimeStampedModel, DomainHelper):
         """
 
         # If no date is specified, grab the registry_expiration_date
+        print("checking if there is a date")
         try:
             exp_date = self.registry_expiration_date
         except KeyError:
             # if no expiration date from registry, set it to today
             logger.warning("current expiration date not set; setting to today")
             exp_date = date.today()
-
+        print("we got the date", exp_date)
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
         try:
             # update expiration date in registry, and set the updated
             # expiration date in the registrar, and in the cache
+            print("we are in the second try")
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
             self.save()
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
+            print("registry error")
             logger.error(f"registry error renewing domain: {err}")
             raise (err)
         except Exception as e:
             # exception raised during the save to registrar
+            print("this is the last error")
             logger.error(f"error updating expiration date in registrar: {e}")
             raise (e)
 

@@ -381,12 +381,13 @@ class DomainRenewalView(DomainBaseView):
         print("*** Checkbox is acknowledged")
         if "submit_button" in request.POST:
             print("*** Submit button clicked")
-            updated_expiration = domain.update_expiration(success=True)
-            print("*** Updated expiration result:", updated_expiration)
-
-            if updated_expiration is True:
+            # updated_expiration = domain.update_expiration(success=True)
+            # print("*** Updated expiration result:", updated_expiration)
+            try:
+                domain.renew_domain()
                 messages.success(request, "This domain has been renewed for one year")
-            else:
+            except Exception as e:
+                print(f'An error occured: {e}')
                 messages.error(request, "This domain has not been renewed")
         return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
