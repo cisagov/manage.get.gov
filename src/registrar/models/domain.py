@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
@@ -40,6 +40,7 @@ from .utility.time_stamped_model import TimeStampedModel
 from .public_contact import PublicContact
 
 from .user_domain_role import UserDomainRole
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -1152,14 +1153,29 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
         return self.expiration_date < now
 
-    def state_display(self):
+    def is_expiring(self):
+        """
+        Check if the domain's expiration date is within 60 days.
+        Return True if domain expiration date exists and within 60 days
+        and otherwise False bc there's no expiration date meaning so not expiring
+        """
+        if self.expiration_date is None:
+            return False
+
+        now = timezone.now().date()
+
+        threshold_date = now + timedelta(days=60)
+        return now < self.expiration_date <= threshold_date
+
+    def state_display(self, request=None):
         """Return the display status of the domain."""
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
+        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+            return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
-        else:
-            return self.state.capitalize()
+        return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
