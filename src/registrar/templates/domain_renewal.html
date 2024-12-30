@@ -38,7 +38,7 @@
 
     {% url 'user-profile' as url %}
     {% include "includes/summary_item.html" with title='Your Contact Information' value=user edit_link=url editable=is_editable  contact='true' %}
-
+  
 
 
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
@@ -66,7 +66,7 @@
       {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
     {% endif %}
 
-
+        
     <div class="border-top-1px border-primary-dark padding-top-1 margin-bottom-2">
 
       <fieldset class="usa-fieldset">
@@ -81,7 +81,7 @@
           Acknowledgement of .gov domain requirements
           </h3>          
         </legend>
-
+      
         {% if messages %}
           <ul class="messages"></ul>
           {% for message in messages %}
@@ -89,8 +89,8 @@
           {% endfor %}
         </ul>
         {% endif %}
-
-
+      
+        
   <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
     {% csrf_token %}
     <label>
