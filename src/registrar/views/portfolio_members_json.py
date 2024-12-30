@@ -136,7 +136,10 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             # Use ArrayRemove to return an empty list when no domain invitations are found
             domain_info=ArrayRemoveNull(
                 ArrayAgg(
-                    Subquery(domain_invitations.values("domain_info")),
+                    # Use order_by("id")[:1] to limit the subquery to a single row,
+                    # otherwise we'll trigger a "more than one row returned by a subquery used as an expression"
+                    # when an email matches multiple domain invitations
+                    Subquery(domain_invitations.values("domain_info").order_by("id")[:1]),
                     distinct=True,
                 )
             ),
