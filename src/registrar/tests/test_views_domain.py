@@ -1009,7 +1009,7 @@ class TestDomainManagers(TestDomainOverview):
             add_page.form.submit()
 
             expected_message_content = (
-                "Can't send invitation email. No email is associated with the account for 'test_user'."
+                "Can't send invitation email. No email is associated with your user account."
             )
 
             # Assert that the error message was called with the correct argument
