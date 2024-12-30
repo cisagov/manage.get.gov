@@ -794,7 +794,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-            self.maxDiff=None
+            self.maxDiff = None
             self.assertEqual(csv_content, expected_content)
 
 
