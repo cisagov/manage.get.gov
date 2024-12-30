@@ -1008,9 +1008,7 @@ class TestDomainManagers(TestDomainOverview):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
 
-            expected_message_content = (
-                "Can't send invitation email. No email is associated with your user account."
-            )
+            expected_message_content = "Can't send invitation email. No email is associated with your user account."
 
             # Assert that the error message was called with the correct argument
             mock_error.assert_called_once_with(
