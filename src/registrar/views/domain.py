@@ -384,11 +384,12 @@ class DomainRenewalView(DomainBaseView):
             # updated_expiration = domain.update_expiration(success=True)
             # print("*** Updated expiration result:", updated_expiration)
             try:
+                print("*** Did we get into the try statement")
                 domain.renew_domain()
                 messages.success(request, "This domain has been renewed for one year")
             except Exception as e:
-                print(f'An error occured: {e}')
-                messages.error(request, "This domain has not been renewed")
+                print(f"An error occured: {e}")
+                messages.error(request, "*** This domain has not been renewed")
         return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
 
