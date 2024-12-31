@@ -2188,7 +2188,7 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         response = self.client.post(self.url, data)
 
         # Check that the UserDomainRole objects were created
-        self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 3)
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user, role=UserDomainRole.Roles.MANAGER).count(), 3)
 
         # Check for a success message and a redirect
         self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))

@@ -279,7 +279,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         except json.JSONDecodeError:
             messages.error(
                 self.request,
-                "Invalid data for {domain_type}. If the issue persists, "
+                f"Invalid data for {domain_type}. If the issue persists, "
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"Invalid data for {domain_type}")
@@ -485,7 +485,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         except json.JSONDecodeError:
             messages.error(
                 self.request,
-                "Invalid data for {domain_type}. If the issue persists, "
+                f"Invalid data for {domain_type}. If the issue persists, "
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"Invalid data for {domain_type}.")
