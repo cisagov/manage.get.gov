@@ -2,8 +2,7 @@
 @use "cisa_colors" as *;
 
 $widescreen-max-width: 1920px;
-$widescreen-left-padding: 4.5rem;
-$widescreen-right-padding: 4.5rem;
+$widescreen-x-padding: 4.5rem;
 
 $hot-pink: #FFC3F9;
 
@@ -258,11 +257,9 @@ abbr[title] {
 // This is used in cases where we want to align content to widescreen margins
 // but we don't want the content itself to have widescreen widths
 @include at-media(desktop) {
-  .padding-left--widescreen {
-    padding-left: $widescreen-left-padding !important;
-  }
-  .padding-right--widescreen {
-    padding-right: $widescreen-right-padding !important;
+  .padding-x--widescreen {
+    padding-left: $widescreen-x-padding !important;
+    padding-right: $widescreen-x-padding !important;
   }
 }
 

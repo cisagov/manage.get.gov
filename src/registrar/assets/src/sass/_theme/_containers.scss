@@ -12,8 +12,8 @@
 // USWDS paddings in a few locations
 @include at-media(desktop) {
     .grid-container--widescreen {
-      padding-left: $widescreen-left-padding !important;
-      padding-right: $widescreen-right-padding !important;
+      padding-left: $widescreen-x-padding !important;
+      padding-right: $widescreen-x-padding !important;
     }
 }
 
