@@ -2621,7 +2621,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         """Display restricted warning, setup the auditlog trail and pass it in extra context,
         display warning that status cannot be changed from 'Approved' if domain is in Ready state"""
 
-        # Fetch the Contact instance
+        # Fetch the domain request instance
         domain_request: models.DomainRequest = models.DomainRequest.objects.get(pk=object_id)
         if domain_request.approved_domain and domain_request.approved_domain.state == models.Domain.State.READY:
             domain = domain_request.approved_domain
