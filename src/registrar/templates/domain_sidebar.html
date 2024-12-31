@@ -18,7 +18,7 @@
 
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
-        <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}">
+        <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>
           DNS
         </a>
         {% if request.path|startswith:url %}
