@@ -131,13 +131,9 @@
           data-force-action
         >
           {% if review_form_is_complete %}
-            {% with modal_heading="You are about to submit a domain request for " domain_name_modal=requested_domain__name modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button_id="domain-request-form-submit-button" modal_button_text="Submit request" %}
-              {% include 'includes/modal.html' %}
-            {% endwith %}
+            {% include 'includes/modal.html' with modal_heading="You are about to submit a domain request for " domain_name_modal=requested_domain__name modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button_id="domain-request-form-submit-button" modal_button_text="Submit request" %}
           {% else %}
-            {% with modal_heading="Your request form is incomplete" modal_description='This request cannot be submitted yet. Return to the request and visit the steps that are marked as "incomplete."' modal_button_text="Return to request" cancel_button_only=True %}
-              {% include 'includes/modal.html' %}
-            {% endwith %}
+            {% include 'includes/modal.html' with modal_heading="Your request form is incomplete" modal_description='This request cannot be submitted yet. Return to the request and visit the steps that are marked as "incomplete."' modal_button_text="Return to request" cancel_button_only=True %}
           {% endif %}
         </div>
 

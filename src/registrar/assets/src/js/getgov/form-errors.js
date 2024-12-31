@@ -11,7 +11,7 @@ export function initFormErrorHandling() {
         firstErrorField.focus();
       }, 50);
     } else if (errorSummary) {
-      // Focus on the error summary for screen reader users
+      // Scroll to the error summary
       errorSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 

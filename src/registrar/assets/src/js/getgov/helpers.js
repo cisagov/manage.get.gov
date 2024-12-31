@@ -83,7 +83,6 @@ export function getCsrfToken() {
 export function submitForm(form_id) {
     let form = document.getElementById(form_id);
     if (form) {
-        console.log("submitting form");
         form.submit();
     } else {
         console.error("Form '" + form_id + "' not found.");

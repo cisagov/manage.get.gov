@@ -38,6 +38,8 @@
                         {% endif %}
                     </button>
                     {% elif modal_button_id and modal_button_text %}
+                        {% comment %} Adding button id allows for onclick listeners on button by id,
+                        which execute form submission on form elsewhere on a page outside modal.{% endcomment %}
                         <button
                             id="{{ modal_button_id }}"
                             type="button"
