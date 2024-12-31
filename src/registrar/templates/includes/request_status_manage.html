@@ -1,7 +1,7 @@
 {% load custom_filters %}
 {% load static url_helpers %}
 <main id="main-content" class="grid-container grid-container--widescreen">
-    <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+    <div class="{% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
         <div class="grid-col desktop:grid-col-8 {% if is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
             {% block breadcrumb %}
             {% if portfolio %}
@@ -140,7 +140,7 @@
             {% endblock modify_request %}
         </div>
 
-        <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 maxw-tablet{% endif %}">
+        <div class="grid-col maxw-fit-content {% if is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
             {% block request_summary_header %}
             <h2 class="text-primary-darker"> Summary of your domain request </h2> 
             {% endblock request_summary_header%}
