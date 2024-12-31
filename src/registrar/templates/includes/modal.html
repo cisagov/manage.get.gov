@@ -1,4 +1,5 @@
 {% load static form_helpers url_helpers %}
+{% load custom_filters %}
 
 <div class="usa-modal__content">
     <div class="usa-modal__main">
@@ -24,39 +25,51 @@
         <div class="usa-modal__footer">
             <ul class="usa-button-group">
                 <li class="usa-button-group__item">
-                    {% if not_form and modal_button %}
-                        {{ modal_button }}
+                    {% if cancel_button_only %}
+                        <button
+                            type="button"
+                            class="{{ modal_button_class|button_class }}"
+                            data-close-modal
+                        >
+                        {% if modal_button_text %}
+                            {{ modal_button_text }}
+                        {% else %}
+                            Cancel
+                        {% endif %}
+                    </button>
+                    {% elif modal_button_id and modal_button_text %}
+                        {% comment %} Adding button id allows for onclick listeners on button by id,
+                        which execute form submission on form elsewhere on a page outside modal.{% endcomment %}
+                        <button
+                            id="{{ modal_button_id }}"
+                            type="button"
+                            class="{{ modal_button_class|button_class }}"
+                        >
+                            {{ modal_button_text }}
+                        </button>
                     {% elif modal_button_url and modal_button_text %}
                         <a
                             href="{{ modal_button_url }}"
                             type="button"
-                            class="usa-button"
+                            class="{{ modal_button_class|button_class }}"
                         >
                             {{ modal_button_text }}
                         </a>
-                    {% else %}
-                        <form method="post">
-                            {% csrf_token %}
-                            {{ modal_button }}
-                        </form>
                     {% endif %}
                 </li>
                 <li class="usa-button-group__item">
                     {% comment %} The cancel button the DS form actually triggers a context change in the view,
                     in addition to being a close modal hook {% endcomment %}
                     {% if cancel_button_resets_ds_form %}
-                        <form method="post">
-                            {% csrf_token %}
-                            <button
-                                type="submit"
-                                class="usa-button usa-button--unstyled padding-105 text-center"
-                                name="btn-cancel-click"
-                                data-close-modal
-                            >
-                                Cancel
-                            </button>
-                        </form>
-                    {% elif not is_domain_request_form or review_form_is_complete %}
+                        <button
+                            type="submit"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
+                            id="btn-cancel-click-button"
+                            data-close-modal
+                        >
+                            Cancel
+                        </button>
+                    {% elif not cancel_button_only %}
                         <button
                             type="button"
                             class="usa-button usa-button--unstyled padding-105 text-center"
@@ -72,20 +85,17 @@
     {% comment %} The cancel button the DS form actually triggers a context change in the view,
     in addition to being a close modal hook {% endcomment %}
     {% if cancel_button_resets_ds_form %}
-        <form method="post">
-            {% csrf_token %}
-            <button
-                type="submit"
-                class="usa-button usa-modal__close"
-                aria-label="Close this window"
-                name="btn-cancel-click"
-                data-close-modal
-            >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                </svg>
-            </button>
-        </form>
+        <button
+            type="submit"
+            class="usa-button usa-modal__close"
+            aria-label="Close this window"
+            id="btn-cancel-click-close-button"
+            data-close-modal
+        >
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+            </svg>
+        </button>
     {% else %}
         <button
             type="button"
