@@ -1,21 +1,18 @@
 @use "uswds-core" as *;
 @use "base" as *;
 
-// Fixes some font size disparities with the Figma
-// for usa-alert alert elements
-.usa-alert {
-  .usa-alert__heading.larger-font-sizing {
-    font-size: units(3);
-  }
-}
 
-.usa-alert__text.measure-none {
-  max-width: measure(none);
-}
+/*----------------
+   Alert Layout
+-----------------*/
 
 // The icon was off center for some reason
 // Fixes that issue
-@media (min-width: 64em){
+@include at-media(desktop) {
+  // NOTE: !important is used because _font.scss overrides this
+  .usa-alert__body--widescreen {
+    max-width: $widescreen-max-width !important;
+  }
   .usa-alert--warning{
     .usa-alert__body::before {
       left: 1rem !important;
@@ -24,13 +21,29 @@
   .usa-alert__body.margin-left-1 {
     margin-left: 0.5rem!important;
   }
+
+  .usa-alert__body--widescreen::before {
+    left: 4rem !important;
+  }
+  .usa-alert__body--widescreen {
+    padding-left: 7rem!important;
+  }
 }
 
-// NOTE: !important is used because _font.scss overrides this
-.usa-alert__body--widescreen {
-  max-width: $widescreen-max-width !important;
+/*----------------
+   Alert Fonts
+-----------------*/
+// Fixes some font size disparities with the Figma
+// for usa-alert alert elements
+.usa-alert {
+  .usa-alert__heading.larger-font-sizing {
+    font-size: 1.5rem;
+  }
 }
 
+/*----------------
+  Alert Coloring
+-----------------*/
 .usa-site-alert--hot-pink {
   .usa-alert {
     background-color: $hot-pink;
@@ -47,3 +60,4 @@
     background-color: color('base-darkest');
   }
 }
+
