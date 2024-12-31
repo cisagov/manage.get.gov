@@ -1,6 +1,6 @@
 {% load custom_filters %}
 {% load static url_helpers %}
-<main id="main-content" class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
+<main id="main-content" class="grid-container grid-container--widescreen">
     <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
         <div class="grid-col desktop:grid-col-8 {% if is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
             {% block breadcrumb %}

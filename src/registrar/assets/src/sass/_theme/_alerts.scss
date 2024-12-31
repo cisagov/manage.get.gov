@@ -8,7 +8,7 @@
 
 // The icon was off center for some reason
 // Fixes that issue
-@media (min-width: 64em){
+@include at-media(desktop) {
   // NOTE: !important is used because _font.scss overrides this
   .usa-alert__body--widescreen {
     max-width: $widescreen-max-width !important;

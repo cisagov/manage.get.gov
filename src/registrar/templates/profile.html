@@ -11,7 +11,7 @@ Edit your User Profile |
 {% endblock %}
 
 {% block content %}
-<main id="main-content" class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
+<main id="main-content" class="grid-container grid-container--widescreen">
     <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
         <div class="desktop:grid-col-8">
             {% if messages %}

@@ -3,7 +3,7 @@
 
 {% block title %}{{form_titles|get_item:steps.current}} | Request a .gov | {% endblock %}
 {% block content %}
-<div class="grid-container {% if is_widescreen_mode %}grid-container--widescreen{% endif %}">
+<div class="grid-container grid-container--widescreen">
   <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
     <div class="tablet:grid-col-3">
       {% include 'domain_request_sidebar.html' %}

@@ -257,7 +257,7 @@ abbr[title] {
 
 // This is used in cases where we want to align content to widescreen margins
 // but we don't want the content itself to have widescreen widths
-@media (min-width: 64em) {
+@include at-media(desktop) {
   .padding-left--widescreen {
     padding-left: $widescreen-left-padding !important;
   }

@@ -13,7 +13,7 @@
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
         {% endif %}
 
-        <div class="section-outlined__search {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %}section-outlined__search--widescreen{% endif %}">
+        <div class="section-outlined__search section-outlined__search--widescreen {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %}">
             <section aria-label="Domain requests search component" class="margin-top-2">
                 <form class="usa-search usa-search--small" method="POST" role="search">
                     {% csrf_token %}

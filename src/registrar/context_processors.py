@@ -109,16 +109,6 @@ def portfolio_permissions(request):
         return portfolio_context
 
 
-def is_widescreen_mode(request):
-    exclude_paths = ["/admin/"]
-
-    # Widescreen is now global for all pages EXCEPT admin
-    is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
-
-    # Return a dictionary with the widescreen mode status.
-    return {"is_widescreen_mode": not is_excluded}
-
-
 def is_widescreen_centered(request):
     include_paths = [
         "/domains/",
