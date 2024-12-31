@@ -4,42 +4,41 @@
 {% block title %} Start a request | {% endblock %}
 
 {% block content %}
-<main id="main-content" class="grid-container grid-container--widescreen">
-    <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-      <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 {% endif %} desktop:grid-col-8">
+<main id="main-content" class="grid-container">
+    <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
 
-      <form class="usa-form usa-form--extra-large" method="post" novalidate>
-          {% csrf_token %}
+    <form class="usa-form usa-form--extra-large" method="post" novalidate>
+        {% csrf_token %}
 
-          <h1>You’re about to start your .gov domain request.</h1>
-          <p>You don’t have to complete the process in one session. You can save what you enter and come back to it when you’re ready.</p>
-          {% if portfolio %}
-          <p>We’ll use the information you provide to verify your domain request meets our guidelines.</p>
-          {% else %}
-          <p>We’ll use the information you provide to verify your organization’s eligibility for a .gov domain. We’ll also verify that the domain you request meets our guidelines.</p>
-          {% endif %}
-          <h2>Time to complete the form</h2>
-          <p>If you have <a href="{% public_site_url 'domains/before/#information-you%E2%80%99ll-need-to-complete-the-domain-request-form' %}" target="_blank" class="usa-link">all the information you need</a>,
-            completing your domain request might take around 15 minutes.</p>
-          <h2>How we’ll reach you</h2>
-          <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review. If the contact information below is not correct, visit <a href="{% url 'user-profile' %}?redirect=domain-request:start" class="usa-link">your profile</a> to make updates.</p>
-          {% include "includes/profile_information.html" with user=user%}
-          
+        <h1>You’re about to start your .gov domain request.</h1>
+        <p>You don’t have to complete the process in one session. You can save what you enter and come back to it when you’re ready.</p>
+        {% if portfolio %}
+        <p>We’ll use the information you provide to verify your domain request meets our guidelines.</p>
+        {% else %}
+        <p>We’ll use the information you provide to verify your organization’s eligibility for a .gov domain. We’ll also verify that the domain you request meets our guidelines.</p>
+        {% endif %}
+        <h2>Time to complete the form</h2>
+        <p>If you have <a href="{% public_site_url 'domains/before/#information-you%E2%80%99ll-need-to-complete-the-domain-request-form' %}" target="_blank" class="usa-link">all the information you need</a>,
+          completing your domain request might take around 15 minutes.</p>
+        <h2>How we’ll reach you</h2>
+        <p>While reviewing your domain request, we may need to reach out with questions. We’ll also email you when we complete our review. If the contact information below is not correct, visit <a href="{% url 'user-profile' %}?redirect=domain-request:start" class="usa-link">your profile</a> to make updates.</p>
+        {% include "includes/profile_information.html" with user=user%}
+        
 
-  {% block form_buttons %}
-          <div class="stepnav">
-              <button
-                type="submit"
-                name="submit_button"
-                value="intro_acknowledge"
-                class="usa-button"
-              >Continue</button>
-          </div>
-  {% endblock %}
+{% block form_buttons %}
+        <div class="stepnav">
+            <button
+              type="submit"
+              name="submit_button"
+              value="intro_acknowledge"
+              class="usa-button"
+            >Continue</button>
+        </div>
+{% endblock %}
 
-          </form>
+        </form>
 
-    <div class="caption margin-top-5"><a href="{% public_site_url 'privacy-policy#pra' %}" target="_blank" rel="noopener noreferrer" class="usa-link">Paperwork Reduction Act statement</a> (OMB control number: 1670-0049; expiration date: 10/31/2026)</div>
-    </div>
+   <div class="caption margin-top-5"><a href="{% public_site_url 'privacy-policy#pra' %}" target="_blank" rel="noopener noreferrer" class="usa-link">Paperwork Reduction Act statement</a> (OMB control number: 1670-0049; expiration date: 10/31/2026)</div>
+  </div>
 </main>
 {% endblock %}
