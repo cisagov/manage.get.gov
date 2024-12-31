@@ -10,7 +10,7 @@
 
 // NOTE: !important is used because we are overriding default
 // USWDS paddings in a few locations
-@media (min-width: 64em) {
+@include at-media(desktop) {
     .grid-container--widescreen {
       padding-left: $widescreen-left-padding !important;
       padding-right: $widescreen-right-padding !important;
