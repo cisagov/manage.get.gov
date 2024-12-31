@@ -291,3 +291,9 @@ def get_dict_value(dictionary, key):
     if isinstance(dictionary, dict):
         return dictionary.get(key, "")
     return ""
+
+
+@register.filter
+def button_class(custom_class):
+    default_class = "usa-button"
+    return f"{default_class} {custom_class}" if custom_class else default_class
