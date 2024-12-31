@@ -1,9 +1,17 @@
 export function hideElement(element) {
-    element.classList.add('display-none');
+    if (element) {
+        element.classList.add('display-none');
+    } else {
+        throw new Error('hideElement expected a passed DOM element as an argument, but none was provided.');
+    }
 };
   
 export function showElement(element) {
-    element.classList.remove('display-none');
+    if (element) {
+        element.classList.remove('display-none');
+    } else {
+        throw new Error('showElement expected a passed DOM element as an argument, but none was provided.');
+    }
 };
 
 /**

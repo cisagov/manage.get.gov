@@ -121,21 +121,22 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
     def initial_invitations_search(self, portfolio):
         """Perform initial invitations search and get related DomainInvitation data based on the email."""
-        
-        # Subquery to get concatenated domain information for each email
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),
-            domain__domain_info__portfolio=portfolio
-        ).annotate(
-            concatenated_info=Concat(
-                F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()
-            )
-        ).values("concatenated_info")
 
-        concatenated_domain_info = domain_invitations.values("email").annotate(
-            domain_info=StringAgg("concatenated_info", delimiter=", ")
-        ).values("domain_info")
-        
+        # Subquery to get concatenated domain information for each email
+        domain_invitations = (
+            DomainInvitation.objects.filter(email=OuterRef("email"), domain__domain_info__portfolio=portfolio)
+            .annotate(
+                concatenated_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
+            )
+            .values("concatenated_info")
+        )
+
+        concatenated_domain_info = (
+            domain_invitations.values("email")
+            .annotate(domain_info=StringAgg("concatenated_info", delimiter=", "))
+            .values("domain_info")
+        )
+
         # PortfolioInvitation query
         invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
         invitations = invitations.annotate(

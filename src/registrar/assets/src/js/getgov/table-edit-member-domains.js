@@ -22,7 +22,7 @@ export class EditMemberDomainsTable extends BaseTable {
     this.editModeContainer =  document.getElementById('domain-assignments-edit-view');
     this.readonlyModeContainer = document.getElementById('domain-assignments-readonly-view');
     this.reviewButton = document.getElementById('review-domain-assignments');
-    this.backButton = document.querySelectorAll('.back-to-edit-domain-assignments');
+    this.backButton = document.getElementById('back-to-edit-domain-assignments');
     this.saveButton = document.getElementById('save-domain-assignments');
     this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
@@ -326,17 +326,15 @@ export class EditMemberDomainsTable extends BaseTable {
         this.showReadonlyMode();
       });
     } else {
-      console.warn('Missing DOM element. Expected element with id review-domain-assignments')
+      console.warn('Missing DOM element. Expected element with id review-domain-assignments');
     }
 
-    if (this.backButton.length == 2) {
-      this.backButton.forEach(backbutton => {
-        backbutton.addEventListener('click', () => {
-          this.showEditMode();
-        });
+    if (this.backButton) {
+      this.backButton.addEventListener('click', () => {
+        this.showEditMode();
       });
     } else {
-      console.warn('Missing one or more DOM element. Expected 2 elements with class back-to-edit-domain-assignments')
+      console.warn('Missing DOM element. Expected element with id back-to-edit-domain-assignments');
     }
 
     if (this.saveButton) {
@@ -344,7 +342,7 @@ export class EditMemberDomainsTable extends BaseTable {
         this.submitChanges();
       });
     } else {
-      console.warn('Missing DOM element. Expected element with id save-domain-assignments')
+      console.warn('Missing DOM element. Expected element with id save-domain-assignments');
     }
   }
 }

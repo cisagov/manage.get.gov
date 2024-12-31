@@ -15,6 +15,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
+from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
@@ -250,10 +251,18 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                 messages.success(request, "The domain assignment changes have been saved.")
                 return redirect(reverse("member-domains", kwargs={"pk": pk}))
             except IntegrityError:
-                messages.error(request, "A database error occurred while saving changes.")
+                messages.error(
+                    request,
+                    f"A database error occurred while saving changes. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                )
+                logger.error("A database error occurred while saving changes.")
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
-                messages.error(request, f"An unexpected error occurred: {str(e)}")
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}")
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
@@ -266,7 +275,11 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         try:
             return json.loads(domain_data) if domain_data else []
         except json.JSONDecodeError:
-            messages.error(self.request, f"Invalid data for {domain_type}.")
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+            )
+            logger.error(f"Invalid data for {domain_type}")
             return None
 
     def _process_added_domains(self, added_domain_ids, member):
@@ -438,10 +451,18 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                 messages.success(request, "The domain assignment changes have been saved.")
                 return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
             except IntegrityError:
-                messages.error(request, "A database error occurred while saving changes.")
+                messages.error(
+                    request,
+                    f"A database error occurred while saving changes. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"A database error occurred while saving changes.")
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
-                messages.error(request, f"An unexpected error occurred: {str(e)}")
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.")
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
@@ -454,7 +475,11 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         try:
             return json.loads(domain_data) if domain_data else []
         except json.JSONDecodeError:
-            messages.error(self.request, f"Invalid data for {domain_type}.")
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"Invalid data for {domain_type}.")
             return None
 
     def _process_added_domains(self, added_domain_ids, email):
