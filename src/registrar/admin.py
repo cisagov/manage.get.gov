@@ -2632,7 +2632,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
 
         message = format_html(
-            "The status of this domain request cannot be changed because it has been joined to a domain in Ready status:"  # noqa: E501
+            "The status of this domain request cannot be changed because it has been joined to a domain in Ready status: "  # noqa: E501
             "<a href='{}'>{}</a>",
             mark_safe(change_url),  # nosec
             escape(str(domain)),
