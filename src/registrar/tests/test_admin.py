@@ -675,40 +675,6 @@ class TestPortfolioInvitationAdmin(TestCase):
             request, "Could not send email invitation. Portfolio invitation not saved."
         )
 
-    # @patch("django.contrib.messages.get_messages")
-    # def test_form_rerenders_if_errors_or_warnings(self, mock_get_messages):
-    #     """Ensure the form is re-rendered when errors or warnings are present."""
-    #     self.client.force_login(self.superuser)
-
-    #     # Mock the presence of an error message
-    #     mock_message = Mock()
-    #     mock_message.level_tag = "error"
-    #     mock_message.message = "Simulated error message"
-    #     mock_get_messages.return_value = [mock_message]
-
-    #     # Create an instance of the admin class
-    #     admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=AdminSite())
-
-    #     # Create a PortfolioInvitation instance
-    #     portfolio_invitation = PortfolioInvitation(
-    #         email="james.gordon@gotham.gov",
-    #         portfolio=self.portfolio,
-    #         roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-    #     )
-
-    #     # Create a request object
-    #     request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
-    #     request.user = self.superuser
-
-    #     # Trigger response_add
-    #     response = admin_instance.response_add(request, portfolio_invitation)
-
-    #     # Assert that the response status code is 200 (indicating the form was re-rendered)
-    #     self.assertEqual(response.status_code, 200, msg="Expected form to re-render due to errors.")
-
-    #     # Assert that the mocked error message is included in the response
-    #     self.assertContains(response, "Simulated error message", msg_prefix="Expected error message not found.")
-
 
 class TestHostAdmin(TestCase):
     """Tests for the HostAdmin class as super user

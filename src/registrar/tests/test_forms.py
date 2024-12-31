@@ -421,7 +421,7 @@ class TestContactForm(TestCase):
 
 
 class TestBasePortfolioMemberForms(TestCase):
-    """We test on the child forms instead of BasePortfolioMemberForm becasue the base form
+    """We test on the child forms instead of BasePortfolioMemberForm because the base form
     is a model form with no model bound."""
 
     def setUp(self):
