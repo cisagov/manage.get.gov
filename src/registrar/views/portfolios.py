@@ -292,7 +292,10 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         if added_domain_ids:
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
-                [UserDomainRole(domain_id=domain_id, user=member) for domain_id in added_domain_ids],
+                [
+                    UserDomainRole(domain_id=domain_id, user=member, role=UserDomainRole.Roles.MANAGER)
+                    for domain_id in added_domain_ids
+                ],
                 ignore_conflicts=True,  # Avoid duplicate entries
             )
 
