@@ -544,7 +544,7 @@ class DomainExport(BaseExport):
                     portfolio__isnull=False,
                     portfolio__organization_type__isnull=False,
                     is_election_board=True,
-                    then=Concat(F("portfolio__organization_type"), Value(" - Election")),
+                    then=Concat(F("portfolio__organization_type"), Value("_election")),
                 ),
                 # When portfolio is present and is_election_board is False or None
                 When(
