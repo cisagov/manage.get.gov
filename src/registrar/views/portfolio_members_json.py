@@ -1,7 +1,6 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
-from django.contrib.postgres.fields import ArrayField
 from django.db.models.functions import Cast, Coalesce, Concat
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
@@ -152,7 +151,8 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
                     # We've pre-concatenated the domain infos to limit the subquery to return a single virtual 'row',
                     # otherwise we'll trigger a "more than one row returned by a subquery used as an expression"
                     # when an email matches multiple domain invitations.
-                    # We'll take care when processing the list of one single concatenated items item in serialize_members
+                    # We'll take care when processing the list of one single concatenated items item
+                    # in serialize_members.
                     Subquery(concatenated_domain_info),
                     distinct=True,
                 )

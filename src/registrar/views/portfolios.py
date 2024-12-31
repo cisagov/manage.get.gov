@@ -253,14 +253,16 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             except IntegrityError:
                 messages.error(
                     request,
-                    f"A database error occurred while saving changes. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
                 logger.error("A database error occurred while saving changes.")
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
                     request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}")
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
@@ -277,7 +279,8 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         except json.JSONDecodeError:
             messages.error(
                 self.request,
-                f"Invalid data for {domain_type}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                "Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"Invalid data for {domain_type}")
             return None
@@ -453,14 +456,16 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
             except IntegrityError:
                 messages.error(
                     request,
-                    f"A database error occurred while saving changes. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}.",
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error(f"A database error occurred while saving changes.")
+                logger.error("A database error occurred while saving changes.")
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
                     request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}",
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.")
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
@@ -477,7 +482,8 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         except json.JSONDecodeError:
             messages.error(
                 self.request,
-                f"Invalid data for {domain_type}. If the issue persists, please contact {DefaultUserValues.HELP_EMAIL}.",
+                "Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"Invalid data for {domain_type}.")
             return None

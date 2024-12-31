@@ -2243,7 +2243,9 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Invalid data for added domains.")
+        self.assertEqual(
+            str(messages[0]), "Invalid data for added domains. If the issue persists, please contact help@get.gov."
+        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2264,7 +2266,9 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Invalid data for removed domains.")
+        self.assertEqual(
+            str(messages[0]), "Invalid data for removed domains. If the issue persists, please contact help@get.gov."
+        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2479,7 +2483,9 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Invalid data for added domains.")
+        self.assertEqual(
+            str(messages[0]), "Invalid data for added domains. If the issue persists, please contact help@get.gov."
+        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2500,7 +2506,9 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Invalid data for removed domains.")
+        self.assertEqual(
+            str(messages[0]), "Invalid data for removed domains. If the issue persists, please contact help@get.gov."
+        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
