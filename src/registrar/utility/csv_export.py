@@ -538,11 +538,23 @@ class DomainExport(BaseExport):
         # model objects as we export data, trying to reinstate model objects in order to grab @property
         # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
         return {
-            "converted_generic_org_type": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+            "converted_org_type": Case(
+                # When portfolio is present and is_election_board is True
+                When(
+                    portfolio__isnull=False,
+                    portfolio__organization_type__isnull=False,
+                    is_election_board=True,
+                    then=Concat(F("portfolio__organization_type"), Value("_election")),
+                ),
+                # When portfolio is present and is_election_board is False or None
+                When(
+                    Q(is_election_board=False) | Q(is_election_board__isnull=True),
+                    portfolio__isnull=False,
+                    portfolio__organization_type__isnull=False,
+                    then=F("portfolio__organization_type"),
+                ),
                 # Otherwise, return the natively assigned value
-                default=F("generic_org_type"),
+                default=F("organization_type"),
                 output_field=CharField(),
             ),
             "converted_federal_agency": Case(
@@ -571,20 +583,6 @@ class DomainExport(BaseExport):
                 When(portfolio__isnull=False, then=F("portfolio__organization_name")),
                 # Otherwise, return the natively assigned value
                 default=F("organization_name"),
-                output_field=CharField(),
-            ),
-            "converted_city": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__city")),
-                # Otherwise, return the natively assigned value
-                default=F("city"),
-                output_field=CharField(),
-            ),
-            "converted_state_territory": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__state_territory")),
-                # Otherwise, return the natively assigned value
-                default=F("state_territory"),
                 output_field=CharField(),
             ),
             "converted_so_email": Case(
@@ -727,7 +725,8 @@ class DomainExport(BaseExport):
             first_ready_on = "(blank)"
 
         # organization_type has organization_type AND is_election
-        domain_org_type = model.get("converted_generic_org_type")
+        # domain_org_type includes "- Election" org_type variants
+        domain_org_type = model.get("converted_org_type")
         human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
         domain_federal_type = model.get("converted_federal_type")
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
@@ -772,8 +771,8 @@ class DomainExport(BaseExport):
             "Domain type": model.get("domain_type"),
             "Agency": model.get("converted_federal_agency"),
             "Organization name": model.get("converted_organization_name"),
-            "City": model.get("converted_city"),
-            "State": model.get("converted_state_territory"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
             "SO": model.get("converted_so_name"),
             "SO email": model.get("converted_so_email"),
             "Security contact email": model.get("security_contact_email"),
@@ -908,7 +907,7 @@ class DomainDataType(DomainExport):
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "converted_generic_org_type",
+            "converted_org_type",
             Coalesce("converted_federal_type", Value("ZZZZZ")),
             "converted_federal_agency",
             "domain__name",
@@ -985,105 +984,6 @@ class DomainDataTypeUser(DomainDataType):
         else:
             # Get all domains the user is associated with
             return Q(domain__id__in=request.user.get_user_domain_ids(request))
-
-
-class DomainRequestsDataType:
-    """
-    The DomainRequestsDataType report, but filtered based on the current request user
-    """
-
-    @classmethod
-    def get_filter_conditions(cls, request=None, **kwargs):
-        if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
-            return Q(id__in=[])
-
-        request_ids = request.user.get_user_domain_request_ids(request)
-        return Q(id__in=request_ids)
-
-    @classmethod
-    def get_queryset(cls, request):
-        return DomainRequest.objects.filter(cls.get_filter_conditions(request))
-
-    def safe_get(attribute, default="N/A"):
-        # Return the attribute value or default if not present
-        return attribute if attribute is not None else default
-
-    @classmethod
-    def exporting_dr_data_to_csv(cls, response, request=None):
-        import csv
-
-        writer = csv.writer(response)
-
-        # CSV headers
-        writer.writerow(
-            [
-                "Domain request",
-                "Region",
-                "Status",
-                "Election office",
-                "Federal type",
-                "Domain type",
-                "Request additional details",
-                "Creator approved domains count",
-                "Creator active requests count",
-                "Alternative domains",
-                "Other contacts",
-                "Current websites",
-                "Federal agency",
-                "SO first name",
-                "SO last name",
-                "SO email",
-                "SO title/role",
-                "Creator first name",
-                "Creator last name",
-                "Creator email",
-                "Organization name",
-                "City",
-                "State/territory",
-                "Request purpose",
-                "CISA regional representative",
-                "Last submitted date",
-                "First submitted date",
-                "Last status update",
-            ]
-        )
-
-        queryset = cls.get_queryset(request)
-        for request in queryset:
-            writer.writerow(
-                [
-                    request.requested_domain,
-                    cls.safe_get(getattr(request, "region_field", None)),
-                    request.status,
-                    cls.safe_get(getattr(request, "election_office", None)),
-                    request.converted_federal_type,
-                    cls.safe_get(getattr(request, "domain_type", None)),
-                    cls.safe_get(getattr(request, "additional_details", None)),
-                    cls.safe_get(getattr(request, "creator_approved_domains_count", None)),
-                    cls.safe_get(getattr(request, "creator_active_requests_count", None)),
-                    cls.safe_get(getattr(request, "all_alternative_domains", None)),
-                    cls.safe_get(getattr(request, "all_other_contacts", None)),
-                    cls.safe_get(getattr(request, "all_current_websites", None)),
-                    cls.safe_get(getattr(request, "converted_federal_agency", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "first_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "last_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "email", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "title", None)),
-                    cls.safe_get(getattr(request.creator, "first_name", None)),
-                    cls.safe_get(getattr(request.creator, "last_name", None)),
-                    cls.safe_get(getattr(request.creator, "email", None)),
-                    cls.safe_get(getattr(request, "converted_organization_name", None)),
-                    cls.safe_get(getattr(request, "converted_city", None)),
-                    cls.safe_get(getattr(request, "converted_state_territory", None)),
-                    cls.safe_get(getattr(request, "purpose", None)),
-                    cls.safe_get(getattr(request, "cisa_representative_email", None)),
-                    cls.safe_get(getattr(request, "last_submitted_date", None)),
-                    cls.safe_get(getattr(request, "first_submitted_date", None)),
-                    cls.safe_get(getattr(request, "last_status_update", None)),
-                ]
-            )
-
-        return response
 
 
 class DomainDataFull(DomainExport):
@@ -1760,20 +1660,6 @@ class DomainRequestExport(BaseExport):
                 default=F("organization_name"),
                 output_field=CharField(),
             ),
-            "converted_city": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__city")),
-                # Otherwise, return the natively assigned value
-                default=F("city"),
-                output_field=CharField(),
-            ),
-            "converted_state_territory": Case(
-                # When portfolio is present, use its value instead
-                When(portfolio__isnull=False, then=F("portfolio__state_territory")),
-                # Otherwise, return the natively assigned value
-                default=F("state_territory"),
-                output_field=CharField(),
-            ),
             "converted_so_email": Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__senior_official__email")),
@@ -1952,8 +1838,8 @@ class DomainRequestExport(BaseExport):
             "Investigator": model.get("investigator__email"),
             # Untouched fields
             "Organization name": model.get("converted_organization_name"),
-            "City": model.get("converted_city"),
-            "State/territory": model.get("converted_state_territory"),
+            "City": model.get("city"),
+            "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
             "CISA regional representative": model.get("cisa_representative_email"),
             "Last submitted date": model.get("last_submitted_date"),
@@ -1963,6 +1849,92 @@ class DomainRequestExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
+
+
+class DomainRequestDataType(DomainRequestExport):
+    """
+    The DomainRequestDataType report, but filtered based on the current request user
+    """
+
+    @classmethod
+    def get_columns(cls):
+        """
+        Overrides the columns for CSV export specific to DomainRequestDataType.
+        """
+        return [
+            "Domain request",
+            "Region",
+            "Status",
+            "Election office",
+            "Federal type",
+            "Domain type",
+            "Request additional details",
+            "Creator approved domains count",
+            "Creator active requests count",
+            "Alternative domains",
+            "Other contacts",
+            "Current websites",
+            "Federal agency",
+            "SO first name",
+            "SO last name",
+            "SO email",
+            "SO title/role",
+            "Creator first name",
+            "Creator last name",
+            "Creator email",
+            "Organization name",
+            "City",
+            "State/territory",
+            "Request purpose",
+            "CISA regional representative",
+            "Last submitted date",
+            "First submitted date",
+            "Last status update",
+        ]
+
+    @classmethod
+    def get_filter_conditions(cls, request=None, **kwargs):
+        """
+        Get a Q object of filter conditions to filter when building queryset.
+        """
+        if request is None or not hasattr(request, "user") or not request.user:
+            # Return nothing
+            return Q(id__in=[])
+        else:
+            # Get all domain requests the user is associated with
+            return Q(id__in=request.user.get_user_domain_request_ids(request))
+
+    @classmethod
+    def get_select_related(cls):
+        """
+        Get a list of tables to pass to select_related when building queryset.
+        """
+        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
+
+    @classmethod
+    def get_prefetch_related(cls):
+        """
+        Get a list of tables to pass to prefetch_related when building queryset.
+        """
+        return ["current_websites", "other_contacts", "alternative_domains"]
+
+    @classmethod
+    def get_related_table_fields(cls):
+        """
+        Get a list of fields from related tables.
+        """
+        return [
+            "requested_domain__name",
+            "federal_agency__agency",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
+            "creator__first_name",
+            "creator__last_name",
+            "creator__email",
+            "investigator__email",
+        ]
 
 
 class DomainRequestGrowth(DomainRequestExport):
