@@ -644,21 +644,20 @@ function handleSuborgFieldsAndButtons() {
     const requestedSuborganizationField = document.getElementById("id_requested_suborganization");
     const suborganizationCity = document.getElementById("id_suborganization_city");
     const suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
-    // The reject button is wrapped in a fieldset with a label
-    const rejectButtonFieldset = document.querySelector(".field-reject_suborganization_button");
     const rejectButton = document.querySelector("#clear-requested-suborganization");
+    console.log("test12345678")
 
     // Ensure that every variable is present before proceeding
-    if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory || !rejectButtonFieldset || !rejectButton) {
+    if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory || !rejectButton) {
         console.warn("handleSuborganizationSelection() => Could not find required fields.")
         return;
     }
 
-    function updateRejectButtonFieldset() {
+    function handleRejectButtonVisibility() {
         if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
-            showElement(rejectButtonFieldset);
+            showElement(rejectButton);
         }else {
-            hideElement(rejectButtonFieldset)
+            hideElement(rejectButton)
         }
     } 
 
@@ -668,12 +667,12 @@ function handleSuborgFieldsAndButtons() {
         suborganizationCity.value = "";
         suborganizationStateTerritory.value = "";
         // Update button visibility after clearing
-        updateRejectButtonFieldset();
+        handleRejectButtonVisibility();
     }
     rejectButton.addEventListener("click", handleRejectButton)
-    requestedSuborganizationField.addEventListener("blur", updateRejectButtonFieldset);
-    suborganizationCity.addEventListener("blur", updateRejectButtonFieldset);
-    suborganizationStateTerritory.addEventListener("change", updateRejectButtonFieldset);
+    requestedSuborganizationField.addEventListener("blur", handleRejectButtonVisibility);
+    suborganizationCity.addEventListener("blur", handleRejectButtonVisibility);
+    suborganizationStateTerritory.addEventListener("change", handleRejectButtonVisibility);
 }
 
 /**

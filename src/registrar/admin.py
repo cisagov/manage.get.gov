@@ -2003,14 +2003,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
-    # ------ Converted fields ------
-    # These fields map to @Property methods and
-    # require these custom definitions to work properly
-    @admin.display(description="Suborganization options")
-    def reject_suborganization_button(self, obj):
-        """Custom field to display the reject suborganization button"""
-        return ""
-
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
@@ -2182,7 +2174,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     "requested_suborganization",
                     "suborganization_city",
                     "suborganization_state_territory",
-                    "reject_suborganization_button",
                     "creator",
                 ]
             },
@@ -2304,7 +2295,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "alternative_domains",
         "is_election_board",
         "status_history",
-        "reject_suborganization_button",
     )
 
     # Read only that we'll leverage for CISA Analysts
