@@ -326,18 +326,15 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="requested-suborganization--clear-button">
             <button 
             id="clear-requested-suborganization"
-            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled padding-left-1 usa-button--icon" 
+            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled" 
             type="button"
             >
-                <div class="no-outline-on-click">
-                    <svg 
-                    class="usa-icon"
-                    >
-                        <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                    </svg>
-                    <!-- the span is targeted in JS, do not remove -->
-                    <span>Clear requested suborganization</span>
-                </div>
+                <svg 
+                class="usa-icon"
+                >
+                    <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+                Clear requested suborganization
             </button>
         </div>
     {% else %}
