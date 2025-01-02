@@ -870,7 +870,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-        self.maxDiff = None
         expected_content = (
             # Header
             "Email,Organization admin,Invited by,Joined date,Last active,Domain requests,"

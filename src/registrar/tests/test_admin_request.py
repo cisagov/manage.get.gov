@@ -26,8 +26,8 @@ from registrar.models import (
     SeniorOfficial,
     Portfolio,
     AllowedEmail,
+    Suborganization,
 )
-from registrar.models.suborganization import Suborganization
 from .common import (
     MockSESClient,
     completed_domain_request,
