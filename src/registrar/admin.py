@@ -1497,16 +1497,15 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             requested_email = obj.email
             requestor = request.user
 
-            requested_user = User.objects.filter(email=requested_email).first()
             permission_exists = UserPortfolioPermission.objects.filter(
-                user=requested_user, portfolio=portfolio
+                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
             ).exists()
             try:
-                if not requested_user or not permission_exists:
-                    # if requested user does not exist or permission does not exist, send email
+                if not permission_exists:
+                    # if permission does not exist for a user with requested_email, send email
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
                     messages.success(request, f"{requested_email} has been invited.")
-                elif permission_exists:
+                else:
                     messages.warning(request, "User is already a member of this portfolio.")
             except Exception as e:
                 # when exception is raised, handle and do not save the model
