@@ -2003,6 +2003,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
+    # ------ Converted fields ------
+    # These fields map to @Property methods and
+    # require these custom definitions to work properly
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display

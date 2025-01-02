@@ -697,10 +697,18 @@ class DomainRequest(TimeStampedModel):
                     portfolio__isnull=False,
                 ).exists()
             ):
-                raise ValidationError(
+                # Add a field-level error to requested_suborganization.
+                # To pass in field-specific errors, we need to embed a dict of
+                # field: validationerror then pass that into a validation error itself.
+                # This is slightly confusing, but it just adds it at that level.
+                msg = (
                     "This suborganization already exists. "
                     "Choose a new name, or select it directly if you would like to use it."
                 )
+                errors = { 
+                    "requested_suborganization": ValidationError(msg)
+                }
+                raise ValidationError(errors)
         elif self.portfolio and not self.sub_organization:
             # You cannot create a new suborganization without these fields
             required_suborg_fields = {
@@ -708,16 +716,16 @@ class DomainRequest(TimeStampedModel):
                 "suborganization_city": self.suborganization_city,
                 "suborganization_state_territory": self.suborganization_state_territory,
             }
-
+            # If at least one value is populated, enforce a all-or-nothing rule
             if any(bool(value) for value in required_suborg_fields.values()):
-                # Find which fields are empty
-                errors_dict = {
-                    field_name: [f"This field is required when creating a new suborganization."]
-                    for field_name, value in required_suborg_fields.items()
-                    if not value
-                }
-                # Adds a validation error to each missing field
-                raise ValidationError({k: ValidationError(v, code="required") for k, v in errors_dict.items()})
+                # Find which fields are empty and throw an error on the field
+                errors = {}
+                for field_name, value in required_suborg_fields.items():
+                    if not value:
+                        errors[field_name] = ValidationError(
+                            "This field is required when creating a new suborganization.",
+                        )
+                raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""

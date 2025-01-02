@@ -645,7 +645,6 @@ function handleSuborgFieldsAndButtons() {
     const suborganizationCity = document.getElementById("id_suborganization_city");
     const suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
     const rejectButton = document.querySelector("#clear-requested-suborganization");
-    console.log("test12345678")
 
     // Ensure that every variable is present before proceeding
     if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory || !rejectButton) {

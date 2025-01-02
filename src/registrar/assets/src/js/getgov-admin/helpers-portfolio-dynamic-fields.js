@@ -495,6 +495,7 @@ export function handlePortfolioSelection(
             if (requestedSuborganizationField) hideElement(requestedSuborganizationField);
             if (suborganizationCity) hideElement(suborganizationCity);
             if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);
+
             // == LOGIC FOR THE DOMAIN REQUEST PAGE == //
             if (rejectSuborganizationButton) hideElement(rejectSuborganizationButton);  
         }

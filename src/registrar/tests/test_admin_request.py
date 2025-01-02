@@ -1,5 +1,7 @@
 from datetime import datetime
+from django.forms import ValidationError
 from django.utils import timezone
+from waffle.testutils import override_flag
 import re
 from django.test import RequestFactory, Client, TestCase, override_settings
 from django.contrib.admin.sites import AdminSite
@@ -25,6 +27,7 @@ from registrar.models import (
     Portfolio,
     AllowedEmail,
 )
+from registrar.models.suborganization import Suborganization
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -82,6 +85,7 @@ class TestDomainRequestAdmin(MockEppLib):
         Contact.objects.all().delete()
         Website.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+        Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
@@ -90,6 +94,99 @@ class TestDomainRequestAdmin(MockEppLib):
         super().tearDownClass()
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
+
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    def test_clean_validates_duplicate_suborganization(self):
+        """Tests that clean() prevents duplicate suborganization names within the same portfolio"""
+        # Create a portfolio and existing suborganization
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Portfolio",
+            creator=self.superuser
+        )
+        
+        # Create an existing suborganization
+        Suborganization.objects.create(
+            name="Existing Suborg",
+            portfolio=portfolio
+        )
+        
+        # Create a domain request trying to use the same suborganization name
+        # (intentionally lowercase)
+        domain_request = completed_domain_request(
+            name="test1234.gov",
+            portfolio=portfolio,
+            requested_suborganization="existing suborg",
+            suborganization_city="Rome",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.OHIO,
+        )
+
+        # Assert that the validation error is raised
+        with self.assertRaises(ValidationError) as err:
+            domain_request.clean()
+        
+        self.assertIn(
+            "This suborganization already exists",
+            str(err.exception)
+        )
+
+        # Test that a different name is allowed. Should not raise a error.
+        domain_request.requested_suborganization = "New Suborg"
+        domain_request.clean()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_clean_validates_partial_suborganization_fields(self):
+        """Tests that clean() enforces all-or-nothing rule for suborganization fields"""
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Portfolio",
+            creator=self.superuser
+        )
+        
+        # Create domain request with only city filled out
+        domain_request = completed_domain_request(
+            name="test1234.gov",
+            portfolio=portfolio,
+            suborganization_city="Test City",
+        )
+
+        # Assert validation error is raised with correct missing fields
+        with self.assertRaises(ValidationError) as err:
+            domain_request.clean()
+        
+        error_dict = err.exception.error_dict
+        expected_missing = ["requested_suborganization", "suborganization_state_territory"]
+        
+        # Verify correct fields are flagged as required
+        self.assertEqual(
+            sorted(error_dict.keys()),
+            sorted(expected_missing)
+        )
+        
+        # Verify error message
+        for field in expected_missing:
+            self.assertEqual(
+                str(error_dict[field][0].message),
+                "This field is required when creating a new suborganization."
+            )
+
+        # When all data is passed in, this should validate correctly
+        domain_request.requested_suborganization = "Complete Suborg"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.OHIO
+        # Assert that no ValidationError is raised
+        try:
+            domain_request.clean()
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised unexpectedly: {e}")
+        
+        # Also ensure that no validation error is raised if nothing is passed in at all
+        domain_request.suborganization_city = None
+        domain_request.requested_suborganization = None
+        domain_request.suborganization_state_territory = None
+        try:
+            domain_request.clean()
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised unexpectedly: {e}")
 
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
