@@ -208,16 +208,19 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
         action_url = reverse(item["type"], kwargs={"pk": item["id"]})
 
-        # Ensure domain_info is properly processed
+        item_type = item.get("type", "")
+
+        # Ensure domain_info is properly processed for invites -
+        # we need to un-concatenate the subquery
         domain_info_list = item.get("domain_info", [])
-        if isinstance(domain_info_list, list) and domain_info_list:
+        if item_type == "invitedmember" and isinstance(domain_info_list, list) and domain_info_list:
             # Split the first item in the list if it exists
             domain_info_list = domain_info_list[0].split(", ")
 
         # Serialize member data
         member_json = {
             "id": item.get("id", ""),  # id is id of UserPortfolioPermission or PortfolioInvitation
-            "type": item.get("type", ""),  # source is member or invitedmember
+            "type": item_type,  # source is member or invitedmember
             "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
             "email": item.get("email_display", ""),
             "member_display": item.get("member_display", ""),
