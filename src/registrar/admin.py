@@ -1553,7 +1553,6 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         if has_errors:
             # Re-render the change form if there are errors or warnings
             # Prepare context for rendering the change form
-            opts = self.model._meta
 
             # Get the model form
             ModelForm = self.get_form(request, obj=obj)
