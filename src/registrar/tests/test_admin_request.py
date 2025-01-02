@@ -100,17 +100,11 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_clean_validates_duplicate_suborganization(self):
         """Tests that clean() prevents duplicate suborganization names within the same portfolio"""
         # Create a portfolio and existing suborganization
-        portfolio = Portfolio.objects.create(
-            organization_name="Test Portfolio",
-            creator=self.superuser
-        )
-        
+        portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
         # Create an existing suborganization
-        Suborganization.objects.create(
-            name="Existing Suborg",
-            portfolio=portfolio
-        )
-        
+        Suborganization.objects.create(name="Existing Suborg", portfolio=portfolio)
+
         # Create a domain request trying to use the same suborganization name
         # (intentionally lowercase)
         domain_request = completed_domain_request(
@@ -124,11 +118,8 @@ class TestDomainRequestAdmin(MockEppLib):
         # Assert that the validation error is raised
         with self.assertRaises(ValidationError) as err:
             domain_request.clean()
-        
-        self.assertIn(
-            "This suborganization already exists",
-            str(err.exception)
-        )
+
+        self.assertIn("This suborganization already exists", str(err.exception))
 
         # Test that a different name is allowed. Should not raise a error.
         domain_request.requested_suborganization = "New Suborg"
@@ -138,11 +129,8 @@ class TestDomainRequestAdmin(MockEppLib):
     @override_flag("organization_feature", active=True)
     def test_clean_validates_partial_suborganization_fields(self):
         """Tests that clean() enforces all-or-nothing rule for suborganization fields"""
-        portfolio = Portfolio.objects.create(
-            organization_name="Test Portfolio",
-            creator=self.superuser
-        )
-        
+        portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
         # Create domain request with only city filled out
         domain_request = completed_domain_request(
             name="test1234.gov",
@@ -153,21 +141,17 @@ class TestDomainRequestAdmin(MockEppLib):
         # Assert validation error is raised with correct missing fields
         with self.assertRaises(ValidationError) as err:
             domain_request.clean()
-        
+
         error_dict = err.exception.error_dict
         expected_missing = ["requested_suborganization", "suborganization_state_territory"]
-        
+
         # Verify correct fields are flagged as required
-        self.assertEqual(
-            sorted(error_dict.keys()),
-            sorted(expected_missing)
-        )
-        
+        self.assertEqual(sorted(error_dict.keys()), sorted(expected_missing))
+
         # Verify error message
         for field in expected_missing:
             self.assertEqual(
-                str(error_dict[field][0].message),
-                "This field is required when creating a new suborganization."
+                str(error_dict[field][0].message), "This field is required when creating a new suborganization."
             )
 
         # When all data is passed in, this should validate correctly
@@ -178,7 +162,7 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request.clean()
         except ValidationError as e:
             self.fail(f"ValidationError was raised unexpectedly: {e}")
-        
+
         # Also ensure that no validation error is raised if nothing is passed in at all
         domain_request.suborganization_city = None
         domain_request.requested_suborganization = None

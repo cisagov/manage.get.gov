@@ -705,9 +705,7 @@ class DomainRequest(TimeStampedModel):
                     "This suborganization already exists. "
                     "Choose a new name, or select it directly if you would like to use it."
                 )
-                errors = { 
-                    "requested_suborganization": ValidationError(msg)
-                }
+                errors = {"requested_suborganization": ValidationError(msg)}
                 raise ValidationError(errors)
         elif self.portfolio and not self.sub_organization:
             # You cannot create a new suborganization without these fields
