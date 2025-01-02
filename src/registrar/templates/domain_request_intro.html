@@ -6,7 +6,7 @@
 {% block content %}
 <main id="main-content" class="grid-container grid-container--widescreen">
     <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-      <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 {% endif %} desktop:grid-col-8">
+      <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
 
       <form class="usa-form usa-form--extra-large" method="post" novalidate>
           {% csrf_token %}
