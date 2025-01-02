@@ -26,7 +26,12 @@ export function handleRequestingEntityFieldset() {
     function toggleSuborganization(radio=null) {
         if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
         requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
-        requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+        if (select.options.length == 2) { // --Select-- and other are the only options
+            hideElement(selectParent); // Hide the select drop down and indicate requesting new suborg
+            requestingNewSuborganization.value = "True";
+        } else {
+            requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+        }
         requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
     }
 
