@@ -314,6 +314,14 @@ class OrganizationContactForm(RegistrarForm):
         label="Urbanization (required for Puerto Rico only)",
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set initial value for federal agency combo box and specify combobox template
+        if self.domain_request and self.domain_request.federal_agency:
+            self.fields["federal_agency"].initial = self.domain_request.federal_agency
+            self.fields["federal_agency"].widget.attrs["data-default-value"] = self.domain_request.federal_agency.pk
+        self.fields["federal_agency"].widget.template_name = "django/forms/widgets/combobox.html",
+
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""
         federal_agency = self.cleaned_data.get("federal_agency", None)
