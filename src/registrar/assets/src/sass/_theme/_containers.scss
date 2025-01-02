@@ -6,21 +6,3 @@
 .usa-identifier__container--widescreen {
     max-width: $widescreen-max-width !important;
 }
-
-
-// NOTE: !important is used because we are overriding default
-// USWDS paddings in a few locations
-@include at-media(desktop) {
-    .grid-container--widescreen {
-      padding-left: $widescreen-x-padding !important;
-      padding-right: $widescreen-x-padding !important;
-    }
-}
-
-// matches max-width to equal the max-width of .grid-container
-// used to trick the eye into thinking we have left-aligned a 
-// regular grid-container within a widescreen (see instances
-// where is_widescreen_centered is used in the html).
-.max-width--grid-container {
-  max-width: 960px;
-}
