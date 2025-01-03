@@ -1475,7 +1475,15 @@ class TestDomainRequestAdmin(MockEppLib):
         normalized_expected = normalize_html(expected_markup)
         normalized_response = normalize_html(response.content.decode("utf-8"))
 
-        self.assertIn(normalized_expected, normalized_response)
+        index = normalized_response.find(normalized_expected)
+
+        # Assert that the expected markup is found in the response
+        assert index != -1, (
+            f"Expected markup not found in the response.\n\n"
+            f"Expected:\n{normalized_expected}\n\n"
+            f"Start index of mismatch: {index}\n\n"
+            f"Consider checking the surrounding response for context."
+        )
 
     @less_console_noise_decorator
     def test_other_websites_has_few_readonly_links(self):
@@ -1511,7 +1519,15 @@ class TestDomainRequestAdmin(MockEppLib):
         normalized_expected = normalize_html(expected_markup)
         normalized_response = normalize_html(response.content.decode("utf-8"))
 
-        self.assertIn(normalized_expected, normalized_response)
+        index = normalized_response.find(normalized_expected)
+
+        # Assert that the expected markup is found in the response
+        assert index != -1, (
+            f"Expected markup not found in the response.\n\n"
+            f"Expected:\n{normalized_expected}\n\n"
+            f"Start index of mismatch: {index}\n\n"
+            f"Consider checking the surrounding response for context."
+        )
 
     @less_console_noise_decorator
     def test_other_websites_has_lots_readonly_links(self):
@@ -1549,7 +1565,15 @@ class TestDomainRequestAdmin(MockEppLib):
         normalized_expected = normalize_html(expected_markup)
         normalized_response = normalize_html(response.content.decode("utf-8"))
 
-        self.assertIn(normalized_expected, normalized_response)
+        index = normalized_response.find(normalized_expected)
+
+        # Assert that the expected markup is found in the response
+        assert index != -1, (
+            f"Expected markup not found in the response.\n\n"
+            f"Expected:\n{normalized_expected}\n\n"
+            f"Start index of mismatch: {index}\n\n"
+            f"Consider checking the surrounding response for context."
+        )
 
     @less_console_noise_decorator
     def test_alternative_domains_has_one_readonly_link(self):
@@ -1582,7 +1606,15 @@ class TestDomainRequestAdmin(MockEppLib):
         normalized_expected = normalize_html(expected_markup)
         normalized_response = normalize_html(response.content.decode("utf-8"))
 
-        self.assertIn(normalized_expected, normalized_response)
+        index = normalized_response.find(normalized_expected)
+
+        # Assert that the expected markup is found in the response
+        assert index != -1, (
+            f"Expected markup not found in the response.\n\n"
+            f"Expected:\n{normalized_expected}\n\n"
+            f"Start index of mismatch: {index}\n\n"
+            f"Consider checking the surrounding response for context."
+        )
 
     @less_console_noise_decorator
     def test_alternative_domains_has_lots_readonly_link(self):
@@ -1636,7 +1668,15 @@ class TestDomainRequestAdmin(MockEppLib):
         normalized_expected = normalize_html(expected_markup)
         normalized_response = normalize_html(response.content.decode("utf-8"))
 
-        self.assertIn(normalized_expected, normalized_response)
+        index = normalized_response.find(normalized_expected)
+
+        # Assert that the expected markup is found in the response
+        assert index != -1, (
+            f"Expected markup not found in the response.\n\n"
+            f"Expected:\n{normalized_expected}\n\n"
+            f"Start index of mismatch: {index}\n\n"
+            f"Consider checking the surrounding response for context."
+        )
 
     @less_console_noise_decorator
     def test_contact_fields_have_detail_table(self):
