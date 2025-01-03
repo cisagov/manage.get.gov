@@ -98,7 +98,7 @@ export class DomainRequestsTable extends BaseTable {
     }
 
     if (request.is_deletable) {
-      // 1st path: Just a modal trigger in any screen size for non-org users
+      // 1st path (non-org): Just a modal trigger in any screen size for non-org users
       modalTrigger = `
         <a 
           role="button" 
@@ -116,7 +116,7 @@ export class DomainRequestsTable extends BaseTable {
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
 
-        // 2nd path: Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
+        // 2nd path (org model): Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
         modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
       }
     }
@@ -134,14 +134,16 @@ export class DomainRequestsTable extends BaseTable {
         ${request.status}
       </td>
       <td>
-        <a href="${actionUrl}">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
-          </svg>
-          ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
-        </a>
+        <div class="grid-row grid-gap">
+          <a href="${actionUrl}">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
+            </svg>
+            ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
+          </a>
+          ${customTableOptions.needsAdditionalColumn ? modalTrigger : ''}
+        </div>
       </td>
-      ${customTableOptions.needsAdditionalColumn ? '<td>'+modalTrigger+'</td>' : ''}
     `;
     tbody.appendChild(row);
     if (request.is_deletable) DomainRequestsTable.addDomainRequestsModal(request.requested_domain, request.id, request.created_at, tbody);
