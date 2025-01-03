@@ -8,7 +8,12 @@ Organization member
 {% load static %}
 
 {% block portfolio_content %}
-<div id="main-content">
+<div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+  <!-- Form messages -->
+  {% include "includes/form_errors.html" with form=form %}
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
 
   {% url 'members' as url %}
   <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">

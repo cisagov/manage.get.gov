@@ -110,8 +110,8 @@
             }
         }
         .usa-nav__secondary {
-            // I don't know why USWDS has this at 2 rem, which puts it out of alignment
-            right: 3rem;
+            right: 1rem;
+            padding-right: $widescreen-x-padding;
             color: color('white');
             bottom: 4.3rem;
             .usa-nav-link,
