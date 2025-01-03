@@ -1041,6 +1041,10 @@ def completed_domain_request(  # noqa
     action_needed_reason=None,
     portfolio=None,
     organization_name=None,
+    sub_organization=None,
+    requested_suborganization=None,
+    suborganization_city=None,
+    suborganization_state_territory=None,
 ):
     """A completed domain request."""
     if not user:
@@ -1102,6 +1106,18 @@ def completed_domain_request(  # noqa
 
     if portfolio:
         domain_request_kwargs["portfolio"] = portfolio
+
+    if sub_organization:
+        domain_request_kwargs["sub_organization"] = sub_organization
+
+    if requested_suborganization:
+        domain_request_kwargs["requested_suborganization"] = requested_suborganization
+
+    if suborganization_city:
+        domain_request_kwargs["suborganization_city"] = suborganization_city
+
+    if suborganization_state_territory:
+        domain_request_kwargs["suborganization_state_territory"] = suborganization_state_territory
 
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
