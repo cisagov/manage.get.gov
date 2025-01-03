@@ -7,7 +7,7 @@ This file tests the various ways in which the registrar interacts with the regis
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
-import datetime
+from datetime import datetime, date, timedelta
 from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
@@ -2267,13 +2267,13 @@ class TestExpirationDate(MockEppLib):
         """assert that the setter for expiration date is not implemented and will raise error"""
         with less_console_noise():
             with self.assertRaises(NotImplementedError):
-                self.domain.registry_expiration_date = datetime.date.today()
+                self.domain.registry_expiration_date = date.today()
 
     def test_renew_domain(self):
         """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
         with less_console_noise():
             self.domain.renew_domain()
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain._cache["ex_date"], test_date)
             self.assertEquals(self.domain.expiration_date, test_date)
 
@@ -2295,18 +2295,42 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             # to do this, need to mock value returned from timezone.now
             # set now to 2023-01-01
-            mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
             # force fetch_cache which sets the expiration date to 2023-05-25
             self.domain.statuses
             with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
                 self.assertFalse(self.domain.is_expired())
+
+    def test_is_expiring_within_threshold(self):
+        """assert that is_expiring returns true when expiration date is within 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=30)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertTrue(self.domain.is_expiring())
+
+    def test_is_not_expiring_outside_threshold(self):
+        """assert that is_expiring returns false when expiration date is outside 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=61)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertFalse(self.domain.is_expiring())
 
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""
         with less_console_noise():
             # force fetch_cache to be called
             self.domain.statuses
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain.expiration_date, test_date)
 
 
@@ -2322,7 +2346,7 @@ class TestCreationDate(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # creation_date returned from mockDataInfoDomain with creation date:
         # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35))
+        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2331,7 +2355,7 @@ class TestCreationDate(MockEppLib):
     def test_creation_date_setter_not_implemented(self):
         """assert that the setter for creation date is not implemented and will raise error"""
         with self.assertRaises(NotImplementedError):
-            self.domain.creation_date = datetime.date.today()
+            self.domain.creation_date = date.today()
 
     def test_creation_date_updated_on_info_domain_call(self):
         """assert that creation date in db is updated on info domain call"""
