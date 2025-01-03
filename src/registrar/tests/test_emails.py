@@ -150,7 +150,7 @@ class TestEmails(TestCase):
     def test_submission_confirmation_no_current_website_spacing(self):
         """Test line spacing without current_website."""
         domain_request = completed_domain_request(
-            has_current_website=False, user=User.objects.create(username="test", email="testy@town.com")
+            current_websites=[], user=User.objects.create(username="test", email="testy@town.com")
         )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
@@ -164,9 +164,7 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_current_website_spacing(self):
         """Test line spacing with current_website."""
-        domain_request = completed_domain_request(
-            has_current_website=True, user=User.objects.create(username="test", email="testy@town.com")
-        )
+        domain_request = completed_domain_request(user=User.objects.create(username="test", email="testy@town.com"))
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -218,9 +216,7 @@ class TestEmails(TestCase):
     @less_console_noise_decorator
     def test_submission_confirmation_alternative_govdomain_spacing(self):
         """Test line spacing with alternative .gov domain."""
-        domain_request = completed_domain_request(
-            has_alternative_gov_domain=True, user=User.objects.create(username="test", email="testy@town.com")
-        )
+        domain_request = completed_domain_request(user=User.objects.create(username="test", email="testy@town.com"))
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -234,7 +230,7 @@ class TestEmails(TestCase):
     def test_submission_confirmation_no_alternative_govdomain_spacing(self):
         """Test line spacing without alternative .gov domain."""
         domain_request = completed_domain_request(
-            has_alternative_gov_domain=False, user=User.objects.create(username="test", email="testy@town.com")
+            alternative_domains=[], user=User.objects.create(username="test", email="testy@town.com")
         )
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
