@@ -375,7 +375,6 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
-        logger.info(portfolio_invitation)
         form = self.form_class(instance=portfolio_invitation)
 
         return render(

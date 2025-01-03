@@ -1097,7 +1097,6 @@ class DomainUsersView(DomainBaseView):
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
-            logger.info(domain_invitation)
             # Query PortfolioInvitations linked to the same portfolio and check roles
             portfolio_invitations = PortfolioInvitation.objects.filter(
                 portfolio=portfolio, email=domain_invitation.email
@@ -1105,8 +1104,6 @@ class DomainUsersView(DomainBaseView):
 
             # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
             for portfolio_invitation in portfolio_invitations:
-                logger.info(portfolio_invitation)
-                logger.info(portfolio_invitation.roles)
                 if (
                     portfolio_invitation.roles
                     and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles
