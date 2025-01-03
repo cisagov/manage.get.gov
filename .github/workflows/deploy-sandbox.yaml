@@ -71,6 +71,8 @@ jobs:
   comment:
     runs-on: ubuntu-latest
     needs: [variables, deploy]
+    permissions: 
+      issues: write
     steps:
       - uses: actions/github-script@v6
         env:
