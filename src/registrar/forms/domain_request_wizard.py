@@ -144,9 +144,10 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
         if self.domain_request.portfolio:
+            choose_text = "(choose from list)" if self.domain_request.portfolio.portfolio_suborganizations.exists() else ""
             self.form_choices = (
                 (False, self.domain_request.portfolio),
-                (True, "A suborganization (choose from list)"),
+                (True, f"A suborganization {choose_text}"),
             )
         self.fields[self.field_name] = self.get_typed_choice_field()
 
