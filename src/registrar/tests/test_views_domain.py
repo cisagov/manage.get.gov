@@ -535,11 +535,24 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
             Domain, "is_expired", self.custom_is_expired
         ):
+            # Grab the detail page
             detail_page = self.client.get(
                 reverse("domain", kwargs={"pk": self.expiringdomain.id}),
             )
+
+            # Make sure we see the link as a domain manager
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            # Make sure we can see Renewal form on the sidebar since it's expiring
             self.assertContains(detail_page, "Renewal form")
-            response = self.client.get(reverse("domain-renewal", kwargs={"pk": self.expiringdomain.id}))
+
+            # Grab link to the renewal page
+            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.expiringdomain.id})
+            self.assertContains(detail_page, f'href="{renewal_form_url}"')
+
+            # Simulate clicking the link
+            response = self.client.get(renewal_form_url)
+
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f"Renew {self.expiringdomain.name}")
 
