@@ -529,6 +529,21 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             )
             self.assertContains(detail_page, "Renew to maintain access")
 
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_sidebar_and_form(self):
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired
+        ):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": self.expiringdomain.id}),
+            )
+            self.assertContains(detail_page, "Renewal form")
+            response = self.client.get(reverse("domain-renewal",kwargs={"pk": self.expiringdomain.id}))
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, f"Renew {self.expiringdomain.name}")
+            
+
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod
