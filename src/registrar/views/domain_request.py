@@ -448,34 +448,21 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
         org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
         if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
-            modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
             context = {
-                "not_form": False,
                 "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
-                "modal_button": modal_button,
-                "modal_heading": "You are about to submit a domain request for ",
-                "domain_name_modal": str(self.domain_request.requested_domain),
-                "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
-                You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
         else:  # form is not complete
-            modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
             context = {
-                "not_form": True,
                 "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
-                "modal_button": modal_button,
-                "modal_heading": "Your request form is incomplete",
-                "modal_description": 'This request cannot be submitted yet.\
-                Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,

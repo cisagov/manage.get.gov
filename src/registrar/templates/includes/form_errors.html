@@ -1,6 +1,7 @@
 {% if form.errors %}
+  <div id="form-errors">
   {% for error in form.non_field_errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
+    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
     <div class="usa-alert__body">
     {{ error|escape }}
     </div>
@@ -14,5 +15,6 @@
       </div>
     </div>
   {% endfor %}
-{% endfor %}
+  {% endfor %}
+  </div>
 {% endif %}

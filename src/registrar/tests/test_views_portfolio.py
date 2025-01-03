@@ -14,6 +14,7 @@ from registrar.models import (
     Suborganization,
     AllowedEmail,
 )
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -27,6 +28,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
 from django.test import Client
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -1929,7 +1931,7 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
         cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
 
         # Assign permissions to the user making requests
-        UserPortfolioPermission.objects.create(
+        cls.portfolio_permission = UserPortfolioPermission.objects.create(
             user=cls.user,
             portfolio=cls.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
@@ -2108,10 +2110,21 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.url = reverse("member-domains-edit", kwargs={"pk": cls.portfolio_permission.pk})
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+
+    def setUp(self):
+        super().setUp()
+        names = ["1.gov", "2.gov", "3.gov"]
+        Domain.objects.bulk_create([Domain(name=name) for name in names])
+
+    def tearDown(self):
+        super().tearDown()
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2164,15 +2177,139 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_valid_added_domains(self):
+        """Test that domains can be successfully added."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that the UserDomainRole objects were created
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user, role=UserDomainRole.Roles.MANAGER).count(), 3)
+
+        # Check for a success message and a redirect
+        self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_valid_removed_domains(self):
+        """Test that domains can be successfully removed."""
+        self.client.force_login(self.user)
+
+        # Create some UserDomainRole objects
+        domains = [1, 2, 3]
+        UserDomainRole.objects.bulk_create([UserDomainRole(domain_id=domain, user=self.user) for domain in domains])
+
+        data = {
+            "removed_domains": json.dumps([1, 2]),
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that the UserDomainRole objects were deleted
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(UserDomainRole.objects.filter(domain_id=3, user=self.user).count(), 1)
+
+        # Check for a success message and a redirect
+        self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+
+        UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_invalid_added_domains_data(self):
+        """Test that an error is returned for invalid added domains data."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": "json-statham",
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that no UserDomainRole objects were created
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 0)
+
+        # Check for an error message and a redirect
+        self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(
+            str(messages[0]), "Invalid data for added domains. If the issue persists, please contact help@get.gov."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_invalid_removed_domains_data(self):
+        """Test that an error is returned for invalid removed domains data."""
+        self.client.force_login(self.user)
+
+        data = {
+            "removed_domains": "not-a-json",
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that no UserDomainRole objects were deleted
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 0)
+
+        # Check for an error message and a redirect
+        self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(
+            str(messages[0]), "Invalid data for removed domains. If the issue persists, please contact help@get.gov."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_no_changes(self):
+        """Test that no changes message is displayed when no changes are made."""
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.url, {})
+
+        # Check that no UserDomainRole objects were created or deleted
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 0)
+
+        # Check for an info message and a redirect
+        self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "No changes detected.")
+
 
 class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.url = reverse("invitedmember-domains-edit", kwargs={"pk": cls.invitation.pk})
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+
+    def setUp(self):
+        super().setUp()
+        names = ["1.gov", "2.gov", "3.gov"]
+        Domain.objects.bulk_create([Domain(name=name) for name in names])
+
+    def tearDown(self):
+        super().tearDown()
+        Domain.objects.all().delete()
+        DomainInvitation.objects.all().delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2223,6 +2360,175 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_valid_added_domains(self):
+        """Test adding new domains successfully."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that the DomainInvitation objects were created
+        self.assertEqual(
+            DomainInvitation.objects.filter(
+                email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+            ).count(),
+            3,
+        )
+
+        # Check for a success message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_existing_and_new_added_domains(self):
+        """Test updating existing and adding new invitations."""
+        self.client.force_login(self.user)
+
+        # Create existing invitations
+        DomainInvitation.objects.bulk_create(
+            [
+                DomainInvitation(
+                    domain_id=1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.CANCELED
+                ),
+                DomainInvitation(
+                    domain_id=2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                ),
+            ]
+        )
+
+        data = {
+            "added_domains": json.dumps([1, 2, 3]),
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that status for domain_id=1 was updated to INVITED
+        self.assertEqual(
+            DomainInvitation.objects.get(domain_id=1, email="invited@example.com").status,
+            DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # Check that domain_id=3 was created as INVITED
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                domain_id=3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+            ).exists()
+        )
+
+        # Check for a success message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_valid_removed_domains(self):
+        """Test removing domains successfully."""
+        self.client.force_login(self.user)
+
+        # Create existing invitations
+        DomainInvitation.objects.bulk_create(
+            [
+                DomainInvitation(
+                    domain_id=1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                ),
+                DomainInvitation(
+                    domain_id=2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                ),
+            ]
+        )
+
+        data = {
+            "removed_domains": json.dumps([1]),
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that the status for domain_id=1 was updated to CANCELED
+        self.assertEqual(
+            DomainInvitation.objects.get(domain_id=1, email="invited@example.com").status,
+            DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+
+        # Check that domain_id=2 remains INVITED
+        self.assertEqual(
+            DomainInvitation.objects.get(domain_id=2, email="invited@example.com").status,
+            DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # Check for a success message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_invalid_added_domains_data(self):
+        """Test handling of invalid JSON for added domains."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": "not-a-json",
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that no DomainInvitation objects were created
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+
+        # Check for an error message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(
+            str(messages[0]), "Invalid data for added domains. If the issue persists, please contact help@get.gov."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_invalid_removed_domains_data(self):
+        """Test handling of invalid JSON for removed domains."""
+        self.client.force_login(self.user)
+
+        data = {
+            "removed_domains": "json-sudeikis",
+        }
+        response = self.client.post(self.url, data)
+
+        # Check that no DomainInvitation objects were updated
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+
+        # Check for an error message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(
+            str(messages[0]), "Invalid data for removed domains. If the issue persists, please contact help@get.gov."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_post_with_no_changes(self):
+        """Test the case where no changes are made."""
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.url, {})
+
+        # Check that no DomainInvitation objects were created or updated
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+
+        # Check for an info message and a redirect
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "No changes detected.")
 
 
 class TestRequestingEntity(WebTest):
