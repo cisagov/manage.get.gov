@@ -143,7 +143,7 @@ export class BaseTable {
     this.statusCheckboxes = document.querySelectorAll(`.${this.sectionSelector} input[name="filter-status"]`);
     this.statusIndicator = document.getElementById(`${this.sectionSelector}__filter-indicator`);
     this.statusToggle = document.getElementById(`${this.sectionSelector}__usa-button--filter`);
-    this.noTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
+    this.noDataTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
     this.noSearchResultsWrapper = document.getElementById(`${this.sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
@@ -451,7 +451,7 @@ export class BaseTable {
         }
 
         // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+        this.updateDisplay(data, this.tableWrapper, this.noDataTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
         // identify the DOM element where the list of results will be inserted into the DOM
         const tbody = this.tableWrapper.querySelector('tbody');
         tbody.innerHTML = '';

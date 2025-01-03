@@ -18,12 +18,11 @@
     </div>
 
     <div class="tablet:grid-col-9" id="main-content">
-
-        {% block messages %}
-            {% include "includes/form_messages.html" %}
-        {% endblock %}
-
+        <!-- Form messages -->
         {% include "includes/form_errors.html" with form=form %}
+        {% block messages %}
+          {% include "includes/form_messages.html" %}
+        {% endblock messages%}
 
         <h1>Organization</h1>
 
