@@ -215,28 +215,28 @@
                     {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
                 {% endif %}
 
-                {# We always show this field even if None #}
-                {% if DomainRequest %}
-                    <h3 class="register-form-review-header">CISA Regional Representative</h3>
-                    <ul class="usa-list usa-list--unstyled margin-top-0">
-                        {% if DomainRequest.cisa_representative_first_name %}
-                        {{ DomainRequest.get_formatted_cisa_rep_name }}
-                        {% else %}
-                        No
-                        {% endif %}
-                    </ul>
-                    <h3 class="register-form-review-header">Anything else</h3>
-                    <ul class="usa-list usa-list--unstyled margin-top-0">
-                        {% if DomainRequest.anything_else %}
-                        {{DomainRequest.anything_else}}
-                        {% else %}
-                        No
-                        {% endif %}
-                    </ul>
-                {% endif %}
-            {% endwith %}
-        {% endif %}
-        {% endblock request_summary%}
+            {# We always show this field even if None #}
+            {% if DomainRequest %}
+                <h3 class="header--body text-primary-dark margin-bottom-0">CISA Regional Representative</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.cisa_representative_first_name %}
+                    {{ DomainRequest.get_formatted_cisa_rep_name }}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+                <h3 class="header--body text-primary-dark margin-bottom-0">Anything else</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.anything_else %}
+                    {{DomainRequest.anything_else}}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+    {% endblock request_summary%}
         </div>
     </div>
 </main>

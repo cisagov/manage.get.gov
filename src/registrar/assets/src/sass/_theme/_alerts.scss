@@ -61,3 +61,7 @@
   }
 }
 
+// Override the specificity of USWDS css to enable no max width on admin alerts
+.usa-alert__body.maxw-none {
+  max-width: none;
+}
