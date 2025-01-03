@@ -1,3 +1,4 @@
+import json
 import logging
 from django.conf import settings
 
@@ -8,10 +9,13 @@ from django.utils.safestring import mark_safe
 from django.contrib import messages
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
+from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
@@ -26,6 +30,7 @@ from registrar.views.utility.permission_views import (
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
+from django.db import IntegrityError
 
 
 logger = logging.getLogger(__name__)
@@ -222,6 +227,86 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             },
         )
 
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio member.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
+        if added_domain_ids is None:
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
+        if removed_domain_ids is None:
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                self._process_added_domains(added_domain_ids, member)
+                self._process_removed_domains(removed_domain_ids, member)
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            except IntegrityError:
+                messages.error(
+                    request,
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error("A database error occurred while saving changes.")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+            except Exception as e:
+                messages.error(
+                    request,
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+    def _parse_domain_ids(self, domain_data, domain_type):
+        """
+        Parses the domain IDs from the request and handles JSON errors.
+        """
+        try:
+            return json.loads(domain_data) if domain_data else []
+        except json.JSONDecodeError:
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"Invalid data for {domain_type}")
+            return None
+
+    def _process_added_domains(self, added_domain_ids, member):
+        """
+        Processes added domains by bulk creating UserDomainRole instances.
+        """
+        if added_domain_ids:
+            # Bulk create UserDomainRole instances for added domains
+            UserDomainRole.objects.bulk_create(
+                [
+                    UserDomainRole(domain_id=domain_id, user=member, role=UserDomainRole.Roles.MANAGER)
+                    for domain_id in added_domain_ids
+                ],
+                ignore_conflicts=True,  # Avoid duplicate entries
+            )
+
+    def _process_removed_domains(self, removed_domain_ids, member):
+        """
+        Processes removed domains by deleting corresponding UserDomainRole instances.
+        """
+        if removed_domain_ids:
+            # Delete UserDomainRole instances for removed domains
+            UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
+
 
 class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
 
@@ -347,6 +432,106 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                 "portfolio_invitation": portfolio_invitation,
             },
         )
+
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio invitee.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        email = portfolio_invitation.email
+
+        added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
+        if added_domain_ids is None:
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
+        if removed_domain_ids is None:
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                self._process_added_domains(added_domain_ids, email)
+                self._process_removed_domains(removed_domain_ids, email)
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            except IntegrityError:
+                messages.error(
+                    request,
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error("A database error occurred while saving changes.")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+            except Exception as e:
+                messages.error(
+                    request,
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+    def _parse_domain_ids(self, domain_data, domain_type):
+        """
+        Parses the domain IDs from the request and handles JSON errors.
+        """
+        try:
+            return json.loads(domain_data) if domain_data else []
+        except json.JSONDecodeError:
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"Invalid data for {domain_type}.")
+            return None
+
+    def _process_added_domains(self, added_domain_ids, email):
+        """
+        Processes added domain invitations by updating existing invitations
+        or creating new ones.
+        """
+        if not added_domain_ids:
+            return
+
+        # Update existing invitations from CANCELED to INVITED
+        existing_invitations = DomainInvitation.objects.filter(domain_id__in=added_domain_ids, email=email)
+        existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # Determine which domains need new invitations
+        existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
+        new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
+
+        # Bulk create new invitations
+        DomainInvitation.objects.bulk_create(
+            [
+                DomainInvitation(
+                    domain_id=domain_id,
+                    email=email,
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
+                )
+                for domain_id in new_domain_ids
+            ]
+        )
+
+    def _process_removed_domains(self, removed_domain_ids, email):
+        """
+        Processes removed domain invitations by updating their status to CANCELED.
+        """
+        if not removed_domain_ids:
+            return
+
+        # Update invitations from INVITED to CANCELED
+        DomainInvitation.objects.filter(
+            domain_id__in=removed_domain_ids,
+            email=email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):

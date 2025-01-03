@@ -12,7 +12,7 @@
   margin-top: units(1);
 }
 
-// register-form-review-header is used on the summary page and
+// header--body is used on the summary page and
 // should not be styled like the register form headers
 .register-form-step h3 {
   color: color('primary-dark');
@@ -25,15 +25,6 @@
   }
 }
 
-.register-form-review-header {
-  color: color('primary-dark');
-  margin-top: units(2);
-  margin-bottom: 0;
-  font-weight: font-weight('semibold');
-  // The units mixin can only get us close, so it's between 
-  // hardcoding the value and using  in markup
-  font-size: 16.96px;
-}
 
 .register-form-step h4 {
   margin-bottom: 0;
