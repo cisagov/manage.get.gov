@@ -25,14 +25,17 @@ from registrar.models import (
     PortfolioInvitation,
     User,
     UserDomainRole,
-    UserPortfolioPermission,
     PublicContact,
 )
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
+    AlreadyDomainInvitedError,
+    AlreadyDomainManagerError,
     GenericError,
     GenericErrorCodes,
+    MissingEmailError,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
     DsDataError,
@@ -63,6 +66,7 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
+from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
 from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 from django import forms
 
@@ -1100,7 +1104,10 @@ class DomainUsersView(DomainBaseView):
 
             # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
             for portfolio_invitation in portfolio_invitations:
-                if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+                if (
+                    portfolio_invitation.roles
+                    and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles
+                ):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
@@ -1142,170 +1149,172 @@ class DomainAddUserView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
-    def _domain_abs_url(self):
-        """Get an absolute URL for this domain."""
-        return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
+    def _get_org_membership(self, requestor_org, requested_email, requested_user):
+        """
+        Verifies if an email belongs to a different organization as a member or invited member.
+        Verifies if an email belongs to this organization as a member or invited member.
+        User does not belong to any org can be deduced from the tuple returned.
 
-    def _is_member_of_different_org(self, email, requestor, requested_user):
-        """Verifies if an email belongs to a different organization as a member or invited member."""
-        # Check if user is a already member of a different organization than the requestor's org
-        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
-        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
-        existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
-
-        return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
-            existing_org_invitation and existing_org_invitation.portfolio != requestor_org
-        )
-
-    def _check_invite_status(self, invite, email):
-        """Check if invitation status is canceled or retrieved, and gives the appropiate response"""
-        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-            messages.warning(
-                self.request,
-                f"{email} is already a manager for this domain.",
-            )
-            return False
-        elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
-            invite.update_cancellation_status()
-            invite.save()
-            return True
-        else:
-            # else if it has been sent but not accepted
-            messages.warning(self.request, f"{email} has already been invited to this domain")
-            return False
-
-    def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
-        """Performs the sending of the domain invitation email,
-        does not make a domain information object
-        email: string- email to send to
-        add_success: bool- default True indicates:
-        adding a success message to the view if the email sending succeeds
-
-        raises EmailSendingError
+        Returns a tuple (member_of_a_different_org, member_of_this_org).
         """
 
-        # Set a default email address to send to for staff
-        requestor_email = settings.DEFAULT_FROM_EMAIL
+        # COMMENT: this code does not take into account multiple portfolios flag
 
-        # Check if the email requestor has a valid email address
-        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
-            requestor_email = requestor.email
-        elif not requestor.is_staff:
-            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requestor '{requestor.username}'.",
-                exc_info=True,
-            )
+        # COMMENT: shouldn't this code be based on the organization of the domain, not the org
+        # of the requestor? requestor could have multiple portfolios
+
+        # Check for existing permissions or invitations for the requested user
+        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+        existing_org_invitation = PortfolioInvitation.objects.filter(email=requested_email).first()
+
+        # Determine membership in a different organization
+        member_of_a_different_org = (
+            existing_org_permission and existing_org_permission.portfolio != requestor_org
+        ) or (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
+
+        # Determine membership in the same organization
+        member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio == requestor_org
+        )
+
+        return member_of_a_different_org, member_of_this_org
+
+    def form_valid(self, form):
+        """Add the specified user to this domain."""
+        requested_email = form.cleaned_data["email"]
+        requestor = self.request.user
+
+        # Look up a user with that email
+        requested_user = self._get_requested_user(requested_email)
+        # NOTE: This does not account for multiple portfolios flag being set to True
+        domain_org = self.object.domain_info.portfolio
+
+        # requestor can only send portfolio invitations if they are staff or if they are a member
+        # of the domain's portfolio
+        requestor_can_update_portfolio = (
+            UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).first() is not None
+            or requestor.is_staff
+        )
+
+        member_of_a_different_org, member_of_this_org = self._get_org_membership(
+            domain_org, requested_email, requested_user
+        )
+
+        # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+        # if requested_email/user is not member or invited member of this portfolio
+        # COMMENT: this code does not take into account multiple portfolios flag
+        #   send portfolio invitation email
+        #   create portfolio invitation
+        #   create message to view
+        if (
+            flag_is_active_for_user(requestor, "organization_feature")
+            and not flag_is_active_for_user(requestor, "multiple_portfolios")
+            and domain_org is not None
+            and requestor_can_update_portfolio
+            and not member_of_this_org
+        ):
+            try:
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=domain_org)
+                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+            except Exception as e:
+                self._handle_portfolio_exceptions(e, requested_email, domain_org)
+                # If that first invite does not succeed take an early exit
+                return redirect(self.get_success_url())
+
+        try:
+            if requested_user is None:
+                self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
+            else:
+                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
+        except Exception as e:
+            self._handle_exceptions(e, requested_email)
+
+        return redirect(self.get_success_url())
+
+    def _get_requested_user(self, email):
+        """Retrieve a user by email or return None if the user doesn't exist."""
+        try:
+            return User.objects.get(email=email)
+        except User.DoesNotExist:
             return None
 
-        # Check is user is a member or invited member of a different org from this domain's org
-        if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
-            email, requestor, requested_user
-        ):
-            add_success = False
-            raise OutsideOrgMemberError
+    def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
+        """Handle invitation for a new user who does not exist in the system."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            domain=self.object,
+            is_member_of_different_org=member_of_different_org,
+        )
+        DomainInvitation.objects.get_or_create(email=email, domain=self.object)
+        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
 
-        # Check to see if an invite has already been sent
-        try:
-            invite = DomainInvitation.objects.get(email=email, domain=self.object)
-            # check if the invite has already been accepted or has a canceled invite
-            add_success = self._check_invite_status(invite, email)
-        except Exception:
-            logger.error("An error occured")
+    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
+        """Handle adding an existing user to the domain."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            domain=self.object,
+            is_member_of_different_org=member_of_different_org,
+        )
+        UserDomainRole.objects.create(
+            user=requested_user,
+            domain=self.object,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        messages.success(self.request, f"Added user {email}.")
 
-        try:
-            send_templated_email(
-                "emails/domain_invitation.txt",
-                "emails/domain_invitation_subject.txt",
-                to_address=email,
-                context={
-                    "domain_url": self._domain_abs_url(),
-                    "domain": self.object,
-                    "requestor_email": requestor_email,
-                },
-            )
-        except EmailSendingError as exc:
-            logger.warn(
-                "Could not sent email invitation to %s for domain %s",
+    def _handle_exceptions(self, exception, email):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning(
+                "Could not send email invitation to %s for domain %s (EmailSendingError)",
                 email,
                 self.object,
                 exc_info=True,
             )
-            logger.info(exc)
-            raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
-
-    def _make_invitation(self, email_address: str, requestor: User):
-        """Make a Domain invitation for this email and redirect with a message."""
-        try:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
-        except EmailSendingError:
             messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, OutsideOrgMemberError):
+            logger.warning(
+                "Could not send email. Can not invite member of a .gov organization to a different organization.",
+                self.object,
+                exc_info=True,
+            )
+            messages.error(
+                self.request,
+                f"{email} is already a member of another .gov organization.",
+            )
+        elif isinstance(exception, AlreadyDomainManagerError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, AlreadyDomainInvitedError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' on domain '{self.object}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        elif isinstance(exception, IntegrityError):
+            messages.warning(self.request, f"{email} is already a manager for this domain")
         else:
-            # (NOTE: only create a domainInvitation if the e-mail sends correctly)
-            DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        return redirect(self.get_success_url())
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
 
-    def form_valid(self, form):
-        """Add the specified user on this domain.
-        Throws EmailSendingError."""
-        requested_email = form.cleaned_data["email"]
-        requestor = self.request.user
-        email_success = False
-        # look up a user with that email
-        try:
-            requested_user = User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            # no matching user, go make an invitation
-            email_success = True
-            return self._make_invitation(requested_email, requestor)
+    def _handle_portfolio_exceptions(self, exception, email, portfolio):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning("Could not send email invitation (EmailSendingError)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
         else:
-            # if user already exists then just send an email
-            try:
-                self._send_domain_invitation_email(
-                    requested_email, requestor, requested_user=requested_user, add_success=False
-                )
-                email_success = True
-            except EmailSendingError:
-                logger.warn(
-                    "Could not send email invitation (EmailSendingError)",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.warning(self.request, "Could not send email invitation.")
-                email_success = True
-            except OutsideOrgMemberError:
-                logger.warn(
-                    "Could not send email. Can not invite member of a .gov organization to a different organization.",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.error(
-                    self.request,
-                    f"{requested_email} is already a member of another .gov organization.",
-                )
-            except Exception:
-                logger.warn(
-                    "Could not send email invitation (Other Exception)",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.warning(self.request, "Could not send email invitation.")
-        if email_success:
-            try:
-                UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=self.object,
-                    role=UserDomainRole.Roles.MANAGER,
-                )
-                messages.success(self.request, f"Added user {requested_email}.")
-            except IntegrityError:
-                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-
-        return redirect(self.get_success_url())
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
 
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):

@@ -60,7 +60,10 @@ class UserPortfolioPermissionFixture:
                             user=user,
                             portfolio=portfolio,
                             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                            additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+                            additional_permissions=[
+                                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+                                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                            ],
                         )
                         user_portfolio_permissions_to_create.append(user_portfolio_permission)
                     else:
