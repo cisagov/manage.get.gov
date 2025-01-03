@@ -20,6 +20,8 @@ from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.tests.test_views import TestWithUser
+from registrar.utility.email import EmailSendingError
+from registrar.utility.errors import MissingEmailError
 from .common import MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -2837,7 +2839,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             ],
         )
 
-        cls.new_member_email = "new_user@example.com"
+        cls.new_member_email = "davekenn4242@gmail.com"
+
+        AllowedEmail.objects.get_or_create(email=cls.new_member_email)
 
         # Assign permissions to the user making requests
         UserPortfolioPermission.objects.create(
@@ -2856,8 +2860,10 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        AllowedEmail.objects.all().delete()
         super().tearDownClass()
 
+    @boto3_mocking.patching
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -2869,30 +2875,240 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Simulate submission of member invite for new user
-        final_response = self.client.post(
-            reverse("new-member"),
-            {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
-                "email": self.new_member_email,
-            },
-        )
+        mock_client_class = MagicMock()
+        mock_client = mock_client_class.return_value
 
-        # Ensure the final submission is successful
-        self.assertEqual(final_response.status_code, 302)  # redirects after success
+        with boto3_mocking.clients.handler_for("sesv2", mock_client_class):
+            # Simulate submission of member invite for new user
+            final_response = self.client.post(
+                reverse("new-member"),
+                {
+                    "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                    "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "email": self.new_member_email,
+                },
+            )
 
-        # Validate Database Changes
-        portfolio_invite = PortfolioInvitation.objects.filter(
-            email=self.new_member_email, portfolio=self.portfolio
-        ).first()
-        self.assertIsNotNone(portfolio_invite)
-        self.assertEqual(portfolio_invite.email, self.new_member_email)
+            # Ensure the final submission is successful
+            self.assertEqual(final_response.status_code, 302)  # Redirects
+
+            # Validate Database Changes
+            portfolio_invite = PortfolioInvitation.objects.filter(
+                email=self.new_member_email, portfolio=self.portfolio
+            ).first()
+            self.assertIsNotNone(portfolio_invite)
+            self.assertEqual(portfolio_invite.email, self.new_member_email)
+
+            # Check that an email was sent
+            self.assertTrue(mock_client.send_email.called)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_member_invite_for_new_users_initial_ajax_call_passes(self):
+        """Tests the member invitation flow for new users."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        mock_client_class = MagicMock()
+        mock_client = mock_client_class.return_value
+
+        with boto3_mocking.clients.handler_for("sesv2", mock_client_class):
+            # Simulate submission of member invite for new user
+            final_response = self.client.post(
+                reverse("new-member"),
+                {
+                    "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                    "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "email": self.new_member_email,
+                },
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+
+            # Ensure the prep ajax submission is successful
+            self.assertEqual(final_response.status_code, 200)
+
+            # Check that the response is a JSON response with is_valid
+            json_response = final_response.json()
+            self.assertIn("is_valid", json_response)
+            self.assertTrue(json_response["is_valid"])
+
+            # assert that portfolio invitation is not created
+            self.assertFalse(
+                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "Portfolio invitation should not be created when an Exception occurs.",
+            )
+
+            # Check that an email was not sent
+            self.assertFalse(mock_client.send_email.called)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_member_invite_for_previously_invited_member(self):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_previously_invited_member_initial_ajax_call_fails(self, mock_send_email):
+        """Tests the initial ajax call in the member invitation flow for existing portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "email": self.invited_member_email,
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the response is a JSON response with is_valid == False
+        json_response = response.json()
+        self.assertIn("is_valid", json_response)
+        self.assertFalse(json_response["is_valid"])
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
+
+        # assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_submit_new_member_raises_email_sending_error(self, mock_send_email):
+        """Test when adding a new member and email_send method raises EmailSendingError."""
+        mock_send_email.side_effect = EmailSendingError("Failed to send email.")
+
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "email": self.new_member_email,
+        }
+
+        # Act
+        with patch("django.contrib.messages.warning") as mock_warning:
+            response = self.client.post(reverse("new-member"), data=form_data)
+
+            # Assert
+            # assert that the send_portfolio_invitation_email called
+            mock_send_email.assert_called_once_with(
+                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+            )
+            # assert that response is a redirect to reverse("members")
+            self.assertRedirects(response, reverse("members"))
+            # assert that messages contains message, "Could not send email invitation"
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            # assert that portfolio invitation is not created
+            self.assertFalse(
+                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "Portfolio invitation should not be created when an EmailSendingError occurs.",
+            )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
+        """Test when adding a new member and email_send method raises MissingEmailError."""
+        mock_send_email.side_effect = MissingEmailError()
+
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "email": self.new_member_email,
+        }
+
+        # Act
+        with patch("django.contrib.messages.error") as mock_error:
+            response = self.client.post(reverse("new-member"), data=form_data)
+
+            # Assert
+            # assert that the send_portfolio_invitation_email called
+            mock_send_email.assert_called_once_with(
+                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+            )
+            # assert that response is a redirect to reverse("members")
+            self.assertRedirects(response, reverse("members"))
+            # assert that messages contains message, "Could not send email invitation"
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "Can't send invitation email. No email is associated with your user account.",
+            )
+            # assert that portfolio invitation is not created
+            self.assertFalse(
+                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "Portfolio invitation should not be created when a MissingEmailError occurs.",
+            )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_submit_new_member_raises_exception(self, mock_send_email):
+        """Test when adding a new member and email_send method raises Exception."""
+        mock_send_email.side_effect = Exception("Generic exception")
+
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "email": self.new_member_email,
+        }
+
+        # Act
+        with patch("django.contrib.messages.warning") as mock_warning:
+            response = self.client.post(reverse("new-member"), data=form_data)
+
+            # Assert
+            # assert that the send_portfolio_invitation_email called
+            mock_send_email.assert_called_once_with(
+                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+            )
+            # assert that response is a redirect to reverse("members")
+            self.assertRedirects(response, reverse("members"))
+            # assert that messages contains message, "Could not send email invitation"
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            # assert that portfolio invitation is not created
+            self.assertFalse(
+                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "Portfolio invitation should not be created when an Exception occurs.",
+            )
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_previously_invited_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
 
@@ -2906,23 +3122,35 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
                 "email": self.invited_member_email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
+        self.assertEqual(response.status_code, 200)
 
-        # TODO: verify messages
+        # verify messages
+        self.assertContains(
+            response,
+            (
+                "This user is already assigned to a portfolio invitation. "
+                "Based on current waffle flag settings, users cannot be assigned "
+                "to multiple portfolios."
+            ),
+        )
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
 
+        # assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_member_invite_for_existing_member(self):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_existing_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
 
@@ -2936,18 +3164,29 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "member_access_level": "basic",
-                "basic_org_domain_request_permissions": "view_only",
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
                 "email": self.user.email,
             },
         )
-        self.assertEqual(response.status_code, 302)  # Redirects
+        self.assertEqual(response.status_code, 200)
 
-        # TODO: verify messages
+        # Verify messages
+        self.assertContains(
+            response,
+            (
+                "This user is already assigned to a portfolio. "
+                "Based on current waffle flag settings, users cannot be "
+                "assigned to multiple portfolios."
+            ),
+        )
 
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
+
+        # assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
 
 
 class TestEditPortfolioMemberView(WebTest):
@@ -3089,7 +3328,13 @@ class TestEditPortfolioMemberView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_admin_removing_own_admin_role(self):
-        """Tests an admin removing their own admin role redirects to home."""
+        """Tests an admin removing their own admin role redirects to home.
+
+        Removing the admin role will remove both view and edit members permissions.
+        Note: The user can remove the edit members permissions but as long as they
+        stay in admin role, they will at least still have view members permissions.
+        """
+
         self.client.force_login(self.user)
 
         # Get the user's admin permission

@@ -23,6 +23,33 @@ class InvalidDomainError(ValueError):
     pass
 
 
+class InvitationError(Exception):
+    """Base exception for invitation-related errors."""
+
+    pass
+
+
+class AlreadyDomainManagerError(InvitationError):
+    """Raised when the user is already a manager for the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} is already a manager for this domain.")
+
+
+class AlreadyDomainInvitedError(InvitationError):
+    """Raised when the user has already been invited to the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} has already been invited to this domain.")
+
+
+class MissingEmailError(InvitationError):
+    """Raised when the requestor has no email associated with their account."""
+
+    def __init__(self):
+        super().__init__("Can't send invitation email. No email is associated with your user account.")
+
+
 class OutsideOrgMemberError(ValueError):
     """
     Error raised when an org member tries adding a user from a different .gov org.

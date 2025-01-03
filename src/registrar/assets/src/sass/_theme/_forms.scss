@@ -78,3 +78,7 @@ legend.float-left-tablet + button.float-right-tablet {
 .read-only-value {
   margin-top: units(0);
 }
+
+.bg-gray-1 .usa-radio {
+  background: color('gray-1');
+}

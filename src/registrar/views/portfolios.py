@@ -1,6 +1,5 @@
 import json
 import logging
-from django.conf import settings
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -15,6 +14,8 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
+from registrar.utility.email_invitations import send_portfolio_invitation_email
+from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
@@ -150,7 +151,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioMemberForm
 
     def get(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
@@ -169,13 +170,14 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user_initially_is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         if form.is_valid():
             # Check if user is removing their own admin or edit role
             removing_admin_role_on_self = (
                 request.user == user
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and user_initially_is_admin
                 and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in form.cleaned_data.get("role", [])
             )
             form.save()
@@ -369,7 +371,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioInvitedMemberForm
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
@@ -694,34 +696,27 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         return render(request, "portfolio_members.html")
 
 
-class NewMemberView(PortfolioMembersPermissionView, FormMixin):
+class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
-    form_class = portfolioForms.NewMemberForm
-
-    def get_object(self, queryset=None):
-        """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
-        if portfolio is None:
-            raise Http404("No organization found for this user")
-        return portfolio
-
-    def get_form_kwargs(self):
-        """Include the instance in the form kwargs."""
-        kwargs = super().get_form_kwargs()
-        kwargs["instance"] = self.get_object()
-        return kwargs
+    form_class = portfolioForms.PortfolioNewMemberForm
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests to display the form."""
-        self.object = self.get_object()
+        self.object = None  # No existing PortfolioInvitation instance
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
-        self.object = self.get_object()
-        form = self.get_form()
+        self.object = None  # For a new invitation, there's no existing model instance
+
+        # portfolio not submitted with form, so override the value
+        data = request.POST.copy()
+        if not data.get("portfolio"):
+            data["portfolio"] = self.request.session.get("portfolio").id
+        # Pass the modified data to the form
+        form = portfolioForms.PortfolioNewMemberForm(data)
 
         if form.is_valid():
             return self.form_valid(form)
@@ -738,7 +733,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             return super().form_invalid(form)  # Handle non-AJAX requests normally
 
     def form_valid(self, form):
-
+        super().form_valid(form)
         if self.is_ajax():
             return JsonResponse({"is_valid": True})  # Return a JSON response
         else:
@@ -748,108 +743,42 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         """Redirect to members table."""
         return reverse("members")
 
-    def _send_portfolio_invitation_email(self, email: str, requestor: User, add_success=True):
-        """Performs the sending of the member invitation email
-        email: string- email to send to
-        add_success: bool- default True indicates:
-        adding a success message to the view if the email sending succeeds
-
-        raises EmailSendingError
-        """
-
-        # Set a default email address to send to for staff
-        requestor_email = settings.DEFAULT_FROM_EMAIL
-
-        # Check if the email requestor has a valid email address
-        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
-            requestor_email = requestor.email
-        elif not requestor.is_staff:
-            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requestor '{requestor.username}'.",
-                exc_info=True,
-            )
-            return None
-
-        # Check to see if an invite has already been sent
-        try:
-            invite = PortfolioInvitation.objects.get(email=email, portfolio=self.object)
-            if invite:  # We have an existin invite
-                # check if the invite has already been accepted
-                if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
-                    add_success = False
-                    messages.warning(
-                        self.request,
-                        f"{email} is already a manager for this portfolio.",
-                    )
-                else:
-                    add_success = False
-                    # it has been sent but not accepted
-                    messages.warning(self.request, f"{email} has already been invited to this portfolio")
-                return
-        except Exception as err:
-            logger.error(f"_send_portfolio_invitation_email() => An error occured: {err}")
-
-        try:
-            logger.debug("requestor email: " + requestor_email)
-
-            # send_templated_email(
-            #     "emails/portfolio_invitation.txt",
-            #     "emails/portfolio_invitation_subject.txt",
-            #     to_address=email,
-            #     context={
-            #         "portfolio": self.object,
-            #         "requestor_email": requestor_email,
-            #     },
-            # )
-        except EmailSendingError as exc:
-            logger.warn(
-                "Could not sent email invitation to %s for domain %s",
-                email,
-                self.object,
-                exc_info=True,
-            )
-            raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited.")
-
-    def _make_invitation(self, email_address: str, requestor: User, add_success=True):
-        """Make a Member invitation for this email and redirect with a message."""
-        try:
-            self._send_portfolio_invitation_email(email=email_address, requestor=requestor, add_success=add_success)
-        except EmailSendingError:
-            logger.warn(
-                "Could not send email invitation (EmailSendingError)",
-                self.object,
-                exc_info=True,
-            )
-            messages.warning(self.request, "Could not send email invitation.")
-        except Exception:
-            logger.warn(
-                "Could not send email invitation (Other Exception)",
-                self.object,
-                exc_info=True,
-            )
-            messages.warning(self.request, "Could not send email invitation.")
-        else:
-            # (NOTE: only create a MemberInvitation if the e-mail sends correctly)
-            PortfolioInvitation.objects.get_or_create(email=email_address, portfolio=self.object)
-        return redirect(self.get_success_url())
-
     def submit_new_member(self, form):
-        """Add the specified user as a member
-        for this portfolio.
-        Throws EmailSendingError."""
+        """Add the specified user as a member for this portfolio."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+        portfolio = form.cleaned_data["portfolio"]
 
         requested_user = User.objects.filter(email=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
-        if not requested_user or not permission_exists:
-            return self._make_invitation(requested_email, requestor)
-        else:
-            if permission_exists:
-                messages.warning(self.request, "User is already a member of this portfolio.")
+        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
+        try:
+            if not requested_user or not permission_exists:
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                form.save()
+                messages.success(self.request, f"{requested_email} has been invited.")
+            else:
+                if permission_exists:
+                    messages.warning(self.request, "User is already a member of this portfolio.")
+        except Exception as e:
+            self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
+
+    def _handle_exceptions(self, exception, portfolio, email):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning(
+                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
+                email,
+                portfolio,
+                exc_info=True,
+            )
+            messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
