@@ -10,7 +10,7 @@
 // Fixes that issue
 @include at-media(desktop) {
   // NOTE: !important is used because _font.scss overrides this
-  .usa-alert__body--widescreen {
+  .usa-alert__body {
     max-width: $widescreen-max-width !important;
   }
   .usa-alert--warning{
