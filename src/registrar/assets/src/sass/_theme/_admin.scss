@@ -342,6 +342,40 @@ div#content > h2 {
     }
 }
 
+.module {
+    .margin-left-0 {
+        margin-left: 0;
+    }
+    .margin-top-0 {
+        margin-top: 0;
+    }
+    .padding-left-0 {
+        padding-left: 0;
+    }
+}
+
+.admin-list-inline {
+    li {
+        float: left;
+        padding-top: 0;
+        margin-right: 4px;
+    }
+    li:not(:last-child)::after {
+        content: ",";
+    }
+}
+
+.form-row {
+    .margin-y-0 {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .padding-y-0 {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
 // Fixes a display issue where the list was entirely white, or had too much whitespace
 .select2-dropdown {
     display: inline-grid !important;

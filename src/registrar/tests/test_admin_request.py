@@ -35,6 +35,7 @@ from .common import (
     multiple_unalphabetical_domain_objects,
     MockEppLib,
     GenericTestHelper,
+    normalize_html,
 )
 from unittest.mock import patch
 
@@ -1445,8 +1446,9 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, expected_url)
 
     @less_console_noise_decorator
-    def test_other_websites_has_readonly_link(self):
-        """Tests if the readonly other_websites field has links"""
+    def test_other_websites_has_one_readonly_link(self):
+        """Tests if the readonly other_websites field has links.
+        Test markup for one website."""
 
         # Create a fake domain request
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
@@ -1462,8 +1464,179 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, domain_request.requested_domain.name)
 
         # Check that the page contains the link we expect.
-        expected_url = '<a href="city.com" target="_blank" class="padding-top-1 current-website__1">city.com</a>'
-        self.assertContains(response, expected_url)
+        expected_markup = """
+            <p class="margin-y-0 padding-y-0">
+                <a href="city.com" target="_blank">
+                    city.com
+                </a>
+            </p>
+            """
+
+        normalized_expected = normalize_html(expected_markup)
+        normalized_response = normalize_html(response.content.decode("utf-8"))
+
+        self.assertIn(normalized_expected, normalized_response)
+
+    @less_console_noise_decorator
+    def test_other_websites_has_few_readonly_links(self):
+        """Tests if the readonly other_websites field has links.
+        Test markup for l5 or less websites."""
+
+        # Create a domain request with 4 current websites
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            current_websites=["city.gov", "city2.gov", "city3.gov", "city4.gov"],
+        )
+
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        expected_markup = """
+            <ul class="margin-top-0 margin-left-0 padding-left-0">
+                <li><a href="city.gov" target="_blank">city.gov</a></li>
+                <li><a href="city2.gov" target="_blank">city2.gov</a></li>
+                <li><a href="city3.gov" target="_blank">city3.gov</a></li>
+                <li><a href="city4.gov" target="_blank">city4.gov</a></li>
+            </ul>
+            """
+
+        normalized_expected = normalize_html(expected_markup)
+        normalized_response = normalize_html(response.content.decode("utf-8"))
+
+        self.assertIn(normalized_expected, normalized_response)
+
+    @less_console_noise_decorator
+    def test_other_websites_has_lots_readonly_links(self):
+        """Tests if the readonly other_websites field has links.
+        Test markup for 6 or more websites."""
+
+        # Create a domain requests with 6 current websites
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            current_websites=["city.gov", "city2.gov", "city3.gov", "city4.gov", "city5.gov", "city6.gov"],
+        )
+
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        expected_markup = """
+            <ul class="margin-top-0 margin-left-0 padding-left-0 admin-list-inline">
+                <li><a href="city.gov" target="_blank">city.gov</a></li>
+                <li><a href="city2.gov" target="_blank">city2.gov</a></li>
+                <li><a href="city3.gov" target="_blank">city3.gov</a></li>
+                <li><a href="city4.gov" target="_blank">city4.gov</a></li>
+                <li><a href="city5.gov" target="_blank">city5.gov</a></li>
+                <li><a href="city6.gov" target="_blank">city6.gov</a></li>
+            </ul>
+            """
+
+        normalized_expected = normalize_html(expected_markup)
+        normalized_response = normalize_html(response.content.decode("utf-8"))
+
+        self.assertIn(normalized_expected, normalized_response)
+
+    @less_console_noise_decorator
+    def test_alternative_domains_has_one_readonly_link(self):
+        """Tests if the readonly alternative_domains field has links.
+        Test markup for one website."""
+
+        # Create a fake domain request
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        website = Website.objects.filter(website="city1.gov").first()
+        base_url = "/admin/registrar/website"
+        return_path = f"/admin/registrar/domainrequest/{domain_request.pk}/change/"
+        expected_markup = f"""
+            <p class="margin-y-0 padding-y-0">
+            <a href="{base_url}/{website.pk}/change/?return_path={return_path}" target="_blank">city1.gov</a>
+            </p>
+        """
+
+        normalized_expected = normalize_html(expected_markup)
+        normalized_response = normalize_html(response.content.decode("utf-8"))
+
+        self.assertIn(normalized_expected, normalized_response)
+
+    @less_console_noise_decorator
+    def test_alternative_domains_has_lots_readonly_link(self):
+        """Tests if the readonly other_websites field has links.
+        Test markup for 6 or more websites."""
+
+        # Create a domain request with 6 alternative domains
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            alternative_domains=[
+                "altcity1.gov",
+                "altcity2.gov",
+                "altcity3.gov",
+                "altcity4.gov",
+                "altcity5.gov",
+                "altcity6.gov",
+            ],
+        )
+
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+            follow=True,
+        )
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, domain_request.requested_domain.name)
+
+        # Check that the page contains the link we expect.
+        website1 = Website.objects.filter(website="altcity1.gov").first()
+        website2 = Website.objects.filter(website="altcity2.gov").first()
+        website3 = Website.objects.filter(website="altcity3.gov").first()
+        website4 = Website.objects.filter(website="altcity4.gov").first()
+        website5 = Website.objects.filter(website="altcity5.gov").first()
+        website6 = Website.objects.filter(website="altcity6.gov").first()
+        base_url = "/admin/registrar/website"
+        return_path = f"/admin/registrar/domainrequest/{domain_request.pk}/change/"
+        attr = 'target="_blank"'
+        expected_markup = f"""
+            <ul class="margin-top-0 margin-left-0 padding-left-0 admin-list-inline">
+                <li><a href="{base_url}/{website1.pk}/change/?return_path={return_path}" {attr}>altcity1.gov</a></li>
+                <li><a href="{base_url}/{website2.pk}/change/?return_path={return_path}" {attr}>altcity2.gov</a></li>
+                <li><a href="{base_url}/{website3.pk}/change/?return_path={return_path}" {attr}>altcity3.gov</a></li>
+                <li><a href="{base_url}/{website4.pk}/change/?return_path={return_path}" {attr}>altcity4.gov</a></li>
+                <li><a href="{base_url}/{website5.pk}/change/?return_path={return_path}" {attr}>altcity5.gov</a></li>
+                <li><a href="{base_url}/{website6.pk}/change/?return_path={return_path}" {attr}>altcity6.gov</a></li>
+            </ul>
+            """
+
+        normalized_expected = normalize_html(expected_markup)
+        normalized_response = normalize_html(response.content.decode("utf-8"))
+
+        self.assertIn(normalized_expected, normalized_response)
 
     @less_console_noise_decorator
     def test_contact_fields_have_detail_table(self):
