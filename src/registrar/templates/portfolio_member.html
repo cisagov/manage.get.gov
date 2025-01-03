@@ -8,7 +8,7 @@ Organization member
 {% load static %}
 
 {% block portfolio_content %}
-<div id="main-content">
+<div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
 
   {% url 'members' as url %}
   <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">

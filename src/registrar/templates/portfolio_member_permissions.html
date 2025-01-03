@@ -11,122 +11,124 @@
 {% block portfolio_content %}
 {% include "includes/form_errors.html" with form=form %}
 
-<!-- Navigation breadcrumbs -->
-<nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
-  <ol class="usa-breadcrumb__list">
-    <li class="usa-breadcrumb__list-item">
-      <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
-    </li>
-    <li class="usa-breadcrumb__list-item">
-      {% if member %}
-        {% url 'member' pk=member.pk as back_url %}
-      {% elif invitation %}
-        {% url 'invitedmember' pk=invitation.pk as back_url %}
-      {% endif %}
-      <a href="{{ back_url }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
-    </li>
-    {% comment %} Manage members {% endcomment %}
-    <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-      <span>Member access and permissions</span>
-    </li>
-  </ol>
-</nav>
+<div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        {% if member %}
+          {% url 'member' pk=member.pk as back_url %}
+        {% elif invitation %}
+          {% url 'invitedmember' pk=invitation.pk as back_url %}
+        {% endif %}
+        <a href="{{ back_url }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+      </li>
+      {% comment %} Manage members {% endcomment %}
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Member access and permissions</span>
+      </li>
+    </ol>
+  </nav>
 
-<!-- Page header -->
-<h1>Member access and permissions</h1>
+  <!-- Page header -->
+  <h1>Member access and permissions</h1>
 
-{% include "includes/required_fields.html" with remove_margin_top=True %}
+  {% include "includes/required_fields.html" with remove_margin_top=True %}
 
-<form class="usa-form usa-form--large" method="post" id="member_form" novalidate>
-  {% csrf_token %}
+  <form class="usa-form usa-form--large" method="post" id="member_form" novalidate>
+    {% csrf_token %}
+    <fieldset class="usa-fieldset">
+      <legend>
+        {% if member and member.email or invitation and invitation.email %}
+          <h2 class="margin-top-1">Member email</h2>
+        {% else %}
+          <h2 class="margin-top-1">Member</h2>
+        {% endif %}
+      </legend>
+      <p class="margin-top-0">
+        {% comment %} 
+        Show member email if possible, then invitation email.
+        If neither of these are true, show the name or as a last resort just "None".
+        {% endcomment %}
+        {% if member %}
+          {% if member.email %}
+            {{ member.email }}
+          {% else %}
+            {{ member.get_formatted_name }}
+          {% endif %}
+        {% elif invitation %}
+          {% if invitation.email %}
+            {{ invitation.email }}
+          {% else %}
+            None
+          {% endif %}
+        {% endif %}
+      </p>
+      <!-- Member email -->
+    </fieldset>
+
+  <!-- Member access radio buttons (Toggles other sections) -->
   <fieldset class="usa-fieldset">
     <legend>
-      {% if member and member.email or invitation and invitation.email %}
-        <h2 class="margin-top-1">Member email</h2>
-      {% else %}
-        <h2 class="margin-top-1">Member</h2>
-      {% endif %}
+      <h2 class="margin-top-0">Member Access</h2>
     </legend>
-    <p class="margin-top-0">
-      {% comment %} 
-      Show member email if possible, then invitation email.
-      If neither of these are true, show the name or as a last resort just "None".
-      {% endcomment %}
-      {% if member %}
-        {% if member.email %}
-          {{ member.email }}
-        {% else %}
-          {{ member.get_formatted_name }}
-        {% endif %}
-      {% elif invitation %}
-        {% if invitation.email %}
-          {{ invitation.email }}
-        {% else %}
-          None
-        {% endif %}
-      {% endif %}
-    </p>
-    <!-- Member email -->
+
+    <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+
+    {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+      {% input_with_errors form.role %}
+    {% endwith %}
+
   </fieldset>
 
-<!-- Member access radio buttons (Toggles other sections) -->
-<fieldset class="usa-fieldset">
-  <legend>
-    <h2 class="margin-top-0">Member Access</h2>
-  </legend>
+  <!-- Admin access form -->
+  <div id="member-admin-permissions" class="margin-top-2">
+      <h2>Admin access permissions</h2>
+      <p>Member permissions available for admin-level acccess.</p>
 
-  <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-
-  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-    {% input_with_errors form.role %}
-  {% endwith %}
-
-</fieldset>
-
-<!-- Admin access form -->
-<div id="member-admin-permissions" class="margin-top-2">
-    <h2>Admin access permissions</h2>
-    <p>Member permissions available for admin-level acccess.</p>
-
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.domain_request_permission_admin %}
-    {% endwith %}
-
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0
-    margin-top-3">Organization members</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-      {% input_with_errors form.member_permission_admin %}
-    {% endwith %}
-  </div>
-
-  <!-- Basic access form -->
-  <div id="member-basic-permissions" class="margin-top-2">
-      <h2>Basic member permissions</h2>
-      <p>Member permissions available for basic-level acccess.</p>
-
-      <h3 class="margin-bottom-0 summary-item__title text-primary-dark">Organization domain requests</h3>
+      <h3 class="summary-item__title
+      text-primary-dark
+      margin-bottom-0">Organization domain requests</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
-        {% input_with_errors form.domain_request_permission_member %}
+        {% input_with_errors form.domain_request_permission_admin %}
       {% endwith %}
-  </div>
 
-  <!-- Submit/cancel buttons -->
-  <div class="margin-top-3">
-    <a
-      type="button"
-      href="{{ back_url }}"
-      class="usa-button usa-button--outline"
-      name="btn-cancel-click"
-      aria-label="Cancel editing member"
-    >
-      Cancel
-    </a>
-    <button type="submit" class="usa-button">Update Member</button>
-  </div>
-</form>
+      <h3 class="summary-item__title
+      text-primary-dark
+      margin-bottom-0
+      margin-top-3">Organization members</h3>
+      {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+        {% input_with_errors form.member_permission_admin %}
+      {% endwith %}
+    </div>
+
+    <!-- Basic access form -->
+    <div id="member-basic-permissions" class="margin-top-2">
+        <h2>Basic member permissions</h2>
+        <p>Member permissions available for basic-level acccess.</p>
+
+        <h3 class="margin-bottom-0 summary-item__title text-primary-dark">Organization domain requests</h3>
+        {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
+          {% input_with_errors form.domain_request_permission_member %}
+        {% endwith %}
+    </div>
+
+    <!-- Submit/cancel buttons -->
+    <div class="margin-top-3">
+      <a
+        type="button"
+        href="{{ back_url }}"
+        class="usa-button usa-button--outline"
+        name="btn-cancel-click"
+        aria-label="Cancel editing member"
+      >
+        Cancel
+      </a>
+      <button type="submit" class="usa-button">Update Member</button>
+    </div>
+  </form>
+</div>
 {% endblock portfolio_content%}

@@ -6,7 +6,7 @@
 {% load static %}
 
 {% block portfolio_content %}
-<div id="main-content">
+<div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
 
     {% url 'members' as url %}
     {% if portfolio_permission %}
