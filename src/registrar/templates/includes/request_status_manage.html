@@ -1,8 +1,8 @@
 {% load custom_filters %}
 {% load static url_helpers %}
 <main id="main-content" class="grid-container grid-container--widescreen">
-    <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-        <div class="grid-col desktop:grid-col-8 {% if is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+    <div class="{% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+        <div class="grid-col desktop:grid-col-8 desktop:grid-offset-2 ">
             {% block breadcrumb %}
             {% if portfolio %}
                 {% url 'domain-requests' as url %}
@@ -140,7 +140,7 @@
             {% endblock modify_request %}
         </div>
 
-        <div class="grid-col {% if is_widescreen_centered %}desktop:grid-offset-2 maxw-tablet{% endif %}">
+        <div class="grid-col maxw-fit-content desktop:grid-offset-2 ">
             {% block request_summary_header %}
             <h2 class="text-primary-darker"> Summary of your domain request </h2> 
             {% endblock request_summary_header%}
@@ -215,28 +215,28 @@
                     {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
                 {% endif %}
 
-                {# We always show this field even if None #}
-                {% if DomainRequest %}
-                    <h3 class="register-form-review-header">CISA Regional Representative</h3>
-                    <ul class="usa-list usa-list--unstyled margin-top-0">
-                        {% if DomainRequest.cisa_representative_first_name %}
-                        {{ DomainRequest.get_formatted_cisa_rep_name }}
-                        {% else %}
-                        No
-                        {% endif %}
-                    </ul>
-                    <h3 class="register-form-review-header">Anything else</h3>
-                    <ul class="usa-list usa-list--unstyled margin-top-0">
-                        {% if DomainRequest.anything_else %}
-                        {{DomainRequest.anything_else}}
-                        {% else %}
-                        No
-                        {% endif %}
-                    </ul>
-                {% endif %}
-            {% endwith %}
-        {% endif %}
-        {% endblock request_summary%}
+            {# We always show this field even if None #}
+            {% if DomainRequest %}
+                <h3 class="header--body text-primary-dark margin-bottom-0">CISA Regional Representative</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.cisa_representative_first_name %}
+                    {{ DomainRequest.get_formatted_cisa_rep_name }}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+                <h3 class="header--body text-primary-dark margin-bottom-0">Anything else</h3>
+                <ul class="usa-list usa-list--unstyled margin-top-0">
+                    {% if DomainRequest.anything_else %}
+                    {{DomainRequest.anything_else}}
+                    {% else %}
+                    No
+                    {% endif %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+    {% endblock request_summary%}
         </div>
     </div>
 </main>

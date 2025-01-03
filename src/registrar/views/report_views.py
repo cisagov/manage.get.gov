@@ -203,7 +203,7 @@ class ExportDataTypeRequests(View):
     def get(self, request, *args, **kwargs):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="domain-requests.csv"'
-        csv_export.DomainRequestsDataType.exporting_dr_data_to_csv(response, request=request)
+        csv_export.DomainRequestDataType.export_data_to_csv(response, request=request)
 
         return response
 
