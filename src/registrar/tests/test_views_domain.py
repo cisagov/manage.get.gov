@@ -539,10 +539,63 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
                 reverse("domain", kwargs={"pk": self.expiringdomain.id}),
             )
             self.assertContains(detail_page, "Renewal form")
-            response = self.client.get(reverse("domain-renewal",kwargs={"pk": self.expiringdomain.id}))
+            response = self.client.get(reverse("domain-renewal", kwargs={"pk": self.expiringdomain.id}))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f"Renew {self.expiringdomain.name}")
-            
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_your_contact_info_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Your Contact Information" on the renewal form
+            self.assertContains(renewal_page, "Your Contact Information")
+
+            # Verify that the "Edit" button for Your Contact is there and links to correct URL
+            edit_button_url = reverse("user-profile")
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "Review the details below and update any required information")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_security_contact_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Security email" on the renewal form
+            self.assertContains(renewal_page, "Security email")
+
+            # Verify that the "Edit" button for Security email is there and links to correct URL
+            edit_button_url = reverse("domain-security-email", kwargs={"pk": self.domain_with_ip.id})
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "A security contact should be capable of evaluating")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_domain_manager_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Domain managers" on the renewal form
+            self.assertContains(renewal_page, "Domain managers")
+
+            # Verify that the "Edit" button for Domain managers is there and links to correct URL
+            edit_button_url = reverse("domain-users", kwargs={"pk": self.domain_with_ip.id})
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "Domain managers can update all information related to a domain")
 
 
 class TestDomainManagers(TestDomainOverview):
