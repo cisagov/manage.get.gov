@@ -2576,6 +2576,46 @@ class TestRequestingEntity(WebTest):
         User.objects.all().delete()
         super().tearDown()
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    def test_form_validates_duplicate_suborganization(self):
+        """Tests that form validation prevents duplicate suborganization names within the same portfolio"""
+        # Create an existing suborganization
+        suborganization = Suborganization.objects.create(name="Existing Suborg", portfolio=self.portfolio)
+
+        # Start the domain request process
+        response = self.app.get(reverse("domain-request:start"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # Navigate past the intro page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        form = response.forms[0]
+        response = form.submit().follow()
+
+        # Fill out the requesting entity form
+        form = response.forms[0]
+        form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = "True"
+        form["portfolio_requesting_entity-is_requesting_new_suborganization"] = "True"
+        form["portfolio_requesting_entity-requested_suborganization"] = suborganization.name.lower()
+        form["portfolio_requesting_entity-suborganization_city"] = "Eggnog"
+        form["portfolio_requesting_entity-suborganization_state_territory"] = DomainRequest.StateTerritoryChoices.OHIO
+
+        # Submit form and verify error
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = form.submit()
+        self.assertContains(response, "This suborganization already exists")
+
+        # Test that a different name is allowed
+        form["portfolio_requesting_entity-requested_suborganization"] = "New Suborg"
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = form.submit().follow()
+
+        # Verify successful submission by checking we're on the next page
+        self.assertContains(response, "Current websites")
+
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
