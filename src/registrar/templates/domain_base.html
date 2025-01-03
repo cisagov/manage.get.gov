@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static url_helpers %}
+
 
 {% block title %}{{ domain.name }} | {% endblock %}
 
@@ -53,8 +55,11 @@
         {% endif %}
 
         {% block domain_content %}
-
+        {% if request.path|endswith:"renewal"%}
+        <h1>Renew {{domain.name}} </h1>
+        {%else%}
         <h1 class="break-word">Domain Overview</h1>
+        {% endif%}
 
         {% endblock %}  {# domain_content #}
       {% endif %}

@@ -1,0 +1,127 @@
+{% extends "domain_base.html" %}
+{% load static url_helpers %}
+{% load custom_filters %}
+
+{% block domain_content %}
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{domain.name}}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Renewal Form</span>
+      </li>
+
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
+  {{ block.super }}
+  <div class="margin-top-4 tablet:grid-col-10">
+    <h2 class="text-bold text-primary-dark domain-name-wrap">Confirm the following information for accuracy</h2>
+    <p>Review these details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link">
+      require</a> that you maintain accurate information for the domain.
+      The details you provide will only be used to support eh administration of .gov and won't be made public.
+    </p>
+    <p>If you would like to retire your domain instead, please <a href="https://get.gov/contact/" class="usa-link">
+      contact us</a>. </p>
+    <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
+    </p>
+    </div>
+
+    {% url 'user-profile' as url %}
+    {% include "includes/summary_item.html" with title='Your Contact Information' value=user edit_link=url editable=is_editable  contact='true' %}
+  
+
+
+    {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
+      {% if is_portfolio_user and not is_domain_manager %}
+      <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body">
+          <p class="usa-alert__text ">
+            You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    {% url 'domain-security-email' pk=domain.id as url %}
+    {% if security_email is not None and security_email not in hidden_security_emails%}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
+    {% endif %}
+    {% url 'domain-users' pk=domain.id as url %}
+    {% if portfolio %}
+      {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
+    {% else %}
+      {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
+    {% endif %}
+
+        
+    <div class="border-top-1px border-primary-dark padding-top-1 margin-bottom-2">
+
+      <fieldset class="usa-fieldset">
+        <legend>
+          <h3 class="summary-item__title 
+          font-sans-md 
+          text-primary-dark 
+          text-semibold 
+          margin-top-0 
+          margin-bottom-05 
+          padding-right-1">
+          Acknowledgement of .gov domain requirements
+          </h3>          
+        </legend>
+      
+        {% if messages %}
+          <ul class="messages"></ul>
+          {% for message in messages %}
+              <p class="usa-error-message">{{ message }}</p>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      
+        
+  <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
+    {% csrf_token %}
+    <label>
+      <div class="usa-checkbox">
+        <input 
+          class="usa-checkbox__input" 
+          id="renewal-checkbox" 
+          type="checkbox" 
+          name="is_policy_acknowledged"
+          value="on"
+          {% if request.POST.is_policy_acknowledged %} checked {% endif %}
+          >
+          <label class="usa-checkbox__label" for="renewal-checkbox">
+            I read and agree to the 
+            <a href="https://get.gov/domains/requirements/" class="usa-link">
+              requirements for operating a .gov domain
+            </a>.
+            <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+          </label>
+      </div>
+    </fieldset>
+    </div>    
+   <button
+    type="submit"
+    name="submit_button"
+    value="next"
+    class="usa-button"
+    method="post"
+    >Submit</button>
+
+  </form>
+
+  </div>
+{% endblock %}  {# domain_content #}
