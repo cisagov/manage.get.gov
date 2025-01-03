@@ -1233,7 +1233,6 @@ class DomainAddUserView(DomainFormBaseView):
         # NOTE: This does not account for multiple portfolios flag being set to True
         domain_org = self.object.domain_info.portfolio
 
-    
         # requestor can only send portfolio invitations if they are staff or if they are a member
         # of the domain's portfolio
         requestor_can_update_portfolio = (

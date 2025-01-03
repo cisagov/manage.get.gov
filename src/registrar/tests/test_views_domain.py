@@ -550,6 +550,7 @@ class TestDomainManagers(TestDomainOverview):
         self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
+        self.domain_information.save()
         # Add portfolio perms to the user object
         self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
