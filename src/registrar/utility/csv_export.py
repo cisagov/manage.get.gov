@@ -1952,7 +1952,7 @@ class DomainRequestGrowth(DomainRequestExport):
             "Domain request",
             "Domain type",
             "Federal type",
-            "Submitted at",
+            "First submitted date",
         ]
 
     @classmethod
@@ -1976,7 +1976,6 @@ class DomainRequestGrowth(DomainRequestExport):
         start_date_formatted = format_start_date(start_date)
         end_date_formatted = format_end_date(end_date)
         return Q(
-            status=DomainRequest.DomainRequestStatus.SUBMITTED,
             last_submitted_date__lte=end_date_formatted,
             last_submitted_date__gte=start_date_formatted,
         )
