@@ -631,6 +631,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             "Check the box if you read and agree to the requirements for operating a .gov domain.",
         )
 
+
 class TestDomainManagers(TestDomainOverview):
     @classmethod
     def setUpClass(cls):

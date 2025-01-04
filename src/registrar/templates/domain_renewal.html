@@ -26,6 +26,7 @@
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
     <h2 class="text-bold text-primary-dark domain-name-wrap">Confirm the following information for accuracy</h2>
+    <p> HELLO </p>
     <p>Review these details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link">
       require</a> that you maintain accurate information for the domain.
       The details you provide will only be used to support eh administration of .gov and won't be made public.
@@ -55,9 +56,9 @@
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% endif %}
     {% url 'domain-users' pk=domain.id as url %}
     {% if portfolio %}
@@ -67,7 +68,7 @@
     {% endif %}
 
         
-    <div class="border-top-1px border-primary-dark padding-top-1 margin-bottom-2">
+    <div class="border-top-1px border-primary-dark padding-top-1 margin-top-3 margin-bottom-2">
 
       <fieldset class="usa-fieldset">
         <legend>
