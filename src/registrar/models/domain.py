@@ -322,34 +322,27 @@ class Domain(TimeStampedModel, DomainHelper):
         """
 
         # If no date is specified, grab the registry_expiration_date
-        print("*** Checking if there is a date")
         try:
             exp_date = self.registry_expiration_date
         except KeyError:
             # if no expiration date from registry, set it to today
-            logger.warning("*** Current expiration date not set; setting to 35 days ")
-            # exp_date = date.today()
-            exp_date = date.today() - timedelta(days=35)
-            print(exp_date)
-        print("*** The exp_date is", exp_date)
+            logger.warning("current expiration date not set; setting to today")
+            exp_date = date.today()
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
         try:
             # update expiration date in registry, and set the updated
             # expiration date in the registrar, and in the cache
-            print("** In renew_domain in 2nd try statement")
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
             self.save()
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
-            print("*** Registry error")
             logger.error(f"registry error renewing domain: {err}")
             raise (err)
         except Exception as e:
             # exception raised during the save to registrar
-            print("*** In renew_domain, in the last Exception statement")
             logger.error(f"error updating expiration date in registrar: {e}")
             raise (e)
 
@@ -1172,11 +1165,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         threshold_date = now + timedelta(days=60)
         return now < self.expiration_date <= threshold_date
-
-    # Dummy method for testing for domain renewal form fail or success banner
-
-    def update_expiration(self, success=True):
-        return success
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
