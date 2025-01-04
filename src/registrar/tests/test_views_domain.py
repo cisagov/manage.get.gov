@@ -9,6 +9,7 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
+from django.contrib.messages import get_messages
 import boto3_mocking  # type: ignore
 
 from registrar.utility.errors import (
@@ -610,6 +611,25 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(edit_page.status_code, 200)
             self.assertContains(edit_page, "Domain managers can update all information related to a domain")
 
+    @override_flag("domain_renewal", active=True)
+    def test_ack_checkbox_not_checked(self):
+
+        # Grab the renewal URL
+        renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+
+        # Test clicking the checkbox
+        response = self.client.post(renewal_url, data={"submit_button": "next"})
+
+        # Verify the error message is displayed
+        # Retrieves messages obj (used in the post call)
+        messages = list(get_messages(response.wsgi_request))
+        # Check we only get 1 error message
+        self.assertEqual(len(messages), 1)
+        # Check that the 1 error msg also is the right text
+        self.assertEqual(
+            str(messages[0]),
+            "Check the box if you read and agree to the requirements for operating a .gov domain.",
+        )
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod
