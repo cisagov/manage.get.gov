@@ -1434,6 +1434,26 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        On creation of a new domain invitation, attempt to retrieve the invitation,
+        which will be successful if a user exists for that email; otherwise, will
+        raise a RuntimeError, and in this case can continue to create the invitation.
+        """
+        # NOTE: is a future ticket accounting for a 'not member of this org' scenario
+        # to mirror the logic in DomainAddUser view?
+        if not change:  # Domain Invitation creation
+            try:
+                User.objects.get(email=obj.email)
+                obj.retrieve()
+            except User.DoesNotExist:
+                # Proceed with invitation as new as exception indicates user does not exist
+                pass
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
+
 
 class PortfolioInvitationAdmin(ListHeaderAdmin):
     """Custom portfolio invitation admin class."""
