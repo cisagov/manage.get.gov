@@ -61,7 +61,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
                     {% if field.field.help_text %}
                         {# .gov override #}
                         {% block help_text %}
-                        <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                        <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}">
                             <div>{{ field.field.help_text|safe }}</div>
                         </div>
                         {% endblock help_text %}

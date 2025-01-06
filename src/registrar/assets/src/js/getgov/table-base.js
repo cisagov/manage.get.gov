@@ -143,7 +143,7 @@ export class BaseTable {
     this.statusCheckboxes = document.querySelectorAll(`.${this.sectionSelector} input[name="filter-status"]`);
     this.statusIndicator = document.getElementById(`${this.sectionSelector}__filter-indicator`);
     this.statusToggle = document.getElementById(`${this.sectionSelector}__usa-button--filter`);
-    this.noTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
+    this.noDataTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
     this.noSearchResultsWrapper = document.getElementById(`${this.sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
@@ -451,7 +451,7 @@ export class BaseTable {
         }
 
         // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+        this.updateDisplay(data, this.tableWrapper, this.noDataTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
         // identify the DOM element where the list of results will be inserted into the DOM
         const tbody = this.tableWrapper.querySelector('tbody');
         tbody.innerHTML = '';
@@ -495,7 +495,8 @@ export class BaseTable {
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
     this.tableHeaders.forEach(header => {
-      header.addEventListener('click', () => {
+      header.addEventListener('click', event => {
+        let button = header.querySelector('.usa-table__header__button')
         const sortBy = header.getAttribute('data-sortable');
         let order = 'asc';
         // sort order will be ascending, unless the currently sorted column is ascending, and the user
@@ -505,6 +506,13 @@ export class BaseTable {
         }
         // load the results with the updated sort
         this.loadTable(1, sortBy, order);
+        // If the click occurs outside of the button, need to simulate a button click in order
+        // for USWDS listener on the button to execute.
+        // Check first to see if click occurs outside of the button
+        if (!button.contains(event.target)) {
+            // Simulate a button click
+            button.click();
+        }
       });
     });
   }

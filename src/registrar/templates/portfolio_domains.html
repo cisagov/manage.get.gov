@@ -9,12 +9,14 @@
 {% endblock %}
 
 {% block portfolio_content %}
+
+<!-- Form messages -->
 {% block messages %}
   {% include "includes/form_messages.html" %}
-{% endblock %}
+{% endblock messages%}
 
 <div id="main-content">
     <h1 id="domains-header">Domains</h1>
-    {% include "includes/domains_table.html" with portfolio=portfolio user_domain_count=user_domain_count %}
+    {% include "includes/domains_table.html" with portfolio=portfolio user_domain_count=user_domain_count num_expiring_domains=num_expiring_domains%}
 </div>
 {% endblock %}
