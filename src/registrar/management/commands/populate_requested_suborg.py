@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand, PopulateScriptTemplate):
-    help = "Loops through each domain request object and populates the last_status_update and first_submitted_date"
+    help = "Loops through each domain request object and populates requested suborg info"
 
     def handle(self, **kwargs):
         """Loops through each DomainRequest object and populates
@@ -26,12 +26,3 @@ class Command(BaseCommand, PopulateScriptTemplate):
             f"sub_city: {record.city}, suborg_state_territory: {record.state_territory}."
         )
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
-
-    def should_skip_record(self, record: DomainRequest) -> bool:
-        """Skips record update if we're missing org name, city, and state territory."""
-        required_fields = [
-            record.organization_name,
-            record.city,
-            record.state_territory
-        ]
-        return not all(bool(field) for field in required_fields)

@@ -32,7 +32,7 @@ import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
-from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient
+from .common import MockEppLib, create_user, less_console_noise, completed_domain_request, MockSESClient
 from api.tests.common import less_console_noise_decorator
 
 
@@ -1731,3 +1731,78 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
+
+
+class TestPopulateRequestedSuborg(MockEppLib):
+    """Tests for the populate_requested_suborg script"""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        """Creates test domain requests with various states"""
+        super().setUp()
+
+        self.user = create_user()
+        # Create a portfolio
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.user)
+
+        # Create a domain request with all required fields
+        self.complete_request = completed_domain_request(
+            name="complete.gov",
+            organization_name="Complete Org",
+            city="Washington",
+            state_territory="DC",
+            portfolio=self.portfolio,
+        )
+
+        # Create a request that already has a suborganization
+        self.suborg = Suborganization.objects.create(name="Existing Suborg", portfolio=self.portfolio)
+        self.existing_suborg_request = completed_domain_request(
+            name="existing.gov",
+            organization_name="Existing Org",
+            city="New York",
+            state_territory="NY",
+            portfolio=self.portfolio,
+            sub_organization=self.suborg,
+        )
+
+    def tearDown(self):
+        """Cleans up test data"""
+        super().tearDown()
+        DomainRequest.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def run_populate_requested_suborg(self):
+        """Executes the populate_requested_suborg command"""
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+            return_value=True,
+        ):
+            call_command("populate_requested_suborg")
+
+    @less_console_noise_decorator
+    def test_populate_requested_suborg_complete_request(self):
+        """Tests that complete requests are updated correctly"""
+        self.run_populate_requested_suborg()
+
+        self.complete_request.refresh_from_db()
+
+        # Verify fields were populated correctly
+        self.assertEqual(self.complete_request.requested_suborganization, "Complete Org")
+        self.assertEqual(self.complete_request.suborganization_city, "Washington")
+        self.assertEqual(self.complete_request.suborganization_state_territory, "DC")
+
+    @less_console_noise_decorator
+    def test_populate_requested_suborg_existing_suborg(self):
+        """Tests that requests with existing suborgs are skipped"""
+        self.run_populate_requested_suborg()
+
+        self.existing_suborg_request.refresh_from_db()
+
+        # Verify the request wasn't modified
+        self.assertEqual(self.existing_suborg_request.sub_organization, self.suborg)
+        self.assertIsNone(self.existing_suborg_request.requested_suborganization)
+        self.assertIsNone(self.existing_suborg_request.suborganization_city)
+        self.assertIsNone(self.existing_suborg_request.suborganization_state_territory)
