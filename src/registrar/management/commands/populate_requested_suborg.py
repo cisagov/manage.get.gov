@@ -22,7 +22,12 @@ class Command(BaseCommand, PopulateScriptTemplate):
         Also excludes approved."""
         return records.exclude(
             organization_name__iexact=F("portfolio__organization_name"),
-            status=DomainRequest.DomainRequestStatus.APPROVED,
+            status__in=[
+                DomainRequest.DomainRequestStatus.APPROVED,
+                DomainRequest.DomainRequestStatus.REJECTED,
+                DomainRequest.DomainRequestStatus.INELIGIBLE,
+                DomainRequest.DomainRequestStatus.STARTED,
+            ],
         )
 
     def update_record(self, record: DomainRequest):
