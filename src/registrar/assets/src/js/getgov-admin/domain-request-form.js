@@ -629,6 +629,51 @@ export function initRejectedEmail() {
     });
 }
 
+
+/**
+ * A function that handles the suborganzation and requested suborganization fields and buttons.
+ * - Fieldwise: Hooks to the sub_organization, suborganization_city, and suborganization_state_territory fields.
+ *   On change, this function checks if any of these fields are not empty: 
+ *   sub_organization, suborganization_city, and suborganization_state_territory.
+ *   If they aren't, then we show the "clear" button. If they are, then we hide it because we don't need it.
+ * 
+ * - Buttonwise: Hooks to the #clear-requested-suborganization button.
+ *   On click, this will clear the input value of sub_organization, suborganization_city, and suborganization_state_territory.
+*/
+function handleSuborgFieldsAndButtons() {
+    const requestedSuborganizationField = document.getElementById("id_requested_suborganization");
+    const suborganizationCity = document.getElementById("id_suborganization_city");
+    const suborganizationStateTerritory = document.getElementById("id_suborganization_state_territory");
+    const rejectButton = document.querySelector("#clear-requested-suborganization");
+
+    // Ensure that every variable is present before proceeding
+    if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory || !rejectButton) {
+        console.warn("handleSuborganizationSelection() => Could not find required fields.")
+        return;
+    }
+
+    function handleRejectButtonVisibility() {
+        if (requestedSuborganizationField.value || suborganizationCity.value || suborganizationStateTerritory.value) {
+            showElement(rejectButton);
+        }else {
+            hideElement(rejectButton)
+        }
+    } 
+
+    function handleRejectButton() {
+        // Clear the text fields
+        requestedSuborganizationField.value = "";
+        suborganizationCity.value = "";
+        suborganizationStateTerritory.value = "";
+        // Update button visibility after clearing
+        handleRejectButtonVisibility();
+    }
+    rejectButton.addEventListener("click", handleRejectButton)
+    requestedSuborganizationField.addEventListener("blur", handleRejectButtonVisibility);
+    suborganizationCity.addEventListener("blur", handleRejectButtonVisibility);
+    suborganizationStateTerritory.addEventListener("change", handleRejectButtonVisibility);
+}
+
 /**
  * A function for dynamic DomainRequest fields
 */
@@ -636,5 +681,6 @@ export function initDynamicDomainRequestFields(){
     const domainRequestPage = document.getElementById("domainrequest_form");
     if (domainRequestPage) {
         handlePortfolioSelection();
+        handleSuborgFieldsAndButtons();
     }
 }

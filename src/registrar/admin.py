@@ -21,10 +21,14 @@ from registrar.utility.admin_helpers import (
     get_field_links_as_list,
 )
 from django.conf import settings
+from django.contrib.messages import get_messages
+from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.email import EmailSendingError
+from registrar.utility.email_invitations import send_portfolio_invitation_email
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -37,7 +41,7 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes, MissingEmailError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1312,6 +1316,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
     search_help_text = "Search by first name, last name, email, or portfolio."
 
+    change_form_template = "django/admin/user_portfolio_permission_change_form.html"
+
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
@@ -1468,7 +1474,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = ["portfolio"]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/portfolio_invitation_change_form.html"
 
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):
@@ -1477,6 +1483,118 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        Only send email on creation of the PortfolioInvitation object. Not on updates.
+        Emails sent to requested user / email.
+        When exceptions are raised, return without saving model.
+        """
+        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+            portfolio = obj.portfolio
+            requested_email = obj.email
+            requestor = request.user
+
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+            ).exists()
+            try:
+                if not permission_exists:
+                    # if permission does not exist for a user with requested_email, send email
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    messages.success(request, f"{requested_email} has been invited.")
+                else:
+                    messages.warning(request, "User is already a member of this portfolio.")
+            except Exception as e:
+                # when exception is raised, handle and do not save the model
+                self._handle_exceptions(e, request, obj)
+                return
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
+
+    def _handle_exceptions(self, exception, request, obj):
+        """Handle exceptions raised during the process.
+
+        Log warnings / errors, and message errors to the user.
+        """
+        if isinstance(exception, EmailSendingError):
+            logger.warning(
+                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
+                obj.email,
+                obj.portfolio,
+                exc_info=True,
+            )
+            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
+        elif isinstance(exception, MissingEmailError):
+            messages.error(request, str(exception))
+            logger.error(
+                f"Can't send email to '{obj.email}' for portfolio '{obj.portfolio}'. "
+                f"No email exists for the requestor.",
+                exc_info=True,
+            )
+
+        else:
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Override response_add to handle rendering when exceptions are raised during add model.
+
+        Normal flow on successful save_model on add is to redirect to changelist_view.
+        If there are errors, flow is modified to instead render change form.
+        """
+        # Check if there are any error or warning messages in the `messages` framework
+        storage = get_messages(request)
+        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
+
+        if has_errors:
+            # Re-render the change form if there are errors or warnings
+            # Prepare context for rendering the change form
+
+            # Get the model form
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+
+            # Create an AdminForm instance
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.get_prepopulated_fields(request, obj),
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+            media = self.media + form.media
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),  # Add admin context
+                "title": f"Add {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": True,  # Indicate this is an "Add" form
+                "change": False,  # Indicate this is not a "Change" form
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,  # Pass the AdminForm instance
+                "media": media,
+                "errors": None,
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=True,
+                change=False,
+                obj=obj,
+            )
+        return super().response_add(request, obj, post_url_continue)
 
 
 class DomainInformationResource(resources.ModelResource):
@@ -2618,8 +2736,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Display restricted warning,
-        Setup the auditlog trail and pass it in extra context."""
+        """Display restricted warning, setup the auditlog trail and pass it in extra context,
+        display warning that status cannot be changed from 'Approved' if domain is in Ready state"""
+
+        # Fetch the domain request instance
+        domain_request: models.DomainRequest = models.DomainRequest.objects.get(pk=object_id)
+        if domain_request.approved_domain and domain_request.approved_domain.state == models.Domain.State.READY:
+            domain = domain_request.approved_domain
+            # get change url for domain
+            app_label = domain_request.approved_domain._meta.app_label
+            model_name = domain._meta.model_name
+            obj_id = domain.id
+            change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
+
+            message = format_html(
+                "The status of this domain request cannot be changed because it has been joined to a domain in Ready status: "  # noqa: E501
+                "<a href='{}'>{}</a>",
+                mark_safe(change_url),  # nosec
+                escape(str(domain)),
+            )
+            messages.warning(
+                request,
+                message,
+            )
+
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
 
