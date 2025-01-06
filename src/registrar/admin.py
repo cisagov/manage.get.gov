@@ -1439,18 +1439,12 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         Override the save_model method.
 
         On creation of a new domain invitation, attempt to retrieve the invitation,
-        which will be successful if a user exists for that email; otherwise, will
-        raise a RuntimeError, and in this case can continue to create the invitation.
+        which will be successful if a single User exists for that email; otherwise, will
+        just continue to create the invitation.
         """
-        # NOTE: is a future ticket accounting for a 'not member of this org' scenario
-        # to mirror the logic in DomainAddUser view?
-        if not change:  # Domain Invitation creation
-            try:
-                User.objects.get(email=obj.email)
-                obj.retrieve()
-            except User.DoesNotExist:
-                # Proceed with invitation as new as exception indicates user does not exist
-                pass
+        if not change and User.objects.filter(email=obj.email).count() == 1:
+            # Domain Invitation creation for an existing User
+            obj.retrieve()
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
 
