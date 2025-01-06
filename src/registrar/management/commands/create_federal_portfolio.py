@@ -233,14 +233,9 @@ class Command(BaseCommand):
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
             else:
-                # Fill in the requesting suborg fields if we have the data to do so
-                if domain_request.organization_name and domain_request.city and domain_request.state_territory:
-                    domain_request.requested_suborganization = domain_request.organization_name
-                    domain_request.suborganization_city = domain_request.city
-                    domain_request.suborganization_state_territory = domain_request.state_territory
-                else:
-                    message = f"No suborganization data found whatsoever for {domain_request}."
-                    TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+                domain_request.requested_suborganization = domain_request.organization_name
+                domain_request.suborganization_city = domain_request.city
+                domain_request.suborganization_state_territory = domain_request.state_territory
 
             self.updated_portfolios.add(portfolio)
 
