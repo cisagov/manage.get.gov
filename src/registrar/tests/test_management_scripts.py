@@ -1764,6 +1764,16 @@ class TestPopulateRequestedSuborg(MockEppLib):
             sub_organization=self.suborg,
         )
 
+        # Create a request where org name matches portfolio name
+        self.matching_name_request = completed_domain_request(
+            name="matching.gov",
+            organization_name="Test Portfolio",
+            city="Boston",
+            state_territory="MA",
+            portfolio=self.portfolio,
+            user=self.user,
+        )
+
     def tearDown(self):
         super().tearDown()
         DomainRequest.objects.all().delete()
@@ -1804,3 +1814,15 @@ class TestPopulateRequestedSuborg(MockEppLib):
         self.assertIsNone(self.existing_suborg_request.requested_suborganization)
         self.assertIsNone(self.existing_suborg_request.suborganization_city)
         self.assertIsNone(self.existing_suborg_request.suborganization_state_territory)
+
+    @less_console_noise_decorator
+    def test_populate_requested_suborg_matching_name(self):
+        """Tests that requests with matching org/portfolio names are skipped"""
+        self.run_populate_requested_suborg()
+
+        self.matching_name_request.refresh_from_db()
+
+        # Verify the request wasn't modified since org name matches portfolio name
+        self.assertIsNone(self.matching_name_request.requested_suborganization)
+        self.assertIsNone(self.matching_name_request.suborganization_city)
+        self.assertIsNone(self.matching_name_request.suborganization_state_territory)

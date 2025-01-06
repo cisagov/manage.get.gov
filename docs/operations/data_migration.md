@@ -926,6 +926,7 @@ These fields are: requested_suborganization, suborganization_city, suborganizati
 
 This is done by pulling from organization_name, city, and state_territory. 
 The script will only parse records with a portfolio but no suborganization attached to it.
+Additionally, it will not parse records wherein the organization name matches the portfolio org name.
 
 ### Running on sandboxes
 

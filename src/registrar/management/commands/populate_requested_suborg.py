@@ -2,6 +2,7 @@ import logging
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors, TerminalHelper
 from registrar.models import DomainRequest
+from django.db.models import F
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
         filter_conditions = {"portfolio__isnull": False, "sub_organization__isnull": True}
         fields_to_update = ["requested_suborganization", "suborganization_city", "suborganization_state_territory"]
         self.mass_update_records(DomainRequest, filter_conditions, fields_to_update)
+
+    def custom_filter(self, records):
+        """Exclude domain requests that have the same org name as the portfolio"""
+        return records.exclude(organization_name=F("portfolio__organization_name"))
 
     def update_record(self, record: DomainRequest):
         """Adds data to requested_suborganization, suborganization_city, and suborganization_state_territory."""
