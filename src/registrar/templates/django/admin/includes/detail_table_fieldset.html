@@ -321,6 +321,22 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% else %}
             <input id="last-sent-rejection-email-content" class="display-none" value="None">
         {% endif %}
+    {% elif field.field.name == "requested_suborganization" %}
+        {{ field.field }}
+        <div class="requested-suborganization--clear-button">
+            <button 
+            id="clear-requested-suborganization"
+            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled" 
+            type="button"
+            >
+                <svg 
+                class="usa-icon"
+                >
+                    <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+                Clear requested suborganization
+            </button>
+        </div>
     {% else %}
         {{ field.field }}
     {% endif %}

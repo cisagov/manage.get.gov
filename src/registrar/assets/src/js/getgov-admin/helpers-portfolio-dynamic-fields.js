@@ -49,6 +49,13 @@ export function handlePortfolioSelection(
     const portfolioUrbanizationField = document.querySelector(".field-portfolio_urbanization");
     const portfolioUrbanization = portfolioUrbanizationField.querySelector(".readonly");
     const portfolioJsonUrl = document.getElementById("portfolio_json_url")?.value || null;
+    // These requested suborganization fields only exist on the domain request page
+    const rejectSuborganizationButton = document.querySelector("#clear-requested-suborganization");
+    const requestedSuborganizationFieldInput = document.getElementById("id_requested_suborganization");
+    const suborganizationCityInput = document.getElementById("id_suborganization_city");
+    const suborganizationStateTerritoryInput = document.getElementById("id_suborganization_state_territory");
+
+    // Global var to track page load
     let isPageLoading = true;
 
    /**
@@ -469,11 +476,28 @@ export function handlePortfolioSelection(
             if (requestedSuborganizationField) showElement(requestedSuborganizationField);
             if (suborganizationCity) showElement(suborganizationCity);
             if (suborganizationStateTerritory) showElement(suborganizationStateTerritory);
+            
+            // == LOGIC FOR THE DOMAIN REQUEST PAGE == //
+            // Handle rejectSuborganizationButton (display of the clear requested suborg button).
+            // Basically, this button should only be visible when we have data for suborg, city, and state_territory.
+            // The function handleSuborgFieldsAndButtons() in domain-request-form.js handles doing this same logic
+            // but on field input for city, state_territory, and the suborg field.
+            // If it doesn't exist, don't do anything.
+            if (rejectSuborganizationButton){
+                if (requestedSuborganizationFieldInput?.value || suborganizationCityInput?.value || suborganizationStateTerritoryInput?.value) {
+                    showElement(rejectSuborganizationButton);
+                }else {
+                    hideElement(rejectSuborganizationButton);
+                }
+            }
         } else {
             // Hide suborganization request fields if suborganization is selected
             if (requestedSuborganizationField) hideElement(requestedSuborganizationField);
             if (suborganizationCity) hideElement(suborganizationCity);
-            if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);  
+            if (suborganizationStateTerritory) hideElement(suborganizationStateTerritory);
+
+            // == LOGIC FOR THE DOMAIN REQUEST PAGE == //
+            if (rejectSuborganizationButton) hideElement(rejectSuborganizationButton);  
         }
     }
 

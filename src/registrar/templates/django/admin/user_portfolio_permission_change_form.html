@@ -2,15 +2,13 @@
 {% load custom_filters %}
 {% load i18n static %}
 
-{% block field_sets %}
-    {% for fieldset in adminform %}
-        {% comment %}
-        This is a placeholder for now.
-
-        Disclaimer:
-        When extending the fieldset view consider whether you need to make a new one that extends from detail_table_fieldset.
-        detail_table_fieldset is used on multiple admin pages, so a change there can have unintended consequences.
-        {% endcomment %}
-        {% include "django/admin/includes/user_portfolio_permission_fieldset.html" with original_object=original %}
-    {% endfor %}
+{% block content_subtitle %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body margin-left-1 maxw-none">
+            <p class="usa-alert__text maxw-none">
+                If you add someone to a portfolio here, it will not trigger an invitation email. To trigger an email, use the <a class="usa-link" href="{% url 'admin:registrar_portfolioinvitation_changelist' %}">Portfolio invitations table</a> instead.
+            </p>
+        </div>
+    </div>
+    {{ block.super }}
 {% endblock %}

@@ -17,6 +17,7 @@ from registrar.models import Contact, DomainRequest, DraftDomain, Domain, Federa
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,20 @@ class RequestingEntityForm(RegistrarForm):
         # Otherwise just return the suborg as normal
         return self.cleaned_data.get("sub_organization")
 
+    def clean_requested_suborganization(self):
+        name = self.cleaned_data.get("requested_suborganization")
+        if (
+            name
+            and Suborganization.objects.filter(
+                name__iexact=name, portfolio=self.domain_request.portfolio, name__isnull=False, portfolio__isnull=False
+            ).exists()
+        ):
+            raise ValidationError(
+                "This suborganization already exists. "
+                "Choose a new name, or select it directly if you would like to use it."
+            )
+        return name
+
     def full_clean(self):
         """Validation logic to remove the custom suborganization value before clean is triggered.
         Without this override, the form will throw an 'invalid option' error."""
@@ -114,7 +129,7 @@ class RequestingEntityForm(RegistrarForm):
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields
-                if not cleaned_data.get("requested_suborganization"):
+                if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
                     self.add_error("requested_suborganization", "Enter the name of your suborganization.")
                 if not cleaned_data.get("suborganization_city"):
                     self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
@@ -530,7 +545,7 @@ class PurposeForm(RegistrarForm):
         widget=forms.Textarea(
             attrs={
                 "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else? You can enter up to 2000 characters."
+                Will it be used for a website, email, or something else?"
             }
         ),
         validators=[
@@ -736,7 +751,13 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=("No other employees rationale"),
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "You don’t need to provide names of other employees now, \
+                but it may slow down our assessment of your eligibility. Describe \
+                why there are no other employees who can help verify your request."
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 1000,
@@ -784,7 +805,12 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
         label="Anything else?",
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Is there anything else you’d like us to know about your domain request? \
+                    Provide details below. You can enter up to 2000 characters"
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,

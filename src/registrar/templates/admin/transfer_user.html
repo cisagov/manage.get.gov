@@ -43,7 +43,7 @@
                 <select name="selected_user" id="selected_user" class="admin-combobox margin-top-0" onchange="this.form.submit()">
                     <option value="">Select a user</option>
                     {% for user in other_users %}
-                        <option value="{{ user.pk }}" {% if selected_user and user.pk == selected_user.pk %}selected{% endif %}>
+                        <option value="{{ user.pk }}" {% if selected_user and user.pk == selected_user.pk %}selected{% endif %}">
                             {{ user.first_name }} {{ user.last_name }}
                         </option>
                     {% endfor %}

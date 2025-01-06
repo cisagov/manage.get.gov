@@ -2,9 +2,10 @@ import { uswdsInitializeModals } from './helpers-uswds.js';
 import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
+import { hookupRadioTogglerListener } from './radios.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
-export function initPortfolioMemberPageToggle() {
+export function initPortfolioNewMemberPageToggle() {
     document.addEventListener("DOMContentLoaded", () => {
         const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
         if (wrapperDeleteAction) {
@@ -149,14 +150,14 @@ export function initAddNewMemberPageListeners() {
       document.getElementById('modalEmail').textContent = emailValue;
 
       // Get selected radio button for access level
-      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
+      let selectedAccess = document.querySelector('input[name="role"]:checked');
       // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
       // This value does not have the first letter capitalized so let's capitalize it
       let accessText = selectedAccess ? capitalizeFirstLetter(selectedAccess.value) : "No access level selected";
       document.getElementById('modalAccessLevel').textContent = accessText;
 
       // Populate permission details based on access level
-      if (selectedAccess && selectedAccess.value === 'admin') {
+      if (selectedAccess && selectedAccess.value === 'organization_admin') {
         populatePermissionDetails('new-member-admin-permissions');
       } else {
         populatePermissionDetails('new-member-basic-permissions');
@@ -169,4 +170,29 @@ export function initAddNewMemberPageListeners() {
         }
   }
 
+}
+
+// Initalize the radio for the member pages
+export function initPortfolioMemberPageRadio() {
+  document.addEventListener("DOMContentLoaded", () => {
+      let memberForm = document.getElementById("member_form");
+      let newMemberForm = document.getElementById("add_member_form")
+      if (memberForm) {
+        hookupRadioTogglerListener(
+          'role', 
+          {
+            'organization_admin': 'member-admin-permissions',
+            'organization_member': 'member-basic-permissions'
+          }
+        );
+      }else if (newMemberForm){
+        hookupRadioTogglerListener(
+          'role', 
+          {
+              'organization_admin': 'new-member-admin-permissions',
+              'organization_member': 'new-member-basic-permissions'
+          }
+        );
+      }
+  });
 }
