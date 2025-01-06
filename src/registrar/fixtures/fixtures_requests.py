@@ -134,7 +134,7 @@ class DomainRequestFixture:
             days_range = (end_date - earliest_date_allowed).days
             first_submitted_date = earliest_date_allowed + timedelta(days=random.randint(0, days_range))  # nosec
 
-            # Generate a random positive offset to ensure last_submitted_date is later 
+            # Generate a random positive offset to ensure last_submitted_date is later
             # (Start with 1 to ensure at least 1 day difference)
             offset_days = random.randint(1, 30)  # nosec
             last_submitted_date = first_submitted_date + timedelta(days=offset_days)
