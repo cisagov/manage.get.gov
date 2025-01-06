@@ -1738,7 +1738,6 @@ class TestPopulateRequestedSuborg(MockEppLib):
 
     @less_console_noise_decorator
     def setUp(self):
-        """Creates test domain requests with various states"""
         super().setUp()
 
         self.user = create_user()
@@ -1766,7 +1765,6 @@ class TestPopulateRequestedSuborg(MockEppLib):
         )
 
     def tearDown(self):
-        """Cleans up test data"""
         super().tearDown()
         DomainRequest.objects.all().delete()
         Suborganization.objects.all().delete()
