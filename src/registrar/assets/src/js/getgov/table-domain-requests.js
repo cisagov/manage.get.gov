@@ -53,24 +53,6 @@ export class DomainRequestsTable extends BaseTable {
     this.toggleExportButton(data.domain_requests);
 
     let needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-
-    // Remove existing delete th and td if they exist
-    let existingDeleteTh =  document.querySelector('.delete-header');
-    if (!needsDeleteColumn) {
-      if (existingDeleteTh)
-        existingDeleteTh.remove();
-    } else {
-      if (!existingDeleteTh) {
-        const delheader = document.createElement('th');
-        delheader.setAttribute('scope', 'col');
-        delheader.setAttribute('role', 'columnheader');
-        delheader.setAttribute('class', 'delete-header width-5');
-        delheader.innerHTML = `
-          <span class="usa-sr-only">Delete Action</span>`;
-        let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
-        tableHeaderRow.appendChild(delheader);
-      }
-    }
     return { 'needsAdditionalColumn': needsDeleteColumn };
   }
 
@@ -88,8 +70,12 @@ export class DomainRequestsTable extends BaseTable {
     <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
 
     let markupCreatorRow = '';
+    
+    // Forces columns of the domain request and domain tables to align in non-org views
+    let columnWidthLimiterClass = 'width-quarter';
 
     if (this.portfolioValue) {
+      columnWidthLimiterClass = '';
       markupCreatorRow = `
         <td>
             <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
@@ -133,7 +119,7 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td>
+      <td class="${columnWidthLimiterClass}">
         <div class="grid-row grid-gap">
           <a href="${actionUrl}">
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
