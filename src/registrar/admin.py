@@ -2736,8 +2736,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Display restricted warning,
-        Setup the auditlog trail and pass it in extra context."""
+        """Display restricted warning, setup the auditlog trail and pass it in extra context,
+        display warning that status cannot be changed from 'Approved' if domain is in Ready state"""
+
+        # Fetch the domain request instance
+        domain_request: models.DomainRequest = models.DomainRequest.objects.get(pk=object_id)
+        if domain_request.approved_domain and domain_request.approved_domain.state == models.Domain.State.READY:
+            domain = domain_request.approved_domain
+            # get change url for domain
+            app_label = domain_request.approved_domain._meta.app_label
+            model_name = domain._meta.model_name
+            obj_id = domain.id
+            change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
+
+            message = format_html(
+                "The status of this domain request cannot be changed because it has been joined to a domain in Ready status: "  # noqa: E501
+                "<a href='{}'>{}</a>",
+                mark_safe(change_url),  # nosec
+                escape(str(domain)),
+            )
+            messages.warning(
+                request,
+                message,
+            )
+
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
 
