@@ -4,6 +4,8 @@ from registrar.management.commands.utility.terminal_helper import PopulateScript
 from registrar.models import DomainRequest
 from django.db.models import F
 
+from registrar.models.utility.generic_helper import normalize_string
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,19 +19,6 @@ class Command(BaseCommand, PopulateScriptTemplate):
         fields_to_update = ["requested_suborganization", "suborganization_city", "suborganization_state_territory"]
         self.mass_update_records(DomainRequest, filter_conditions, fields_to_update)
 
-    def custom_filter(self, records):
-        """Exclude domain requests that have the same org name as the portfolio.
-        Also excludes approved."""
-        return records.exclude(
-            organization_name__iexact=F("portfolio__organization_name"),
-            status__in=[
-                DomainRequest.DomainRequestStatus.APPROVED,
-                DomainRequest.DomainRequestStatus.REJECTED,
-                DomainRequest.DomainRequestStatus.INELIGIBLE,
-                DomainRequest.DomainRequestStatus.STARTED,
-            ],
-        )
-
     def update_record(self, record: DomainRequest):
         """Adds data to requested_suborganization, suborganization_city, and suborganization_state_territory."""
         record.requested_suborganization = record.organization_name
@@ -40,3 +29,22 @@ class Command(BaseCommand, PopulateScriptTemplate):
             f"sub_city: {record.city}, suborg_state_territory: {record.state_territory}."
         )
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
+    
+    def should_skip_record(self, record) -> bool:
+        """Skips updating the record if the portfolio name is the same as the org name,
+        or if we are trying to update a record in an invalid status."""
+        portfolio_normalized = normalize_string(record.portfolio.organization_name)
+        org_normalized = normalize_string(record.organization_name)
+        if portfolio_normalized == org_normalized:
+            return True
+
+        invalid_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.STARTED,
+        ]
+        if record.status in invalid_statuses:
+            return True
+
+        return False

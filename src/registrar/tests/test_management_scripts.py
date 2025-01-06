@@ -1751,6 +1751,7 @@ class TestPopulateRequestedSuborg(MockEppLib):
             city="Washington",
             state_territory="DC",
             portfolio=self.portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
         # Create a request that already has a suborganization
@@ -1762,6 +1763,7 @@ class TestPopulateRequestedSuborg(MockEppLib):
             state_territory="NY",
             portfolio=self.portfolio,
             sub_organization=self.suborg,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
         # Create a request where org name matches portfolio name
@@ -1772,6 +1774,7 @@ class TestPopulateRequestedSuborg(MockEppLib):
             state_territory="MA",
             portfolio=self.portfolio,
             user=self.user,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
     def tearDown(self):
