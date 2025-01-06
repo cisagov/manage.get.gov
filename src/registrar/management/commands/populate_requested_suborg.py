@@ -18,8 +18,12 @@ class Command(BaseCommand, PopulateScriptTemplate):
         self.mass_update_records(DomainRequest, filter_conditions, fields_to_update)
 
     def custom_filter(self, records):
-        """Exclude domain requests that have the same org name as the portfolio"""
-        return records.exclude(organization_name__iexact=F("portfolio__organization_name"))
+        """Exclude domain requests that have the same org name as the portfolio.
+        Also excludes approved."""
+        return records.exclude(
+            organization_name__iexact=F("portfolio__organization_name"),
+            status=DomainRequest.DomainRequestStatus.APPROVED,
+        )
 
     def update_record(self, record: DomainRequest):
         """Adds data to requested_suborganization, suborganization_city, and suborganization_state_territory."""
