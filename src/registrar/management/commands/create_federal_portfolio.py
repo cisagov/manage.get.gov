@@ -107,7 +107,7 @@ class Command(BaseCommand):
             valid_agencies = DomainInformation.objects.filter(
                 federal_agency=federal_agency, organization_name__isnull=False
             )
-            org_names = set(valid_agencies.values_list("organization_name", flat=True))
+            org_names = set([agency.trim() for agency in valid_agencies.values_list("organization_name", flat=True)])
             self.create_suborganizations(portfolio, federal_agency, org_names)
             if parse_domains or both:
                 self.handle_portfolio_domains(portfolio, federal_agency)

@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
         for suborg in all_suborgs:
             # Normalize name by removing extra spaces and converting to lowercase
-            normalized_name = " ".join(suborg.name.split()).lower()
+            normalized_name = " ".join(suborg.name.trim().split()).lower()
             
             # First occurrence of this name
             if normalized_name not in duplicates:
@@ -28,7 +28,8 @@ class Command(BaseCommand):
                 continue
 
             # Compare with our current best
-            current_best = duplicates[normalized_name]["keep"]
+            duplicate_record = duplicates.get(normalized_name)
+            current_best = duplicate_record.get("keep")
 
             # Check if all other fields match.
             # If they don't, we should inspect this record manually.
@@ -50,25 +51,13 @@ class Command(BaseCommand):
             # The fewest spaces and most capitals wins.
             new_has_fewer_spaces = suborg.name.count(" ") < current_best.name.count(" ")
             new_has_more_capitals = sum(1 for c in suborg.name if c.isupper()) > sum(1 for c in current_best.name if c.isupper())
-            # TODO 
-            # Split into words and count properly capitalized first letters
-            # new_proper_caps = sum(
-            #     1 for word in suborg.name.split() 
-            #     if word and word[0].isupper()
-            # )
-            # current_proper_caps = sum(
-            #     1 for word in current_best.name.split() 
-            #     if word and word[0].isupper()
-            # )
-            # new_has_better_caps = new_proper_caps > current_proper_caps
-
             if new_has_fewer_spaces or new_has_more_capitals:
                 # New suborg is better - demote the old one to the delete list
-                duplicates[normalized_name]["delete"].append(current_best)
-                duplicates[normalized_name]["keep"] = suborg
+                duplicate_record["delete"].append(current_best)
+                duplicate_record["keep"] = suborg
             else:
                 # If it is not better, just delete the old one
-                duplicates[normalized_name]["delete"].append(suborg)
+                duplicate_record["delete"].append(suborg)
 
         # Filter out entries without duplicates
         duplicates = {k: v for k, v in duplicates.items() if v.get("delete")}
