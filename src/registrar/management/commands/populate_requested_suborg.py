@@ -37,7 +37,6 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Skips updating the record if the portfolio name is the same as the org name,
         or if we are trying to update a record in an invalid status."""
         invalid_statuses = [
-            DomainRequest.DomainRequestStatus.APPROVED,
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.STARTED,
