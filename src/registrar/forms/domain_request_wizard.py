@@ -7,6 +7,7 @@ from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
+from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.forms.utility.wizard_form_helper import (
     RegistrarForm,
     RegistrarFormSet,
@@ -257,6 +258,7 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
         empty_label="--Select--",
+        widget=ComboboxWidget,
     )
     organization_name = forms.CharField(
         label="Organization name",
@@ -298,11 +300,20 @@ class OrganizationContactForm(RegistrarForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Set initial value for federal agency combo box and specify combobox template
-        if self.domain_request and self.domain_request.federal_agency:
+
+        # Initialize federal_agency combobox widget
+        # Domain requests forms have prefix associated with step
+        prefix = kwargs.get("prefix", "")
+        prefixed_name = f"{prefix}-federal_agency" if prefix else "federal_agency"
+
+        # For combobox widget, need to set the data-default-value to selected value
+        if self.is_bound and self.data.get(prefixed_name):
+            # If form is bound (from a POST), use submitted value
+            self.fields["federal_agency"].widget.attrs["data-default-value"] = self.data.get(prefixed_name)
+        elif self.domain_request and self.domain_request.federal_agency:
+            # If form is not bound, set initial
             self.fields["federal_agency"].initial = self.domain_request.federal_agency
             self.fields["federal_agency"].widget.attrs["data-default-value"] = self.domain_request.federal_agency.pk
-        self.fields["federal_agency"].widget.template_name = "django/forms/widgets/combobox.html",
 
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""
