@@ -162,7 +162,7 @@ class DomainSuborganizationForm(forms.ModelForm):
     """Form for updating the suborganization"""
 
     sub_organization = forms.ModelChoiceField(
-        label = "Suborganization name",
+        label="Suborganization name",
         queryset=Suborganization.objects.none(),
         required=False,
         widget=ComboboxWidget,
