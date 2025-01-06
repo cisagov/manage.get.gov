@@ -104,11 +104,7 @@ class Command(BaseCommand):
         also create new suborganizations"""
         portfolio, created = self.create_portfolio(federal_agency)
         if created:
-            valid_agencies = DomainInformation.objects.filter(
-                federal_agency=federal_agency, organization_name__isnull=False
-            )
-            org_names = set([agency.trim() for agency in valid_agencies.values_list("organization_name", flat=True)])
-            self.create_suborganizations(portfolio, federal_agency, org_names)
+            self.create_suborganizations(portfolio, federal_agency)
             if parse_domains or both:
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
@@ -159,8 +155,13 @@ class Command(BaseCommand):
 
         return portfolio, True
 
-    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency, org_names: set):
+    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
+        valid_agencies = DomainInformation.objects.filter(
+            federal_agency=federal_agency, organization_name__isnull=False
+        )
+        org_names = set(valid_agencies.values_list("organization_name", flat=True))
+
         if not org_names:
             message = (
                 "Could not add any suborganizations."
