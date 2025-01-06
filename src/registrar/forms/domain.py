@@ -4,6 +4,7 @@ import logging
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
+from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
@@ -161,9 +162,10 @@ class DomainSuborganizationForm(forms.ModelForm):
     """Form for updating the suborganization"""
 
     sub_organization = forms.ModelChoiceField(
+        label = "Suborganization name",
         queryset=Suborganization.objects.none(),
         required=False,
-        widget=forms.Select(),
+        widget=ComboboxWidget,
     )
 
     class Meta:
@@ -177,20 +179,6 @@ class DomainSuborganizationForm(forms.ModelForm):
 
         portfolio = self.instance.portfolio if self.instance else None
         self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
-
-        # Set initial value
-        if self.instance and self.instance.sub_organization:
-            self.fields["sub_organization"].initial = self.instance.sub_organization
-
-        # Set custom form label
-        self.fields["sub_organization"].label = "Suborganization name"
-
-        # Use the combobox rather than the regular select widget
-        self.fields["sub_organization"].widget.template_name = "django/forms/widgets/combobox.html"
-
-        # Set data-default-value attribute
-        if self.instance and self.instance.sub_organization:
-            self.fields["sub_organization"].widget.attrs["data-default-value"] = self.instance.sub_organization.pk
 
 
 class BaseNameserverFormset(forms.BaseFormSet):
