@@ -19,7 +19,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
 
     def custom_filter(self, records):
         """Exclude domain requests that have the same org name as the portfolio"""
-        return records.exclude(organization_name=F("portfolio__organization_name"))
+        return records.exclude(organization_name__iexact=F("portfolio__organization_name"))
 
     def update_record(self, record: DomainRequest):
         """Adds data to requested_suborganization, suborganization_city, and suborganization_state_territory."""
