@@ -316,23 +316,6 @@ class OrganizationContactForm(RegistrarForm):
         label="Urbanization (required for Puerto Rico only)",
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Initialize federal_agency combobox widget
-        # Domain requests forms have prefix associated with step
-        prefix = kwargs.get("prefix", "")
-        prefixed_name = f"{prefix}-federal_agency" if prefix else "federal_agency"
-
-        # For combobox widget, need to set the data-default-value to selected value
-        if self.is_bound and self.data.get(prefixed_name):
-            # If form is bound (from a POST), use submitted value
-            self.fields["federal_agency"].widget.attrs["data-default-value"] = self.data.get(prefixed_name)
-        elif self.domain_request and self.domain_request.federal_agency:
-            # If form is not bound, set initial
-            self.fields["federal_agency"].initial = self.domain_request.federal_agency
-            self.fields["federal_agency"].widget.attrs["data-default-value"] = self.domain_request.federal_agency.pk
-
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""
         federal_agency = self.cleaned_data.get("federal_agency", None)
