@@ -104,7 +104,11 @@ class Command(BaseCommand):
         also create new suborganizations"""
         portfolio, created = self.create_portfolio(federal_agency)
         if created:
-            self.create_suborganizations(portfolio, federal_agency)
+            valid_agencies = DomainInformation.objects.filter(
+                federal_agency=federal_agency, organization_name__isnull=False
+            )
+            org_names = set(valid_agencies.values_list("organization_name", flat=True))
+            self.create_suborganizations(portfolio, federal_agency, org_names)
             if parse_domains or both:
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
@@ -155,13 +159,8 @@ class Command(BaseCommand):
 
         return portfolio, True
 
-    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
+    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency, org_names: set):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
-        valid_agencies = DomainInformation.objects.filter(
-            federal_agency=federal_agency, organization_name__isnull=False
-        )
-        org_names = set(valid_agencies.values_list("organization_name", flat=True))
-
         if not org_names:
             message = (
                 "Could not add any suborganizations."
@@ -232,6 +231,16 @@ class Command(BaseCommand):
             domain_request.portfolio = portfolio
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
+            else:
+                # Fill in the requesting suborg fields if we have the data to do so
+                if domain_request.organization_name and domain_request.city and domain_request.state_territory:
+                    domain_request.requested_suborganization = domain_request.organization_name
+                    domain_request.suborganization_city = domain_request.city
+                    domain_request.suborganization_state_territory = domain_request.state_territory
+                else:
+                    message = f"No suborganization data found whatsoever for {domain_request}."
+                    TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
