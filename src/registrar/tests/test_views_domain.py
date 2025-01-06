@@ -576,13 +576,16 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(edit_page, "Review the details below and update any required information")
 
     @override_flag("domain_renewal", active=True)
-    def test_domain_renewal_form_security_contact_edit(self):
+    def test_domain_renewal_form_security_email_edit(self):
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
 
             # Verify we see "Security email" on the renewal form
             self.assertContains(renewal_page, "Security email")
+
+            # Verify we see "strong recommend" blurb
+            self.assertContains(renewal_page, "We strongly recommend that you provide a security email.")
 
             # Verify that the "Edit" button for Security email is there and links to correct URL
             edit_button_url = reverse("domain-security-email", kwargs={"pk": self.domain_with_ip.id})

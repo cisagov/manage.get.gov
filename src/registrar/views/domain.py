@@ -380,9 +380,9 @@ class DomainRenewalView(DomainBaseView):
         if "submit_button" in request.POST:
             try:
                 domain.renew_domain()
-                messages.success(request, "This domain has been renewed for one year")
+                messages.success(request, "This domain has been renewed for one year.")
             except Exception as e:
-                messages.error(request, "*** This domain has not been renewed")
+                messages.error(request, "This domain has not been renewed for one year, error was %s" % e)
         return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
 
