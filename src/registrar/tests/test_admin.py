@@ -191,10 +191,10 @@ class TestDomainInvitationAdmin(TestCase):
     @less_console_noise_decorator
     def test_save_model_user_exists(self):
         """Test saving a domain invitation when the user exists.
-        
+
         Should attempt to retrieve the domain invitation."""
         # Create a user with the same email
-        User.objects.create_user(email="test@example.com", password="password", username="username")
+        User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
         invitation = DomainInvitation(email="test@example.com", domain=self.domain)
@@ -219,7 +219,7 @@ class TestDomainInvitationAdmin(TestCase):
     @less_console_noise_decorator
     def test_save_model_user_does_not_exist(self):
         """Test saving a domain invitation when the user does not exist.
-        
+
         Should not attempt to retrieve the domain invitation."""
         # Create a domain invitation instance
         invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
