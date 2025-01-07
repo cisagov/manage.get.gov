@@ -1770,6 +1770,11 @@ class TestCreateFederalPortfolio(TestCase):
         ):
             self.run_create_federal_portfolio(agency_name="test")
 
+        with self.assertRaisesRegex(
+            CommandError, "You must pass --parse_requests when using --include_started_requests"
+        ):
+            self.run_create_federal_portfolio(agency_name="test", include_started_requests=True)
+
     def test_command_error_agency_not_found(self):
         """Check error handling for non-existent agency."""
         expected_message = (

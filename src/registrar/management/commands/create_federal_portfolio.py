@@ -203,7 +203,9 @@ class Command(BaseCommand):
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
-                new_suborgs.append(Suborganization(name=normalize_string(name, lowercase=False), portfolio=portfolio))  # type: ignore
+                new_suborgs.append(
+                    Suborganization(name=normalize_string(name, lowercase=False), portfolio=portfolio)
+                )  # type: ignore
 
         if new_suborgs:
             Suborganization.objects.bulk_create(new_suborgs)
@@ -246,25 +248,26 @@ class Command(BaseCommand):
             # Set the portfolio
             domain_request.portfolio = portfolio
 
-            # Conditionally clear federal agency if the org name is the same as the portfolio name.
-            if include_started_requests:
-                domain_request.sync_portfolio_and_federal_agency_for_started_requests()
-
             # Set suborg info
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
             else:
                 clean_organization_name = None
                 if isinstance(domain_request.organization_name, str):
-                    clean_organization_name = domain_request.organization_name.strip()
+                    clean_organization_name = normalize_string(domain_request.organization_name, lowercase=False)
 
                 clean_city = None
                 if isinstance(domain_request.city, str):
-                    clean_city = domain_request.city.strip()
+                    clean_city = normalize_string(domain_request.city, lowercase=False)
 
                 domain_request.requested_suborganization = clean_organization_name
                 domain_request.suborganization_city = clean_city
                 domain_request.suborganization_state_territory = domain_request.state_territory
+
+            # Conditionally clear federal agency if the org name is the same as the portfolio name.
+            if include_started_requests:
+                domain_request.sync_portfolio_and_federal_agency_for_started_requests()
+
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(

@@ -344,6 +344,7 @@ def value_of_attribute(obj, attribute_name: str):
         value = value()
     return value
 
+
 def normalize_string(string_to_normalize: str, lowercase=True) -> str:
     """Normalizes a given string. Returns a string without extra spaces, in all lowercase."""
     new_string = " ".join(string_to_normalize.split())
