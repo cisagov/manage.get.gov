@@ -429,7 +429,7 @@ export class MembersTable extends BaseTable {
       if (num_domains >= 1)
       {
         modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain${num_domains > 1 ? "s": ""} in the organization.
-        Removing them from the organization will remove all of their domains. They will no longer be able to
+        Removing them from the organization will remove them from all of their domains. They will no longer be able to
         access this organization. This action cannot be undone.`;
       }
     }
