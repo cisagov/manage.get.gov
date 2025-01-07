@@ -52,11 +52,6 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
-        parser.add_argument(
-            "--include_started_requests",
-            action=argparse.BooleanOptionalAction,
-            help="If parse_requests is enabled, we parse started",
-        )
 
     def handle(self, **options):
         agency_name = options.get("agency_name")
@@ -64,7 +59,6 @@ class Command(BaseCommand):
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
-        include_started_requests = options.get("include_started_requests")
 
         if not both:
             if not parse_requests and not parse_domains:
@@ -72,9 +66,6 @@ class Command(BaseCommand):
         else:
             if parse_requests or parse_domains:
                 raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
-
-        if include_started_requests and not parse_requests:
-            raise CommandError("You must pass --parse_requests when using --include_started_requests")
 
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
         agencies = FederalAgency.objects.filter(**federal_agency_filter)
@@ -88,14 +79,15 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
+        portfolio_set = set()
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                self.handle_populate_portfolio(
-                    federal_agency, parse_domains, parse_requests, both, include_started_requests
-                )
+                # We currently only grab the list of changed domain requests, but we may want to grab the domains too
+                portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+                portfolio_set.add(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -111,9 +103,39 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, include_started_requests):
+        # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
+        # We only do this for started domain requests.
+        if parse_requests:
+            message = "Removing duplicate portfolio and federal_agency values from domain requests..."
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
+            domain_requests_to_update = DomainRequest.objects.filter(
+                portfolio__in=portfolio_set,
+                status=DomainRequest.DomainRequestStatus.STARTED,
+                federal_agency__agency__isnull=False,
+                portfolio__organization_name__isnull=False,
+            )
+            updated_requests = []
+            for req in domain_requests_to_update:
+                if normalize_string(req.federal_agency.agency) == normalize_string(req.portfolio.organization_name):
+                    req.federal_agency = None
+                    updated_requests.append(req)
+            DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
+
+            # Log the results
+            if TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=False,
+                prompt_message=f"Updated {updated_requests} domain requests successfully.",
+                prompt_title="Do you want to see a list of all changed domain requests?",
+            ):
+                logger.info(f"Federal agency set to none on: {[str(request) for request in updated_requests]}")
+
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
-        also create new suborganizations"""
+        also create new suborganizations.
+
+        Returns the processed portfolio
+        """
         portfolio, created = self.create_portfolio(federal_agency)
         if created:
             self.create_suborganizations(portfolio, federal_agency)
@@ -121,7 +143,9 @@ class Command(BaseCommand):
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
         if parse_requests or both:
-            self.handle_portfolio_requests(portfolio, federal_agency, include_started_requests)
+            self.handle_portfolio_requests(portfolio, federal_agency)
+
+        return portfolio
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -213,17 +237,19 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency, include_started_requests):
+    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
+        Returns a list of updated records.
+
+        Returns a queryset of DomainRequest objects, or None if nothing changed.
         """
         invalid_states = [
+            DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        if not include_started_requests:
-            invalid_states.append(DomainRequest.DomainRequestStatus.STARTED)
 
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
             status__in=invalid_states
@@ -260,11 +286,6 @@ class Command(BaseCommand):
                 domain_request.requested_suborganization = clean_organization_name
                 domain_request.suborganization_city = clean_city
                 domain_request.suborganization_state_territory = domain_request.state_territory
-
-            # Conditionally clear federal agency if the org name is the same as the portfolio name.
-            if include_started_requests:
-                domain_request.sync_portfolio_and_federal_agency_for_started_requests()
-
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(
@@ -275,7 +296,6 @@ class Command(BaseCommand):
                 "requested_suborganization",
                 "suborganization_city",
                 "suborganization_state_territory",
-                "federal_agency",
             ],
         )
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
@@ -285,6 +305,8 @@ class Command(BaseCommand):
         """
         Associate portfolio with domains for a federal agency.
         Updates all relevant domain information records.
+
+        Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
         domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
         if not domain_infos.exists():
