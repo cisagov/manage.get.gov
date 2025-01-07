@@ -228,19 +228,14 @@ class Command(BaseCommand):
             return None
 
         # Get all suborg information and store it in a dict to avoid doing a db call
-        suborgs = Suborganization.objects.filter(portfolio=portfolio, name__isnull=False)
-        normalized_suborgs = {}
-        for suborg in suborgs:
-            cleaned_name = normalize_string(suborg)
-            if cleaned_name not in normalized_suborgs:
-                # TODO - need to do ranking with caps and spaces
-                normalized_suborgs[cleaned_name] = suborg
-
+        # TODO IMPORTANT: RUN DATA FIX SCRIPT FIRST BEFORE THIS ONE
+        suborgs = Suborganization.objects.filter(portfolio=portfolio)
+        normalized_suborgs = {normalize_string(suborg.name): suborg for suborg in suborgs if suborg.name}
         for domain_request in domain_requests:
             domain_request.portfolio = portfolio
             normalized_organization_name = normalize_string(domain_request.organization_name)
             if normalized_organization_name in normalized_suborgs:
-                domain_request.sub_organization = suborgs.get(normalized_organization_name)
+                domain_request.sub_organization = normalized_suborgs.get(normalized_organization_name)
             else:
                 clean_organization_name = None
                 if isinstance(domain_request.organization_name, str):
