@@ -5,6 +5,7 @@ import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
+from registrar.models.utility.generic_helper import normalize_string
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,11 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--both",
+            action=argparse.BooleanOptionalAction,
+            help="Adds portfolio to both requests and domains",
+        )
+        parser.add_argument(
+            "--force-add-requested-suborg",
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
@@ -182,7 +188,7 @@ class Command(BaseCommand):
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
             # Stored in variables due to linter wanting type information here.
             portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
-            if name is not None and name.lower() == portfolio_name.lower():
+            if name is not None and normalize_string(name) == normalize_string(portfolio_name):
                 # You can use this to populate location information, when this occurs.
                 # However, this isn't needed for now so we can skip it.
                 message = (
@@ -227,11 +233,31 @@ class Command(BaseCommand):
             return None
 
         # Get all suborg information and store it in a dict to avoid doing a db call
-        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
+        suborgs = Suborganization.objects.filter(portfolio=portfolio, name__isnull=False)
+        normalized_suborgs = {}
+        for suborg in suborgs:
+            cleaned_name = normalize_string(suborg)
+            if cleaned_name not in normalized_suborgs:
+                # TODO - need to do ranking with caps and spaces
+                normalized_suborgs[cleaned_name] = suborg
+
         for domain_request in domain_requests:
             domain_request.portfolio = portfolio
-            if domain_request.organization_name in suborgs:
-                domain_request.sub_organization = suborgs.get(domain_request.organization_name)
+            normalized_organization_name = normalize_string(domain_request.organization_name)
+            if normalized_organization_name in normalized_suborgs:
+                domain_request.sub_organization = suborgs.get(normalized_organization_name)
+            else:
+                clean_organization_name = None
+                if isinstance(domain_request.organization_name, str):
+                    clean_organization_name = domain_request.organization_name.strip()
+
+                clean_city = None
+                if isinstance(domain_request.city, str):
+                    clean_city = domain_request.city.strip()
+
+                domain_request.requested_suborganization = clean_organization_name
+                domain_request.suborganization_city = clean_city
+                domain_request.suborganization_state_territory = domain_request.state_territory
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
