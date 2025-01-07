@@ -232,6 +232,18 @@ class Command(BaseCommand):
             domain_request.portfolio = portfolio
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
+            else:
+                clean_organization_name = None
+                if isinstance(domain_request.organization_name, str):
+                    clean_organization_name = domain_request.organization_name.strip()
+
+                clean_city = None
+                if isinstance(domain_request.city, str):
+                    clean_city = domain_request.city.strip()
+
+                domain_request.requested_suborganization = clean_organization_name
+                domain_request.suborganization_city = clean_city
+                domain_request.suborganization_state_territory = domain_request.state_territory
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
