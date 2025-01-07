@@ -32,7 +32,7 @@ import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
-from .common import MockEppLib, create_user, less_console_noise, completed_domain_request, MockSESClient
+from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient
 from api.tests.common import less_console_noise_decorator
 
 
