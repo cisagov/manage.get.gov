@@ -1521,10 +1521,7 @@ class TestCreateFederalPortfolio(TestCase):
     def test_handle_portfolio_requests_sync_federal_agency(self):
         """Test that federal agency is cleared when org name matches portfolio name"""
         # Create a portfolio. This script skips over "started"
-        portfolio = Portfolio.objects.create(
-            organization_name="Sugarcane",
-            creator=self.user
-        )
+        portfolio = Portfolio.objects.create(organization_name="Sugarcane", creator=self.user)
         # Create a domain request with matching org name
         matching_request = completed_domain_request(
             name="matching.gov",
@@ -1532,7 +1529,7 @@ class TestCreateFederalPortfolio(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.federal_agency_2,
             user=self.user,
-            portfolio=portfolio
+            portfolio=portfolio,
         )
 
         # Create a request not in started (no change should occur)
@@ -1545,9 +1542,7 @@ class TestCreateFederalPortfolio(TestCase):
         )
 
         self.run_create_federal_portfolio(agency_name="Sugarcane", parse_requests=True)
-        self.run_create_federal_portfolio(
-            agency_name="Test Federal Agency", parse_requests=True
-        )
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
 
         # Refresh from db
         matching_request.refresh_from_db()

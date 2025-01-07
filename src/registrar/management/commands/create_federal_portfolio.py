@@ -275,17 +275,12 @@ class Command(BaseCommand):
             # Set suborg info
             domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
             if domain_request.sub_organization is None:
-                clean_organization_name = None
-                if isinstance(domain_request.organization_name, str):
-                    clean_organization_name = normalize_string(domain_request.organization_name, lowercase=False)
-
-                clean_city = None
-                if isinstance(domain_request.city, str):
-                    clean_city = normalize_string(domain_request.city, lowercase=False)
-
-                domain_request.requested_suborganization = clean_organization_name
-                domain_request.suborganization_city = clean_city
+                domain_request.requested_suborganization = normalize_string(
+                    domain_request.organization_name, lowercase=False
+                )
+                domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
                 domain_request.suborganization_state_territory = domain_request.state_territory
+
             self.updated_portfolios.add(portfolio)
 
         DomainRequest.objects.bulk_update(
@@ -322,8 +317,7 @@ class Command(BaseCommand):
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_info in domain_infos:
             domain_info.portfolio = portfolio
-            if domain_info.organization_name in suborgs:
-                domain_info.sub_organization = suborgs.get(domain_info.organization_name)
+            domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."

@@ -8,7 +8,7 @@ from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper, normalize_string
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
