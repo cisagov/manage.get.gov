@@ -1590,15 +1590,16 @@ class TestCreateFederalPortfolio(TestCase):
 
     def test_script_adds_requested_suborganization_information(self):
         """Tests that the script adds the requested suborg fields for domain requests"""
+        # Create a new domain request with some errant spacing
         custom_suborg_request = completed_domain_request(
             name="custom_org.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.executive_agency_2,
             user=self.user,
-            organization_name="requested org name",
-            city="Austin",
-            state_territory=DomainRequest.StateTerritoryChoices.TEXAS
+            organization_name=" requested org name ",
+            city="Austin   ",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
         )
 
         self.assertIsNone(custom_suborg_request.requested_suborganization)
@@ -1607,10 +1608,13 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Run the script and test it
         self.run_create_federal_portfolio(branch="executive", parse_requests=True)
+        custom_suborg_request.refresh_from_db()
 
         self.assertEqual(custom_suborg_request.requested_suborganization, "requested org name")
         self.assertEqual(custom_suborg_request.suborganization_city, "Austin")
-        self.assertEqual(custom_suborg_request.suborganization_state_territory, DomainRequest.StateTerritoryChoices.TEXAS)
+        self.assertEqual(
+            custom_suborg_request.suborganization_state_territory, DomainRequest.StateTerritoryChoices.TEXAS
+        )
 
     def test_create_multiple_portfolios_for_branch_executive(self):
         """Tests creating all portfolios under a given branch"""

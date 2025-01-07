@@ -246,7 +246,16 @@ class Command(BaseCommand):
                 domain_request.suborganization_state_territory = domain_request.state_territory
             self.updated_portfolios.add(portfolio)
 
-        DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
+        DomainRequest.objects.bulk_update(
+            domain_requests,
+            [
+                "portfolio",
+                "sub_organization",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ],
+        )
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
