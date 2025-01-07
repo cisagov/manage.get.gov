@@ -365,7 +365,6 @@ class DomainRenewalView(DomainBaseView):
         # Check if the checkbox is checked
         is_policy_acknowledged = request.POST.get("is_policy_acknowledged", None)
         if is_policy_acknowledged != "on":
-            print("!!! Checkbox is NOT acknowledged")
             messages.error(
                 request, "Check the box if you read and agree to the requirements for operating a .gov domain."
             )
@@ -378,18 +377,12 @@ class DomainRenewalView(DomainBaseView):
                 },
             )
 
-        print("*** Checkbox is acknowledged")
         if "submit_button" in request.POST:
-            print("*** Submit button clicked")
-            # updated_expiration = domain.update_expiration(success=True)
-            # print("*** Updated expiration result:", updated_expiration)
             try:
-                print("*** Did we get into the try statement")
                 domain.renew_domain()
-                messages.success(request, "This domain has been renewed for one year")
+                messages.success(request, "This domain has been renewed for one year.")
             except Exception as e:
-                print(f"An error occured: {e}")
-                messages.error(request, "*** This domain has not been renewed")
+                messages.error(request, "This domain has not been renewed for one year, error was %s" % e)
         return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
 

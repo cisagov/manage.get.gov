@@ -9,6 +9,7 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
+from django.contrib.messages import get_messages
 import boto3_mocking  # type: ignore
 
 from registrar.utility.errors import (
@@ -451,11 +452,20 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
         self.user.save()
 
+    def todays_expiration_date(self):
+        todays_date = datetime.today()
+        new_expiration_date = todays_date.replace(year=todays_date.year + 1)
+        return new_expiration_date
+
     def custom_is_expired(self):
         return False
 
     def custom_is_expiring(self):
         return True
+    
+    def custom_renew_domain(self):
+        self.domain_with_ip.expiration_date = self.todays_expiration_date()
+        self.domain_with_ip.save()
 
     @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
@@ -575,13 +585,16 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(edit_page, "Review the details below and update any required information")
 
     @override_flag("domain_renewal", active=True)
-    def test_domain_renewal_form_security_contact_edit(self):
+    def test_domain_renewal_form_security_email_edit(self):
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
 
             # Verify we see "Security email" on the renewal form
             self.assertContains(renewal_page, "Security email")
+
+            # Verify we see "strong recommend" blurb
+            self.assertContains(renewal_page, "We strongly recommend that you provide a security email.")
 
             # Verify that the "Edit" button for Security email is there and links to correct URL
             edit_button_url = reverse("domain-security-email", kwargs={"pk": self.domain_with_ip.id})
@@ -608,7 +621,47 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             # Simulate clicking on edit button
             edit_page = renewal_page.click(href=edit_button_url, index=1)
             self.assertEqual(edit_page.status_code, 200)
-            self.assertContains(edit_page, "Domain managers can update all information related to a domain"
+            self.assertContains(edit_page, "Domain managers can update all information related to a domain")
+
+    @override_flag("domain_renewal", active=True)
+    def test_ack_checkbox_not_checked(self):
+
+        # Grab the renewal URL
+        renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+
+        # Test clicking the checkbox
+        response = self.client.post(renewal_url, data={"submit_button": "next"})
+
+        # Verify the error message is displayed
+        # Retrieves messages obj (used in the post call)
+        messages = list(get_messages(response.wsgi_request))
+        # Check we only get 1 error message
+        self.assertEqual(len(messages), 1)
+        # Check that the 1 error msg also is the right text
+        self.assertEqual(
+            str(messages[0]),
+            "Check the box if you read and agree to the requirements for operating a .gov domain.",
+        )
+    
+    @override_flag("domain_renewal", active=True)
+    def test_ack_checkbox_checked(self):
+
+        # Grab the renewal URL
+        with patch.object(Domain, "renew_domain", self.custom_renew_domain):
+            renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+
+            # Click the check, and submit 
+            response = self.client.post(renewal_url, data={"is_policy_acknowledged": "on", "submit_button": "next"})
+
+            #Check that it redirects after a successfully submits
+            self.assertRedirects(response, reverse("domain", kwargs={"pk":self.domain_with_ip.id}))
+
+            #Check for the updated expiration
+            formatted_new_expiration_date = self.todays_expiration_date().strftime("%b. %-d, %Y")
+            redirect_response = self.client.get(reverse("domain", kwargs={"pk":self.domain_with_ip.id}), follow=True)
+            self.assertContains(redirect_response, formatted_new_expiration_date)
+
+
 
 class TestDomainManagers(TestDomainOverview):
     @classmethod
