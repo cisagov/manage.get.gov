@@ -184,7 +184,7 @@ class Command(BaseCommand):
             return
 
         # Check for existing suborgs on the current portfolio
-        existing_suborgs = Suborganization.objects.filter(name__in=org_names)
+        existing_suborgs = Suborganization.objects.filter(name__in=org_names, name__isnull=False)
         if existing_suborgs.exists():
             message = f"Some suborganizations already exist for portfolio '{portfolio}'."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
@@ -192,9 +192,7 @@ class Command(BaseCommand):
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
-            # Stored in variables due to linter wanting type information here.
-            portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
-            if name is not None and normalize_string(name) == normalize_string(portfolio_name):
+            if normalize_string(name) == normalize_string(portfolio.organization_name):
                 # You can use this to populate location information, when this occurs.
                 # However, this isn't needed for now so we can skip it.
                 message = (
@@ -249,9 +247,8 @@ class Command(BaseCommand):
             domain_request.portfolio = portfolio
 
             # Set suborg info
-            if domain_request.organization_name in suborgs:
-                domain_request.sub_organization = suborgs.get(domain_request.organization_name)
-            else:
+            domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
+            if domain_request.sub_organization is None:
                 clean_organization_name = None
                 if isinstance(domain_request.organization_name, str):
                     clean_organization_name = normalize_string(domain_request.organization_name, lowercase=False)
