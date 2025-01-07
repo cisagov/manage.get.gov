@@ -5,6 +5,7 @@ import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
+from registrar.models.utility.generic_helper import normalize_string
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,11 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
+        parser.add_argument(
+            "--include_started_requests",
+            action=argparse.BooleanOptionalAction,
+            help="If parse_requests is enabled, we parse started",
+        )
 
     def handle(self, **options):
         agency_name = options.get("agency_name")
@@ -58,6 +64,7 @@ class Command(BaseCommand):
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
+        include_started_requests = options.get("include_started_requests")
 
         if not both:
             if not parse_requests and not parse_domains:
@@ -65,6 +72,9 @@ class Command(BaseCommand):
         else:
             if parse_requests or parse_domains:
                 raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
+
+        if include_started_requests and not parse_requests:
+            raise CommandError("You must pass --parse_requests when using --include_started_requests")
 
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
         agencies = FederalAgency.objects.filter(**federal_agency_filter)
@@ -83,7 +93,9 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+                self.handle_populate_portfolio(
+                    federal_agency, parse_domains, parse_requests, both, include_started_requests
+                )
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -99,7 +111,7 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, include_started_requests):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
         portfolio, created = self.create_portfolio(federal_agency)
@@ -109,7 +121,7 @@ class Command(BaseCommand):
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
         if parse_requests or both:
-            self.handle_portfolio_requests(portfolio, federal_agency)
+            self.handle_portfolio_requests(portfolio, federal_agency, include_started_requests)
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -182,7 +194,7 @@ class Command(BaseCommand):
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
             # Stored in variables due to linter wanting type information here.
             portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
-            if name is not None and name.lower() == portfolio_name.lower():
+            if name is not None and normalize_string(name) == normalize_string(portfolio_name):
                 # You can use this to populate location information, when this occurs.
                 # However, this isn't needed for now so we can skip it.
                 message = (
@@ -191,7 +203,7 @@ class Command(BaseCommand):
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
-                new_suborgs.append(Suborganization(name=name, portfolio=portfolio))  # type: ignore
+                new_suborgs.append(Suborganization(name=normalize_string(name, lowercase=False), portfolio=portfolio))  # type: ignore
 
         if new_suborgs:
             Suborganization.objects.bulk_create(new_suborgs)
@@ -201,16 +213,18 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
+    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency, include_started_requests):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
         """
         invalid_states = [
-            DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
+        if not include_started_requests:
+            invalid_states.append(DomainRequest.DomainRequestStatus.STARTED)
+
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
             status__in=invalid_states
         )
@@ -229,7 +243,14 @@ class Command(BaseCommand):
         # Get all suborg information and store it in a dict to avoid doing a db call
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_request in domain_requests:
+            # Set the portfolio
             domain_request.portfolio = portfolio
+
+            # Conditionally clear federal agency if the org name is the same as the portfolio name.
+            if include_started_requests:
+                domain_request.sync_portfolio_and_federal_agency_for_started_requests()
+
+            # Set suborg info
             if domain_request.organization_name in suborgs:
                 domain_request.sub_organization = suborgs.get(domain_request.organization_name)
             else:
@@ -254,6 +275,7 @@ class Command(BaseCommand):
                 "requested_suborganization",
                 "suborganization_city",
                 "suborganization_state_territory",
+                "federal_agency",
             ],
         )
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."

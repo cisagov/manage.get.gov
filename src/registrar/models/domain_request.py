@@ -8,7 +8,7 @@ from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
+from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper, normalize_string
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
@@ -729,6 +729,7 @@ class DomainRequest(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+        self.sync_portfolio_and_federal_agency_for_started_requests()
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
@@ -743,6 +744,22 @@ class DomainRequest(TimeStampedModel):
 
         # Update the cached values after saving
         self._cache_status_and_status_reasons()
+
+    def sync_portfolio_and_federal_agency_for_started_requests(self) -> bool:
+        """
+        Prevents duplicate organization data by clearing the federal_agency field if it matches the portfolio.
+        Only runs on STARTED requests.
+
+        Returns a bool indicating if the federal agency was changed or not.
+        """
+        agency_name = getattr(self.federal_agency, "agency", None)
+        portfolio_name = getattr(self.portfolio, "organization_name", None)
+        if portfolio_name and agency_name and self.status == DomainRequest.DomainRequestStatus.STARTED:
+            if normalize_string(agency_name) == normalize_string(portfolio_name):
+                self.federal_agency = None
+                return True
+
+        return False
 
     def create_requested_suborganization(self):
         """Creates the requested suborganization.

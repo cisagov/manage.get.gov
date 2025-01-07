@@ -1424,6 +1424,7 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Create an agency wih no federal type (can only be created via specifiying it manually)
         self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
+        self.federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane")
 
         # And create some with federal_type ones with creative names
         self.executive_agency_1 = FederalAgency.objects.create(
@@ -1516,6 +1517,48 @@ class TestCreateFederalPortfolio(TestCase):
         ):
             call_command("create_federal_portfolio", **kwargs)
 
+    @less_console_noise_decorator
+    def test_handle_portfolio_requests_sync_federal_agency(self):
+        """Test that federal agency is cleared when org name matches portfolio name"""
+
+        # Create a domain request with matching org name
+        matching_request = completed_domain_request(
+            name="matching.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency_2,
+            user=self.user,
+        )
+
+        # Create a request not in started (no change should occur)
+        matching_request_in_wrong_status = completed_domain_request(
+            name="kinda-matching.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+            user=self.user,
+        )
+
+        self.run_create_federal_portfolio(agency_name="Sugarcane", parse_requests=True, include_started_requests=True)
+        self.run_create_federal_portfolio(
+            agency_name="Test Federal Agency", parse_requests=True, include_started_requests=True
+        )
+
+        # Refresh from db
+        matching_request.refresh_from_db()
+        matching_request_in_wrong_status.refresh_from_db()
+
+        # Request with matching name should have federal_agency cleared
+        self.assertIsNone(matching_request.federal_agency)
+        self.assertIsNotNone(matching_request.portfolio)
+        self.assertEqual(matching_request.portfolio.organization_name, "Sugarcane")
+
+        # Request with matching name but wrong state should keep its federal agency
+        self.assertEqual(matching_request_in_wrong_status.federal_agency, self.federal_agency)
+        self.assertIsNotNone(matching_request_in_wrong_status.portfolio)
+        self.assertEqual(matching_request_in_wrong_status.portfolio.organization_name, "Test Federal Agency")
+
+    @less_console_noise_decorator
     def test_create_single_portfolio(self):
         """Test portfolio creation with suborg and senior official."""
         self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)

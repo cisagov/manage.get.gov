@@ -1074,6 +1074,38 @@ class TestDomainRequest(TestCase):
         self.assertEqual(domain_request2.generic_org_type, domain_request2.converted_generic_org_type)
         self.assertEqual(domain_request2.federal_agency, domain_request2.converted_federal_agency)
 
+    def test_sync_portfolio_and_federal_agency_for_started_requests(self):
+        """Tests the sync_portfolio_and_federal_agency_for_started_requests function"""
+        # Create a federal agency with a "bad" name
+        user = create_user()
+        federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane  ")
+        request = completed_domain_request(
+            name="matching.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=federal_agency_2,
+            user=user,
+        )
+        self.assertIsNone(request.portfolio)
+
+        # Nothing should happen on normal save
+        request.notes = "test change"
+        request.save()
+        self.assertEqual(request.federal_agency, federal_agency_2)
+
+        # But when a portfolio exists, the federal agency should be cleared if its a duplicate
+        portfolio = Portfolio.objects.create(organization_name="sugarcane", creator=user)
+        request.portfolio = portfolio
+        request.save()
+        self.assertIsNone(request.federal_agency)
+
+        # However -- this change should only occur if the names match (when normalized)
+        portfolio = Portfolio.objects.create(organization_name="some other name", creator=user)
+        request.portfolio = portfolio
+        request.federal_agency = federal_agency_2
+        request.save()
+        self.assertEqual(request.federal_agency, federal_agency_2)
+
 
 class TestDomainRequestSuborganization(TestCase):
     """Tests for the suborganization fields on domain requests"""
