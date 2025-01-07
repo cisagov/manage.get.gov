@@ -106,29 +106,36 @@ class Command(BaseCommand):
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
         if parse_requests:
-            message = "Removing duplicate portfolio and federal_agency values from domain requests..."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+            self.post_process_started_domain_requests(portfolio_set)
 
-            domain_requests_to_update = DomainRequest.objects.filter(
-                portfolio__in=portfolio_set,
-                status=DomainRequest.DomainRequestStatus.STARTED,
-                federal_agency__agency__isnull=False,
-                portfolio__organization_name__isnull=False,
-            )
-            updated_requests = []
-            for req in domain_requests_to_update:
-                if normalize_string(req.federal_agency.agency) == normalize_string(req.portfolio.organization_name):
-                    req.federal_agency = None
-                    updated_requests.append(req)
-            DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
+    def post_process_started_domain_requests(self, portfolio_set):
+        """
+        Removes duplicate organization data by clearing federal_agency when it matches the portfolio name.
+        Only processes domain requests in STARTED status.
+        """
+        message = "Removing duplicate portfolio and federal_agency values from domain requests..."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
-            # Log the results
-            if TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate=False,
-                prompt_message=f"Updated {updated_requests} domain requests successfully.",
-                prompt_title="Do you want to see a list of all changed domain requests?",
-            ):
-                logger.info(f"Federal agency set to none on: {[str(request) for request in updated_requests]}")
+        domain_requests_to_update = DomainRequest.objects.filter(
+            portfolio__in=portfolio_set,
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            federal_agency__agency__isnull=False,
+            portfolio__organization_name__isnull=False,
+        )
+        updated_requests = []
+        for req in domain_requests_to_update:
+            if normalize_string(req.federal_agency.agency) == normalize_string(req.portfolio.organization_name):
+                req.federal_agency = None
+                updated_requests.append(req)
+        DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
+
+        # Log the results
+        if TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=False,
+            prompt_message=f"Updated {len(updated_requests)} domain requests successfully.",
+            prompt_title="Do you want to see a list of all changed domain requests?",
+        ):
+            logger.info(f"Federal agency set to none on: {[str(request) for request in updated_requests]}")
 
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
