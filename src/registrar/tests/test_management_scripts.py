@@ -1755,4 +1755,3 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
-

@@ -918,4 +918,3 @@ Example (only requests): `./manage.py create_federal_portfolio --branch "executi
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
 - Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
 you must specify at least one to run this script.
-
