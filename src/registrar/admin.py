@@ -1467,11 +1467,14 @@ class DomainInvitationAdmin(ListHeaderAdmin):
                     and not member_of_this_org
                 ):
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
-                    PortfolioInvitation.objects.get_or_create(
+                    portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                         email=requested_email,
                         portfolio=domain_org,
                         roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                     )
+                    if requested_user is not None:
+                        portfolio_invitation.retrieve()
+                        portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
 
                 send_domain_invitation_email(
@@ -1548,7 +1551,16 @@ class DomainInvitationAdmin(ListHeaderAdmin):
                 change=False,
                 obj=obj,
             )
-        return super().response_add(request, obj, post_url_continue)
+        # Preserve all success messages
+        all_messages = [message for message in get_messages(request)]
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        # Re-add all messages to the storage after `super().response_add` to preserve them
+        for message in all_messages:
+            messages.add_message(request, message.level, message.message)
+
+        return response
 
 
 class PortfolioInvitationAdmin(ListHeaderAdmin):
@@ -1612,6 +1624,8 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
 
             permission_exists = UserPortfolioPermission.objects.filter(
                 user__email=requested_email, portfolio=portfolio, user__email__isnull=False
@@ -1620,6 +1634,8 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    if requested_user is not None:
+                        obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
                     messages.warning(request, "User is already a member of this portfolio.")
@@ -1685,7 +1701,16 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
                 change=False,
                 obj=obj,
             )
-        return super().response_add(request, obj, post_url_continue)
+        # Preserve all success messages
+        all_messages = [message for message in get_messages(request)]
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        # Re-add all messages to the storage after `super().response_add` to preserve them
+        for message in all_messages:
+            messages.add_message(request, message.level, message.message)
+
+        return response
 
 
 class DomainInformationResource(resources.ModelResource):

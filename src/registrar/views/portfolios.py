@@ -754,7 +754,9 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
         try:
             if not requested_user or not permission_exists:
                 send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
-                form.save()
+                portfolio_invitation = form.save()
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
                 if permission_exists:

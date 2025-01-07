@@ -1182,9 +1182,12 @@ class DomainAddUserView(DomainFormBaseView):
                 and not member_of_this_org
             ):
                 send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
-                PortfolioInvitation.objects.get_or_create(
+                portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                     email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
                 )
+                if requested_user is not None:
+                    portfolio_invitation.retrieve()
+                    portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
 
             if requested_user is None:
