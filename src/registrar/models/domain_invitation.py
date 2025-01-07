@@ -56,6 +56,8 @@ class DomainInvitation(TimeStampedModel):
         Raises:
             RuntimeError if no matching user can be found.
         """
+        # NOTE: this is currently not accounting for scenario when User.objects.get matches
+        # multiple user accounts with the same email address
 
         # get a user with this email address
         User = get_user_model()

@@ -7,7 +7,7 @@ from registrar.utility.errors import (
     OutsideOrgMemberError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.utility.email import send_templated_email
+from registrar.utility.email import EmailSendingError, send_templated_email
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
     # Check if the requestor is staff and has an email
     if not requestor.is_staff:
         if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError
+            raise MissingEmailError(email=email, domain=domain)
         else:
             requestor_email = requestor.email
 
@@ -65,15 +65,18 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
         pass
 
     # Send the email
-    send_templated_email(
-        "emails/domain_invitation.txt",
-        "emails/domain_invitation_subject.txt",
-        to_address=email,
-        context={
-            "domain": domain,
-            "requestor_email": requestor_email,
-        },
-    )
+    try:
+        send_templated_email(
+            "emails/domain_invitation.txt",
+            "emails/domain_invitation_subject.txt",
+            to_address=email,
+            context={
+                "domain": domain,
+                "requestor_email": requestor_email,
+            },
+        )
+    except EmailSendingError as err:
+        raise EmailSendingError(f"Could not send email invitation to {email} for domain {domain}.") from err
 
 
 def send_portfolio_invitation_email(email: str, requestor, portfolio):
@@ -98,17 +101,22 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
     # Check if the requestor is staff and has an email
     if not requestor.is_staff:
         if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError
+            raise MissingEmailError(email=email, portfolio=portfolio)
         else:
             requestor_email = requestor.email
 
-    send_templated_email(
-        "emails/portfolio_invitation.txt",
-        "emails/portfolio_invitation_subject.txt",
-        to_address=email,
-        context={
-            "portfolio": portfolio,
-            "requestor_email": requestor_email,
-            "email": email,
-        },
-    )
+    try:
+        send_templated_email(
+            "emails/portfolio_invitation.txt",
+            "emails/portfolio_invitation_subject.txt",
+            to_address=email,
+            context={
+                "portfolio": portfolio,
+                "requestor_email": requestor_email,
+                "email": email,
+            },
+        )
+    except EmailSendingError as err:
+        raise EmailSendingError(
+            f"Could not sent email invitation to {email} for portfolio {portfolio}. Portfolio invitation not saved."
+        ) from err
