@@ -1,5 +1,5 @@
+import json
 import logging
-from django.conf import settings
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,10 +8,15 @@ from django.utils.safestring import mark_safe
 from django.contrib import messages
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
+from registrar.utility.email_invitations import send_portfolio_invitation_email
+from registrar.utility.errors import MissingEmailError
+from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
     PortfolioDomainRequestsPermissionView,
@@ -26,6 +31,7 @@ from registrar.views.utility.permission_views import (
 )
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
+from django.db import IntegrityError
 
 
 logger = logging.getLogger(__name__)
@@ -145,7 +151,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioMemberForm
 
     def get(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
@@ -164,13 +170,14 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        user_initially_is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         if form.is_valid():
             # Check if user is removing their own admin or edit role
             removing_admin_role_on_self = (
                 request.user == user
-                and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and user_initially_is_admin
                 and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in form.cleaned_data.get("role", [])
             )
             form.save()
@@ -221,6 +228,86 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                 "member": member,
             },
         )
+
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio member.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        member = portfolio_permission.user
+
+        added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
+        if added_domain_ids is None:
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
+        if removed_domain_ids is None:
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                self._process_added_domains(added_domain_ids, member)
+                self._process_removed_domains(removed_domain_ids, member)
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            except IntegrityError:
+                messages.error(
+                    request,
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error("A database error occurred while saving changes.")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+            except Exception as e:
+                messages.error(
+                    request,
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}")
+                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+    def _parse_domain_ids(self, domain_data, domain_type):
+        """
+        Parses the domain IDs from the request and handles JSON errors.
+        """
+        try:
+            return json.loads(domain_data) if domain_data else []
+        except json.JSONDecodeError:
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"Invalid data for {domain_type}")
+            return None
+
+    def _process_added_domains(self, added_domain_ids, member):
+        """
+        Processes added domains by bulk creating UserDomainRole instances.
+        """
+        if added_domain_ids:
+            # Bulk create UserDomainRole instances for added domains
+            UserDomainRole.objects.bulk_create(
+                [
+                    UserDomainRole(domain_id=domain_id, user=member, role=UserDomainRole.Roles.MANAGER)
+                    for domain_id in added_domain_ids
+                ],
+                ignore_conflicts=True,  # Avoid duplicate entries
+            )
+
+    def _process_removed_domains(self, removed_domain_ids, member):
+        """
+        Processes removed domains by deleting corresponding UserDomainRole instances.
+        """
+        if removed_domain_ids:
+            # Delete UserDomainRole instances for removed domains
+            UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
 
 class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
@@ -284,7 +371,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
     template_name = "portfolio_member_permissions.html"
-    form_class = portfolioForms.BasePortfolioMemberForm
+    form_class = portfolioForms.PortfolioInvitedMemberForm
 
     def get(self, request, pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
@@ -347,6 +434,106 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                 "portfolio_invitation": portfolio_invitation,
             },
         )
+
+    def post(self, request, pk):
+        """
+        Handles adding and removing domains for a portfolio invitee.
+        """
+        added_domains = request.POST.get("added_domains")
+        removed_domains = request.POST.get("removed_domains")
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        email = portfolio_invitation.email
+
+        added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
+        if added_domain_ids is None:
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
+        if removed_domain_ids is None:
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        if added_domain_ids or removed_domain_ids:
+            try:
+                self._process_added_domains(added_domain_ids, email)
+                self._process_removed_domains(removed_domain_ids, email)
+                messages.success(request, "The domain assignment changes have been saved.")
+                return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            except IntegrityError:
+                messages.error(
+                    request,
+                    "A database error occurred while saving changes. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error("A database error occurred while saving changes.")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+            except Exception as e:
+                messages.error(
+                    request,
+                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.")
+                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+        else:
+            messages.info(request, "No changes detected.")
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+    def _parse_domain_ids(self, domain_data, domain_type):
+        """
+        Parses the domain IDs from the request and handles JSON errors.
+        """
+        try:
+            return json.loads(domain_data) if domain_data else []
+        except json.JSONDecodeError:
+            messages.error(
+                self.request,
+                f"Invalid data for {domain_type}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"Invalid data for {domain_type}.")
+            return None
+
+    def _process_added_domains(self, added_domain_ids, email):
+        """
+        Processes added domain invitations by updating existing invitations
+        or creating new ones.
+        """
+        if not added_domain_ids:
+            return
+
+        # Update existing invitations from CANCELED to INVITED
+        existing_invitations = DomainInvitation.objects.filter(domain_id__in=added_domain_ids, email=email)
+        existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # Determine which domains need new invitations
+        existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
+        new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
+
+        # Bulk create new invitations
+        DomainInvitation.objects.bulk_create(
+            [
+                DomainInvitation(
+                    domain_id=domain_id,
+                    email=email,
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
+                )
+                for domain_id in new_domain_ids
+            ]
+        )
+
+    def _process_removed_domains(self, removed_domain_ids, email):
+        """
+        Processes removed domain invitations by updating their status to CANCELED.
+        """
+        if not removed_domain_ids:
+            return
+
+        # Update invitations from INVITED to CANCELED
+        DomainInvitation.objects.filter(
+            domain_id__in=removed_domain_ids,
+            email=email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
 
 class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
@@ -509,34 +696,27 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         return render(request, "portfolio_members.html")
 
 
-class NewMemberView(PortfolioMembersPermissionView, FormMixin):
+class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
-    form_class = portfolioForms.NewMemberForm
-
-    def get_object(self, queryset=None):
-        """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
-        if portfolio is None:
-            raise Http404("No organization found for this user")
-        return portfolio
-
-    def get_form_kwargs(self):
-        """Include the instance in the form kwargs."""
-        kwargs = super().get_form_kwargs()
-        kwargs["instance"] = self.get_object()
-        return kwargs
+    form_class = portfolioForms.PortfolioNewMemberForm
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests to display the form."""
-        self.object = self.get_object()
+        self.object = None  # No existing PortfolioInvitation instance
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
 
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
-        self.object = self.get_object()
-        form = self.get_form()
+        self.object = None  # For a new invitation, there's no existing model instance
+
+        # portfolio not submitted with form, so override the value
+        data = request.POST.copy()
+        if not data.get("portfolio"):
+            data["portfolio"] = self.request.session.get("portfolio").id
+        # Pass the modified data to the form
+        form = portfolioForms.PortfolioNewMemberForm(data)
 
         if form.is_valid():
             return self.form_valid(form)
@@ -553,7 +733,7 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
             return super().form_invalid(form)  # Handle non-AJAX requests normally
 
     def form_valid(self, form):
-
+        super().form_valid(form)
         if self.is_ajax():
             return JsonResponse({"is_valid": True})  # Return a JSON response
         else:
@@ -563,108 +743,42 @@ class NewMemberView(PortfolioMembersPermissionView, FormMixin):
         """Redirect to members table."""
         return reverse("members")
 
-    def _send_portfolio_invitation_email(self, email: str, requestor: User, add_success=True):
-        """Performs the sending of the member invitation email
-        email: string- email to send to
-        add_success: bool- default True indicates:
-        adding a success message to the view if the email sending succeeds
-
-        raises EmailSendingError
-        """
-
-        # Set a default email address to send to for staff
-        requestor_email = settings.DEFAULT_FROM_EMAIL
-
-        # Check if the email requestor has a valid email address
-        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
-            requestor_email = requestor.email
-        elif not requestor.is_staff:
-            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requestor '{requestor.username}'.",
-                exc_info=True,
-            )
-            return None
-
-        # Check to see if an invite has already been sent
-        try:
-            invite = PortfolioInvitation.objects.get(email=email, portfolio=self.object)
-            if invite:  # We have an existin invite
-                # check if the invite has already been accepted
-                if invite.status == PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED:
-                    add_success = False
-                    messages.warning(
-                        self.request,
-                        f"{email} is already a manager for this portfolio.",
-                    )
-                else:
-                    add_success = False
-                    # it has been sent but not accepted
-                    messages.warning(self.request, f"{email} has already been invited to this portfolio")
-                return
-        except Exception as err:
-            logger.error(f"_send_portfolio_invitation_email() => An error occured: {err}")
-
-        try:
-            logger.debug("requestor email: " + requestor_email)
-
-            # send_templated_email(
-            #     "emails/portfolio_invitation.txt",
-            #     "emails/portfolio_invitation_subject.txt",
-            #     to_address=email,
-            #     context={
-            #         "portfolio": self.object,
-            #         "requestor_email": requestor_email,
-            #     },
-            # )
-        except EmailSendingError as exc:
-            logger.warn(
-                "Could not sent email invitation to %s for domain %s",
-                email,
-                self.object,
-                exc_info=True,
-            )
-            raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited.")
-
-    def _make_invitation(self, email_address: str, requestor: User, add_success=True):
-        """Make a Member invitation for this email and redirect with a message."""
-        try:
-            self._send_portfolio_invitation_email(email=email_address, requestor=requestor, add_success=add_success)
-        except EmailSendingError:
-            logger.warn(
-                "Could not send email invitation (EmailSendingError)",
-                self.object,
-                exc_info=True,
-            )
-            messages.warning(self.request, "Could not send email invitation.")
-        except Exception:
-            logger.warn(
-                "Could not send email invitation (Other Exception)",
-                self.object,
-                exc_info=True,
-            )
-            messages.warning(self.request, "Could not send email invitation.")
-        else:
-            # (NOTE: only create a MemberInvitation if the e-mail sends correctly)
-            PortfolioInvitation.objects.get_or_create(email=email_address, portfolio=self.object)
-        return redirect(self.get_success_url())
-
     def submit_new_member(self, form):
-        """Add the specified user as a member
-        for this portfolio.
-        Throws EmailSendingError."""
+        """Add the specified user as a member for this portfolio."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
+        portfolio = form.cleaned_data["portfolio"]
 
         requested_user = User.objects.filter(email=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=self.object).exists()
-        if not requested_user or not permission_exists:
-            return self._make_invitation(requested_email, requestor)
-        else:
-            if permission_exists:
-                messages.warning(self.request, "User is already a member of this portfolio.")
+        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
+        try:
+            if not requested_user or not permission_exists:
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                form.save()
+                messages.success(self.request, f"{requested_email} has been invited.")
+            else:
+                if permission_exists:
+                    messages.warning(self.request, "User is already a member of this portfolio.")
+        except Exception as e:
+            self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
+
+    def _handle_exceptions(self, exception, portfolio, email):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning(
+                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
+                email,
+                portfolio,
+                exc_info=True,
+            )
+            messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
