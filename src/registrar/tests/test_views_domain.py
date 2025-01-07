@@ -464,7 +464,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     def custom_is_expiring(self):
         return True
-    
+
     def custom_renew_domain(self):
         self.domain_with_ip.expiration_date = self.todays_expiration_date()
         self.domain_with_ip.save()
@@ -644,7 +644,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             str(messages[0]),
             "Check the box if you read and agree to the requirements for operating a .gov domain.",
         )
-    
+
     @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_checked(self):
 
@@ -652,17 +652,16 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "renew_domain", self.custom_renew_domain):
             renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
 
-            # Click the check, and submit 
+            # Click the check, and submit
             response = self.client.post(renewal_url, data={"is_policy_acknowledged": "on", "submit_button": "next"})
 
-            #Check that it redirects after a successfully submits
-            self.assertRedirects(response, reverse("domain", kwargs={"pk":self.domain_with_ip.id}))
+            # Check that it redirects after a successfully submits
+            self.assertRedirects(response, reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
 
-            #Check for the updated expiration
+            # Check for the updated expiration
             formatted_new_expiration_date = self.todays_expiration_date().strftime("%b. %-d, %Y")
-            redirect_response = self.client.get(reverse("domain", kwargs={"pk":self.domain_with_ip.id}), follow=True)
+            redirect_response = self.client.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}), follow=True)
             self.assertContains(redirect_response, formatted_new_expiration_date)
-
 
 
 class TestDomainManagers(TestDomainOverview):
