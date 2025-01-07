@@ -1588,6 +1588,30 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
+    def test_script_adds_requested_suborganization_information(self):
+        """Tests that the script adds the requested suborg fields for domain requests"""
+        custom_suborg_request = completed_domain_request(
+            name="custom_org.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.executive_agency_2,
+            user=self.user,
+            organization_name="requested org name",
+            city="Austin",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS
+        )
+
+        self.assertIsNone(custom_suborg_request.requested_suborganization)
+        self.assertIsNone(custom_suborg_request.suborganization_city)
+        self.assertIsNone(custom_suborg_request.suborganization_state_territory)
+
+        # Run the script and test it
+        self.run_create_federal_portfolio(branch="executive", parse_requests=True)
+
+        self.assertEqual(custom_suborg_request.requested_suborganization, "requested org name")
+        self.assertEqual(custom_suborg_request.suborganization_city, "Austin")
+        self.assertEqual(custom_suborg_request.suborganization_state_territory, DomainRequest.StateTerritoryChoices.TEXAS)
+
     def test_create_multiple_portfolios_for_branch_executive(self):
         """Tests creating all portfolios under a given branch"""
         federal_choice = DomainRequest.OrganizationChoices.FEDERAL
@@ -1732,100 +1756,3 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
 
-
-class TestPopulateRequestedSuborg(MockEppLib):
-    """Tests for the populate_requested_suborg script"""
-
-    @less_console_noise_decorator
-    def setUp(self):
-        super().setUp()
-
-        self.user = create_user()
-        # Create a portfolio
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.user)
-
-        # Create a domain request with all required fields
-        self.complete_request = completed_domain_request(
-            name="complete.gov",
-            organization_name="Complete Org",
-            city="Washington",
-            state_territory="DC",
-            portfolio=self.portfolio,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-
-        # Create a request that already has a suborganization
-        self.suborg = Suborganization.objects.create(name="Existing Suborg", portfolio=self.portfolio)
-        self.existing_suborg_request = completed_domain_request(
-            name="existing.gov",
-            organization_name="Existing Org",
-            city="New York",
-            state_territory="NY",
-            portfolio=self.portfolio,
-            sub_organization=self.suborg,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-
-        # Create a request where org name matches portfolio name
-        self.matching_name_request = completed_domain_request(
-            name="matching.gov",
-            organization_name="Test Portfolio",
-            city="Boston",
-            state_territory="MA",
-            portfolio=self.portfolio,
-            user=self.user,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-
-    def tearDown(self):
-        super().tearDown()
-        DomainRequest.objects.all().delete()
-        Suborganization.objects.all().delete()
-        Portfolio.objects.all().delete()
-        User.objects.all().delete()
-
-    @less_console_noise_decorator
-    def run_populate_requested_suborg(self):
-        """Executes the populate_requested_suborg command"""
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
-            return_value=True,
-        ):
-            call_command("populate_requested_suborg")
-
-    @less_console_noise_decorator
-    def test_populate_requested_suborg_complete_request(self):
-        """Tests that complete requests are updated correctly"""
-        self.run_populate_requested_suborg()
-
-        self.complete_request.refresh_from_db()
-
-        # Verify fields were populated correctly
-        self.assertEqual(self.complete_request.requested_suborganization, "Complete Org")
-        self.assertEqual(self.complete_request.suborganization_city, "Washington")
-        self.assertEqual(self.complete_request.suborganization_state_territory, "DC")
-
-    @less_console_noise_decorator
-    def test_populate_requested_suborg_existing_suborg(self):
-        """Tests that requests with existing suborgs are skipped"""
-        self.run_populate_requested_suborg()
-
-        self.existing_suborg_request.refresh_from_db()
-
-        # Verify the request wasn't modified
-        self.assertEqual(self.existing_suborg_request.sub_organization, self.suborg)
-        self.assertIsNone(self.existing_suborg_request.requested_suborganization)
-        self.assertIsNone(self.existing_suborg_request.suborganization_city)
-        self.assertIsNone(self.existing_suborg_request.suborganization_state_territory)
-
-    @less_console_noise_decorator
-    def test_populate_requested_suborg_matching_name(self):
-        """Tests that requests with matching org/portfolio names are skipped"""
-        self.run_populate_requested_suborg()
-
-        self.matching_name_request.refresh_from_db()
-
-        # Verify the request wasn't modified since org name matches portfolio name
-        self.assertIsNone(self.matching_name_request.requested_suborganization)
-        self.assertIsNone(self.matching_name_request.suborganization_city)
-        self.assertIsNone(self.matching_name_request.suborganization_state_territory)
