@@ -52,11 +52,6 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
-        parser.add_argument(
-            "--force-add-requested-suborg",
-            action=argparse.BooleanOptionalAction,
-            help="Adds portfolio to both requests and domains",
-        )
 
     def handle(self, **options):
         agency_name = options.get("agency_name")
