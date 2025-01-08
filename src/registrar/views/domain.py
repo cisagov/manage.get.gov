@@ -374,10 +374,11 @@ class DomainRenewalView(DomainBaseView):
                 try:
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
-                except Exception as e:
+                except Exception:
                     messages.error(
                         request,
-                        "This domain has not been renewed for one year, please email help@get.gov if this problem persists.",
+                        "This domain has not been renewed for one year, "
+                        "please email help@get.gov if this problem persists.",
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
