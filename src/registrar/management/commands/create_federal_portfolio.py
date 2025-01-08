@@ -85,7 +85,6 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                # We currently only grab the list of changed domain requests, but we may want to grab the domains too
                 portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
                 portfolios.append(portfolio)
             except Exception as exec:
@@ -105,11 +104,12 @@ class Command(BaseCommand):
 
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
-        if parse_requests:
+        if parse_requests or both:
             TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=True,
                 prompt_message="This action will update domain requests even if they aren't on a portfolio.",
-                prompt_title="Do you want to clear federal agency on started domain requests?",
+                prompt_title="Do you want to clear federal agency on (related) started domain requests?",
+                verify_message=None
             )
             self.post_process_started_domain_requests(agencies, portfolios)
 
@@ -141,15 +141,18 @@ class Command(BaseCommand):
             if agency_name in portfolio_set:
                 req.federal_agency = None
                 updated_requests.append(req)
-        DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
 
-        # Log the results
+        # Execute the update and Log the results
         if TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=False,
-            prompt_message=f"Updated {len(updated_requests)} domain requests successfully.",
-            prompt_title="Do you want to see a list of all changed domain requests?",
+            prompt_message=(
+                f"{len(domain_requests_to_update)} domain requests will be updated. "
+                f"These records will be changed: {[str(req) for req in updated_requests]}"
+            ),
+            prompt_title="Do wish to commit this update to the database?",
         ):
-            logger.info(f"Federal agency set to none on: {[str(request) for request in updated_requests]}")
+            DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
