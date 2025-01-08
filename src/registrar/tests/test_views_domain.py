@@ -631,19 +631,11 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         # Grab the renewal URL
         renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
 
-        # Test clicking the checkbox
+        # Test that the checkbox is not checked
         response = self.client.post(renewal_url, data={"submit_button": "next"})
 
-        # Verify the error message is displayed
-        # Retrieves messages obj (used in the post call)
-        messages = list(get_messages(response.wsgi_request))
-        # Check we only get 1 error message
-        self.assertEqual(len(messages), 1)
-        # Check that the 1 error msg also is the right text
-        self.assertEqual(
-            str(messages[0]),
-            "Check the box if you read and agree to the requirements for operating a .gov domain.",
-        )
+        error_message = "Check the box if you read and agree to the requirements for operating a .gov domain."
+        self.assertContains(response, error_message)
 
     @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_checked(self):
