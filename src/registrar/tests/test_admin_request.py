@@ -1570,7 +1570,7 @@ class TestDomainRequestAdmin(MockEppLib):
     @less_console_noise_decorator
     def test_other_websites_has_few_readonly_links(self):
         """Tests if the readonly other_websites field has links.
-        Test markup for l5 or less websites."""
+        Test markup for 5 or less websites."""
 
         # Create a domain request with 4 current websites
         domain_request = completed_domain_request(
