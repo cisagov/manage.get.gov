@@ -440,15 +440,15 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             username="usertest",
         )
 
-        self.expiringdomain, _ = Domain.objects.get_or_create(
-            name="expiringdomain.gov",
+        self.domaintorenew, _ = Domain.objects.get_or_create(
+            name="domainrenewal.gov",
         )
 
         UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.expiringdomain, role=UserDomainRole.Roles.MANAGER
+            user=self.user, domain=self.domaintorenew, role=UserDomainRole.Roles.MANAGER
         )
 
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.expiringdomain)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domaintorenew)
 
         self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
 
@@ -459,9 +459,12 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         new_expiration_date = todays_date.replace(year=todays_date.year + 1)
         return new_expiration_date
 
-    def custom_is_expired(self):
+    def custom_is_expired_false(self):
         return False
 
+    def custom_is_expired_true(self):
+        return True
+    
     def custom_is_expiring(self):
         return True
 
@@ -473,11 +476,11 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
-            Domain, "is_expired", self.custom_is_expired
+            Domain, "is_expired", self.custom_is_expired_false
         ):
-            self.assertEquals(self.expiringdomain.state, Domain.State.UNKNOWN)
+            self.assertEquals(self.domaintorenew.state, Domain.State.UNKNOWN)
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": self.expiringdomain.id}),
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
             )
             self.assertContains(detail_page, "Expiring soon")
 
@@ -508,17 +511,17 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
                 UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             ],
         )
-        expiringdomain2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
+        domaintorenew2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
         DomainInformation.objects.get_or_create(
-            creator=non_dom_manage_user, domain=expiringdomain2, portfolio=self.portfolio
+            creator=non_dom_manage_user, domain=domaintorenew2, portfolio=self.portfolio
         )
         non_dom_manage_user.refresh_from_db()
         self.client.force_login(non_dom_manage_user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
-            Domain, "is_expired", self.custom_is_expired
+            Domain, "is_expired", self.custom_is_expired_false
         ):
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": expiringdomain2.id}),
+                reverse("domain", kwargs={"pk": domaintorenew2.id}),
             )
             self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
 
@@ -527,29 +530,29 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
 
-        expiringdomain3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
+        domaintorenew3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
 
-        UserDomainRole.objects.get_or_create(user=self.user, domain=expiringdomain3, role=UserDomainRole.Roles.MANAGER)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=expiringdomain3, portfolio=portfolio)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domaintorenew3, role=UserDomainRole.Roles.MANAGER)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domaintorenew3, portfolio=portfolio)
         self.user.refresh_from_db()
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
-            Domain, "is_expired", self.custom_is_expired
+            Domain, "is_expired", self.custom_is_expired_false
         ):
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": expiringdomain3.id}),
+                reverse("domain", kwargs={"pk": domaintorenew3.id}),
             )
             self.assertContains(detail_page, "Renew to maintain access")
 
     @override_flag("domain_renewal", active=True)
-    def test_domain_renewal_form_and_sidebar(self):
+    def test_domain_renewal_form_and_sidebar_expiring(self):
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
-            Domain, "is_expired", self.custom_is_expired
+            Domain, "is_expiring", self.custom_is_expiring
         ):
             # Grab the detail page
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": self.expiringdomain.id}),
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
             )
 
             # Make sure we see the link as a domain manager
@@ -559,14 +562,44 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(detail_page, "Renewal form")
 
             # Grab link to the renewal page
-            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.expiringdomain.id})
+            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domaintorenew.id})
             self.assertContains(detail_page, f'href="{renewal_form_url}"')
 
             # Simulate clicking the link
             response = self.client.get(renewal_form_url)
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, f"Renew {self.expiringdomain.name}")
+            self.assertContains(response, f"Renew {self.domaintorenew.name}")
+    
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_and_sidebar_expired(self):
+        
+        self.client.force_login(self.user)
+     
+        with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
+            Domain, "is_expired", self.custom_is_expired_true
+        ):
+            # Grab the detail page
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
+            )
+
+            print("puglesss", self.domaintorenew.is_expired)
+            # Make sure we see the link as a domain manager
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            # Make sure we can see Renewal form on the sidebar since it's expired
+            self.assertContains(detail_page, "Renewal form")
+
+            # Grab link to the renewal page
+            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domaintorenew.id})
+            self.assertContains(detail_page, f'href="{renewal_form_url}"')
+
+            # Simulate clicking the link
+            response = self.client.get(renewal_form_url)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, f"Renew {self.domaintorenew.name}")
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_your_contact_info_edit(self):
