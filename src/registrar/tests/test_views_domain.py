@@ -454,7 +454,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
         self.user.save()
 
-    def todays_expiration_date(self):
+    def expiration_date_one_year_out(self):
         todays_date = datetime.today()
         new_expiration_date = todays_date.replace(year=todays_date.year + 1)
         return new_expiration_date
@@ -466,7 +466,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         return True
 
     def custom_renew_domain(self):
-        self.domain_with_ip.expiration_date = self.todays_expiration_date()
+        self.domain_with_ip.expiration_date = self.expiration_date_one_year_out()
         self.domain_with_ip.save()
 
     @override_flag("domain_renewal", active=True)
@@ -659,7 +659,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.todays_expiration_date().strftime("%b. %-d, %Y")
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
             redirect_response = self.client.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}), follow=True)
             self.assertContains(redirect_response, formatted_new_expiration_date)
 

@@ -337,13 +337,14 @@ class Domain(TimeStampedModel, DomainHelper):
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
             self.save()
+
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
-            logger.error(f"registry error renewing domain: {err}")
+            logger.error(f"Registry error renewing domain '{self.name}': {err}")
             raise (err)
         except Exception as e:
             # exception raised during the save to registrar
-            logger.error(f"error updating expiration date in registrar: {e}")
+            logger.error(f"Error updating expiration date for domain '{self.name}' in registrar: {e}")
             raise (e)
 
     @Cache
