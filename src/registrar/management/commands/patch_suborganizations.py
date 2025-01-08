@@ -12,12 +12,19 @@ class Command(BaseCommand):
     help = "Clean up duplicate suborganizations that differ only by spaces and capitalization"
 
     def handle(self, **kwargs):
-
+        # Maybe we should just do these manually?
+        extra_records_to_delete = [
+            "Assistant Secretary for Preparedness and Response Office of the Secretary",
+            "US Geological Survey",
+            "USDA/OC",
+        ]
         # Step 1: delete duplicates
+        self.delete_suborganization_duplicates()
+
+    def delete_suborganization_duplicates(self, extra_records_to_delete):
         # Find duplicates
         duplicates = {}
         all_suborgs = Suborganization.objects.all()
-
         for suborg in all_suborgs:
             # Normalize name by removing extra spaces and converting to lowercase
             normalized_name = " ".join(suborg.name.split()).lower()
@@ -124,6 +131,4 @@ class Command(BaseCommand):
             
             except Exception as e:
                 logger.error(f"{TerminalColors.FAIL}Failed to clean up suborganizations: {str(e)}{TerminalColors.ENDC}")
-        
-        # Step 2: Add city, state, etc info to existing suborganizations.
-        
+

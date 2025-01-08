@@ -7,6 +7,8 @@ from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
 from django.db.models import F
 
+from registrar.models.utility.generic_helper import normalize_string
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,10 +101,6 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
-        # TODO - add post processing step to add suborg city, state, etc.
-        # This needs to be done after because of execution order.
-        # However, we do not need to necessarily prompt the user in this case.
-
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
@@ -126,9 +124,9 @@ class Command(BaseCommand):
 
         # Post process steps
         # Add suborg info to created or existing suborgs. Get the refreshed queryset for each.
-        self.post_process_suborganization(suborganizations.all(), domains.all(), domain_requests.all())
+        self.post_process_suborganization_fields(suborganizations.all(), domains.all(), domain_requests.all())
 
-    def post_process_suborganization(self, suborganizations, domains, requests):
+    def post_process_suborganization_fields(self, suborganizations, domains, requests):
         # Exclude domains and requests where the org name is the same,
         # and where we are missing some crucial information.
         domains = domains.exclude(
