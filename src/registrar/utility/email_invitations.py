@@ -1,5 +1,7 @@
 from django.conf import settings
 from registrar.models import DomainInvitation
+from registrar.models.domain import Domain
+from registrar.models.user import User
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -13,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def send_domain_invitation_email(email: str, requestor, domain, is_member_of_different_org):
+def send_domain_invitation_email(email: str, requestor, domains: Domain | list[Domain], is_member_of_different_org, requested_user=None):
     """
     Sends a domain invitation email to the specified address.
 
@@ -22,8 +24,9 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
     Args:
         email (str): Email address of the recipient.
         requestor (User): The user initiating the invitation.
-        domain (Domain): The domain object for which the invitation is being sent.
+        domains (Domain or list of Domain): The domain objects for which the invitation is being sent.
         is_member_of_different_org (bool): if an email belongs to a different org
+        requested_user (User | None): The recipient if the email belongs to a user in the registrar
 
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
@@ -32,13 +35,19 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
         OutsideOrgMemberError: If the requested_user is part of a different organization.
         EmailSendingError: If there is an error while sending the email.
     """
+    print('send_domain_invitation_email')
+    # Normalize domains
+    if isinstance(domains, Domain):
+        domains = [domains]
+
     # Default email address for staff
     requestor_email = settings.DEFAULT_FROM_EMAIL
 
     # Check if the requestor is staff and has an email
     if not requestor.is_staff:
         if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError(email=email, domain=domain)
+            domain_names = ", ".join([domain.name for domain in domains])
+            raise MissingEmailError(email=email, domain=domain_names)
         else:
             requestor_email = requestor.email
 
@@ -51,18 +60,19 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
     ):
         raise OutsideOrgMemberError
 
-    # Check for an existing invitation
-    try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
-        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-            raise AlreadyDomainManagerError(email)
-        elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
-            invite.update_cancellation_status()
-            invite.save()
-        else:
-            raise AlreadyDomainInvitedError(email)
-    except DomainInvitation.DoesNotExist:
-        pass
+    # Check for an existing invitation for each domain
+    for domain in domains:
+        try:
+            invite = DomainInvitation.objects.get(email=email, domain=domain)
+            if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+                raise AlreadyDomainManagerError(email)
+            elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
+                invite.update_cancellation_status()
+                invite.save()
+            else:
+                raise AlreadyDomainInvitedError(email)
+        except DomainInvitation.DoesNotExist:
+            pass
 
     # Send the email
     try:
@@ -71,12 +81,18 @@ def send_domain_invitation_email(email: str, requestor, domain, is_member_of_dif
             "emails/domain_invitation_subject.txt",
             to_address=email,
             context={
-                "domain": domain,
+                "domains": domains,
                 "requestor_email": requestor_email,
+                "invitee_email_address": email,
+                "requested_user": requested_user,
             },
         )
     except EmailSendingError as err:
-        raise EmailSendingError(f"Could not send email invitation to {email} for domain {domain}.") from err
+        print('point of failure test')
+        domain_names = ", ".join([domain.name for domain in domains])
+        raise EmailSendingError(
+            f"Could not send email invitation to {email} for domains: {domain_names}"
+        ) from err
 
 
 def send_portfolio_invitation_email(email: str, requestor, portfolio):

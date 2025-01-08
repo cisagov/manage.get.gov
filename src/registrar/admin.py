@@ -1480,8 +1480,9 @@ class DomainInvitationAdmin(ListHeaderAdmin):
                 send_domain_invitation_email(
                     email=requested_email,
                     requestor=requestor,
-                    domain=domain,
+                    domains=domain,
                     is_member_of_different_org=member_of_a_different_org,
+                    requested_user=requested_user
                 )
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User

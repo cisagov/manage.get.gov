@@ -1,36 +1,46 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi.
+{% if requested_user and requested_user.first_name %}
+Hi, {{ requested_user.first_name }}.
+{% else %}
+Hi,
+{% endif %}
 
-{{ requestor_email }} has added you as a manager on {{ domain.name }}.
+{{ requestor_email }} has invited you to manage:
+{% for domain in domains %}
+{{ domain.name }}
+{% endfor %}
 
-You can manage this domain on the .gov registrar <https://manage.get.gov>.
+To manage domain information, visit the .gov registrar <https://manage.get.gov>.
 
 ----------------------------------------------------------------
+{% if not requested_user %}
 
 YOU NEED A LOGIN.GOV ACCOUNT
-You’ll need a Login.gov account to manage your .gov domain. Login.gov provides
-a simple and secure process for signing in to many government services with one
-account. 
+You’ll need a Login.gov account to access the .gov registrar. That account needs to be
+associated with the following email address: {{ invitee_email_address }}
 
-If you don’t already have one, follow these steps to create your
-Login.gov account <https://login.gov/help/get-started/create-your-account/>.
+Login.gov provides a simple and secure process for signing in to many government
+services with one account. If you don’t already have one, follow these steps to create
+your Login.gov account <https://login.gov/help/get-started/create-your-account/>.
+{% endif %}
 
 
 DOMAIN MANAGEMENT
-As a .gov domain manager, you can add or update information about your domain.
-You’ll also serve as a contact for your .gov domain. Please keep your contact
-information updated. 
+As a .gov domain manager, you can add or update information like name servers. You’ll
+also serve as a contact for the domains you manage. Please keep your contact
+information updated.
 
 Learn more about domain management <https://get.gov/help/domain-management>. 
 
 
 SOMETHING WRONG?
-If you’re not affiliated with {{ domain.name }} or think you received this
-message in error, reply to this email.
+If you’re not affiliated with the .gov domains mentioned in this invitation or think you
+received this message in error, reply to this email.
 
 
 THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+.Gov helps the public identify official, trusted information. Thank you for using a .gov
+domain.
 
 ----------------------------------------------------------------
 
@@ -38,5 +48,6 @@ The .gov team
 Contact us: <https://get.gov/contact/>
 Learn about .gov <https://get.gov>
 
-The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency
+(CISA) <https://cisa.gov/>
 {% endautoescape %}

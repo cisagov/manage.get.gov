@@ -1204,7 +1204,7 @@ class DomainAddUserView(DomainFormBaseView):
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
-            domain=self.object,
+            domains=self.object,
             is_member_of_different_org=member_of_different_org,
         )
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
@@ -1215,8 +1215,9 @@ class DomainAddUserView(DomainFormBaseView):
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
-            domain=self.object,
+            domains=self.object,
             is_member_of_different_org=member_of_different_org,
+            requested_user=requested_user,
         )
         UserDomainRole.objects.create(
             user=requested_user,
