@@ -5,6 +5,11 @@
 {% block title %} Domain Requests | {% endblock %}
 
 {% block portfolio_content %}
+
+{% block messages %}
+    {% include "includes/form_messages.html" %}
+{% endblock %}
+
     <h1 id="domains-header">Domain requests</h1>
     <section class="section-outlined">
         <div class="section-outlined__header margin-bottom-3">

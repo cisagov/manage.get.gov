@@ -9,6 +9,11 @@
 {% endblock %}
 
 {% block portfolio_content %}
+
+{% block messages %}
+    {% include "includes/form_messages.html" %}
+{% endblock %}
+
 {% include "includes/form_errors.html" with form=form %}
 
 <!-- Navigation breadcrumbs -->

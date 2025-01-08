@@ -8,6 +8,11 @@ Organization member
 {% load static %}
 
 {% block portfolio_content %}
+
+{% block messages %}
+    {% include "includes/form_messages.html" %}
+{% endblock %}
+
 <div id="main-content">
 
   {% url 'members' as url %}
