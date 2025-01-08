@@ -108,7 +108,9 @@ class Command(BaseCommand):
             TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=True,
                 prompt_message="This action will update domain requests even if they aren't on a portfolio.",
-                prompt_title="Do you want to clear federal agency on (related) started domain requests?",
+                prompt_title=(
+                    "POST PROCESS STEP: Do you want to clear federal agency on (related) started domain requests?"
+                ),
                 verify_message=None,
             )
             self.post_process_started_domain_requests(agencies, portfolios)
@@ -247,9 +249,7 @@ class Command(BaseCommand):
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
-                new_suborgs.append(
-                    Suborganization(name=name, portfolio=portfolio)
-                )  # type: ignore
+                new_suborgs.append(Suborganization(name=name, portfolio=portfolio))  # type: ignore
 
         if new_suborgs:
             Suborganization.objects.bulk_create(new_suborgs)
