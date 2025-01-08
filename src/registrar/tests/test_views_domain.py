@@ -11,7 +11,6 @@ from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from .common import MockEppLib, MockSESClient, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
-from django.contrib.messages import get_messages
 import boto3_mocking  # type: ignore
 
 from registrar.utility.errors import (
