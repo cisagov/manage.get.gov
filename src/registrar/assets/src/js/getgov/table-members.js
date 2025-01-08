@@ -137,7 +137,7 @@ export class MembersTable extends BaseTable {
     }
     // This easter egg is only for fixtures that dont have names as we are displaying their emails
     // All prod users will have emails linked to their account
-    if (customTableOptions.needsAdditionalColumn) MembersTable.addMemberModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
+    if (customTableOptions.needsAdditionalColumn) MembersTable.addMemberDeleteModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
   }
 
   /**
@@ -417,24 +417,21 @@ export class MembersTable extends BaseTable {
    * @param {string} submit_delete_url - `${member_type}-${member_id}/delete`
    * @param {HTMLElement} wrapper_element - The element to which the modal is appended
    */
-  static addMemberModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
-    let modalHeading = '';
-    let modalDescription = '';
+  static addMemberDeleteModal(num_domains, member_email, submit_delete_url, id, wrapper_element) {
 
-    if (num_domains == 0){
+    let modalHeading = ``;
+    let modalDescription = ``;
+
+    if (num_domains >= 0){
       modalHeading = `Are you sure you want to delete ${member_email}?`;
       modalDescription = `They will no longer be able to access this organization. 
       This action cannot be undone.`;
-    } else if (num_domains == 1) {
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain in the organization.
-      Removing them from the organization will remove all of their domains. They will no longer be able to
-      access this organization. This action cannot be undone.`;
-    } else if (num_domains > 1) {
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
-      modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domains in the organization.
-      Removing them from the organization will remove all of their domains. They will no longer be able to
-      access this organization. This action cannot be undone.`;
+      if (num_domains >= 1)
+      {
+        modalDescription = `<b>${member_email}</b> currently manages ${num_domains} domain${num_domains > 1 ? "s": ""} in the organization.
+        Removing them from the organization will remove them from all of their domains. They will no longer be able to
+        access this organization. This action cannot be undone.`;
+      }
     }
 
     const modalSubmit = `
