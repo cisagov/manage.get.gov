@@ -3,6 +3,7 @@ import logging
 from django.core.management import BaseCommand
 from registrar.models import Suborganization, DomainRequest, DomainInformation
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+from registrar.models.utility.generic_helper import normalize_string
 
 
 logger = logging.getLogger(__name__)
@@ -12,18 +13,58 @@ class Command(BaseCommand):
     help = "Clean up duplicate suborganizations that differ only by spaces and capitalization"
 
     def handle(self, **kwargs):
-        # Maybe we should just do these manually?
-        extra_records_to_delete = [
+        manual_records = [
             "Assistant Secretary for Preparedness and Response Office of the Secretary",
             "US Geological Survey",
             "USDA/OC",
         ]
-        # Step 1: delete duplicates
-        self.delete_suborganization_duplicates()
-
-    def delete_suborganization_duplicates(self, extra_records_to_delete):
-        # Find duplicates
         duplicates = {}
+        for record in Suborganization.objects.filter(name__in=manual_records):
+            if record.name:
+                norm_name = normalize_string(record.name)
+                duplicates[norm_name] = {
+                    "keep": None,
+                    "delete": [record]
+                }
+
+        records_to_delete.update(self.handle_suborganization_duplicates())
+
+        # Get confirmation and execute deletions
+        if TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=True,
+            prompt_message=preview,
+            prompt_title="Clean up duplicate suborganizations?",
+            verify_message="*** WARNING: This will delete suborganizations! ***"
+        ):
+            # Update all references to point to the right suborg before deletion
+            for record in duplicates.values():
+                best_record = record.get("keep")
+                delete_ids = [dupe.id for dupe in record.get("delete")]
+                
+                # Update domain requests
+                DomainRequest.objects.filter(
+                    sub_organization_id__in=delete_ids
+                ).update(sub_organization=best_record)
+                
+                # Update domain information
+                DomainInformation.objects.filter(
+                    sub_organization_id__in=delete_ids
+                ).update(sub_organization=best_record)
+
+            records_to_delete = set(
+                dupe.id 
+                for data in duplicates.values() 
+                for dupe in data["delete"]
+            )
+            try:
+                delete_count, _ = Suborganization.objects.filter(id__in=records_to_delete).delete()
+                logger.info(f"{TerminalColors.OKGREEN}Successfully deleted {delete_count} suborganizations{TerminalColors.ENDC}")
+            except Exception as e:
+                logger.error(f"{TerminalColors.FAIL}Failed to clean up suborganizations: {str(e)}{TerminalColors.ENDC}")
+
+
+    def handle_suborganization_duplicates(self, duplicates):
+        # Find duplicates
         all_suborgs = Suborganization.objects.all()
         for suborg in all_suborgs:
             # Normalize name by removing extra spaces and converting to lowercase
@@ -103,32 +144,26 @@ class Command(BaseCommand):
             prompt_title="Clean up duplicate suborganizations?",
             verify_message="*** WARNING: This will delete suborganizations! ***"
         ):
-            try:
-                # Update all references to point to the right suborg before deletion
-                for record in duplicates.values():
-                    best_record = record.get("keep")
-                    delete_ids = [dupe.id for dupe in record.get("delete")]
-                    
-                    # Update domain requests
-                    DomainRequest.objects.filter(
-                        sub_organization_id__in=delete_ids
-                    ).update(sub_organization=best_record)
-                    
-                    # Update domain information
-                    DomainInformation.objects.filter(
-                        sub_organization_id__in=delete_ids
-                    ).update(sub_organization=best_record)
-
-                ids_to_delete = [
-                    dupe.id 
-                    for data in duplicates.values() 
-                    for dupe in data["delete"]
-                ]
+            # Update all references to point to the right suborg before deletion
+            for record in duplicates.values():
+                best_record = record.get("keep")
+                delete_ids = [dupe.id for dupe in record.get("delete")]
                 
-                # Bulk delete all duplicates
-                delete_count, _ = Suborganization.objects.filter(id__in=ids_to_delete).delete()
-                logger.info(f"{TerminalColors.OKGREEN}Successfully deleted {delete_count} suborganizations{TerminalColors.ENDC}")
-            
-            except Exception as e:
-                logger.error(f"{TerminalColors.FAIL}Failed to clean up suborganizations: {str(e)}{TerminalColors.ENDC}")
+                # Update domain requests
+                DomainRequest.objects.filter(
+                    sub_organization_id__in=delete_ids
+                ).update(sub_organization=best_record)
+                
+                # Update domain information
+                DomainInformation.objects.filter(
+                    sub_organization_id__in=delete_ids
+                ).update(sub_organization=best_record)
 
+            records_to_delete = set(
+                dupe.id 
+                for data in duplicates.values() 
+                for dupe in data["delete"]
+            )
+            return records_to_delete
+        else:
+            return set()
