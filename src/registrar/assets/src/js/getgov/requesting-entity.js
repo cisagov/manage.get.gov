@@ -13,6 +13,7 @@ export function handleRequestingEntityFieldset() {
     const selectParent = select?.parentElement;
     const suborgContainer = document.getElementById("suborganization-container");
     const suborgDetailsContainer = document.getElementById("suborganization-container__details");
+    const suborgAddtlInstruction = document.getElementById("suborganization-addtl-instruction");
     const subOrgCreateNewOption = document.getElementById("option-to-add-suborg")?.value;
     // Make sure all crucial page elements exist before proceeding.
     // This more or less ensures that we are on the Requesting Entity page, and not elsewhere.
@@ -26,7 +27,13 @@ export function handleRequestingEntityFieldset() {
     function toggleSuborganization(radio=null) {
         if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
         requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
-        requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+        if (select.options.length == 2) { // --Select-- and other are the only options
+            hideElement(selectParent); // Hide the select drop down and indicate requesting new suborg
+            hideElement(suborgAddtlInstruction); // Hide additional instruction related to the list
+            requestingNewSuborganization.value = "True";
+        } else {
+            requestingNewSuborganization.value = requestingSuborganization && select.value === "other" ? "True" : "False";
+        }
         requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
     }
 
