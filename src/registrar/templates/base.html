@@ -47,7 +47,7 @@
   <script src="{% static 'js/uswds-init.min.js' %}" defer></script>
   <!-- We override with our own copy to make some classes accessible in our JS -->
   <script src="{% static 'js/uswds-edited.js' %}" defer></script>
-  <script src="{% static 'js/get-gov.js' %}" defer></script>
+  <script src="{% static 'js/getgov.min.js' %}" defer></script>
   {% endblock %}
 
   {% block canonical %}
@@ -72,13 +72,32 @@
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
   {% if not IS_PRODUCTION %}
-    {% include "includes/non-production-alert.html" %}
+    {% include "includes/banner-non-production-alert.html" %}
   {% endif %}
 
+  {% comment %}
+    <!-- Site banner / red alert banner / emergency banner / incident banner - Remove one of those includes and place outside the comment block to activate the banner.
+    DO NOT FORGET TO EDIT THE BANNER CONTENT -->
+    
+    <!-- Red banner with exclamation mark in a circle: -->
+    {% include "includes/banner-error.html" %}
+
+    <!-- Blue banner with 'i'' mark in a circle: -->
+    {% include "includes/banner-info.html" %}
+
+    <!-- Marron banner with exclamation mark in a circle: -->
+    {% include "includes/banner-service-disruption.html" %}
+    {% include "includes/banner-site-alert.html" %}
+    {% include "includes/banner-system-outage.html" %}
+
+    <!-- Yellow banner with exclamation mark in a triangle: -->
+    {% include "includes/banner-warning.html" %}
+  {% endcomment %}
+  
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">
-        <div class="usa-banner__inner {% if is_widescreen_mode %} usa-banner__inner--widescreen {% endif %}">
+        <div class="usa-banner__inner usa-banner__inner--widescreen padding-x--widescreen">
           <div class="grid-col-auto">
             <img class="usa-banner__header-flag" src="{% static 'img/us_flag_small.png' %}" alt="U.S. flag" />
           </div>
@@ -94,7 +113,7 @@
           </button>
         </div>
       </header>
-      <div class="usa-banner__content usa-accordion__content" id="gov-banner-default">
+      <div class="usa-banner__content usa-accordion__content padding-x--widescreen margin-x-0" id="gov-banner-default">
         <div class="grid-row grid-gap-lg">
           <div class="usa-banner__guidance tablet:grid-col-6">
             <img class="usa-banner__icon usa-media-block__img" src="{% static 'img/icon-dot-gov.svg' %}" role="img"
@@ -139,13 +158,15 @@
   {% endblock header %}
 
   {% block wrapper %}
-  <div id="wrapper">
+  {% block wrapperdiv %}
+  <div id="wrapper" class="wrapper--padding-top-6">
+  {% endblock wrapperdiv %}
     {% block messages %}
     {% if messages %}
     <ul class="messages">
       {% for message in messages %}
       {% if 'base' in message.extra_tags %}
-      <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>
+      <li{% if message.tags %} class="{{ message.tags }}" {% endif %}">
         {{ message }}
         </li>
         {% endif %}

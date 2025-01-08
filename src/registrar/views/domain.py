@@ -2,12 +2,12 @@
 
 Authorization is handled by the `DomainPermissionView`. To ensure that only
 authorized users can see information on a domain, every view here should
-inherit from `DomainPermissionView` (or DomainInvitationPermissionDeleteView).
+inherit from `DomainPermissionView` (or DomainInvitationPermissionCancelView).
 """
 
 from datetime import date
 import logging
-
+import requests
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
@@ -25,13 +25,17 @@ from registrar.models import (
     PortfolioInvitation,
     User,
     UserDomainRole,
-    UserPortfolioPermission,
     PublicContact,
 )
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
+    AlreadyDomainInvitedError,
+    AlreadyDomainManagerError,
     GenericError,
     GenericErrorCodes,
+    MissingEmailError,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
     DsDataError,
@@ -62,7 +66,9 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from .utility import DomainPermissionView, DomainInvitationPermissionDeleteView
+from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
+from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -453,6 +459,216 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        context["is_valid_domain"] = self.object.name in self.valid_domains
+        return context
+
+
+class PrototypeDomainDNSRecordForm(forms.Form):
+    """Form for adding DNS records in prototype."""
+
+    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
+
+    content = forms.GenericIPAddressField(
+        label="IPv4 Address",
+        required=True,
+        protocol="IPv4",
+    )
+
+    ttl = forms.ChoiceField(
+        label="TTL",
+        choices=[
+            (1, "Automatic"),
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"),
+            (86400, "1 day"),
+        ],
+        initial=1,
+    )
+
+
+class PrototypeDomainDNSRecordView(DomainFormBaseView):
+    template_name = "prototype_domain_dns.html"
+    form_class = PrototypeDomainDNSRecordForm
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+
+    def has_permission(self):
+        has_permission = super().has_permission()
+        if not has_permission:
+            return False
+
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        if not flag_enabled:
+            return False
+
+        self.object = self.get_object()
+        if self.object.name not in self.valid_domains:
+            return False
+
+        return True
+
+    def get_success_url(self):
+        return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
+
+    def find_by_name(self, items, name):
+        """Find an item by name in a list of dictionaries."""
+        return next((item.get("id") for item in items if item.get("name") == name), None)
+
+    def post(self, request, *args, **kwargs):
+        """Handle form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        errors = []
+        if form.is_valid():
+            try:
+                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
+                    raise Exception(f"create dns record was called for domain {self.name}")
+
+                if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
+                    raise Exception(
+                        f"Can only create DNS records for: {self.valid_domains}."
+                        " Create one in a test environment if it doesn't already exist."
+                    )
+
+                base_url = "https://api.cloudflare.com/client/v4"
+                headers = {
+                    "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
+                    "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
+                    "Content-Type": "application/json",
+                }
+                params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
+
+                # 1. Get tenant details
+                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params, timeout=5)
+                tenant_response_json = tenant_response.json()
+                logger.info(f"Found tenant: {tenant_response_json}")
+                tenant_id = tenant_response_json["result"][0]["tenant_tag"]
+                errors = tenant_response_json.get("errors", [])
+                tenant_response.raise_for_status()
+
+                # 2. Create or get a account under tenant
+
+                # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
+                account_name = f"account-{self.object.name}"
+                params = {"tenant_id": tenant_id, "name": account_name}
+
+                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
+                account_response_json = account_response.json()
+                logger.debug(f"account get: {account_response_json}")
+                errors = account_response_json.get("errors", [])
+                account_response.raise_for_status()
+
+                # See if we already made an account.
+                # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
+                accounts = account_response_json.get("result", [])
+                account_id = self.find_by_name(accounts, account_name)
+
+                # If we didn't, create one
+                if not account_id:
+                    account_response = requests.post(
+                        f"{base_url}/accounts",
+                        headers=headers,
+                        json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
+                        timeout=5,
+                    )
+                    account_response_json = account_response.json()
+                    logger.info(f"Created account: {account_response_json}")
+                    account_id = account_response_json["result"]["id"]
+                    errors = account_response_json.get("errors", [])
+                    account_response.raise_for_status()
+
+                # 3. Create or get a zone under account
+
+                # Try to find an existing zone first by searching on the current id
+                zone_name = self.object.name
+                params = {"account.id": account_id, "name": zone_name}
+                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params, timeout=5)
+                zone_response_json = zone_response.json()
+                logger.debug(f"get zone: {zone_response_json}")
+                errors = zone_response_json.get("errors", [])
+                zone_response.raise_for_status()
+
+                # Get the zone id
+                zones = zone_response_json.get("result", [])
+                zone_id = self.find_by_name(zones, zone_name)
+
+                # Create one if it doesn't presently exist
+                if not zone_id:
+                    zone_response = requests.post(
+                        f"{base_url}/zones",
+                        headers=headers,
+                        json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
+                        timeout=5,
+                    )
+                    zone_response_json = zone_response.json()
+                    logger.info(f"Created zone: {zone_response_json}")
+                    zone_id = zone_response_json.get("result", {}).get("id")
+                    errors = zone_response_json.get("errors", [])
+                    zone_response.raise_for_status()
+
+                # 4. Add or get a zone subscription
+
+                # See if one already exists
+                subscription_response = requests.get(
+                    f"{base_url}/zones/{zone_id}/subscription", headers=headers, timeout=5
+                )
+                subscription_response_json = subscription_response.json()
+                logger.debug(f"get subscription: {subscription_response_json}")
+
+                # Create a subscription if one doesn't exist already.
+                # If it doesn't, we get this error message (code 1207):
+                # Add a core subscription first and try again. The zone does not have an active core subscription.
+                # Note that status code and error code are different here.
+                if subscription_response.status_code == 404:
+                    subscription_response = requests.post(
+                        f"{base_url}/zones/{zone_id}/subscription",
+                        headers=headers,
+                        json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
+                        timeout=5,
+                    )
+                    subscription_response.raise_for_status()
+                    subscription_response_json = subscription_response.json()
+                    logger.info(f"Created subscription: {subscription_response_json}")
+                else:
+                    subscription_response.raise_for_status()
+
+                # # 5. Create DNS record
+                # # Format the DNS record according to Cloudflare's API requirements
+                dns_response = requests.post(
+                    f"{base_url}/zones/{zone_id}/dns_records",
+                    headers=headers,
+                    json={
+                        "type": "A",
+                        "name": form.cleaned_data["name"],
+                        "content": form.cleaned_data["content"],
+                        "ttl": int(form.cleaned_data["ttl"]),
+                        "comment": "Test record (will need clean up)",
+                    },
+                    timeout=5,
+                )
+                dns_response_json = dns_response.json()
+                logger.info(f"Created DNS record: {dns_response_json}")
+                errors = dns_response_json.get("errors", [])
+                dns_response.raise_for_status()
+                dns_name = dns_response_json["result"]["name"]
+                messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+            except Exception as err:
+                logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
+                messages.error(request, f"An error occurred: {err}")
+            finally:
+                if errors:
+                    messages.error(request, f"Request errors: {errors}")
+        return super().post(request)
 
 
 class DomainNameserversView(DomainFormBaseView):
@@ -593,15 +809,6 @@ class DomainDNSSECView(DomainFormBaseView):
         context = super().get_context_data(**kwargs)
 
         has_dnssec_records = self.object.dnssecdata is not None
-
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="disable_dnssec">Confirm</button>'
-        )
-
-        context["modal_button"] = modal_button
         context["has_dnssec_records"] = has_dnssec_records
         context["dnssec_enabled"] = self.request.session.pop("dnssec_enabled", False)
 
@@ -694,15 +901,6 @@ class DomainDsDataView(DomainFormBaseView):
             # to preserve the context["form"]
             context = super().get_context_data(form=formset)
             context["trigger_modal"] = True
-            # Create HTML for the modal button
-            modal_button = (
-                '<button type="submit" '
-                'class="usa-button usa-button--secondary" '
-                'name="disable-override-click">Remove all DS data</button>'
-            )
-
-            # context to back out of a broken form on all fields delete
-            context["modal_button"] = modal_button
             return self.render_to_response(context)
 
         if formset.is_valid() or override:
@@ -838,11 +1036,88 @@ class DomainUsersView(DomainBaseView):
         # Add conditionals to the context (such as "can_delete_users")
         context = self._add_booleans_to_context(context)
 
-        # Add modal buttons to the context (such as for delete)
-        context = self._add_modal_buttons_to_context(context)
+        # Get portfolio from session (if set)
+        portfolio = self.request.session.get("portfolio")
+
+        # Add domain manager roles separately in order to also pass admin status
+        context = self._add_domain_manager_roles_to_context(context, portfolio)
+
+        # Add domain invitations separately in order to also pass admin status
+        context = self._add_invitations_to_context(context, portfolio)
 
         # Get the email of the current user
         context["current_user_email"] = self.request.user.email
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        """Get method for DomainUsersView."""
+        # Call the parent class's `get` method to get the response and context
+        response = super().get(request, *args, **kwargs)
+
+        # Ensure context is available after the parent call
+        context = response.context_data if hasattr(response, "context_data") else {}
+
+        # Check if context contains `domain_managers_roles` and its length is 1
+        if context.get("domain_manager_roles") and len(context["domain_manager_roles"]) == 1:
+            # Add an info message
+            messages.info(request, "This domain has one manager. Adding more can prevent issues.")
+
+        return response
+
+    def _add_domain_manager_roles_to_context(self, context, portfolio):
+        """Add domain_manager_roles to context separately, as roles need admin indicator."""
+
+        # Prepare a list to store roles with an admin flag
+        domain_manager_roles = []
+
+        for permission in self.object.permissions.all():
+            # Determine if the user has the ORGANIZATION_ADMIN role
+            has_admin_flag = any(
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
+                and portfolio == portfolio_permission.portfolio
+                for portfolio_permission in permission.user.portfolio_permissions.all()
+            )
+
+            # Add the role along with the computed flag to the list
+            domain_manager_roles.append({"permission": permission, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["domain_manager_roles"] = domain_manager_roles
+
+        return context
+
+    def _add_invitations_to_context(self, context, portfolio):
+        """Add invitations to context separately as invitations needs admin indicator."""
+
+        # Prepare a list to store invitations with an admin flag
+        invitations = []
+
+        for domain_invitation in self.object.invitations.all():
+            # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
+            has_admin_flag = False
+
+            # Query PortfolioInvitations linked to the same portfolio and check roles
+            portfolio_invitations = PortfolioInvitation.objects.filter(
+                portfolio=portfolio, email=domain_invitation.email
+            )
+
+            # If any of the PortfolioInvitations have the ORGANIZATION_ADMIN role, set the flag to True
+            for portfolio_invitation in portfolio_invitations:
+                if (
+                    portfolio_invitation.roles
+                    and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles
+                ):
+                    has_admin_flag = True
+                    break  # Once we find one match, no need to check further
+
+            # Add the role along with the computed flag to the list if the domain invitation
+            # if the status is not canceled
+            if domain_invitation.status != "canceled":
+                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+
+        # Pass roles_with_flags to the context
+        context["invitations"] = invitations
 
         return context
 
@@ -860,26 +1135,6 @@ class DomainUsersView(DomainBaseView):
         context["can_delete_users"] = can_delete_users
         return context
 
-    def _add_modal_buttons_to_context(self, context):
-        """Adds modal buttons (and their HTML) to the context"""
-        # Create HTML for the modal button
-        modal_button = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="delete_domain_manager">Yes, remove domain manager</button>'
-        )
-        context["modal_button"] = modal_button
-
-        # Create HTML for the modal button when deleting yourself
-        modal_button_self = (
-            '<button type="submit" '
-            'class="usa-button usa-button--secondary" '
-            'name="delete_domain_manager_self">Yes, remove myself</button>'
-        )
-        context["modal_button_self"] = modal_button_self
-
-        return context
-
 
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
@@ -894,168 +1149,177 @@ class DomainAddUserView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
-    def _domain_abs_url(self):
-        """Get an absolute URL for this domain."""
-        return self.request.build_absolute_uri(reverse("domain", kwargs={"pk": self.object.id}))
+    def _get_org_membership(self, requestor_org, requested_email, requested_user):
+        """
+        Verifies if an email belongs to a different organization as a member or invited member.
+        Verifies if an email belongs to this organization as a member or invited member.
+        User does not belong to any org can be deduced from the tuple returned.
 
-    def _is_member_of_different_org(self, email, requestor, requested_user):
-        """Verifies if an email belongs to a different organization as a member or invited member."""
-        # Check if user is a already member of a different organization than the requestor's org
-        requestor_org = UserPortfolioPermission.objects.filter(user=requestor).first().portfolio
-        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
-        existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
-
-        return (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
-            existing_org_invitation and existing_org_invitation.portfolio != requestor_org
-        )
-
-    def _send_domain_invitation_email(self, email: str, requestor: User, requested_user=None, add_success=True):
-        """Performs the sending of the domain invitation email,
-        does not make a domain information object
-        email: string- email to send to
-        add_success: bool- default True indicates:
-        adding a success message to the view if the email sending succeeds
-
-        raises EmailSendingError
+        Returns a tuple (member_of_a_different_org, member_of_this_org).
         """
 
-        # Set a default email address to send to for staff
-        requestor_email = settings.DEFAULT_FROM_EMAIL
+        # COMMENT: this code does not take into account multiple portfolios flag
 
-        # Check if the email requestor has a valid email address
-        if not requestor.is_staff and requestor.email is not None and requestor.email.strip() != "":
-            requestor_email = requestor.email
-        elif not requestor.is_staff:
-            messages.error(self.request, "Can't send invitation email. No email is associated with your account.")
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'."
-                f"No email exists for the requestor '{requestor.username}'.",
-                exc_info=True,
-            )
+        # COMMENT: shouldn't this code be based on the organization of the domain, not the org
+        # of the requestor? requestor could have multiple portfolios
+
+        # Check for existing permissions or invitations for the requested user
+        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
+        existing_org_invitation = PortfolioInvitation.objects.filter(email=requested_email).first()
+
+        # Determine membership in a different organization
+        member_of_a_different_org = (
+            existing_org_permission and existing_org_permission.portfolio != requestor_org
+        ) or (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
+
+        # Determine membership in the same organization
+        member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == requestor_org) or (
+            existing_org_invitation and existing_org_invitation.portfolio == requestor_org
+        )
+
+        return member_of_a_different_org, member_of_this_org
+
+    def form_valid(self, form):
+        """Add the specified user to this domain."""
+        requested_email = form.cleaned_data["email"]
+        requestor = self.request.user
+
+        # Look up a user with that email
+        requested_user = self._get_requested_user(requested_email)
+        # NOTE: This does not account for multiple portfolios flag being set to True
+        domain_org = self.object.domain_info.portfolio
+
+        # requestor can only send portfolio invitations if they are staff or if they are a member
+        # of the domain's portfolio
+        requestor_can_update_portfolio = (
+            UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).first() is not None
+            or requestor.is_staff
+        )
+
+        member_of_a_different_org, member_of_this_org = self._get_org_membership(
+            domain_org, requested_email, requested_user
+        )
+
+        # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+        # if requested_email/user is not member or invited member of this portfolio
+        # COMMENT: this code does not take into account multiple portfolios flag
+        #   send portfolio invitation email
+        #   create portfolio invitation
+        #   create message to view
+        if (
+            flag_is_active_for_user(requestor, "organization_feature")
+            and not flag_is_active_for_user(requestor, "multiple_portfolios")
+            and domain_org is not None
+            and requestor_can_update_portfolio
+            and not member_of_this_org
+        ):
+            try:
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=domain_org)
+                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+            except Exception as e:
+                self._handle_portfolio_exceptions(e, requested_email, domain_org)
+                # If that first invite does not succeed take an early exit
+                return redirect(self.get_success_url())
+
+        try:
+            if requested_user is None:
+                self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
+            else:
+                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
+        except Exception as e:
+            self._handle_exceptions(e, requested_email)
+
+        return redirect(self.get_success_url())
+
+    def _get_requested_user(self, email):
+        """Retrieve a user by email or return None if the user doesn't exist."""
+        try:
+            return User.objects.get(email=email)
+        except User.DoesNotExist:
             return None
 
-        # Check is user is a member or invited member of a different org from this domain's org
-        if flag_is_active_for_user(requestor, "organization_feature") and self._is_member_of_different_org(
-            email, requestor, requested_user
-        ):
-            add_success = False
-            raise OutsideOrgMemberError
+    def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
+        """Handle invitation for a new user who does not exist in the system."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            domain=self.object,
+            is_member_of_different_org=member_of_different_org,
+        )
+        DomainInvitation.objects.get_or_create(email=email, domain=self.object)
+        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
 
-        # Check to see if an invite has already been sent
-        try:
-            invite = DomainInvitation.objects.get(email=email, domain=self.object)
-            # check if the invite has already been accepted
-            if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-                add_success = False
-                messages.warning(
-                    self.request,
-                    f"{email} is already a manager for this domain.",
-                )
-            else:
-                add_success = False
-                # else if it has been sent but not accepted
-                messages.warning(self.request, f"{email} has already been invited to this domain")
-        except Exception:
-            logger.error("An error occured")
+    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
+        """Handle adding an existing user to the domain."""
+        send_domain_invitation_email(
+            email=email,
+            requestor=requestor,
+            domain=self.object,
+            is_member_of_different_org=member_of_different_org,
+        )
+        UserDomainRole.objects.create(
+            user=requested_user,
+            domain=self.object,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        messages.success(self.request, f"Added user {email}.")
 
-        try:
-            send_templated_email(
-                "emails/domain_invitation.txt",
-                "emails/domain_invitation_subject.txt",
-                to_address=email,
-                context={
-                    "domain_url": self._domain_abs_url(),
-                    "domain": self.object,
-                    "requestor_email": requestor_email,
-                },
-            )
-        except EmailSendingError as exc:
-            logger.warn(
-                "Could not sent email invitation to %s for domain %s",
+    def _handle_exceptions(self, exception, email):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning(
+                "Could not send email invitation to %s for domain %s (EmailSendingError)",
                 email,
                 self.object,
                 exc_info=True,
             )
-            raise EmailSendingError("Could not send email invitation.") from exc
-        else:
-            if add_success:
-                messages.success(self.request, f"{email} has been invited to this domain.")
-
-    def _make_invitation(self, email_address: str, requestor: User):
-        """Make a Domain invitation for this email and redirect with a message."""
-        try:
-            self._send_domain_invitation_email(email=email_address, requestor=requestor)
-        except EmailSendingError:
             messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, OutsideOrgMemberError):
+            logger.warning(
+                "Could not send email. Can not invite member of a .gov organization to a different organization.",
+                self.object,
+                exc_info=True,
+            )
+            messages.error(
+                self.request,
+                f"{email} is already a member of another .gov organization.",
+            )
+        elif isinstance(exception, AlreadyDomainManagerError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, AlreadyDomainInvitedError):
+            messages.warning(self.request, str(exception))
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' on domain '{self.object}'. No email exists for the requestor.",
+                exc_info=True,
+            )
+        elif isinstance(exception, IntegrityError):
+            messages.warning(self.request, f"{email} is already a manager for this domain")
         else:
-            # (NOTE: only create a domainInvitation if the e-mail sends correctly)
-            DomainInvitation.objects.get_or_create(email=email_address, domain=self.object)
-        return redirect(self.get_success_url())
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
 
-    def form_valid(self, form):
-        """Add the specified user on this domain.
-        Throws EmailSendingError."""
-        requested_email = form.cleaned_data["email"]
-        requestor = self.request.user
-        email_success = False
-        # look up a user with that email
-        try:
-            requested_user = User.objects.get(email=requested_email)
-        except User.DoesNotExist:
-            # no matching user, go make an invitation
-            email_success = True
-            return self._make_invitation(requested_email, requestor)
+    def _handle_portfolio_exceptions(self, exception, email, portfolio):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, EmailSendingError):
+            logger.warning("Could not send email invitation (EmailSendingError)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
+        elif isinstance(exception, MissingEmailError):
+            messages.error(self.request, str(exception))
+            logger.error(
+                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                exc_info=True,
+            )
         else:
-            # if user already exists then just send an email
-            try:
-                self._send_domain_invitation_email(
-                    requested_email, requestor, requested_user=requested_user, add_success=False
-                )
-                email_success = True
-            except EmailSendingError:
-                logger.warn(
-                    "Could not send email invitation (EmailSendingError)",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.warning(self.request, "Could not send email invitation.")
-                email_success = True
-            except OutsideOrgMemberError:
-                logger.warn(
-                    "Could not send email. Can not invite member of a .gov organization to a different organization.",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.error(
-                    self.request,
-                    f"{requested_email} is already a member of another .gov organization.",
-                )
-            except Exception:
-                logger.warn(
-                    "Could not send email invitation (Other Exception)",
-                    self.object,
-                    exc_info=True,
-                )
-                messages.warning(self.request, "Could not send email invitation.")
-        if email_success:
-            try:
-                UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=self.object,
-                    role=UserDomainRole.Roles.MANAGER,
-                )
-                messages.success(self.request, f"Added user {requested_email}.")
-            except IntegrityError:
-                messages.warning(self.request, f"{requested_email} is already a manager for this domain")
-
-        return redirect(self.get_success_url())
+            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.warning(self.request, "Could not send email invitation.")
 
 
-# The order of the superclasses matters here. BaseDeleteView has a bug where the
-# "form_valid" function does not call super, so it cannot use SuccessMessageMixin.
-# The workaround is to use SuccessMessageMixin first.
-class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermissionDeleteView):
-    object: DomainInvitation  # workaround for type mismatch in DeleteView
+class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
+    object: DomainInvitation
+    fields = []
 
     def post(self, request, *args, **kwargs):
         """Override post method in order to error in the case when the
@@ -1063,6 +1327,8 @@ class DomainInvitationDeleteView(SuccessMessageMixin, DomainInvitationPermission
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
+            self.object.cancel_invitation()
+            self.object.save()
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED

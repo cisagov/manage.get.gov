@@ -68,9 +68,20 @@ def portfolio_permissions(request):
         "has_organization_feature_flag": False,
         "has_organization_requests_flag": False,
         "has_organization_members_flag": False,
+        "is_portfolio_admin": False,
+        "has_domain_renewal_flag": False,
     }
     try:
         portfolio = request.session.get("portfolio")
+
+        # These feature flags will display and doesn't depend on portfolio
+        portfolio_context.update(
+            {
+                "has_organization_feature_flag": True,
+                "has_domain_renewal_flag": request.user.has_domain_renewal_flag(),
+            }
+        )
+
         # Linting: line too long
         view_suborg = request.user.has_view_suborganization_portfolio_permission(portfolio)
         edit_suborg = request.user.has_edit_suborganization_portfolio_permission(portfolio)
@@ -88,6 +99,8 @@ def portfolio_permissions(request):
                 "has_organization_feature_flag": True,
                 "has_organization_requests_flag": request.user.has_organization_requests_flag(),
                 "has_organization_members_flag": request.user.has_organization_members_flag(),
+                "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
+                "has_domain_renewal_flag": request.user.has_domain_renewal_flag(),
             }
         return portfolio_context
 
@@ -96,6 +109,21 @@ def portfolio_permissions(request):
         return portfolio_context
 
 
-def is_widescreen_mode(request):
-    widescreen_paths = ["/domains/", "/requests/", "/members/"]
-    return {"is_widescreen_mode": any(path in request.path for path in widescreen_paths) or request.path == "/"}
+def is_widescreen_centered(request):
+    include_paths = [
+        "/domains/",
+        "/requests/",
+        "/members/",
+    ]
+    exclude_paths = [
+        "/domains/edit",
+        "members/new-member/",
+    ]
+
+    is_excluded = any(exclude_path in request.path for exclude_path in exclude_paths)
+
+    # Check if the current path matches a path in included_paths or the root path.
+    is_widescreen_centered = any(path in request.path for path in include_paths) or request.path == "/"
+
+    # Return a dictionary with the widescreen mode status.
+    return {"is_widescreen_centered": is_widescreen_centered and not is_excluded}

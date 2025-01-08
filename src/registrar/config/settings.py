@@ -86,6 +86,11 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
+# PROTOTYPE: Used for DNS hosting
+secret_registry_tenant_key = secret("REGISTRY_TENANT_KEY", None)
+secret_registry_tenant_name = secret("REGISTRY_TENANT_NAME", None)
+secret_registry_service_email = secret("REGISTRY_SERVICE_EMAIL", None)
+
 # region: Basic Django Config-----------------------------------------------###
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
@@ -246,7 +251,7 @@ TEMPLATES = [
                 "registrar.context_processors.org_user_status",
                 "registrar.context_processors.add_path_to_context",
                 "registrar.context_processors.portfolio_permissions",
-                "registrar.context_processors.is_widescreen_mode",
+                "registrar.context_processors.is_widescreen_centered",
             ],
         },
     },
@@ -363,7 +368,6 @@ CSP_DEFAULT_SRC = ("'self'",)
 CSP_STYLE_SRC = [
     "'self'",
     "https://www.ssa.gov/accessibility/andi/andi.css",
-    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css",
 ]
 CSP_SCRIPT_SRC_ELEM = [
     "'self'",
@@ -371,7 +375,6 @@ CSP_SCRIPT_SRC_ELEM = [
     "https://cdn.jsdelivr.net/npm/chart.js",
     "https://www.ssa.gov",
     "https://ajax.googleapis.com",
-    "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js",
 ]
 CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
@@ -687,6 +690,9 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
+SECRET_REGISTRY_TENANT_KEY = secret_registry_tenant_key
+SECRET_REGISTRY_TENANT_NAME = secret_registry_tenant_name
+SECRET_REGISTRY_SERVICE_EMAIL = secret_registry_service_email
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
@@ -818,7 +824,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = True
 
 # session engine to cache session information
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

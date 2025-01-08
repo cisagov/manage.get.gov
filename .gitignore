@@ -2,7 +2,9 @@
 
 docs/research/data/**
 **/assets/*
-!**/assets/sass/
+!**/assets/src/
+!**/assets/src/js/
+!**/assets/src/sass/
 !**/assets/img/registrar/
 public/
 credentials*
@@ -170,6 +172,9 @@ node_modules
 
 # Vim
 *.swp
+
+# VS Code
+.vscode
 
 # Compliance/trestle related
 docs/compliance/.trestle/cache

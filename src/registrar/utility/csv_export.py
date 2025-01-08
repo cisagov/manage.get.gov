@@ -10,16 +10,38 @@ from registrar.models import (
     DomainInformation,
     PublicContact,
     UserDomainRole,
+    PortfolioInvitation,
+    UserGroup,
+    UserPortfolioPermission,
 )
-from django.db.models import Case, CharField, Count, DateField, F, ManyToManyField, Q, QuerySet, Value, When
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    DateField,
+    F,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    TextField,
+    Value,
+    When,
+    OuterRef,
+    Subquery,
+    Exists,
+    Func,
+)
 from django.utils import timezone
-from django.db.models.functions import Concat, Coalesce
-from django.contrib.postgres.aggregates import StringAgg
+from django.db.models.functions import Concat, Coalesce, Cast
+from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.contrib.admin.models import LogEntry, ADDITION
+from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
+from registrar.models.utility.orm_helper import ArrayRemoveNull
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
-from registrar.utility.enums import DefaultEmail
-
+from registrar.utility.enums import DefaultEmail, DefaultUserValues
 
 logger = logging.getLogger(__name__)
 
@@ -109,14 +131,14 @@ class BaseExport(ABC):
         return Q()
 
     @classmethod
-    def get_filter_conditions(cls, **export_kwargs):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
         return Q()
 
     @classmethod
-    def get_computed_fields(cls):
+    def get_computed_fields(cls, **kwargs):
         """
         Get a dict of computed fields. These are fields that do not exist on the model normally
         and will be passed to .annotate() when building a queryset.
@@ -145,7 +167,7 @@ class BaseExport(ABC):
         return queryset
 
     @classmethod
-    def write_csv_before(cls, csv_writer, **export_kwargs):
+    def write_csv_before(cls, csv_writer, **kwargs):
         """
         Write to csv file before the write_csv method.
         Override in subclasses where needed.
@@ -162,7 +184,7 @@ class BaseExport(ABC):
 
         Parameters:
             initial_queryset (QuerySet): Initial queryset.
-            computed_fields (dict, optional): Fields to compute {field_name: expression}.
+            computed_fields  (dict, optional): Fields to compute {field_name: expression}.
             related_table_fields (list, optional): Extra fields to retrieve; defaults to annotation keys if None.
             include_many_to_many (bool, optional): Determines if we should include many to many fields or not
             **kwargs: Additional keyword arguments for specific parameters (e.g., public_contacts, domain_invitations,
@@ -192,21 +214,37 @@ class BaseExport(ABC):
         return cls.update_queryset(queryset, **kwargs)
 
     @classmethod
-    def export_data_to_csv(cls, csv_file, **export_kwargs):
+    def export_data_to_csv(cls, csv_file, **kwargs):
         """
         All domain metadata:
         Exports domains of all statuses plus domain managers.
         """
         writer = csv.writer(csv_file)
         columns = cls.get_columns()
+        models_dict = cls.get_model_annotation_dict(**kwargs)
+
+        # Write to csv file before the write_csv
+        cls.write_csv_before(writer, **kwargs)
+
+        # Write the csv file
+        rows = cls.write_csv(writer, columns, models_dict)
+
+        # Return rows that for easier parsing and testing
+        return rows
+
+    @classmethod
+    def get_annotated_queryset(cls, **kwargs):
+        """Returns an annotated queryset based off of all query conditions."""
         sort_fields = cls.get_sort_fields()
-        kwargs = cls.get_additional_args()
+        # Get additional args and merge with incoming kwargs
+        additional_args = cls.get_additional_args()
+        kwargs.update(additional_args)
         select_related = cls.get_select_related()
         prefetch_related = cls.get_prefetch_related()
         exclusions = cls.get_exclusions()
         annotations_for_sort = cls.get_annotations_for_sort()
-        filter_conditions = cls.get_filter_conditions(**export_kwargs)
-        computed_fields = cls.get_computed_fields()
+        filter_conditions = cls.get_filter_conditions(**kwargs)
+        computed_fields = cls.get_computed_fields(**kwargs)
         related_table_fields = cls.get_related_table_fields()
 
         model_queryset = (
@@ -219,21 +257,11 @@ class BaseExport(ABC):
             .order_by(*sort_fields)
             .distinct()
         )
+        return cls.annotate_and_retrieve_fields(model_queryset, computed_fields, related_table_fields, **kwargs)
 
-        # Convert the queryset to a dictionary (including annotated fields)
-        annotated_queryset = cls.annotate_and_retrieve_fields(
-            model_queryset, computed_fields, related_table_fields, **kwargs
-        )
-        models_dict = convert_queryset_to_dict(annotated_queryset, is_model=False)
-
-        # Write to csv file before the write_csv
-        cls.write_csv_before(writer, **export_kwargs)
-
-        # Write the csv file
-        rows = cls.write_csv(writer, columns, models_dict)
-
-        # Return rows that for easier parsing and testing
-        return rows
+    @classmethod
+    def get_model_annotation_dict(cls, **kwargs):
+        return convert_queryset_to_dict(cls.get_annotated_queryset(**kwargs), is_model=False)
 
     @classmethod
     def write_csv(
@@ -273,6 +301,221 @@ class BaseExport(ABC):
         pass
 
 
+class MemberExport(BaseExport):
+    """CSV export for the MembersTable. The members table combines the content
+    of three tables: PortfolioInvitation, UserPortfolioPermission, and DomainInvitation."""
+
+    @classmethod
+    def model(self):
+        """
+        No model is defined for the member report as it is a combination of multiple fields.
+        This is a special edge case, but the base report requires this to be defined.
+        """
+        return None
+
+    @classmethod
+    def get_model_annotation_dict(cls, request=None, **kwargs):
+        """Combines the permissions and invitation model annotations for
+        the final returned csv export which combines both of these contexts.
+        Returns a dictionary of a union between:
+        - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
+        """
+        portfolio = request.session.get("portfolio")
+        if not portfolio:
+            return {}
+
+        # Union the two querysets to combine UserPortfolioPermission + invites.
+        # Unions cannot have a col mismatch, so we must clamp what is returned here.
+        shared_columns = [
+            "id",
+            "first_name",
+            "last_name",
+            "email_display",
+            "last_active",
+            "roles",
+            "additional_permissions_display",
+            "member_display",
+            "domain_info",
+            "type",
+            "joined_date",
+            "invited_by",
+        ]
+
+        # Permissions
+        permissions = (
+            UserPortfolioPermission.objects.filter(portfolio=portfolio)
+            .select_related("user")
+            .annotate(
+                first_name=F("user__first_name"),
+                last_name=F("user__last_name"),
+                email_display=F("user__email"),
+                last_active=Coalesce(
+                    Func(F("user__last_login"), Value("YYYY-MM-DD"), function="to_char", output_field=TextField()),
+                    Value("Invalid date"),
+                    output_field=CharField(),
+                ),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=Case(
+                    # If email is present and not blank, use email
+                    When(Q(user__email__isnull=False) & ~Q(user__email=""), then=F("user__email")),
+                    # If first name or last name is present, use concatenation of first_name + " " + last_name
+                    When(
+                        Q(user__first_name__isnull=False) | Q(user__last_name__isnull=False),
+                        then=Concat(
+                            Coalesce(F("user__first_name"), Value("")),
+                            Value(" "),
+                            Coalesce(F("user__last_name"), Value("")),
+                        ),
+                    ),
+                    # If neither, use an empty string
+                    default=Value(""),
+                    output_field=CharField(),
+                ),
+                domain_info=ArrayAgg(
+                    F("user__permissions__domain__name"),
+                    distinct=True,
+                    # only include domains in portfolio
+                    filter=Q(user__permissions__domain__isnull=False)
+                    & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                ),
+                type=Value("member", output_field=CharField()),
+                joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+            )
+            .values(*shared_columns)
+        )
+
+        # Invitations
+        domain_invitations = DomainInvitation.objects.filter(
+            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
+            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
+        ).annotate(domain_info=F("domain__name"))
+        invitations = (
+            PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+            .filter(portfolio=portfolio)
+            .annotate(
+                first_name=Value(None, output_field=CharField()),
+                last_name=Value(None, output_field=CharField()),
+                email_display=F("email"),
+                last_active=Value("Invited", output_field=CharField()),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=F("email"),
+                # Use ArrayRemove to return an empty list when no domain invitations are found
+                domain_info=ArrayRemoveNull(
+                    ArrayAgg(
+                        Subquery(domain_invitations.values("domain_info")),
+                        distinct=True,
+                    )
+                ),
+                type=Value("invitedmember", output_field=CharField()),
+                joined_date=Value("Unretrieved", output_field=CharField()),
+                invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
+            )
+            .values(*shared_columns)
+        )
+        # Adding a order_by increases output predictability.
+        # Doesn't matter as much for normal use, but makes tests easier.
+        # We should also just be ordering by default anyway.
+        members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
+        return convert_queryset_to_dict(members, is_model=False)
+
+    @classmethod
+    def get_invited_by_query(cls, object_id_query):
+        """Returns the user that created the given portfolio invitation.
+        Grabs this data from the audit log, given that a portfolio invitation object
+        is specified via object_id_query."""
+        return Coalesce(
+            Subquery(
+                LogEntry.objects.filter(
+                    content_type=ContentType.objects.get_for_model(PortfolioInvitation),
+                    object_id=object_id_query,
+                    action_flag=ADDITION,
+                )
+                .annotate(
+                    display_email=Case(
+                        When(
+                            Exists(
+                                UserGroup.objects.filter(
+                                    name__in=["cisa_analysts_group", "full_access_group"],
+                                    user=OuterRef("user"),
+                                )
+                            ),
+                            then=Value(DefaultUserValues.HELP_EMAIL.value),
+                        ),
+                        default=F("user__email"),
+                        output_field=CharField(),
+                    )
+                )
+                .order_by("action_time")
+                .values("display_email")[:1]
+            ),
+            Value(DefaultUserValues.SYSTEM.value),
+            output_field=CharField(),
+        )
+
+    @classmethod
+    def get_portfolio_invitation_id_query(cls):
+        """Gets the id of the portfolio invitation that created this UserPortfolioPermission.
+        This makes the assumption that if an invitation is retrieved, it must have created the given
+        UserPortfolioPermission object."""
+        return Cast(
+            Subquery(
+                PortfolioInvitation.objects.filter(
+                    status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+                    # Double outer ref because we first go into the LogEntry query,
+                    # then into the parent UserPortfolioPermission.
+                    email=OuterRef(OuterRef("user__email")),
+                    portfolio=OuterRef(OuterRef("portfolio")),
+                ).values("id")[:1]
+            ),
+            output_field=CharField(),
+        )
+
+    @classmethod
+    def get_columns(cls):
+        """
+        Returns the list of column string names for CSV export. Override in subclasses as needed.
+        """
+        return [
+            "Email",
+            "Organization admin",
+            "Invited by",
+            "Joined date",
+            "Last active",
+            "Domain requests",
+            "Member management",
+            "Domain management",
+            "Number of domains",
+            "Domains",
+        ]
+
+    @classmethod
+    @abstractmethod
+    def parse_row(cls, columns, model):
+        """
+        Given a set of columns and a model dictionary, generate a new row from cleaned column data.
+        Must be implemented by subclasses
+        """
+        roles = model.get("roles", [])
+        permissions = model.get("additional_permissions_display")
+        user_managed_domains = model.get("domain_info", [])
+        length_user_managed_domains = len(user_managed_domains)
+        FIELDS = {
+            "Email": model.get("email_display"),
+            "Organization admin": bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles),
+            "Invited by": model.get("invited_by"),
+            "Joined date": model.get("joined_date"),
+            "Last active": model.get("last_active"),
+            "Domain requests": UserPortfolioPermission.get_domain_request_permission_display(roles, permissions),
+            "Member management": UserPortfolioPermission.get_member_permission_display(roles, permissions),
+            "Domain management": bool(length_user_managed_domains > 0),
+            "Number of domains": length_user_managed_domains,
+            "Domains": ",".join(user_managed_domains),
+        }
+        return [FIELDS.get(column, "") for column in columns]
+
+
 class DomainExport(BaseExport):
     """
     A collection of functions which return csv files regarding Domains.  Although class is
@@ -284,6 +527,113 @@ class DomainExport(BaseExport):
     def model(cls):
         # Return the model class that this export handles
         return DomainInformation
+
+    @classmethod
+    def get_computed_fields(cls, **kwargs):
+        """
+        Get a dict of computed fields.
+        """
+        # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
+        # This is for performance purposes. Since we are working with dictionary values and not
+        # model objects as we export data, trying to reinstate model objects in order to grab @property
+        # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
+        return {
+            "converted_org_type": Case(
+                # When portfolio is present and is_election_board is True
+                When(
+                    portfolio__isnull=False,
+                    portfolio__organization_type__isnull=False,
+                    is_election_board=True,
+                    then=Concat(F("portfolio__organization_type"), Value("_election")),
+                ),
+                # When portfolio is present and is_election_board is False or None
+                When(
+                    Q(is_election_board=False) | Q(is_election_board__isnull=True),
+                    portfolio__isnull=False,
+                    portfolio__organization_type__isnull=False,
+                    then=F("portfolio__organization_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("organization_type"),
+                output_field=CharField(),
+            ),
+            "converted_federal_agency": Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__agency"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_agency__agency"),
+                output_field=CharField(),
+            ),
+            "converted_federal_type": Case(
+                # When portfolio is present, use its value instead
+                # NOTE: this is an @Property funciton in portfolio.
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_type"),
+                output_field=CharField(),
+            ),
+            "converted_organization_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+                # Otherwise, return the natively assigned value
+                default=F("organization_name"),
+                output_field=CharField(),
+            ),
+            "converted_so_email": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__email")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__email"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_last_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__last_name")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__last_name"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_first_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__first_name")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__first_name"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_title": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__title")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__title"),
+                output_field=CharField(),
+            ),
+            "converted_so_name": Case(
+                # When portfolio is present, use that senior official instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
+                    then=Concat(
+                        Coalesce(F("portfolio__senior_official__first_name"), Value("")),
+                        Value(" "),
+                        Coalesce(F("portfolio__senior_official__last_name"), Value("")),
+                        output_field=CharField(),
+                    ),
+                ),
+                # Otherwise, return the natively assigned senior official
+                default=Concat(
+                    Coalesce(F("senior_official__first_name"), Value("")),
+                    Value(" "),
+                    Coalesce(F("senior_official__last_name"), Value("")),
+                    output_field=CharField(),
+                ),
+                output_field=CharField(),
+            ),
+        }
 
     @classmethod
     def update_queryset(cls, queryset, **kwargs):
@@ -374,10 +724,11 @@ class DomainExport(BaseExport):
         if first_ready_on is None:
             first_ready_on = "(blank)"
 
-        # organization_type has generic_org_type AND is_election
-        domain_org_type = model.get("organization_type")
+        # organization_type has organization_type AND is_election
+        # domain_org_type includes "- Election" org_type variants
+        domain_org_type = model.get("converted_org_type")
         human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
-        domain_federal_type = model.get("federal_type")
+        domain_federal_type = model.get("converted_federal_type")
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
         domain_type = human_readable_domain_org_type
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
@@ -392,29 +743,59 @@ class DomainExport(BaseExport):
         ):
             security_contact_email = "(blank)"
 
+        model["status"] = human_readable_status
+        model["first_ready_on"] = first_ready_on
+        model["expiration_date"] = expiration_date
+        model["domain_type"] = domain_type
+        model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
+        FIELDS = cls.get_fields(model)
+
+        row = [FIELDS.get(column, "") for column in columns]
+
+        return row
+
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull and DomainDataFederal are
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    @classmethod
+    def get_fields(cls, model):
         FIELDS = {
             "Domain name": model.get("domain__name"),
-            "Status": human_readable_status,
-            "First ready on": first_ready_on,
-            "Expiration date": expiration_date,
-            "Domain type": domain_type,
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
+            "Agency": model.get("converted_federal_agency"),
+            "Organization name": model.get("converted_organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
-            "SO": model.get("so_name"),
-            "SO email": model.get("senior_official__email"),
-            "Security contact email": security_contact_email,
+            "SO": model.get("converted_so_name"),
+            "SO email": model.get("converted_so_email"),
+            "Security contact email": model.get("security_contact_email"),
             "Created at": model.get("domain__created_at"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
         }
+        return FIELDS
 
-        row = [FIELDS.get(column, "") for column in columns]
-        return row
+    def get_filtered_domain_infos_by_org(domain_infos_to_filter, org_to_filter_by):
+        """Returns a list of Domain Requests that has been filtered by the given organization value."""
+
+        annotated_queryset = domain_infos_to_filter.annotate(
+            converted_generic_org_type=Case(
+                # Recreate the logic of the converted_generic_org_type property
+                # here in annotations
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                default=F("generic_org_type"),
+                output_field=CharField(),
+            )
+        )
+        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
 
     @classmethod
     def get_sliced_domains(cls, filter_condition):
@@ -423,23 +804,51 @@ class DomainExport(BaseExport):
         when a domain has more that one manager.
         """
 
-        domains = DomainInformation.objects.all().filter(**filter_condition).distinct()
-        domains_count = domains.count()
-        federal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
-        interstate = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).count()
-        state_or_territory = (
-            domains.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+        domain_informations = DomainInformation.objects.all().filter(**filter_condition).distinct()
+        domains_count = domain_informations.count()
+        federal = (
+            cls.get_filtered_domain_infos_by_org(domain_informations, DomainRequest.OrganizationChoices.FEDERAL)
+            .distinct()
+            .count()
         )
-        tribal = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
-        county = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
-        city = domains.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+        interstate = cls.get_filtered_domain_infos_by_org(
+            domain_informations, DomainRequest.OrganizationChoices.INTERSTATE
+        ).count()
+        state_or_territory = (
+            cls.get_filtered_domain_infos_by_org(
+                domain_informations, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
+            )
+            .distinct()
+            .count()
+        )
+        tribal = (
+            cls.get_filtered_domain_infos_by_org(domain_informations, DomainRequest.OrganizationChoices.TRIBAL)
+            .distinct()
+            .count()
+        )
+        county = (
+            cls.get_filtered_domain_infos_by_org(domain_informations, DomainRequest.OrganizationChoices.COUNTY)
+            .distinct()
+            .count()
+        )
+        city = (
+            cls.get_filtered_domain_infos_by_org(domain_informations, DomainRequest.OrganizationChoices.CITY)
+            .distinct()
+            .count()
+        )
         special_district = (
-            domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+            cls.get_filtered_domain_infos_by_org(
+                domain_informations, DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
+            )
+            .distinct()
+            .count()
         )
         school_district = (
-            domains.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+            cls.get_filtered_domain_infos_by_org(domain_informations, DomainRequest.OrganizationChoices.SCHOOL_DISTRICT)
+            .distinct()
+            .count()
         )
-        election_board = domains.filter(is_election_board=True).distinct().count()
+        election_board = domain_informations.filter(is_election_board=True).distinct().count()
 
         return [
             domains_count,
@@ -466,6 +875,7 @@ class DomainDataType(DomainExport):
         """
         Overrides the columns for CSV export specific to DomainExport.
         """
+
         return [
             "Domain name",
             "Status",
@@ -484,15 +894,22 @@ class DomainDataType(DomainExport):
         ]
 
     @classmethod
+    def get_annotations_for_sort(cls):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
+
+    @classmethod
     def get_sort_fields(cls):
         """
         Returns the sort fields.
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
-            "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            "converted_org_type",
+            Coalesce("converted_federal_type", Value("ZZZZZ")),
+            "converted_federal_agency",
             "domain__name",
         ]
 
@@ -531,21 +948,7 @@ class DomainDataType(DomainExport):
         """
         Get a list of tables to pass to prefetch_related when building queryset.
         """
-        return ["permissions"]
-
-    @classmethod
-    def get_computed_fields(cls, delimiter=", "):
-        """
-        Get a dict of computed fields.
-        """
-        return {
-            "so_name": Concat(
-                Coalesce(F("senior_official__first_name"), Value("")),
-                Value(" "),
-                Coalesce(F("senior_official__last_name"), Value("")),
-                output_field=CharField(),
-            ),
-        }
+        return ["domain__permissions"]
 
     @classmethod
     def get_related_table_fields(cls):
@@ -571,7 +974,7 @@ class DomainDataTypeUser(DomainDataType):
     """
 
     @classmethod
-    def get_filter_conditions(cls, request=None):
+    def get_filter_conditions(cls, request=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -583,110 +986,44 @@ class DomainDataTypeUser(DomainDataType):
             return Q(domain__id__in=request.user.get_user_domain_ids(request))
 
 
-class DomainRequestsDataType:
-    """
-    The DomainRequestsDataType report, but filtered based on the current request user
-    """
-
-    @classmethod
-    def get_filter_conditions(cls, request=None):
-        if request is None or not hasattr(request, "user") or not request.user.is_authenticated:
-            return Q(id__in=[])
-
-        request_ids = request.user.get_user_domain_request_ids(request)
-        return Q(id__in=request_ids)
-
-    @classmethod
-    def get_queryset(cls, request):
-        return DomainRequest.objects.filter(cls.get_filter_conditions(request))
-
-    def safe_get(attribute, default="N/A"):
-        # Return the attribute value or default if not present
-        return attribute if attribute is not None else default
-
-    @classmethod
-    def exporting_dr_data_to_csv(cls, response, request=None):
-        import csv
-
-        writer = csv.writer(response)
-
-        # CSV headers
-        writer.writerow(
-            [
-                "Domain request",
-                "Region",
-                "Status",
-                "Election office",
-                "Federal type",
-                "Domain type",
-                "Request additional details",
-                "Creator approved domains count",
-                "Creator active requests count",
-                "Alternative domains",
-                "Other contacts",
-                "Current websites",
-                "Federal agency",
-                "SO first name",
-                "SO last name",
-                "SO email",
-                "SO title/role",
-                "Creator first name",
-                "Creator last name",
-                "Creator email",
-                "Organization name",
-                "City",
-                "State/territory",
-                "Request purpose",
-                "CISA regional representative",
-                "Last submitted date",
-                "First submitted date",
-                "Last status update",
-            ]
-        )
-
-        queryset = cls.get_queryset(request)
-        for request in queryset:
-            writer.writerow(
-                [
-                    request.requested_domain,
-                    cls.safe_get(getattr(request, "region_field", None)),
-                    request.status,
-                    cls.safe_get(getattr(request, "election_office", None)),
-                    request.federal_type,
-                    cls.safe_get(getattr(request, "domain_type", None)),
-                    cls.safe_get(getattr(request, "additional_details", None)),
-                    cls.safe_get(getattr(request, "creator_approved_domains_count", None)),
-                    cls.safe_get(getattr(request, "creator_active_requests_count", None)),
-                    cls.safe_get(getattr(request, "all_alternative_domains", None)),
-                    cls.safe_get(getattr(request, "all_other_contacts", None)),
-                    cls.safe_get(getattr(request, "all_current_websites", None)),
-                    cls.safe_get(getattr(request, "converted_federal_agency", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "first_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "last_name", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "email", None)),
-                    cls.safe_get(getattr(request.converted_senior_official, "title", None)),
-                    cls.safe_get(getattr(request.creator, "first_name", None)),
-                    cls.safe_get(getattr(request.creator, "last_name", None)),
-                    cls.safe_get(getattr(request.creator, "email", None)),
-                    cls.safe_get(getattr(request, "converted_organization_name", None)),
-                    cls.safe_get(getattr(request, "converted_city", None)),
-                    cls.safe_get(getattr(request, "converted_state_territory", None)),
-                    cls.safe_get(getattr(request, "purpose", None)),
-                    cls.safe_get(getattr(request, "cisa_representative_email", None)),
-                    cls.safe_get(getattr(request, "last_submitted_date", None)),
-                    cls.safe_get(getattr(request, "first_submitted_date", None)),
-                    cls.safe_get(getattr(request, "last_status_update", None)),
-                ]
-            )
-
-        return response
-
-
 class DomainDataFull(DomainExport):
     """
     Shows security contacts, filtered by state
     Inherits from BaseExport -> DomainExport
     """
+
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull is
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
+    @classmethod
+    def get_fields(cls, model):
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
+            "Agency": model.get("federal_agency__agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("senior_official__email"),
+            "Security contact email": model.get("security_contact_email"),
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+        return FIELDS
 
     @classmethod
     def get_columns(cls):
@@ -702,6 +1039,13 @@ class DomainDataFull(DomainExport):
             "State",
             "Security contact email",
         ]
+
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
 
     @classmethod
     def get_sort_fields(cls):
@@ -739,7 +1083,7 @@ class DomainDataFull(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -749,20 +1093,6 @@ class DomainDataFull(DomainExport):
                 Domain.State.ON_HOLD,
             ],
         )
-
-    @classmethod
-    def get_computed_fields(cls, delimiter=", "):
-        """
-        Get a dict of computed fields.
-        """
-        return {
-            "so_name": Concat(
-                Coalesce(F("senior_official__first_name"), Value("")),
-                Value(" "),
-                Coalesce(F("senior_official__last_name"), Value("")),
-                output_field=CharField(),
-            ),
-        }
 
     @classmethod
     def get_related_table_fields(cls):
@@ -782,6 +1112,39 @@ class DomainDataFederal(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull is
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
+    # The following fields are changed from DomainExport:
+    # converted_organization_name => organization_name
+    # converted_city => city
+    # converted_state_territory => state_territory
+    # converted_so_name => so_name
+    # converted_so_email => senior_official__email
+    @classmethod
+    def get_fields(cls, model):
+        FIELDS = {
+            "Domain name": model.get("domain__name"),
+            "Status": model.get("status"),
+            "First ready on": model.get("first_ready_on"),
+            "Expiration date": model.get("expiration_date"),
+            "Domain type": model.get("domain_type"),
+            "Agency": model.get("federal_agency__agency"),
+            "Organization name": model.get("organization_name"),
+            "City": model.get("city"),
+            "State": model.get("state_territory"),
+            "SO": model.get("so_name"),
+            "SO email": model.get("senior_official__email"),
+            "Security contact email": model.get("security_contact_email"),
+            "Created at": model.get("domain__created_at"),
+            "Deleted": model.get("domain__deleted"),
+            "Domain managers": model.get("managers"),
+            "Invited domain managers": model.get("invited_users"),
+        }
+        return FIELDS
+
     @classmethod
     def get_columns(cls):
         """
@@ -796,6 +1159,13 @@ class DomainDataFederal(DomainExport):
             "State",
             "Security contact email",
         ]
+
+    @classmethod
+    def get_annotations_for_sort(cls, delimiter=", "):
+        """
+        Get a dict of annotations to make available for sorting.
+        """
+        return cls.get_computed_fields()
 
     @classmethod
     def get_sort_fields(cls):
@@ -833,7 +1203,7 @@ class DomainDataFederal(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls):
+    def get_filter_conditions(cls, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
@@ -844,20 +1214,6 @@ class DomainDataFederal(DomainExport):
                 Domain.State.ON_HOLD,
             ],
         )
-
-    @classmethod
-    def get_computed_fields(cls, delimiter=", "):
-        """
-        Get a dict of computed fields.
-        """
-        return {
-            "so_name": Concat(
-                Coalesce(F("senior_official__first_name"), Value("")),
-                Value(" "),
-                Coalesce(F("senior_official__last_name"), Value("")),
-                output_field=CharField(),
-            ),
-        }
 
     @classmethod
     def get_related_table_fields(cls):
@@ -930,10 +1286,14 @@ class DomainGrowth(DomainExport):
         return ["domain"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         filter_ready = Q(
             domain__state__in=[Domain.State.READY],
             domain__first_ready__gte=start_date,
@@ -1002,10 +1362,14 @@ class DomainManaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=False,
@@ -1137,10 +1501,14 @@ class DomainUnmanaged(DomainExport):
         return ["permissions"]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not end_date:
+            # Return nothing
+            return Q(id__in=[])
+
         end_date_formatted = format_end_date(end_date)
         return Q(
             domain__permissions__isnull=True,
@@ -1224,24 +1592,166 @@ class DomainRequestExport(BaseExport):
         # Return the model class that this export handles
         return DomainRequest
 
+    def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
+        """Returns a list of Domain Requests that has been filtered by the given organization value"""
+        annotated_queryset = domain_requests_to_filter.annotate(
+            converted_generic_org_type=Case(
+                # Recreate the logic of the converted_generic_org_type property
+                # here in annotations
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                default=F("generic_org_type"),
+                output_field=CharField(),
+            )
+        )
+        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
+
+        # return domain_requests_to_filter.filter(
+        #     # Filter based on the generic org value returned by converted_generic_org_type
+        #     id__in=[
+        #         domainRequest.id
+        #         for domainRequest in domain_requests_to_filter
+        #         if domainRequest.converted_generic_org_type
+        #         and domainRequest.converted_generic_org_type == org_to_filter_by
+        #     ]
+        # )
+
+    @classmethod
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
+        """
+        Get a dict of computed fields.
+        """
+        # NOTE: These computed fields imitate @Property functions in the Domain model and Portfolio model where needed.
+        # This is for performance purposes. Since we are working with dictionary values and not
+        # model objects as we export data, trying to reinstate model objects in order to grab @property
+        # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
+        return {
+            "converted_generic_org_type": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("generic_org_type"),
+                output_field=CharField(),
+            ),
+            "converted_federal_agency": Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__agency"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_agency__agency"),
+                output_field=CharField(),
+            ),
+            "converted_federal_type": Case(
+                # When portfolio is present, use its value instead
+                # NOTE: this is an @Property funciton in portfolio.
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_type"),
+                output_field=CharField(),
+            ),
+            "converted_organization_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+                # Otherwise, return the natively assigned value
+                default=F("organization_name"),
+                output_field=CharField(),
+            ),
+            "converted_so_email": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__email")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__email"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_last_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__last_name")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__last_name"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_first_name": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__first_name")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__first_name"),
+                output_field=CharField(),
+            ),
+            "converted_senior_official_title": Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__senior_official__title")),
+                # Otherwise, return the natively assigned senior official
+                default=F("senior_official__title"),
+                output_field=CharField(),
+            ),
+            "converted_so_name": Case(
+                # When portfolio is present, use that senior official instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__senior_official__isnull=False),
+                    then=Concat(
+                        Coalesce(F("portfolio__senior_official__first_name"), Value("")),
+                        Value(" "),
+                        Coalesce(F("portfolio__senior_official__last_name"), Value("")),
+                        output_field=CharField(),
+                    ),
+                ),
+                # Otherwise, return the natively assigned senior official
+                default=Concat(
+                    Coalesce(F("senior_official__first_name"), Value("")),
+                    Value(" "),
+                    Coalesce(F("senior_official__last_name"), Value("")),
+                    output_field=CharField(),
+                ),
+                output_field=CharField(),
+            ),
+        }
+
     @classmethod
     def get_sliced_requests(cls, filter_condition):
         """Get filtered requests counts sliced by org type and election office."""
         requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
         requests_count = requests.count()
-        federal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.FEDERAL).distinct().count()
-        interstate = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.INTERSTATE).distinct().count()
-        state_or_territory = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.STATE_OR_TERRITORY).distinct().count()
+        federal = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.FEDERAL)
+            .distinct()
+            .count()
         )
-        tribal = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.TRIBAL).distinct().count()
-        county = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.COUNTY).distinct().count()
-        city = requests.filter(generic_org_type=DomainRequest.OrganizationChoices.CITY).distinct().count()
+        interstate = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.INTERSTATE)
+            .distinct()
+            .count()
+        )
+        state_or_territory = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY)
+            .distinct()
+            .count()
+        )
+        tribal = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.TRIBAL)
+            .distinct()
+            .count()
+        )
+        county = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.COUNTY)
+            .distinct()
+            .count()
+        )
+        city = (
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.CITY).distinct().count()
+        )
         special_district = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT).distinct().count()
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.SPECIAL_DISTRICT)
+            .distinct()
+            .count()
         )
         school_district = (
-            requests.filter(generic_org_type=DomainRequest.OrganizationChoices.SCHOOL_DISTRICT).distinct().count()
+            cls.get_filtered_domain_requests_by_org(requests, DomainRequest.OrganizationChoices.SCHOOL_DISTRICT)
+            .distinct()
+            .count()
         )
         election_board = requests.filter(is_election_board=True).distinct().count()
 
@@ -1265,11 +1775,11 @@ class DomainRequestExport(BaseExport):
         """
 
         # Handle the federal_type field. Defaults to the wrong format.
-        federal_type = model.get("federal_type")
+        federal_type = model.get("converted_federal_type")
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.get("generic_org_type") or model.get("organization_type")
+        org_type = model.get("converted_generic_org_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
@@ -1317,17 +1827,17 @@ class DomainRequestExport(BaseExport):
             "Other contacts": model.get("all_other_contacts"),
             "Current websites": model.get("all_current_websites"),
             # Untouched FK fields - passed into the request dict.
-            "Federal agency": model.get("federal_agency__agency"),
-            "SO first name": model.get("senior_official__first_name"),
-            "SO last name": model.get("senior_official__last_name"),
-            "SO email": model.get("senior_official__email"),
-            "SO title/role": model.get("senior_official__title"),
+            "Federal agency": model.get("converted_federal_agency"),
+            "SO first name": model.get("converted_senior_official_first_name"),
+            "SO last name": model.get("converted_senior_official_last_name"),
+            "SO email": model.get("converted_so_email"),
+            "SO title/role": model.get("converted_senior_official_title"),
             "Creator first name": model.get("creator__first_name"),
             "Creator last name": model.get("creator__last_name"),
             "Creator email": model.get("creator__email"),
             "Investigator": model.get("investigator__email"),
             # Untouched fields
-            "Organization name": model.get("organization_name"),
+            "Organization name": model.get("converted_organization_name"),
             "City": model.get("city"),
             "State/territory": model.get("state_territory"),
             "Request purpose": model.get("purpose"),
@@ -1339,6 +1849,92 @@ class DomainRequestExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
+
+
+class DomainRequestDataType(DomainRequestExport):
+    """
+    The DomainRequestDataType report, but filtered based on the current request user
+    """
+
+    @classmethod
+    def get_columns(cls):
+        """
+        Overrides the columns for CSV export specific to DomainRequestDataType.
+        """
+        return [
+            "Domain request",
+            "Region",
+            "Status",
+            "Election office",
+            "Federal type",
+            "Domain type",
+            "Request additional details",
+            "Creator approved domains count",
+            "Creator active requests count",
+            "Alternative domains",
+            "Other contacts",
+            "Current websites",
+            "Federal agency",
+            "SO first name",
+            "SO last name",
+            "SO email",
+            "SO title/role",
+            "Creator first name",
+            "Creator last name",
+            "Creator email",
+            "Organization name",
+            "City",
+            "State/territory",
+            "Request purpose",
+            "CISA regional representative",
+            "Last submitted date",
+            "First submitted date",
+            "Last status update",
+        ]
+
+    @classmethod
+    def get_filter_conditions(cls, request=None, **kwargs):
+        """
+        Get a Q object of filter conditions to filter when building queryset.
+        """
+        if request is None or not hasattr(request, "user") or not request.user:
+            # Return nothing
+            return Q(id__in=[])
+        else:
+            # Get all domain requests the user is associated with
+            return Q(id__in=request.user.get_user_domain_request_ids(request))
+
+    @classmethod
+    def get_select_related(cls):
+        """
+        Get a list of tables to pass to select_related when building queryset.
+        """
+        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
+
+    @classmethod
+    def get_prefetch_related(cls):
+        """
+        Get a list of tables to pass to prefetch_related when building queryset.
+        """
+        return ["current_websites", "other_contacts", "alternative_domains"]
+
+    @classmethod
+    def get_related_table_fields(cls):
+        """
+        Get a list of fields from related tables.
+        """
+        return [
+            "requested_domain__name",
+            "federal_agency__agency",
+            "senior_official__first_name",
+            "senior_official__last_name",
+            "senior_official__email",
+            "senior_official__title",
+            "creator__first_name",
+            "creator__last_name",
+            "creator__email",
+            "investigator__email",
+        ]
 
 
 class DomainRequestGrowth(DomainRequestExport):
@@ -1369,10 +1965,13 @@ class DomainRequestGrowth(DomainRequestExport):
         ]
 
     @classmethod
-    def get_filter_conditions(cls, start_date=None, end_date=None):
+    def get_filter_conditions(cls, start_date=None, end_date=None, **kwargs):
         """
         Get a Q object of filter conditions to filter when building queryset.
         """
+        if not start_date or not end_date:
+            # Return nothing
+            return Q(id__in=[])
 
         start_date_formatted = format_start_date(start_date)
         end_date_formatted = format_end_date(end_date)
@@ -1465,28 +2064,38 @@ class DomainRequestDataFull(DomainRequestExport):
         ]
 
     @classmethod
-    def get_computed_fields(cls, delimiter=", "):
+    def get_computed_fields(cls, delimiter=", ", **kwargs):
         """
         Get a dict of computed fields.
         """
-        return {
-            "creator_approved_domains_count": cls.get_creator_approved_domains_count_query(),
-            "creator_active_requests_count": cls.get_creator_active_requests_count_query(),
-            "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
-            "all_alternative_domains": StringAgg("alternative_domains__website", delimiter=delimiter, distinct=True),
-            # Coerce the other contacts object to "{first_name} {last_name} {email}"
-            "all_other_contacts": StringAgg(
-                Concat(
-                    "other_contacts__first_name",
-                    Value(" "),
-                    "other_contacts__last_name",
-                    Value(" "),
-                    "other_contacts__email",
+        # Get computed fields from the parent class
+        computed_fields = super().get_computed_fields()
+
+        # Add additional computed fields
+        computed_fields.update(
+            {
+                "creator_approved_domains_count": cls.get_creator_approved_domains_count_query(),
+                "creator_active_requests_count": cls.get_creator_active_requests_count_query(),
+                "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
+                "all_alternative_domains": StringAgg(
+                    "alternative_domains__website", delimiter=delimiter, distinct=True
                 ),
-                delimiter=delimiter,
-                distinct=True,
-            ),
-        }
+                # Coerce the other contacts object to "{first_name} {last_name} {email}"
+                "all_other_contacts": StringAgg(
+                    Concat(
+                        "other_contacts__first_name",
+                        Value(" "),
+                        "other_contacts__last_name",
+                        Value(" "),
+                        "other_contacts__email",
+                    ),
+                    delimiter=delimiter,
+                    distinct=True,
+                ),
+            }
+        )
+
+        return computed_fields
 
     @classmethod
     def get_related_table_fields(cls):

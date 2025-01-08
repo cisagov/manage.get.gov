@@ -1,0 +1,67 @@
+@use "uswds-core" as *;
+@use "base" as *;
+
+
+/*----------------
+   Alert Layout
+-----------------*/
+
+// The icon was off center for some reason
+// Fixes that issue
+@include at-media(desktop) {
+  // NOTE: !important is used because _font.scss overrides this
+  .usa-alert__body {
+    max-width: $widescreen-max-width !important;
+  }
+  .usa-alert--warning{
+    .usa-alert__body::before {
+      left: 1rem !important;
+    }
+  }
+  .usa-alert__body.margin-left-1 {
+    margin-left: 0.5rem!important;
+  }
+
+  .usa-alert__body--widescreen::before {
+    left: 4rem !important;
+  }
+  .usa-alert__body--widescreen {
+    padding-left: 7rem!important;
+  }
+}
+
+/*----------------
+   Alert Fonts
+-----------------*/
+// Fixes some font size disparities with the Figma
+// for usa-alert alert elements
+.usa-alert {
+  .usa-alert__heading.larger-font-sizing {
+    font-size: 1.5rem;
+  }
+}
+
+/*----------------
+  Alert Coloring
+-----------------*/
+.usa-site-alert--hot-pink {
+  .usa-alert {
+    background-color: $hot-pink;
+    border-left-color: $hot-pink;
+    .usa-alert__body {
+      color: color('base-darkest');
+      background-color: $hot-pink;
+    }
+  }
+}
+
+@supports ((-webkit-mask:url()) or (mask:url())) {
+  .usa-site-alert--hot-pink .usa-alert .usa-alert__body::before {
+    background-color: color('base-darkest');
+  }
+}
+
+// Override the specificity of USWDS css to enable no max width on admin alerts
+.usa-alert__body.maxw-none {
+  max-width: none;
+}

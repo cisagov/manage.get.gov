@@ -1,0 +1,36 @@
+name: Sub-issue
+description: Describe an idea, problem, or feature that is related to a parent issue.
+
+body:
+  - type: markdown
+    id: title-help
+    attributes:
+      value: |
+        > Titles should be short, descriptive, and compelling. Use sentence case (don't capitalize unnecessarily).
+  - type: textarea
+    id: description
+    attributes:
+      label: Sub-issue description
+      description: |
+        Describe the issue so that someone who wasn't present for its discovery can understand why it matters. Use full sentences, plain language, and [good formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+
+        For stories, use the user story format (e.g., As a user, I want, So that).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: If known, share 1-3 statements that would need to be true for this issue to be considered resolved. Use a [task list](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists) if appropriate.
+      placeholder: "- [ ]"
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: "Share any other thoughts, like how this might be implemented or fixed. Screenshots and links to documents/discussions are welcome."
+  - type: markdown
+    id: note
+    attributes:
+      value: |
+        > We may edit the text in this issue to document our understanding and clarify the product work.
+        

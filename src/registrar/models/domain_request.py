@@ -12,6 +12,7 @@ from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTy
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
+from django.core.exceptions import ValidationError
 
 from registrar.utility.waffle import flag_is_active_for_user
 
@@ -280,7 +281,7 @@ class DomainRequest(TimeStampedModel):
 
         ELIGIBILITY_UNCLEAR = ("eligibility_unclear", "Unclear organization eligibility")
         QUESTIONABLE_SENIOR_OFFICIAL = ("questionable_senior_official", "Questionable senior official")
-        ALREADY_HAS_DOMAINS = ("already_has_domains", "Already has domains")
+        ALREADY_HAS_A_DOMAIN = ("already_has_a_domain", "Already has a domain")
         BAD_NAME = ("bad_name", "Doesn’t meet naming requirements")
         OTHER = ("other", "Other (no auto-email sent)")
 
@@ -671,6 +672,59 @@ class DomainRequest(TimeStampedModel):
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
 
+    def clean(self):
+        """
+        Validates suborganization-related fields in two scenarios:
+        1. New suborganization request: Prevents duplicate names within same portfolio
+        2. Partial suborganization data: Enforces a all-or-nothing rule for city/state/name fields
+        when portfolio exists without selected suborganization
+
+        Add new domain request validation rules here to ensure they're
+        enforced during both model save and form submission.
+        Not presently used on the domain request wizard, though.
+        """
+        super().clean()
+        # Validation logic for a suborganization request
+        if self.is_requesting_new_suborganization():
+            # Raise an error if this suborganization already exists
+            Suborganization = apps.get_model("registrar.Suborganization")
+            if (
+                self.requested_suborganization
+                and Suborganization.objects.filter(
+                    name__iexact=self.requested_suborganization,
+                    portfolio=self.portfolio,
+                    name__isnull=False,
+                    portfolio__isnull=False,
+                ).exists()
+            ):
+                # Add a field-level error to requested_suborganization.
+                # To pass in field-specific errors, we need to embed a dict of
+                # field: validationerror then pass that into a validation error itself.
+                # This is slightly confusing, but it just adds it at that level.
+                msg = (
+                    "This suborganization already exists. "
+                    "Choose a new name, or select it directly if you would like to use it."
+                )
+                errors = {"requested_suborganization": ValidationError(msg)}
+                raise ValidationError(errors)
+        elif self.portfolio and not self.sub_organization:
+            # You cannot create a new suborganization without these fields
+            required_suborg_fields = {
+                "requested_suborganization": self.requested_suborganization,
+                "suborganization_city": self.suborganization_city,
+                "suborganization_state_territory": self.suborganization_state_territory,
+            }
+            # If at least one value is populated, enforce a all-or-nothing rule
+            if any(bool(value) for value in required_suborg_fields.values()):
+                # Find which fields are empty and throw an error on the field
+                errors = {}
+                for field_name, value in required_suborg_fields.items():
+                    if not value:
+                        errors[field_name] = ValidationError(
+                            "This field is required when creating a new suborganization.",
+                        )
+                raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_organization_type()
@@ -689,6 +743,18 @@ class DomainRequest(TimeStampedModel):
 
         # Update the cached values after saving
         self._cache_status_and_status_reasons()
+
+    def create_requested_suborganization(self):
+        """Creates the requested suborganization.
+        Adds the name, portfolio, city, and state_territory fields.
+        Returns the created suborganization."""
+        Suborganization = apps.get_model("registrar.Suborganization")
+        return Suborganization.objects.create(
+            name=self.requested_suborganization,
+            portfolio=self.portfolio,
+            city=self.suborganization_city,
+            state_territory=self.suborganization_state_territory,
+        )
 
     def send_custom_status_update_email(self, status):
         """Helper function to send out a second status email when the status remains the same,
@@ -784,7 +850,9 @@ class DomainRequest(TimeStampedModel):
         return True
 
     def delete_and_clean_up_domain(self, called_from):
+        # Delete the approved domain
         try:
+            # Clean up the approved domain
             domain_state = self.approved_domain.state
             # Only reject if it exists on EPP
             if domain_state != Domain.State.UNKNOWN:
@@ -795,6 +863,39 @@ class DomainRequest(TimeStampedModel):
         except Exception as err:
             logger.error(err)
             logger.error(f"Can't query an approved domain while attempting {called_from}")
+
+        # Delete the suborg as long as this is the only place it is used
+        self._cleanup_dangling_suborg()
+
+    def _cleanup_dangling_suborg(self):
+        """Deletes the existing suborg if its only being used by the deleted record"""
+        # Nothing to delete, so we just smile and walk away
+        if self.sub_organization is None:
+            return
+
+        Suborganization = apps.get_model("registrar.Suborganization")
+
+        # Stored as so because we need to set the reference to none first,
+        # so we can't just use the self.sub_organization property
+        suborg = Suborganization.objects.get(id=self.sub_organization.id)
+        requests = suborg.request_sub_organization
+        domain_infos = suborg.information_sub_organization
+
+        # Check if this is the only reference to the suborganization
+        if requests.count() != 1 or domain_infos.count() > 1:
+            return
+
+        # Remove the suborganization reference from request.
+        self.sub_organization = None
+        self.save()
+
+        # Remove the suborganization reference from domain if it exists.
+        if domain_infos.count() == 1:
+            domain_infos.update(sub_organization=None)
+
+        # Delete the now-orphaned suborganization
+        logger.info(f"_cleanup_dangling_suborg() -> Deleting orphan suborganization: {suborg}")
+        suborg.delete()
 
     def _send_status_update_email(
         self,
@@ -984,6 +1085,7 @@ class DomainRequest(TimeStampedModel):
 
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("action_needed")
+
         elif self.status == self.DomainRequestStatus.REJECTED:
             self.rejection_reason = None
 
@@ -1014,8 +1116,16 @@ class DomainRequest(TimeStampedModel):
         domain request into an admin on that domain. It also triggers an email
         notification."""
 
+        should_save = False
         if self.federal_agency is None:
             self.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+            should_save = True
+
+        if self.is_requesting_new_suborganization():
+            self.sub_organization = self.create_requested_suborganization()
+            should_save = True
+
+        if should_save:
             self.save()
 
         # create the domain
@@ -1148,7 +1258,7 @@ class DomainRequest(TimeStampedModel):
     def is_requesting_new_suborganization(self) -> bool:
         """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
-        Used for the RequestingEntity page.
+        Used for the RequestingEntity page and on DomainInformation.create_from_da().
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.
@@ -1438,6 +1548,18 @@ class DomainRequest(TimeStampedModel):
         return self.federal_type
 
     @property
+    def converted_address_line1(self):
+        if self.portfolio:
+            return self.portfolio.address_line1
+        return self.address_line1
+
+    @property
+    def converted_address_line2(self):
+        if self.portfolio:
+            return self.portfolio.address_line2
+        return self.address_line2
+
+    @property
     def converted_city(self):
         if self.portfolio:
             return self.portfolio.city
@@ -1450,7 +1572,32 @@ class DomainRequest(TimeStampedModel):
         return self.state_territory
 
     @property
+    def converted_urbanization(self):
+        if self.portfolio:
+            return self.portfolio.urbanization
+        return self.urbanization
+
+    @property
+    def converted_zipcode(self):
+        if self.portfolio:
+            return self.portfolio.zipcode
+        return self.zipcode
+
+    @property
     def converted_senior_official(self):
         if self.portfolio:
             return self.portfolio.senior_official
         return self.senior_official
+
+    # ----- Portfolio Properties (display values)-----
+    @property
+    def converted_generic_org_type_display(self):
+        if self.portfolio:
+            return self.portfolio.get_organization_type_display()
+        return self.get_generic_org_type_display()
+
+    @property
+    def converted_federal_type_display(self):
+        if self.portfolio:
+            return self.portfolio.federal_agency.get_federal_type_display()
+        return self.get_federal_type_display()

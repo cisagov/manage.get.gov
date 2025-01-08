@@ -21,6 +21,7 @@ from registrar.views.report_views import (
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
     ExportDataTypeRequests,
+    ExportMembersPortfolio,
 )
 
 # --jsons
@@ -28,6 +29,8 @@ from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
+    get_portfolio_json,
+    get_suborganization_list_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
     get_rejection_email_for_user_json,
@@ -39,12 +42,13 @@ from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
-domain_request_urls = [
-    path("", views.DomainRequestWizard.as_view(), name=""),
-    path("finished/", views.Finished.as_view(), name="finished"),
-]
 
 # dynamically generate the other domain_request_urls
+domain_request_urls = [
+    path("", RedirectView.as_view(pattern_name="domain-request:start"), name="redirect-to-start"),
+    path("start/", views.DomainRequestWizard.as_view(), name=views.DomainRequestWizard.NEW_URL_NAME),
+    path("finished/", views.Finished.as_view(), name=views.DomainRequestWizard.FINISHED_URL_NAME),
+]
 for step, view in [
     # add/remove steps here
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
@@ -65,7 +69,7 @@ for step, view in [
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
     (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
-    domain_request_urls.append(path(f"{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"<int:id>/{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -91,6 +95,11 @@ urlpatterns = [
         name="member",
     ),
     path(
+        "member/<int:pk>/delete",
+        views.PortfolioMemberDeleteView.as_view(),
+        name="member-delete",
+    ),
+    path(
         "member/<int:pk>/permissions",
         views.PortfolioMemberEditView.as_view(),
         name="member-permissions",
@@ -101,9 +110,19 @@ urlpatterns = [
         name="member-domains",
     ),
     path(
+        "member/<int:pk>/domains/edit",
+        views.PortfolioMemberDomainsEditView.as_view(),
+        name="member-domains-edit",
+    ),
+    path(
         "invitedmember/<int:pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
+    ),
+    path(
+        "invitedmember/<int:pk>/delete",
+        views.PortfolioInvitedMemberDeleteView.as_view(),
+        name="invitedmember-delete",
     ),
     path(
         "invitedmember/<int:pk>/permissions",
@@ -115,6 +134,11 @@ urlpatterns = [
         views.PortfolioInvitedMemberDomainsView.as_view(),
         name="invitedmember-domains",
     ),
+    path(
+        "invitedmember/<int:pk>/domains/edit",
+        views.PortfolioInvitedMemberDomainsEditView.as_view(),
+        name="invitedmember-domains-edit",
+    ),
     # path(
     #     "no-organization-members/",
     #     views.PortfolioNoMembersView.as_view(),
@@ -122,7 +146,7 @@ urlpatterns = [
     # ),
     path(
         "members/new-member/",
-        views.NewMemberView.as_view(),
+        views.PortfolioAddMemberView.as_view(),
         name="new-member",
     ),
     path(
@@ -201,6 +225,16 @@ urlpatterns = [
         name="get-senior-official-from-federal-agency-json",
     ),
     path(
+        "admin/api/get-portfolio-json/",
+        get_portfolio_json,
+        name="get-portfolio-json",
+    ),
+    path(
+        "admin/api/get-suborganization-list-json/",
+        get_suborganization_list_json,
+        name="get-suborganization-list-json",
+    ),
+    path(
         "admin/api/get-federal-and-portfolio-types-from-federal-agency-json/",
         get_federal_and_portfolio_types_from_federal_agency_json,
         name="get-federal-and-portfolio-types-from-federal-agency-json",
@@ -217,14 +251,14 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path(
+        "reports/export_members_portfolio/",
+        ExportMembersPortfolio.as_view(),
+        name="export_members_portfolio",
+    ),
+    path(
         "reports/export_data_type_user/",
         ExportDataTypeUser.as_view(),
         name="export_data_type_user",
-    ),
-    path(
-        "reports/export_data_type_requests/",
-        ExportDataTypeRequests.as_view(),
-        name="export_data_type_requests",
     ),
     path(
         "reports/export_data_type_requests/",
@@ -269,6 +303,7 @@ urlpatterns = [
         name="todo",
     ),
     path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
+    path("domain/<int:pk>/prototype-dns", views.PrototypeDomainDNSRecordView.as_view(), name="prototype-domain-dns"),
     path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
         "domain/<int:pk>/dns",
@@ -326,9 +361,9 @@ urlpatterns = [
         name="user-profile",
     ),
     path(
-        "invitation/<int:pk>/delete",
-        views.DomainInvitationDeleteView.as_view(http_method_names=["post"]),
-        name="invitation-delete",
+        "invitation/<int:pk>/cancel",
+        views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
+        name="invitation-cancel",
     ),
     path(
         "domain-request/<int:pk>/delete",

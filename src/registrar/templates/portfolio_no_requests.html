@@ -4,14 +4,20 @@
 
 {% block title %} Domain Requests | {% endblock %}
 
+<!-- Form messages -->
+{% block messages %}
+  {% include "includes/form_messages.html" %}
+{% endblock messages%}
+
 {% block portfolio_content %}
-    <h1 id="domains-header">Current domain requests</h1>
+<div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+    <h1 id="domains-header">Domain requests</h1>
     <section class="section-outlined">
         <div class="section-outlined__header margin-bottom-3">
             <h2 id="domains-header" class="display-inline-block">You don’t have access to domain requests.</h2>
             {% if portfolio_administrators %}
-            <p>If you believe you should have access to a request, reach out to your organization’s administrators.</p>
-            <p>Your organizations administrators:</p>
+            <p>If you believe you should have access to requests, reach out to your organization’s administrators.</p>
+            <p>Your organization's administrators:</p>
             <ul class="margin-top-0">
                 {% for administrator in portfolio_administrators %}
                     {% if administrator.email %}
@@ -27,4 +33,5 @@
             {% endif %}
         </div>
     </section>
+</div>
 {% endblock %}

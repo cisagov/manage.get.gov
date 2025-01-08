@@ -426,13 +426,14 @@ class DomainInformation(TimeStampedModel):
         else:
             return None
 
+    # ----- Portfolio Properties -----
+
     @property
     def converted_organization_name(self):
         if self.portfolio:
             return self.portfolio.organization_name
         return self.organization_name
 
-    # ----- Portfolio Properties -----
     @property
     def converted_generic_org_type(self):
         if self.portfolio:
@@ -454,20 +455,20 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_senior_official(self):
         if self.portfolio:
-            return self.portfolio.senior_official
-        return self.senior_official
+            return self.portfolio.display_senior_official
+        return self.display_senior_official
 
     @property
     def converted_address_line1(self):
         if self.portfolio:
-            return self.portfolio.address_line1
-        return self.address_line1
+            return self.portfolio.display_address_line1
+        return self.display_address_line1
 
     @property
     def converted_address_line2(self):
         if self.portfolio:
-            return self.portfolio.address_line2
-        return self.address_line2
+            return self.portfolio.display_address_line2
+        return self.display_address_line2
 
     @property
     def converted_city(self):
@@ -478,17 +479,30 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_state_territory(self):
         if self.portfolio:
-            return self.portfolio.state_territory
-        return self.state_territory
+            return self.portfolio.get_state_territory_display()
+        return self.get_state_territory_display()
 
     @property
     def converted_zipcode(self):
         if self.portfolio:
-            return self.portfolio.zipcode
-        return self.zipcode
+            return self.portfolio.display_zipcode
+        return self.display_zipcode
 
     @property
     def converted_urbanization(self):
         if self.portfolio:
-            return self.portfolio.urbanization
-        return self.urbanization
+            return self.portfolio.display_urbanization
+        return self.display_urbanization
+
+    # ----- Portfolio Properties (display values)-----
+    @property
+    def converted_generic_org_type_display(self):
+        if self.portfolio:
+            return self.portfolio.get_organization_type_display()
+        return self.get_generic_org_type_display()
+
+    @property
+    def converted_federal_type_display(self):
+        if self.portfolio:
+            return self.portfolio.federal_agency.get_federal_type_display()
+        return self.get_federal_type_display()

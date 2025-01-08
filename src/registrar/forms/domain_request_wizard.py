@@ -17,6 +17,7 @@ from registrar.models import Contact, DomainRequest, DraftDomain, Domain, Federa
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class RequestingEntityForm(RegistrarForm):
     # If this selection is made on the form (tracked by js), then it will toggle the form value of this.
     # In other words, this essentially tracks if the suborganization field == "Other".
     # "Other" is just an imaginary value that is otherwise invalid.
-    # Note the logic in `def clean` and `handleRequestingEntityFieldset` in get-gov.js
+    # Note the logic in `def clean` and `handleRequestingEntityFieldset` in getgov.min.js
     is_requesting_new_suborganization = forms.BooleanField(required=False, widget=forms.HiddenInput())
 
     sub_organization = forms.ModelChoiceField(
@@ -78,6 +79,20 @@ class RequestingEntityForm(RegistrarForm):
         # Otherwise just return the suborg as normal
         return self.cleaned_data.get("sub_organization")
 
+    def clean_requested_suborganization(self):
+        name = self.cleaned_data.get("requested_suborganization")
+        if (
+            name
+            and Suborganization.objects.filter(
+                name__iexact=name, portfolio=self.domain_request.portfolio, name__isnull=False, portfolio__isnull=False
+            ).exists()
+        ):
+            raise ValidationError(
+                "This suborganization already exists. "
+                "Choose a new name, or select it directly if you would like to use it."
+            )
+        return name
+
     def full_clean(self):
         """Validation logic to remove the custom suborganization value before clean is triggered.
         Without this override, the form will throw an 'invalid option' error."""
@@ -114,12 +129,15 @@ class RequestingEntityForm(RegistrarForm):
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
                 # Validate custom suborganization fields
-                if not cleaned_data.get("requested_suborganization"):
-                    self.add_error("requested_suborganization", "Requested suborganization is required.")
+                if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
+                    self.add_error("requested_suborganization", "Enter the name of your suborganization.")
                 if not cleaned_data.get("suborganization_city"):
-                    self.add_error("suborganization_city", "City is required.")
+                    self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
                 if not cleaned_data.get("suborganization_state_territory"):
-                    self.add_error("suborganization_state_territory", "State, territory, or military post is required.")
+                    self.add_error(
+                        "suborganization_state_territory",
+                        "Select the state, territory, or military post where your suborganization is located.",
+                    )
             elif not suborganization:
                 self.add_error("sub_organization", "Suborganization is required.")
 
@@ -141,9 +159,12 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
         """Extend the initialization of the form from RegistrarForm __init__"""
         super().__init__(*args, **kwargs)
         if self.domain_request.portfolio:
+            choose_text = (
+                "(choose from list)" if self.domain_request.portfolio.portfolio_suborganizations.exists() else ""
+            )
             self.form_choices = (
                 (False, self.domain_request.portfolio),
-                (True, "A suborganization (choose from list)"),
+                (True, f"A suborganization {choose_text}"),
             )
         self.fields[self.field_name] = self.get_typed_choice_field()
 
@@ -524,7 +545,12 @@ class DotGovDomainForm(RegistrarForm):
 class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
         label="Purpose",
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                Will it be used for a website, email, or something else?"
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,
@@ -728,7 +754,13 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
         required=True,
         # label has to end in a space to get the label_suffix to show
         label=("No other employees rationale"),
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "You don’t need to provide names of other employees now, \
+                but it may slow down our assessment of your eligibility. Describe \
+                why there are no other employees who can help verify your request."
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 1000,
@@ -776,7 +808,12 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
         label="Anything else?",
-        widget=forms.Textarea(),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Is there anything else you’d like us to know about your domain request? \
+                    Provide details below. You can enter up to 2000 characters"
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 2000,
@@ -788,6 +825,22 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
             )
         },
+    )
+
+
+class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
+    """The form for the portfolio additional details page. Tied to the anything_else field."""
+
+    anything_else = forms.CharField(
+        required=False,
+        label="Anything else?",
+        widget=forms.Textarea(),
+        validators=[
+            MaxLengthValidator(
+                2000,
+                message="Response must be less than 2000 characters.",
+            )
+        ],
     )
 
 

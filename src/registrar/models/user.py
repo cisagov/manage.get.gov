@@ -4,17 +4,18 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
-from registrar.models import DomainInformation, UserDomainRole
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
+from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 from .domain_invitation import DomainInvitation
-from .portfolio_invitation import PortfolioInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
 from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
+from django.utils import timezone
+from datetime import timedelta
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -164,6 +165,20 @@ class User(AbstractUser):
         active_requests_count = self.domain_requests_created.filter(status__in=allowed_states).count()
         return active_requests_count
 
+    def get_num_expiring_domains(self, request):
+        """Return number of expiring domains"""
+        domain_ids = self.get_user_domain_ids(request)
+        now = timezone.now().date()
+        expiration_window = 60
+        threshold_date = now + timedelta(days=expiration_window)
+        num_of_expiring_domains = Domain.objects.filter(
+            id__in=domain_ids,
+            expiration_date__isnull=False,
+            expiration_date__lte=threshold_date,
+            expiration_date__gt=now,
+        ).count()
+        return num_of_expiring_domains
+
     def get_rejected_requests_count(self):
         """Return count of rejected requests"""
         return self.domain_requests_created.filter(status=DomainRequest.DomainRequestStatus.REJECTED).count()
@@ -256,6 +271,12 @@ class User(AbstractUser):
 
     def has_edit_suborganization_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
+
+    def is_portfolio_admin(self, portfolio):
+        return "Admin" in self.portfolio_role_summary(portfolio)
+
+    def has_domain_renewal_flag(self):
+        return flag_is_active_for_user(self, "domain_renewal")
 
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
@@ -471,3 +492,40 @@ class User(AbstractUser):
             return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
         else:
             return UserDomainRole.objects.filter(user=self).values_list("id", flat=True)
+
+    def get_active_requests_count_in_portfolio(self, request):
+        """Return count of active requests for the portfolio associated with the request."""
+        # Get the portfolio from the session using the existing method
+
+        portfolio = request.session.get("portfolio")
+
+        if not portfolio:
+            return 0  # No portfolio found
+
+        allowed_states = [
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        ]
+
+        # Now filter based on the portfolio retrieved
+        active_requests_count = self.domain_requests_created.filter(
+            status__in=allowed_states, portfolio=portfolio
+        ).count()
+
+        return active_requests_count
+
+    def is_only_admin_of_portfolio(self, portfolio):
+        """Check if the user is the only admin of the given portfolio."""
+
+        admin_permission = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+
+        admins = UserPortfolioPermission.objects.filter(portfolio=portfolio, roles__contains=[admin_permission])
+        admin_count = admins.count()
+
+        # Check if the current user is in the list of admins
+        if admin_count == 1 and admins.first().user == self:
+            return True  # The user is the only admin
+
+        # If there are other admins or the user is not the only one
+        return False

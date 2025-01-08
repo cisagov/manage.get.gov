@@ -52,9 +52,12 @@ error messages, if necessary.
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
     {% for error in field.errors %}
-      <span class="usa-error-message" role="alert">
-        {{ error }}
-      </span>
+      <div class="usa-error-message display-flex" role="alert">
+        <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+          <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
+        </svg>
+        <span class="margin-left-05">{{ error }}</span>
+      </div>
     {% endfor %}
     </div>
   {% endif %}
@@ -68,7 +71,11 @@ error messages, if necessary.
   {% endif %}
 
   {# this is the input field, itself #}
-  {% include widget.template_name %}
+  {% with aria_label=aria_label %}
+      {% include widget.template_name %}
+  {% endwith %}
+  
+  
 
   {% if append_gov %}
       <span class="padding-top-05 padding-left-2px">.gov </span>

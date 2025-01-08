@@ -6,13 +6,20 @@
 {% load static %}
 
 {% block portfolio_content %}
-<div id="main-content">
+<div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+    <!-- Form messages -->
+    {% include "includes/form_errors.html" with form=form %}
+    {% block messages %}
+      {% include "includes/form_messages.html" %}
+    {% endblock messages%}
 
     {% url 'members' as url %}
     {% if portfolio_permission %}
         {% url 'member' pk=portfolio_permission.id as url2 %}
+        {% url 'member-domains-edit' pk=portfolio_permission.id as url3 %}
     {% else %}
         {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
+        {% url 'invitedmember-domains-edit' pk=portfolio_invitation.id as url3 %}
     {% endif %}
     <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
     <ol class="usa-breadcrumb__list">
@@ -23,7 +30,7 @@
             <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
         </li>
         <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Manage member</span>
+        <span>Domain assignments</span>
         </li>
     </ol>
     </nav>
@@ -35,7 +42,7 @@
         {% if has_edit_members_portfolio_permission %}
             <div class="mobile:grid-col-12 tablet:grid-col-5">
                 <p class="float-right-tablet tablet:margin-y-0">
-                    <a href="#" class="usa-button"
+                    <a href="{{ url3 }}" class="usa-button"
                     >
                         Edit domain assignments
                     </a>

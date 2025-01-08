@@ -4,6 +4,32 @@
 {% block title %}DS data | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+
+  {% block breadcrumb %}
+  {% if portfolio %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns-dnssec' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNSSEC</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>DS data</span>
+      </li>
+    </ol>
+  </nav>
+  {% endif %}
+  {% endblock breadcrumb %}
+
   {% if domain.dnssecdata is None %}
   <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
     <div class="usa-alert__body">
@@ -16,7 +42,7 @@
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
 
-  <h1>DS data</h1>
+  <h1 id="domain-dsdata">DS data</h1>
 
   <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
 
@@ -115,7 +141,15 @@
     aria-describedby="Your DNSSEC records will be deleted from the registry."
     data-force-action
   >
-      {% include 'includes/modal.html' with cancel_button_resets_ds_form=True modal_heading="Warning: You are about to remove all DS records on your domain." modal_description="To fully disable DNSSEC: In addition to removing your DS records here, you’ll need to delete the DS records at your DNS host. To avoid causing your domain to appear offline, you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button=modal_button|safe %}
+      {% include 'includes/modal.html' with cancel_button_resets_ds_form=True modal_heading="Warning: You are about to remove all DS records on your domain." modal_description="To fully disable DNSSEC: In addition to removing your DS records here, you’ll need to delete the DS records at your DNS host. To avoid causing your domain to appear offline, you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button_id="disable-override-click-button" modal_button_text="Remove all DS data" modal_button_class="usa-button--secondary" %}
   </div>
+  <form method="post" id="disable-override-click-form">
+    {% csrf_token %}
+    <input type="hidden" name="disable-override-click" value="1">
+  </form>
+  <form method="post" id="btn-cancel-click-form">
+    {% csrf_token %}
+    <input type="hidden" name="btn-cancel-click" value="1">
+  </form>
 
 {% endblock %}  {# domain_content #}

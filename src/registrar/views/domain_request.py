@@ -53,7 +53,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     URL_NAMESPACE = "domain-request"
     # name for accessing /domain-request/<id>/edit
     EDIT_URL_NAME = "edit-domain-request"
-    NEW_URL_NAME = "/request/"
+    NEW_URL_NAME = "start"
+    FINISHED_URL_NAME = "finished"
 
     # region: Titles
     # We need to pass our human-readable step titles as context to the templates.
@@ -158,6 +159,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # Configure titles, wizard_conditions, unlocking_steps, and steps
         self.configure_step_options()
         self._domain_request = None  # for caching
+        self.kwargs = {}
 
     def configure_step_options(self):
         """Changes which steps are available to the user based on self.is_portfolio.
@@ -182,7 +184,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        return "domain_request_id" in self.storage
+        return bool(self.kwargs.get("id") is not None)
 
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""
@@ -214,11 +216,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
-            id = self.storage["domain_request_id"]
             try:
                 self._domain_request = DomainRequest.objects.get(
                     creator=creator,
-                    pk=id,
+                    pk=self.kwargs.get("id"),
                 )
                 return self._domain_request
             except DomainRequest.DoesNotExist:
@@ -238,8 +239,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
-
-        self.storage["domain_request_id"] = self._domain_request.id
         return self._domain_request
 
     @property
@@ -295,6 +294,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def get(self, request, *args, **kwargs):
         """This method handles GET requests."""
 
+        self.kwargs = kwargs
         if not self.is_portfolio and self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
@@ -307,7 +307,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # and remove any prior wizard data from their session
         if current_url == self.EDIT_URL_NAME and "id" in kwargs:
             del self.storage
-            self.storage["domain_request_id"] = kwargs["id"]
 
         # if accessing this class directly, redirect to either to an acknowledgement
         # page or to the first step in the processes (if an edit rather than a new request);
@@ -315,19 +314,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         # send users "to the domain request wizard" without needing to know which view
         # is first in the list of steps.
         if self.__class__ == DomainRequestWizard:
-            if request.path_info == self.NEW_URL_NAME:
+            if current_url == self.NEW_URL_NAME:
                 # Clear context so the prop getter won't create a request here.
                 # Creating a request will be handled in the post method for the
                 # intro page.
-                return render(
-                    request,
-                    "domain_request_intro.html",
-                    {
-                        "hide_requests": True,
-                        "hide_domains": True,
-                        "hide_members": True,
-                    },
-                )
+                return render(request, "domain_request_intro.html")
             else:
                 return self.goto(self.steps.first)
 
@@ -450,63 +441,42 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         if self.domain_request.requested_domain is not None:
             requested_domain_name = self.domain_request.requested_domain.name
 
-        context_stuff = {}
+        context = {}
 
         # Note: we will want to consolidate the non_org_steps_complete check into the same check that
         # org_steps_complete is using at some point.
         non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
         org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
         if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
-            modal_button = '<button type="submit" ' 'class="usa-button" ' ">Submit request</button>"
-            context_stuff = {
-                "not_form": False,
+            context = {
                 "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
-                "modal_button": modal_button,
-                "modal_heading": "You are about to submit a domain request for ",
-                "domain_name_modal": str(self.domain_request.requested_domain),
-                "modal_description": "Once you submit this request, you won’t be able to edit it until we review it.\
-                You’ll only be able to withdraw your request.",
                 "review_form_is_complete": True,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
         else:  # form is not complete
-            modal_button = '<button type="button" class="usa-button" data-close-modal>Return to request</button>'
-            context_stuff = {
-                "not_form": True,
+            context = {
                 "form_titles": self.titles,
                 "steps": self.steps,
                 "visited": self.storage.get("step_history", []),
                 "is_federal": self.domain_request.is_federal(),
-                "modal_button": modal_button,
-                "modal_heading": "Your request form is incomplete",
-                "modal_description": 'This request cannot be submitted yet.\
-                Return to the request and visit the steps that are marked as "incomplete."',
                 "review_form_is_complete": False,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
             }
-
-        # Hides the requests and domains buttons in the navbar
-        context_stuff["hide_requests"] = self.is_portfolio
-        context_stuff["hide_domains"] = self.is_portfolio
-
-        return context_stuff
+        context["domain_request_id"] = self.domain_request.id
+        return context
 
     def get_step_list(self) -> list:
         """Dynamically generated list of steps in the form wizard."""
         return request_step_list(self, self.get_step_enum())
 
     def goto(self, step):
-        if step == "generic_org_type" or step == "portfolio_requesting_entity":
-            # We need to avoid creating a new domain request if the user
-            # clicks the back button
-            self.request.session["new_request"] = False
         self.steps.current = step
-        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}"))
+        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"id": self.domain_request.id}))
 
     def goto_next_step(self):
         """Redirects to the next step."""
@@ -531,9 +501,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
-
-        if "new_request" not in request.session:
-            request.session["new_request"] = True
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
@@ -572,9 +539,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     def handle_intro_acknowledge(self, request):
         """If we are starting a new request, clear storage
         and redirect to the first step"""
-        if request.path_info == self.NEW_URL_NAME:
-            if self.request.session["new_request"] is True:
-                del self.storage
         return self.goto(self.steps.first)
 
     def save(self, forms: list):
@@ -638,7 +602,7 @@ class RequestingEntity(DomainRequestWizard):
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
-    forms = [forms.AnythingElseForm]
+    forms = [forms.PortfolioAnythingElseForm]
 
 
 # Non-portfolio pages

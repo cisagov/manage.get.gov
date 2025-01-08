@@ -1,0 +1,53 @@
+@use "uswds-core" as *;
+
+// Finer grained letterspacing adjustments
+$letter-space--xs: .0125em;
+
+p,
+address, 
+.usa-list li { 
+  @include typeset('sans', 'sm', 5); 
+  max-width: measure(5);
+}
+
+h1 {
+  @include typeset('sans', '2xl', 2);
+  margin: 0 0 units(2);
+  color: color('primary-darker');
+}
+
+h2 {
+  font-weight: font-weight('semibold');
+  line-height: line-height('heading', 3);
+  margin: units(4) 0 units(1);
+  color: color('primary-darker');
+}
+
+.header--body {
+  margin-top: units(2);
+  font-weight: font-weight('semibold');
+  // The units mixin can only get us close, so it's between 
+  // hardcoding the value and using in markup
+  font-size: 16.96px;
+}
+
+.h4--sm-05 {
+  font-size: size('body', 'sm');
+  font-weight: normal;
+  color: color('primary');
+  margin-bottom: units(0.5);
+}
+
+// Normalize typography in forms
+.usa-form,
+.usa-form fieldset {
+  font-size: 1rem;
+  .usa-legend {
+    font-size: 1rem;
+  }
+}
+
+.p--blockquote {
+  padding-left: units(1);
+  border-left: 2px solid color('base-lighter');
+}

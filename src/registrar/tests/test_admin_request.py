@@ -1,5 +1,7 @@
 from datetime import datetime
+from django.forms import ValidationError
 from django.utils import timezone
+from waffle.testutils import override_flag
 import re
 from django.test import RequestFactory, Client, TestCase, override_settings
 from django.contrib.admin.sites import AdminSite
@@ -24,7 +26,10 @@ from registrar.models import (
     SeniorOfficial,
     Portfolio,
     AllowedEmail,
+    Suborganization,
 )
+from registrar.models.host import Host
+from registrar.models.public_contact import PublicContact
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -36,7 +41,7 @@ from .common import (
     MockEppLib,
     GenericTestHelper,
 )
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -76,12 +81,15 @@ class TestDomainRequestAdmin(MockEppLib):
 
     def tearDown(self):
         super().tearDown()
+        Host.objects.all().delete()
+        PublicContact.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         Contact.objects.all().delete()
         Website.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+        Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
         self.mock_client.EMAILS_SENT.clear()
 
@@ -90,6 +98,83 @@ class TestDomainRequestAdmin(MockEppLib):
         super().tearDownClass()
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
+
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    def test_clean_validates_duplicate_suborganization(self):
+        """Tests that clean() prevents duplicate suborganization names within the same portfolio"""
+        # Create a portfolio and existing suborganization
+        portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
+        # Create an existing suborganization
+        Suborganization.objects.create(name="Existing Suborg", portfolio=portfolio)
+
+        # Create a domain request trying to use the same suborganization name
+        # (intentionally lowercase)
+        domain_request = completed_domain_request(
+            name="test1234.gov",
+            portfolio=portfolio,
+            requested_suborganization="existing suborg",
+            suborganization_city="Rome",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.OHIO,
+        )
+
+        # Assert that the validation error is raised
+        with self.assertRaises(ValidationError) as err:
+            domain_request.clean()
+
+        self.assertIn("This suborganization already exists", str(err.exception))
+
+        # Test that a different name is allowed. Should not raise a error.
+        domain_request.requested_suborganization = "New Suborg"
+        domain_request.clean()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_clean_validates_partial_suborganization_fields(self):
+        """Tests that clean() enforces all-or-nothing rule for suborganization fields"""
+        portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+
+        # Create domain request with only city filled out
+        domain_request = completed_domain_request(
+            name="test1234.gov",
+            portfolio=portfolio,
+            suborganization_city="Test City",
+        )
+
+        # Assert validation error is raised with correct missing fields
+        with self.assertRaises(ValidationError) as err:
+            domain_request.clean()
+
+        error_dict = err.exception.error_dict
+        expected_missing = ["requested_suborganization", "suborganization_state_territory"]
+
+        # Verify correct fields are flagged as required
+        self.assertEqual(sorted(error_dict.keys()), sorted(expected_missing))
+
+        # Verify error message
+        for field in expected_missing:
+            self.assertEqual(
+                str(error_dict[field][0].message), "This field is required when creating a new suborganization."
+            )
+
+        # When all data is passed in, this should validate correctly
+        domain_request.requested_suborganization = "Complete Suborg"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.OHIO
+        # Assert that no ValidationError is raised
+        try:
+            domain_request.clean()
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised unexpectedly: {e}")
+
+        # Also ensure that no validation error is raised if nothing is passed in at all
+        domain_request.suborganization_city = None
+        domain_request.requested_suborganization = None
+        domain_request.suborganization_state_territory = None
+        try:
+            domain_request.clean()
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised unexpectedly: {e}")
 
     @less_console_noise_decorator
     def test_domain_request_senior_official_is_alphabetically_sorted(self):
@@ -203,7 +288,7 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.save()
 
         domain_request.action_needed()
-        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
+        domain_request.action_needed_reason = DomainRequest.ActionNeededReasons.ALREADY_HAS_A_DOMAIN
         domain_request.save()
 
         # Let's just change the action needed reason
@@ -230,7 +315,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "In review",
             "Rejected - Purpose requirements not met",
             "Action needed - Unclear organization eligibility",
-            "Action needed - Already has domains",
+            "Action needed - Already has a domain",
             "In review",
             "Submitted",
             "Started",
@@ -241,7 +326,7 @@ class TestDomainRequestAdmin(MockEppLib):
         assert_status_count(normalized_content, "Started", 1)
         assert_status_count(normalized_content, "Submitted", 1)
         assert_status_count(normalized_content, "In review", 2)
-        assert_status_count(normalized_content, "Action needed - Already has domains", 1)
+        assert_status_count(normalized_content, "Action needed - Already has a domain", 1)
         assert_status_count(normalized_content, "Action needed - Unclear organization eligibility", 1)
         assert_status_count(normalized_content, "Rejected - Purpose requirements not met", 1)
 
@@ -576,9 +661,9 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=51)
+        self.assertContains(response, "Federal", count=55)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">federal</td>', count=1)
+        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -685,9 +770,9 @@ class TestDomainRequestAdmin(MockEppLib):
         # Create a sample domain request
         domain_request = completed_domain_request(status=in_review, user=_creator)
 
-        # Test the email sent out for already_has_domains
-        already_has_domains = DomainRequest.ActionNeededReasons.ALREADY_HAS_DOMAINS
-        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_domains)
+        # Test the email sent out for already_has_a_domain
+        already_has_a_domain = DomainRequest.ActionNeededReasons.ALREADY_HAS_A_DOMAIN
+        self.transition_state_and_send_email(domain_request, action_needed, action_needed_reason=already_has_a_domain)
 
         self.assert_email_is_accurate("ORGANIZATION ALREADY HAS A .GOV DOMAIN", 0, EMAIL, bcc_email_address=BCC_EMAIL)
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
@@ -1526,7 +1611,9 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_response_contains_distinct_values(response, expected_other_employees_fields)
 
         # Test for the copy link
-        self.assertContains(response, "copy-to-clipboard", count=4)
+        # We expect 5 in the form + 2 from the js module copy-to-clipboard.js
+        # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
+        self.assertContains(response, "copy-to-clipboard", count=7)
 
         # Test that Creator counts display properly
         self.assertNotContains(response, "Approved domains")
@@ -1626,6 +1713,17 @@ class TestDomainRequestAdmin(MockEppLib):
         readonly_fields = self.admin.get_readonly_fields(request, domain_request)
 
         expected_fields = [
+            "portfolio_senior_official",
+            "portfolio_organization_type",
+            "portfolio_federal_type",
+            "portfolio_organization_name",
+            "portfolio_federal_agency",
+            "portfolio_state_territory",
+            "portfolio_address_line1",
+            "portfolio_address_line2",
+            "portfolio_city",
+            "portfolio_zipcode",
+            "portfolio_urbanization",
             "other_contacts",
             "current_websites",
             "alternative_domains",
@@ -1680,7 +1778,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "notes",
             "alternative_domains",
         ]
-        self.maxDiff = None
         self.assertEqual(readonly_fields, expected_fields)
 
     def test_readonly_fields_for_analyst(self):
@@ -1689,8 +1786,18 @@ class TestDomainRequestAdmin(MockEppLib):
             request.user = self.staffuser
 
             readonly_fields = self.admin.get_readonly_fields(request)
-            self.maxDiff = None
             expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
@@ -1709,9 +1816,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "cisa_representative_first_name",
                 "cisa_representative_last_name",
                 "cisa_representative_email",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
             ]
             self.assertEqual(readonly_fields, expected_fields)
 
@@ -1723,6 +1827,17 @@ class TestDomainRequestAdmin(MockEppLib):
             readonly_fields = self.admin.get_readonly_fields(request)
 
             expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
@@ -1776,6 +1891,37 @@ class TestDomainRequestAdmin(MockEppLib):
                 mock_warning.assert_called_once_with(
                     request,
                     "Cannot edit a domain request with a restricted creator.",
+                )
+
+    @less_console_noise_decorator
+    def test_approved_domain_request_with_ready_domain_has_warning_message(self):
+        """Tests if the domain request has a warning message when the approved domain is in Ready state"""
+        # Create an instance of the model
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
+        # Approve the domain request
+        domain_request.approve()
+        domain_request.save()
+
+        # Add nameservers to get to Ready state
+        domain_request.approved_domain.nameservers = [
+            ("ns1.city.gov", ["1.1.1.1"]),
+            ("ns2.city.gov", ["1.1.1.2"]),
+        ]
+        domain_request.approved_domain.save()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            with patch("django.contrib.messages.warning") as mock_warning:
+                # Create a request object
+                self.client.force_login(self.superuser)
+                self.client.get(
+                    "/admin/registrar/domainrequest/{}/change/".format(domain_request.pk),
+                    follow=True,
+                )
+
+                # Assert that the error message was called with the correct argument
+                mock_warning.assert_called_once_with(
+                    ANY,  # don't care about the request argument
+                    f"The status of this domain request cannot be changed because it has been joined to a domain in Ready status: <a href='/admin/registrar/domain/{domain_request.approved_domain.id}/change/'>{domain_request.approved_domain.name}</a>",  # noqa
                 )
 
     def trigger_saving_approved_to_another_state(self, domain_is_active, another_state, rejection_reason=None):
@@ -1934,6 +2080,7 @@ class TestDomainRequestAdmin(MockEppLib):
             # Grab the current list of table filters
             readonly_fields = self.admin.get_list_filter(request)
             expected_fields = (
+                DomainRequestAdmin.PortfolioFilter,
                 DomainRequestAdmin.StatusListFilter,
                 DomainRequestAdmin.GenericOrgFilter,
                 DomainRequestAdmin.FederalTypeFilter,

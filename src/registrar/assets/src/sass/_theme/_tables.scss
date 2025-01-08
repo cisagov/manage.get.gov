@@ -1,0 +1,101 @@
+@use "uswds-core" as *;
+
+td,
+th {
+  vertical-align: top;
+}
+
+.dotgov-table--stacked {
+  td, th {
+    padding: units(1) units(2) units(2px) 0;
+    border: none;
+  }
+
+  tr:first-child th:first-child {
+    border-top: none;
+  }
+
+  tr {
+    border-bottom: none;
+    border-top: 2px solid color('base-lighter');
+    margin-top: units(2);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  td[data-label]:before,
+  th[data-label]:before {
+    color: color('primary-darker');
+    padding-bottom: units(2px);
+  }
+
+  td .no-click-outline-and-cursor-help {
+    cursor: help;
+    use {
+      // USWDS has weird interactions with SVGs regarding tooltips,
+      // and other components. In this event, we need to disable pointer interactions.
+      pointer-events: none;
+    }
+  }
+}
+
+.dotgov-table {
+  width: 100%;
+
+  tbody th {
+    word-break: break-word;
+  }
+
+  @include at-media(mobile-lg) {
+
+    margin-top: units(1);
+
+    tr {
+      border: none;
+    }
+
+    tr:not(.hide-td-borders) {
+      td, th {
+        border-bottom: 1px solid color('base-lighter');
+      }
+    }
+
+    thead th {
+      color: color('primary-darker');
+      border-bottom: 2px solid color('base-light');
+    }
+
+    tbody tr:last-of-type {
+      td, th {
+        border-bottom: 0;
+      }
+    }
+
+    td, th {
+      padding: units(2) units(4) units(2) 0;
+    }
+
+    // Hack fix to the overly specific selector above that broke utility class usefulness
+    .padding-right-105 {
+      padding-right: .75rem;
+    }
+
+    thead tr:first-child th:first-child {
+      border-top: none;
+    }
+  }
+
+  @include at-media(tablet-lg) {
+    th[data-sortable] .usa-table__header__button {
+      right: auto;
+  
+      &[aria-sort=ascending],
+      &[aria-sort=descending],
+      &:not([aria-sort]) {
+        right: auto;
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView, TemplateView
+from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
 from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
@@ -16,6 +16,7 @@ from .mixins import (
     PortfolioDomainRequestsPermission,
     PortfolioDomainsPermission,
     PortfolioMemberDomainsPermission,
+    PortfolioMemberDomainsEditPermission,
     PortfolioMemberEditPermission,
     UserDeleteDomainRolePermission,
     UserProfilePermission,
@@ -156,17 +157,11 @@ class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateV
         raise NotImplementedError
 
 
-class DomainInvitationPermissionDeleteView(DomainInvitationPermission, DeleteView, abc.ABC):
-    """Abstract view for deleting a domain invitation.
-
-    This one is fairly specialized, but this is the only thing that we do
-    right now with domain invitations. We still have the full
-    `DomainInvitationPermission` class, but here we just pair it with a
-    DeleteView.
-    """
+class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
+    """Abstract view for cancelling a DomainInvitation."""
 
     model = DomainInvitation
-    object: DomainInvitation  # workaround for type mismatch in DeleteView
+    object: DomainInvitation
 
 
 class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
@@ -281,6 +276,16 @@ class PortfolioMemberEditPermissionView(PortfolioMemberEditPermission, Portfolio
 
 class PortfolioMemberDomainsPermissionView(PortfolioMemberDomainsPermission, PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for portfolio member domains views that enforces permissions.
+
+    This abstract view cannot be instantiated. Actual views must specify
+    `template_name`.
+    """
+
+
+class PortfolioMemberDomainsEditPermissionView(
+    PortfolioMemberDomainsEditPermission, PortfolioBasePermissionView, abc.ABC
+):
+    """Abstract base view for portfolio member domains edit views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.

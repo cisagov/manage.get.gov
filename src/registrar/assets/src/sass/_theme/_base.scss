@@ -1,0 +1,284 @@
+@use "uswds-core" as *;
+@use "cisa_colors" as *;
+
+$widescreen-max-width: 1920px;
+$widescreen-x-padding: 4.5rem;
+
+$hot-pink: #FFC3F9;
+
+/* Styles for making visible to screen reader / AT users only. */
+.sr-only {
+  @include sr-only;
+}
+
+.clear-both {
+  clear: both;
+}
+ 
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+ 
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+ 
+#wrapper {
+  flex-grow: 1;
+  padding-top: units(3);
+  padding-bottom: units(6) * 2 ; //Workaround because USWDS units jump from 10 to 15
+}
+
+#wrapper.wrapper--padding-top-6 {
+  padding-top: units(6);
+}
+
+#wrapper.dashboard {
+  background-color: color('primary-lightest');
+  padding-top: units(5)!important;
+}
+
+#wrapper.dashboard--grey-1,
+.bg-gray-1 {
+  background-color: color('gray-1');
+}
+
+
+.section-outlined {
+  background-color: color('white');
+  border: 1px solid color('base-lighter');
+  border-radius: 4px;
+  padding: 0 units(4) units(3) units(2);
+  margin-top: units(3);
+
+  &.margin-top-0 {
+    margin-top: 0;
+  }
+
+  h2 {
+    color: color('primary-dark');
+    margin-top: units(2);
+    margin-bottom: units(2);
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+
+  @include at-media(mobile-lg) {
+    margin-top: units(5);
+
+    &.margin-top-0 {
+      margin-top: 0;
+    }
+
+    h2 {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.section-outlined--border-base-light {
+  border: 1px solid color('base-light');
+}
+
+.section-outlined__header--no-portfolio {
+  .section-outlined__search,
+  .section-outlined__utility-button {
+    margin-top: units(2);
+  }
+
+  @include at-media(tablet) {
+    display: flex;
+    column-gap: units(3);
+
+    .section-outlined__search,
+    .section-outlined__utility-button {
+      margin-top: 0;
+    }
+    .section-outlined__search {
+      flex-grow: 4;
+      // Align right
+      max-width: 383px;
+      margin-left: auto;
+    }
+  }
+}
+
+/*
+This is a hack to keep the "Export" button on Domain Requests page inline
+with the searchbar in widescreen mode. 
+
+EXPLANATION:  The existing frontend implementation puts the searchbar and export
+button in two separate columns in a grid, which creates a solid wrap-around effect
+for mobile devices.  The searchbar had a max-width that exactly equaled the max width
+of its parent column (for non-widescreens), so there wasn't any issue at this time of 
+implementation.
+However, during immplementation of widescreen mode this small max-width caused the searchbar to
+no longer fill its parent grid column for larger screen sizes, creating a visual gap between 
+it and the adjacent export button.  To fix this, we will limit the width of the first 
+grid column to the max-width of the searchbar, which was calculated to be 33rem.
+*/
+.section-outlined__search--widescreen {
+  max-width: 33rem;
+}
+
+.break-word {
+  word-break: break-word;
+}
+
+.dotgov-status-box {
+  background-color: color('primary-lightest'); 
+  border-color: color('accent-cool-lighter');
+}
+
+.dotgov-status-box--action-need {
+  background-color: color('warning-lighter'); 
+  border-color: color('warning');
+}
+
+footer {
+  border-top: 1px solid color('primary-darker');
+}
+
+.usa-footer__secondary-section {
+  background-color: color('primary-lightest');
+}
+
+.usa-footer__secondary-section a {
+  color: color('primary');
+}
+
+.usa-radio {
+  margin-top: 1rem;
+  font-size: 1.06rem;
+}
+
+abbr[title] {
+  // workaround for underlining abbr element
+  border-bottom: none;
+  text-decoration: none;
+}
+
+@include at-media(tablet) {
+  .float-right-tablet {
+      float: right;
+  }
+  .float-left-tablet {
+     float: left;
+  }
+}
+
+.visible-desktop {
+  display: none;
+}
+
+@include at-media(desktop) {
+  .float-right-desktop {
+     float: right;
+  }
+  .float-left-desktop {
+     float: left;
+  }
+  .visible-desktop {
+    display: block;
+  }
+}
+
+.hidden-mobile-flex {
+  display: none!important;
+}
+.visible-mobile-flex {
+  display: flex!important;
+}
+
+@include at-media(tablet) {
+  .hidden-mobile-flex {
+    display: flex!important;
+  }
+  .visible-mobile-flex {
+    display: none!important;
+  }
+}
+
+
+.flex-end {
+  align-items: flex-end;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.padding--8-8-9 {
+  padding: 8px 8px 9px !important;
+}
+
+.ellipsis {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ellipsis--23 {
+  max-width: 23ch;
+}
+
+.ellipsis--30 {
+  max-width: 30ch;
+}
+
+.ellipsis--50 {
+  max-width: 50ch;
+}
+
+.vertical-align-middle {
+  vertical-align: middle;
+}
+
+@include at-media(desktop) {
+  .ellipsis--desktop-50 {
+    max-width: 50ch;
+  }
+}
+
+// Boost this USWDS utility class for the accordions in the portfolio requests table
+.left-auto {
+  left: auto!important;
+}
+
+.usa-banner__inner--widescreen  {
+  max-width: $widescreen-max-width;
+}
+
+// This is used in cases where we want to align content to widescreen margins
+// but we don't want the content itself to have widescreen widths
+@include at-media(desktop) {
+  .padding-x--widescreen {
+    padding-left: $widescreen-x-padding !important;
+    padding-right: $widescreen-x-padding !important;
+  }
+}
+
+.margin-right-neg-4px {
+  margin-right: -4px;
+}
+
+.break-word {
+  word-break: break-word;
+}
+
+//Icon size adjustment used by buttons and form errors
+.usa-icon.usa-icon--large {
+  margin: 0;
+  height: 1.5em;
+  width: 1.5em;
+}
+
+.maxw-fit-content {
+  max-width: fit-content;
+}

@@ -1,7 +1,6 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Value, F, CharField, TextField, Q, Case, When, OuterRef, Subquery
-from django.db.models.expressions import Func
 from django.db.models.functions import Cast, Coalesce, Concat
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
@@ -12,6 +11,8 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.utility.mixins import PortfolioMembersPermission
+from registrar.models.utility.orm_helper import ArrayRemoveNull
+from django.contrib.postgres.aggregates import StringAgg
 
 
 class PortfolioMembersJson(PortfolioMembersPermission, View):
@@ -100,7 +101,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
                         user__permissions__domain__domain_info__portfolio=portfolio
                     ),  # only include domains in portfolio
                 ),
-                source=Value("permission", output_field=CharField()),
+                type=Value("member", output_field=CharField()),
             )
             .values(
                 "id",
@@ -112,18 +113,29 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
                 "additional_permissions_display",
                 "member_display",
                 "domain_info",
-                "source",
+                "type",
             )
         )
         return permissions
 
     def initial_invitations_search(self, portfolio):
         """Perform initial invitations search and get related DomainInvitation data based on the email."""
-        # Get DomainInvitation query for matching email and for the portfolio
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
-            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField()))
+
+        # Subquery to get concatenated domain information for each email
+        domain_invitations = (
+            DomainInvitation.objects.filter(email=OuterRef("email"), domain__domain_info__portfolio=portfolio)
+            .annotate(
+                concatenated_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
+            )
+            .values("concatenated_info")
+        )
+
+        concatenated_domain_info = (
+            domain_invitations.values("email")
+            .annotate(domain_info=StringAgg("concatenated_info", delimiter=", "))
+            .values("domain_info")
+        )
+
         # PortfolioInvitation query
         invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
         invitations = invitations.annotate(
@@ -134,13 +146,18 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             additional_permissions_display=F("additional_permissions"),
             member_display=F("email"),
             # Use ArrayRemove to return an empty list when no domain invitations are found
-            domain_info=ArrayRemove(
+            domain_info=ArrayRemoveNull(
                 ArrayAgg(
-                    Subquery(domain_invitations.values("domain_info")),
+                    # We've pre-concatenated the domain infos to limit the subquery to return a single virtual 'row',
+                    # otherwise we'll trigger a "more than one row returned by a subquery used as an expression"
+                    # when an email matches multiple domain invitations.
+                    # We'll take care when processing the list of one single concatenated items item
+                    # in serialize_members.
+                    Subquery(concatenated_domain_info),
                     distinct=True,
                 )
             ),
-            source=Value("invitation", output_field=CharField()),
+            type=Value("invitedmember", output_field=CharField()),
         ).values(
             "id",
             "first_name",
@@ -151,8 +168,9 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "additional_permissions_display",
             "member_display",
             "domain_info",
-            "source",
+            "type",
         )
+
         return invitations
 
     def apply_search_term(self, queryset, request):
@@ -188,12 +206,21 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
         view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
 
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
-        action_url = reverse("member" if item["source"] == "permission" else "invitedmember", kwargs={"pk": item["id"]})
+        action_url = reverse(item["type"], kwargs={"pk": item["id"]})
+
+        item_type = item.get("type", "")
+
+        # Ensure domain_info is properly processed for invites -
+        # we need to un-concatenate the subquery
+        domain_info_list = item.get("domain_info", [])
+        if item_type == "invitedmember" and isinstance(domain_info_list, list) and domain_info_list:
+            # Split the first item in the list if it exists
+            domain_info_list = domain_info_list[0].split(", ")
 
         # Serialize member data
         member_json = {
-            "id": item.get("id", ""),
-            "source": item.get("source", ""),
+            "id": item.get("id", ""),  # id is id of UserPortfolioPermission or PortfolioInvitation
+            "type": item_type,  # source is member or invitedmember
             "name": " ".join(filter(None, [item.get("first_name", ""), item.get("last_name", "")])),
             "email": item.get("email_display", ""),
             "member_display": item.get("member_display", ""),
@@ -203,9 +230,9 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             ),
             # split domain_info array values into ids to form urls, and names
             "domain_urls": [
-                reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in item.get("domain_info")
+                reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in domain_info_list
             ],
-            "domain_names": [domain_info.split(":")[1] for domain_info in item.get("domain_info")],
+            "domain_names": [domain_info.split(":")[1] for domain_info in domain_info_list],
             "is_admin": is_admin,
             "last_active": item.get("last_active"),
             "action_url": action_url,
@@ -213,9 +240,3 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             "svg_icon": ("visibility" if view_only else "settings"),
         }
         return member_json
-
-
-# Custom Func to use array_remove to remove null values
-class ArrayRemove(Func):
-    function = "array_remove"
-    template = "%(function)s(%(expressions)s, NULL)"

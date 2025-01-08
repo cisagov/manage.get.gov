@@ -11,8 +11,9 @@ from .domain import (
     DomainSecurityEmailView,
     DomainUsersView,
     DomainAddUserView,
-    DomainInvitationDeleteView,
+    DomainInvitationCancelView,
     DomainDeleteUserView,
+    PrototypeDomainDNSRecordView,
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *
