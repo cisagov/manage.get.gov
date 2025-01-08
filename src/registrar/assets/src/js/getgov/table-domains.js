@@ -1,4 +1,5 @@
 import { BaseTable } from './table-base.js';
+import { uswdsInitializeTooltips } from './helpers-uswds.js';
 
 export class DomainsTable extends BaseTable {
 
@@ -65,6 +66,9 @@ export class DomainsTable extends BaseTable {
       </td>
     `;
     tbody.appendChild(row);
+  }
+  initializeTooltips() {
+    uswdsInitializeTooltips();
   }
 }
 
