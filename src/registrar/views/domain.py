@@ -12,11 +12,11 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-from registrar.forms.domain import DomainSuborganizationForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -364,30 +364,33 @@ class DomainRenewalView(DomainBaseView):
         self._update_session_with_domain()
 
     def post(self, request, pk):
-        domain = Domain.objects.filter(id=pk).first()
+        domain = get_object_or_404(Domain, id=pk)
 
-        # Check if the checkbox is checked
-        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", None)
-        if is_policy_acknowledged != "on":
-            messages.error(
-                request, "Check the box if you read and agree to the requirements for operating a .gov domain."
-            )
-            return render(
-                request,
-                "domain_renewal.html",
-                {
-                    "domain": domain,
-                    "form": request.POST,
-                },
-            )
+        form = DomainRenewalForm(request.POST)
 
-        if "submit_button" in request.POST:
-            try:
-                domain.renew_domain()
-                messages.success(request, "This domain has been renewed for one year.")
-            except Exception as e:
-                messages.error(request, "This domain has not been renewed for one year, error was %s" % e)
-        return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
+        if form.is_valid():
+            # check for key in the post request data
+            if "submit_button" in request.POST:
+                try:
+                    domain.renew_domain()
+                    messages.success(request, "This domain has been renewed for one year.")
+                except Exception:
+                    messages.error(
+                        request,
+                        "This domain has not been renewed for one year, "
+                        "please email help@get.gov if this problem persists.",
+                    )
+            return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
+
+        # if not valid, render the template with error messages
+        return render(
+            request,
+            "domain_renewal.html",
+            {
+                "domain": domain,
+                "form": form,
+            },
+        )
 
 
 class DomainOrgNameAddressView(DomainFormBaseView):

@@ -130,23 +130,4 @@ domain = Domain.objects.get_or_create(name="<that-domain-here>")
 10. Add yourself as domain manager
 11. Go to the Registrar page and you should now see the expiring domain
 
-If you want to be in the org model mode, turn the `organization_feature` waffle flag on, and add that domain via Django Admin to a portfolio to be able to view it. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+If you want to be in the org model mode, turn the `organization_feature` waffle flag on, and add that domain via Django Admin to a portfolio to be able to view it.

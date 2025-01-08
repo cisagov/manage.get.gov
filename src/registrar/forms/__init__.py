@@ -10,6 +10,7 @@ from .domain import (
     DomainDsdataFormset,
     DomainDsdataForm,
     DomainSuborganizationForm,
+    DomainRenewalForm,
 )
 from .portfolio import (
     PortfolioOrgAddressForm,
