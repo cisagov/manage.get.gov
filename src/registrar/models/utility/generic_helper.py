@@ -345,7 +345,7 @@ def value_of_attribute(obj, attribute_name: str):
     return value
 
 
-def normalize_string(string_to_normalize: str, lowercase=True) -> str:
+def normalize_string(string_to_normalize, lowercase=True):
     """Normalizes a given string. Returns a string without extra spaces, in all lowercase."""
     if not isinstance(string_to_normalize, str):
         logger.error(f"normalize_string => {string_to_normalize} is not type str.")
