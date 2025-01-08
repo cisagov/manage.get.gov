@@ -464,7 +464,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     def custom_is_expired_true(self):
         return True
-    
+
     def custom_is_expiring(self):
         return True
 
@@ -570,12 +570,12 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f"Renew {self.domaintorenew.name}")
-    
+
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_and_sidebar_expired(self):
-        
+
         self.client.force_login(self.user)
-     
+
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
             Domain, "is_expired", self.custom_is_expired_true
         ):
