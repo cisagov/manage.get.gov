@@ -1424,7 +1424,6 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Create an agency wih no federal type (can only be created via specifiying it manually)
         self.federal_agency = FederalAgency.objects.create(agency="Test Federal Agency")
-        self.federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane")
 
         # And create some with federal_type ones with creative names
         self.executive_agency_1 = FederalAgency.objects.create(
@@ -1518,8 +1517,13 @@ class TestCreateFederalPortfolio(TestCase):
             call_command("create_federal_portfolio", **kwargs)
 
     @less_console_noise_decorator
-    def test_handle_portfolio_requests_sync_federal_agency(self):
-        """Test that federal agency is cleared when org name matches portfolio name"""
+    def test_post_process_started_domain_requests_existing_portfolio(self):
+        """Ensures that federal agency is cleared when agency name matches portfolio name.
+        As the name implies, this implicitly tests the "post_process_started_domain_requests" function.
+        """
+        federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
+
+        # Test records with portfolios and no org names
         # Create a portfolio. This script skips over "started"
         portfolio = Portfolio.objects.create(organization_name="Sugarcane", creator=self.user)
         # Create a domain request with matching org name
@@ -1527,7 +1531,7 @@ class TestCreateFederalPortfolio(TestCase):
             name="matching.gov",
             status=DomainRequest.DomainRequestStatus.STARTED,
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            federal_agency=self.federal_agency_2,
+            federal_agency=federal_agency_2,
             user=self.user,
             portfolio=portfolio,
         )
@@ -1557,6 +1561,44 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(matching_request_in_wrong_status.federal_agency, self.federal_agency)
         self.assertIsNotNone(matching_request_in_wrong_status.portfolio)
         self.assertEqual(matching_request_in_wrong_status.portfolio.organization_name, "Test Federal Agency")
+
+    @less_console_noise_decorator
+    def test_post_process_started_domain_requests(self):
+        """Tests that federal agency is cleared when agency name
+        matches an existing portfolio's name, even if the domain request isn't
+        directly on that portfolio."""
+
+        federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
+
+        # Create a request with matching federal_agency name but no direct portfolio association
+        matching_agency_request = completed_domain_request(
+            name="agency-match.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=federal_agency_2,
+            user=self.user,
+        )
+
+        # Create a control request that shouldn't match
+        non_matching_request = completed_domain_request(
+            name="no-match.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+            user=self.user,
+        )
+
+        # We expect the matching agency to have its fed agency cleared.
+        self.run_create_federal_portfolio(agency_name="Sugarcane", parse_requests=True)
+        matching_agency_request.refresh_from_db()
+        non_matching_request.refresh_from_db()
+
+        # Request with matching agency name should have federal_agency cleared
+        self.assertIsNone(matching_agency_request.federal_agency)
+
+        # Non-matching request should keep its federal_agency
+        self.assertIsNotNone(non_matching_request.federal_agency)
+        self.assertEqual(non_matching_request.federal_agency, self.federal_agency)
 
     @less_console_noise_decorator
     def test_create_single_portfolio(self):

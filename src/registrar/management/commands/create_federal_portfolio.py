@@ -79,7 +79,7 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
-        portfolio_set = set()
+        portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
@@ -87,7 +87,7 @@ class Command(BaseCommand):
                 # C901 'Command.handle' is too complex (12)
                 # We currently only grab the list of changed domain requests, but we may want to grab the domains too
                 portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
-                portfolio_set.add(portfolio)
+                portfolios.append(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -106,9 +106,14 @@ class Command(BaseCommand):
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
         if parse_requests:
-            self.post_process_started_domain_requests(portfolio_set)
+            TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=True,
+                prompt_message="This action will update domain requests even if they aren't on a portfolio.",
+                prompt_title="Do you want to clear federal agency on started domain requests?",
+            )
+            self.post_process_started_domain_requests(agencies, portfolios)
 
-    def post_process_started_domain_requests(self, portfolio_set):
+    def post_process_started_domain_requests(self, agencies, portfolios):
         """
         Removes duplicate organization data by clearing federal_agency when it matches the portfolio name.
         Only processes domain requests in STARTED status.
@@ -116,15 +121,24 @@ class Command(BaseCommand):
         message = "Removing duplicate portfolio and federal_agency values from domain requests..."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
+        # For each request, clear the federal agency under these conditions:
+        # 1. A portfolio *already exists* with the same name as the federal agency.
+        # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
+        # 3. The domain request is in status "started".
+        # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
         domain_requests_to_update = DomainRequest.objects.filter(
-            portfolio__in=portfolio_set,
-            status=DomainRequest.DomainRequestStatus.STARTED,
+            federal_agency__in=agencies,
             federal_agency__agency__isnull=False,
-            portfolio__organization_name__isnull=False,
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            organization_name__isnull=False,
         )
+        portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
+
+        # Update the request, assuming the given agency name matches the portfolio name
         updated_requests = []
         for req in domain_requests_to_update:
-            if normalize_string(req.federal_agency.agency) == normalize_string(req.portfolio.organization_name):
+            agency_name = normalize_string(req.federal_agency.agency)
+            if agency_name in portfolio_set:
                 req.federal_agency = None
                 updated_requests.append(req)
         DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
@@ -140,8 +154,6 @@ class Command(BaseCommand):
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations.
-
-        Returns the processed portfolio
         """
         portfolio, created = self.create_portfolio(federal_agency)
         if created:
