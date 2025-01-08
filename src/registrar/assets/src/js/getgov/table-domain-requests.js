@@ -53,7 +53,7 @@ export class DomainRequestsTable extends BaseTable {
     this.toggleExportButton(data.domain_requests);
 
     let needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-    return { 'needsAdditionalColumn': needsDeleteColumn };
+    return { 'isDeletable': needsDeleteColumn };
   }
 
   addRow(dataObject, tbody, customTableOptions) {
@@ -71,11 +71,8 @@ export class DomainRequestsTable extends BaseTable {
 
     let markupCreatorRow = '';
     
-    // Forces columns of the domain request and domain tables to align in non-org views
-    let columnWidthLimiterClass = 'width-quarter';
 
     if (this.portfolioValue) {
-      columnWidthLimiterClass = '';
       markupCreatorRow = `
         <td>
             <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
@@ -119,15 +116,15 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td class="${columnWidthLimiterClass}">
-        <div class="grid-row grid-gap">
-          <a href="${actionUrl}">
+      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
+        <div class="tablet:display-flex tablet:flex-row">
+          <a href="${actionUrl}" ${customTableOptions.isDeletable ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
             </svg>
             ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
           </a>
-          ${customTableOptions.needsAdditionalColumn ? modalTrigger : ''}
+          ${customTableOptions.isDeletable ? modalTrigger : ''}
         </div>
       </td>
     `;

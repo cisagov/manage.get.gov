@@ -23,12 +23,8 @@ export class DomainsTable extends BaseTable {
     const row = document.createElement('tr');
 
     let markupForSuborganizationRow = '';
-    
-    // Forces columns of the domain request and domain tables to align in non-org views
-    let columnWidthLimiterClass = 'width-quarter';
 
     if (this.portfolioValue) {
-      columnWidthLimiterClass = ''
       markupForSuborganizationRow = `
         <td>
             <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
@@ -59,7 +55,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td class="${columnWidthLimiterClass}">
+      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
         <a href="${actionUrl}">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
