@@ -63,13 +63,13 @@
       {% endif %}
     {% endif %}
 
-    <!-- <div class="custom-renewal-heading"> -->
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% endif %}
+
     {% url 'domain-users' pk=domain.id as url %}
     {% if portfolio %}
       {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}

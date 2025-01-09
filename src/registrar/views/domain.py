@@ -320,13 +320,14 @@ class DomainRenewalView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+
         context["hidden_security_emails"] = default_emails
 
         security_email = self.object.get_security_email()
-        user = self.request.user
         if security_email is None or security_email in default_emails:
             context["security_email"] = None
-        context["user"] = user
+            return context
+        context["security_email"] = security_email
         return context
 
     def can_access_domain_via_portfolio(self, pk):
