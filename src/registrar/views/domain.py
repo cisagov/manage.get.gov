@@ -1168,9 +1168,10 @@ class DomainAddUserView(DomainFormBaseView):
 
         member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
+            # COMMENT: this code does not take into account multiple portfolios flag being set to TRUE
+
             # determine portfolio of the domain (code currently is looking at requestor's portfolio)
             # if requested_email/user is not member or invited member of this portfolio
-            # COMMENT: this code does not take into account multiple portfolios flag
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view

@@ -28,7 +28,7 @@ def get_org_membership(requestor_org, requested_email, requested_user):
     Returns a tuple (member_of_a_different_org, member_of_this_org).
     """
 
-    # COMMENT: this code does not take into account multiple portfolios flag
+    # COMMENT: this code does not take into account when multiple portfolios flag is set to true
 
     # COMMENT: shouldn't this code be based on the organization of the domain, not the org
     # of the requestor? requestor could have multiple portfolios
