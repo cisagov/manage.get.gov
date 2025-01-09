@@ -159,6 +159,7 @@ class Command(BaseCommand):
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations.
+        Returns the portfolio for the given federal_agency.
         """
         portfolio, created = self.create_portfolio(federal_agency)
         if created:
