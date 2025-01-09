@@ -35,7 +35,6 @@ def send_domain_invitation_email(email: str, requestor, domains: Domain | list[D
         OutsideOrgMemberError: If the requested_user is part of a different organization.
         EmailSendingError: If there is an error while sending the email.
     """
-    print('send_domain_invitation_email')
     # Normalize domains
     if isinstance(domains, Domain):
         domains = [domains]
@@ -88,7 +87,6 @@ def send_domain_invitation_email(email: str, requestor, domains: Domain | list[D
             },
         )
     except EmailSendingError as err:
-        print('point of failure test')
         domain_names = ", ".join([domain.name for domain in domains])
         raise EmailSendingError(
             f"Could not send email invitation to {email} for domains: {domain_names}"
