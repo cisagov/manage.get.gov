@@ -1,4 +1,5 @@
 import copy
+from io import StringIO
 import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
@@ -32,7 +33,7 @@ import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
-from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient
+from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient, MockDbForIndividualTests
 from api.tests.common import less_console_noise_decorator
 
 
@@ -1731,3 +1732,159 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
+
+    def test_post_process_suborganization_fields(self):
+        """Test suborganization field updates from domain and request data.
+        Also tests the priority order for updating city and state_territory:
+        1. Domain information fields
+        2. Domain request suborganization fields
+        3. Domain request standard fields
+        """
+        # Create test data with different field combinations
+        self.domain_info.organization_name = "super"
+        self.domain_info.city = "Domain City "
+        self.domain_info.state_territory = "NY"
+        self.domain_info.save()
+
+        self.domain_request_2.organization_name = "super"
+        self.domain_request.suborganization_city = "Request Suborg City"
+        self.domain_request.suborganization_state_territory = "CA"
+        self.domain_request.city = "Request City"
+        self.domain_request.state_territory = "TX"
+        self.domain_request.save()
+
+        # Create another request/info pair without domain info data
+        self.domain_info_2.organization_name = "creative"
+        self.domain_info_2.city = None
+        self.domain_info_2.state_territory = None
+        self.domain_info_2.save()
+
+        self.domain_request_2.organization_name = "creative"
+        self.domain_request_2.suborganization_city = "Second Suborg City"
+        self.domain_request_2.suborganization_state_territory = "WA"
+        self.domain_request_2.city = "Second City"
+        self.domain_request_2.state_territory = "OR"
+        self.domain_request_2.save()
+
+        # Create a third request/info pair without suborg data
+        self.domain_info_3.organization_name = "names"
+        self.domain_info_3.city = None
+        self.domain_info_3.state_territory = None
+        self.domain_info_3.save()
+
+        self.domain_request_3.organization_name = "names"
+        self.domain_request_3.suborganization_city = None
+        self.domain_request_3.suborganization_state_territory = None
+        self.domain_request_3.city = "Third City"
+        self.domain_request_3.state_territory = "FL"
+        self.domain_request_3.save()
+
+        # Test running the script with both, and just with parse_requests
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True, parse_domains=True)
+        self.run_create_federal_portfolio(
+            agency_name="Executive Agency 1",
+            parse_requests=True,
+        )
+
+        self.domain_info.refresh_from_db()
+        self.domain_request.refresh_from_db()
+        self.domain_info_2.refresh_from_db()
+        self.domain_request_2.refresh_from_db()
+        self.domain_info_3.refresh_from_db()
+        self.domain_request_3.refresh_from_db()
+
+        # Verify suborganizations were created with correct field values
+        # Should use domain info values
+        suborg_1 = Suborganization.objects.get(name=self.domain_info.organization_name)
+        self.assertEqual(suborg_1.city, "Domain City")
+        self.assertEqual(suborg_1.state_territory, "NY")
+
+        # Should use domain request suborg values
+        suborg_2 = Suborganization.objects.get(name=self.domain_info_2.organization_name)
+        self.assertEqual(suborg_2.city, "Second Suborg City")
+        self.assertEqual(suborg_2.state_territory, "WA")
+
+        # Should use domain request standard values
+        suborg_3 = Suborganization.objects.get(name=self.domain_info_3.organization_name)
+        self.assertEqual(suborg_3.city, "Third City")
+        self.assertEqual(suborg_3.state_territory, "FL")
+
+
+class TestPatchSuborganizations(MockDbForIndividualTests):
+    """Tests for the patch_suborganizations management command."""
+
+    @less_console_noise_decorator
+    def run_patch_suborganizations(self):
+        """Helper method to run the patch_suborganizations command."""
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+            return_value=True,
+        ):
+            call_command("patch_suborganizations")
+
+    @less_console_noise_decorator
+    def test_space_and_case_duplicates(self):
+        """Test cleaning up duplicates that differ by spaces and case.
+
+        Should keep the version with:
+        1. Fewest spaces
+        2. Most leading capitals
+        """
+        Suborganization.objects.create(name="Test Organization ", portfolio=self.portfolio_1)
+        Suborganization.objects.create(name="test organization", portfolio=self.portfolio_1)
+        Suborganization.objects.create(name="Test Organization", portfolio=self.portfolio_1)
+
+        # Create an unrelated record to test that it doesn't get deleted, too
+        Suborganization.objects.create(name="unrelated org", portfolio=self.portfolio_1)
+        self.run_patch_suborganizations()
+        self.assertEqual(Suborganization.objects.count(), 2)
+        self.assertEqual(Suborganization.objects.filter(name__in=["unrelated org", "Test Organization"]).count(), 2)
+
+    @less_console_noise_decorator
+    def test_hardcoded_record(self):
+        """Tests that our hardcoded records update as we expect them to"""
+        # Create orgs with old and new name formats
+        old_name = "USDA/OC"
+        new_name = "USDA, Office of Communications"
+
+        Suborganization.objects.create(name=old_name, portfolio=self.portfolio_1)
+        Suborganization.objects.create(name=new_name, portfolio=self.portfolio_1)
+
+        self.run_patch_suborganizations()
+
+        # Verify only the new one remains
+        self.assertEqual(Suborganization.objects.count(), 1)
+        remaining = Suborganization.objects.first()
+        self.assertEqual(remaining.name, new_name)
+
+    @less_console_noise_decorator
+    def test_reference_updates(self):
+        """Test that references are updated on domain info and domain request before deletion."""
+        # Create suborganizations
+        keep_org = Suborganization.objects.create(name="Test Organization", portfolio=self.portfolio_1)
+        delete_org = Suborganization.objects.create(name="test organization ", portfolio=self.portfolio_1)
+        unrelated_org = Suborganization.objects.create(name="awesome", portfolio=self.portfolio_1)
+
+        # We expect these references to update
+        self.domain_request_1.sub_organization = delete_org
+        self.domain_information_1.sub_organization = delete_org
+        self.domain_request_1.save()
+        self.domain_information_1.save()
+
+        # But not these ones
+        self.domain_request_2.sub_organization = unrelated_org
+        self.domain_information_2.sub_organization = unrelated_org
+        self.domain_request_2.save()
+        self.domain_information_2.save()
+
+        self.run_patch_suborganizations()
+
+        self.domain_request_1.refresh_from_db()
+        self.domain_information_1.refresh_from_db()
+        self.domain_request_2.refresh_from_db()
+        self.domain_information_2.refresh_from_db()
+
+        self.assertEqual(self.domain_request_1.sub_organization, keep_org)
+        self.assertEqual(self.domain_information_1.sub_organization, keep_org)
+        self.assertEqual(self.domain_request_2.sub_organization, unrelated_org)
+        self.assertEqual(self.domain_information_2.sub_organization, unrelated_org)

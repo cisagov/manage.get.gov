@@ -355,7 +355,7 @@ def normalize_string(string_to_normalize, lowercase=True):
     return new_string.lower() if lowercase else new_string
 
 
-def count_capitals(text: str, leading_only: bool): 
+def count_capitals(text: str, leading_only: bool):
     """Counts capital letters in a string.
     Args:
         text (str): The string to analyze.

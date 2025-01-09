@@ -19,12 +19,12 @@ class Command(BaseCommand):
         # For extra_records_to_prune: the key gets deleted, the value gets kept.
         extra_records_to_prune = {
             normalize_string("Assistant Secretary for Preparedness and Response Office of the Secretary"): {
-                "keep": "Assistant Secretary for Preparedness and Response, Office of the Secretary"
+                "replace_with": "Assistant Secretary for Preparedness and Response, Office of the Secretary"
             },
-            normalize_string("US Geological Survey"): {"keep": "U.S. Geological Survey"},
-            normalize_string("USDA/OC"): {"keep": "USDA, Office of Communications"},
-            normalize_string("GSA, IC, OGP WebPortfolio"): {"keep": "GSA, IC, OGP Web Portfolio"},
-            normalize_string("USDA/ARS/NAL"): {"keep": "USDA, ARS, NAL"},
+            normalize_string("US Geological Survey"): {"replace_with": "U.S. Geological Survey"},
+            normalize_string("USDA/OC"): {"replace_with": "USDA, Office of Communications"},
+            normalize_string("GSA, IC, OGP WebPortfolio"): {"replace_with": "GSA, IC, OGP Web Portfolio"},
+            normalize_string("USDA/ARS/NAL"): {"replace_with": "USDA, ARS, NAL"},
         }
 
         # First: Group all suborganization names by their "normalized" names (finding duplicates).
@@ -61,8 +61,8 @@ class Command(BaseCommand):
             if normalized_name in extra_records_to_prune:
                 # The 'keep' field expects a Suborganization but we just pass in a string, so this is just a workaround.
                 # This assumes that there is only one item in the name_group array (see usda/oc example). Should be fine, given our data.
-                hardcoded_record_name = extra_records_to_prune[normalized_name]["keep"]
-                name_group = name_groups.get(normalized_name(hardcoded_record_name), [])
+                hardcoded_record_name = extra_records_to_prune[normalized_name]["replace_with"]
+                name_group = name_groups.get(normalize_string(hardcoded_record_name))
                 keep = name_group[0] if name_group else None
                 records_to_prune[normalized_name] = {"keep": keep, "delete": duplicate_suborgs}
             # Delete duplicates (extra spaces or casing differences)
