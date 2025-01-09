@@ -2211,7 +2211,8 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_post_with_valid_removed_domains(self):
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_with_valid_removed_domains(self, mock_send_domain_email):
         """Test that domains can be successfully removed."""
         self.client.force_login(self.user)
 
@@ -2233,6 +2234,8 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        # assert that send_domain_invitation_email is not called
+        mock_send_domain_email.assert_not_called()
 
         UserDomainRole.objects.all().delete()
 
@@ -2299,6 +2302,29 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "No changes detected.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_when_send_domain_email_raises_exception(self, mock_send_domain_email):
+        """Test attempt to add new domains when an EmailSendingError raised."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs for the attempted add
+        }
+        mock_send_domain_email.side_effect = EmailSendingError("Failed to send email")
+        response = self.client.post(self.url, data)
+
+        # Check that the UserDomainRole objects were not created
+        self.assertEqual(UserDomainRole.objects.filter(user=self.user, role=UserDomainRole.Roles.MANAGER).count(), 0)
+
+        # Check for an error message and a redirect to edit form
+        self.assertRedirects(response, reverse("member-domains-edit", kwargs={"pk": self.portfolio_permission.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.")
 
 
 class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
@@ -2412,7 +2438,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_domain_invitation_email")
-    def test_post_with_existing_and_new_added_domains(self, mock_send_domain_email):
+    def test_post_with_existing_and_new_added_domains(self, _):
         """Test updating existing and adding new invitations."""
         self.client.force_login(self.user)
 
@@ -2452,7 +2478,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_post_with_valid_removed_domains(self):
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_with_valid_removed_domains(self, mock_send_domain_email):
         """Test removing domains successfully."""
         self.client.force_login(self.user)
 
@@ -2487,6 +2514,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
 
         # Check for a success message and a redirect
         self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
+        # assert that send_domain_invitation_email is not called
+        mock_send_domain_email.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2551,6 +2580,34 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "No changes detected.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_when_send_domain_email_raises_exception(self, mock_send_domain_email):
+        """Test attempt to add new domains when an EmailSendingError raised."""
+        self.client.force_login(self.user)
+
+        data = {
+            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs for the attempted add
+        }
+        mock_send_domain_email.side_effect = EmailSendingError("Failed to send email")
+        response = self.client.post(self.url, data)
+
+        # Check that the DomainInvitation objects were not created
+        self.assertEqual(
+            DomainInvitation.objects.filter(
+                email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+            ).count(),
+            0,
+        )
+
+        # Check for an error message and a redirect to edit form
+        self.assertRedirects(response, reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.pk}))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.")
 
 
 class TestRequestingEntity(WebTest):
