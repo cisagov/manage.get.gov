@@ -759,7 +759,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email invitation.")
+        self.assertContains(success_page, "Failed to send email.")
 
     @boto3_mocking.patching
     @less_console_noise_decorator

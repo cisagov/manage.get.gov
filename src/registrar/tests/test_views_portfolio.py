@@ -2402,16 +2402,17 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         # Verify that the invitation email was sent
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
-        self.assertEqual(call_args["email"], "info@example.com")
+        self.assertEqual(call_args["email"], "invited@example.com")
         self.assertEqual(call_args["requestor"], self.user)
         self.assertEqual(list(call_args["domains"]), list(expected_domains))
-        self.assertIsNone(call_args.get("is_member_of_different_org"))
+        self.assertFalse(call_args.get("is_member_of_different_org"))
 
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_post_with_existing_and_new_added_domains(self):
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_with_existing_and_new_added_domains(self, mock_send_domain_email):
         """Test updating existing and adding new invitations."""
         self.client.force_login(self.user)
 
