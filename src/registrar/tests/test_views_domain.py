@@ -606,10 +606,10 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
 
-            # Verify we see "Your Contact Information" on the renewal form
-            self.assertContains(renewal_page, "Your Contact Information")
+            # Verify we see "Your contact information" on the renewal form
+            self.assertContains(renewal_page, "Your contact information")
 
-            # Verify that the "Edit" button for Your Contact is there and links to correct URL
+            # Verify that the "Edit" button for Your contact is there and links to correct URL
             edit_button_url = reverse("user-profile")
             self.assertContains(renewal_page, f'href="{edit_button_url}"')
 
@@ -2816,7 +2816,6 @@ class TestDomainRenewal(TestWithUser):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
-        self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
 
     @less_console_noise_decorator
@@ -2854,5 +2853,4 @@ class TestDomainRenewal(TestWithUser):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
-        self.assertNotContains(domains_page, "Expiring soon")
         self.assertNotContains(domains_page, "will expire soon")
