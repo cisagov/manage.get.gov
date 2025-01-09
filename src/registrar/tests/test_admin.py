@@ -69,7 +69,7 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 
-from unittest.mock import ANY, patch, Mock
+from unittest.mock import ANY, call, patch, Mock
 from django.forms import ValidationError
 
 
@@ -143,6 +143,7 @@ class TestDomainInvitationAdmin(TestCase):
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
+        PortfolioInvitation.objects.all().delete()
         DomainInvitation.objects.all().delete()
         DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
@@ -194,14 +195,255 @@ class TestDomainInvitationAdmin(TestCase):
             self.assertContains(response, retrieved_html, count=1)
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_save_model_user_exists(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists.
+    def test_add_domain_invitation_success_when_user_not_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member.
 
-        Should attempt to retrieve the domain invitation."""
-        # Create a user with the same email
+        Should send out domain and portfolio invites.
+        Should trigger success messages for both email sends.
+        Should attempt to retrieve the domain invitation.
+        Should attempt to retrieve the portfolio invitation."""
+
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
+
+        # Assert success message
+        mock_messages_success.assert_has_calls([
+            call(request, "test@example.com has been invited to the organization: new portfolio"),
+            call(request, "test@example.com has been invited to the domain: example.com"),
+        ])
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
+        self.assertEqual(PortfolioInvitation.objects.first().email, "test@example.com")
+
+        # Assert invitations were retrieved
+        domain_invitation = DomainInvitation.objects.get(email=user.email, domain=self.domain)
+        portfolio_invitation = PortfolioInvitation.objects.get(email=user.email, portfolio=self.portfolio)
+
+        self.assertEqual(domain_invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.first().user, user)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.first().user, user)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=False)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_organization_feature_off(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and organization_feature flag is off.
+
+        Should send out a domain invitation.
+        Should not send a out portfolio invitation.
+        Should trigger success message for the domain invitation.
+        Should retrieve the domain invitation.
+        Should not create a portfolio invitation."""
+        
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain but not portfolio
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert correct invite was created
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "test@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the domain invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+        # Assert the domain invitation was retrieved
+        domain_invitation = DomainInvitation.objects.get(email=user.email, domain=self.domain)
+
+        self.assertEqual(domain_invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.first().user, user)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("multiple_portfolios", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_multiple_portfolio_feature_on(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and multiple_portfolio flag is on.
+
+        Should send out a domain invitation.
+        Should not send a out portfolio invitation.
+        Should trigger success message for the domain invitation.
+        Should retrieve the domain invitation.
+        Should not create a portfolio invitation."""
+        
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain but not portfolio
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert correct invite was created
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "test@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the domain invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+        # Assert the domain invitation was retrieved
+        domain_invitation = DomainInvitation.objects.get(email=user.email, domain=self.domain)
+
+        self.assertEqual(domain_invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.first().user, user)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_user_existing_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and a portfolio invitation exists.
+
+        Should send out domain invitation only.
+        Should trigger success message for the domain invitation.
+        Should retrieve the domain invitation."""
+
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        UserPortfolioPermission.objects.create(user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_not_called
+
+        # Assert retrieve was not called
+        domain_invitation_mock_retrieve.assert_called_once()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "test@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+    
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_portfolio_email(self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending portfolio email exception.
+
+        Should only attempt to send the portfolio invitation.
+        Should trigger error message on portfolio invitation.
+        Should not attempt to retrieve the domain invitation."""
+
+        mock_send_portfolio_email.side_effect = MissingEmailError("craving a burger")
+
         User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
@@ -213,25 +455,172 @@ class TestDomainInvitationAdmin(TestCase):
         request = self.factory.post("/admin/registrar/DomainInvitation/add/")
         request.user = self.superuser
 
-        # Patch the retrieve method
-        with patch.object(DomainInvitation, "retrieve") as mock_retrieve:
-            admin_instance.save_model(request, invitation, form=None, change=False)
+       # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
 
-        # Assert retrieve was called
-        mock_retrieve.assert_called_once()
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_not_called()
+        mock_send_portfolio_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
 
-        # Assert the invitation was saved
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_save_model_user_does_not_exist(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+
+        Should send out the portfolio invitation and attempt to send the domain invitation.
+        Should trigger portfolio invitation success message.
+        Should trigger domain invitation error message.
+        Should not attempt to retrieve the domain invitation.
+        Should attempt to retrieve the portfolio invitation."""
+
+        mock_send_domain_email.side_effect = MissingEmailError("craving a burger")
+
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_called_once()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "test@example.com has been invited to the organization: new portfolio"
+        )
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_existing_portfolio_member_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+
+        Should send out the portfolio invitation and attempt to send the domain invitation.
+        Should trigger portfolio invitation success message.
+        Should trigger domain invitation error message.
+        Should not attempt to retrieve the domain invitation.
+        Should attempt to retrieve the portfolio invitation."""
+
+        mock_send_domain_email.side_effect = MissingEmailError("craving a burger")
+
+        user = User.objects.create_user(email="test@example.com", username="username")
+
+        UserPortfolioPermission.objects.create(
+            user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="test@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_not_called()
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_email_not_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
         """Test saving a domain invitation when the user does not exist.
 
-        Should not attempt to retrieve the domain invitation."""
+        Should send out domain and portfolio invitations.
+        Should trigger success messages.
+        Should not attempt to retrieve the domain invitation.
+        Should not attempt to retrieve the portfolio invitation."""
         # Create a domain invitation instance
         invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
 
@@ -242,15 +631,370 @@ class TestDomainInvitationAdmin(TestCase):
         request.user = self.superuser
 
         # Patch the retrieve method to ensure it is not called
-        with patch.object(DomainInvitation, "retrieve") as mock_retrieve:
-            admin_instance.save_model(request, invitation, form=None, change=False)
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
 
         # Assert retrieve was not called
-        mock_retrieve.assert_not_called()
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
 
-        # Assert the invitation was saved
+        # Assert success message
+        mock_messages_success.assert_has_calls([
+            call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+            call(request, "nonexistent@example.com has been invited to the domain: example.com"),
+        ])
+
+        # Assert the invitations were saved
         self.assertEqual(DomainInvitation.objects.count(), 1)
         self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
+        self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=False)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_organization_feature_off(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user does not exist and organization_feature flag is off.
+
+        Should send out a domain invitation.
+        Should not send a out portfolio invitation.
+        Should trigger success message for domain invitation.
+        Should not retrieve the domain invitation.
+        Should not create a portfolio invitation."""
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain but not portfolio
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "nonexistent@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the domain invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("multiple_portfolios", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_multiple_portfolio_feature_on(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user does not exist and multiple_portfolio flag is on.
+
+        Should send out a domain invitation.
+        Should not send a out portfolio invitation.
+        Should trigger success message for domain invitation.
+        Should not retrieve the domain invitation.
+        Should not create a portfolio invitation."""
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain but not portfolio
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "nonexistent@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the domain invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_add_domain_invitation_success_when_email_existing_portfolio_invitation(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user does not exist and a portfolio invitation exists.
+
+        Should send out domain invitation only.
+        Should trigger success message for the domain invitation.
+        Should not attempt to retrieve the domain invitation.
+        Should not attempt to retrieve the portfolio invitation."""
+
+        PortfolioInvitation.objects.create(email="nonexistent@example.com", portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=False,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_not_called
+
+        # Assert retrieve was not called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "nonexistent@example.com has been invited to the domain: example.com"
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
+        self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_portfolio_email(self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending portfolio email exception.
+
+        Should only attempt to send the portfolio invitation.
+        Should trigger error message on portfolio invitation.
+        Should not attempt to retrieve the domain invitation.
+        Should not attempt to retrieve the portfolio invitation."""
+
+        mock_send_portfolio_email.side_effect = MissingEmailError("craving a burger")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+       # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_not_called()
+        mock_send_portfolio_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+
+        Should send out the portfolio invitation and attempt to send the domain invitation.
+        Should trigger portfolio invitation success message.
+        Should trigger domain invitation error message.
+        Should not attempt to retrieve the domain invitation.
+        Should attempt to retrieve the portfolio invitation."""
+
+        mock_send_domain_email.side_effect = MissingEmailError("craving a burger")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+        )
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_called_once_with(
+            request, "nonexistent@example.com has been invited to the organization: new portfolio"
+        )
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    @patch("django.contrib.messages.error")
+    def test_add_domain_invitation_when_user_existing_portfolio_email_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+
+        Should send out the portfolio invitation and attempt to send the domain invitation.
+        Should trigger portfolio invitation success message.
+        Should trigger domain invitation error message.
+        Should not attempt to retrieve the domain invitation.
+        Should attempt to retrieve the portfolio invitation."""
+
+        mock_send_domain_email.side_effect = MissingEmailError("craving a burger")
+
+        PortfolioInvitation.objects.create(
+            email="nonexistent@example.com", portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
+            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+                admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert sends appropriate emails - domain and portfolio invites
+        mock_send_domain_email.assert_called_once_with(
+            email="nonexistent@example.com",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=False,
+            requested_user=None,
+        )
+        mock_send_portfolio_email.assert_not_called()
+
+        # Assert retrieve on domain invite only was called
+        domain_invitation_mock_retrieve.assert_not_called()
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+        # Assert success message
+        mock_messages_success.assert_not_called()
+
+        # Assert error message
+        mock_messages_error.assert_called_once_with(
+            request, "Can't send invitation email. No email is associated with your user account."
+        )
+
+        # Assert the invitations were saved
+        self.assertEqual(DomainInvitation.objects.count(), 0)
+        self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
 
 class TestUserPortfolioPermissionAdmin(TestCase):
@@ -387,6 +1131,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         Contact.objects.all().delete()
+        User.objects.all().delete()
 
     @classmethod
     def tearDownClass(self):
@@ -543,34 +1288,32 @@ class TestPortfolioInvitationAdmin(TestCase):
     @less_console_noise_decorator
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
-        with less_console_noise():
-            self.client.force_login(self.superuser)
+        self.client.force_login(self.superuser)
 
-            response = self.client.get(
-                "/admin/registrar/portfolioinvitation/",
-                {},
-                follow=True,
-            )
+        response = self.client.get(
+            "/admin/registrar/portfolioinvitation/",
+            {},
+            follow=True,
+        )
 
-            # Assert that the filters are added
-            self.assertContains(response, "invited", count=4)
-            self.assertContains(response, "Invited", count=2)
-            self.assertContains(response, "retrieved", count=2)
-            self.assertContains(response, "Retrieved", count=2)
+        # Assert that the filters are added
+        self.assertContains(response, "invited", count=4)
+        self.assertContains(response, "Invited", count=2)
+        self.assertContains(response, "retrieved", count=2)
+        self.assertContains(response, "Retrieved", count=2)
 
-            # Check for the HTML context specificially
-            invited_html = '<a href="?status__exact=invited">Invited</a>'
-            retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
+        # Check for the HTML context specificially
+        invited_html = '<a href="?status__exact=invited">Invited</a>'
+        retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
 
-            self.assertContains(response, invited_html, count=1)
-            self.assertContains(response, retrieved_html, count=1)
+        self.assertContains(response, invited_html, count=1)
+        self.assertContains(response, retrieved_html, count=1)
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
-    def test_save_sends_email(self, mock_messages_warning, mock_send_email):
-        """On save_model, an email is NOT sent if an invitation already exists."""
-        self.client.force_login(self.superuser)
+    def test_save_sends_email(self, mock_messages_success, mock_send_email):
+        """On save_model, an email is sent if an invitation already exists."""
 
         # Create an instance of the admin class
         admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
@@ -589,7 +1332,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
-        # Assert that send_portfolio_invitation_email is not called
+        # Assert that send_portfolio_invitation_email is called
         mock_send_email.assert_called()
 
         # Get the arguments passed to send_portfolio_invitation_email
@@ -601,7 +1344,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_warning.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -640,6 +1383,90 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
+    def test_add_portfolio_invitation_auto_retrieves_invitation_when_user_exists(self, mock_messages_success, mock_send_email):
+        """On save_model, we create and retrieve a portfolio invitation if the user exists."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        User.objects.create_user(email="james.gordon@gotham.gov", username="username")
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+            admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that send_portfolio_invitation_email is called
+        mock_send_email.assert_called()
+
+        # Get the arguments passed to send_portfolio_invitation_email
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert that a warning message was triggered
+        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+
+        # The invitation is not retrieved
+        portfolio_invitation_mock_retrieve.assert_called_once()
+        
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
+    def test_add_portfolio_invitation_does_not_retrieve_invitation_when_no_user(self, mock_messages_success, mock_send_email):
+        """On save_model, we create but do not retrieve a portfolio invitation if the user does not exist."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Create a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request.user = self.superuser
+
+        # Call the save_model method
+        with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
+            admin_instance.save_model(request, portfolio_invitation, None, None)
+
+        # Assert that send_portfolio_invitation_email is called
+        mock_send_email.assert_called()
+
+        # Get the arguments passed to send_portfolio_invitation_email
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert that a warning message was triggered
+        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+
+        # The invitation is not retrieved
+        portfolio_invitation_mock_retrieve.assert_not_called()
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")  # Mock the `messages.error` call
     def test_save_exception_email_sending_error(self, mock_messages_error, mock_send_email):
         """Handle EmailSendingError correctly when sending the portfolio invitation fails."""
@@ -667,7 +1494,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(
-            request, "Could not send email invitation. Portfolio invitation not saved."
+            request, "Email service unavailable"
         )
 
     @less_console_noise_decorator
@@ -705,7 +1532,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.error")  # Mock the `messages.error` call
+    @patch("django.contrib.messages.warning")  # Mock the `messages.error` call
     def test_save_exception_generic_error(self, mock_messages_error, mock_send_email):
         """Handle generic exceptions correctly during portfolio invitation."""
         self.client.force_login(self.superuser)
@@ -732,7 +1559,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(
-            request, "Could not send email invitation. Portfolio invitation not saved."
+            request, "Could not send email invitation."
         )
 
 
