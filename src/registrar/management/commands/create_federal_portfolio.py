@@ -61,26 +61,10 @@ class Command(BaseCommand):
         parse_domains = options.get("parse_domains")
         both = options.get("both")
 
-        if not both:
-            if not parse_requests and not parse_domains:
-                raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
-        else:
-            if parse_requests or parse_domains:
-                raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
-
-        federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
-        agencies = FederalAgency.objects.filter(**federal_agency_filter)
-        if not agencies or agencies.count() < 1:
-            if agency_name:
-                raise CommandError(
-                    f"Cannot find the federal agency '{agency_name}' in our database. "
-                    "The value you enter for `agency_name` must be "
-                    "prepopulated in the FederalAgency table before proceeding."
-                )
-            else:
-                raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
-
         # C901 'Command.handle' is too complex (12)
+        self.validate_parse_options(parse_requests, parse_domains, both)
+
+        agencies = self.get_agencies(agency_name, branch)
         self.handle_all_populate_portfolio(agencies, parse_domains, parse_requests, both)
         TerminalHelper.log_script_run_summary(
             self.updated_portfolios,
@@ -90,6 +74,32 @@ class Command(BaseCommand):
             skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
             display_as_str=True,
         )
+
+    def validate_parse_options(self, parse_requests, parse_domains, both):
+        """Validates parse options. Raises a CommandError if invalid."""
+        if not both:
+            if not parse_requests and not parse_domains:
+                raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
+        else:
+            if parse_requests or parse_domains:
+                raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
+
+    def get_agencies(self, agency_name, branch):
+        """Get federal agencies based on command options. Raises a CommandError if invalid."""
+        federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
+        agencies = FederalAgency.objects.filter(**federal_agency_filter)
+
+        if not agencies.exists():
+            if agency_name:
+                raise CommandError(
+                    f"Cannot find the federal agency '{agency_name}' in our database. "
+                    "The value you enter for `agency_name` must be "
+                    "prepopulated in the FederalAgency table before proceeding."
+                )
+            else:
+                raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
+
+        return agencies
 
     def handle_all_populate_portfolio(self, agencies, parse_domains, parse_requests, both):
         """Loops through every agency and creates a portfolio for each.
