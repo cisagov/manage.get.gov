@@ -60,7 +60,8 @@ class Command(BaseCommand):
             # Delete data from our preset list
             if normalized_name in extra_records_to_prune:
                 # The 'keep' field expects a Suborganization but we just pass in a string, so this is just a workaround.
-                # This assumes that there is only one item in the name_group array (see usda/oc example). Should be fine, given our data.
+                # This assumes that there is only one item in the name_group array (see usda/oc example).
+                # But this should be fine, given our data.
                 hardcoded_record_name = extra_records_to_prune[normalized_name]["replace_with"]
                 name_group = name_groups.get(normalize_string(hardcoded_record_name))
                 keep = name_group[0] if name_group else None

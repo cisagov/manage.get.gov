@@ -1,5 +1,4 @@
 import copy
-from io import StringIO
 import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
@@ -1746,7 +1745,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.domain_info.state_territory = "NY"
         self.domain_info.save()
 
-        self.domain_request_2.organization_name = "super"
+        self.domain_request.organization_name = "super"
         self.domain_request.suborganization_city = "Request Suborg City"
         self.domain_request.suborganization_state_territory = "CA"
         self.domain_request.city = "Request City"

@@ -80,6 +80,22 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
+        # C901 'Command.handle' is too complex (12)
+        self.handle_all_populate_portfolio(agencies, parse_domains, parse_requests, both)
+        TerminalHelper.log_script_run_summary(
+            self.updated_portfolios,
+            self.failed_portfolios,
+            self.skipped_portfolios,
+            debug=False,
+            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
+            display_as_str=True,
+        )
+
+    def handle_all_populate_portfolio(self, agencies, parse_domains, parse_requests, both):
+        """Loops through every agency and creates a portfolio for each.
+        For a given portfolio, it adds suborgs, and associates
+        the suborg and portfolio to domains and domain requests.
+        """
         all_suborganizations = []
         all_domains = []
         all_domain_requests = []
@@ -87,13 +103,19 @@ class Command(BaseCommand):
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
-                # C901 'Command.handle' is too complex (12)
-                suborgs, domains, requests = self.handle_populate_portfolio(
-                    federal_agency, parse_domains, parse_requests, both
-                )
-                all_suborganizations.extend(suborgs)
+                portfolio, created = self.create_portfolio(federal_agency)
+                suborganizations = self.create_suborganizations(portfolio, federal_agency)
+                domains = []
+                domain_requests = []
+                if created and parse_domains or both:
+                    domains = self.handle_portfolio_domains(portfolio, federal_agency)
+
+                if parse_requests or both:
+                    domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
+
+                all_suborganizations.extend(suborganizations)
                 all_domains.extend(domains)
-                all_domain_requests.extend(requests)
+                all_domain_requests.extend(domain_requests)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -106,88 +128,6 @@ class Command(BaseCommand):
             self.post_process_suborganization_fields(all_suborganizations, all_domains, all_domain_requests)
             message = f"Added city and state_territory information to {len(all_suborganizations)} suborgs."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
-        TerminalHelper.log_script_run_summary(
-            self.updated_portfolios,
-            self.failed_portfolios,
-            self.skipped_portfolios,
-            debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
-            display_as_str=True,
-        )
-
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
-        """Attempts to create a portfolio. If successful, this function will
-        also create new suborganizations"""
-        portfolio, created = self.create_portfolio(federal_agency)
-        suborganizations = self.create_suborganizations(portfolio, federal_agency)
-        domains = []
-        domain_requests = []
-        if created:
-            if parse_domains or both:
-                domains = self.handle_portfolio_domains(portfolio, federal_agency)
-
-        if parse_requests or both:
-            domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
-
-        return suborganizations, domains, domain_requests
-
-    def post_process_suborganization_fields(self, suborganizations, domains, requests):
-        """Post-process suborganization fields by pulling data from related domains and requests.
-
-        This function updates suborganization city and state_territory fields based on
-        related domain information and domain request information.
-        """
-
-        # Exclude domains and requests where the org name is the same,
-        # and where we are missing some crucial information.
-        domains = DomainInformation.objects.filter(id__in=[domain.id for domain in domains]).exclude(
-            portfolio__isnull=True,
-            organization_name__isnull=True,
-            sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name"),
-        )
-        domains_dict = {domain.organization_name: domain for domain in domains}
-
-        requests = DomainRequest.objects.filter(id__in=[request.id for request in requests]).exclude(
-            portfolio__isnull=True,
-            organization_name__isnull=True,
-            sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name"),
-        )
-        requests_dict = {request.organization_name: request for request in requests}
-
-        for suborg in suborganizations:
-            domain = domains_dict.get(suborg.name, None)
-            request = requests_dict.get(suborg.name, None)
-
-            # PRIORITY:
-            # 1. Domain info
-            # 2. Domain request requested suborg fields
-            # 3. Domain request normal fields
-            city = None
-            if domain and domain.city:
-                city = normalize_string(domain.city, lowercase=False)
-            elif request and request.suborganization_city:
-                city = normalize_string(request.suborganization_city, lowercase=False)
-            elif request and request.city:
-                city = normalize_string(request.city, lowercase=False)
-
-            state_territory = None
-            if domain and domain.state_territory:
-                state_territory = domain.state_territory
-            elif request and request.suborganization_state_territory:
-                state_territory = request.suborganization_state_territory
-            elif request and request.state_territory:
-                state_territory = request.state_territory
-
-            if city:
-                suborg.city = city
-
-            if suborg:
-                suborg.state_territory = state_territory
-
-        Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -278,6 +218,7 @@ class Command(BaseCommand):
             )
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
+
         return new_suborgs
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
@@ -285,14 +226,14 @@ class Command(BaseCommand):
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
         """
+        invalid_states = [
+            DomainRequest.DomainRequestStatus.STARTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.REJECTED,
+        ]
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
-            status__in=[
-                DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.INELIGIBLE,
-                DomainRequest.DomainRequestStatus.REJECTED,
-            ]
+            status__in=invalid_states
         )
-
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
@@ -346,3 +287,56 @@ class Command(BaseCommand):
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
         return domain_infos
+
+    def post_process_suborganization_fields(self, suborganizations, domains, requests):
+        """Post-process suborganization fields by pulling data from related domains and requests.
+
+        This function updates suborganization city and state_territory fields based on
+        related domain information and domain request information.
+        """
+        domains = DomainInformation.objects.filter(id__in=[domain.id for domain in domains]).exclude(
+            portfolio__isnull=True,
+            organization_name__isnull=True,
+            sub_organization__isnull=True,
+            organization_name__iexact=F("portfolio__organization_name"),
+        )
+        requests = DomainRequest.objects.filter(id__in=[request.id for request in requests]).exclude(
+            portfolio__isnull=True,
+            organization_name__isnull=True,
+            sub_organization__isnull=True,
+            organization_name__iexact=F("portfolio__organization_name"),
+        )
+        domains_dict = {domain.organization_name: domain for domain in domains}
+        requests_dict = {request.organization_name: request for request in requests}
+
+        for suborg in suborganizations:
+            domain = domains_dict.get(suborg.name, None)
+            request = requests_dict.get(suborg.name, None)
+
+            # PRIORITY:
+            # 1. Domain info
+            # 2. Domain request requested suborg fields
+            # 3. Domain request normal fields
+            city = None
+            if domain and domain.city:
+                city = normalize_string(domain.city, lowercase=False)
+            elif request and request.suborganization_city:
+                city = normalize_string(request.suborganization_city, lowercase=False)
+            elif request and request.city:
+                city = normalize_string(request.city, lowercase=False)
+
+            state_territory = None
+            if domain and domain.state_territory:
+                state_territory = domain.state_territory
+            elif request and request.suborganization_state_territory:
+                state_territory = request.suborganization_state_territory
+            elif request and request.state_territory:
+                state_territory = request.state_territory
+
+            if city:
+                suborg.city = city
+
+            if suborg:
+                suborg.state_territory = state_territory
+
+        Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
