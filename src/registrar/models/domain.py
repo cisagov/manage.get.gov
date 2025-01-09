@@ -1575,7 +1575,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
 
-    def get_state_help_text(self) -> str:
+    def get_state_help_text(self, request=None) -> str:
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
@@ -1585,7 +1585,7 @@ class Domain(TimeStampedModel, DomainHelper):
             help_text = (
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
-        elif flag_is_active(self, "domain_renewal") and self.is_expiring():
+        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
             help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
         else:
             help_text = Domain.State.get_help_text(self.state)
