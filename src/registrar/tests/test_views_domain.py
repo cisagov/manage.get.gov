@@ -564,6 +564,8 @@ class TestDomainManagers(TestDomainOverview):
     def tearDown(self):
         """Ensure that the user has its original permissions"""
         PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -651,21 +653,74 @@ class TestDomainManagers(TestDomainOverview):
         call_args = mock_send_domain_email.call_args.kwargs
         self.assertEqual(call_args["email"], "mayor@igorville.gov")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertEqual(call_args["domain"], self.domain)
+        self.assertEqual(call_args["domains"], self.domain)
         self.assertIsNone(call_args.get("is_member_of_different_org"))
 
-        # Assert that the PortfolioInvitation is created
+        # Assert that the PortfolioInvitation is created and retrieved
         portfolio_invitation = PortfolioInvitation.objects.filter(
             email="mayor@igorville.gov", portfolio=self.portfolio
         ).first()
         self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
         self.assertEqual(portfolio_invitation.email, "mayor@igorville.gov")
         self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+        #Assert that the UserPortfolioPermission is created
+        user_portfolio_permission = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(user_portfolio_permission, "User portfolio permission should be created")
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(self, mock_send_domain_email, mock_send_portfolio_email):
+        """Adding an email not associated with a user works and sends portfolio invitation."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "notauser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="notauser@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "notauser@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domains"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that the PortfolioInvitation is created
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email="notauser@igorville.gov", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
+        self.assertEqual(portfolio_invitation.email, "notauser@igorville.gov")
+        self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "notauser@igorville.gov")
+    
     @boto3_mocking.patching
     @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
@@ -759,7 +814,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email invitation.")
+        self.assertContains(success_page, "Failed to send email.")
 
     @boto3_mocking.patching
     @less_console_noise_decorator
