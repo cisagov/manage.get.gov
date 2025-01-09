@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # when creating invitations and sending associated emails. These can be reused in
 # any view, and were initially developed for domain.py, portfolios.py and admin.py
 
+
 def get_org_membership(requestor_org, requested_email, requested_user):
     """
     Verifies if an email belongs to a different organization as a member or invited member.

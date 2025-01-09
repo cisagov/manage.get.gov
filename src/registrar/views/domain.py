@@ -1186,6 +1186,7 @@ class DomainAddUserView(DomainFormBaseView):
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                     email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
                 )
+                # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()

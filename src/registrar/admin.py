@@ -1393,6 +1393,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
+
 class BaseInvitationAdmin(ListHeaderAdmin):
     """Base class for admin classes which will customize save_model and send email invitations
     on model adds, and require custom handling of forms and form errors."""
@@ -1542,6 +1543,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                         portfolio=domain_org,
                         roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                     )
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
@@ -1552,7 +1554,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     requestor=requestor,
                     domains=domain,
                     is_member_of_different_org=member_of_a_different_org,
-                    requested_user=requested_user
+                    requested_user=requested_user,
                 )
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
@@ -1639,6 +1641,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")

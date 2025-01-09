@@ -296,7 +296,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         Processes added domains by bulk creating UserDomainRole instances.
         """
         if added_domain_ids:
-            print('_process_added_domains')
+            # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, member.email, member)
             send_domain_invitation_email(
@@ -514,14 +514,15 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         or creating new ones.
         """
         if added_domain_ids:
+            # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
             send_domain_invitation_email(
-                    email=email,
-                    requestor=requestor,
-                    domains=added_domains,
-                    is_member_of_different_org=member_of_a_different_org,
-                )
+                email=email,
+                requestor=requestor,
+                domains=added_domains,
+                is_member_of_different_org=member_of_a_different_org,
+            )
 
             # Update existing invitations from CANCELED to INVITED
             existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
@@ -542,7 +543,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                     for domain_id in new_domain_ids
                 ]
             )
-        
+
     def _process_removed_domains(self, removed_domain_ids, email):
         """
         Processes removed domain invitations by updating their status to CANCELED.
@@ -777,6 +778,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             if not requested_user or not permission_exists:
                 send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
                 portfolio_invitation = form.save()
+                # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
