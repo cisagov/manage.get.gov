@@ -269,7 +269,6 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
             status__in=invalid_states
         )
