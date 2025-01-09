@@ -34,7 +34,7 @@ from django.views.generic import View
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
 
-from registrar.views.utility.portfolio_helper import get_org_membership
+from registrar.views.utility.invitation_helper import get_org_membership
 
 
 logger = logging.getLogger(__name__)

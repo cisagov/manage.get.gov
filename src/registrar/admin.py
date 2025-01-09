@@ -29,7 +29,7 @@ from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
-from registrar.views.utility.portfolio_helper import (
+from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
     handle_invitation_exceptions,
@@ -1393,8 +1393,78 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
+class BaseInvitationAdmin(ListHeaderAdmin):
+    """Base class for admin classes which will customize save_model and send email invitations
+    on model adds, and require custom handling of forms and form errors."""
 
-class DomainInvitationAdmin(ListHeaderAdmin):
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Override response_add to handle rendering when exceptions are raised during add model.
+
+        Normal flow on successful save_model on add is to redirect to changelist_view.
+        If there are errors, flow is modified to instead render change form.
+        """
+        # store current messages from request so that they are preserved throughout the method
+        storage = get_messages(request)
+        # Check if there are any error or warning messages in the `messages` framework
+        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
+
+        if has_errors:
+            # Re-render the change form if there are errors or warnings
+            # Prepare context for rendering the change form
+
+            # Get the model form
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+
+            # Create an AdminForm instance
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.get_prepopulated_fields(request, obj),
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+            media = self.media + form.media
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),  # Add admin context
+                "title": f"Add {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": True,  # Indicate this is an "Add" form
+                "change": False,  # Indicate this is not a "Change" form
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,  # Pass the AdminForm instance
+                "media": media,
+                "errors": None,
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=True,
+                change=False,
+                obj=obj,
+            )
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        # Re-add all messages from storage after `super().response_add`
+        # as super().response_add resets the success messages in request
+        for message in storage:
+            messages.add_message(request, message.level, message.message)
+
+        return response
+
+
+class DomainInvitationAdmin(BaseInvitationAdmin):
     """Custom domain invitation admin class."""
 
     class Meta:
@@ -1497,74 +1567,8 @@ class DomainInvitationAdmin(ListHeaderAdmin):
             # Call the parent save method to save the object
             super().save_model(request, obj, form, change)
 
-    def response_add(self, request, obj, post_url_continue=None):
-        """
-        Override response_add to handle rendering when exceptions are raised during add model.
 
-        Normal flow on successful save_model on add is to redirect to changelist_view.
-        If there are errors, flow is modified to instead render change form.
-        """
-        # Check if there are any error or warning messages in the `messages` framework
-        storage = get_messages(request)
-        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
-
-        if has_errors:
-            # Re-render the change form if there are errors or warnings
-            # Prepare context for rendering the change form
-
-            # Get the model form
-            ModelForm = self.get_form(request, obj=obj)
-            form = ModelForm(instance=obj)
-
-            # Create an AdminForm instance
-            admin_form = AdminForm(
-                form,
-                list(self.get_fieldsets(request, obj)),
-                self.get_prepopulated_fields(request, obj),
-                self.get_readonly_fields(request, obj),
-                model_admin=self,
-            )
-            media = self.media + form.media
-
-            opts = obj._meta
-            change_form_context = {
-                **self.admin_site.each_context(request),  # Add admin context
-                "title": f"Add {opts.verbose_name}",
-                "opts": opts,
-                "original": obj,
-                "save_as": self.save_as,
-                "has_change_permission": self.has_change_permission(request, obj),
-                "add": True,  # Indicate this is an "Add" form
-                "change": False,  # Indicate this is not a "Change" form
-                "is_popup": False,
-                "inline_admin_formsets": [],
-                "save_on_top": self.save_on_top,
-                "show_delete": self.has_delete_permission(request, obj),
-                "obj": obj,
-                "adminform": admin_form,  # Pass the AdminForm instance
-                "media": media,
-                "errors": None,
-            }
-            return self.render_change_form(
-                request,
-                context=change_form_context,
-                add=True,
-                change=False,
-                obj=obj,
-            )
-        # Preserve all success messages
-        all_messages = [message for message in get_messages(request)]
-
-        response = super().response_add(request, obj, post_url_continue)
-
-        # Re-add all messages to the storage after `super().response_add` to preserve them
-        for message in all_messages:
-            messages.add_message(request, message.level, message.message)
-
-        return response
-
-
-class PortfolioInvitationAdmin(ListHeaderAdmin):
+class PortfolioInvitationAdmin(BaseInvitationAdmin):
     """Custom portfolio invitation admin class."""
 
     form = PortfolioInvitationAdminForm
@@ -1646,72 +1650,6 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
                 return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
-
-    def response_add(self, request, obj, post_url_continue=None):
-        """
-        Override response_add to handle rendering when exceptions are raised during add model.
-
-        Normal flow on successful save_model on add is to redirect to changelist_view.
-        If there are errors, flow is modified to instead render change form.
-        """
-        # Check if there are any error or warning messages in the `messages` framework
-        storage = get_messages(request)
-        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
-
-        if has_errors:
-            # Re-render the change form if there are errors or warnings
-            # Prepare context for rendering the change form
-
-            # Get the model form
-            ModelForm = self.get_form(request, obj=obj)
-            form = ModelForm(instance=obj)
-
-            # Create an AdminForm instance
-            admin_form = AdminForm(
-                form,
-                list(self.get_fieldsets(request, obj)),
-                self.get_prepopulated_fields(request, obj),
-                self.get_readonly_fields(request, obj),
-                model_admin=self,
-            )
-            media = self.media + form.media
-
-            opts = obj._meta
-            change_form_context = {
-                **self.admin_site.each_context(request),  # Add admin context
-                "title": f"Add {opts.verbose_name}",
-                "opts": opts,
-                "original": obj,
-                "save_as": self.save_as,
-                "has_change_permission": self.has_change_permission(request, obj),
-                "add": True,  # Indicate this is an "Add" form
-                "change": False,  # Indicate this is not a "Change" form
-                "is_popup": False,
-                "inline_admin_formsets": [],
-                "save_on_top": self.save_on_top,
-                "show_delete": self.has_delete_permission(request, obj),
-                "obj": obj,
-                "adminform": admin_form,  # Pass the AdminForm instance
-                "media": media,
-                "errors": None,
-            }
-            return self.render_change_form(
-                request,
-                context=change_form_context,
-                add=True,
-                change=False,
-                obj=obj,
-            )
-        # Preserve all success messages
-        all_messages = [message for message in get_messages(request)]
-
-        response = super().response_add(request, obj, post_url_continue)
-
-        # Re-add all messages to the storage after `super().response_add` to preserve them
-        for message in all_messages:
-            messages.add_message(request, message.level, message.message)
-
-        return response
 
 
 class DomainInformationResource(resources.ModelResource):

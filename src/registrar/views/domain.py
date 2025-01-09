@@ -42,7 +42,7 @@ from registrar.utility.errors import (
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.views.utility.portfolio_helper import (
+from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
     handle_invitation_exceptions,
