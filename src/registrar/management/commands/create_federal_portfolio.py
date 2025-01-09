@@ -263,9 +263,6 @@ class Command(BaseCommand):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
-        Returns a list of updated records.
-
-        Returns a queryset of DomainRequest objects, or None if nothing changed.
         """
         invalid_states = [
             DomainRequest.DomainRequestStatus.STARTED,
