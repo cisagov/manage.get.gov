@@ -16,16 +16,25 @@ class Command(BaseCommand):
         and updates DomainInformation / DomainRequest sub_organization references before deletion."""
 
         # First: get a preset list of records we want to delete.
-        # The key gets deleted, the value gets kept.
-        additional_records_to_delete = {
+        # For extra_records_to_prune: the key gets deleted, the value gets kept.
+        extra_records_to_prune = {
             normalize_string("Assistant Secretary for Preparedness and Response Office of the Secretary"): {
-                "keep": Suborganization.objects.none()
+                "keep": "Assistant Secretary for Preparedness and Response, Office of the Secretary"
             },
-            normalize_string("US Geological Survey"): {"keep": Suborganization.objects.none()},
-            normalize_string("USDA/OC"): {"keep": Suborganization.objects.none()},
+            normalize_string("US Geological Survey"): {"keep": "U.S. Geological Survey"},
+            normalize_string("USDA/OC"): {"keep": "USDA, Office of Communications"},
+            normalize_string("GSA, IC, OGP WebPortfolio"): {"keep": "GSA, IC, OGP Web Portfolio"},
+            normalize_string("USDA/ARS/NAL"): {"keep": "USDA, ARS, NAL"}
+            # TODO - U.S Immigration and Customs Enforcement
         }
 
-        # First: Group all suborganization names by their "normalized" names (finding duplicates)
+        # First: Group all suborganization names by their "normalized" names (finding duplicates).
+        # Returns a dict that looks like this:
+        # {
+        #   "amtrak": [<Suborganization: AMTRAK>, <Suborganization: aMtRaK>, <Suborganization: AMTRAK  >],
+        #   ...etc
+        # } 
+        #
         name_groups = {}
         for suborg in Suborganization.objects.all():
             normalized_name = normalize_string(suborg.name)
@@ -33,26 +42,35 @@ class Command(BaseCommand):
                 name_groups[normalized_name] = []
             name_groups[normalized_name].append(suborg)
 
-        # Second: find the record we should keep, and the duplicate records we should delete
+        # Second: find the record we should keep, and the records we should delete
+        # Returns a dict that looks like this:
+        # {
+        #  "amtrak": {
+        #       "keep": <Suborganization: AMTRAK>
+        #       "delete": [<Suborganization: aMtRaK>, <Suborganization: AMTRAK  >]
+        #   },
+        #   "usda/oc": {
+        #       "keep": <Suborganization: USDA, Office of Communications>,
+        #       "delete": [<Suborganization: USDA/OC>]
+        #   },
+        #   ...etc
+        # }
         records_to_prune = {}
         for normalized_name, duplicate_suborgs in name_groups.items():
-            if normalized_name in additional_records_to_delete:
-                record = additional_records_to_delete.get(normalized_name)
-                records_to_prune[normalized_name] = {"keep": record.get("keep"), "delete": duplicate_suborgs}
-                continue
+            # Delete data from our preset list
+            if normalized_name in extra_records_to_prune:
+                record = extra_records_to_prune.get(normalized_name)
+                # The 'keep' field expects a Suborganization but we just pass in a string, so this is just a workaround.
+                hardcoded_record_name = normalize_string(record.get("keep"))
+                name_group = name_groups.get(hardcoded_record_name, [])
 
-            if len(duplicate_suborgs) > 1:
-                # Pick the best record to keep.
-                # The fewest spaces and most capitals (at the beginning of each word) wins.
-                best_record = duplicate_suborgs[0]
-                for suborg in duplicate_suborgs:
-                    has_fewer_spaces = suborg.name.count(" ") < best_record.name.count(" ")
-                    has_more_capitals = count_capitals(suborg.name, leading_only=True) > count_capitals(
-                        best_record.name, leading_only=True
-                    )
-                    if has_fewer_spaces or has_more_capitals:
-                        best_record = suborg
-
+                # This assumes that there is only one item in the name_group array. Should be fine, given our data.
+                keep = name_group[0] if name_group else None
+                records_to_prune[normalized_name] = {"keep": keep, "delete": duplicate_suborgs}
+            # Delete duplicates (extra spaces or casing differences)
+            elif len(duplicate_suborgs) > 1:
+                # Pick the best record (fewest spaces, most leading capitals)
+                best_record = max(duplicate_suborgs, key=lambda suborg: (-suborg.name.count(" "), count_capitals(suborg.name, leading_only=True)))
                 records_to_prune[normalized_name] = {
                     "keep": best_record,
                     "delete": [s for s in duplicate_suborgs if s != best_record],
@@ -62,18 +80,20 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.error, TerminalColors.FAIL, "No suborganizations to delete.")
             return
 
-        # Third: Show a preview of the changes
+        # Third: Build a preview of the changes
         total_records_to_remove = 0
-        preview = "The following records will be removed:\n"
+        preview_lines = ["The following records will be removed:"]
         for data in records_to_prune.values():
             keep = data.get("keep")
+            delete = data.get("delete")
             if keep:
-                preview += f"\nKeeping: '{keep.name}' (id: {keep.id})"
-
-            for duplicate in data.get("delete"):
-                preview += f"\nRemoving: '{duplicate.name}' (id: {duplicate.id})"
+                preview_lines.append(f"Keeping: '{keep.name}' (id: {keep.id})")
+            
+            for duplicate in delete:
+                preview_lines.append(f"Removing: '{duplicate.name}' (id: {duplicate.id})")
                 total_records_to_remove += 1
-            preview += "\n"
+            preview_lines.append("")
+        preview = "\n".join(preview_lines)
 
         # Fourth: Get user confirmation and execute deletions
         if TerminalHelper.prompt_for_execution(
@@ -88,17 +108,14 @@ class Command(BaseCommand):
                 for record in records_to_prune.values():
                     best_record = record["keep"]
                     suborgs_to_remove = {dupe.id for dupe in record["delete"]}
-                    # Update domain requests
                     DomainRequest.objects.filter(sub_organization_id__in=suborgs_to_remove).update(
                         sub_organization=best_record
                     )
-
-                    # Update domain information
                     DomainInformation.objects.filter(sub_organization_id__in=suborgs_to_remove).update(
                         sub_organization=best_record
                     )
-
                     all_suborgs_to_remove.update(suborgs_to_remove)
+                # Delete the suborgs
                 delete_count, _ = Suborganization.objects.filter(id__in=all_suborgs_to_remove).delete()
                 TerminalHelper.colorful_logger(
                     logger.info, TerminalColors.MAGENTA, f"Successfully deleted {delete_count} suborganizations."
