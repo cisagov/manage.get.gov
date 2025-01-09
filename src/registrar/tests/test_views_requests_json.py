@@ -338,7 +338,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain_request.creator.email, creator[i])
             # Check action url, action label and svg icon
             # Example domain requests will test each of below three scenarios
-            if creator[i] != self.user.email:
+            if creator[i] != self.user.email or not self.user.has_edit_request_portfolio_permission(self.portfolio):
                 # Test case where action is View
                 self.assertEqual("View", action_labels[i])
                 self.assertEqual(
