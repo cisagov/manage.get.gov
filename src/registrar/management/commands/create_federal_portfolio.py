@@ -54,7 +54,7 @@ class Command(BaseCommand):
             help="Adds portfolio to both requests and domains",
         )
 
-    def handle(self, **options):  # noqa: C901
+    def handle(self, **options):
         agency_name = options.get("agency_name")
         branch = options.get("branch")
         parse_requests = options.get("parse_requests")
