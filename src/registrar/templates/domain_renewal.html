@@ -103,7 +103,9 @@
             class="usa-checkbox__input" 
             id="renewal-checkbox" 
             type="checkbox" 
-            name="{{ form.is_policy_acknowledged.name }}">
+            name="{{ form.is_policy_acknowledged.name }}"
+            {% if form.is_policy_acknowledged.value %}checked{% endif %}
+            >
             <label class="usa-checkbox__label" for="renewal-checkbox">
               I read and agree to the 
               <a href="https://get.gov/domains/requirements/" class="usa-link">
