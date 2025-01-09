@@ -401,16 +401,15 @@ class TerminalHelper:
         # Allow the user to inspect the command string
         # and ask if they wish to proceed
         proceed_execution = TerminalHelper.query_yes_no_exit(
-            f"""{TerminalColors.OKCYAN}
-            =====================================================
-            {prompt_title}
-            =====================================================
-            {verify_message}
-
-            {prompt_message}
-            {TerminalColors.FAIL}
-            Proceed? (Y = proceed, N = {action_description_for_selecting_no})
-            {TerminalColors.ENDC}"""
+            f"\n{TerminalColors.OKCYAN}"
+            "====================================================="
+            f"\n{prompt_title}\n"
+            "====================================================="
+            f"\n{verify_message}\n"
+            f"\n{prompt_message}\n"
+            f"{TerminalColors.FAIL}"
+            f"Proceed? (Y = proceed, N = {action_description_for_selecting_no})"
+            f"{TerminalColors.ENDC}"
         )
 
         # If the user decided to proceed return true.

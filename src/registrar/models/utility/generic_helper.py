@@ -344,6 +344,7 @@ def value_of_attribute(obj, attribute_name: str):
         value = value()
     return value
 
+
 def normalize_string(string_to_normalize, lowercase=True):
     """Normalizes a given string. Returns a string without extra spaces, in all lowercase."""
     if not isinstance(string_to_normalize, str):
@@ -352,3 +353,17 @@ def normalize_string(string_to_normalize, lowercase=True):
 
     new_string = " ".join(string_to_normalize.split())
     return new_string.lower() if lowercase else new_string
+
+
+def count_capitals(text: str, leading_only: bool): 
+    """Counts capital letters in a string.
+    Args:
+        text (str): The string to analyze.
+        leading_only (bool): If False, counts all capital letters.
+                                If True, only counts capitals at the start of words.
+    Returns:
+        int: Number of capital letters found.
+    """
+    if leading_only:
+        return sum(word[0].isupper() for word in text.split() if word)
+    return sum(c.isupper() for c in text if c)

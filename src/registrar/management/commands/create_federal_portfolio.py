@@ -133,15 +133,15 @@ class Command(BaseCommand):
             portfolio__isnull=True,
             organization_name__isnull=True,
             sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name")
-        ).in_bulk("organization_name")
+            organization_name__iexact=F("portfolio__organization_name"),
+        ).in_bulk(field_name="organization_name")
 
         requests = requests.exclude(
             portfolio__isnull=True,
             organization_name__isnull=True,
             sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name")
-        ).in_bulk("organization_name")
+            organization_name__iexact=F("portfolio__organization_name"),
+        ).in_bulk(field_name="organization_name")
 
         for suborg in suborganizations:
             domain = domains.get(suborg.name, None)
@@ -169,7 +169,7 @@ class Command(BaseCommand):
 
             if city:
                 suborg.city = city
-            
+
             if suborg:
                 suborg.state_territory = state_territory
 
