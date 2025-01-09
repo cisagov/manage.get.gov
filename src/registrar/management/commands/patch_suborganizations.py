@@ -24,16 +24,16 @@ class Command(BaseCommand):
             normalize_string("US Geological Survey"): {"keep": "U.S. Geological Survey"},
             normalize_string("USDA/OC"): {"keep": "USDA, Office of Communications"},
             normalize_string("GSA, IC, OGP WebPortfolio"): {"keep": "GSA, IC, OGP Web Portfolio"},
-            normalize_string("USDA/ARS/NAL"): {"keep": "USDA, ARS, NAL"}
-            # TODO - U.S Immigration and Customs Enforcement
+            normalize_string("USDA/ARS/NAL"): {"keep": "USDA, ARS, NAL"},
         }
 
         # First: Group all suborganization names by their "normalized" names (finding duplicates).
         # Returns a dict that looks like this:
         # {
         #   "amtrak": [<Suborganization: AMTRAK>, <Suborganization: aMtRaK>, <Suborganization: AMTRAK  >],
+        #   "usda/oc": [<Suborganization: USDA/OC>],
         #   ...etc
-        # } 
+        # }
         #
         name_groups = {}
         for suborg in Suborganization.objects.all():
@@ -59,18 +59,19 @@ class Command(BaseCommand):
         for normalized_name, duplicate_suborgs in name_groups.items():
             # Delete data from our preset list
             if normalized_name in extra_records_to_prune:
-                record = extra_records_to_prune.get(normalized_name)
                 # The 'keep' field expects a Suborganization but we just pass in a string, so this is just a workaround.
-                hardcoded_record_name = normalize_string(record.get("keep"))
-                name_group = name_groups.get(hardcoded_record_name, [])
-
-                # This assumes that there is only one item in the name_group array. Should be fine, given our data.
+                # This assumes that there is only one item in the name_group array (see usda/oc example). Should be fine, given our data.
+                hardcoded_record_name = extra_records_to_prune[normalized_name]["keep"]
+                name_group = name_groups.get(normalized_name(hardcoded_record_name), [])
                 keep = name_group[0] if name_group else None
                 records_to_prune[normalized_name] = {"keep": keep, "delete": duplicate_suborgs}
             # Delete duplicates (extra spaces or casing differences)
             elif len(duplicate_suborgs) > 1:
                 # Pick the best record (fewest spaces, most leading capitals)
-                best_record = max(duplicate_suborgs, key=lambda suborg: (-suborg.name.count(" "), count_capitals(suborg.name, leading_only=True)))
+                best_record = max(
+                    duplicate_suborgs,
+                    key=lambda suborg: (-suborg.name.count(" "), count_capitals(suborg.name, leading_only=True)),
+                )
                 records_to_prune[normalized_name] = {
                     "keep": best_record,
                     "delete": [s for s in duplicate_suborgs if s != best_record],
@@ -88,14 +89,14 @@ class Command(BaseCommand):
             delete = data.get("delete")
             if keep:
                 preview_lines.append(f"Keeping: '{keep.name}' (id: {keep.id})")
-            
+
             for duplicate in delete:
                 preview_lines.append(f"Removing: '{duplicate.name}' (id: {duplicate.id})")
                 total_records_to_remove += 1
             preview_lines.append("")
         preview = "\n".join(preview_lines)
 
-        # Fourth: Get user confirmation and execute deletions
+        # Fourth: Get user confirmation and delete
         if TerminalHelper.prompt_for_execution(
             system_exit_on_terminate=True,
             prompt_message=preview,
