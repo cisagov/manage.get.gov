@@ -2180,7 +2180,8 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_post_with_valid_added_domains(self):
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_with_valid_added_domains(self, mock_send_domain_email):
         """Test that domains can be successfully added."""
         self.client.force_login(self.user)
 
@@ -2197,6 +2198,15 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+
+        expected_domains = Domain.objects.filter(id__in=[1, 2, 3])
+        # Verify that the invitation email was sent
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "info@example.com")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(list(call_args["domains"]), list(expected_domains))
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2364,7 +2374,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_post_with_valid_added_domains(self):
+    @patch("registrar.views.portfolios.send_domain_invitation_email")
+    def test_post_with_valid_added_domains(self, mock_send_domain_email):
         """Test adding new domains successfully."""
         self.client.force_login(self.user)
 
@@ -2386,6 +2397,16 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+
+        expected_domains = Domain.objects.filter(id__in=[1, 2, 3])
+        # Verify that the invitation email was sent
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "info@example.com")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(list(call_args["domains"]), list(expected_domains))
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

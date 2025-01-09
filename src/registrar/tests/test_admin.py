@@ -136,12 +136,17 @@ class TestDomainInvitationAdmin(TestCase):
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.superuser = create_superuser()
         self.domain = Domain.objects.create(name="example.com")
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Portfolio.objects.all().delete()
+        Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
 
@@ -189,7 +194,10 @@ class TestDomainInvitationAdmin(TestCase):
             self.assertContains(response, retrieved_html, count=1)
 
     @less_console_noise_decorator
-    def test_save_model_user_exists(self):
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_model_user_exists(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
         """Test saving a domain invitation when the user exists.
 
         Should attempt to retrieve the domain invitation."""
@@ -217,7 +225,10 @@ class TestDomainInvitationAdmin(TestCase):
         self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
 
     @less_console_noise_decorator
-    def test_save_model_user_does_not_exist(self):
+    @patch("registrar.admin.send_domain_invitation_email")
+    @patch("registrar.admin.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_model_user_does_not_exist(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
         """Test saving a domain invitation when the user does not exist.
 
         Should not attempt to retrieve the domain invitation."""
