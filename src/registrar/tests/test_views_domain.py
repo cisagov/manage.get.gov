@@ -758,7 +758,7 @@ class TestDomainManagers(TestDomainOverview):
         call_args = mock_send_domain_email.call_args.kwargs
         self.assertEqual(call_args["email"], "mayor@igorville.gov")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertEqual(call_args["domain"], self.domain)
+        self.assertEqual(call_args["domains"], self.domain)
         self.assertIsNone(call_args.get("is_member_of_different_org"))
 
         # Assert that no PortfolioInvitation is created
