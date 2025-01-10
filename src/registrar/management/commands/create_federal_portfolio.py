@@ -258,7 +258,7 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return list(domain_requests)
+        return list(domain_requests) if len(domain_requests) > 0 else []
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
@@ -286,7 +286,7 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return list(domain_infos)
+        return list(domain_infos) if len(domain_infos) > 0 else []
 
     def post_process_suborganization_fields(self, suborganizations, domains, requests):
         """Post-process suborganization fields by pulling data from related domains and requests.
