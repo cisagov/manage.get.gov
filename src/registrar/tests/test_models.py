@@ -361,7 +361,7 @@ class TestPortfolioInvitations(TestCase):
                 portfolio=third_portfolio,
             ).exists()
         )
-    
+
     @less_console_noise_decorator
     def test_clean_portfolio_invitation(self):
         """Tests validation of portfolio invitation permissions"""
@@ -407,7 +407,7 @@ class TestPortfolioInvitations(TestCase):
     def test_clean_user_portfolio_permission_multiple_portfolios_flag_off_and_duplicate_permission(self):
         """MISSING TEST: Test validation of multiple_portfolios flag.
         Scenario 1: Flag is inactive, and the user has existing portfolio permissions
-        
+
         NOTE: Refer to the same test under TestUserPortfolioPermission"""
 
         pass
@@ -417,7 +417,7 @@ class TestPortfolioInvitations(TestCase):
     def test_clean_user_portfolio_permission_multiple_portfolios_flag_off_and_existing_invitation(self):
         """MISSING TEST: Test validation of multiple_portfolios flag.
         Scenario 2: Flag is inactive, and the user has existing portfolio invitation to another portfolio
-        
+
         NOTE: Refer to the same test under TestUserPortfolioPermission"""
 
         pass
@@ -427,18 +427,17 @@ class TestPortfolioInvitations(TestCase):
     def test_clean_user_portfolio_permission_multiple_portfolios_flag_on_and_duplicate_permission(self):
         """MISSING TEST: Test validation of multiple_portfolios flag.
         Scenario 3: Flag is active, and the user has existing portfolio invitation
-        
+
         NOTE: Refer to the same test under TestUserPortfolioPermission"""
 
         pass
-
 
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)
     def test_clean_user_portfolio_permission_multiple_portfolios_flag_on_and_existing_invitation(self):
         """MISSING TEST: Test validation of multiple_portfolios flag.
         Scenario 4: Flag is active, and the user has existing portfolio invitation to another portfolio
-        
+
         NOTE: Refer to the same test under TestUserPortfolioPermission"""
 
         pass
@@ -625,7 +624,7 @@ class TestUserPortfolioPermission(TestCase):
         """Test validation of multiple_portfolios flag.
         Scenario 1: Flag is inactive, and the user has existing portfolio permissions"""
 
-        #existing permission
+        # existing permission
         UserPortfolioPermission.objects.create(
             user=self.superuser,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
@@ -698,7 +697,6 @@ class TestUserPortfolioPermission(TestCase):
             permission.clean()
         except ValidationError:
             self.fail("ValidationError was raised unexpectedly when flag is active.")
-
 
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)

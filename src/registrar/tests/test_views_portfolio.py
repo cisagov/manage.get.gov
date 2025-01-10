@@ -2324,7 +2324,10 @@ class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
         self.assertRedirects(response, reverse("member-domains-edit", kwargs={"pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.")
+        self.assertEqual(
+            str(messages[0]),
+            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+        )
 
 
 class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
@@ -2432,7 +2435,6 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.assertEqual(call_args["requestor"], self.user)
         self.assertEqual(list(call_args["domains"]), list(expected_domains))
         self.assertFalse(call_args.get("is_member_of_different_org"))
-
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2607,7 +2609,10 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.assertRedirects(response, reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.")
+        self.assertEqual(
+            str(messages[0]),
+            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+        )
 
 
 class TestRequestingEntity(WebTest):
@@ -3320,8 +3325,6 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         # Simulate a session to ensure continuity
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        invite_count_before = PortfolioInvitation.objects.count()
 
         new_user = User.objects.create(email="newuser@example.com")
 

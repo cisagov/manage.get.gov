@@ -28,7 +28,6 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
-    UserPortfolioPermissionAdmin,
 )
 from registrar.models import (
     Domain,
@@ -70,8 +69,6 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 
 from unittest.mock import ANY, call, patch, Mock
-from django.forms import ValidationError
-
 
 import logging
 
@@ -199,7 +196,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_not_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_user_not_portfolio_member(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user exists and is not a portfolio member.
 
         Should send out domain and portfolio invites.
@@ -235,10 +234,12 @@ class TestDomainInvitationAdmin(TestCase):
         )
 
         # Assert success message
-        mock_messages_success.assert_has_calls([
-            call(request, "test@example.com has been invited to the organization: new portfolio"),
-            call(request, "test@example.com has been invited to the domain: example.com"),
-        ])
+        mock_messages_success.assert_has_calls(
+            [
+                call(request, "test@example.com has been invited to the organization: new portfolio"),
+                call(request, "test@example.com has been invited to the domain: example.com"),
+            ]
+        )
 
         # Assert the invitations were saved
         self.assertEqual(DomainInvitation.objects.count(), 1)
@@ -262,7 +263,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_organization_feature_off(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_organization_feature_off(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user exists and organization_feature flag is off.
 
         Should send out a domain invitation.
@@ -270,7 +273,7 @@ class TestDomainInvitationAdmin(TestCase):
         Should trigger success message for the domain invitation.
         Should retrieve the domain invitation.
         Should not create a portfolio invitation."""
-        
+
         user = User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
@@ -322,7 +325,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_multiple_portfolio_feature_on(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_multiple_portfolio_feature_on(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user exists and multiple_portfolio flag is on.
 
         Should send out a domain invitation.
@@ -330,7 +335,7 @@ class TestDomainInvitationAdmin(TestCase):
         Should trigger success message for the domain invitation.
         Should retrieve the domain invitation.
         Should not create a portfolio invitation."""
-        
+
         user = User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
@@ -381,7 +386,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_existing_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_user_existing_portfolio_member(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user exists and a portfolio invitation exists.
 
         Should send out domain invitation only.
@@ -393,7 +400,9 @@ class TestDomainInvitationAdmin(TestCase):
         # Create a domain invitation instance
         invitation = DomainInvitation(email="test@example.com", domain=self.domain)
 
-        UserPortfolioPermission.objects.create(user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+        UserPortfolioPermission.objects.create(
+            user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
 
         admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
 
@@ -429,14 +438,17 @@ class TestDomainInvitationAdmin(TestCase):
         self.assertEqual(DomainInvitation.objects.count(), 1)
         self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
-    
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_portfolio_email(self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending portfolio email exception.
+    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_portfolio_email(
+        self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises
+        sending portfolio email exception.
 
         Should only attempt to send the portfolio invitation.
         Should trigger error message on portfolio invitation.
@@ -455,7 +467,7 @@ class TestDomainInvitationAdmin(TestCase):
         request = self.factory.post("/admin/registrar/DomainInvitation/add/")
         request.user = self.superuser
 
-       # Patch the retrieve method to ensure it is not called
+        # Patch the retrieve method to ensure it is not called
         with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
             with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
                 admin_instance.save_model(request, invitation, form=None, change=False)
@@ -487,8 +499,11 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+    def test_add_domain_invitation_when_user_not_portfolio_member_raises_exception_sending_domain_email(
+        self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises
+        sending domain email exception.
 
         Should send out the portfolio invitation and attempt to send the domain invitation.
         Should trigger portfolio invitation success message.
@@ -552,8 +567,11 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_existing_portfolio_member_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+    def test_add_domain_invitation_when_user_existing_portfolio_member_raises_exception_sending_domain_email(
+        self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises
+        sending domain email exception.
 
         Should send out the portfolio invitation and attempt to send the domain invitation.
         Should trigger portfolio invitation success message.
@@ -614,7 +632,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_email_not_portfolio_member(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_email_not_portfolio_member(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user does not exist.
 
         Should send out domain and portfolio invitations.
@@ -654,10 +674,12 @@ class TestDomainInvitationAdmin(TestCase):
         portfolio_invitation_mock_retrieve.assert_not_called()
 
         # Assert success message
-        mock_messages_success.assert_has_calls([
-            call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
-            call(request, "nonexistent@example.com has been invited to the domain: example.com"),
-        ])
+        mock_messages_success.assert_has_calls(
+            [
+                call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+                call(request, "nonexistent@example.com has been invited to the domain: example.com"),
+            ]
+        )
 
         # Assert the invitations were saved
         self.assertEqual(DomainInvitation.objects.count(), 1)
@@ -670,7 +692,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_organization_feature_off(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_organization_feature_off(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user does not exist and organization_feature flag is off.
 
         Should send out a domain invitation.
@@ -722,7 +746,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_multiple_portfolio_feature_on(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_multiple_portfolio_feature_on(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user does not exist and multiple_portfolio flag is on.
 
         Should send out a domain invitation.
@@ -773,7 +799,9 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_email_existing_portfolio_invitation(self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
+    def test_add_domain_invitation_success_when_email_existing_portfolio_invitation(
+        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
         """Test saving a domain invitation when the user does not exist and a portfolio invitation exists.
 
         Should send out domain invitation only.
@@ -781,7 +809,11 @@ class TestDomainInvitationAdmin(TestCase):
         Should not attempt to retrieve the domain invitation.
         Should not attempt to retrieve the portfolio invitation."""
 
-        PortfolioInvitation.objects.create(email="nonexistent@example.com", portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+        PortfolioInvitation.objects.create(
+            email="nonexistent@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
 
         # Create a domain invitation instance
         invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
@@ -827,8 +859,11 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_portfolio_email(self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending portfolio email exception.
+    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_portfolio_email(
+        self, mock_messages_error, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member raises
+        sending portfolio email exception.
 
         Should only attempt to send the portfolio invitation.
         Should trigger error message on portfolio invitation.
@@ -846,7 +881,7 @@ class TestDomainInvitationAdmin(TestCase):
         request = self.factory.post("/admin/registrar/DomainInvitation/add/")
         request.user = self.superuser
 
-       # Patch the retrieve method to ensure it is not called
+        # Patch the retrieve method to ensure it is not called
         with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
             with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
                 admin_instance.save_model(request, invitation, form=None, change=False)
@@ -878,8 +913,11 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+    def test_add_domain_invitation_when_user_not_portfolio_email_raises_exception_sending_domain_email(
+        self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member
+        raises sending domain email exception.
 
         Should send out the portfolio invitation and attempt to send the domain invitation.
         Should trigger portfolio invitation success message.
@@ -941,8 +979,11 @@ class TestDomainInvitationAdmin(TestCase):
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
     @patch("django.contrib.messages.error")
-    def test_add_domain_invitation_when_user_existing_portfolio_email_raises_exception_sending_domain_email(self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email):
-        """Test saving a domain invitation when the user exists and is not a portfolio member raises sending domain email exception.
+    def test_add_domain_invitation_when_user_existing_portfolio_email_raises_exception_sending_domain_email(
+        self, mock_messages_error, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
+    ):
+        """Test saving a domain invitation when the user exists and is not a portfolio member
+        raises sending domain email exception.
 
         Should send out the portfolio invitation and attempt to send the domain invitation.
         Should trigger portfolio invitation success message.
@@ -953,7 +994,9 @@ class TestDomainInvitationAdmin(TestCase):
         mock_send_domain_email.side_effect = MissingEmailError("craving a burger")
 
         PortfolioInvitation.objects.create(
-            email="nonexistent@example.com", portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+            email="nonexistent@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
 
         # Create a domain invitation instance
@@ -1208,7 +1251,9 @@ class TestPortfolioInvitationAdmin(TestCase):
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
-    def test_add_portfolio_invitation_auto_retrieves_invitation_when_user_exists(self, mock_messages_success, mock_send_email):
+    def test_add_portfolio_invitation_auto_retrieves_invitation_when_user_exists(
+        self, mock_messages_success, mock_send_email
+    ):
         """On save_model, we create and retrieve a portfolio invitation if the user exists."""
 
         # Create an instance of the admin class
@@ -1247,11 +1292,13 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # The invitation is not retrieved
         portfolio_invitation_mock_retrieve.assert_called_once()
-        
+
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
-    def test_add_portfolio_invitation_does_not_retrieve_invitation_when_no_user(self, mock_messages_success, mock_send_email):
+    def test_add_portfolio_invitation_does_not_retrieve_invitation_when_no_user(
+        self, mock_messages_success, mock_send_email
+    ):
         """On save_model, we create but do not retrieve a portfolio invitation if the user does not exist."""
 
         # Create an instance of the admin class
@@ -1317,9 +1364,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(
-            request, "Email service unavailable"
-        )
+        mock_messages_error.assert_called_once_with(request, "Email service unavailable")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1382,9 +1427,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(
-            request, "Could not send email invitation."
-        )
+        mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
 
 
 class TestHostAdmin(TestCase):
