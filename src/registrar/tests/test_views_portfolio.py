@@ -2112,8 +2112,10 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         super().setUpClass()
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
-        names = ["1.gov", "2.gov", "3.gov"]
-        Domain.objects.bulk_create([Domain(name=name) for name in names])
+        # Create domains for testing
+        cls.domain1 = Domain.objects.create(name="1.gov")
+        cls.domain2 = Domain.objects.create(name="2.gov")
+        cls.domain3 = Domain.objects.create(name="3.gov")
 
     @classmethod
     def tearDownClass(cls):
@@ -2133,7 +2135,6 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
             phone="8003112345",
             title="Member",
         )
-
         # Create test user with no perms
         self.user_no_perms = User.objects.create(
             username="test_user_no_perms",
@@ -2169,6 +2170,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     def tearDown(self):
         super().tearDown()
         UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         Portfolio.objects.exclude(id=self.portfolio.id).delete()
@@ -2234,7 +2236,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.client.force_login(self.user)
 
         data = {
-            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs
+            "added_domains": json.dumps([self.domain1.id, self.domain2.id, self.domain3.id]),  # Mock domain IDs
         }
         response = self.client.post(self.url, data)
 
@@ -2247,7 +2249,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
-        expected_domains = Domain.objects.filter(id__in=[1, 2, 3])
+        expected_domains = [self.domain1, self.domain2, self.domain3]
         # Verify that the invitation email was sent
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -2265,17 +2267,17 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.client.force_login(self.user)
 
         # Create some UserDomainRole objects
-        domains = [1, 2, 3]
-        UserDomainRole.objects.bulk_create([UserDomainRole(domain_id=domain, user=self.user) for domain in domains])
+        domains = [self.domain1, self.domain2, self.domain3]
+        UserDomainRole.objects.bulk_create([UserDomainRole(domain=domain, user=self.user) for domain in domains])
 
         data = {
-            "removed_domains": json.dumps([1, 2]),
+            "removed_domains": json.dumps([self.domain1.id, self.domain2.id]),
         }
         response = self.client.post(self.url, data)
 
         # Check that the UserDomainRole objects were deleted
         self.assertEqual(UserDomainRole.objects.filter(user=self.user).count(), 1)
-        self.assertEqual(UserDomainRole.objects.filter(domain_id=3, user=self.user).count(), 1)
+        self.assertEqual(UserDomainRole.objects.filter(domain=self.domain3, user=self.user).count(), 1)
 
         # Check for a success message and a redirect
         self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
@@ -2360,7 +2362,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.client.force_login(self.user)
 
         data = {
-            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs for the attempted add
+            "added_domains": json.dumps([self.domain1.id, self.domain2.id, self.domain3.id]),  # Mock domain IDs
         }
         mock_send_domain_email.side_effect = EmailSendingError("Failed to send email")
         response = self.client.post(self.url, data)
