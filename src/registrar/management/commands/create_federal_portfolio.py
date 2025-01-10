@@ -87,7 +87,7 @@ class Command(BaseCommand):
             self.failed_portfolios,
             self.skipped_portfolios,
             debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
+            skipped_header="----- SOME PORTFOLIOS WERENT CREATED -----",
             display_as_str=True,
         )
 
@@ -258,7 +258,7 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return domain_requests
+        return list(domain_requests)
 
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
@@ -286,7 +286,7 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return domain_infos
+        return list(domain_infos)
 
     def post_process_suborganization_fields(self, suborganizations, domains, requests):
         """Post-process suborganization fields by pulling data from related domains and requests.
@@ -342,6 +342,6 @@ class Command(BaseCommand):
             if suborg:
                 suborg.state_territory = state_territory
             
-            logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state}")
+            logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
 
         return Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
