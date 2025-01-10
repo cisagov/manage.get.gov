@@ -2380,25 +2380,67 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
 
 
-class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomainsView):
+class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.url = reverse("invitedmember-domains-edit", kwargs={"pk": cls.invitation.pk})
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        # Create domains for testing
+        cls.domain1 = Domain.objects.create(name="1.gov")
+        cls.domain2 = Domain.objects.create(name="2.gov")
+        cls.domain3 = Domain.objects.create(name="3.gov")
+        
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        Domain.objects.all().delete()
 
     def setUp(self):
         super().setUp()
-        names = ["1.gov", "2.gov", "3.gov"]
-        Domain.objects.bulk_create([Domain(name=name) for name in names])
+        # Add a user with no permissions
+        self.user_no_perms = User.objects.create(
+            username="test_user_no_perms",
+            first_name="No",
+            last_name="Permissions",
+            email="user_no_perms@example.com",
+            phone="8003112345",
+            title="No Permissions",
+        )
+        # Add an invited member who has been invited to manage domains
+        self.invited_member_email = "invited@example.com"
+        self.invitation = PortfolioInvitation.objects.create(
+            email=self.invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        self.url = reverse("invitedmember-domains-edit", kwargs={"pk": self.invitation.pk})
 
     def tearDown(self):
         super().tearDown()
         Domain.objects.all().delete()
         DomainInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        Portfolio.objects.exclude(id=self.portfolio.id).delete()
+        User.objects.exclude(id=self.user.id).delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2459,7 +2501,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.client.force_login(self.user)
 
         data = {
-            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs
+            "added_domains": json.dumps([self.domain1.id, self.domain2.id, self.domain3.id]),
         }
         response = self.client.post(self.url, data)
 
@@ -2477,7 +2519,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
-        expected_domains = Domain.objects.filter(id__in=[1, 2, 3])
+        expected_domains = [self.domain1, self.domain2, self.domain3]
         # Verify that the invitation email was sent
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -2498,29 +2540,29 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         DomainInvitation.objects.bulk_create(
             [
                 DomainInvitation(
-                    domain_id=1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.CANCELED
+                    domain=self.domain1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.CANCELED
                 ),
                 DomainInvitation(
-                    domain_id=2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
                 ),
             ]
         )
 
         data = {
-            "added_domains": json.dumps([1, 2, 3]),
+            "added_domains": json.dumps([self.domain1.id, self.domain2.id, self.domain3.id]),
         }
         response = self.client.post(self.url, data)
 
         # Check that status for domain_id=1 was updated to INVITED
         self.assertEqual(
-            DomainInvitation.objects.get(domain_id=1, email="invited@example.com").status,
+            DomainInvitation.objects.get(domain=self.domain1, email="invited@example.com").status,
             DomainInvitation.DomainInvitationStatus.INVITED,
         )
 
         # Check that domain_id=3 was created as INVITED
         self.assertTrue(
             DomainInvitation.objects.filter(
-                domain_id=3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                domain=self.domain3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
             ).exists()
         )
 
@@ -2539,28 +2581,28 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         DomainInvitation.objects.bulk_create(
             [
                 DomainInvitation(
-                    domain_id=1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
                 ),
                 DomainInvitation(
-                    domain_id=2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
                 ),
             ]
         )
 
         data = {
-            "removed_domains": json.dumps([1]),
+            "removed_domains": json.dumps([self.domain1.id]),
         }
         response = self.client.post(self.url, data)
 
         # Check that the status for domain_id=1 was updated to CANCELED
         self.assertEqual(
-            DomainInvitation.objects.get(domain_id=1, email="invited@example.com").status,
+            DomainInvitation.objects.get(domain=self.domain1, email="invited@example.com").status,
             DomainInvitation.DomainInvitationStatus.CANCELED,
         )
 
         # Check that domain_id=2 remains INVITED
         self.assertEqual(
-            DomainInvitation.objects.get(domain_id=2, email="invited@example.com").status,
+            DomainInvitation.objects.get(domain=self.domain2, email="invited@example.com").status,
             DomainInvitation.DomainInvitationStatus.INVITED,
         )
 
@@ -2642,7 +2684,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestPortfolioInvitedMemberDomain
         self.client.force_login(self.user)
 
         data = {
-            "added_domains": json.dumps([1, 2, 3]),  # Mock domain IDs for the attempted add
+            "added_domains": json.dumps([self.domain1.id, self.domain2.id, self.domain3.id]),
         }
         mock_send_domain_email.side_effect = EmailSendingError("Failed to send email")
         response = self.client.post(self.url, data)
