@@ -125,8 +125,8 @@ class Command(BaseCommand):
         # Post process steps
         # Add suborg info to created or existing suborgs.
         if all_suborganizations:
-            self.post_process_suborganization_fields(all_suborganizations, all_domains, all_domain_requests)
-            message = f"Added city and state_territory information to {len(all_suborganizations)} suborgs."
+            updated_suborg_count = self.post_process_suborganization_fields(all_suborganizations, all_domains, all_domain_requests)
+            message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
     def create_portfolio(self, federal_agency):
@@ -308,10 +308,13 @@ class Command(BaseCommand):
         )
         domains_dict = {domain.organization_name: domain for domain in domains}
         requests_dict = {request.organization_name: request for request in requests}
+        logger.info(f"domains_dict: {domains_dict}")
+        logger.info(f"requests_dict: {domains_dict}")
 
         for suborg in suborganizations:
             domain = domains_dict.get(suborg.name, None)
             request = requests_dict.get(suborg.name, None)
+            logger.info(f"suborg {suborg}: domain: {domain} , request: {request}")
 
             # PRIORITY:
             # 1. Domain info
@@ -338,5 +341,7 @@ class Command(BaseCommand):
 
             if suborg:
                 suborg.state_territory = state_territory
+            
+            logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state}")
 
-        Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
+        return Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
