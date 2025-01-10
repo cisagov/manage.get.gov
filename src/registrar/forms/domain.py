@@ -457,6 +457,17 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         },
     )
 
+    state_territory = forms.ChoiceField(
+        label="State, territory, or military post",
+        required=True,
+        choices=DomainInformation.StateTerritoryChoices.choices,
+        widget=ComboboxWidget(
+            attrs={
+                "required": True,
+            }
+        ),
+    )
+
     class Meta:
         model = DomainInformation
         fields = [
@@ -479,20 +490,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             },
         }
         widgets = {
-            # We need to set the required attributed for State/territory
-            # because for this fields we are creating an individual
-            # instance of the Select. For the other fields we use the for loop to set
-            # the class's required attribute to true.
             "organization_name": forms.TextInput,
             "address_line1": forms.TextInput,
             "address_line2": forms.TextInput,
             "city": forms.TextInput,
-            "state_territory": forms.Select(
-                attrs={
-                    "required": True,
-                },
-                choices=DomainInformation.StateTerritoryChoices.choices,
-            ),
             "urbanization": forms.TextInput,
         }
 
