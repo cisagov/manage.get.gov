@@ -2390,7 +2390,6 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         cls.domain1 = Domain.objects.create(name="1.gov")
         cls.domain2 = Domain.objects.create(name="2.gov")
         cls.domain3 = Domain.objects.create(name="3.gov")
-        
 
     @classmethod
     def tearDownClass(cls):
@@ -2540,10 +2539,14 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         DomainInvitation.objects.bulk_create(
             [
                 DomainInvitation(
-                    domain=self.domain1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.CANCELED
+                    domain=self.domain1,
+                    email="invited@example.com",
+                    status=DomainInvitation.DomainInvitationStatus.CANCELED,
                 ),
                 DomainInvitation(
-                    domain=self.domain2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain2,
+                    email="invited@example.com",
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
                 ),
             ]
         )
@@ -2581,10 +2584,14 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         DomainInvitation.objects.bulk_create(
             [
                 DomainInvitation(
-                    domain=self.domain1, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain1,
+                    email="invited@example.com",
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
                 ),
                 DomainInvitation(
-                    domain=self.domain2, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                    domain=self.domain2,
+                    email="invited@example.com",
+                    status=DomainInvitation.DomainInvitationStatus.INVITED,
                 ),
             ]
         )
