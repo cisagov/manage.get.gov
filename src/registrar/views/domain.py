@@ -330,7 +330,6 @@ class DomainRenewalView(DomainView):
 
     def post(self, request, pk):
 
-        print("**** POST data:", request.POST)
         domain = get_object_or_404(Domain, id=pk)
 
         form = DomainRenewalForm(request.POST)
@@ -358,6 +357,8 @@ class DomainRenewalView(DomainView):
                 "domain": domain,
                 "form": form,
                 "is_editable": True,
+                "has_domain_renewal_flag": True,
+                "is_domain_manager": True,
             },
         )
 
