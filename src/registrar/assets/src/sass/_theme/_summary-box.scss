@@ -5,10 +5,12 @@
 .usa-summary-box {
     font-size: 1rem;
     .usa-summary-box__heading {
-        font-size: 1.17em;
+        // 1.17em / 18.72px
+        @include typeset('sans', 'sm', 6);
     }
     p, li, dd {
-        font-size: 1.06rem;
+        // 1.06rem / 16.96px
+        @include typeset('sans', 'sm', 5);
     }
 }
 
