@@ -49,7 +49,7 @@
   </div>
 
     {% url 'user-profile' as url %}
-    {% include "includes/summary_item.html" with title='Your Contact Information' value=user edit_link=url editable=is_editable  contact='true' %}
+    {% include "includes/summary_item.html" with title='Your Contact Information' value=request.user edit_link=url editable=is_editable  contact='true' %}
   
 
 

@@ -311,23 +311,10 @@ class DomainView(DomainBaseView):
         self._update_session_with_domain()
 
 
-class DomainRenewalView(DomainBaseView):
+class DomainRenewalView(DomainView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        context["hidden_security_emails"] = default_emails
-
-        security_email = self.object.get_security_email()
-        user = self.request.user
-        if security_email is None or security_email in default_emails:
-            context["security_email"] = None
-        context["user"] = user
-        return context
 
     def can_access_domain_via_portfolio(self, pk):
         """Most views should not allow permission to portfolio users.
@@ -340,28 +327,6 @@ class DomainRenewalView(DomainBaseView):
                 if domain.domain_info.portfolio == portfolio:
                     return True
         return False
-
-    def in_editable_state(self, pk):
-        """Override in_editable_state from DomainPermission
-        Allow detail page to be viewable"""
-
-        requested_domain = None
-        if Domain.objects.filter(id=pk).exists():
-            requested_domain = Domain.objects.get(id=pk)
-
-        # return true if the domain exists, this will allow the detail page to load
-        if requested_domain:
-            return True
-        return False
-
-    def _get_domain(self, request):
-        """
-        override get_domain for this view so that domain overview
-        always resets the cache for the domain object
-        """
-        self.session = request.session
-        self.object = self.get_object()
-        self._update_session_with_domain()
 
     def post(self, request, pk):
         domain = get_object_or_404(Domain, id=pk)
