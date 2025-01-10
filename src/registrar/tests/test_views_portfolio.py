@@ -2106,25 +2106,73 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 404)
 
 
-class TestPortfolioMemberDomainsEditView(TestPortfolioMemberDomainsView):
+class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.url = reverse("member-domains-edit", kwargs={"pk": cls.portfolio_permission.pk})
+        # Create Portfolio
+        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        names = ["1.gov", "2.gov", "3.gov"]
+        Domain.objects.bulk_create([Domain(name=name) for name in names])
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        Domain.objects.all().delete()
 
     def setUp(self):
         super().setUp()
-        names = ["1.gov", "2.gov", "3.gov"]
-        Domain.objects.bulk_create([Domain(name=name) for name in names])
+        # Create test member
+        self.user_member = User.objects.create(
+            username="test_member",
+            first_name="Second",
+            last_name="User",
+            email="second@example.com",
+            phone="8003112345",
+            title="Member",
+        )
+
+        # Create test user with no perms
+        self.user_no_perms = User.objects.create(
+            username="test_user_no_perms",
+            first_name="No",
+            last_name="Permissions",
+            email="user_no_perms@example.com",
+            phone="8003112345",
+            title="No Permissions",
+        )
+        # Assign permissions to the user making requests
+        self.portfolio_permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        # Assign permissions to test member
+        self.permission = UserPortfolioPermission.objects.create(
+            user=self.user_member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        # Create url to be used in all tests
+        self.url = reverse("member-domains-edit", kwargs={"pk": self.portfolio_permission.pk})
 
     def tearDown(self):
         super().tearDown()
         UserDomainRole.objects.all().delete()
-        Domain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        Portfolio.objects.exclude(id=self.portfolio.id).delete()
+        User.objects.exclude(id=self.user.id).delete()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
