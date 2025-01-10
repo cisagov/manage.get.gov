@@ -5,8 +5,7 @@ import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
-from django.db.models import F
-from django.db.models import Q
+from django.db.models import F, Q
 
 from registrar.models.utility.generic_helper import normalize_string
 
