@@ -82,7 +82,23 @@ class Command(BaseCommand):
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
         # C901 'Command.handle' is too complex (12)
-        self.handle_all_populate_portfolio(agencies, parse_domains, parse_requests, both)
+        for federal_agency in agencies:
+            message = f"Processing federal agency '{federal_agency.agency}'..."
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+            try:
+                # C901 'Command.handle' is too complex (12)
+                self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+            except Exception as exec:
+                self.failed_portfolios.add(federal_agency)
+                logger.error(exec)
+                message = f"Failed to create portfolio '{federal_agency.agency}'"
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
+
+        # POST PROCESS STEP: Add additional suborg info where applicable.
+        updated_suborg_count = self.post_process_suborganization_fields(agencies)
+        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
         TerminalHelper.log_script_run_summary(
             self.updated_portfolios,
             self.failed_portfolios,
@@ -92,34 +108,16 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
-    def handle_all_populate_portfolio(self, agencies, parse_domains, parse_requests, both):
-        """Loops through every agency and creates a portfolio for each.
-        For a given portfolio, it adds suborgs, and associates
-        the suborg and portfolio to domains and domain requests.
-        """
-        for federal_agency in agencies:
-            message = f"Processing federal agency '{federal_agency.agency}'..."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-            try:
-                portfolio, created = self.create_portfolio(federal_agency)
-                self.create_suborganizations(portfolio, federal_agency)
-                if created and parse_domains or both:
-                    self.handle_portfolio_domains(portfolio, federal_agency)
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
+        """Attempts to create a portfolio. If successful, this function will
+        also create new suborganizations"""
+        portfolio, created = self.create_portfolio(federal_agency)
+        self.create_suborganizations(portfolio, federal_agency)
+        if created and parse_domains or both:
+            self.handle_portfolio_domains(portfolio, federal_agency)
 
-                if parse_requests or both:
-                    self.handle_portfolio_requests(portfolio, federal_agency)
-
-            except Exception as exec:
-                self.failed_portfolios.add(federal_agency)
-                logger.error(exec)
-                message = f"Failed to create portfolio '{federal_agency.agency}'"
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
-
-        # Post process steps
-        # Add additional suborg info where applicable.
-        updated_suborg_count = self.post_process_suborganization_fields(agencies)
-        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+        if parse_requests or both:
+            self.handle_portfolio_requests(portfolio, federal_agency)
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -280,7 +278,7 @@ class Command(BaseCommand):
         related domain information and domain request information.
         """
         # Assuming that org name, portfolio, and suborg all aren't null
-        # we assume that we want to add suborg info. 
+        # we assume that we want to add suborg info.
         # as long as the org name doesnt match the portfolio name (as that implies it is the portfolio).
         should_add_suborgs_filter = Q(
             organization_name__isnull=False,
@@ -288,20 +286,16 @@ class Command(BaseCommand):
             sub_organization__isnull=False,
         ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
         domains = DomainInformation.objects.filter(
-            should_add_suborgs_filter,
-            federal_agency__in=agencies, 
-            portfolio__isnull=False
+            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
         )
         requests = DomainRequest.objects.filter(
-            should_add_suborgs_filter,
-            federal_agency__in=agencies, 
-            portfolio__isnull=False
+            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
         )
         domains_dict = {domain.organization_name: domain for domain in domains}
         requests_dict = {request.organization_name: request for request in requests}
         suborgs_to_edit = Suborganization.objects.filter(
-            Q(id__in=domains.values_list("sub_organization", flat=True)) |
-            Q(id__in=requests.values_list("sub_organization", flat=True))
+            Q(id__in=domains.values_list("sub_organization", flat=True))
+            | Q(id__in=requests.values_list("sub_organization", flat=True))
         )
         for suborg in suborgs_to_edit:
             domain = domains_dict.get(suborg.name, None)
@@ -332,7 +326,7 @@ class Command(BaseCommand):
 
             if suborg:
                 suborg.state_territory = state_territory
-            
+
             logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
 
         return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
