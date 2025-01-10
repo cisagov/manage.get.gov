@@ -57,6 +57,7 @@ class RequestingEntityForm(RegistrarForm):
         label="State, territory, or military post",
         required=False,
         choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        widget=ComboboxWidget,
     )
 
     def __init__(self, *args, **kwargs):
