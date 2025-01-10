@@ -94,14 +94,13 @@
         <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
           {% csrf_token %}
           <div class="usa-checkbox">
-          {% if form.is_policy_acknowledged.errors %}
-            <p class="usa-error-message">{{ form.is_policy_acknowledged.errors|join:" " }}</p>
-          {% endif %}
+          <input type="hidden" name="is_policy_acknowledged" value="False">
           <input 
             class="usa-checkbox__input" 
             id="renewal-checkbox" 
             type="checkbox" 
-            name="{{ form.is_policy_acknowledged.name }}"
+            name="is_policy_acknowledged"
+            value="True"
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="renewal-checkbox">

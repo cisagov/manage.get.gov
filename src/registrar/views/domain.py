@@ -329,11 +329,14 @@ class DomainRenewalView(DomainView):
         return False
 
     def post(self, request, pk):
+
+        print("**** POST data:", request.POST)
         domain = get_object_or_404(Domain, id=pk)
 
         form = DomainRenewalForm(request.POST)
 
         if form.is_valid():
+
             # check for key in the post request data
             if "submit_button" in request.POST:
                 try:
