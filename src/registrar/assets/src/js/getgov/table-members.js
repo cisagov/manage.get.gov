@@ -84,7 +84,7 @@ export class MembersTable extends BaseTable {
 
     let admin_tagHTML = ``;
     if (member.is_admin)
-      admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
+      admin_tagHTML = `<span class="usa-tag margin-left-1 primary-dark text-medium">Admin</span>`
 
     // generate html blocks for domains and permissions for the member
     let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);

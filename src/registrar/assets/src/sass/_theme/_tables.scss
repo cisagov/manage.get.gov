@@ -87,6 +87,10 @@ th {
     }
   }
 
+  .usa-tag {
+    text-transform: none;
+  }
+
   @include at-media(tablet-lg) {
     th[data-sortable] .usa-table__header__button {
       right: auto;
