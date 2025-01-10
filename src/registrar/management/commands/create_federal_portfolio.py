@@ -6,6 +6,7 @@ from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
 from django.db.models import F
+from django.db.models import Q
 
 from registrar.models.utility.generic_helper import normalize_string
 
@@ -96,29 +97,18 @@ class Command(BaseCommand):
         For a given portfolio, it adds suborgs, and associates
         the suborg and portfolio to domains and domain requests.
         """
-        all_suborganizations = []
-        all_domains = []
-        all_domain_requests = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 portfolio, created = self.create_portfolio(federal_agency)
-                suborganizations = self.create_suborganizations(portfolio, federal_agency)
-                domains = []
-                domain_requests = []
+                self.create_suborganizations(portfolio, federal_agency)
                 if created and parse_domains or both:
-                    domains = self.handle_portfolio_domains(portfolio, federal_agency)
+                    self.handle_portfolio_domains(portfolio, federal_agency)
 
                 if parse_requests or both:
-                    domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
+                    self.handle_portfolio_requests(portfolio, federal_agency)
 
-                if suborganizations:
-                    all_suborganizations.extend(suborganizations)
-                if all_domains:
-                    all_domains.extend(domains)
-                if domain_requests:
-                    all_domain_requests.extend(domain_requests)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -126,11 +116,10 @@ class Command(BaseCommand):
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
 
         # Post process steps
-        # Add suborg info to created or existing suborgs.
-        if all_suborganizations:
-            updated_suborg_count = self.post_process_suborganization_fields(all_suborganizations, all_domains, all_domain_requests)
-            message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+        # Add additional suborg info where applicable.
+        updated_suborg_count = self.post_process_suborganization_fields(agencies)
+        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -221,8 +210,6 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-        return new_suborgs if len(new_suborgs) > 0 else []
-
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
@@ -260,8 +247,6 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return list(domain_requests) if len(domain_requests) > 0 else []
-
     def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domains for a federal agency.
@@ -288,35 +273,39 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-        return list(domain_infos) if len(domain_infos) > 0 else []
-
-    def post_process_suborganization_fields(self, suborganizations, domains, requests):
+    def post_process_suborganization_fields(self, agencies):
         """Post-process suborganization fields by pulling data from related domains and requests.
 
         This function updates suborganization city and state_territory fields based on
         related domain information and domain request information.
         """
-        domains = DomainInformation.objects.filter(id__in=[domain.id for domain in domains]).exclude(
-            portfolio__isnull=True,
-            organization_name__isnull=True,
-            sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name"),
+        # Assuming that org name, portfolio, and suborg all aren't null
+        # we assume that we want to add suborg info. 
+        # as long as the org name doesnt match the portfolio name (as that implies it is the portfolio).
+        should_add_suborgs_filter = Q(
+            organization_name__isnull=False,
+            portfolio__isnull=False,
+            sub_organization__isnull=False,
+        ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
+        domains = DomainInformation.objects.filter(
+            should_add_suborgs_filter,
+            federal_agency__in=agencies, 
+            portfolio__isnull=False
         )
-        requests = DomainRequest.objects.filter(id__in=[request.id for request in requests]).exclude(
-            portfolio__isnull=True,
-            organization_name__isnull=True,
-            sub_organization__isnull=True,
-            organization_name__iexact=F("portfolio__organization_name"),
+        requests = DomainRequest.objects.filter(
+            should_add_suborgs_filter,
+            federal_agency__in=agencies, 
+            portfolio__isnull=False
         )
         domains_dict = {domain.organization_name: domain for domain in domains}
         requests_dict = {request.organization_name: request for request in requests}
-        logger.info(f"domains_dict: {domains_dict}")
-        logger.info(f"requests_dict: {domains_dict}")
-
-        for suborg in suborganizations:
+        suborgs_to_edit = Suborganization.objects.filter(
+            Q(id__in=domains.values_list("sub_organization", flat=True)) |
+            Q(id__in=requests.values_list("sub_organization", flat=True))
+        )
+        for suborg in suborgs_to_edit:
             domain = domains_dict.get(suborg.name, None)
             request = requests_dict.get(suborg.name, None)
-            logger.info(f"suborg {suborg}: domain: {domain} , request: {request}")
 
             # PRIORITY:
             # 1. Domain info
@@ -346,4 +335,4 @@ class Command(BaseCommand):
             
             logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
 
-        return Suborganization.objects.bulk_update(suborganizations, ["city", "state_territory"])
+        return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
