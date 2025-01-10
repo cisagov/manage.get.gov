@@ -607,7 +607,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
 
             # Verify we see "Your contact information" on the renewal form
-            self.assertContains(renewal_page, "Your contact information")
+            self.assertContains(renewal_page, "Your Contact Information")
 
             # Verify that the "Edit" button for Your contact is there and links to correct URL
             edit_button_url = reverse("user-profile")

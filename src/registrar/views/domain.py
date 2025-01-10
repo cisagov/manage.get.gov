@@ -315,7 +315,7 @@ class DomainRenewalView(DomainView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
-    
+
     def can_access_domain_via_portfolio(self, pk):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
