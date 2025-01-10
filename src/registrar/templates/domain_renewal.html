@@ -94,7 +94,21 @@
         <form method="post" action="{% url 'domain-renewal' pk=domain.id %}"> 
           {% csrf_token %}
           <div class="usa-checkbox">
+
+            {% if form.is_policy_acknowledged.errors %}
+            {% for error in form.is_policy_acknowledged.errors %}
+            <div class="usa-error-message display-flex" role="alert">
+              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+                <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
+              </svg>
+              <span class="margin-left-05">{{ error }}</span>
+            </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+
           <input type="hidden" name="is_policy_acknowledged" value="False">
+
           <input 
             class="usa-checkbox__input" 
             id="renewal-checkbox" 
@@ -111,7 +125,7 @@
               <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
           </div>
-    
+
           <button
             type="submit"
             name="submit_button"

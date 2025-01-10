@@ -357,6 +357,7 @@ class DomainRenewalView(DomainView):
             {
                 "domain": domain,
                 "form": form,
+                "is_editable": True,
             },
         )
 
