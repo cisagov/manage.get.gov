@@ -2958,7 +2958,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             ],
         )
 
-        cls.new_member_email = "davekenn4242@gmail.com"
+        cls.new_member_email = "newmember@example.com"
 
         AllowedEmail.objects.get_or_create(email=cls.new_member_email)
 
@@ -3012,11 +3012,13 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             self.assertEqual(final_response.status_code, 302)  # Redirects
 
             # Validate Database Changes
+            # Validate that portfolio invitation was created but not retrieved
             portfolio_invite = PortfolioInvitation.objects.filter(
                 email=self.new_member_email, portfolio=self.portfolio
             ).first()
             self.assertIsNotNone(portfolio_invite)
             self.assertEqual(portfolio_invite.email, self.new_member_email)
+            self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
             # Check that an email was sent
             self.assertTrue(mock_client.send_email.called)
@@ -3306,6 +3308,54 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         # assert that send_portfolio_invitation_email is not called
         mock_send_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_existing_user_who_is_not_a_member(self, mock_send_email):
+        """Tests the member invitation flow for existing user who is not a portfolio member."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        new_user = User.objects.create(email="newuser@example.com")
+
+        # Simulate submission of member invite for the newly created user
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "email": "newuser@example.com",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+
+        # Validate Database Changes
+        # Validate that portfolio invitation was created and retrieved
+        portfolio_invite = PortfolioInvitation.objects.filter(
+            email="newuser@example.com", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, "newuser@example.com")
+        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        # Validate UserPortfolioPermission
+        user_portfolio_permission = UserPortfolioPermission.objects.filter(
+            user=new_user, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(user_portfolio_permission)
+
+        # assert that send_portfolio_invitation_email is called
+        mock_send_email.assert_called_once()
+        call_args = mock_send_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "newuser@example.com")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
 
 
 class TestEditPortfolioMemberView(WebTest):
