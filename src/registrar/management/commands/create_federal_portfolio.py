@@ -102,25 +102,25 @@ class Command(BaseCommand):
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-            try:
-                portfolio, created = self.create_portfolio(federal_agency)
-                suborganizations = self.create_suborganizations(portfolio, federal_agency)
-                domains = []
-                domain_requests = []
-                if created and parse_domains or both:
-                    domains = self.handle_portfolio_domains(portfolio, federal_agency)
+            # try:
+            portfolio, created = self.create_portfolio(federal_agency)
+            suborganizations = self.create_suborganizations(portfolio, federal_agency)
+            domains = []
+            domain_requests = []
+            if created and parse_domains or both:
+                domains = self.handle_portfolio_domains(portfolio, federal_agency)
 
-                if parse_requests or both:
-                    domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
+            if parse_requests or both:
+                domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
 
-                all_suborganizations.extend(suborganizations)
-                all_domains.extend(domains)
-                all_domain_requests.extend(domain_requests)
-            except Exception as exec:
-                self.failed_portfolios.add(federal_agency)
-                logger.error(exec)
-                message = f"Failed to create portfolio '{federal_agency.agency}'"
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
+            all_suborganizations.extend(suborganizations)
+            all_domains.extend(domains)
+            all_domain_requests.extend(domain_requests)
+            # except Exception as exec:
+            #     self.failed_portfolios.add(federal_agency)
+            #     logger.error(exec)
+            #     message = f"Failed to create portfolio '{federal_agency.agency}'"
+            #     TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
 
         # Post process steps
         # Add suborg info to created or existing suborgs.
