@@ -51,8 +51,6 @@
     {% url 'user-profile' as url %}
     {% include "includes/summary_item.html" with title='Your Contact Information' value=request.user edit_link=url editable=is_editable  contact='true' %}
   
-
-
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
       {% if is_portfolio_user and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
@@ -67,17 +65,17 @@
 
     {% url 'domain-security-email' pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value=security_email custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the  public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='Security email' value='None provided' custom_text_for_value_none='We strongly recommend that you provide a security email. This email will allow the public to report observed or suspected security issues on your domain.' edit_link=url editable=is_editable %}
     {% endif %}
+
     {% url 'domain-users' pk=domain.id as url %}
     {% if portfolio %}
       {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
     {% endif %}
-
 
     <div class="border-top-1px border-primary-dark padding-top-1 margin-top-3 margin-bottom-2">
 
@@ -103,7 +101,9 @@
             class="usa-checkbox__input" 
             id="renewal-checkbox" 
             type="checkbox" 
-            name="{{ form.is_policy_acknowledged.name }}">
+            name="{{ form.is_policy_acknowledged.name }}"
+            {% if form.is_policy_acknowledged.value %}checked{% endif %}
+            >
             <label class="usa-checkbox__label" for="renewal-checkbox">
               I read and agree to the 
               <a href="https://get.gov/domains/requirements/" class="usa-link">

@@ -127,17 +127,15 @@
           </ul>
         {% endif %}
       {% else %}
-      <p class="margin-top-0 margin-bottom-0">
         {% if custom_text_for_value_none %}
-          <p class="text-base-dark">{{ custom_text_for_value_none }}</p>
+          <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
         {% endif %}
         {% if value %}
           {{ value }}
         {% endif %}
-        {% if not value and not custom_text_for_value_none %}
+        {% if not value %}
           None
         {% endif %}
-      </p>
       {% endif %}
     </div>
 
