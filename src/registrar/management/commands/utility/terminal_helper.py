@@ -442,13 +442,14 @@ class TerminalHelper:
                 f.write(file_contents)
 
     @staticmethod
-    def colorful_logger(log_level, color, message):
+    def colorful_logger(log_level, color, message, exc_info=True):
         """Adds some color to your log output.
 
         Args:
             log_level: str | Logger.method -> Desired log level. ex: logger.info or "INFO"
             color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
             message: str -> Message to display.
+            exc_info: bool -> Whether the log should print exc_info or not
         """
 
         if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
@@ -462,4 +463,4 @@ class TerminalHelper:
             terminal_color = color
 
         colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
-        log_method(colored_message)
+        log_method(colored_message, exc_info=exc_info)

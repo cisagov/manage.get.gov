@@ -113,9 +113,12 @@ class Command(BaseCommand):
                 if parse_requests or both:
                     domain_requests = self.handle_portfolio_requests(portfolio, federal_agency)
 
-                all_suborganizations.extend(suborganizations)
-                all_domains.extend(domains)
-                all_domain_requests.extend(domain_requests)
+                if suborganizations:
+                    all_suborganizations.extend(suborganizations)
+                if all_domains:
+                    all_domains.extend(domains)
+                if domain_requests:
+                    all_domain_requests.extend(domain_requests)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
