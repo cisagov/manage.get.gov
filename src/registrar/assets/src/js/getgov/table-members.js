@@ -257,9 +257,7 @@ export class MembersTable extends BaseTable {
       domainsHTML += "</ul>";
 
       // If there are more than 6 domains, display a "View assigned domains" link
-      if (num_domains >= 6) {
-        domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
-      }
+      domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
 
       domainsHTML += "</div>";
     }
