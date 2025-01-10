@@ -1,0 +1,15 @@
+// USWDS override to basically match the header size to a standard h3 size
+// This get complicated because USWDS sets a size on the container then a relative
+// size on the header. We'll need to reset the container size, override the header size,
+// then 'fix' the content size.
+.usa-summary-box {
+    font-size: 1rem;
+    .usa-summary-box__heading {
+        font-size: 1.17em;
+    }
+    p, li, dd {
+        font-size: 1.06rem;
+    }
+}
+
+  

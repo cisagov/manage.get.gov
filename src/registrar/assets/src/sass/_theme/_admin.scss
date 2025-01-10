@@ -812,16 +812,19 @@ div.dja__model-description{
     text-decoration: underline !important;
 }
 
-//-- Override some styling for the USWDS summary box (per design quidance for ticket #2055
-.usa-summary-box {
-    background: #{$dhs-blue-10};
-    border-color: #{$dhs-blue-30};
-    max-width: 72ex;
-    word-wrap: break-word;
-}
+//-- Override some styling for the USWDS summary box (per design guidance for ticket #2055)
+// Keep it scoped to admin.scss
+.dashboard {
+    .usa-summary-box {
+        background: #{$dhs-blue-10};
+        border-color: #{$dhs-blue-30};
+        max-width: 72ex;
+        word-wrap: break-word;
+    }
 
-.usa-summary-box h3 {
-    color: #{$dhs-blue-60};
+    .usa-summary-box h3 {
+        color: #{$dhs-blue-60};
+    }
 }
 
 .module caption, .inline-group h2 {
