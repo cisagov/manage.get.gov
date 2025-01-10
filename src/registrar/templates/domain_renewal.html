@@ -46,7 +46,7 @@
       contact us</a>. </p>
     <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
     </p>
-  </div>
+
 
     {% url 'user-profile' as url %}
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user edit_link=url editable=is_editable  contact='true' %}
