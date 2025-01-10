@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model, login
 from django.utils.timezone import make_aware
 from datetime import date, datetime, timedelta
 from django.utils import timezone
+from django.utils.html import strip_spaces_between_tags
 
 from registrar.models import (
     Contact,
@@ -105,6 +106,11 @@ def less_console_noise(output_stream=None):
 def get_time_aware_date(date=datetime(2023, 11, 1)):
     """Returns a time aware date"""
     return timezone.make_aware(date)
+
+
+def normalize_html(html):
+    """Normalize HTML by removing newlines and extra spaces."""
+    return strip_spaces_between_tags(" ".join(html.split()))
 
 
 class GenericTestHelper(TestCase):
@@ -1017,8 +1023,9 @@ def create_ready_domain():
 # TODO in 1793: Remove the federal agency/updated federal agency fields
 def completed_domain_request(  # noqa
     has_other_contacts=True,
-    has_current_website=True,
-    has_alternative_gov_domain=True,
+    # pass empty [] if you want current_websites or alternative_domains set to None
+    current_websites=["city.com"],
+    alternative_domains=["city1.gov"],
     has_about_your_organization=True,
     has_anything_else=True,
     has_cisa_representative=True,
@@ -1034,6 +1041,10 @@ def completed_domain_request(  # noqa
     action_needed_reason=None,
     portfolio=None,
     organization_name=None,
+    sub_organization=None,
+    requested_suborganization=None,
+    suborganization_city=None,
+    suborganization_state_territory=None,
 ):
     """A completed domain request."""
     if not user:
@@ -1046,8 +1057,6 @@ def completed_domain_request(  # noqa
         phone="(555) 555 5555",
     )
     domain, _ = DraftDomain.objects.get_or_create(name=name)
-    alt, _ = Website.objects.get_or_create(website="city1.gov")
-    current, _ = Website.objects.get_or_create(website="city.com")
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -1098,14 +1107,30 @@ def completed_domain_request(  # noqa
     if portfolio:
         domain_request_kwargs["portfolio"] = portfolio
 
+    if sub_organization:
+        domain_request_kwargs["sub_organization"] = sub_organization
+
+    if requested_suborganization:
+        domain_request_kwargs["requested_suborganization"] = requested_suborganization
+
+    if suborganization_city:
+        domain_request_kwargs["suborganization_city"] = suborganization_city
+
+    if suborganization_state_territory:
+        domain_request_kwargs["suborganization_state_territory"] = suborganization_state_territory
+
     domain_request, _ = DomainRequest.objects.get_or_create(**domain_request_kwargs)
 
     if has_other_contacts:
         domain_request.other_contacts.add(other)
-    if has_current_website:
-        domain_request.current_websites.add(current)
-    if has_alternative_gov_domain:
-        domain_request.alternative_domains.add(alt)
+    if len(current_websites) > 0:
+        for website in current_websites:
+            current, _ = Website.objects.get_or_create(website=website)
+            domain_request.current_websites.add(current)
+    if len(alternative_domains) > 0:
+        for alternative_domain in alternative_domains:
+            alt, _ = Website.objects.get_or_create(website=alternative_domain)
+            domain_request.alternative_domains.add(alt)
     if has_cisa_representative:
         domain_request.cisa_representative_first_name = "CISA-first-name"
         domain_request.cisa_representative_last_name = "CISA-last-name"

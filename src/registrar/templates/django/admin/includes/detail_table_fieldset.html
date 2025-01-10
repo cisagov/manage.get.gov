@@ -109,22 +109,38 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         This ONLY applies to analysts. For superusers, its business as usual.
         {% endcomment %}
         <div class="readonly">
-        {% with total_websites=field.contents|split:", " %}
-            {% for website in total_websites %}
-                <a href="{{ website }}" target="_blank" class="padding-top-1 current-website__{{forloop.counter}}">{{ website }}</a>{% if not forloop.last %}, {% endif %}
-                {# Acts as a <br> #}
-                {% if total_websites|length < 5 %}
-                <div class="display-block margin-top-1"></div>
+            {% with total_websites=field.contents|split:", " %}
+                {% if total_websites|length == 1 %}
+                    <p class="margin-y-0 padding-y-0">
+                        <a href="{{ total_websites.0 }}" target="_blank">
+                            {{ total_websites.0 }}
+                        </a>
+                    </p>
+                {% elif total_websites|length > 1 %}
+                    <ul class="margin-top-0 margin-left-0 padding-left-0{% if total_websites|length > 5 %} admin-list-inline{% endif %}">
+                        {% for website in total_websites %}
+                            {% comment %}White space matters: do NOT reformat the following line{% endcomment %}
+                            <li><a href="{{ website }}" target="_blank">{{ website }}</a></li>
+                        {% endfor %}
+                    </ul>
                 {% endif %}
-            {% endfor %}
-        {% endwith %}
+            {% endwith %}
         </div>
     {% elif field.field.name == "alternative_domains" %}
         <div class="readonly">
             {% with current_path=request.get_full_path %}
-            {% for alt_domain in original_object.alternative_domains.all %}
-                <a href="{% url 'admin:registrar_website_change' alt_domain.id %}?{{ 'return_path='|add:current_path }}">{{ alt_domain }}</a>{% if not forloop.last %}, {% endif %}
-            {% endfor %}
+                {% if original_object.alternative_domains.all|length == 1 %}
+                    <p class="margin-y-0 padding-y-0">
+                        <a href="{% url 'admin:registrar_website_change' original_object.alternative_domains.all.0.id %}?{{ 'return_path='|add:current_path }}" target="_blank">{{ original_object.alternative_domains.all.0 }}</a>
+                    </p>
+                {% elif original_object.alternative_domains.all|length > 1 %}
+                    <ul class="margin-top-0 margin-left-0 padding-left-0 admin-list-inline">
+                        {% for alt_domain in original_object.alternative_domains.all %}
+                            {% comment %}White space matters: do NOT reformat the following line{% endcomment %}
+                            <li><a href="{% url 'admin:registrar_website_change' alt_domain.id %}?{{ 'return_path='|add:current_path }}" target="_blank">{{alt_domain}}</a></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             {% endwith %}
         </div>
     {% elif field.field.name == "domain_managers" or field.field.name == "invited_domain_managers" %}
@@ -321,6 +337,22 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% else %}
             <input id="last-sent-rejection-email-content" class="display-none" value="None">
         {% endif %}
+    {% elif field.field.name == "requested_suborganization" %}
+        {{ field.field }}
+        <div class="requested-suborganization--clear-button">
+            <button 
+            id="clear-requested-suborganization"
+            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled" 
+            type="button"
+            >
+                <svg 
+                class="usa-icon"
+                >
+                    <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+                Clear requested suborganization
+            </button>
+        </div>
     {% else %}
         {{ field.field }}
     {% endif %}

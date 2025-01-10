@@ -1,5 +1,9 @@
 {% load static field_helpers url_helpers %}
 
+<!-- Form messages -->
+{% block messages %}
+{% include "includes/form_messages.html" %}
+{% endblock messages%}
 {% if can_edit %}
     {% include "includes/form_errors.html" with form=form %}
 {% endif %}

@@ -176,7 +176,16 @@ html[data-theme="dark"] {
     color: var(--primary-fg);
 }
 
+// Reset the USWDS styles for alerts
+@include at-media(desktop) {
+    .dashboard .usa-alert__body--widescreen {
+        padding-left: 4rem !important;
+    }
 
+    .dashboard .usa-alert__body--widescreen::before {
+        left: 1.5rem !important;
+    }
+}
 
 #branding h1,
 h1, h2, h3,
@@ -339,6 +348,40 @@ div#content > h2 {
         background: none!important;
         padding: 0!important;
         margin: 0!important;
+    }
+}
+
+.module {
+    .margin-left-0 {
+        margin-left: 0;
+    }
+    .margin-top-0 {
+        margin-top: 0;
+    }
+    .padding-left-0 {
+        padding-left: 0;
+    }
+}
+
+.admin-list-inline {
+    li {
+        float: left;
+        padding-top: 0;
+        margin-right: 4px;
+    }
+    li:not(:last-child)::after {
+        content: ",";
+    }
+}
+
+.form-row {
+    .margin-y-0 {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .padding-y-0 {
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 
