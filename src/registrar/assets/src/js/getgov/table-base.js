@@ -382,7 +382,7 @@ export class BaseTable {
    * for a member, they will also see the kebab column)
    * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
    * Currently returns a dictionary of either:
-   * - "isDeletable": If a new column should be displayed 
+   * - "hasAdditionalActions": If additional elements need to be added to the Action column 
    * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
    */
   customizeTable(dataObjects){ return {}; }
@@ -406,7 +406,7 @@ export class BaseTable {
    * Returns either: data.members, data.domains or data.domain_requests
    * @param {Object} dataObject - The data used to populate the row content 
    * @param {HTMLElement} tbody - The table body to which the new row is appended to 
-   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie isDeletable)
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie hasAdditionalActions)
    */
   addRow(dataObject, tbody, customTableOptions) {
     throw new Error('addRow must be defined');

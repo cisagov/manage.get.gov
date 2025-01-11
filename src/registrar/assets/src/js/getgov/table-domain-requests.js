@@ -52,8 +52,8 @@ export class DomainRequestsTable extends BaseTable {
     // Manage "export as CSV" visibility for domain requests
     this.toggleExportButton(data.domain_requests);
 
-    let needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-    return { 'isDeletable': needsDeleteColumn };
+    let isDeletable = data.domain_requests.some(request => request.is_deletable);
+    return { 'hasAdditionalActions': isDeletable };
   }
 
   addRow(dataObject, tbody, customTableOptions) {
@@ -118,13 +118,13 @@ export class DomainRequestsTable extends BaseTable {
       </td>
       <td class="${ this.portfolioValue ? '' : "width-quarter"}">
         <div class="tablet:display-flex tablet:flex-row">
-          <a href="${actionUrl}" ${customTableOptions.isDeletable ? "class='margin-right-2'" : ''}>
+          <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
             </svg>
             ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
           </a>
-          ${customTableOptions.isDeletable ? modalTrigger : ''}
+          ${customTableOptions.hasAdditionalActions ? modalTrigger : ''}
         </div>
       </td>
     `;
