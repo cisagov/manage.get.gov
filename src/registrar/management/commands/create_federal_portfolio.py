@@ -26,12 +26,12 @@ class Command(BaseCommand):
 
         Required (mutually exclusive) arguments:
             --agency_name: Name of a specific FederalAgency to create a portfolio for
-            --branch: Federal branch to process ("executive", "legislative", or "judicial"). 
+            --branch: Federal branch to process ("executive", "legislative", or "judicial").
                     Creates portfolios for all FederalAgencies in that branch.
 
         Required (at least one):
             --parse_requests: Add the created portfolio(s) to related DomainRequest records
-            --parse_domains: Add the created portfolio(s) to related DomainInformation records  
+            --parse_domains: Add the created portfolio(s) to related DomainInformation records
             Note: You can use both --parse_requests and --parse_domains together
 
         Optional (mutually exclusive with parse options):
