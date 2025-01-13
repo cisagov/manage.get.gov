@@ -10,17 +10,19 @@ address,
   max-width: measure(5);
 }
 
+h1, h2, h3, h4, h5, h6 {
+  color: color('primary-darker');
+}
+
 h1 {
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
-  color: color('primary-darker');
 }
 
 h2 {
   font-weight: font-weight('semibold');
   line-height: line-height('heading', 3);
   margin: units(4) 0 units(1);
-  color: color('primary-darker');
 }
 
 .header--body {

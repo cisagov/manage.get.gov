@@ -39,22 +39,20 @@
 
             {% block status_summary %}
             <div
-                class="usa-summary-box dotgov-status-box margin-top-3 padding-left-2" 
+                class="usa-summary-box margin-top-3 padding-y-2 margin-bottom-1" 
                 role="region"
                 aria-labelledby="summary-box-key-information"
             >
-            <div class="usa-summary-box__body">
-                <p class="usa-summary-box__heading font-sans-md margin-bottom-0" 
-                    id="summary-box-key-information"
-                > 
-                <span class="text-bold text-primary-darker">
-                    Status:
-                </span>
-                {{ DomainRequest.get_status_display|default:"ERROR Please contact technical support/dev" }}
-                </p>
+                <div class="usa-summary-box__body">
+                    <div class="usa-summary-box__text padding-top-0" 
+                    > 
+                        <p class="font-sans-md margin-y-0 text-primary-darker">
+                            <strong>Status:</strong>
+                            {{ DomainRequest.get_status_display|default:"ERROR Please contact technical support/dev" }}
+                        </p>
+                    </div>
+                </div>
             </div>
-            </div>
-            <br>
             {% endblock status_summary %}
             
             {% block status_metadata %}
@@ -142,7 +140,7 @@
 
         <div class="grid-col maxw-fit-content desktop:grid-offset-2 ">
             {% block request_summary_header %}
-            <h2 class="text-primary-darker"> Summary of your domain request </h2> 
+            <h2> Summary of your domain request </h2> 
             {% endblock request_summary_header%}
 
             {% block request_summary %}

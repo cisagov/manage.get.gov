@@ -516,10 +516,6 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     max-width: 68ex;
 }
 
-.usa-summary-box__dhs-color {
-    color: $dhs-blue-70;
-}
-
 details.dja-detail-table {
     display: inline-table;
     background-color: var(--body-bg);
@@ -810,21 +806,6 @@ div.dja__model-description{
 
 .text-underline {
     text-decoration: underline !important;
-}
-
-//-- Override some styling for the USWDS summary box (per design guidance for ticket #2055)
-// Keep it scoped to admin.scss
-.dashboard {
-    .usa-summary-box {
-        background: #{$dhs-blue-10};
-        border-color: #{$dhs-blue-30};
-        max-width: 72ex;
-        word-wrap: break-word;
-    }
-
-    .usa-summary-box h3 {
-        color: #{$dhs-blue-60};
-    }
 }
 
 .module caption, .inline-group h2 {

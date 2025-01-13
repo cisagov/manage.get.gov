@@ -129,16 +129,6 @@ grid column to the max-width of the searchbar, which was calculated to be 33rem.
   word-break: break-word;
 }
 
-.dotgov-status-box {
-  background-color: color('primary-lightest'); 
-  border-color: color('accent-cool-lighter');
-}
-
-.dotgov-status-box--action-need {
-  background-color: color('warning-lighter'); 
-  border-color: color('warning');
-}
-
 footer {
   border-top: 1px solid color('primary-darker');
 }
