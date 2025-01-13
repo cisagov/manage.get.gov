@@ -4,9 +4,9 @@ import ipaddress
 import re
 from datetime import date, timedelta
 from typing import Optional
+from django.db import transaction
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
-
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
@@ -2077,49 +2077,35 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.
         If it can't, it'll create it. Returns PublicContact"""
-        db_contact = PublicContact.objects.filter(
-            registry_id=public_contact.registry_id,
-            contact_type=public_contact.contact_type,
-            domain=self,
-        )
-
-        # If we find duplicates, log it and delete the oldest ones.
-        if db_contact.count() > 1:
-            logger.warning("_get_or_create_public_contact() -> Duplicate contacts found. Deleting duplicate.")
-
-            newest_duplicate = db_contact.order_by("-created_at").first()
-
-            duplicates_to_delete = db_contact.exclude(id=newest_duplicate.id)  # type: ignore
-
-            # Delete all duplicates
-            duplicates_to_delete.delete()
-
-            # Do a second filter to grab the latest content
-            db_contact = PublicContact.objects.filter(
+        try:
+            with transaction.atomic():
+                contact, _ = PublicContact.objects.get_or_create(
+                    registry_id=public_contact.registry_id,
+                    contact_type=public_contact.contact_type,
+                    domain=self,
+                    defaults={
+                        "email": public_contact.email,
+                        "voice": public_contact.voice,
+                        "fax": public_contact.fax,
+                        "name": public_contact.name,
+                        "org": public_contact.org,
+                        "pw": public_contact.pw,
+                        "city": public_contact.city,
+                        "pc": public_contact.pc,
+                        "cc": public_contact.cc,
+                        "sp": public_contact.sp,
+                        "street1": public_contact.street1,
+                        "street2": public_contact.street2,
+                        "street3": public_contact.street3,
+                    }
+                )
+        except IntegrityError:
+            contact = PublicContact.objects.get(
                 registry_id=public_contact.registry_id,
                 contact_type=public_contact.contact_type,
                 domain=self,
             )
-
-        # Save to DB if it doesn't exist already.
-        if db_contact.count() == 0:
-            # Doesn't run custom save logic, just saves to DB
-            public_contact.save(skip_epp_save=True)
-            logger.info(f"Created a new PublicContact: {public_contact}")
-            # Append the item we just created
-            return public_contact
-
-        existing_contact = db_contact.get()
-
-        # Does the item we're grabbing match what we have in our DB?
-        if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
-            existing_contact.delete()
-            public_contact.save()
-            logger.warning("Requested PublicContact is out of sync " "with DB.")
-            return public_contact
-
-        # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.
-        return existing_contact
+        return contact
 
     def _registrant_to_public_contact(self, registry_id: str):
         """EPPLib returns the registrant as a string,
