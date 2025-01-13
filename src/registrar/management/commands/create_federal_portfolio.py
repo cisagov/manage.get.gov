@@ -8,7 +8,6 @@ from registrar.models import DomainInformation, DomainRequest, FederalAgency, Su
 from registrar.models.utility.generic_helper import normalize_string
 from django.db.models import F, Q
 
-from registrar.models.utility.generic_helper import normalize_string
 
 logger = logging.getLogger(__name__)
 
