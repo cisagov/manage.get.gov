@@ -22,10 +22,21 @@ class Command(BaseCommand):
         self.failed_portfolios = set()
 
     def add_arguments(self, parser):
-        """Add three arguments:
-        1. agency_name => the value of FederalAgency.agency
-        2. --parse_requests => if true, adds the given portfolio to each related DomainRequest
-        3. --parse_domains => if true, adds the given portfolio to each related DomainInformation
+        """Add command line arguments to create federal portfolios.
+
+        Required (mutually exclusive) arguments:
+            --agency_name: Name of a specific FederalAgency to create a portfolio for
+            --branch: Federal branch to process ("executive", "legislative", or "judicial"). 
+                    Creates portfolios for all FederalAgencies in that branch.
+
+        Required (at least one):
+            --parse_requests: Add the created portfolio(s) to related DomainRequest records
+            --parse_domains: Add the created portfolio(s) to related DomainInformation records  
+            Note: You can use both --parse_requests and --parse_domains together
+
+        Optional (mutually exclusive with parse options):
+            --both: Shorthand for using both --parse_requests and --parse_domains
+                Cannot be used with --parse_requests or --parse_domains
         """
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
