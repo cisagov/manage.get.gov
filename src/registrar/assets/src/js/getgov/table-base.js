@@ -143,7 +143,7 @@ export class BaseTable {
     this.statusCheckboxes = document.querySelectorAll(`.${this.sectionSelector} input[name="filter-status"]`);
     this.statusIndicator = document.getElementById(`${this.sectionSelector}__filter-indicator`);
     this.statusToggle = document.getElementById(`${this.sectionSelector}__usa-button--filter`);
-    this.noTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
+    this.noDataTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
     this.noSearchResultsWrapper = document.getElementById(`${this.sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
@@ -376,13 +376,20 @@ export class BaseTable {
   loadModals(page, total, unfiltered_total) {}
 
   /**
+   * Loads tooltips + sets up event listeners
+   * "Activates" the tooltips after the DOM updates 
+   * Utilizes "uswdsInitializeTooltips"
+  */
+  initializeTooltips() {}
+
+  /**
    * Allows us to customize the table display based on specific conditions and a user's permissions
    * Dynamically manages the visibility set up of columns, adding/removing headers 
    * (ie if a domain request is deleteable, we include the kebab column or if a user has edit permissions
    * for a member, they will also see the kebab column)
    * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
    * Currently returns a dictionary of either:
-   * - "needsAdditionalColumn": If a new column should be displayed 
+   * - "hasAdditionalActions": If additional elements need to be added to the Action column 
    * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
    */
   customizeTable(dataObjects){ return {}; }
@@ -406,7 +413,7 @@ export class BaseTable {
    * Returns either: data.members, data.domains or data.domain_requests
    * @param {Object} dataObject - The data used to populate the row content 
    * @param {HTMLElement} tbody - The table body to which the new row is appended to 
-   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie needsAdditionalColumn)
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie hasAdditionalActions)
    */
   addRow(dataObject, tbody, customTableOptions) {
     throw new Error('addRow must be defined');
@@ -451,7 +458,7 @@ export class BaseTable {
         }
 
         // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+        this.updateDisplay(data, this.tableWrapper, this.noDataTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
         // identify the DOM element where the list of results will be inserted into the DOM
         const tbody = this.tableWrapper.querySelector('tbody');
         tbody.innerHTML = '';
@@ -471,6 +478,7 @@ export class BaseTable {
         this.initCheckboxListeners();
 
         this.loadModals(data.page, data.total, data.unfiltered_total);
+        this.initializeTooltips();
 
         // Do not scroll on first page load
         if (scroll)

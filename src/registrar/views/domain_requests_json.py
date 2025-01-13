@@ -125,15 +125,6 @@ def serialize_domain_request(request, domain_request, user):
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
 
-    # Determine if the request is deletable
-    if not user.is_org_user(request):
-        is_deletable = domain_request.status in deletable_statuses
-    else:
-        portfolio = request.session.get("portfolio")
-        is_deletable = (
-            domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
-        ) and domain_request.creator == user
-
     # Determine action label based on user permissions and request status
     editable_statuses = [
         DomainRequest.DomainRequestStatus.STARTED,
@@ -141,10 +132,25 @@ def serialize_domain_request(request, domain_request, user):
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
 
-    if user.has_edit_request_portfolio_permission and domain_request.creator == user:
+    # No portfolio action_label
+    if domain_request.creator == user:
         action_label = "Edit" if domain_request.status in editable_statuses else "Manage"
     else:
         action_label = "View"
+
+    # No portfolio deletable
+    is_deletable = domain_request.status in deletable_statuses
+
+    # If we're working with a portfolio
+    if user.is_org_user(request):
+        portfolio = request.session.get("portfolio")
+        is_deletable = (
+            domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
+        ) and domain_request.creator == user
+        if user.has_edit_request_portfolio_permission(portfolio) and domain_request.creator == user:
+            action_label = "Edit" if domain_request.status in editable_statuses else "Manage"
+        else:
+            action_label = "View"
 
     # Map the action label to corresponding URLs and icons
     action_url_map = {
