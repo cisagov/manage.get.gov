@@ -3835,6 +3835,9 @@ class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
     autocomplete_fields = ["domain"]
+    list_display = ("domain", "email", "name", "contact_type", "id")
+    search_fields = ["email", "name", "id"]
+    search_help_text = "Search by email, name or id."
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if extra_context is None:
