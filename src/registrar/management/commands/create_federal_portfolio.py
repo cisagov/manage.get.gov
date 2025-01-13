@@ -162,7 +162,7 @@ class Command(BaseCommand):
                 f"{len(domain_requests_to_update)} domain requests will be updated. "
                 f"These records will be changed: {[str(req) for req in updated_requests]}"
             ),
-            prompt_title="Do wish to commit this update to the database?",
+            prompt_title="Do you wish to commit this update to the database?",
         ):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
