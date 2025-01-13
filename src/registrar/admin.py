@@ -1625,28 +1625,27 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
-        organization in the Domain Information object."""
+        organization in the Domain Request object."""
 
         title = "generic organization"
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = DomainRequest.objects.annotate(
+                converted_generic_org=Case(
+                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                    default=Value(''),
+                    output_field=CharField()
+                )
+            ).values_list('converted_generic_org', flat=True).distinct()
 
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, org) for org in queryset if org])
 
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
                     | Q(portfolio__isnull=True, generic_org_type=self.value())
@@ -1984,22 +1983,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = DomainRequest.objects.annotate(
+                converted_generic_org=Case(
+                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                    default=Value(''),
+                    output_field=CharField()
+                )
+            ).values_list('converted_generic_org', flat=True).distinct()
 
-            # Populate the set with tuples of (value, display value)
-            for domain_request in DomainRequest.objects.all():
-                converted_generic_org = domain_request.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_request.converted_generic_org_type_display  # Display value
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, org) for org in queryset if org])
 
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
                     | Q(portfolio__isnull=True, generic_org_type=self.value())
@@ -2015,26 +2013,23 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            converted_federal_types = set()
+            # Annotate the queryset for efficient filtering
+            queryset = DomainRequest.objects.annotate(
+                converted_federal_type=Case(
+                    When(portfolio__isnull=False, portfolio__federal_type__isnull=False, then="portfolio__federal_type"),
+                    When(portfolio__isnull=True, federal_type__isnull=False, then="federal_type"),
+                    default=Value(''),
+                    output_field=CharField()
+                )
+            ).values_list('converted_federal_type', flat=True).distinct()
 
-            # Populate the set with tuples of (value, display value)
-            for domain_request in DomainRequest.objects.all():
-                converted_federal_type = domain_request.converted_federal_type  # Actual value
-                converted_federal_type_display = domain_request.converted_federal_type_display  # Display value
+            # Filter out empty values and return sorted unique entries
+            return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
 
-                if converted_federal_type:
-                    converted_federal_types.add(
-                        (converted_federal_type, converted_federal_type_display)  # Value, Display
-                    )
-
-            # Sort the set by display value
-            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a federal type is selected in the filter
+            if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_agency__federal_type=self.value())
+                    Q(portfolio__federal_type=self.value())
                     | Q(portfolio__isnull=True, federal_type=self.value())
                 )
             return queryset
@@ -3167,72 +3162,67 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":
                 return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
-
+    
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
-        organization in the Domain Information object."""
+        organization in the Domain Request object."""
 
         title = "generic organization"
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
-
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
-
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
-        def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
-                return queryset.filter(
-                    Q(domain_info__portfolio__organization_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = DomainRequest.objects.annotate(
+                converted_generic_org=Case(
+                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                    default=Value(''),
+                    output_field=CharField()
                 )
+            ).values_list('converted_generic_org', flat=True).distinct()
 
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, org) for org in queryset if org])
+
+        def queryset(self, request, queryset):
+            if self.value():
+                return queryset.filter(
+                    Q(portfolio__organization_type=self.value())
+                    | Q(portfolio__isnull=True, generic_org_type=self.value())
+                )
             return queryset
 
     class FederalTypeFilter(admin.SimpleListFilter):
         """Custom Federal Type filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's federal type.  If not, use the
-        federal type in the Domain Information object."""
+        organization in the Domain Request object."""
 
         title = "federal type"
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            converted_federal_types = set()
+            # Annotate the queryset for efficient filtering
+            queryset = DomainRequest.objects.annotate(
+                converted_federal_type=Case(
+                    When(portfolio__isnull=False, portfolio__federal_type__isnull=False, then="portfolio__federal_type"),
+                    When(portfolio__isnull=True, federal_type__isnull=False, then="federal_type"),
+                    default=Value(''),
+                    output_field=CharField()
+                )
+            ).values_list('converted_federal_type', flat=True).distinct()
 
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_federal_type = domain_info.converted_federal_type  # Actual value
-                converted_federal_type_display = domain_info.converted_federal_type_display  # Display value
+            # Filter out empty values and return sorted unique entries
+            return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
 
-                if converted_federal_type:
-                    converted_federal_types.add(
-                        (converted_federal_type, converted_federal_type_display)  # Value, Display
-                    )
-
-            # Sort the set by display value
-            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a federal type is selected in the filter
+            if self.value():
                 return queryset.filter(
-                    Q(domain_info__portfolio__federal_agency__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+                    Q(portfolio__federal_type=self.value())
+                    | Q(portfolio__isnull=True, federal_type=self.value())
                 )
             return queryset
-
+        
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
             converted_generic_org_type=Case(
@@ -3254,7 +3244,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 # When portfolio is present, use its value instead
                 When(
                     Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
-                    then=F("domain_info__portfolio__federal_agency__federal_type"),
+                    then=F("domain_info__portfolio__federal_type"),
                 ),
                 # Otherwise, return the natively assigned value
                 default=F("domain_info__federal_agency__federal_type"),
