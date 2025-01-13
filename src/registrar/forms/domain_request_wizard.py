@@ -45,6 +45,7 @@ class RequestingEntityForm(RegistrarForm):
         required=False,
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
+        widget=ComboboxWidget,
     )
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
