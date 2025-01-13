@@ -1516,6 +1516,91 @@ class TestCreateFederalPortfolio(TestCase):
         ):
             call_command("create_federal_portfolio", **kwargs)
 
+    @less_console_noise_decorator
+    def test_post_process_started_domain_requests_existing_portfolio(self):
+        """Ensures that federal agency is cleared when agency name matches portfolio name.
+        As the name implies, this implicitly tests the "post_process_started_domain_requests" function.
+        """
+        federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
+
+        # Test records with portfolios and no org names
+        # Create a portfolio. This script skips over "started"
+        portfolio = Portfolio.objects.create(organization_name="Sugarcane", creator=self.user)
+        # Create a domain request with matching org name
+        matching_request = completed_domain_request(
+            name="matching.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=federal_agency_2,
+            user=self.user,
+            portfolio=portfolio,
+        )
+
+        # Create a request not in started (no change should occur)
+        matching_request_in_wrong_status = completed_domain_request(
+            name="kinda-matching.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+            user=self.user,
+        )
+
+        self.run_create_federal_portfolio(agency_name="Sugarcane", parse_requests=True)
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
+
+        # Refresh from db
+        matching_request.refresh_from_db()
+        matching_request_in_wrong_status.refresh_from_db()
+
+        # Request with matching name should have federal_agency cleared
+        self.assertIsNone(matching_request.federal_agency)
+        self.assertIsNotNone(matching_request.portfolio)
+        self.assertEqual(matching_request.portfolio.organization_name, "Sugarcane")
+
+        # Request with matching name but wrong state should keep its federal agency
+        self.assertEqual(matching_request_in_wrong_status.federal_agency, self.federal_agency)
+        self.assertIsNotNone(matching_request_in_wrong_status.portfolio)
+        self.assertEqual(matching_request_in_wrong_status.portfolio.organization_name, "Test Federal Agency")
+
+    @less_console_noise_decorator
+    def test_post_process_started_domain_requests(self):
+        """Tests that federal agency is cleared when agency name
+        matches an existing portfolio's name, even if the domain request isn't
+        directly on that portfolio."""
+
+        federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
+
+        # Create a request with matching federal_agency name but no direct portfolio association
+        matching_agency_request = completed_domain_request(
+            name="agency-match.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=federal_agency_2,
+            user=self.user,
+        )
+
+        # Create a control request that shouldn't match
+        non_matching_request = completed_domain_request(
+            name="no-match.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+            user=self.user,
+        )
+
+        # We expect the matching agency to have its fed agency cleared.
+        self.run_create_federal_portfolio(agency_name="Sugarcane", parse_requests=True)
+        matching_agency_request.refresh_from_db()
+        non_matching_request.refresh_from_db()
+
+        # Request with matching agency name should have federal_agency cleared
+        self.assertIsNone(matching_agency_request.federal_agency)
+
+        # Non-matching request should keep its federal_agency
+        self.assertIsNotNone(non_matching_request.federal_agency)
+        self.assertEqual(non_matching_request.federal_agency, self.federal_agency)
+
+    @less_console_noise_decorator
     def test_create_single_portfolio(self):
         """Test portfolio creation with suborg and senior official."""
         self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
@@ -1587,6 +1672,34 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
         self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
+
+    def test_script_adds_requested_suborganization_information(self):
+        """Tests that the script adds the requested suborg fields for domain requests"""
+        # Create a new domain request with some errant spacing
+        custom_suborg_request = completed_domain_request(
+            name="custom_org.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.executive_agency_2,
+            user=self.user,
+            organization_name=" requested org name ",
+            city="Austin   ",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+        )
+
+        self.assertIsNone(custom_suborg_request.requested_suborganization)
+        self.assertIsNone(custom_suborg_request.suborganization_city)
+        self.assertIsNone(custom_suborg_request.suborganization_state_territory)
+
+        # Run the script and test it
+        self.run_create_federal_portfolio(branch="executive", parse_requests=True)
+        custom_suborg_request.refresh_from_db()
+
+        self.assertEqual(custom_suborg_request.requested_suborganization, "requested org name")
+        self.assertEqual(custom_suborg_request.suborganization_city, "Austin")
+        self.assertEqual(
+            custom_suborg_request.suborganization_state_territory, DomainRequest.StateTerritoryChoices.TEXAS
+        )
 
     def test_create_multiple_portfolios_for_branch_executive(self):
         """Tests creating all portfolios under a given branch"""

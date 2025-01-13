@@ -1041,6 +1041,8 @@ def completed_domain_request(  # noqa
     federal_agency=None,
     federal_type=None,
     action_needed_reason=None,
+    city=None,
+    state_territory=None,
     portfolio=None,
     organization_name=None,
     sub_organization=None,
@@ -1083,7 +1085,7 @@ def completed_domain_request(  # noqa
         organization_name=organization_name if organization_name else "Testorg",
         address_line1="address 1",
         address_line2="address 2",
-        state_territory="NY",
+        state_territory="NY" if not state_territory else state_territory,
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
@@ -1092,6 +1094,10 @@ def completed_domain_request(  # noqa
         investigator=investigator,
         federal_agency=federal_agency,
     )
+
+    if city:
+        domain_request_kwargs["city"] = city
+
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:
