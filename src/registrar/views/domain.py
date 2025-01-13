@@ -316,18 +316,6 @@ class DomainRenewalView(DomainView):
 
     template_name = "domain_renewal.html"
 
-    def can_access_domain_via_portfolio(self, pk):
-        """Most views should not allow permission to portfolio users.
-        If particular views allow permissions, they will need to override
-        this function."""
-        portfolio = self.request.session.get("portfolio")
-        if self.request.user.has_any_domains_portfolio_permission(portfolio):
-            if Domain.objects.filter(id=pk).exists():
-                domain = Domain.objects.get(id=pk)
-                if domain.domain_info.portfolio == portfolio:
-                    return True
-        return False
-
     def post(self, request, pk):
 
         domain = get_object_or_404(Domain, id=pk)
