@@ -445,11 +445,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     """Form for updating the organization name and mailing address."""
 
     # for federal agencies we also want to know the top-level agency.
-    excluded_agencies = ["gov Administration", "Non-Federal Agency"]
     federal_agency = forms.ModelChoiceField(
         label="Federal agency",
         required=False,
-        queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
+        queryset=FederalAgency.objects.all(),
         empty_label="--Select--",
         widget=ComboboxWidget,
     )
