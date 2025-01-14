@@ -28,19 +28,6 @@ export function loadInitialValuesForComboBoxes() {
       // Override the default clear button behavior such that it no longer clears the input,
       // it just resets to the data-initial-value.
       // Due to the nature of how uswds works, this is slightly hacky.
-      // Use a MutationObserver to watch for changes in the dropdown list
-      const dropdownList = comboBox.querySelector(`#${input.id}--list`);
-      const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-              if (mutation.type === "childList") {
-                addBlankOption(clearInputButton, dropdownList, initialValue);
-              }
-          });
-      });
-
-      // Configure the observer to watch for changes in the dropdown list
-      const config = { childList: true, subtree: true };
-      observer.observe(dropdownList, config);
 
       // Input event listener to detect typing
       input.addEventListener("input", () => {
@@ -85,29 +72,6 @@ export function loadInitialValuesForComboBoxes() {
       hideElement(clearInputButton);
     }else {
       showElement(clearInputButton)
-    }
-  }
-
-  function addBlankOption(clearInputButton, dropdownList, initialValue) {
-    if (dropdownList && !dropdownList.querySelector('[data-value=""]') && !isTyping) {
-        const blankOption = document.createElement("li");
-        blankOption.setAttribute("role", "option");
-        blankOption.setAttribute("data-value", "");
-        blankOption.classList.add("usa-combo-box__list-option");
-        if (!initialValue){
-          blankOption.classList.add("usa-combo-box__list-option--selected")
-        }
-        blankOption.textContent = "⎯";
-
-        dropdownList.insertBefore(blankOption, dropdownList.firstChild);
-        blankOption.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          overrideDefaultClearButton = false;
-          // Trigger the default clear behavior
-          clearInputButton.click();
-          overrideDefaultClearButton = true;
-        });
     }
   }
 }

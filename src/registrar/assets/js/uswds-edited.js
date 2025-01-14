@@ -29,6 +29,8 @@
  *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
+ *  - modified combobox to allow for blank values in list
+ *  - modified aria label for X button in combobox to reflect modified behavior of button
  */
 
 if ("document" in window.self) {
@@ -1218,9 +1220,11 @@ const enhanceComboBox = _comboBoxEl => {
     input.setAttribute(key, value);
   }));
   comboBoxEl.insertAdjacentElement("beforeend", input);
+  // DOTGOV - modified the aria-label of the clear input button to Reset selection to reflect changed button behavior
+  // <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Clear the select contents">&nbsp;</button>
   comboBoxEl.insertAdjacentHTML("beforeend", Sanitizer.escapeHTML`
     <span class="${CLEAR_INPUT_BUTTON_WRAPPER_CLASS}" tabindex="-1">
-        <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Clear the select contents">&nbsp;</button>
+        <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Reset selection">&nbsp;</button>
       </span>
       <span class="${INPUT_BUTTON_SEPARATOR_CLASS}">&nbsp;</span>
       <span class="${TOGGLE_LIST_BUTTON_WRAPPER_CLASS}" tabindex="-1">
@@ -1356,8 +1360,12 @@ const displayList = el => {
   for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
     const optionEl = selectEl.options[i];
     const optionId = `${listOptionBaseId}${options.length}`;
-    if (optionEl.value && (disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
-      if (selectEl.value && optionEl.value === selectEl.value) {
+    // DOTGOV: modified combobox to allow for options with blank value
+    //if (optionEl.value && (disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
+    if ((disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
+      // DOTGOV: modified combobox to allow blank option value selections to be considered selected
+      //if (selectEl.value && optionEl.value === selectEl.value) {
+      if (selectEl.value && optionEl.value === selectEl.value || (!selectEl.value && !optionEl.value)) {
         selectedItemId = optionId;
       }
       if (disableFiltering && !firstFoundId && regex.test(optionEl.text)) {

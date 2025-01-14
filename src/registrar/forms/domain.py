@@ -164,6 +164,7 @@ class DomainSuborganizationForm(forms.ModelForm):
     sub_organization = forms.ModelChoiceField(
         label="Suborganization name",
         queryset=Suborganization.objects.none(),
+        empty_label="⎯ (No suborganization)",
         required=False,
         widget=ComboboxWidget,
     )
@@ -468,12 +469,11 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
-        widget=ComboboxWidget(
-            attrs={
-                "required": True,
-            }
-        ),
+        choices=[("", "--Select--")] + DomainInformation.StateTerritoryChoices.choices,
+        error_messages={
+            "required": ("Select the state, territory, or military post where your organization is located.")
+        },
+        widget=ComboboxWidget(),
     )
 
     class Meta:
@@ -493,9 +493,6 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             "organization_name": {"required": "Enter the name of your organization."},
             "address_line1": {"required": "Enter the street address of your organization."},
             "city": {"required": "Enter the city where your organization is located."},
-            "state_territory": {
-                "required": "Select the state, territory, or military post where your organization is located."
-            },
         }
         widgets = {
             "organization_name": forms.TextInput,

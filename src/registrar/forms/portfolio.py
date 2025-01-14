@@ -37,7 +37,10 @@ class PortfolioOrgAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
+        choices=[("", "--Select--")] + DomainInformation.StateTerritoryChoices.choices,
+        error_messages={
+            "required": ("Select the state, territory, or military post where your organization is located.")
+        },
         widget=ComboboxWidget,
     )
 
@@ -54,9 +57,6 @@ class PortfolioOrgAddressForm(forms.ModelForm):
         error_messages = {
             "address_line1": {"required": "Enter the street address of your organization."},
             "city": {"required": "Enter the city where your organization is located."},
-            "state_territory": {
-                "required": "Select the state, territory, or military post where your organization is located."
-            },
             "zipcode": {"required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789."},
         }
         widgets = {
