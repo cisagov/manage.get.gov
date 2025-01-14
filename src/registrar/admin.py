@@ -2785,7 +2785,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             audit_log_entries = LogEntry.objects.filter(
                 object_id=object_id, content_type__model="domainrequest"
             ).order_by("-timestamp")
-            
+
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:
                 entry = self.process_log_entry(log_entry)
