@@ -1023,7 +1023,6 @@ class DomainRequest(TimeStampedModel):
             portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS])
             cc_users = self.portfolio.portfolio_admin_users | portfolio_view_requests_users
             cc_addresses = list(cc_users.values_list("email", flat=True))
-            print("cc addresses: ", cc_addresses)
 
         if self.status in limited_statuses:
             self._send_status_update_email(
