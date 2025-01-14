@@ -131,13 +131,11 @@ class TestDomainInvitationAdmin(TestCase):
       tests have available superuser, client, and admin
     """
 
-    @classmethod
-    def setUpClass(cls):
-        cls.factory = RequestFactory()
-        cls.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
-        cls.superuser = create_superuser()
-
     def setUp(self):
+        self.factory = RequestFactory()
+        self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
+        self.superuser = create_superuser()
+        self.domain = Domain.objects.create(name="example.com")
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
 
@@ -145,9 +143,6 @@ class TestDomainInvitationAdmin(TestCase):
         """Delete all DomainInvitation objects"""
         DomainInvitation.objects.all().delete()
         Contact.objects.all().delete()
-
-    @classmethod
-    def tearDownClass(self):
         User.objects.all().delete()
 
     @less_console_noise_decorator
@@ -168,6 +163,7 @@ class TestDomainInvitationAdmin(TestCase):
         )
         self.assertContains(response, "Show more")
 
+    @less_console_noise_decorator
     def test_get_filters(self):
         """Ensures that our filters are displaying correctly"""
         with less_console_noise():
@@ -191,6 +187,59 @@ class TestDomainInvitationAdmin(TestCase):
 
             self.assertContains(response, invited_html, count=1)
             self.assertContains(response, retrieved_html, count=1)
+
+    @less_console_noise_decorator
+    def test_save_model_user_exists(self):
+        """Test saving a domain invitation when the user exists.
+
+        Should attempt to retrieve the domain invitation."""
+        # Create a user with the same email
+        User.objects.create_user(email="test@example.com", username="username")
+
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method
+        with patch.object(DomainInvitation, "retrieve") as mock_retrieve:
+            admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert retrieve was called
+        mock_retrieve.assert_called_once()
+
+        # Assert the invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
+
+    @less_console_noise_decorator
+    def test_save_model_user_does_not_exist(self):
+        """Test saving a domain invitation when the user does not exist.
+
+        Should not attempt to retrieve the domain invitation."""
+        # Create a domain invitation instance
+        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
+
+        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
+
+        # Create a request object
+        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
+        request.user = self.superuser
+
+        # Patch the retrieve method to ensure it is not called
+        with patch.object(DomainInvitation, "retrieve") as mock_retrieve:
+            admin_instance.save_model(request, invitation, form=None, change=False)
+
+        # Assert retrieve was not called
+        mock_retrieve.assert_not_called()
+
+        # Assert the invitation was saved
+        self.assertEqual(DomainInvitation.objects.count(), 1)
+        self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
 
 
 class TestUserPortfolioPermissionAdmin(TestCase):

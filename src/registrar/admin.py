@@ -1434,6 +1434,20 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        On creation of a new domain invitation, attempt to retrieve the invitation,
+        which will be successful if a single User exists for that email; otherwise, will
+        just continue to create the invitation.
+        """
+        if not change and User.objects.filter(email=obj.email).count() == 1:
+            # Domain Invitation creation for an existing User
+            obj.retrieve()
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
+
 
 class PortfolioInvitationAdmin(ListHeaderAdmin):
     """Custom portfolio invitation admin class."""
