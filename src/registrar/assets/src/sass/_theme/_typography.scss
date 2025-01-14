@@ -15,6 +15,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
+  font-size: 2.125rem;
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
 }
@@ -23,35 +24,23 @@ h2 {
   margin: units(4) 0 units(1);
 }
 
-h3, h4 {
+h3, .h3 {
+  font-size: 1.25rem;
   font-weight: font-weight('semibold');
 }
 
-.header--body {
-  margin-top: units(2);
+h4, .h4 {
+  font-size: 1.15rem;
   font-weight: font-weight('semibold');
-  // The units mixin can only get us close, so it's between 
-  // hardcoding the value and using in markup
-  font-size: 16.96px;
-}
-
-.h4--sm-05 {
-  font-size: size('body', 'sm');
-  font-weight: normal;
-  color: color('primary');
-  margin-bottom: units(0.5);
-}
-
-// Normalize typography in forms
-.usa-form,
-.usa-form fieldset {
-  font-size: 1rem;
-  .usa-legend {
-    font-size: 1rem;
-  }
 }
 
 .p--blockquote {
   padding-left: units(1);
   border-left: 2px solid color('base-lighter');
+}
+
+.summary-item__title {
+  // match h3 at 18.72px and semibold
+  font-size: 1.25em;
+  font-weight: 600;
 }

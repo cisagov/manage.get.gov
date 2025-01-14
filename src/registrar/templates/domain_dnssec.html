@@ -33,7 +33,7 @@
 
   <form class="usa-form usa-form--text-width" method="post">
     {% csrf_token %}
-
+    {% if has_dnssec_records %}
     <div
         class="usa-summary-box " 
         role="region"
@@ -62,7 +62,7 @@
       data-open-modal
       >Disable DNSSEC</a
     >
-
+    {% else %}
     <div id="enable-dnssec">
       <div class="usa-alert usa-alert--info">
         <div class="usa-alert__body">
@@ -71,7 +71,7 @@
       </div>
       <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button">Enable DNSSEC</a>
     </div>
-
+    {% endif %}
   </form>
 
   <div
