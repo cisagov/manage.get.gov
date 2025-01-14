@@ -3515,7 +3515,7 @@ class TestTransferUser(WebTest):
 
             messages.error.assert_not_called()
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
@@ -3531,7 +3531,6 @@ class TestTransferUser(WebTest):
 
         self.assertEquals(domain_request.creator, self.user1)
         self.assertEquals(domain_request.investigator, self.user1)
-
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_information_creator(self):
@@ -3623,7 +3622,7 @@ class TestTransferUser(WebTest):
         with self.assertRaises(User.DoesNotExist):
             self.user2.refresh_from_db()
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_transfer_user_throws_transfer_and_delete_success_messages(self):
         """Test that success messages for data transfer and user deletion are displayed."""
         # Ensure the setup for VerifiedByStaff
@@ -3648,8 +3647,8 @@ class TestTransferUser(WebTest):
             mock_success_message.assert_any_call(
                 ANY,
                 (
-                    "Data transferred successfully for the following objects: ['Changed requestor "
-                    + 'from "Furiosa Jabassa " to "Max Rokatanski " on immortan.joe@citadel.com\']'
+                    "Data transferred successfully for the following objects: ['Transferred requestor "
+                    + "from Furiosa Jabassa  to Max Rokatanski ']"
                 ),
             )
 
