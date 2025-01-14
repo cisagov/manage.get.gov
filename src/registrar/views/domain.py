@@ -12,11 +12,11 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-from registrar.forms.domain import DomainSuborganizationForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -309,6 +309,47 @@ class DomainView(DomainBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
+
+
+class DomainRenewalView(DomainView):
+    """Domain detail overview page."""
+
+    template_name = "domain_renewal.html"
+
+    def post(self, request, pk):
+
+        domain = get_object_or_404(Domain, id=pk)
+
+        form = DomainRenewalForm(request.POST)
+
+        if form.is_valid():
+
+            # check for key in the post request data
+            if "submit_button" in request.POST:
+                try:
+                    domain.renew_domain()
+                    messages.success(request, "This domain has been renewed for one year.")
+                except Exception:
+                    messages.error(
+                        request,
+                        "This domain has not been renewed for one year, "
+                        "please email help@get.gov if this problem persists.",
+                    )
+            return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
+
+        # if not valid, render the template with error messages
+        # passing editable, has_domain_renewal_flag, and is_editable for re-render
+        return render(
+            request,
+            "domain_renewal.html",
+            {
+                "domain": domain,
+                "form": form,
+                "is_editable": True,
+                "has_domain_renewal_flag": True,
+                "is_domain_manager": True,
+            },
+        )
 
 
 class DomainOrgNameAddressView(DomainFormBaseView):
