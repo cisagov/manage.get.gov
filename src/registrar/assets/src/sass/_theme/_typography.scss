@@ -20,9 +20,11 @@ h1 {
 }
 
 h2 {
-  font-weight: font-weight('semibold');
-  line-height: line-height('heading', 3);
   margin: units(4) 0 units(1);
+}
+
+h3, h4 {
+  font-weight: font-weight('semibold');
 }
 
 .header--body {

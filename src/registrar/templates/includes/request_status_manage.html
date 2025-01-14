@@ -59,12 +59,12 @@
 
             {% if portfolio %}
                 {% if DomainRequest.creator %}
-                <p class="margin-top-1 margin-bottom-1">
-                    <b class="review__step__name">Created by:</b> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
+                <p>
+                    <strong class="text-primary-dark">Created by:</strong> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
                 </p>
                 {% else %}
-                <p class="margin-top-1 margin-bottom-1">
-                    <b class="review__step__name">No creator found:</b> this is an error, please email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+                <p>
+                    <strong class="text-primary-dark">No creator found:</strong> this is an error, please email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
                 </p>
                 {% endif %}
             {% endif %}
@@ -75,49 +75,32 @@
             There is some code repetition, but it gives us more flexibility rather than a dense reduction. 
             Leave it this way until we've solidified our requirements.
             {% endcomment %}
-            {% if DomainRequest.status == statuses.STARTED %}
-            {% with first_started_date=DomainRequest.get_first_status_started_date|date:"F j, Y" %}
-            <p class="margin-top-1">
+            
+            <p>
+                {% if DomainRequest.status == statuses.STARTED %}
+                {% with first_started_date=DomainRequest.get_first_status_started_date|date:"F j, Y" %}
                 {% comment %} 
                 A newly created domain request will not have a value for last_status update.
                 This is because the status never really updated. 
                 However, if this somehow goes back to started we can default to displaying that new date.
                 {% endcomment %}
-                <b class="review__step__name">Started on:</b> {{last_status_update|default:first_started_date}}
-            </p>
-            {% endwith %}
-            {% elif DomainRequest.status == statuses.SUBMITTED %}
-            <p class="margin-top-1 margin-bottom-1">
-                <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
-            </p>
-            <p class="margin-top-1">
-                <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
-            </p>
-            {% elif DomainRequest.status == statuses.ACTION_NEEDED %}
-            <p class="margin-top-1 margin-bottom-1">
-                <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
-            </p>
-            <p class="margin-top-1">
-                <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
-            </p>
-            {% elif DomainRequest.status == statuses.REJECTED %}
-            <p class="margin-top-1 margin-bottom-1">
-                <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
-            </p>
-            <p class="margin-top-1">
-                <b class="review__step__name">Rejected on:</b> {{last_status_update}}
-            </p>
-            {% elif DomainRequest.status == statuses.WITHDRAWN %}
-            <p class="margin-top-1 margin-bottom-1">
-                <b class="review__step__name">Submitted on:</b> {{last_submitted|default:first_submitted }}
-            </p>
-            <p class="margin-top-1">
-                <b class="review__step__name">Withdrawn on:</b> {{last_status_update}}
-            </p>
-            {% else %}
-            {% comment %} Shown for in_review, approved, ineligible {% endcomment %}
-            <p class="margin-top-1">
-                <b class="review__step__name">Last updated on:</b> {{DomainRequest.updated_at|date:"F j, Y"}}
+                    <strong class="text-primary-dark">Started on:</strong> {{last_status_update|default:first_started_date}}
+                {% endwith %}
+                {% elif DomainRequest.status == statuses.SUBMITTED %}
+                    <strong class="text-primary-dark">Submitted on:</strong> {{last_submitted|default:first_submitted }}<br>
+                    <strong class="text-primary-dark">Last updated on:</strong> {{DomainRequest.updated_at|date:"F j, Y"}}
+                {% elif DomainRequest.status == statuses.ACTION_NEEDED %}
+                    <strong class="text-primary-dark">Submitted on:</strong> {{last_submitted|default:first_submitted }}<br>
+                    <strong class="text-primary-dark">Last updated on:</strong> {{DomainRequest.updated_at|date:"F j, Y"}}
+                {% elif DomainRequest.status == statuses.REJECTED %}
+                    <strong class="text-primary-dark">Submitted on:</strong> {{last_submitted|default:first_submitted }}<br>
+                    <strong class="text-primary-dark">Rejected on:</strong> {{last_status_update}}
+                {% elif DomainRequest.status == statuses.WITHDRAWN %}
+                    <strong class="text-primary-dark">Submitted on:</strong> {{last_submitted|default:first_submitted }}<br>
+                    <strong class="text-primary-dark">Withdrawn on:</strong> {{last_status_update}}
+                {% else %}
+                {% comment %} Shown for in_review, approved, ineligible {% endcomment %}
+                    <strong class="text-primary-dark">Last updated on:</strong> {{DomainRequest.updated_at|date:"F j, Y"}}
             </p>
             {% endif %}
             {% endwith %}
@@ -125,7 +108,7 @@
 
             {% block status_blurb %}
             {% if DomainRequest.is_awaiting_review %}
-                <p>{% include "includes/domain_request_awaiting_review.html" with show_withdraw_text=DomainRequest.is_withdrawable %}</p>
+                {% include "includes/domain_request_awaiting_review.html" with show_withdraw_text=DomainRequest.is_withdrawable %}
             {% endif %}
             {% endblock status_blurb %}
 

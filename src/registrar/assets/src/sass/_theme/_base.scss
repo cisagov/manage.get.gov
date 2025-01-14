@@ -271,3 +271,9 @@ abbr[title] {
 .maxw-fit-content {
   max-width: fit-content;
 }
+
+.summary-item__title {
+  // match h3 at 18.72px and semibold
+  font-size: 1.17em;
+  font-weight: 600;
+}

@@ -10,8 +10,6 @@
       <h3
     {% endif %} 
       class="summary-item__title
-             font-sans-md
-             text-primary-dark text-semibold
              margin-top-0 margin-bottom-05
              padding-right-1"
       >
@@ -41,8 +39,6 @@
                   <dt>
                   
                  <h4 class="summary-item__title
-             font-sans-md
-             text-primary-dark text-semibold
              margin-bottom-05
              padding-right-1">
                       Contact {{forloop.counter}}
@@ -143,7 +139,7 @@
       <div class="text-right">
       <a
           href="{{ edit_link }}"
-          class="usa-link usa-link--icon font-sans-sm line-height-sans-5"
+          class="usa-link usa-link--icon font-sans-sm line-height-sans-4"
       >
         <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
           <use xlink:href="{% static 'img/sprite.svg' %}#{% if manage_button %}settings{% elif view_button %}visibility{% else %}edit{% endif %}"></use>

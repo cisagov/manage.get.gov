@@ -30,7 +30,7 @@
       <div class="usa-summary-box__body">
         <div class="usa-summary-box__text padding-top-0"
         > 
-          <p class="font-sans-md margin-y-0 text-primary-darker">
+          <p class="font-sans-md margin-top-0 margin-bottom-05 text-primary-darker">
             <strong>Status:</strong>
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
             {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
