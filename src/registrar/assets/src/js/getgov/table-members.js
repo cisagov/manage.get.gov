@@ -84,7 +84,7 @@ export class MembersTable extends BaseTable {
 
     let admin_tagHTML = ``;
     if (member.is_admin)
-      admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary">Admin</span>`
+      admin_tagHTML = `<span class="usa-tag margin-left-1 primary-dark text-medium">Admin</span>`
 
     // generate html blocks for domains and permissions for the member
     let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
@@ -257,9 +257,7 @@ export class MembersTable extends BaseTable {
       domainsHTML += "</ul>";
 
       // If there are more than 6 domains, display a "View assigned domains" link
-      if (num_domains >= 6) {
-        domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
-      }
+      domainsHTML += `<p><a href="${action_url}/domains">View assigned domains</a></p>`;
 
       domainsHTML += "</div>";
     }
