@@ -4,9 +4,9 @@ import ipaddress
 import re
 from datetime import date, timedelta
 from typing import Optional
+from django.db import transaction
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
-
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
@@ -1329,7 +1329,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_default_administrative_contact(self):
         """Gets the default administrative contact."""
-        logger.info("get_default_security_contact() -> Adding administrative security contact")
+        logger.info("get_default_administrative_contact() -> Adding administrative security contact")
         contact = PublicContact.get_default_administrative()
         contact.domain = self
         return contact
@@ -1848,7 +1848,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             self._add_missing_contacts_if_unknown(cleaned)
-
         except Exception as e:
             logger.error(
                 "%s couldn't _add_missing_contacts_if_unknown, error was %s."
@@ -1866,7 +1865,6 @@ class Domain(TimeStampedModel, DomainHelper):
         is in an UNKNOWN state, that is an error state)
         Note: The transition state change happens at the end of the function
         """
-
         missingAdmin = True
         missingSecurity = True
         missingTech = True
@@ -1890,6 +1888,11 @@ class Domain(TimeStampedModel, DomainHelper):
             if missingTech:
                 technical_contact = self.get_default_technical_contact()
                 technical_contact.save()
+            
+            logger.info(
+                "_add_missing_contacts_if_unknown => " 
+                f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
+            )
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
@@ -2104,8 +2107,20 @@ class Domain(TimeStampedModel, DomainHelper):
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
             # Doesn't run custom save logic, just saves to DB
-            public_contact.save(skip_epp_save=True)
-            logger.info(f"Created a new PublicContact: {public_contact}")
+            try:
+                public_contact.save(skip_epp_save=True)
+                logger.info(f"Created a new PublicContact: {public_contact}")
+            except IntegrityError as err:
+                logger.error(
+                    "_get_or_create_public_contact() => tried to create a duplicate public contact: "
+                    f"{err}", exc_info=True
+                )
+                return PublicContact.objects.get(
+                    registry_id=public_contact.registry_id,
+                    contact_type=public_contact.contact_type,
+                    domain=self,
+                )
+
             # Append the item we just created
             return public_contact
 
