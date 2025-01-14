@@ -2782,7 +2782,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         try:
             # Retrieve and order audit log entries by timestamp in descending order
-            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
+            audit_log_entries = LogEntry.objects.filter(
+                object_id=object_id, content_type__model="domainrequest"
+            ).order_by("-timestamp")
 
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:
