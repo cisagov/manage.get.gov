@@ -1632,7 +1632,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
-            queryset = DomainRequest.objects.annotate(
+            queryset = DomainInformation.objects.annotate(
                 converted_generic_org=Case(
                     When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
                     When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
@@ -2016,8 +2016,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Annotate the queryset for efficient filtering
             queryset = DomainRequest.objects.annotate(
                 converted_federal_type=Case(
-                    When(portfolio__isnull=False, portfolio__federal_type__isnull=False, then="portfolio__federal_type"),
-                    When(portfolio__isnull=True, federal_type__isnull=False, then="federal_type"),
+                    When(portfolio__isnull=False, portfolio__federal_agency__federal_type__isnull=False, then="portfolio__federal_agency__federal_type"),
+                    When(portfolio__isnull=True, federal_agency__federal_type__isnull=False, then="federal_agency__federal_type"),
                     default=Value(''),
                     output_field=CharField()
                 )
@@ -3175,10 +3175,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
-            queryset = DomainRequest.objects.annotate(
+            queryset = Domain.objects.annotate(
                 converted_generic_org=Case(
-                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
-                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                    When(domain_info__isnull=False, domain_info__portfolio__organization_type__isnull=False, then="domain_info__portfolio__organization_type"),
+                    When(domain_info__isnull=False, domain_info__portfolio__isnull=True, domain_info__generic_org_type__isnull=False, then="domain_info__generic_org_type"),
                     default=Value(''),
                     output_field=CharField()
                 )
@@ -3190,8 +3190,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__organization_type=self.value())
-                    | Q(portfolio__isnull=True, generic_org_type=self.value())
+                    Q(domain_info__portfolio__organization_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())
                 )
             return queryset
 
@@ -3205,10 +3205,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset for efficient filtering
-            queryset = DomainRequest.objects.annotate(
+            queryset = Domain.objects.annotate(
                 converted_federal_type=Case(
-                    When(portfolio__isnull=False, portfolio__federal_type__isnull=False, then="portfolio__federal_type"),
-                    When(portfolio__isnull=True, federal_type__isnull=False, then="federal_type"),
+                    When(domain_info__isnull=False, domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__organization_type")),
+                    When(domain_info__isnull=False, domain_info__portfolio__isnull=True, domain_info__federal_type__isnull=False, then="domain_info__federal_agency__federal_type"),
                     default=Value(''),
                     output_field=CharField()
                 )
@@ -3220,8 +3220,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_type=self.value())
+                    Q(domain_info__portfolio__federal_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_type=self.value())
                 )
             return queryset
         
@@ -3246,7 +3246,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 # When portfolio is present, use its value instead
                 When(
                     Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
-                    then=F("domain_info__portfolio__federal_type"),
+                    then=F("domain_info__portfolio__federal_agency__federal_type"),
                 ),
                 # Otherwise, return the natively assigned value
                 default=F("domain_info__federal_agency__federal_type"),
