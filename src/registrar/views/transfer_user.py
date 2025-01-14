@@ -1,22 +1,18 @@
 import logging
 from django.db import transaction
-from django.db.models import Manager, ForeignKey, OneToOneField, ManyToManyField, ManyToOneRel
+from django.db.models import ForeignKey, OneToOneField, ManyToManyField, ManyToOneRel
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
-from registrar import models
 from registrar.models.domain import Domain
-from registrar.models.domain_information import DomainInformation
 from registrar.models.domain_request import DomainRequest
-from registrar.models.portfolio import Portfolio
 from registrar.models.user import User
 from django.contrib.admin import site
 from django.contrib import messages
 
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.verified_by_staff import VerifiedByStaff
-from typing import Any, List
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +81,6 @@ class TransferUserView(View):
                 logger.debug("Deleting old user")
                 selected_user.delete()
                 messages.success(request, f"Deleted {selected_user} {selected_user.username}")
-
         except Exception as e:
             messages.error(request, f"An error occurred during the transfer: {e}")
             logger.error(f"An error occurred during the transfer: {e}", exc_info=True)

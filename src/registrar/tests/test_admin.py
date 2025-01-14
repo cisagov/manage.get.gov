@@ -3638,10 +3638,6 @@ class TestTransferUser(WebTest):
             submit_form["selected_user"] = self.user2.pk
             after_submit = submit_form.submit().follow()
 
-            print("mock_success_message.call_args_list:")
-            for call in mock_success_message.call_args_list:
-                print(call)
-
             self.assertContains(after_submit, "<h1>Change user</h1>")
 
             mock_success_message.assert_any_call(
