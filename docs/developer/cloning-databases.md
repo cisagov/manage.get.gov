@@ -11,7 +11,7 @@ Step 1:
 Get the name of the correct service using `cf spaces-users cisa-dotgov stable`. There should only be one user with a name that is a UUID, that is the one you want.
 
 step 2:
-Remove the space develeper role by doing the following command:
+Remove the space developer role by doing the following command:
 `cf unset-space-role [USER] cisa-dotgov staging SpaceDeveloper`
 
 This will cause the job to fail without requiring pushing anything to main.
