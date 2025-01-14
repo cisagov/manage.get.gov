@@ -1,7 +1,10 @@
 import logging
+from django.db import transaction
+from django.db.models import Manager,ForeignKey, OneToOneField, ManyToManyField, ManyToOneRel
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
+from registrar import models
 from registrar.models.domain import Domain
 from registrar.models.domain_information import DomainInformation
 from registrar.models.domain_request import DomainRequest
@@ -21,22 +24,8 @@ logger = logging.getLogger(__name__)
 class TransferUserView(View):
     """Transfer user methods that set up the transfer_user template and handle the forms on it."""
 
-    JOINS = [
-        (DomainRequest, "creator"),
-        (DomainInformation, "creator"),
-        (Portfolio, "creator"),
-        (DomainRequest, "investigator"),
-        (UserDomainRole, "user"),
-        (VerifiedByStaff, "requestor"),
-        (UserPortfolioPermission, "user"),
-    ]
-
-    # Future-proofing in case joined fields get added on the user model side
-    # This was tested in the first portfolio model iteration and works
-    USER_FIELDS: List[Any] = []
-
     def get(self, request, user_id):
-        """current_user referes to the 'source' user where the button that redirects to this view was clicked.
+        """current_user refers to the 'source' user where the button that redirects to this view was clicked.
         other_users exclude current_user and populate a dropdown, selected_user is the selection in the dropdown.
 
         This also querries the relevant domains and domain requests, and the admin context needed for the sidenav."""
@@ -71,86 +60,234 @@ class TransferUserView(View):
 
     def post(self, request, user_id):
         """This handles the transfer from selected_user to current_user then deletes selected_user.
-
-        NOTE: We have a ticket to refactor this into a more solid lookup for related fields in #2645"""
-
+        """
         current_user = get_object_or_404(User, pk=user_id)
         selected_user_id = request.POST.get("selected_user")
         selected_user = get_object_or_404(User, pk=selected_user_id)
 
         try:
-            change_logs = []
+            # Make this atomic so that we don't get any partial transfers
+            with transaction.atomic():
+                change_logs = []
 
-            # Transfer specific fields
-            self.transfer_user_fields_and_log(selected_user, current_user, change_logs)
+                self._delete_duplicate_user_domain_roles_and_log(selected_user, current_user, change_logs)
 
-            # Perform the updates and log the changes
-            for model_class, field_name in self.JOINS:
-                self.update_joins_and_log(model_class, field_name, selected_user, current_user, change_logs)
+                self._delete_duplicate_user_portfolio_permissions_and_log(selected_user, current_user, change_logs)
+                # Dynamically handle related fields 
+                self.transfer_related_fields_and_log(selected_user, current_user, change_logs)
 
-            # Success message if any related objects were updated
-            if change_logs:
-                success_message = f"Data transferred successfully for the following objects: {change_logs}"
-                messages.success(request, success_message)
+                # Success message if any related objects were updated
+                logger.debug(f"change_logs: {change_logs}")
+                if change_logs:
+                    logger.debug(f"change_logs: {change_logs}")
+                    success_message = f"Data transferred successfully for the following objects: {change_logs}"
+                    messages.success(request, success_message)
 
-            selected_user.delete()
-            messages.success(request, f"Deleted {selected_user} {selected_user.username}")
+                logger.debug("Deleting old user")
+                selected_user.delete()
+                messages.success(request, f"Deleted {selected_user} {selected_user.username}")
 
         except Exception as e:
             messages.error(request, f"An error occurred during the transfer: {e}")
+            logger.error(f"An error occurred during the transfer: {e}", exc_info=True)
 
         return redirect("admin:registrar_user_change", object_id=user_id)
-
-    @classmethod
-    def update_joins_and_log(cls, model_class, field_name, selected_user, current_user, change_logs):
+    
+    def _delete_duplicate_user_portfolio_permissions_and_log(self, selected_user, current_user, change_logs):
         """
-        Helper function to update the user join fields for a given model and log the changes.
+        Check and remove duplicate UserPortfolioPermission objects from the selected_user based on portfolios associated with the current_user.
+        """
+        try:
+            # Fetch portfolios associated with the current_user
+            current_user_portfolios = UserPortfolioPermission.objects.filter(user=current_user).values_list('portfolio_id', flat=True)
+
+            # Identify duplicates in selected_user for these portfolios
+            duplicates = (
+                UserPortfolioPermission.objects
+                .filter(user=selected_user, portfolio_id__in=current_user_portfolios)
+            )
+
+            duplicate_count = duplicates.count()
+
+            if duplicate_count > 0:
+                # Log the specific duplicates before deletion for better traceability
+                duplicate_permissions = list(duplicates)
+                logger.debug(f"Duplicate permissions to be removed: {duplicate_permissions}")
+
+                duplicates.delete()
+                logger.info(f"Removed {duplicate_count} duplicate UserPortfolioPermission(s) from user_id {selected_user.id} for portfolios already associated with user_id {current_user.id}")
+                change_logs.append(f"Removed {duplicate_count} duplicate UserPortfolioPermission(s) from user_id {selected_user.id} for portfolios already associated with user_id {current_user.id}")
+        
+        except Exception as e:
+            logger.error(f"Failed to check and remove duplicate UserPortfolioPermissions: {e}", exc_info=True)
+            raise
+
+    def _delete_duplicate_user_domain_roles_and_log(self, selected_user, current_user, change_logs):
+        """
+        Check and remove duplicate UserDomainRole objects from the selected_user based on domains associated with the current_user.
+        Retain one instance per domain to maintain data integrity.
         """
 
-        filter_kwargs = {field_name: selected_user}
-        updated_objects = model_class.objects.filter(**filter_kwargs)
+        try:
+            # Fetch domains associated with the current_user
+            current_user_domains = UserDomainRole.objects.filter(user=current_user).values_list('domain_id', flat=True)
 
-        for obj in updated_objects:
-            # Check for duplicate UserDomainRole before updating
-            if model_class == UserDomainRole:
-                if model_class.objects.filter(user=current_user, domain=obj.domain).exists():
-                    continue  # Skip the update to avoid a duplicate
+            # Identify duplicates in selected_user for these domains
+            duplicates = (
+                UserDomainRole.objects
+                .filter(user=selected_user, domain_id__in=current_user_domains)
+            )
 
-            if model_class == UserPortfolioPermission:
-                if model_class.objects.filter(user=current_user, portfolio=obj.portfolio).exists():
-                    continue  # Skip the update to avoid a duplicate
+            duplicate_count = duplicates.count()
 
-            # Update the field on the object and save it
+            if duplicate_count > 0:
+                duplicates.delete()
+                logger.info(
+                    f"Removed {duplicate_count} duplicate UserDomainRole(s) from user_id {selected_user.id} "
+                    f"for domains already associated with user_id {current_user.id}"
+                )
+                change_logs.append(
+                    f"Removed {duplicate_count} duplicate UserDomainRole(s) from user_id {selected_user.id} "
+                    f"for domains already associated with user_id {current_user.id}"
+                )
+        
+        except Exception as e:
+            logger.error(f"Failed to check and remove duplicate UserDomainRoles: {e}", exc_info=True)
+            raise
+
+    def transfer_related_fields_and_log(self, selected_user, current_user, change_logs):
+        """
+        Dynamically find all related fields to the User model and transfer them from selected_user to current_user.
+        Handles ForeignKey, OneToOneField, ManyToManyField, and ManyToOneRel relationships.
+        """
+        user_model = User
+
+        # Handle forward relationships
+        for related_field in user_model._meta.get_fields():
+            if related_field.is_relation and related_field.related_model:
+                if isinstance(related_field, ForeignKey):
+                    self._handle_foreign_key(related_field, selected_user, current_user, change_logs)
+                elif isinstance(related_field, OneToOneField):
+                    self._handle_one_to_one(related_field, selected_user, current_user, change_logs)
+                elif isinstance(related_field, ManyToManyField):
+                    self._handle_many_to_many(related_field, selected_user, current_user, change_logs)
+                elif isinstance(related_field, ManyToOneRel):
+                    self._handle_many_to_one_rel(related_field, selected_user, current_user, change_logs)
+
+        # # Handle reverse relationships
+        for related_object in user_model._meta.related_objects:
+            if isinstance(related_object, ManyToOneRel):
+                self._handle_many_to_one_rel(related_object, selected_user, current_user, change_logs)
+            elif isinstance(related_object.field, OneToOneField):
+                self._handle_one_to_one_reverse(related_object, selected_user, current_user, change_logs)
+            elif isinstance(related_object.field, ForeignKey):
+                self._handle_foreign_key_reverse(related_object, selected_user, current_user, change_logs)
+            elif isinstance(related_object.field, ManyToManyField):
+                self._handle_many_to_many_reverse(related_object, selected_user, current_user, change_logs)
+
+    def _handle_foreign_key(self, related_field: ForeignKey, selected_user, current_user, change_logs):
+        related_name = related_field.get_accessor_name()
+        # for foreign key relationships, getattr returns a manager
+        related_manager = getattr(selected_user, related_name, None)
+
+        if related_manager:
+            # get all the related objects
+            related_queryset = related_manager.all()
+            for obj in related_queryset:
+                # set the foreign key to the current user
+                setattr(obj, related_field.field.name, current_user)
+                obj.save()
+                log_entry = f'Transferred {related_field.field.name} from {selected_user} to {current_user}'
+                logger.info(log_entry)
+                change_logs.append(log_entry)
+    
+    def _handle_one_to_one(self, related_field: OneToOneField, selected_user, current_user, change_logs):
+        related_name = related_field.get_accessor_name()
+        # for one to one relationships, getattr returns the related object
+        related_object = getattr(selected_user, related_name, None)
+
+        if related_object:
+            # set the one to one field to the current user
+            setattr(related_object, related_field.field.name, current_user)
+            related_object.save()
+            log_entry = f'Transferred {related_field.field.name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
+
+    def _handle_many_to_many(self, related_field: ManyToManyField, selected_user, current_user, change_logs):
+        # for many to many relationships, getattr returns a manager
+        related_manager = getattr(selected_user, related_field.name, None)
+        if related_manager:
+            # get all the related objects
+            related_queryset = related_manager.all()
+            # add the related objects to the current user
+            getattr(current_user, related_field.name).add(*related_queryset)
+            log_entry = f'Transferred {related_field.name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
+
+    def _handle_many_to_one_rel(self, related_object: ManyToOneRel, selected_user: User, current_user: User, change_logs: List[str]):
+        """
+        Handles ManyToOneRel relationships, where multiple objects relate to the User via a ForeignKey.
+        """
+        related_model = related_object.related_model
+        related_name = related_object.field.name
+
+        # for many to one relationships, we need a queryset
+        related_queryset = related_model.objects.filter(**{related_name: selected_user})
+        for obj in related_queryset:
+            setattr(obj, related_name, current_user)
+            obj.save()
+            log_entry = f'Transferred {related_name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
+
+    def _handle_one_to_one_reverse(self, related_object: OneToOneField, selected_user: User, current_user: User, change_logs: List[str]):
+        """
+        Handles reverse OneToOneField relationships.
+        """
+        related_model = related_object.related_model
+        field_name = related_object.field.name
+
+        try:
+            related_instance = related_model.objects.filter(**{field_name: selected_user}).first()
+            setattr(related_instance, field_name, current_user)
+            related_instance.save()
+            log_entry = f'Transferred {field_name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
+        except related_model.DoesNotExist:
+            logger.warning(f"No related instance found for reverse OneToOneField {field_name} for {selected_user}")
+    
+    def _handle_foreign_key_reverse(self, related_object: ForeignKey, selected_user: User, current_user: User, change_logs: List[str]):
+        """
+        Handles reverse ForeignKey relationships.
+        """
+        related_model = related_object.related_model
+        field_name = related_object.field.name
+
+        related_queryset = related_model.objects.filter(**{field_name: selected_user})
+        for obj in related_queryset:
             setattr(obj, field_name, current_user)
             obj.save()
+            log_entry = f'Transferred {field_name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
 
-            # Log the change
-            cls.log_change(obj, field_name, selected_user, current_user, change_logs)
-
-    @classmethod
-    def transfer_user_fields_and_log(cls, selected_user, current_user, change_logs):
+    def _handle_many_to_many_reverse(self, related_object: ManyToManyField, selected_user: User, current_user: User, change_logs: List[str]):
         """
-        Transfers portfolio fields from the selected_user to the current_user.
-        Logs the changes for each transferred field.
+        Handles reverse ManyToManyField relationships.
         """
-        for field in cls.USER_FIELDS:
-            field_value = getattr(selected_user, field, None)
+        related_model = related_object.related_model
+        field_name = related_object.field.name
 
-            if field_value:
-                setattr(current_user, field, field_value)
-                cls.log_change(current_user, field, field_value, field_value, change_logs)
-
-        current_user.save()
-
-    @classmethod
-    def log_change(cls, obj, field_name, field_value, new_value, change_logs):
-        """Logs the change for a specific field on an object"""
-        log_entry = f'Changed {field_name} from "{field_value}" to "{new_value}" on {obj}'
-
-        logger.info(log_entry)
-
-        # Collect the related object for the success message
-        change_logs.append(log_entry)
+        related_manager = related_model.objects.filter(**{field_name: selected_user})
+        if related_manager:
+            related_qs = related_manager.all()
+            getattr(current_user, field_name).add(*related_qs)
+            log_entry = f'Transferred {field_name} from {selected_user} to {current_user}'
+            logger.info(log_entry)
+            change_logs.append(log_entry)
 
     @classmethod
     def get_domains(cls, user):
