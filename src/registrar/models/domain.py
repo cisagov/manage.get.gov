@@ -326,9 +326,8 @@ class Domain(TimeStampedModel, DomainHelper):
             exp_date = self.registry_expiration_date
         except KeyError:
             # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
+            logger.warning("current expiration date not set; setting to today", exc_info=True)
             exp_date = date.today()
-
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
@@ -338,13 +337,14 @@ class Domain(TimeStampedModel, DomainHelper):
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
             self.save()
+
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
-            logger.error(f"registry error renewing domain: {err}")
+            logger.error(f"Registry error renewing domain '{self.name}': {err}")
             raise (err)
         except Exception as e:
             # exception raised during the save to registrar
-            logger.error(f"error updating expiration date in registrar: {e}")
+            logger.error(f"Error updating expiration date for domain '{self.name}' in registrar: {e}")
             raise (e)
 
     @Cache
@@ -1575,7 +1575,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
 
-    def get_state_help_text(self) -> str:
+    def get_state_help_text(self, request=None) -> str:
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
@@ -1585,6 +1585,8 @@ class Domain(TimeStampedModel, DomainHelper):
             help_text = (
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
+        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+            help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
         else:
             help_text = Domain.State.get_help_text(self.state)
 
