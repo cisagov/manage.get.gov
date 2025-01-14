@@ -6,6 +6,7 @@ from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
 from registrar.models.utility.generic_helper import normalize_string
+from django.db.models import F, Q
 
 
 logger = logging.getLogger(__name__)
@@ -104,12 +105,17 @@ class Command(BaseCommand):
                 message = f"Failed to create portfolio '{federal_agency.agency}'"
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
 
+        # POST PROCESS STEP: Add additional suborg info where applicable.
+        updated_suborg_count = self.post_process_suborganization_fields(agencies)
+        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
         TerminalHelper.log_script_run_summary(
             self.updated_portfolios,
             self.failed_portfolios,
             self.skipped_portfolios,
             debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
+            skipped_header="----- SOME PORTFOLIOS WERENT CREATED -----",
             display_as_str=True,
         )
 
@@ -169,14 +175,11 @@ class Command(BaseCommand):
 
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
         """Attempts to create a portfolio. If successful, this function will
-        also create new suborganizations.
-        Returns the portfolio for the given federal_agency.
-        """
-        portfolio, created = self.create_portfolio(federal_agency)
-        if created:
-            self.create_suborganizations(portfolio, federal_agency)
-            if parse_domains or both:
-                self.handle_portfolio_domains(portfolio, federal_agency)
+        also create new suborganizations"""
+        portfolio, _ = self.create_portfolio(federal_agency)
+        self.create_suborganizations(portfolio, federal_agency)
+        if parse_domains or both:
+            self.handle_portfolio_domains(portfolio, federal_agency)
 
         if parse_requests or both:
             self.handle_portfolio_requests(portfolio, federal_agency)
@@ -233,7 +236,6 @@ class Command(BaseCommand):
             federal_agency=federal_agency, organization_name__isnull=False
         )
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
-
         if not org_names:
             message = (
                 "Could not add any suborganizations."
@@ -352,3 +354,63 @@ class Command(BaseCommand):
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+
+    def post_process_suborganization_fields(self, agencies):
+        """Post-process suborganization fields by pulling data from related domains and requests.
+
+        This function updates suborganization city and state_territory fields based on
+        related domain information and domain request information.
+        """
+        # Assuming that org name, portfolio, and suborg all aren't null
+        # we assume that we want to add suborg info.
+        # as long as the org name doesnt match the portfolio name (as that implies it is the portfolio).
+        should_add_suborgs_filter = Q(
+            organization_name__isnull=False,
+            portfolio__isnull=False,
+            sub_organization__isnull=False,
+        ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
+        domains = DomainInformation.objects.filter(
+            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
+        )
+        requests = DomainRequest.objects.filter(
+            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
+        )
+        domains_dict = {domain.organization_name: domain for domain in domains}
+        requests_dict = {request.organization_name: request for request in requests}
+        suborgs_to_edit = Suborganization.objects.filter(
+            Q(id__in=domains.values_list("sub_organization", flat=True))
+            | Q(id__in=requests.values_list("sub_organization", flat=True))
+        )
+        for suborg in suborgs_to_edit:
+            domain = domains_dict.get(suborg.name, None)
+            request = requests_dict.get(suborg.name, None)
+
+            # PRIORITY:
+            # 1. Domain info
+            # 2. Domain request requested suborg fields
+            # 3. Domain request normal fields
+            city = None
+            if domain and domain.city:
+                city = normalize_string(domain.city, lowercase=False)
+            elif request and request.suborganization_city:
+                city = normalize_string(request.suborganization_city, lowercase=False)
+            elif request and request.city:
+                city = normalize_string(request.city, lowercase=False)
+
+            state_territory = None
+            if domain and domain.state_territory:
+                state_territory = domain.state_territory
+            elif request and request.suborganization_state_territory:
+                state_territory = request.suborganization_state_territory
+            elif request and request.state_territory:
+                state_territory = request.state_territory
+
+            if city:
+                suborg.city = city
+
+            if suborg:
+                suborg.state_territory = state_territory
+
+            logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
+
+        return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])

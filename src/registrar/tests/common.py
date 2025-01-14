@@ -40,6 +40,7 @@ from epplibwrapper import (
     ErrorCode,
     responses,
 )
+from registrar.models.suborganization import Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -911,6 +912,7 @@ class MockDb(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()

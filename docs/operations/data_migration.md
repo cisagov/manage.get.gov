@@ -918,3 +918,38 @@ Example (only requests): `./manage.py create_federal_portfolio --branch "executi
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
 - Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
 you must specify at least one to run this script.
+
+
+## Patch suborganizations
+This script deletes some duplicate suborganization data that exists in our database (one-time use).
+It works in two ways:
+1. If the only name difference between two suborg records is extra spaces or a capitalization difference,
+then we delete all duplicate records of this type.
+2. If the suborg name is one we manually specify to delete via the script.
+
+Before it deletes records, it goes through each DomainInformation and DomainRequest object and updates the reference to "sub_organization" to match the non-duplicative record.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+To create a specific portfolio: 
+```./manage.py patch_suborganizations```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py patch_suborganizations```
