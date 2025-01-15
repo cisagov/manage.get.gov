@@ -73,8 +73,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
                 },
             )
         except EmailSendingError as err:
-            domain_names = ", ".join([domain.name for domain in domains])
-            raise EmailSendingError(f"Could not send email invitation to {email} for domains: {domain_names}") from err
+            raise EmailSendingError(f"Could not send email manager notification to {user.email} for domains: {domain.name}") from err
 
 
 def normalize_domains(domains):
