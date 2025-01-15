@@ -375,15 +375,67 @@ class Command(BaseCommand):
         requests = DomainRequest.objects.filter(
             should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
         )
-        domains_dict = {domain.organization_name: domain for domain in domains}
-        requests_dict = {request.organization_name: request for request in requests}
+
+        # Since domains / requests can share an org name, lets first create lists of duplicate names.
+        # If only one item exists in this list, we can just pull that info.
+        # If more than one exists, then we can determine what value we should choose.
+        domains_dict = {}
+        for domain in domains:
+            normalized_name = normalize_string(domain.organization_name)
+            domains_dict.setdefault(normalized_name, []).append(domain)
+
+        requests_dict = {}
+        for request in requests:
+            normalized_name = normalize_string(request.organization_name)
+            requests_dict.setdefault(normalized_name, []).append(request)
+
         suborgs_to_edit = Suborganization.objects.filter(
             Q(id__in=domains.values_list("sub_organization", flat=True))
             | Q(id__in=requests.values_list("sub_organization", flat=True))
         )
         for suborg in suborgs_to_edit:
-            domain = domains_dict.get(suborg.name, None)
-            request = requests_dict.get(suborg.name, None)
+            normalized_suborg_name = normalize_string(suborg.name)
+            domains = domains_dict.get(normalized_suborg_name, [])
+            requests = requests_dict.get(normalized_suborg_name, [])
+
+            domains_length = len(domains)
+            if domains_length == 0:
+                domain = None
+            elif domains_length == 1:
+                domain = domains[0]
+            else:
+                logger.info(f"in this loop (domains): {domains}")
+                reference = domains[0]
+                use_domain = all(
+                    domain.city == reference.city and domain.state_territory == reference.state_territory
+                    for domain in domains[1:]
+                )
+                domain = reference if use_domain else None
+
+            requests_length = len(requests)
+            if requests_length == 0:
+                request = None
+            elif requests_length == 1:
+                request = requests[0]
+            else:
+                logger.info(f"in this loop (requests): {requests}")
+                reference = requests[0]
+                use_domain = all(
+                    (
+                        (request.city == reference.city and request.state_territory == reference.state_territory)
+                        or (
+                            request.suborganization_city == reference.suborganization_city
+                            and request.suborganization_state_territory == reference.suborganization_state_territory
+                        )
+                    )
+                    for request in requests[1:]
+                )
+                request = reference if use_domain else None
+
+            if not domain and not request:
+                message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data exists."
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+                break
 
             # PRIORITY:
             # 1. Domain info
@@ -414,3 +466,9 @@ class Command(BaseCommand):
             logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
 
         return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
+
+    def locations_match(item, reference):
+        return (item.city == reference.city and item.state_territory == reference.state_territory) or (
+            item.suborganization_city == reference.suborganization_city
+            and item.suborganization_state_territory == reference.suborganization_state_territory
+        )
