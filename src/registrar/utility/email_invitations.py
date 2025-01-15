@@ -76,7 +76,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
             ) from err
 
 
-def normalize_domains(domains):
+def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
     """Ensures domains is always a list."""
     return [domains] if isinstance(domains, Domain) else domains
 
