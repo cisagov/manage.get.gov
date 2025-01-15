@@ -354,9 +354,9 @@ class DomainRequestFixture:
             )
             if num_additional_requests_to_make > 0:
                 for _ in range(num_additional_requests_to_make):
-                    random_user = random.choice(users)
+                    random_user = random.choice(users)  # nosec
                     try:
-                        random_request_type = random.choice(cls.DOMAINREQUESTS)
+                        random_request_type = random.choice(cls.DOMAINREQUESTS)  # nosec
                         # Prepare DomainRequest objects
                         domain_request = DomainRequest(
                             creator=random_user,
