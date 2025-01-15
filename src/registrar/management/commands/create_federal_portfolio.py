@@ -407,7 +407,10 @@ class Command(BaseCommand):
                 logger.info(f"in this loop (domains): {domains}")
                 reference = domains[0]
                 use_domain = all(
-                    domain.city == reference.city and domain.state_territory == reference.state_territory
+                    domain.city
+                    and domain.state_territory
+                    and domain.city == reference.city
+                    and domain.state_territory == reference.state_territory
                     for domain in domains[1:]
                 )
                 domain = reference if use_domain else None
@@ -422,9 +425,16 @@ class Command(BaseCommand):
                 reference = requests[0]
                 use_domain = all(
                     (
-                        (request.city == reference.city and request.state_territory == reference.state_territory)
+                        (
+                            request.city
+                            and request.state_territory
+                            and request.city == reference.city
+                            and request.state_territory == reference.state_territory
+                        )
                         or (
-                            request.suborganization_city == reference.suborganization_city
+                            request.suborganization_city
+                            and request.suborganization_state_territory
+                            and request.suborganization_city == reference.suborganization_city
                             and request.suborganization_state_territory == reference.suborganization_state_territory
                         )
                     )
