@@ -1,6 +1,8 @@
+from datetime import date
 from django.conf import settings
 from registrar.models import DomainInvitation
 from registrar.models.domain import Domain
+from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -41,6 +43,39 @@ def send_domain_invitation_email(
 
     send_invitation_email(email, requestor_email, domains, requested_user)
 
+    # send emails to domain managers
+    for domain in domains:
+        send_emails_to_domain_managers(
+            email=email,
+            requestor_email=requestor_email,
+            domain=domain,
+            requested_user=requested_user,
+        )
+
+
+def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, requested_user=None):
+    # Get each domain manager from list
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
+    for user_domain_role in user_domain_roles:
+        # Send email to each domain manager
+        user = user_domain_role.user
+        try:
+            send_templated_email(
+                "emails/domain_manager_notification.txt",
+                "emails/domain_manager_notification_subject.txt",
+                to_address=user.email,
+                context={
+                    "domain": domain,
+                    "requestor_email": requestor_email,
+                    "invited_email_address": email,
+                    "domain_manager": user,
+                    "date": date.today(),
+                },
+            )
+        except EmailSendingError as err:
+            domain_names = ", ".join([domain.name for domain in domains])
+            raise EmailSendingError(f"Could not send email invitation to {email} for domains: {domain_names}") from err
+
 
 def normalize_domains(domains):
     """Ensures domains is always a list."""
@@ -68,6 +103,8 @@ def validate_invitation(email, domains, requestor, is_member_of_different_org):
 
     for domain in domains:
         validate_existing_invitation(email, domain)
+
+        # NOTE: should we also be validating against existing user_domain_roles
 
 
 def check_outside_org_membership(email, requestor, is_member_of_different_org):
