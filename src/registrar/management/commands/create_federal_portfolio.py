@@ -445,7 +445,7 @@ class Command(BaseCommand):
             if not domain and not request:
                 message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data exists."
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-                break
+                continue
 
             # PRIORITY:
             # 1. Domain info
