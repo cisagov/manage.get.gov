@@ -165,19 +165,15 @@ class TestDomainInvitationAdmin(TestCase):
             response, "Domain invitations contain all individuals who have been invited to manage a .gov domain."
         )
         self.assertContains(response, "Show more")
-    
+
     @less_console_noise_decorator
     def test_has_change_form_description(self):
         """Tests if this model has a model description on the change form view"""
         self.client.force_login(self.superuser)
 
-        domain, _ = Domain.objects.get_or_create(
-            name="systemofadown.com"
-        )
+        domain, _ = Domain.objects.get_or_create(name="systemofadown.com")
 
-        domain_invitation, _ = DomainInvitation.objects.get_or_create(
-            email="toxicity@systemofadown.com", domain=domain
-        )
+        domain_invitation, _ = DomainInvitation.objects.get_or_create(email="toxicity@systemofadown.com", domain=domain)
 
         response = self.client.get(
             "/admin/registrar/domaininvitation/{}/change/".format(domain_invitation.pk),
@@ -190,7 +186,7 @@ class TestDomainInvitationAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a domain here, it will trigger emails to the invitee and all managers of the domain when you click",
+            "If you add someone to a domain here, it will trigger emails to the invitee and all managers of the domain",
         )
 
     @less_console_noise_decorator
@@ -1983,15 +1979,13 @@ class TestUserDomainRoleAdmin(TestCase):
             response, "This table represents the managers who are assigned to each domain in the registrar"
         )
         self.assertContains(response, "Show more")
-    
+
     @less_console_noise_decorator
     def test_has_change_form_description(self):
         """Tests if this model has a model description on the change form view"""
         self.client.force_login(self.superuser)
 
-        domain, _ = Domain.objects.get_or_create(
-            name="systemofadown.com"
-        )
+        domain, _ = Domain.objects.get_or_create(name="systemofadown.com")
 
         user_domain_role, _ = UserDomainRole.objects.get_or_create(
             user=self.superuser, domain=domain, role=[UserDomainRole.Roles.MANAGER]
