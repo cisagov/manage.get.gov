@@ -1594,7 +1594,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
     # Search
     search_fields = [
         "email",
-        "portfolio__name",
+        "portfolio__organization_name",
     ]
 
     # Filters
