@@ -56,7 +56,7 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders) {
+    tr:not(.hide-td-borders):not(:last-of-type) {
       td, th {
         border-bottom: 1px solid color('base-lighter');
       }

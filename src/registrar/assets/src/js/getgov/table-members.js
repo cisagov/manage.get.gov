@@ -424,7 +424,7 @@ export class MembersTable extends BaseTable {
     let modalDescription = ``;
 
     if (num_domains >= 0){
-      modalHeading = `Are you sure you want to delete ${member_email}?`;
+      modalHeading = `Are you sure you want to remove ${member_email} from the organization?`;
       modalDescription = `They will no longer be able to access this organization. 
       This action cannot be undone.`;
       if (num_domains >= 1)
