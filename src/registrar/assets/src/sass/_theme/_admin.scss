@@ -8,7 +8,7 @@
 :root,
 html[data-theme="light"] {
     --primary: #{$theme-color-primary};
-    --secondary: #{$theme-color-error};
+    --secondary: #{$theme-color-primary-darkest};
     --accent: #{$theme-color-accent-cool};
     // --primary-fg: #fff;
 

@@ -41,6 +41,14 @@ th {
   }
 }
 
+.members__table-wrapper .dotgov-table {
+  tr:not(.hide-td-borders):not(:last-of-type) {
+    td, th {
+      border-bottom: 1px solid color('base-lighter');
+    }
+  }
+}
+
 .dotgov-table {
   width: 100%;
 
@@ -56,7 +64,7 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders):not(:last-of-type) {
+    tr:not(.hide-td-borders) {
       td, th {
         border-bottom: 1px solid color('base-lighter');
       }

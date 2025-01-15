@@ -462,10 +462,7 @@ export class BaseTable {
 
         let dataObjects = this.getDataObjects(data);
         let customTableOptions = this.customizeTable(data);
-
-        dataObjects.forEach(dataObject => {
-          this.addRow(dataObject, tbody, customTableOptions);
-        });
+        this.loadRows(dataObjects, tbody, customTableOptions)
 
         this.initShowMoreButtons();
         this.initCheckboxListeners();
@@ -490,6 +487,12 @@ export class BaseTable {
         this.currentSearchTerm = searchTerm;
     })
     .catch(error => console.error('Error fetching objects:', error));
+  }
+
+  loadRows(dataObjects, tbody, customTableOptions) {
+    dataObjects.forEach(dataObject => {
+      this.addRow(dataObject, tbody, customTableOptions);
+    });
   }
 
   // Add event listeners to table headers for sorting

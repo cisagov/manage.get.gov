@@ -66,7 +66,14 @@ export class MembersTable extends BaseTable {
     };
   }
 
-  addRow(dataObject, tbody, customTableOptions) {
+  loadRows(dataObjects, tbody, customTableOptions) {
+    dataObjects.forEach((dataObject, index) => {
+      const isLastRow = index === dataObjects.length - 1;
+      this.addRow(dataObject, tbody, customTableOptions, isLastRow);
+    });
+  }
+
+  addRow(dataObject, tbody, customTableOptions, isLastRow = false) {
     const member = dataObject;
     // member is based on either a UserPortfolioPermission or a PortfolioInvitation
     // and also includes information from related domains; the 'id' of the org_member
@@ -81,6 +88,9 @@ export class MembersTable extends BaseTable {
     const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member.name}`): ''; 
 
     const row = document.createElement('tr');
+    if (isLastRow) {
+      row.classList.add("hide-td-borders");
+    }
 
     let admin_tagHTML = ``;
     if (member.is_admin)
