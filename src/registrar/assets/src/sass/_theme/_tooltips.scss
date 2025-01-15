@@ -66,9 +66,9 @@
     text-align: center;
     font-size: inherit; //inherit tooltip fontsize of .93rem
     max-width: fit-content;
+    display: block;
     @include at-media('desktop') {
       width: 70vw;
     }
-    display: block;
   }
 }

@@ -46,8 +46,17 @@ class AlreadyDomainInvitedError(InvitationError):
 class MissingEmailError(InvitationError):
     """Raised when the requestor has no email associated with their account."""
 
-    def __init__(self):
-        super().__init__("Can't send invitation email. No email is associated with your user account.")
+    def __init__(self, email=None, domain=None, portfolio=None):
+        # Default message if no additional info is provided
+        message = "Can't send invitation email. No email is associated with your user account."
+
+        # Customize message based on provided arguments
+        if email and domain:
+            message = f"Can't send email to '{email}' on domain '{domain}'. No email exists for the requestor."
+        elif email and portfolio:
+            message = f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor."
+
+        super().__init__(message)
 
 
 class OutsideOrgMemberError(ValueError):
