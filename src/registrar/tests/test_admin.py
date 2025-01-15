@@ -335,7 +335,7 @@ class TestDomainInvitationAdmin(TestCase):
         Should trigger success message for the domain invitation.
         Should retrieve the domain invitation.
         Should not create a portfolio invitation.
-        
+
         NOTE: This test may need to be reworked when the multiple_portfolio flag is fully fleshed out.
         """
 
