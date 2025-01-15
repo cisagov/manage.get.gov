@@ -29,6 +29,9 @@
  *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
+ *  - modified combobox to allow for blank values in list
+ *  - modified aria label for X button in combobox to reflect modified behavior of button
+ *  - modified combobox to handle error class
  */
 
 if ("document" in window.self) {
@@ -1035,7 +1038,7 @@ const noop = () => {};
  * @param {string} value The new value of the element
  */
 const changeElementValue = function (el) {
-  let value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+    let value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
   const elementToChange = el;
   elementToChange.value = value;
   const event = new CustomEvent("change", {
@@ -1165,13 +1168,21 @@ const enhanceComboBox = _comboBoxEl => {
       placeholder
     });
   }
-  if (defaultValue) {
-    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-      const optionEl = selectEl.options[i];
-      if (optionEl.value === defaultValue) {
-        selectedOption = optionEl;
-        break;
-      }
+  // DOTGOV - allowing for defaultValue to be empty
+  //if (defaultValue) {
+  //  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+  //    const optionEl = selectEl.options[i];
+  //    if (optionEl.value === defaultValue) {
+  //      selectedOption = optionEl;
+  //      break;
+  //    }
+  //  }
+  //}
+  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+    const optionEl = selectEl.options[i];
+    if ((optionEl.value === defaultValue) || (!optionEl.value && !defaultValue)) {
+      selectedOption = optionEl;
+      break;
     }
   }
 
@@ -1213,14 +1224,21 @@ const enhanceComboBox = _comboBoxEl => {
   input.setAttribute("class", INPUT_CLASS);
   input.setAttribute("type", "text");
   input.setAttribute("role", "combobox");
+  // DOTGOV - handle error class for combobox
+  // Check if 'usa-input--error' exists in selectEl and add it to input if true
+  if (selectEl.classList.contains('usa-input--error')) {
+    input.classList.add('usa-input--error');
+  }
   additionalAttributes.forEach(attr => Object.keys(attr).forEach(key => {
     const value = Sanitizer.escapeHTML`${attr[key]}`;
     input.setAttribute(key, value);
   }));
   comboBoxEl.insertAdjacentElement("beforeend", input);
+  // DOTGOV - modified the aria-label of the clear input button to Reset selection to reflect changed button behavior
+  // <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Clear the select contents">&nbsp;</button>
   comboBoxEl.insertAdjacentHTML("beforeend", Sanitizer.escapeHTML`
     <span class="${CLEAR_INPUT_BUTTON_WRAPPER_CLASS}" tabindex="-1">
-        <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Clear the select contents">&nbsp;</button>
+        <button type="button" class="${CLEAR_INPUT_BUTTON_CLASS}" aria-label="Reset selection">&nbsp;</button>
       </span>
       <span class="${INPUT_BUTTON_SEPARATOR_CLASS}">&nbsp;</span>
       <span class="${TOGGLE_LIST_BUTTON_WRAPPER_CLASS}" tabindex="-1">
@@ -1356,8 +1374,12 @@ const displayList = el => {
   for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
     const optionEl = selectEl.options[i];
     const optionId = `${listOptionBaseId}${options.length}`;
-    if (optionEl.value && (disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
-      if (selectEl.value && optionEl.value === selectEl.value) {
+    // DOTGOV: modified combobox to allow for options with blank value
+    //if (optionEl.value && (disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
+    if ((disableFiltering || isPristine || !inputValue || regex.test(optionEl.text))) {
+      // DOTGOV: modified combobox to allow blank option value selections to be considered selected
+      //if (selectEl.value && optionEl.value === selectEl.value) {
+      if (selectEl.value && optionEl.value === selectEl.value || (!selectEl.value && !optionEl.value)) {
         selectedItemId = optionId;
       }
       if (disableFiltering && !firstFoundId && regex.test(optionEl.text)) {
@@ -1492,16 +1514,27 @@ const resetSelection = el => {
   } = getComboBoxContext(el);
   const selectValue = selectEl.value;
   const inputValue = (inputEl.value || "").toLowerCase();
-  if (selectValue) {
-    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-      const optionEl = selectEl.options[i];
-      if (optionEl.value === selectValue) {
-        if (inputValue !== optionEl.text) {
-          changeElementValue(inputEl, optionEl.text);
-        }
-        comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
-        return;
+  // DOTGOV - allow for option value to be empty string
+  //if (selectValue) {
+  //  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+  //    const optionEl = selectEl.options[i];
+  //    if (optionEl.value === selectValue) {
+  //      if (inputValue !== optionEl.text) {
+  //        changeElementValue(inputEl, optionEl.text);
+  //      }
+  //      comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
+  //      return;
+  //    }
+  //  }
+  //}
+  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+    const optionEl = selectEl.options[i];
+    if ((!selectValue && !optionEl.value) || optionEl.value === selectValue) {
+      if (inputValue !== optionEl.text) {
+        changeElementValue(inputEl, optionEl.text);
       }
+      comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
+      return;
     }
   }
   if (inputValue) {

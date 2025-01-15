@@ -7,6 +7,7 @@ from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
 
+from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.forms.utility.wizard_form_helper import (
     RegistrarForm,
     RegistrarFormSet,
@@ -44,6 +45,7 @@ class RequestingEntityForm(RegistrarForm):
         required=False,
         queryset=Suborganization.objects.none(),
         empty_label="--Select--",
+        widget=ComboboxWidget,
     )
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
@@ -57,6 +59,7 @@ class RequestingEntityForm(RegistrarForm):
         label="State, territory, or military post",
         required=False,
         choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        widget=ComboboxWidget,
     )
 
     def __init__(self, *args, **kwargs):
@@ -275,6 +278,7 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
         empty_label="--Select--",
+        widget=ComboboxWidget,
     )
     organization_name = forms.CharField(
         label="Organization name",
@@ -298,6 +302,7 @@ class OrganizationContactForm(RegistrarForm):
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
+        widget=ComboboxWidget,
     )
     zipcode = forms.CharField(
         label="Zip code",
