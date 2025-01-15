@@ -1,8 +1,6 @@
 from datetime import date
 from django.conf import settings
-from registrar.models import DomainInvitation
-from registrar.models.domain import Domain
-from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import Domain, DomainInvitation, UserDomainRole
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -73,7 +71,9 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
                 },
             )
         except EmailSendingError as err:
-            raise EmailSendingError(f"Could not send email manager notification to {user.email} for domains: {domain.name}") from err
+            raise EmailSendingError(
+                f"Could not send email manager notification to {user.email} for domains: {domain.name}"
+            ) from err
 
 
 def normalize_domains(domains):
