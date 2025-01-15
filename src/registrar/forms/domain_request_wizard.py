@@ -63,13 +63,19 @@ class RequestingEntityForm(RegistrarForm):
     )
 
     def __init__(self, *args, **kwargs):
-        """Override of init to add the suborganization queryset"""
+        """Override of init to add the suborganization queryset and 'other' option"""
         super().__init__(*args, **kwargs)
 
         if self.domain_request.portfolio:
-            self.fields["sub_organization"].queryset = Suborganization.objects.filter(
-                portfolio=self.domain_request.portfolio
-            )
+            # Fetch the queryset for the portfolio
+            queryset = Suborganization.objects.filter(portfolio=self.domain_request.portfolio)
+            # set the queryset appropriately so that post can validate against queryset
+            self.fields["sub_organization"].queryset = queryset
+
+            # Modify the choices to include "other" so that form can display options properly
+            self.fields["sub_organization"].choices = [("", "--Select--")] + [
+                (obj.id, str(obj)) for obj in queryset
+            ] + [("other", "Other (enter your suborganization manually)")]
 
     def clean_sub_organization(self):
         """On suborganization clean, set the suborganization value to None if the user is requesting
