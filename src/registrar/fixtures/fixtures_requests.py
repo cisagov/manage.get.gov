@@ -326,6 +326,11 @@ class DomainRequestFixture:
     def _create_domain_requests(cls, users):
         """Creates DomainRequests given a list of users."""
         total_domain_requests_to_make = 1000
+       
+        # Check if the database is already populated with the desired
+        # number of entries.
+        # (Prevents re-adding more entries to an already populated database,
+        # which happens when restarting Docker src)
         domain_requests_already_made = DomainRequest.objects.count()
 
         domain_requests_to_create = []
@@ -349,14 +354,14 @@ class DomainRequestFixture:
                 for _ in range(num_additional_requests_to_make):
                     random_user = random.choice(users)
                     try:
-                        random_request_data = random.choice(cls.DOMAINREQUESTS)
+                        random_request_type = random.choice(cls.DOMAINREQUESTS)
                         # Prepare DomainRequest objects
                         domain_request = DomainRequest(
                             creator=random_user,
-                            organization_name=random_request_data["organization_name"],
+                            organization_name=random_request_type["organization_name"],
                         )
-                        cls._set_non_foreign_key_fields(domain_request, random_request_data)
-                        cls._set_foreign_key_fields(domain_request, random_request_data, random_user)
+                        cls._set_non_foreign_key_fields(domain_request, random_request_type)
+                        cls._set_foreign_key_fields(domain_request, random_request_type, random_user)
                         domain_requests_to_create.append(domain_request)
                     except Exception as e:
                         logger.warning(f"Error creating random domain request: {e}")
