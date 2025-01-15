@@ -48,7 +48,10 @@ def normalize_domains(domains):
 
 
 def get_requestor_email(requestor, domains):
-    """Get the requestor's email or raise an error if it's missing."""
+    """Get the requestor's email or raise an error if it's missing.
+
+    If the requestor is staff, default email is returned.
+    """
     if requestor.is_staff:
         return settings.DEFAULT_FROM_EMAIL
 

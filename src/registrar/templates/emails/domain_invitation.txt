@@ -1,15 +1,9 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-{% if requested_user and requested_user.first_name %}
-Hi, {{ requested_user.first_name }}.
-{% else %}
-Hi,
-{% endif %}
+Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }}.{% endif %}
 
 {{ requestor_email }} has invited you to manage:
-{% for domain in domains %}
-{{ domain.name }}
+{% for domain in domains %}{{ domain.name }}
 {% endfor %}
-
 To manage domain information, visit the .gov registrar <https://manage.get.gov>.
 
 ----------------------------------------------------------------

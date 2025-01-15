@@ -1,8 +1,6 @@
 from django.contrib import messages
 from django.db import IntegrityError
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user import User
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
 
@@ -20,32 +18,33 @@ logger = logging.getLogger(__name__)
 # any view, and were initially developed for domain.py, portfolios.py and admin.py
 
 
-def get_org_membership(requestor_org, requested_email, requested_user):
+def get_org_membership(org, email, user):
     """
-    Verifies if an email belongs to a different organization as a member or invited member.
-    Verifies if an email belongs to this organization as a member or invited member.
-    User does not belong to any org can be deduced from the tuple returned.
+    Determines if an email/user belongs to a different organization or this organization
+    as either a member or an invited member.
 
-    Returns a tuple (member_of_a_different_org, member_of_this_org).
+    This function returns a tuple (member_of_a_different_org, member_of_this_org),
+    which provides:
+    - member_of_a_different_org: True if the user/email is associated with an organization other than the given org.
+    - member_of_this_org: True if the user/email is associated with the given org.
+
+    Note: This implementation assumes single portfolio ownership for a user.
+    If the "multiple portfolios" feature is enabled, this logic may not account for
+    situations where a user or email belongs to multiple organizations.
     """
 
-    # COMMENT: this code does not take into account when multiple portfolios flag is set to true
-
-    # COMMENT: shouldn't this code be based on the organization of the domain, not the org
-    # of the requestor? requestor could have multiple portfolios
-
-    # Check for existing permissions or invitations for the requested user
-    existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email=requested_email).first()
+    # Check for existing permissions or invitations for the user
+    existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
+    existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
 
     # Determine membership in a different organization
-    member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != requestor_org) or (
-        existing_org_invitation and existing_org_invitation.portfolio != requestor_org
+    member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
+        existing_org_invitation and existing_org_invitation.portfolio != org
     )
 
     # Determine membership in the same organization
-    member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == requestor_org) or (
-        existing_org_invitation and existing_org_invitation.portfolio == requestor_org
+    member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == org) or (
+        existing_org_invitation and existing_org_invitation.portfolio == org
     )
 
     return member_of_a_different_org, member_of_this_org

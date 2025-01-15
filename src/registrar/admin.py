@@ -1520,7 +1520,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         """
         if not change:
             domain = obj.domain
-            domain_org = domain.domain_info.portfolio
+            domain_org = getattr(domain.domain_info, "portfolio", None)
             requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
@@ -1536,6 +1536,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     and not flag_is_active(request, "multiple_portfolios")
                     and domain_org is not None
                     and not member_of_this_org
+                    and not member_of_a_different_org
                 ):
                     send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
                     portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(

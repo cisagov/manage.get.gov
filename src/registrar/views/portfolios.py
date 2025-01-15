@@ -262,7 +262,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                     "A database error occurred while saving changes. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error("A database error occurred while saving changes.")
+                logger.error("A database error occurred while saving changes.", exc_info=True)
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
@@ -270,7 +270,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                     f"An unexpected error occurred: {str(e)}. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error(f"An unexpected error occurred: {str(e)}")
+                logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
@@ -479,7 +479,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                     "A database error occurred while saving changes. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error("A database error occurred while saving changes.")
+                logger.error("A database error occurred while saving changes.", exc_info=True)
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
@@ -487,7 +487,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                     f"An unexpected error occurred: {str(e)}. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error(f"An unexpected error occurred: {str(e)}.")
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
