@@ -398,49 +398,41 @@ class Command(BaseCommand):
             domains = domains_dict.get(normalized_suborg_name, [])
             requests = requests_dict.get(normalized_suborg_name, [])
 
-            domains_length = len(domains)
-            if domains_length == 0:
-                domain = None
-            elif domains_length == 1:
-                domain = domains[0]
-            else:
-                logger.info(f"in this loop (domains): {domains}")
+            # Try to get matching domain info
+            domain = None
+            if domains:
                 reference = domains[0]
-                use_domain = all(
-                    domain.city
-                    and domain.state_territory
-                    and domain.city == reference.city
-                    and domain.state_territory == reference.state_territory
-                    for domain in domains[1:]
+                locations_match = all(
+                    d.city
+                    and d.state_territory
+                    and d.city == reference.city
+                    and d.state_territory == reference.state_territory
+                    for d in domains
                 )
-                domain = reference if use_domain else None
+                if locations_match:
+                    domain = reference
 
-            requests_length = len(requests)
-            if requests_length == 0:
-                request = None
-            elif requests_length == 1:
-                request = requests[0]
-            else:
-                logger.info(f"in this loop (requests): {requests}")
+            # Try to get matching request info
+            request = None
+            if requests:
                 reference = requests[0]
-                use_domain = all(
+                locations_match = all(
                     (
-                        (
-                            request.city
-                            and request.state_territory
-                            and request.city == reference.city
-                            and request.state_territory == reference.state_territory
-                        )
-                        or (
-                            request.suborganization_city
-                            and request.suborganization_state_territory
-                            and request.suborganization_city == reference.suborganization_city
-                            and request.suborganization_state_territory == reference.suborganization_state_territory
-                        )
+                        r.city
+                        and r.state_territory
+                        and r.city == reference.city
+                        and r.state_territory == reference.state_territory
                     )
-                    for request in requests[1:]
+                    or (
+                        r.suborganization_city
+                        and r.suborganization_state_territory
+                        and r.suborganization_city == reference.suborganization_city
+                        and r.suborganization_state_territory == reference.suborganization_state_territory
+                    )
+                    for r in requests
                 )
-                request = reference if use_domain else None
+                if locations_match:
+                    request = reference
 
             if not domain and not request:
                 message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data exists."
