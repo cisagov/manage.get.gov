@@ -1632,14 +1632,18 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
-            queryset = DomainInformation.objects.annotate(
-                converted_generic_org=Case(
-                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
-                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
-                    default=Value(''),
-                    output_field=CharField()
+            queryset = (
+                DomainInformation.objects.annotate(
+                    converted_generic_org=Case(
+                        When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list('converted_generic_org', flat=True).distinct()
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
             # Filter out empty results and return sorted list of unique values
             return sorted([(org, org) for org in queryset if org])
@@ -1984,14 +1988,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
-            queryset = DomainRequest.objects.annotate(
-                converted_generic_org=Case(
-                    When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
-                    When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
-                    default=Value(''),
-                    output_field=CharField()
+            queryset = (
+                DomainRequest.objects.annotate(
+                    converted_generic_org=Case(
+                        When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list('converted_generic_org', flat=True).distinct()
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
             # Filter out empty results and return sorted list of unique values
             return sorted([(org, org) for org in queryset if org])
@@ -2014,14 +2022,26 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset for efficient filtering
-            queryset = DomainRequest.objects.annotate(
-                converted_federal_type=Case(
-                    When(portfolio__isnull=False, portfolio__federal_agency__federal_type__isnull=False, then="portfolio__federal_agency__federal_type"),
-                    When(portfolio__isnull=True, federal_agency__federal_type__isnull=False, then="federal_agency__federal_type"),
-                    default=Value(''),
-                    output_field=CharField()
+            queryset = (
+                DomainRequest.objects.annotate(
+                    converted_federal_type=Case(
+                        When(
+                            portfolio__isnull=False,
+                            portfolio__federal_agency__federal_type__isnull=False,
+                            then="portfolio__federal_agency__federal_type",
+                        ),
+                        When(
+                            portfolio__isnull=True,
+                            federal_agency__federal_type__isnull=False,
+                            then="federal_agency__federal_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list('converted_federal_type', flat=True).distinct()
+                .values_list("converted_federal_type", flat=True)
+                .distinct()
+            )
 
             # Filter out empty values and return sorted unique entries
             return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
@@ -2029,8 +2049,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_type=self.value())
+                    Q(portfolio__federal_type=self.value()) | Q(portfolio__isnull=True, federal_type=self.value())
                 )
             return queryset
 
@@ -3164,7 +3183,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                 return queryset.filter(domain_info__is_election_board=True)
             if self.value() == "0":
                 return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
-    
+
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
@@ -3175,14 +3194,27 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
-            queryset = Domain.objects.annotate(
-                converted_generic_org=Case(
-                    When(domain_info__isnull=False, domain_info__portfolio__organization_type__isnull=False, then="domain_info__portfolio__organization_type"),
-                    When(domain_info__isnull=False, domain_info__portfolio__isnull=True, domain_info__generic_org_type__isnull=False, then="domain_info__generic_org_type"),
-                    default=Value(''),
-                    output_field=CharField()
+            queryset = (
+                Domain.objects.annotate(
+                    converted_generic_org=Case(
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__organization_type__isnull=False,
+                            then="domain_info__portfolio__organization_type",
+                        ),
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=True,
+                            domain_info__generic_org_type__isnull=False,
+                            then="domain_info__generic_org_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list('converted_generic_org', flat=True).distinct()
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
             # Filter out empty results and return sorted list of unique values
             return sorted([(org, org) for org in queryset if org])
@@ -3205,14 +3237,27 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         def lookups(self, request, model_admin):
             # Annotate the queryset for efficient filtering
-            queryset = Domain.objects.annotate(
-                converted_federal_type=Case(
-                    When(domain_info__isnull=False, domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__organization_type")),
-                    When(domain_info__isnull=False, domain_info__portfolio__isnull=True, domain_info__federal_type__isnull=False, then="domain_info__federal_agency__federal_type"),
-                    default=Value(''),
-                    output_field=CharField()
+            queryset = (
+                Domain.objects.annotate(
+                    converted_federal_type=Case(
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=False,
+                            then=F("domain_info__portfolio__organization_type"),
+                        ),
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=True,
+                            domain_info__federal_type__isnull=False,
+                            then="domain_info__federal_agency__federal_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
                 )
-            ).values_list('converted_federal_type', flat=True).distinct()
+                .values_list("converted_federal_type", flat=True)
+                .distinct()
+            )
 
             # Filter out empty values and return sorted unique entries
             return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
@@ -3224,7 +3269,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     | Q(domain_info__portfolio__isnull=True, domain_info__federal_type=self.value())
                 )
             return queryset
-        
+
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
             converted_generic_org_type=Case(

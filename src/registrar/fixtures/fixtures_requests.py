@@ -323,10 +323,10 @@ class DomainRequestFixture:
             cls._create_domain_requests(users)
 
     @classmethod
-    def _create_domain_requests(cls, users):
+    def _create_domain_requests(cls, users):  # noqa: C901
         """Creates DomainRequests given a list of users."""
         total_domain_requests_to_make = 1000
-       
+
         # Check if the database is already populated with the desired
         # number of entries.
         # (Prevents re-adding more entries to an already populated database,
@@ -349,7 +349,9 @@ class DomainRequestFixture:
                     except Exception as e:
                         logger.warning(e)
 
-            num_additional_requests_to_make = total_domain_requests_to_make-domain_requests_already_made-len(domain_requests_to_create)
+            num_additional_requests_to_make = (
+                total_domain_requests_to_make - domain_requests_already_made - len(domain_requests_to_create)
+            )
             if num_additional_requests_to_make > 0:
                 for _ in range(num_additional_requests_to_make):
                     random_user = random.choice(users)
@@ -365,7 +367,6 @@ class DomainRequestFixture:
                         domain_requests_to_create.append(domain_request)
                     except Exception as e:
                         logger.warning(f"Error creating random domain request: {e}")
-
 
         # Bulk create domain requests
         cls._bulk_create_requests(domain_requests_to_create)
