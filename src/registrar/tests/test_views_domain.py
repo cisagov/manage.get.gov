@@ -9,7 +9,7 @@ from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -766,7 +766,11 @@ class TestDomainManagers(TestDomainOverview):
         success_result = add_page.form.submit()
 
         mock_send_domain_email.assert_called_once_with(
-            email="mayor@igorville.gov", requestor=self.user, domains=self.domain, is_member_of_different_org=None, requested_user=user
+            email="mayor@igorville.gov",
+            requestor=self.user,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
         )
 
         self.assertEqual(success_result.status_code, 302)
