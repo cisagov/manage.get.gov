@@ -48,7 +48,7 @@ export function loadInitialValuesForComboBoxes() {
 
       // Change the default input behaviour - have it reset to the data default instead
       clearInputButton.addEventListener("click", (e) => {
-        if (overrideDefaultClearButton && initialValue) {
+        if (overrideDefaultClearButton) {
           e.preventDefault();
           e.stopPropagation();
           input.click();

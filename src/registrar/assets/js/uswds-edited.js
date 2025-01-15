@@ -1037,7 +1037,7 @@ const noop = () => {};
  * @param {string} value The new value of the element
  */
 const changeElementValue = function (el) {
-  let value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+    let value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
   const elementToChange = el;
   elementToChange.value = value;
   const event = new CustomEvent("change", {
@@ -1167,13 +1167,21 @@ const enhanceComboBox = _comboBoxEl => {
       placeholder
     });
   }
-  if (defaultValue) {
-    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-      const optionEl = selectEl.options[i];
-      if (optionEl.value === defaultValue) {
-        selectedOption = optionEl;
-        break;
-      }
+  // DOTGOV - allowing for defaultValue to be empty
+  //if (defaultValue) {
+  //  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+  //    const optionEl = selectEl.options[i];
+  //    if (optionEl.value === defaultValue) {
+  //      selectedOption = optionEl;
+  //      break;
+  //    }
+  //  }
+  //}
+  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+    const optionEl = selectEl.options[i];
+    if ((optionEl.value === defaultValue) || (!optionEl.value && !defaultValue)) {
+      selectedOption = optionEl;
+      break;
     }
   }
 
@@ -1500,16 +1508,27 @@ const resetSelection = el => {
   } = getComboBoxContext(el);
   const selectValue = selectEl.value;
   const inputValue = (inputEl.value || "").toLowerCase();
-  if (selectValue) {
-    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-      const optionEl = selectEl.options[i];
-      if (optionEl.value === selectValue) {
-        if (inputValue !== optionEl.text) {
-          changeElementValue(inputEl, optionEl.text);
-        }
-        comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
-        return;
+  // DOTGOV - allow for option value to be empty string
+  //if (selectValue) {
+  //  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+  //    const optionEl = selectEl.options[i];
+  //    if (optionEl.value === selectValue) {
+  //      if (inputValue !== optionEl.text) {
+  //        changeElementValue(inputEl, optionEl.text);
+  //      }
+  //      comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
+  //      return;
+  //    }
+  //  }
+  //}
+  for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+    const optionEl = selectEl.options[i];
+    if ((!selectValue && !optionEl.value) || optionEl.value === selectValue) {
+      if (inputValue !== optionEl.text) {
+        changeElementValue(inputEl, optionEl.text);
       }
+      comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
+      return;
     }
   }
   if (inputValue) {
