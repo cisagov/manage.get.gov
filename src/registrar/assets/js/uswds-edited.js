@@ -31,6 +31,7 @@
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
  *  - modified combobox to allow for blank values in list
  *  - modified aria label for X button in combobox to reflect modified behavior of button
+ *  - modified combobox to handle error class
  */
 
 if ("document" in window.self) {
@@ -1223,6 +1224,11 @@ const enhanceComboBox = _comboBoxEl => {
   input.setAttribute("class", INPUT_CLASS);
   input.setAttribute("type", "text");
   input.setAttribute("role", "combobox");
+  // DOTGOV - handle error class for combobox
+  // Check if 'usa-input--error' exists in selectEl and add it to input if true
+  if (selectEl.classList.contains('usa-input--error')) {
+    input.classList.add('usa-input--error');
+  }
   additionalAttributes.forEach(attr => Object.keys(attr).forEach(key => {
     const value = Sanitizer.escapeHTML`${attr[key]}`;
     input.setAttribute(key, value);
