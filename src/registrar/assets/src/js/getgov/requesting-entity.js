@@ -38,11 +38,6 @@ export function handleRequestingEntityFieldset() {
         requestingNewSuborganization.value === "True" ? showElement(suborgDetailsContainer) : hideElement(suborgDetailsContainer);
     }
 
-    // Add fake "other" option to sub_organization select
-    if (select && !Array.from(select.options).some(option => option.value === "other")) {
-        select.add(new Option(subOrgCreateNewOption, "other"));
-    }
-
     if (requestingNewSuborganization.value === "True") {
         select.value = "other";
     }
