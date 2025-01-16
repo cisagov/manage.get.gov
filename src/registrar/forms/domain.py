@@ -655,3 +655,15 @@ DomainDsdataFormset = formset_factory(
     extra=0,
     can_delete=True,
 )
+
+
+class DomainRenewalForm(forms.Form):
+    """Form making sure domain renewal ack is checked"""
+
+    is_policy_acknowledged = forms.BooleanField(
+        required=True,
+        label="I have read and agree to the requirements for operating a .gov domain.",
+        error_messages={
+            "required": "Check the box if you read and agree to the requirements for operating a .gov domain."
+        },
+    )
