@@ -1845,6 +1845,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
 
+    @less_console_noise_decorator
     def test_post_process_suborganization_fields(self):
         """Test suborganization field updates from domain and request data.
         Also tests the priority order for updating city and state_territory:
@@ -1920,104 +1921,164 @@ class TestCreateFederalPortfolio(TestCase):
         suborg_3 = Suborganization.objects.get(name=self.domain_info_3.organization_name)
         self.assertEqual(suborg_3.city, "Third City")
         self.assertEqual(suborg_3.state_territory, "FL")
-    
-    def test_post_process_suborganization_fields_multiple_locations(self):
+
+    @less_console_noise_decorator
+    def test_post_process_suborganization_fields_duplicate_records(self):
         """Test suborganization field updates when multiple domains/requests exist for the same org.
         Tests that:
-        1. Matching locations are accepted
-        2. Non-matching locations are rejected
-        3. Single location is always accepted
+        1. City / state_territory us updated when all location info matches
+        2. Updates are skipped when locations don't match
+        3. Priority order is maintained across multiple records:
+            a. Domain information fields
+            b. Domain request suborganization fields
+            c. Domain request standard fields
         """
-        # Test case 1: Multiple domains with matching locations
-        self.domain_info.organization_name = "matching"
-        self.domain_info.city = "Same City"
-        self.domain_info.state_territory = "NY"
-        self.domain_info.save()
-
-        completed_domain_request(
-            name="matching"
+        # Case 1: Multiple records with all fields matching
+        matching_request_1 = completed_domain_request(
+            name="matching1.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="matching org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            suborganization_city="Suborg City",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.CALIFORNIA,
+            federal_agency=self.federal_agency,
         )
-        domain_info_copy = DomainInformation.objects.create(
-            organization_name="matching",
-            city="Same City",
-            state_territory="NY",
-            federal_agency=self.domain_info.federal_agency,
-            portfolio=self.domain_info.portfolio,
-            sub_organization=self.domain_info.sub_organization
+        matching_request_1.approve()
+        domain_info_1 = DomainInformation.objects.get(domain_request=matching_request_1)
+        domain_info_1.city = "Domain Info City"
+        domain_info_1.state_territory = DomainRequest.StateTerritoryChoices.NEW_YORK
+        domain_info_1.save()
+
+        matching_request_2 = completed_domain_request(
+            name="matching2.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="matching org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            suborganization_city="Suborg City",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.CALIFORNIA,
+            federal_agency=self.federal_agency,
         )
+        matching_request_2.approve()
+        domain_info_2 = DomainInformation.objects.get(domain_request=matching_request_2)
+        domain_info_2.city = "Domain Info City"
+        domain_info_2.state_territory = DomainRequest.StateTerritoryChoices.NEW_YORK
+        domain_info_2.save()
 
-        # Test case 2: Multiple domains with non-matching locations
-        self.domain_info_2.organization_name = "non-matching"
-        self.domain_info_2.city = "City One"
-        self.domain_info_2.state_territory = "CA"
-        self.domain_info_2.save()
-
-        domain_info_2_copy = DomainInformation.objects.create(
-            organization_name="non-matching",
-            city="City Two",  # Different city
-            state_territory="CA",
-            federal_agency=self.domain_info_2.federal_agency,
-            portfolio=self.domain_info_2.portfolio,
-            sub_organization=self.domain_info_2.sub_organization
+        # Case 2: Multiple records with only request fields (no domain info)
+        request_only_1 = completed_domain_request(
+            name="request1.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="request org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            suborganization_city="Suborg City",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.CALIFORNIA,
+            federal_agency=self.federal_agency,
         )
+        request_only_1.approve()
+        domain_info_3 = DomainInformation.objects.get(domain_request=request_only_1)
+        domain_info_3.city = None
+        domain_info_3.state_territory = None
+        domain_info_3.save()
 
-        # Test case 3: Multiple requests with matching locations
-        self.domain_request.organization_name = "matching-requests"
-        self.domain_request.city = "Request City"
-        self.domain_request.state_territory = "TX"
-        self.domain_request.save()
-
-        request_copy = DomainRequest.objects.create(
-            organization_name="matching-requests",
-            city="Request City",
-            state_territory="TX",
-            federal_agency=self.domain_request.federal_agency,
-            portfolio=self.domain_request.portfolio,
-            sub_organization=self.domain_request.sub_organization
+        request_only_2 = completed_domain_request(
+            name="request2.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="request org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            suborganization_city="Suborg City",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.CALIFORNIA,
+            federal_agency=self.federal_agency,
         )
+        request_only_2.approve()
+        domain_info_4 = DomainInformation.objects.get(domain_request=request_only_2)
+        domain_info_4.city = None
+        domain_info_4.state_territory = None
+        domain_info_4.save()
 
-        # Test case 4: Multiple requests with non-matching locations
-        self.domain_request_2.organization_name = "non-matching-requests"
-        self.domain_request_2.city = "Request One"
-        self.domain_request_2.state_territory = "WA"
-        self.domain_request_2.save()
-
-        request_2_copy = DomainRequest.objects.create(
-            organization_name="non-matching-requests",
-            city="Request Two",  # Different city
-            state_territory="WA",
-            federal_agency=self.domain_request_2.federal_agency,
-            portfolio=self.domain_request_2.portfolio,
-            sub_organization=self.domain_request_2.sub_organization
+        # Case 3: Multiple records with only standard fields (no suborg)
+        standard_only_1 = completed_domain_request(
+            name="standard1.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="standard org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            federal_agency=self.federal_agency,
         )
+        standard_only_1.approve()
+        domain_info_5 = DomainInformation.objects.get(domain_request=standard_only_1)
+        domain_info_5.city = None
+        domain_info_5.state_territory = None
+        domain_info_5.save()
 
-        # Run the portfolio creation
-        self.run_create_federal_portfolio(
-            agency_name="Test Federal Agency",
-            parse_requests=True,
-            parse_domains=True
+        standard_only_2 = completed_domain_request(
+            name="standard2.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="standard org",
+            city="Standard City",
+            state_territory=DomainRequest.StateTerritoryChoices.TEXAS,
+            federal_agency=self.federal_agency,
         )
+        standard_only_2.approve()
+        domain_info_6 = DomainInformation.objects.get(domain_request=standard_only_2)
+        domain_info_6.city = None
+        domain_info_6.state_territory = None
+        domain_info_6.save()
 
-        # Verify results
-        # Case 1: Should use matching domain info
-        suborg_1 = Suborganization.objects.get(name="matching")
-        self.assertEqual(suborg_1.city, "Same City")
-        self.assertEqual(suborg_1.state_territory, "NY")
+        # Case 4: Multiple records with mismatched locations
+        mismatch_request_1 = completed_domain_request(
+            name="mismatch1.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="mismatch org",
+            city="City One",
+            state_territory=DomainRequest.StateTerritoryChoices.FLORIDA,
+            federal_agency=self.federal_agency,
+        )
+        mismatch_request_1.approve()
+        domain_info_5 = DomainInformation.objects.get(domain_request=mismatch_request_1)
+        domain_info_5.city = "Different City"
+        domain_info_5.state_territory = DomainRequest.StateTerritoryChoices.ALASKA
+        domain_info_5.save()
 
-        # Case 2: Should not update due to mismatched locations
-        suborg_2 = Suborganization.objects.get(name="non-matching")
-        self.assertIsNone(suborg_2.city)
-        self.assertIsNone(suborg_2.state_territory)
+        mismatch_request_2 = completed_domain_request(
+            name="mismatch2.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            organization_name="mismatch org",
+            city="City Two",
+            state_territory=DomainRequest.StateTerritoryChoices.HAWAII,
+            federal_agency=self.federal_agency,
+        )
+        mismatch_request_2.approve()
+        domain_info_6 = DomainInformation.objects.get(domain_request=mismatch_request_2)
+        domain_info_6.city = "Another City"
+        domain_info_6.state_territory = DomainRequest.StateTerritoryChoices.CALIFORNIA
+        domain_info_6.save()
 
-        # Case 3: Should use matching request info
-        suborg_3 = Suborganization.objects.get(name="matching-requests")
-        self.assertEqual(suborg_3.city, "Request City")
-        self.assertEqual(suborg_3.state_territory, "TX")
+        # Run the portfolio creation script
+        self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True, parse_domains=True)
 
-        # Case 4: Should not update due to mismatched locations
-        suborg_4 = Suborganization.objects.get(name="non-matching-requests")
-        self.assertIsNone(suborg_4.city)
-        self.assertIsNone(suborg_4.state_territory)
+        # Case 1: Should use domain info values (highest priority)
+        matching_suborg = Suborganization.objects.get(name="matching org")
+        self.assertEqual(matching_suborg.city, "Domain Info City")
+        self.assertEqual(matching_suborg.state_territory, DomainRequest.StateTerritoryChoices.NEW_YORK)
+
+        # Case 2: Should use suborg values (second priority)
+        request_suborg = Suborganization.objects.get(name="request org")
+        self.assertEqual(request_suborg.city, "Suborg City")
+        self.assertEqual(request_suborg.state_territory, DomainRequest.StateTerritoryChoices.CALIFORNIA)
+
+        # Case 3: Should use standard values (lowest priority)
+        standard_suborg = Suborganization.objects.get(name="standard org")
+        self.assertEqual(standard_suborg.city, "Standard City")
+        self.assertEqual(standard_suborg.state_territory, DomainRequest.StateTerritoryChoices.TEXAS)
+
+        # Case 4: Should skip update due to mismatched locations
+        mismatch_suborg = Suborganization.objects.get(name="mismatch org")
+        self.assertIsNone(mismatch_suborg.city)
+        self.assertIsNone(mismatch_suborg.state_territory)
 
 
 class TestPatchSuborganizations(MockDbForIndividualTests):

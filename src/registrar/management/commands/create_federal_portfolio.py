@@ -357,17 +357,17 @@ class Command(BaseCommand):
 
     def post_process_suborganization_fields(self, agencies):
         """Updates suborganization city/state fields from domain and request data.
-        
+
         Priority order for data:
         1. Domain information
-        2. Domain request suborganization fields 
+        2. Domain request suborganization fields
         3. Domain request standard fields
         """
         # Common filter between domaininformation / domain request.
         # Filter by only the agencies we've updated thus far.
         # Then, only process records without null portfolio, org name, or suborg name.
         base_filter = Q(
-            federal_agency__in=agencies, 
+            federal_agency__in=agencies,
             portfolio__isnull=False,
             organization_name__isnull=False,
             sub_organization__isnull=False,
@@ -382,9 +382,9 @@ class Command(BaseCommand):
         requests = DomainRequest.objects.filter(
             base_filter,
             (
-                Q(city__isnull=False, state_territory__isnull=False) |
-                Q(suborganization_city__isnull=False, suborganization_state_territory__isnull=False)
-            ), 
+                Q(city__isnull=False, state_territory__isnull=False)
+                | Q(suborganization_city__isnull=False, suborganization_state_territory__isnull=False)
+            ),
         )
 
         # Second: Group domains and requests by normalized organization name.
@@ -416,9 +416,7 @@ class Command(BaseCommand):
             if domains:
                 reference = domains[0]
                 use_location_for_domain = all(
-                    d.city == reference.city
-                    and d.state_territory == reference.state_territory
-                    for d in domains
+                    d.city == reference.city and d.state_territory == reference.state_territory for d in domains
                 )
                 if use_location_for_domain:
                     domain = reference
@@ -450,7 +448,7 @@ class Command(BaseCommand):
 
             if not domain and not request:
                 message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data."
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+                TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
                 continue
 
             # PRIORITY:
@@ -467,10 +465,11 @@ class Command(BaseCommand):
                 suborg.city = normalize_string(request.city, lowercase=False)
                 suborg.state_territory = request.state_territory
 
-            logger.info(
+            message = (
                 f"Added city/state_territory to suborg: {suborg}. "
                 f"city - {suborg.city}, state - {suborg.state_territory}"
             )
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         # Fifth: Perform a bulk update
         return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
