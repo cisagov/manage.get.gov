@@ -1665,28 +1665,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             return err.code
 
-    def _fetch_contacts(self, contact_data):
-        """Fetch contact info."""
-        choices = PublicContact.ContactTypeChoices
-        # We expect that all these fields get populated,
-        # so we can create these early, rather than waiting.
-        contacts_dict = {
-            choices.ADMINISTRATIVE: None,
-            choices.SECURITY: None,
-            choices.TECHNICAL: None,
-        }
-        for domainContact in contact_data:
-            req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
-
-            # Map the object we recieved from EPP to a PublicContact
-            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
-
-            # Find/create it in the DB
-            in_db = self._get_or_create_public_contact(mapped_object)
-            contacts_dict[in_db.contact_type] = in_db.registry_id
-        return contacts_dict
-
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
         logger.info("_get_or_create_contact() -> Fetching contact info")
@@ -1869,8 +1847,8 @@ class Domain(TimeStampedModel, DomainHelper):
         missingSecurity = True
         missingTech = True
 
-        if len(cleaned.get("_contacts")) < 3:
-            for contact in cleaned.get("_contacts"):
+        if len(cleaned.get("contacts")) < 3:
+            for contact in cleaned.get("contacts"):
                 if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     missingAdmin = False
                 if contact.type == PublicContact.ContactTypeChoices.SECURITY:
@@ -1890,7 +1868,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 technical_contact.save()
             
             logger.info(
-                "_add_missing_contacts_if_unknown => " 
+                "_add_missing_contacts_if_unknown => In function. Values are " 
                 f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
             )
 
@@ -2070,6 +2048,30 @@ class Domain(TimeStampedModel, DomainHelper):
         if contacts and isinstance(contacts, list) and len(contacts) > 0:
             cleaned_contacts = self._fetch_contacts(contacts)
         return cleaned_contacts
+    
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        choices = PublicContact.ContactTypeChoices
+        # We expect that all these fields get populated,
+        # so we can create these early, rather than waiting.
+        contacts_dict = {
+            choices.ADMINISTRATIVE: None,
+            choices.SECURITY: None,
+            choices.TECHNICAL: None,
+        }
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+            logger.info(f"_fetch_contacts => this is the data: {data}")
+
+            # Map the object we recieved from EPP to a PublicContact
+            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
+            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
+
+            # Find/create it in the DB
+            in_db = self._get_or_create_public_contact(mapped_object)
+            contacts_dict[in_db.contact_type] = in_db.registry_id
+        return contacts_dict
 
     def _get_hosts(self, hosts):
         cleaned_hosts = []
