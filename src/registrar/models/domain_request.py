@@ -954,7 +954,6 @@ class DomainRequest(TimeStampedModel):
                     "recipient": recipient,
                     "is_org_user": is_org_user,
                 }
-
             if custom_email_content:
                 context["custom_email_content"] = custom_email_content
             send_templated_email(
