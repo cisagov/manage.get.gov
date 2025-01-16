@@ -2086,11 +2086,13 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.
         If it can't, it'll create it. Returns PublicContact"""
+        logger.info(f"in function")
         db_contact = PublicContact.objects.filter(
             registry_id=public_contact.registry_id,
             contact_type=public_contact.contact_type,
             domain=self,
         )
+        logger.info(f"db_contact {db_contact}")
 
         # If we find duplicates, log it and delete the oldest ones.
         if db_contact.count() > 1:
@@ -2113,20 +2115,22 @@ class Domain(TimeStampedModel, DomainHelper):
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
             # Doesn't run custom save logic, just saves to DB
-            public_contact.save(skip_epp_save=True)
-            # try:
-            #     public_contact.save(skip_epp_save=True)
-            #     logger.info(f"Created a new PublicContact: {public_contact}")
-            # except IntegrityError as err:
-            #     logger.error(
-            #         "_get_or_create_public_contact() => tried to create a duplicate public contact: "
-            #         f"{err}", exc_info=True
-            #     )
-            #     return PublicContact.objects.get(
-            #         registry_id=public_contact.registry_id,
-            #         contact_type=public_contact.contact_type,
-            #         domain=self,
-            #     )
+            try:
+                public_contact.save(skip_epp_save=True)
+                logger.info(f"Created a new PublicContact: {public_contact}")
+            # In rare cases, _add_missing_contacts_if_unknown will cause a race condition with this function.
+            # This is because it calls .save(), which is called here.
+            # 
+            except IntegrityError as err:
+                logger.error(
+                    "_get_or_create_public_contact() => tried to create a duplicate public contact: "
+                    f"{err}", exc_info=True
+                )
+                return PublicContact.objects.get(
+                    registry_id=public_contact.registry_id,
+                    contact_type=public_contact.contact_type,
+                    domain=self,
+                )
 
             # Append the item we just created
             return public_contact
