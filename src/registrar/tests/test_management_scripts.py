@@ -1920,6 +1920,104 @@ class TestCreateFederalPortfolio(TestCase):
         suborg_3 = Suborganization.objects.get(name=self.domain_info_3.organization_name)
         self.assertEqual(suborg_3.city, "Third City")
         self.assertEqual(suborg_3.state_territory, "FL")
+    
+    def test_post_process_suborganization_fields_multiple_locations(self):
+        """Test suborganization field updates when multiple domains/requests exist for the same org.
+        Tests that:
+        1. Matching locations are accepted
+        2. Non-matching locations are rejected
+        3. Single location is always accepted
+        """
+        # Test case 1: Multiple domains with matching locations
+        self.domain_info.organization_name = "matching"
+        self.domain_info.city = "Same City"
+        self.domain_info.state_territory = "NY"
+        self.domain_info.save()
+
+        completed_domain_request(
+            name="matching"
+        )
+        domain_info_copy = DomainInformation.objects.create(
+            organization_name="matching",
+            city="Same City",
+            state_territory="NY",
+            federal_agency=self.domain_info.federal_agency,
+            portfolio=self.domain_info.portfolio,
+            sub_organization=self.domain_info.sub_organization
+        )
+
+        # Test case 2: Multiple domains with non-matching locations
+        self.domain_info_2.organization_name = "non-matching"
+        self.domain_info_2.city = "City One"
+        self.domain_info_2.state_territory = "CA"
+        self.domain_info_2.save()
+
+        domain_info_2_copy = DomainInformation.objects.create(
+            organization_name="non-matching",
+            city="City Two",  # Different city
+            state_territory="CA",
+            federal_agency=self.domain_info_2.federal_agency,
+            portfolio=self.domain_info_2.portfolio,
+            sub_organization=self.domain_info_2.sub_organization
+        )
+
+        # Test case 3: Multiple requests with matching locations
+        self.domain_request.organization_name = "matching-requests"
+        self.domain_request.city = "Request City"
+        self.domain_request.state_territory = "TX"
+        self.domain_request.save()
+
+        request_copy = DomainRequest.objects.create(
+            organization_name="matching-requests",
+            city="Request City",
+            state_territory="TX",
+            federal_agency=self.domain_request.federal_agency,
+            portfolio=self.domain_request.portfolio,
+            sub_organization=self.domain_request.sub_organization
+        )
+
+        # Test case 4: Multiple requests with non-matching locations
+        self.domain_request_2.organization_name = "non-matching-requests"
+        self.domain_request_2.city = "Request One"
+        self.domain_request_2.state_territory = "WA"
+        self.domain_request_2.save()
+
+        request_2_copy = DomainRequest.objects.create(
+            organization_name="non-matching-requests",
+            city="Request Two",  # Different city
+            state_territory="WA",
+            federal_agency=self.domain_request_2.federal_agency,
+            portfolio=self.domain_request_2.portfolio,
+            sub_organization=self.domain_request_2.sub_organization
+        )
+
+        # Run the portfolio creation
+        self.run_create_federal_portfolio(
+            agency_name="Test Federal Agency",
+            parse_requests=True,
+            parse_domains=True
+        )
+
+        # Verify results
+        # Case 1: Should use matching domain info
+        suborg_1 = Suborganization.objects.get(name="matching")
+        self.assertEqual(suborg_1.city, "Same City")
+        self.assertEqual(suborg_1.state_territory, "NY")
+
+        # Case 2: Should not update due to mismatched locations
+        suborg_2 = Suborganization.objects.get(name="non-matching")
+        self.assertIsNone(suborg_2.city)
+        self.assertIsNone(suborg_2.state_territory)
+
+        # Case 3: Should use matching request info
+        suborg_3 = Suborganization.objects.get(name="matching-requests")
+        self.assertEqual(suborg_3.city, "Request City")
+        self.assertEqual(suborg_3.state_territory, "TX")
+
+        # Case 4: Should not update due to mismatched locations
+        suborg_4 = Suborganization.objects.get(name="non-matching-requests")
+        self.assertIsNone(suborg_4.city)
+        self.assertIsNone(suborg_4.state_territory)
 
 
 class TestPatchSuborganizations(MockDbForIndividualTests):

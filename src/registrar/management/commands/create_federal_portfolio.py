@@ -356,43 +356,56 @@ class Command(BaseCommand):
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def post_process_suborganization_fields(self, agencies):
-        """Post-process suborganization fields by pulling data from related domains and requests.
-
-        This function updates suborganization city and state_territory fields based on
-        related domain information and domain request information.
+        """Updates suborganization city/state fields from domain and request data.
+        
+        Priority order for data:
+        1. Domain information
+        2. Domain request suborganization fields 
+        3. Domain request standard fields
         """
-        # Assuming that org name, portfolio, and suborg all aren't null
-        # we assume that we want to add suborg info.
-        # as long as the org name doesnt match the portfolio name (as that implies it is the portfolio).
-        should_add_suborgs_filter = Q(
-            organization_name__isnull=False,
+        # Common filter between domaininformation / domain request.
+        # Filter by only the agencies we've updated thus far.
+        # Then, only process records without null portfolio, org name, or suborg name.
+        base_filter = Q(
+            federal_agency__in=agencies, 
             portfolio__isnull=False,
+            organization_name__isnull=False,
             sub_organization__isnull=False,
         ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
+
+        # First: Remove null city / state_territory values on domain info / domain requests.
+        # We want to add city data if there is data to add to begin with!
         domains = DomainInformation.objects.filter(
-            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
+            base_filter,
+            Q(city__isnull=False, state_territory__isnull=False),
         )
         requests = DomainRequest.objects.filter(
-            should_add_suborgs_filter, federal_agency__in=agencies, portfolio__isnull=False
+            base_filter,
+            (
+                Q(city__isnull=False, state_territory__isnull=False) |
+                Q(suborganization_city__isnull=False, suborganization_state_territory__isnull=False)
+            ), 
         )
 
-        # Since domains / requests can share an org name, lets first create lists of duplicate names.
-        # If only one item exists in this list, we can just pull that info.
-        # If more than one exists, then we can determine what value we should choose.
+        # Second: Group domains and requests by normalized organization name.
+        # This means that later down the line we have to account for "duplicate" org names.
         domains_dict = {}
+        requests_dict = {}
         for domain in domains:
             normalized_name = normalize_string(domain.organization_name)
             domains_dict.setdefault(normalized_name, []).append(domain)
 
-        requests_dict = {}
         for request in requests:
             normalized_name = normalize_string(request.organization_name)
             requests_dict.setdefault(normalized_name, []).append(request)
 
+        # Third: Get suborganizations to update
         suborgs_to_edit = Suborganization.objects.filter(
             Q(id__in=domains.values_list("sub_organization", flat=True))
             | Q(id__in=requests.values_list("sub_organization", flat=True))
         )
+
+        # Fourth: Process each suborg to add city / state territory info
         for suborg in suborgs_to_edit:
             normalized_suborg_name = normalize_string(suborg.name)
             domains = domains_dict.get(normalized_suborg_name, [])
@@ -402,75 +415,62 @@ class Command(BaseCommand):
             domain = None
             if domains:
                 reference = domains[0]
-                locations_match = all(
-                    d.city
-                    and d.state_territory
-                    and d.city == reference.city
+                use_location_for_domain = all(
+                    d.city == reference.city
                     and d.state_territory == reference.state_territory
                     for d in domains
                 )
-                if locations_match:
+                if use_location_for_domain:
                     domain = reference
 
             # Try to get matching request info
+            # Uses consensus: if all city / state_territory info matches, then we can assume the data is "good".
+            # If not, take the safe route and just skip updating this particular record.
             request = None
+            use_suborg_location_for_request = True
+            use_location_for_request = True
             if requests:
                 reference = requests[0]
-                locations_match = all(
-                    (
-                        r.city
-                        and r.state_territory
-                        and r.city == reference.city
-                        and r.state_territory == reference.state_territory
-                    )
-                    or (
-                        r.suborganization_city
-                        and r.suborganization_state_territory
-                        and r.suborganization_city == reference.suborganization_city
-                        and r.suborganization_state_territory == reference.suborganization_state_territory
-                    )
+                use_suborg_location_for_request = all(
+                    r.suborganization_city
+                    and r.suborganization_state_territory
+                    and r.suborganization_city == reference.suborganization_city
+                    and r.suborganization_state_territory == reference.suborganization_state_territory
                     for r in requests
                 )
-                if locations_match:
+                use_location_for_request = all(
+                    r.city
+                    and r.state_territory
+                    and r.city == reference.city
+                    and r.state_territory == reference.state_territory
+                    for r in requests
+                )
+                if use_suborg_location_for_request or use_location_for_request:
                     request = reference
 
             if not domain and not request:
-                message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data exists."
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+                message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data."
+                TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
                 continue
 
             # PRIORITY:
             # 1. Domain info
             # 2. Domain request requested suborg fields
             # 3. Domain request normal fields
-            city = None
-            if domain and domain.city:
-                city = normalize_string(domain.city, lowercase=False)
-            elif request and request.suborganization_city:
-                city = normalize_string(request.suborganization_city, lowercase=False)
-            elif request and request.city:
-                city = normalize_string(request.city, lowercase=False)
+            if domain:
+                suborg.city = normalize_string(domain.city, lowercase=False)
+                suborg.state_territory = domain.state_territory
+            elif request and use_suborg_location_for_request:
+                suborg.city = normalize_string(request.suborganization_city, lowercase=False)
+                suborg.state_territory = request.suborganization_state_territory
+            elif request and use_location_for_request:
+                suborg.city = normalize_string(request.city, lowercase=False)
+                suborg.state_territory = request.state_territory
 
-            state_territory = None
-            if domain and domain.state_territory:
-                state_territory = domain.state_territory
-            elif request and request.suborganization_state_territory:
-                state_territory = request.suborganization_state_territory
-            elif request and request.state_territory:
-                state_territory = request.state_territory
+            logger.info(
+                f"Added city/state_territory to suborg: {suborg}. "
+                f"city - {suborg.city}, state - {suborg.state_territory}"
+            )
 
-            if city:
-                suborg.city = city
-
-            if suborg:
-                suborg.state_territory = state_territory
-
-            logger.info(f"{suborg}: city: {suborg.city}, state: {suborg.state_territory}")
-
+        # Fifth: Perform a bulk update
         return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
-
-    def locations_match(item, reference):
-        return (item.city == reference.city and item.state_territory == reference.state_territory) or (
-            item.suborganization_city == reference.suborganization_city
-            and item.suborganization_state_territory == reference.suborganization_state_territory
-        )
