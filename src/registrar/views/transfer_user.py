@@ -124,9 +124,8 @@ class TransferUserView(View):
         # Handle ForeignKey relationships
         related_object = getattr(selected_user, related_field.name, None)
         if related_object:
-            with ignore_unique_violation():
-                setattr(current_user, related_field.name, related_object)
-                current_user.save()
+            setattr(current_user, related_field.name, related_object)
+            current_user.save()
             self.log_change(selected_user, current_user, related_field.name, change_logs)
 
     def _handle_one_to_one(self, related_field: OneToOneField, selected_user, current_user, change_logs):
@@ -165,9 +164,8 @@ class TransferUserView(View):
         field_name = related_field.get_accessor_name()
         related_instance = getattr(selected_user, field_name, None)
         if related_instance:
-            with ignore_unique_violation():
-                setattr(related_instance, field_name, current_user)
-                related_instance.save()
+            setattr(related_instance, field_name, current_user)
+            related_instance.save()
             self.log_change(selected_user, current_user, field_name, change_logs)
 
     @classmethod
