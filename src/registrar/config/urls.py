@@ -346,6 +346,11 @@ urlpatterns = [
         name="domain-security-email",
     ),
     path(
+        "domain/<int:pk>/renewal",
+        views.DomainRenewalView.as_view(),
+        name="domain-renewal",
+    ),
+    path(
         "domain/<int:pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",

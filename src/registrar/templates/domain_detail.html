@@ -46,10 +46,18 @@
 
           {% if domain.get_state_help_text %}
             <p class="margin-y-0 text-primary-darker">
-              {% if has_domain_renewal_flag and domain.is_expiring and is_domain_manager %}
-                This domain will expire soon. <a href="/not-available-yet">Renew to maintain access.</a>
+              {% if has_domain_renewal_flag and domain.is_expired and is_domain_manager %}
+                This domain has expired, but it is still online. 
+                {% url 'domain-renewal' pk=domain.id as url %}
+                <a href="{{ url }}">Renew to maintain access.</a>
+              {% elif has_domain_renewal_flag and domain.is_expiring and is_domain_manager %}
+                This domain will expire soon. 
+                {% url 'domain-renewal' pk=domain.id as url %}
+                <a href="{{ url }}">Renew to maintain access.</a>
               {% elif has_domain_renewal_flag and domain.is_expiring and is_portfolio_user %}
                 This domain will expire soon. Contact one of the listed domain managers to renew the domain.
+              {% elif has_domain_renewal_flag and domain.is_expired and is_portfolio_user %}
+                This domain has expired, but it is still online. Contact one of the listed domain managers to renew the domain.
               {% else %}
                 {{ domain.get_state_help_text }}
               {% endif %}
