@@ -368,7 +368,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         and from the database if `use_db` is True (provided that record exists).
         An empty form will be provided if neither of those are true.
         """
-        logger.debug(f"get_forms({step},{use_post},{use_db},{files})")
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
@@ -385,7 +384,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         for form in forms:
             data = form.from_database(self.domain_request) if self.has_pk() else None
-            logger.debug(data)
             if use_post:
                 instantiated.append(form(self.request.POST, **kwargs))
             elif use_db:
@@ -562,13 +560,6 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
     forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
-
-    #for debugging:
-    def get(self, request, *args, **kwargs):
-        """This method handles GET requests."""
-        logger.debug("in get")
-
-        return super().get(request, *args, **kwargs)
     
     def save(self, forms: list):
         """Override of save to clear or associate certain suborganization data
