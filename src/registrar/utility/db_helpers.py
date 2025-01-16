@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from django.db import transaction, IntegrityError
 from psycopg2 import errorcodes
 
+
 @contextmanager
 def ignore_unique_violation():
     """
