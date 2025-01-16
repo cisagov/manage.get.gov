@@ -1020,7 +1020,9 @@ class DomainRequest(TimeStampedModel):
 
         cc_addresses: list[str] = []
         if self.requesting_entity_is_portfolio:
-            portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS])
+            portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(
+                permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+            )
             cc_users = self.portfolio.portfolio_admin_users | portfolio_view_requests_users
             cc_addresses = list(cc_users.values_list("email", flat=True))
 
@@ -1031,7 +1033,7 @@ class DomainRequest(TimeStampedModel):
                 "emails/submission_confirmation_subject.txt",
                 send_email=True,
                 bcc_address=bcc_address,
-                cc_addresses=cc_addresses
+                cc_addresses=cc_addresses,
             )
 
     @transition(
