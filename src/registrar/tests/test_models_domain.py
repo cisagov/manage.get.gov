@@ -348,26 +348,30 @@ class TestDomainCache(MockEppLib):
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
-    def test_get_security_email_during_unknown_state_race_condition(self):
+
+    def test_get_security_email_race_condition(self):
         """
-        Scenario: A domain is accessed for the first time
-            Given a domain in UNKNOWN state with a security contact in registry
-            When get_security_email is called during state transition
-            Then the security contact is fetched from registry
+        Scenario: Two processes try to create the same security contact simultaneously
+            Given a domain in UNKNOWN state
+            When a race condition occurs during contact creation
+            Then no IntegrityError is raised
             And only one security contact exists in database
-            And the security email matches the registry contact
-            And no duplicate contact creation is attempted
+            And the correct security email is returned
         """
         domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
         
         # Store original method
         original_filter = PublicContact.objects.filter
-        
+        self.first_call = True
         def mock_filter(*args, **kwargs):
-            # First call returns empty queryset to simulate contact not existing
+            """ Simulates the race condition by creating a 
+            duplicate contact between filter check and save
+            """
             result = original_filter(*args, **kwargs)
-            if kwargs.get('contact_type') == PublicContact.ContactTypeChoices.SECURITY:
-                # Create the duplicate contact after the check but before the save
+
+            # Return empty queryset for first call. Otherwise just proceed as normal.
+            if self.first_call:
+                self.first_call = False
                 duplicate = PublicContact(
                     domain=domain,
                     contact_type=PublicContact.ContactTypeChoices.SECURITY,
@@ -376,11 +380,20 @@ class TestDomainCreation(MockEppLib):
                     name="Registry Customer Service"
                 )
                 duplicate.save(skip_epp_save=True)
+                return PublicContact.objects.none()
+
             return result
             
         with patch.object(PublicContact.objects, 'filter', side_effect=mock_filter):
             try:
-                security_email = domain.get_security_email()
+                public_contact = PublicContact(
+                    domain=domain,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                    registry_id="defaultSec",
+                    email="dotgov@cisa.dhs.gov",
+                    name="Registry Customer Service"
+                )
+                returned_public_contact = domain._get_or_create_public_contact(public_contact)
             except IntegrityError:
                 self.fail(
                     "IntegrityError was raised during contact creation due to a race condition. "
@@ -395,7 +408,7 @@ class TestDomainCreation(MockEppLib):
             contact_type=PublicContact.ContactTypeChoices.SECURITY
         )
         self.assertEqual(security_contacts.count(), 1)
-        self.assertEqual(security_email, "dotgov@cisa.dhs.gov")
+        self.assertEqual(returned_public_contact, security_contacts.get())
 
     @boto3_mocking.patching
     def test_approved_domain_request_creates_domain_locally(self):
