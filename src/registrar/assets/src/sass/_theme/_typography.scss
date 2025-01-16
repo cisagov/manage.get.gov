@@ -10,17 +10,23 @@ address,
   max-width: measure(5);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1:not(.usa-alert__heading),
+h2:not(.usa-alert__heading),
+h3:not(.usa-alert__heading),
+h4:not(.usa-alert__heading),
+h5:not(.usa-alert__heading),
+h6:not(.usa-alert__heading) {
   color: color('primary-darker');
 }
 
-h1 {
+h1, .h1 {
   font-size: 2.125rem;
   @include typeset('sans', '2xl', 2);
   margin: 0 0 units(2);
 }
 
-h2 {
+h2, .h2 {
+  line-height: 1.3;
   margin: units(4) 0 units(1);
 }
 
@@ -30,17 +36,12 @@ h3, .h3 {
 }
 
 h4, .h4 {
-  font-size: 1.15rem;
+  font-size: 1.125rem;
+  line-height: 1.25;
   font-weight: font-weight('semibold');
 }
 
 .p--blockquote {
   padding-left: units(1);
   border-left: 2px solid color('base-lighter');
-}
-
-.summary-item__title {
-  // match h3 at 18.72px and semibold
-  font-size: 1.25em;
-  font-weight: 600;
 }

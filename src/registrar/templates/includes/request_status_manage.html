@@ -130,13 +130,12 @@
             {% if portfolio %}
                 {% include "includes/portfolio_request_review_steps.html" with is_editable=False domain_request=DomainRequest %}
             {% else %}
-                {% with heading_level='h3' %}
                 {% with org_type=DomainRequest.get_generic_org_type_display %}
-                {% include "includes/summary_item.html" with title='Type of organization' value=org_type heading_level=heading_level %}
+                {% include "includes/summary_item.html" with title='Type of organization' value=org_type %}
                 {% endwith %}
 
                 {% if DomainRequest.tribe_name %}
-                    {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name %}
 
                     {% if DomainRequest.federally_recognized_tribe %}
                         <p>Federally-recognized tribe</p>
@@ -149,51 +148,51 @@
                 {% endif %}
 
                 {% if DomainRequest.get_federal_type_display %}
-                    {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display %}
                 {% endif %}
 
                 {% if DomainRequest.is_election_board %}
                     {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
-                        {% include "includes/summary_item.html" with title='Election office' value=value heading_level=heading_level %}
+                        {% include "includes/summary_item.html" with title='Election office' value=value %}
                     {% endwith %}
                 {% endif %}
 
                 {% if DomainRequest.organization_name %}
-                    {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' %}
                 {% endif %}
 
                 {% if DomainRequest.about_your_organization %}
-                    {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='About your organization' value=DomainRequest.about_your_organization %}
                 {% endif %}
 
                 {% if DomainRequest.senior_official %}
-                    {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Senior official' value=DomainRequest.senior_official contact='true' %}
                 {% endif %}
 
                 {% if DomainRequest.current_websites.all %}
-                    {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Current websites' value=DomainRequest.current_websites.all list='true' %}
                 {% endif %}
 
                 {% if DomainRequest.requested_domain %}
-                    {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='.gov domain' value=DomainRequest.requested_domain %}
                 {% endif %}
 
                 {% if DomainRequest.alternative_domains.all %}
-                    {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Alternative domains' value=DomainRequest.alternative_domains.all list='true' %}
                 {% endif %}
 
                 {% if DomainRequest.purpose %}
-                    {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose %}
                 {% endif %}
 
                 {% if DomainRequest.creator %}
-                    {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' %}
                 {% endif %}
 
                 {% if DomainRequest.other_contacts.all %}
-                    {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.other_contacts.all contact='true' list='true' %}
                 {% else %}
-                    {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale heading_level=heading_level %}
+                    {% include "includes/summary_item.html" with title='Other employees from your organization' value=DomainRequest.no_other_contacts_rationale %}
                 {% endif %}
 
             {# We always show this field even if None #}
@@ -215,7 +214,6 @@
                     {% endif %}
                 </ul>
             {% endif %}
-        {% endwith %}
     {% endif %}
     {% endblock request_summary%}
         </div>
