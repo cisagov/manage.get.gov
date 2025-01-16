@@ -560,7 +560,7 @@ class PortfolioDomainRequestWizard(DomainRequestWizard):
 class RequestingEntity(DomainRequestWizard):
     template_name = "domain_request_requesting_entity.html"
     forms = [forms.RequestingEntityYesNoForm, forms.RequestingEntityForm]
-    
+
     def save(self, forms: list):
         """Override of save to clear or associate certain suborganization data
         depending on what the user wishes to do. For instance, we want to add a suborganization

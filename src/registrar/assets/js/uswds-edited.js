@@ -29,8 +29,6 @@
  *  - tooltip dynamic content updated to include nested element (for better sizing control)
  *  - modal exposed to window to be accessible in other js files
  *  - fixed bug in createHeaderButton which added newlines to header button tooltips
- *  - modified combobox to allow for blank values in list
- *  - modified aria label for X button in combobox to reflect modified behavior of button
  *  - modified combobox to handle error class
  */
 
@@ -1169,13 +1167,13 @@ const enhanceComboBox = _comboBoxEl => {
     });
   }
   if (defaultValue) {
-   for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-     const optionEl = selectEl.options[i];
-     if (optionEl.value === defaultValue) {
-       selectedOption = optionEl;
-       break;
-     }
-   }
+    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+      const optionEl = selectEl.options[i];
+      if (optionEl.value === defaultValue) {
+        selectedOption = optionEl;
+        break;
+      }
+    }
   }
 
   /**
@@ -1501,16 +1499,16 @@ const resetSelection = el => {
   const selectValue = selectEl.value;
   const inputValue = (inputEl.value || "").toLowerCase();
   if (selectValue) {
-   for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
-     const optionEl = selectEl.options[i];
-     if (optionEl.value === selectValue) {
-       if (inputValue !== optionEl.text) {
-         changeElementValue(inputEl, optionEl.text);
-       }
-       comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
-       return;
-     }
-   }
+    for (let i = 0, len = selectEl.options.length; i < len; i += 1) {
+      const optionEl = selectEl.options[i];
+      if (optionEl.value === selectValue) {
+        if (inputValue !== optionEl.text) {
+          changeElementValue(inputEl, optionEl.text);
+        }
+        comboBoxEl.classList.add(COMBO_BOX_PRISTINE_CLASS);
+        return;
+      }
+    }
   }
   if (inputValue) {
     changeElementValue(inputEl);
