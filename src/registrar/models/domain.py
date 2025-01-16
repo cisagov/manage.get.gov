@@ -2116,8 +2116,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if db_contact.count() == 0:
             # Doesn't run custom save logic, just saves to DB
             try:
-                public_contact.save(skip_epp_save=True)
-                logger.info(f"Created a new PublicContact: {public_contact}")
+                with transaction.atomic():
+                    public_contact.save(skip_epp_save=True)
+                    logger.info(f"Created a new PublicContact: {public_contact}")
             # In rare cases, _add_missing_contacts_if_unknown will cause a race condition with this function.
             # This is because it calls .save(), which is called here.
             # 

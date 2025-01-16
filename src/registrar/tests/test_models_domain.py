@@ -349,6 +349,7 @@ class TestDomainCache(MockEppLib):
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
 
+    @less_console_noise_decorator
     def test_get_security_email_race_condition(self):
         """
         Scenario: Two processes try to create the same security contact simultaneously
