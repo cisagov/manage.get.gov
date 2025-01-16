@@ -1,6 +1,6 @@
 import logging
-from django.db import transaction, IntegrityError
-from django.db.models import ForeignKey, OneToOneField, ManyToManyField, ManyToOneRel, ManyToManyRel, OneToOneRel, Model, UniqueConstraint
+from django.db import transaction
+from django.db.models import ForeignKey, OneToOneField, ManyToManyField, ManyToOneRel, ManyToManyRel, OneToOneRel
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -12,8 +12,6 @@ from django.contrib import messages
 
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-
-from psycopg2 import errorcodes
 
 from registrar.utility.db_helpers import ignore_unique_violation
 
@@ -72,13 +70,10 @@ class TransferUserView(View):
                 self.transfer_related_fields_and_log(selected_user, current_user, change_logs)
 
                 # Success message if any related objects were updated
-                logger.debug(f"change_logs: {change_logs}")
                 if change_logs:
-                    logger.debug(f"change_logs: {change_logs}")
                     success_message = f"Data transferred successfully for the following objects: {change_logs}"
                     messages.success(request, success_message)
 
-                logger.debug("Deleting old user")
                 selected_user.delete()
                 messages.success(request, f"Deleted {selected_user} {selected_user.username}")
         except Exception as e:
