@@ -401,16 +401,15 @@ class TerminalHelper:
         # Allow the user to inspect the command string
         # and ask if they wish to proceed
         proceed_execution = TerminalHelper.query_yes_no_exit(
-            f"""{TerminalColors.OKCYAN}
-            =====================================================
-            {prompt_title}
-            =====================================================
-            {verify_message}
-
-            {prompt_message}
-            {TerminalColors.FAIL}
-            Proceed? (Y = proceed, N = {action_description_for_selecting_no})
-            {TerminalColors.ENDC}"""
+            f"\n{TerminalColors.OKCYAN}"
+            "====================================================="
+            f"\n{prompt_title}\n"
+            "====================================================="
+            f"\n{verify_message}\n"
+            f"\n{prompt_message}\n"
+            f"{TerminalColors.FAIL}"
+            f"Proceed? (Y = proceed, N = {action_description_for_selecting_no})"
+            f"{TerminalColors.ENDC}"
         )
 
         # If the user decided to proceed return true.
@@ -443,13 +442,14 @@ class TerminalHelper:
                 f.write(file_contents)
 
     @staticmethod
-    def colorful_logger(log_level, color, message):
+    def colorful_logger(log_level, color, message, exc_info=True):
         """Adds some color to your log output.
 
         Args:
             log_level: str | Logger.method -> Desired log level. ex: logger.info or "INFO"
             color: str | TerminalColors -> Output color. ex: TerminalColors.YELLOW or "YELLOW"
             message: str -> Message to display.
+            exc_info: bool -> Whether the log should print exc_info or not
         """
 
         if isinstance(log_level, str) and hasattr(logger, log_level.lower()):
@@ -463,4 +463,4 @@ class TerminalHelper:
             terminal_color = color
 
         colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
-        log_method(colored_message)
+        log_method(colored_message, exc_info=exc_info)
