@@ -1939,6 +1939,8 @@ class Domain(TimeStampedModel, DomainHelper):
         Additionally, capture and cache old hosts and contacts from cache if they
         don't exist in cleaned
         """
+
+        # object reference issue between self._cache vs cleaned?
         old_cache_hosts = self._cache.get("hosts")
         old_cache_contacts = self._cache.get("contacts")
 
@@ -2111,19 +2113,20 @@ class Domain(TimeStampedModel, DomainHelper):
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
             # Doesn't run custom save logic, just saves to DB
-            try:
-                public_contact.save(skip_epp_save=True)
-                logger.info(f"Created a new PublicContact: {public_contact}")
-            except IntegrityError as err:
-                logger.error(
-                    "_get_or_create_public_contact() => tried to create a duplicate public contact: "
-                    f"{err}", exc_info=True
-                )
-                return PublicContact.objects.get(
-                    registry_id=public_contact.registry_id,
-                    contact_type=public_contact.contact_type,
-                    domain=self,
-                )
+            public_contact.save(skip_epp_save=True)
+            # try:
+            #     public_contact.save(skip_epp_save=True)
+            #     logger.info(f"Created a new PublicContact: {public_contact}")
+            # except IntegrityError as err:
+            #     logger.error(
+            #         "_get_or_create_public_contact() => tried to create a duplicate public contact: "
+            #         f"{err}", exc_info=True
+            #     )
+            #     return PublicContact.objects.get(
+            #         registry_id=public_contact.registry_id,
+            #         contact_type=public_contact.contact_type,
+            #         domain=self,
+            #     )
 
             # Append the item we just created
             return public_contact
