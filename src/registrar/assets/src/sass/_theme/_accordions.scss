@@ -40,12 +40,6 @@
     top: 30px;
 }
 
-@media (min-width: 1030px) {
-    .usa-accordion--more-actions .usa-accordion__content {
-        right: auto;
-    }
-}
-
 // Special positioning for the kabob menu popup in the last row on a given page
 // This won't work on the Members table rows because that table has show-more rows
 // Currently, that's not an issue since that Members table is not wrapped in the
