@@ -31,7 +31,7 @@ initializeUrbanizationToggle();
 userProfileListener();
 finishUserSetupListener();
 
-loadInitialValuesForComboBoxes();
+//loadInitialValuesForComboBoxes();
 
 handleRequestingEntityFieldset();
 

@@ -77,6 +77,20 @@ class RequestingEntityForm(RegistrarForm):
                 (obj.id, str(obj)) for obj in queryset
             ] + [("other", "Other (enter your suborganization manually)")]
 
+    @classmethod
+    def from_database(cls, obj: DomainRequest | None):
+        """Returns a dict of form field values gotten from `obj`.
+        Overrides RegistrarForm method in order to set sub_organization to 'other'
+        on GETs of the RequestingEntityForm."""
+        if obj is None:
+            return {}
+        # get the domain request as a dict, per usual method
+        domain_request_dict = {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
+        # set sub_organization to 'other' if is_requesting_new_suborganization is True
+        if obj.is_requesting_new_suborganization():
+            domain_request_dict["sub_organization"] = "other"
+        return domain_request_dict
+
     def clean_sub_organization(self):
         """On suborganization clean, set the suborganization value to None if the user is requesting
         a custom suborganization (as it doesn't exist yet)"""
@@ -102,42 +116,132 @@ class RequestingEntityForm(RegistrarForm):
             )
         return name
 
+    # def full_clean(self):
+    #     """Validation logic to remove the custom suborganization value before clean is triggered.
+    #     Without this override, the form will throw an 'invalid option' error."""
+    #     # Remove the custom other field before cleaning
+    #     data = self.data.copy() if self.data else None
+
+    #     # Remove the 'other' value from suborganization if it exists.
+    #     # This is a special value that tracks if the user is requesting a new suborg.
+    #     suborganization = self.data.get("portfolio_requesting_entity-sub_organization")
+    #     if suborganization and "other" in suborganization:
+    #         data["portfolio_requesting_entity-sub_organization"] = ""
+
+    #     # Set the modified data back to the form
+    #     self.data = data
+
+    #     # Call the parent's full_clean method
+    #     super().full_clean()
+
     def full_clean(self):
-        """Validation logic to remove the custom suborganization value before clean is triggered.
+        """Validation logic to temporarily remove the custom suborganization value before clean is triggered.
         Without this override, the form will throw an 'invalid option' error."""
-        # Remove the custom other field before cleaning
-        data = self.data.copy() if self.data else None
+        logger.debug("full_clean")
+        # Ensure self.data is not None before proceeding
+        if self.data:
+            # handle case where form has been submitted
+            logger.debug("form was submitted")
+            # Create a copy of the data for manipulation
+            data = self.data.copy()
 
-        # Remove the 'other' value from suborganization if it exists.
-        # This is a special value that tracks if the user is requesting a new suborg.
-        suborganization = self.data.get("portfolio_requesting_entity-sub_organization")
-        if suborganization and "other" in suborganization:
-            data["portfolio_requesting_entity-sub_organization"] = ""
+            # Retrieve sub_organization
+            suborganization = data.get("portfolio_requesting_entity-sub_organization")
 
-        # Set the modified data back to the form
-        self.data = data
+            logger.debug(f"suborganization submitted as {suborganization}")
+            # # Determine if "other" should be stored in _original_suborganization
+            # if not suborganization:
+            #     logger.debug("suborg stored as other")
+            #     self._original_suborganization = "other"
+            # else:
+            self._original_suborganization = suborganization
+
+            # If the original value was "other", clear it for validation
+            if self._original_suborganization == "other":
+                data["portfolio_requesting_entity-sub_organization"] = ""
+
+            # Set the modified data back to the form
+            self.data = data
+        else:
+            # handle case of a GET
+            suborganization = None
+            if self.initial and "sub_organization" in self.initial:
+                print("suborg in self.initial")
+                suborganization = self.initial["sub_organization"]
+            print(self.initial["sub_organization"])
+            print(suborganization)
+            # Check if is_requesting_new_suborganization is True
+            is_requesting_new_suborganization = False
+            if self.initial and "is_requesting_new_suborganization" in self.initial:
+                # Call the method if it exists
+                print(self.initial["is_requesting_new_suborganization"]())
+                is_requesting_new_suborganization = self.initial["is_requesting_new_suborganization"]()
+
+            # Determine if "other" should be set
+            if is_requesting_new_suborganization and suborganization is None:
+                print("presetting to other")
+                self._original_suborganization = "other"
+            else:
+                self._original_suborganization = suborganization
+            print("self.data does not exist")
+            print(self.initial)
+            # # Handle the initial GET request case
+            # self._original_suborganization = None
 
         # Call the parent's full_clean method
         super().full_clean()
 
+        # Restore "other" if there are errors
+        if self.errors:
+            logger.debug(f"errors detected: {self.errors}; resetting original_sub_organization")
+            self.data["portfolio_requesting_entity-sub_organization"] = self._original_suborganization
+
+
+    # def clean(self):
+    #     """Custom clean implementation to handle our desired logic flow for suborganization.
+    #     Given that these fields often rely on eachother, we need to do this in the parent function."""
+    #     cleaned_data = super().clean()
+
+    #     # Do some custom error validation if the requesting entity is a suborg.
+    #     # Otherwise, just validate as normal.
+    #     suborganization = self.cleaned_data.get("sub_organization")
+    #     is_requesting_new_suborganization = self.cleaned_data.get("is_requesting_new_suborganization")
+
+    #     # Get the value of the yes/no checkbox from RequestingEntityYesNoForm.
+    #     # Since self.data stores this as a string, we need to convert "True" => True.
+    #     requesting_entity_is_suborganization = self.data.get(
+    #         "portfolio_requesting_entity-requesting_entity_is_suborganization"
+    #     )
+    #     if requesting_entity_is_suborganization == "True":
+    #         if is_requesting_new_suborganization:
+    #             # Validate custom suborganization fields
+    #             if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
+    #                 self.add_error("requested_suborganization", "Enter the name of your suborganization.")
+    #             if not cleaned_data.get("suborganization_city"):
+    #                 self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
+    #             if not cleaned_data.get("suborganization_state_territory"):
+    #                 self.add_error(
+    #                     "suborganization_state_territory",
+    #                     "Select the state, territory, or military post where your suborganization is located.",
+    #                 )
+    #         elif not suborganization:
+    #             self.add_error("sub_organization", "Suborganization is required.")
+
+    #     return cleaned_data
+
     def clean(self):
-        """Custom clean implementation to handle our desired logic flow for suborganization.
-        Given that these fields often rely on eachother, we need to do this in the parent function."""
+        """Custom clean implementation to handle our desired logic flow for suborganization."""
         cleaned_data = super().clean()
 
-        # Do some custom error validation if the requesting entity is a suborg.
-        # Otherwise, just validate as normal.
-        suborganization = self.cleaned_data.get("sub_organization")
-        is_requesting_new_suborganization = self.cleaned_data.get("is_requesting_new_suborganization")
-
-        # Get the value of the yes/no checkbox from RequestingEntityYesNoForm.
-        # Since self.data stores this as a string, we need to convert "True" => True.
+        # Get the cleaned data
+        suborganization = cleaned_data.get("sub_organization")
+        is_requesting_new_suborganization = cleaned_data.get("is_requesting_new_suborganization")
         requesting_entity_is_suborganization = self.data.get(
             "portfolio_requesting_entity-requesting_entity_is_suborganization"
         )
+
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
-                # Validate custom suborganization fields
                 if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
                     self.add_error("requested_suborganization", "Enter the name of your suborganization.")
                 if not cleaned_data.get("suborganization_city"):
@@ -149,6 +253,12 @@ class RequestingEntityForm(RegistrarForm):
                     )
             elif not suborganization:
                 self.add_error("sub_organization", "Suborganization is required.")
+
+        # If there are errors, restore the "other" value for rendering
+        if self.errors and getattr(self, "_original_suborganization", None) == "other":
+            self.cleaned_data["sub_organization"] = self._original_suborganization
+        elif not self.data and getattr(self, "_original_suborganization", None) == "other":
+            self.cleaned_data["sub_organization"] = self._original_suborganization
 
         return cleaned_data
 
