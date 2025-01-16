@@ -73,12 +73,14 @@ class RequestingEntityForm(RegistrarForm):
             self.fields["sub_organization"].queryset = queryset
 
             # Modify the choices to include "other" so that form can display options properly
-            self.fields["sub_organization"].choices = [("", "--Select--")] + [
-                (obj.id, str(obj)) for obj in queryset
-            ] + [("other", "Other (enter your suborganization manually)")]
+            self.fields["sub_organization"].choices = (
+                [("", "--Select--")]
+                + [(obj.id, str(obj)) for obj in queryset]
+                + [("other", "Other (enter your suborganization manually)")]
+            )
 
     @classmethod
-    def from_database(cls, obj: DomainRequest | None):
+    def from_database(cls, obj: DomainRequest | Contact | None):
         """Returns a dict of form field values gotten from `obj`.
         Overrides RegistrarForm method in order to set sub_organization to 'other'
         on GETs of the RequestingEntityForm."""
@@ -86,9 +88,11 @@ class RequestingEntityForm(RegistrarForm):
             return {}
         # get the domain request as a dict, per usual method
         domain_request_dict = {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
+
         # set sub_organization to 'other' if is_requesting_new_suborganization is True
-        if obj.is_requesting_new_suborganization():
+        if isinstance(obj, DomainRequest) and obj.is_requesting_new_suborganization():
             domain_request_dict["sub_organization"] = "other"
+
         return domain_request_dict
 
     def clean_sub_organization(self):
@@ -115,7 +119,6 @@ class RequestingEntityForm(RegistrarForm):
                 "Choose a new name, or select it directly if you would like to use it."
             )
         return name
-
 
     def full_clean(self):
         """Validation logic to temporarily remove the custom suborganization value before clean is triggered.
