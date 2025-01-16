@@ -1847,8 +1847,10 @@ class Domain(TimeStampedModel, DomainHelper):
         missingSecurity = True
         missingTech = True
 
-        if len(cleaned.get("contacts")) < 3:
-            for contact in cleaned.get("contacts"):
+        # Potential collision - mismatch between _contacts and contacts?
+        # But the ID wouldnt match in this case because the default is being grabbed?
+        if len(cleaned.get("_contacts")) < 3:
+            for contact in cleaned.get("_contacts"):
                 if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     missingAdmin = False
                 if contact.type == PublicContact.ContactTypeChoices.SECURITY:
