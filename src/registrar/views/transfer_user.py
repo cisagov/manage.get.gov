@@ -15,6 +15,8 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
 from psycopg2 import errorcodes
 
+from registrar.utility.db_helpers import ignore_unique_violation
+
 logger = logging.getLogger(__name__)
 
 
@@ -118,33 +120,27 @@ class TransferUserView(View):
         related_manager = getattr(selected_user, related_field.get_accessor_name(), None)
         if related_manager and related_manager.exists():
             for related_object in related_manager.all():
-                # use an atomic transaction to set a save point in case of a unique constraint violation
-                with transaction.atomic():
-                    try:
-                        setattr(related_object, related_field.field.name, current_user)
-                        related_object.save()
-                    except IntegrityError as e:
-                        if e.__cause__.pgcode == errorcodes.UNIQUE_VIOLATION:
-                            # roll back to the savepoint, effectively ignoring this transaction
-                            continue
-                        else:
-                            raise e
+                with ignore_unique_violation():
+                    setattr(related_object, related_field.field.name, current_user)
+                    related_object.save()
             self.log_change(selected_user, current_user, related_field.field.name, change_logs)
 
     def _handle_foreign_key(self, related_field: ForeignKey, selected_user, current_user, change_logs):
         # Handle ForeignKey relationships
         related_object = getattr(selected_user, related_field.name, None)
         if related_object:
-            setattr(current_user, related_field.name, related_object)
-            current_user.save()
+            with ignore_unique_violation():
+                setattr(current_user, related_field.name, related_object)
+                current_user.save()
             self.log_change(selected_user, current_user, related_field.name, change_logs)
 
     def _handle_one_to_one(self, related_field: OneToOneField, selected_user, current_user, change_logs):
         # Handle OneToOne relationship
         related_object = getattr(selected_user, related_field.name, None)
         if related_object:
-            setattr(current_user, related_field.name, related_object)
-            current_user.save()
+            with ignore_unique_violation():
+                setattr(current_user, related_field.name, related_object)
+                current_user.save()
             self.log_change(selected_user, current_user, related_field.name, change_logs)
 
     def _handle_many_to_many(self, related_field: ManyToManyField, selected_user, current_user, change_logs):
@@ -153,8 +149,9 @@ class TransferUserView(View):
         related_manager = getattr(selected_user, related_name, None)
         if related_manager and related_manager.exists():
             for instance in related_manager.all():
-                getattr(instance, related_name).remove(selected_user)
-                getattr(instance, related_name).add(current_user)
+                with ignore_unique_violation():
+                    getattr(instance, related_name).remove(selected_user)
+                    getattr(instance, related_name).add(current_user)
             self.log_change(selected_user, current_user, related_name, change_logs)
 
     def _handle_many_to_many_reverse(self, related_field: ManyToManyRel, selected_user, current_user, change_logs):
@@ -163,8 +160,9 @@ class TransferUserView(View):
         related_manager = getattr(selected_user, related_name, None)
         if related_manager and related_manager.exists():
             for instance in related_manager.all():
-                getattr(instance, related_name).remove(selected_user)
-                getattr(instance, related_name).add(current_user)
+                with ignore_unique_violation():
+                    getattr(instance, related_name).remove(selected_user)
+                    getattr(instance, related_name).add(current_user)
             self.log_change(selected_user, current_user, related_name, change_logs)
 
     def _handle_one_to_one_reverse(self, related_field: OneToOneRel, selected_user, current_user, change_logs):
@@ -172,8 +170,9 @@ class TransferUserView(View):
         field_name = related_field.get_accessor_name()
         related_instance = getattr(selected_user, field_name, None)
         if related_instance:
-            setattr(related_instance, field_name, current_user)
-            related_instance.save()
+            with ignore_unique_violation():
+                setattr(related_instance, field_name, current_user)
+                related_instance.save()
             self.log_change(selected_user, current_user, field_name, change_logs)
 
     @classmethod
