@@ -118,8 +118,7 @@ class TransferUserView(View):
                 with ignore_unique_violation():
                     setattr(related_object, related_field.field.name, current_user)
                     related_object.save()
-            obj_type = related_field.related_model.__name__
-            self.log_change(obj_type, selected_user, current_user, related_field.field.name, change_logs)
+                self.log_change(related_object.__name__, selected_user, current_user, related_field.field.name, change_logs)
 
     def _handle_foreign_key(self, related_field: ForeignKey, selected_user, current_user, change_logs):
         # Handle ForeignKey relationships
@@ -147,8 +146,7 @@ class TransferUserView(View):
                 with ignore_unique_violation():
                     getattr(instance, related_name).remove(selected_user)
                     getattr(instance, related_name).add(current_user)
-            obj_type = related_field.related_model.__name__
-            self.log_change(obj_type, selected_user, current_user, related_name, change_logs)
+                self.log_change(instance.__name__, selected_user, current_user, related_name, change_logs)
 
     def _handle_many_to_many_reverse(self, related_field: ManyToManyRel, selected_user, current_user, change_logs):
         # Handle reverse relationship
@@ -159,8 +157,7 @@ class TransferUserView(View):
                 with ignore_unique_violation():
                     getattr(instance, related_name).remove(selected_user)
                     getattr(instance, related_name).add(current_user)
-            obj_type = related_field.related_model.__name__
-            self.log_change(obj_type, selected_user, current_user, related_name, change_logs)
+                self.log_change(instance.__name__, selected_user, current_user, related_name, change_logs)
 
     def _handle_one_to_one_reverse(self, related_field: OneToOneRel, selected_user, current_user, change_logs):
         # Handle reverse relationship
