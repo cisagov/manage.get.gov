@@ -85,8 +85,7 @@ export class MembersTable extends BaseTable {
     const num_domains = member.domain_urls.length;
     const last_active = this.handleLastActive(member.last_active);
     let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
-    const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member.name}`): ''; 
-
+    const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.member_display}`) : ''; 
     const row = document.createElement('tr');
     if (isLastRow) {
       row.classList.add("hide-td-borders");
@@ -98,7 +97,7 @@ export class MembersTable extends BaseTable {
 
     // generate html blocks for domains and permissions for the member
     let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
-    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices);
+    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices, unique_id);
 
     // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
     let showMoreButton = '';
@@ -109,7 +108,7 @@ export class MembersTable extends BaseTable {
           type="button" 
           class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
           data-for=${unique_id}
-          aria-label="Expand for additional information"
+          aria-label="Expand for additional information for ${member.member_display}"
         >
           <span>Expand</span>
           <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24">
@@ -125,7 +124,7 @@ export class MembersTable extends BaseTable {
     }
 
     row.innerHTML = `
-      <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+      <th aria-describedby="permissions-member-${unique_id}" role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
         ${member.member_display} ${admin_tagHTML} ${showMoreButton}
       </th>
       <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
@@ -383,7 +382,7 @@ export class MembersTable extends BaseTable {
    * - If no relevant permissions are found, the function returns a message stating that the user has no additional permissions.
    * - The resulting HTML always includes a header "Additional permissions for this member" and appends the relevant permission descriptions.
    */
-  generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices) {
+  generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices, unique_id) {
     let permissionsHTML = '';
 
     // Define shared classes across elements for easier refactoring
@@ -416,7 +415,7 @@ export class MembersTable extends BaseTable {
     }
 
     // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = "<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0 text-primary'>Additional permissions for this member</h4>" + permissionsHTML + "</div>";
+    permissionsHTML = `<div id="permissions-member-${unique_id}" class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0 text-primary'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
     
     return permissionsHTML;
   }
