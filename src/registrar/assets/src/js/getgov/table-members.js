@@ -69,11 +69,11 @@ export class MembersTable extends BaseTable {
   loadRows(dataObjects, tbody, customTableOptions) {
     dataObjects.forEach((dataObject, index) => {
       const isLastRow = index === dataObjects.length - 1;
-      this.addRow(dataObject, tbody, customTableOptions, isLastRow);
+      this.addRow(index, dataObject, tbody, customTableOptions, isLastRow);
     });
   }
 
-  addRow(dataObject, tbody, customTableOptions, isLastRow = false) {
+  addRow(index, dataObject, tbody, customTableOptions, isLastRow = false) {
     const member = dataObject;
     // member is based on either a UserPortfolioPermission or a PortfolioInvitation
     // and also includes information from related domains; the 'id' of the org_member
@@ -87,6 +87,7 @@ export class MembersTable extends BaseTable {
     let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
     const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.member_display}`) : ''; 
     const row = document.createElement('tr');
+    const isLastRow = index === dataObjects.length - 1;
     if (isLastRow) {
       row.classList.add("hide-td-borders");
     }
@@ -109,6 +110,7 @@ export class MembersTable extends BaseTable {
           class="usa-button--show-more-button usa-button usa-button--unstyled display-block margin-top-1" 
           data-for=${unique_id}
           aria-label="Expand for additional information for ${member.member_display}"
+          aria-label-placeholder="${member.member_display}"
         >
           <span>Expand</span>
           <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24">
@@ -124,7 +126,7 @@ export class MembersTable extends BaseTable {
     }
 
     row.innerHTML = `
-      <th aria-describedby="permissions-member-${unique_id}" role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+      <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
         ${member.member_display} ${admin_tagHTML} ${showMoreButton}
       </th>
       <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
@@ -175,12 +177,26 @@ export class MembersTable extends BaseTable {
         spanElement.textContent = 'Close';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
         buttonParentRow.classList.add('hide-td-borders');
-        toggleButton.setAttribute('aria-label', 'Close additional information');
+
+        let ariaLabelText = "Close additional information";
+        let ariaLabelPlaceholder = toggleButton.getAttribute("aria-label-placeholder");
+        if (ariaLabelPlaceholder) {
+          ariaLabelText = `Close additional information for ${ariaLabelPlaceholder}`;
+        }
+        toggleButton.setAttribute('aria-label', ariaLabelText);
+
+        // Set tabindex for focusable elements in expanded content
       } else {    
         hideElement(contentDiv);
         spanElement.textContent = 'Expand';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
         buttonParentRow.classList.remove('hide-td-borders');
+
+        let ariaLabelText = "Expand for additional information";
+        let ariaLabelPlaceholder = toggleButton.getAttribute("aria-label-placeholder");
+        if (ariaLabelPlaceholder) {
+          ariaLabelText = `Expand for additional information for ${ariaLabelPlaceholder}`;
+        }
         toggleButton.setAttribute('aria-label', 'Expand for additional information');
       }
     }
@@ -415,7 +431,7 @@ export class MembersTable extends BaseTable {
     }
 
     // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = `<div id="permissions-member-${unique_id}" class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0 text-primary'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
+    permissionsHTML = `<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0 text-primary'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
     
     return permissionsHTML;
   }
