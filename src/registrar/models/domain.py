@@ -1847,10 +1847,9 @@ class Domain(TimeStampedModel, DomainHelper):
         missingSecurity = True
         missingTech = True
 
-        # Potential collision - mismatch between _contacts and contacts?
-        # But the ID wouldnt match in this case because the default is being grabbed?
-        if len(cleaned.get("_contacts")) < 3:
-            for contact in cleaned.get("_contacts"):
+        contacts = cleaned.get("_contacts", [])
+        if len(contacts) < 3:
+            for contact in contacts:
                 if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     missingAdmin = False
                 if contact.type == PublicContact.ContactTypeChoices.SECURITY:
@@ -1868,9 +1867,9 @@ class Domain(TimeStampedModel, DomainHelper):
             if missingTech:
                 technical_contact = self.get_default_technical_contact()
                 technical_contact.save()
-            
+
             logger.info(
-                "_add_missing_contacts_if_unknown => In function. Values are " 
+                "_add_missing_contacts_if_unknown => Adding contacts. Values are "
                 f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
             )
 
@@ -2052,7 +2051,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if contacts and isinstance(contacts, list) and len(contacts) > 0:
             cleaned_contacts = self._fetch_contacts(contacts)
         return cleaned_contacts
-    
+
     def _fetch_contacts(self, contact_data):
         """Fetch contact info."""
         choices = PublicContact.ContactTypeChoices
@@ -2086,13 +2085,11 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.
         If it can't, it'll create it. Returns PublicContact"""
-        logger.info(f"in function")
         db_contact = PublicContact.objects.filter(
             registry_id=public_contact.registry_id,
             contact_type=public_contact.contact_type,
             domain=self,
         )
-        logger.info(f"db_contact {db_contact}")
 
         # If we find duplicates, log it and delete the oldest ones.
         if db_contact.count() > 1:
@@ -2119,13 +2116,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 with transaction.atomic():
                     public_contact.save(skip_epp_save=True)
                     logger.info(f"Created a new PublicContact: {public_contact}")
-            # In rare cases, _add_missing_contacts_if_unknown will cause a race condition with this function.
-            # This is because it calls .save(), which is called here.
-            # 
             except IntegrityError as err:
                 logger.error(
-                    "_get_or_create_public_contact() => tried to create a duplicate public contact: "
-                    f"{err}", exc_info=True
+                    "_get_or_create_public_contact() => tried to create a duplicate public contact: " f"{err}",
+                    exc_info=True,
                 )
                 return PublicContact.objects.get(
                     registry_id=public_contact.registry_id,
@@ -2142,7 +2136,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
             existing_contact.delete()
             public_contact.save()
-            logger.warning("Requested PublicContact is out of sync " "with DB.")
+            logger.warning("Requested PublicContact is out of sync with our DB.")
             return public_contact
 
         # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.
