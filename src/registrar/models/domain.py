@@ -1586,7 +1586,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
         elif flag_is_active(request, "domain_renewal") and self.is_expiring():
-            help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
+            help_text = "This domain will expire soon. Go to “Manage” to renew the domain."
         else:
             help_text = Domain.State.get_help_text(self.state)
 
