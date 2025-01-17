@@ -579,7 +579,10 @@ class MockDb(TestCase):
         )
 
         cls.suborganization_1, _ = Suborganization.objects.get_or_create(
-            name="SubOrg 1", portfolio=cls.portfolio_1, city="Nashville", state_territory="TN",
+            name="SubOrg 1",
+            portfolio=cls.portfolio_1,
+            city="Nashville",
+            state_territory="TN",
         )
 
         current_date = get_time_aware_date(datetime(2024, 4, 2))

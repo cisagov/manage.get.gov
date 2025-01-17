@@ -792,8 +792,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,,,,,0,1,city1.gov,,,,,"
-                "Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
+                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,,,,,0,1,city1.gov,"
+                ",,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
             )
 
