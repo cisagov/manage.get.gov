@@ -44,7 +44,6 @@ class RequestingEntityForm(RegistrarForm):
         label="Suborganization name",
         required=False,
         queryset=Suborganization.objects.none(),
-        empty_label="--Select--",
         widget=ComboboxWidget,
     )
     requested_suborganization = forms.CharField(
@@ -58,7 +57,7 @@ class RequestingEntityForm(RegistrarForm):
     suborganization_state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=False,
-        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        choices=DomainRequest.StateTerritoryChoices.choices,
         widget=ComboboxWidget,
     )
 
@@ -74,8 +73,7 @@ class RequestingEntityForm(RegistrarForm):
 
             # Modify the choices to include "other" so that form can display options properly
             self.fields["sub_organization"].choices = (
-                [("", "--Select--")]
-                + [(obj.id, str(obj)) for obj in queryset]
+                [(obj.id, str(obj)) for obj in queryset]
                 + [("other", "Other (enter your suborganization manually)")]
             )
 
@@ -328,7 +326,6 @@ class OrganizationContactForm(RegistrarForm):
         # uncomment to see if modelChoiceField can be an arg later
         required=False,
         queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
-        empty_label="--Select--",
         widget=ComboboxWidget,
     )
     organization_name = forms.CharField(
@@ -349,7 +346,7 @@ class OrganizationContactForm(RegistrarForm):
     )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
-        choices=[("", "--Select--")] + DomainRequest.StateTerritoryChoices.choices,
+        choices=DomainRequest.StateTerritoryChoices.choices,
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },

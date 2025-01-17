@@ -15,7 +15,6 @@ export function handleRequestingEntityFieldset() {
     const suborgContainer = document.getElementById("suborganization-container");
     const suborgDetailsContainer = document.getElementById("suborganization-container__details");
     const suborgAddtlInstruction = document.getElementById("suborganization-addtl-instruction");
-    const subOrgCreateNewOption = document.getElementById("option-to-add-suborg")?.value;
     // Make sure all crucial page elements exist before proceeding.
     // This more or less ensures that we are on the Requesting Entity page, and not elsewhere.
     if (!radios || !input || !select || !inputGrandParent || !suborgContainer || !suborgDetailsContainer) return;
@@ -28,7 +27,7 @@ export function handleRequestingEntityFieldset() {
     function toggleSuborganization(radio=null) {
         if (radio != null) requestingSuborganization = radio?.checked && radio.value === "True";
         requestingSuborganization ? showElement(suborgContainer) : hideElement(suborgContainer);
-        if (select.options.length == 2) { // --Select-- and other are the only options
+        if (select.options.length == 1) { // other is the only option
             hideElement(inputGrandParent); // Hide the combo box and indicate requesting new suborg
             hideElement(suborgAddtlInstruction); // Hide additional instruction related to the list
             requestingNewSuborganization.value = "True";
