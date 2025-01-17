@@ -1665,6 +1665,30 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             return err.code
 
+    def _fetch_contacts(self, contact_data):
+        """Fetch contact info."""
+        choices = PublicContact.ContactTypeChoices
+        # We expect that all these fields get populated,
+        # so we can create these early, rather than waiting.
+        contacts_dict = {
+            choices.ADMINISTRATIVE: None,
+            choices.SECURITY: None,
+            choices.TECHNICAL: None,
+        }
+        for domainContact in contact_data:
+            req = commands.InfoContact(id=domainContact.contact)
+            data = registry.send(req, cleaned=True).res_data[0]
+            logger.info(f"_fetch_contacts => this is the data: {data}")
+
+            # Map the object we recieved from EPP to a PublicContact
+            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
+            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
+
+            # Find/create it in the DB
+            in_db = self._get_or_create_public_contact(mapped_object)
+            contacts_dict[in_db.contact_type] = in_db.registry_id
+        return contacts_dict
+
     def _get_or_create_contact(self, contact: PublicContact):
         """Try to fetch info about a contact. Create it if it does not exist."""
         logger.info("_get_or_create_contact() -> Fetching contact info")
@@ -1826,6 +1850,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             self._add_missing_contacts_if_unknown(cleaned)
+
         except Exception as e:
             logger.error(
                 "%s couldn't _add_missing_contacts_if_unknown, error was %s."
@@ -1843,6 +1868,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is in an UNKNOWN state, that is an error state)
         Note: The transition state change happens at the end of the function
         """
+
         missingAdmin = True
         missingSecurity = True
         missingTech = True
@@ -1938,8 +1964,6 @@ class Domain(TimeStampedModel, DomainHelper):
         Additionally, capture and cache old hosts and contacts from cache if they
         don't exist in cleaned
         """
-
-        # object reference issue between self._cache vs cleaned?
         old_cache_hosts = self._cache.get("hosts")
         old_cache_contacts = self._cache.get("contacts")
 
@@ -2052,30 +2076,6 @@ class Domain(TimeStampedModel, DomainHelper):
             cleaned_contacts = self._fetch_contacts(contacts)
         return cleaned_contacts
 
-    def _fetch_contacts(self, contact_data):
-        """Fetch contact info."""
-        choices = PublicContact.ContactTypeChoices
-        # We expect that all these fields get populated,
-        # so we can create these early, rather than waiting.
-        contacts_dict = {
-            choices.ADMINISTRATIVE: None,
-            choices.SECURITY: None,
-            choices.TECHNICAL: None,
-        }
-        for domainContact in contact_data:
-            req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
-            logger.info(f"_fetch_contacts => this is the data: {data}")
-
-            # Map the object we recieved from EPP to a PublicContact
-            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
-            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
-
-            # Find/create it in the DB
-            in_db = self._get_or_create_public_contact(mapped_object)
-            contacts_dict[in_db.contact_type] = in_db.registry_id
-        return contacts_dict
-
     def _get_hosts(self, hosts):
         cleaned_hosts = []
         if hosts and isinstance(hosts, list):
@@ -2118,7 +2118,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info(f"Created a new PublicContact: {public_contact}")
             except IntegrityError as err:
                 logger.error(
-                    "_get_or_create_public_contact() => tried to create a duplicate public contact: " f"{err}",
+                    f"_get_or_create_public_contact() => tried to create a duplicate public contact: {err}",
                     exc_info=True,
                 )
                 return PublicContact.objects.get(
@@ -2136,7 +2136,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
             existing_contact.delete()
             public_contact.save()
-            logger.warning("Requested PublicContact is out of sync with our DB.")
+            logger.warning("Requested PublicContact is out of sync with DB.")
             return public_contact
 
         # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.
