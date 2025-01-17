@@ -4,7 +4,7 @@
  * accessible directly in getgov.min.js
  * 
  */
-export function initializeTooltips() {
+export function uswdsInitializeTooltips() {
     function checkTooltip() {
       // Check that the tooltip library is loaded, and if not, wait and retry
       if (window.tooltip && typeof window.tooltip.init === 'function') {

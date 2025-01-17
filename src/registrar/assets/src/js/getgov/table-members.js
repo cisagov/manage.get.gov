@@ -61,7 +61,7 @@ export class MembersTable extends BaseTable {
       tableHeaderRow.appendChild(extraActionsHeader);
     }
     return { 
-      'needsAdditionalColumn': hasEditPermission,
+      'hasAdditionalActions': hasEditPermission,
       'UserPortfolioPermissionChoices' : data.UserPortfolioPermissionChoices
     };
   }
@@ -85,7 +85,8 @@ export class MembersTable extends BaseTable {
     const num_domains = member.domain_urls.length;
     const last_active = this.handleLastActive(member.last_active);
     let cancelInvitationButton = member.type === "invitedmember" ? "Cancel invitation" : "Remove member";
-    const kebabHTML = customTableOptions.needsAdditionalColumn ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.member_display}`) : ''; 
+    const kebabHTML = customTableOptions.hasAdditionalActions ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.name}`): ''; 
+
     const row = document.createElement('tr');
     const isLastRow = index === dataObjects.length - 1;
     if (isLastRow) {
@@ -140,7 +141,7 @@ export class MembersTable extends BaseTable {
           ${member.action_label} <span class="usa-sr-only">${member.name}</span>
         </a>
       </td>
-      ${customTableOptions.needsAdditionalColumn ? '<td>'+kebabHTML+'</td>' : ''}
+      ${customTableOptions.hasAdditionalActions ? '<td>'+kebabHTML+'</td>' : ''}
     `;
     tbody.appendChild(row);
     if (domainsHTML || permissionsHTML) {
@@ -148,7 +149,7 @@ export class MembersTable extends BaseTable {
     }
     // This easter egg is only for fixtures that dont have names as we are displaying their emails
     // All prod users will have emails linked to their account
-    if (customTableOptions.needsAdditionalColumn) MembersTable.addMemberDeleteModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
+    if (customTableOptions.hasAdditionalActions) MembersTable.addMemberDeleteModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
   }
 
   /**

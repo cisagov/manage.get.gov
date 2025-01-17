@@ -376,13 +376,20 @@ export class BaseTable {
   loadModals(page, total, unfiltered_total) {}
 
   /**
+   * Loads tooltips + sets up event listeners
+   * "Activates" the tooltips after the DOM updates 
+   * Utilizes "uswdsInitializeTooltips"
+  */
+  initializeTooltips() {}
+
+  /**
    * Allows us to customize the table display based on specific conditions and a user's permissions
    * Dynamically manages the visibility set up of columns, adding/removing headers 
    * (ie if a domain request is deleteable, we include the kebab column or if a user has edit permissions
    * for a member, they will also see the kebab column)
    * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
    * Currently returns a dictionary of either:
-   * - "needsAdditionalColumn": If a new column should be displayed 
+   * - "hasAdditionalActions": If additional elements need to be added to the Action column 
    * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
    */
   customizeTable(dataObjects){ return {}; }
@@ -406,7 +413,7 @@ export class BaseTable {
    * Returns either: data.members, data.domains or data.domain_requests
    * @param {Object} dataObject - The data used to populate the row content 
    * @param {HTMLElement} tbody - The table body to which the new row is appended to 
-   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie needsAdditionalColumn)
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie hasAdditionalActions)
    */
   addRow(dataObject, tbody, customTableOptions) {
     throw new Error('addRow must be defined');
@@ -468,6 +475,7 @@ export class BaseTable {
         this.initCheckboxListeners();
 
         this.loadModals(data.page, data.total, data.unfiltered_total);
+        this.initializeTooltips();
 
         // Do not scroll on first page load
         if (scroll)

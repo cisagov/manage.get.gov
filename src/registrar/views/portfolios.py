@@ -8,13 +8,14 @@ from django.utils.safestring import mark_safe
 from django.contrib import messages
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
+from registrar.models.domain import Domain
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
-from registrar.utility.email_invitations import send_portfolio_invitation_email
+from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
@@ -32,6 +33,8 @@ from registrar.views.utility.permission_views import (
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
+
+from registrar.views.utility.invitation_helper import get_org_membership
 
 
 logger = logging.getLogger(__name__)
@@ -238,6 +241,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         removed_domains = request.POST.get("removed_domains")
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         member = portfolio_permission.user
+        portfolio = portfolio_permission.portfolio
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
@@ -249,7 +253,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
 
         if added_domain_ids or removed_domain_ids:
             try:
-                self._process_added_domains(added_domain_ids, member)
+                self._process_added_domains(added_domain_ids, member, request.user, portfolio)
                 self._process_removed_domains(removed_domain_ids, member)
                 messages.success(request, "The domain assignment changes have been saved.")
                 return redirect(reverse("member-domains", kwargs={"pk": pk}))
@@ -259,15 +263,15 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                     "A database error occurred while saving changes. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error("A database error occurred while saving changes.")
+                logger.error("A database error occurred while saving changes.", exc_info=True)
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
                     request,
-                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error(f"An unexpected error occurred: {str(e)}")
+                logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
                 return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
@@ -288,16 +292,26 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             logger.error(f"Invalid data for {domain_type}")
             return None
 
-    def _process_added_domains(self, added_domain_ids, member):
+    def _process_added_domains(self, added_domain_ids, member, requestor, portfolio):
         """
         Processes added domains by bulk creating UserDomainRole instances.
         """
         if added_domain_ids:
+            # get added_domains from ids to pass to send email method and bulk create
+            added_domains = Domain.objects.filter(id__in=added_domain_ids)
+            member_of_a_different_org, _ = get_org_membership(portfolio, member.email, member)
+            send_domain_invitation_email(
+                email=member.email,
+                requestor=requestor,
+                domains=added_domains,
+                is_member_of_different_org=member_of_a_different_org,
+                requested_user=member,
+            )
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
                 [
-                    UserDomainRole(domain_id=domain_id, user=member, role=UserDomainRole.Roles.MANAGER)
-                    for domain_id in added_domain_ids
+                    UserDomainRole(domain=domain, user=member, role=UserDomainRole.Roles.MANAGER)
+                    for domain in added_domains
                 ],
                 ignore_conflicts=True,  # Avoid duplicate entries
             )
@@ -444,6 +458,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         removed_domains = request.POST.get("removed_domains")
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
         email = portfolio_invitation.email
+        portfolio = portfolio_invitation.portfolio
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
@@ -455,7 +470,7 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
 
         if added_domain_ids or removed_domain_ids:
             try:
-                self._process_added_domains(added_domain_ids, email)
+                self._process_added_domains(added_domain_ids, email, request.user, portfolio)
                 self._process_removed_domains(removed_domain_ids, email)
                 messages.success(request, "The domain assignment changes have been saved.")
                 return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
@@ -465,15 +480,15 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
                     "A database error occurred while saving changes. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error("A database error occurred while saving changes.")
+                logger.error("A database error occurred while saving changes.", exc_info=True)
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
             except Exception as e:
                 messages.error(
                     request,
-                    "An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
                     f"please contact {DefaultUserValues.HELP_EMAIL}.",
                 )
-                logger.error(f"An unexpected error occurred: {str(e)}.")
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
         else:
             messages.info(request, "No changes detected.")
@@ -494,33 +509,41 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
             logger.error(f"Invalid data for {domain_type}.")
             return None
 
-    def _process_added_domains(self, added_domain_ids, email):
+    def _process_added_domains(self, added_domain_ids, email, requestor, portfolio):
         """
         Processes added domain invitations by updating existing invitations
         or creating new ones.
         """
-        if not added_domain_ids:
-            return
+        if added_domain_ids:
+            # get added_domains from ids to pass to send email method and bulk create
+            added_domains = Domain.objects.filter(id__in=added_domain_ids)
+            member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
+            send_domain_invitation_email(
+                email=email,
+                requestor=requestor,
+                domains=added_domains,
+                is_member_of_different_org=member_of_a_different_org,
+            )
 
-        # Update existing invitations from CANCELED to INVITED
-        existing_invitations = DomainInvitation.objects.filter(domain_id__in=added_domain_ids, email=email)
-        existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
+            # Update existing invitations from CANCELED to INVITED
+            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
+            existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
 
-        # Determine which domains need new invitations
-        existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
-        new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
+            # Determine which domains need new invitations
+            existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
+            new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
 
-        # Bulk create new invitations
-        DomainInvitation.objects.bulk_create(
-            [
-                DomainInvitation(
-                    domain_id=domain_id,
-                    email=email,
-                    status=DomainInvitation.DomainInvitationStatus.INVITED,
-                )
-                for domain_id in new_domain_ids
-            ]
-        )
+            # Bulk create new invitations
+            DomainInvitation.objects.bulk_create(
+                [
+                    DomainInvitation(
+                        domain_id=domain_id,
+                        email=email,
+                        status=DomainInvitation.DomainInvitationStatus.INVITED,
+                    )
+                    for domain_id in new_domain_ids
+                ]
+            )
 
     def _process_removed_domains(self, removed_domain_ids, email):
         """
@@ -755,7 +778,11 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
         try:
             if not requested_user or not permission_exists:
                 send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
-                form.save()
+                portfolio_invitation = form.save()
+                # if user exists for email, immediately retrieve portfolio invitation upon creation
+                if requested_user is not None:
+                    portfolio_invitation.retrieve()
+                    portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
                 if permission_exists:

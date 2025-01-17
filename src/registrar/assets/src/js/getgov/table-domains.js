@@ -1,4 +1,5 @@
 import { BaseTable } from './table-base.js';
+import { uswdsInitializeTooltips } from './helpers-uswds.js';
 
 export class DomainsTable extends BaseTable {
 
@@ -55,7 +56,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td>
+      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
         <a href="${actionUrl}">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
@@ -65,6 +66,9 @@ export class DomainsTable extends BaseTable {
       </td>
     `;
     tbody.appendChild(row);
+  }
+  initializeTooltips() {
+    uswdsInitializeTooltips();
   }
 }
 
