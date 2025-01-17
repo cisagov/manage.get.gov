@@ -68,12 +68,11 @@ export class MembersTable extends BaseTable {
 
   loadRows(dataObjects, tbody, customTableOptions) {
     dataObjects.forEach((dataObject, index) => {
-      const isLastRow = index === dataObjects.length - 1;
-      this.addRow(index, dataObject, tbody, customTableOptions, isLastRow);
+      this.addRow(index, dataObject, tbody, customTableOptions);
     });
   }
 
-  addRow(index, dataObject, tbody, customTableOptions, isLastRow = false) {
+  addRow(index, dataObject, tbody, customTableOptions) {
     const member = dataObject;
     // member is based on either a UserPortfolioPermission or a PortfolioInvitation
     // and also includes information from related domains; the 'id' of the org_member
