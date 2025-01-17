@@ -1019,7 +1019,7 @@ class DomainRequest(TimeStampedModel):
             bcc_address = settings.DEFAULT_FROM_EMAIL
 
         cc_addresses: list[str] = []
-        if self.requesting_entity_is_portfolio:
+        if self.requesting_entity_is_portfolio():
             portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(
                 permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
             )
