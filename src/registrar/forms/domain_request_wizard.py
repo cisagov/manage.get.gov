@@ -95,7 +95,6 @@ class RequestingEntityForm(RegistrarForm):
     def clean_sub_organization(self):
         """On suborganization clean, set the suborganization value to None if the user is requesting
         a custom suborganization (as it doesn't exist yet)"""
-
         # If it's a new suborganization, return None (equivalent to selecting nothing)
         if self.cleaned_data.get("is_requesting_new_suborganization"):
             return None
@@ -129,7 +128,6 @@ class RequestingEntityForm(RegistrarForm):
             # Retrieve sub_organization and store in _original_suborganization
             suborganization = data.get("portfolio_requesting_entity-sub_organization")
             self._original_suborganization = suborganization
-
             # If the original value was "other", clear it for validation
             if self._original_suborganization == "other":
                 data["portfolio_requesting_entity-sub_organization"] = ""
@@ -171,7 +169,6 @@ class RequestingEntityForm(RegistrarForm):
         requesting_entity_is_suborganization = self.data.get(
             "portfolio_requesting_entity-requesting_entity_is_suborganization"
         )
-
         if requesting_entity_is_suborganization == "True":
             if is_requesting_new_suborganization:
                 if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
