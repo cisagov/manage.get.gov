@@ -2933,7 +2933,7 @@ class TestRequestingEntity(WebTest):
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_requesting_entity_page_errors(self):
         """Tests that we get the expected form errors on requesting entity"""
         domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)

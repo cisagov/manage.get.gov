@@ -368,6 +368,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         and from the database if `use_db` is True (provided that record exists).
         An empty form will be provided if neither of those are true.
         """
+
         kwargs = {
             "files": files,
             "prefix": self.steps.current,
