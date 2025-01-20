@@ -52,6 +52,11 @@ def send_domain_invitation_email(
 
 
 def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, requested_user=None):
+    """
+    Notifies all domain managers of the provided domain of a change
+    Raises:
+        EmailSendingError
+    """
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
@@ -72,7 +77,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
             )
         except EmailSendingError as err:
             raise EmailSendingError(
-                f"Could not send email manager notification to {user.email} for domains: {domain.name}"
+                f"Could not send email manager notification to {user.email} for domain: {domain.name}"
             ) from err
 
 
