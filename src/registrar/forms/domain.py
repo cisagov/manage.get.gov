@@ -164,7 +164,6 @@ class DomainSuborganizationForm(forms.ModelForm):
     sub_organization = forms.ModelChoiceField(
         label="Suborganization name",
         queryset=Suborganization.objects.none(),
-        empty_label="⎯ (No suborganization)",
         required=False,
         widget=ComboboxWidget,
     )
