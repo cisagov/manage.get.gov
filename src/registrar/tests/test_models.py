@@ -22,6 +22,7 @@ import boto3_mocking
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
+from registrar.models.user_group import UserGroup
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
 
@@ -749,6 +750,65 @@ class TestUserPortfolioPermission(TestCase):
 
         # Should return the forbidden permissions for member role
         self.assertEqual(member_only_permissions, set(member_forbidden))
+
+    @less_console_noise_decorator
+    def test_save_new_instance_adds_perm_user_to_og_model_users_group(self):
+        """
+        Saving a new instance of UserPortfolioPermission adds the UserPortfolioPermission.user
+        to the group org_model_users.
+
+        Saving an existing instance does not add the user to the group.
+        """
+        # Create the org_model_users group
+        org_model_users, _ = UserGroup.objects.get_or_create(name="org_model_users")
+
+        # Ensure the test user does not belong to org_model_users
+        self.assertFalse(self.user.groups.filter(name="org_model_users").exists())
+
+        # Save a new UserPortfolioPermission instance
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio,
+            user=self.user,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Assert that the user is now in org_model_users
+        self.assertTrue(self.user.groups.filter(name="org_model_users").exists())
+
+        # Remove the user from org_model_users
+        self.user.groups.remove(org_model_users)
+        self.assertFalse(self.user.groups.filter(name="org_model_users").exists())
+
+        # Modify the permissions and save again
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.save()
+
+        # Assert that the user has not been added back to org_model_users
+        self.assertFalse(self.user.groups.filter(name="org_model_users").exists())
+
+    @less_console_noise_decorator
+    def test_save_new_instance_when_org_model_users_group_does_not_exist(self):
+        """
+        This mocks the lower environments.
+
+        In this instance, nothing should happen.
+        """
+        # Ensure the org_model_users group does not exist
+        UserGroup.objects.filter(name="org_model_users").delete()
+        self.assertFalse(UserGroup.objects.filter(name="org_model_users").exists())
+
+        # Save a new UserPortfolioPermission instance
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio,
+            user=self.user,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Assert that the portfolio_permission exists
+        self.assertIsNotNone(portfolio_permission)
+
+        # Assert that the org_model_users group still does not exist
+        self.assertFalse(UserGroup.objects.filter(name="org_model_users").exists())
 
 
 class TestUser(TestCase):

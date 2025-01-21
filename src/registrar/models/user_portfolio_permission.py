@@ -9,6 +9,7 @@ from registrar.models.utility.portfolio_helper import (
 )
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.auth.models import Group
 
 
 class UserPortfolioPermission(TimeStampedModel):
@@ -186,3 +187,30 @@ class UserPortfolioPermission(TimeStampedModel):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
         validate_user_portfolio_permission(self)
+
+    def save(self, *args, **kwargs):
+        """
+        Save override
+
+        Ensures that the user associated with this instance is added to the
+        'org_model_users' group under specific conditions.
+        """
+        is_new_instance = self.pk is None  # Check if this is a new instance being created
+
+        super().save(*args, **kwargs)  # Call the original save method
+
+        if is_new_instance:
+            try:
+                # Fetch the 'org_model_users' group
+                org_model_users_group = Group.objects.get(name="org_model_users")
+            except Group.DoesNotExist:
+                org_model_users_group = None
+
+            if (
+                org_model_users_group  # Ensure the group exists
+                and not self.user.groups.filter(
+                    name="org_model_users"
+                ).exists()  # Check if the user is already in the group
+            ):
+                # Add the user to the group
+                self.user.groups.add(org_model_users_group)
