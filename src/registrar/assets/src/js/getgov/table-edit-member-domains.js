@@ -104,7 +104,7 @@ export class EditMemberDomainsTable extends BaseTable {
     }
     
     row.innerHTML = `
-        <th scope="row" role="rowheader" aria-label="Checkbox for ${domain.name}" data-label="Selection" data-sort-value="0" class="padding-right-105">
+        <th scope="row" role="rowheader" data-label="Selection" data-sort-value="0" class="padding-right-105">
             <div class="usa-checkbox">
                 <input
                     class="usa-checkbox__input"
@@ -112,6 +112,7 @@ export class EditMemberDomainsTable extends BaseTable {
                     type="checkbox"
                     name="${domain.name}"
                     value="${domain.id}"
+                    aria-label="${domain.name}"
                     ${checked ? 'checked' : ''}
                     ${disabled ? 'disabled' : ''}
                 />
