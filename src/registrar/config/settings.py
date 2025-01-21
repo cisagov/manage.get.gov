@@ -60,6 +60,7 @@ env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
+env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
 env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
@@ -485,6 +486,24 @@ class JsonServerFormatter(ServerFormatter):
 
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
+    
+# Define console handler outside LOGGING so we can conditionally enablefilters
+console_handler = {
+    "level": env_log_level,
+    "class": "logging.StreamHandler",
+    "formatter": "verbose",
+}
+
+if env_log_format == "json":
+    # in production we need everything to be logged as json so that log levels are parsed correctly
+    django_handlers = ["json"]
+else:
+    # for non-production environments, send non-error messages to console handler
+    # we do this because json clutters logs when debugging
+    django_handlers = ["console", "json"]
+    # Only add below_error filter for non-production environments
+    console_handler["filters"] = ["below_error"]
+
 
 LOGGING = {
     "version": 1,
@@ -515,12 +534,7 @@ LOGGING = {
     # define where log messages will be sent;
     # each logger can have one or more handlers
     "handlers": {
-        "console": {
-            "level": env_log_level,
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-            "filters": ["below_error"],
-        },
+        "console": console_handler,
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
@@ -546,7 +560,7 @@ LOGGING = {
     "loggers": {
         # Django's generic logger
         "django": {
-            "handlers": ["console", "json"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
