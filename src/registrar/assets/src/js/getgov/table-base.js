@@ -284,15 +284,18 @@ export class BaseTable {
         showElement(dataWrapper);
         hideElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = '';
       } else {
         hideElement(dataWrapper);
         showElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = this.noSearchResultsWrapper.innerHTML;
       }
     } else {
       hideElement(dataWrapper);
       hideElement(noSearchResultsWrapper);
       showElement(noDataWrapper);
+      this.tableAnnouncementRegion.innerHTML = this.noDataWrapper.innerHTML;
     }
   };
 
@@ -470,7 +473,6 @@ export class BaseTable {
 
         let dataObjects = this.getDataObjects(data);
         let customTableOptions = this.customizeTable(data);
-        console.log(`dataobjects: ${dataObjects}`)
         this.loadRows(dataObjects, tbody, customTableOptions)
 
         this.initShowMoreButtons();
@@ -482,16 +484,6 @@ export class BaseTable {
         // Do not scroll on first page load
         if (scroll)
           scrollToElement('class', this.sectionSelector);
-          // Note: this code is similar to that in updateDisplay.
-          // This is slightly different in that we control this via scroll, hence we have this here.
-          const { unfiltered_total, total } = data;
-          if (unfiltered_total) {
-            if (!total) {
-              this.noSearchResultsWrapper.focus();
-            }
-          }else {
-            this.noDataWrapper.focus();
-          }
         this.scrollToTable = true;
 
         // update pagination
@@ -505,7 +497,6 @@ export class BaseTable {
         this.currentSortBy = sortBy;
         this.currentOrder = order;
         this.currentSearchTerm = searchTerm;
-        this.tableAnnouncementRegion.innerHTML = '';
     })
     .catch(error => console.error('Error fetching objects:', error));
   }
