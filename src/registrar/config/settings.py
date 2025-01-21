@@ -519,16 +519,13 @@ LOGGING = {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            # "filters": ["below_error"],
+            "filters": ["below_error"],
         },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "django.server",
         },
-        # log all messages at ERROR level or higher using json formatter
-        # We do this because error logs often comprise many lines,
-        # and json formatting makes them easier to parse.
         "json": {
             "level": "ERROR",
             "class": "logging.StreamHandler",
@@ -538,9 +535,7 @@ LOGGING = {
         # because containerized apps
         # do not log to the file system.
     },
-    # filters are used to filter messages based on a callback function
     "filters": {
-        # filter for messages below ERROR level
         "below_error": {
             "()": "django.utils.log.CallbackFilter",
             "callback": lambda record: record.levelno < logging.ERROR,
@@ -551,7 +546,7 @@ LOGGING = {
     "loggers": {
         # Django's generic logger
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "json"],
             "level": "INFO",
             "propagate": False,
         },
