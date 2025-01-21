@@ -68,11 +68,12 @@ export class MembersTable extends BaseTable {
 
   loadRows(dataObjects, tbody, customTableOptions) {
     dataObjects.forEach((dataObject, index) => {
-      this.addRow(index, dataObject, tbody, customTableOptions);
+      const isLastRow = index === dataObjects.length - 1;
+      this.addRow(dataObject, tbody, customTableOptions, isLastRow);
     });
   }
 
-  addRow(index, dataObject, tbody, customTableOptions) {
+  addRow(dataObject, tbody, customTableOptions, isLastRow) {
     const member = dataObject;
     // member is based on either a UserPortfolioPermission or a PortfolioInvitation
     // and also includes information from related domains; the 'id' of the org_member
@@ -87,7 +88,6 @@ export class MembersTable extends BaseTable {
     const kebabHTML = customTableOptions.hasAdditionalActions ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.name}`): ''; 
 
     const row = document.createElement('tr');
-    const isLastRow = index === dataObjects.length - 1;
     if (isLastRow) {
       row.classList.add("hide-td-borders");
     }
