@@ -448,6 +448,7 @@ export class BaseTable {
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
 
+    this.tableAnnouncementRegion.innerHTML = '<p>Loading table.</p>';
     let url = `${baseUrlValue}?${searchParams.toString()}`
     fetch(url)
       .then(response => response.json())
@@ -480,6 +481,18 @@ export class BaseTable {
         // Do not scroll on first page load
         if (scroll)
           scrollToElement('class', this.sectionSelector);
+          // Note: this code is similar to that in updateDisplay.
+          // This is slightly different in that we control this via scroll, hence we have this here.
+          const { unfiltered_total, total } = data;
+          if (unfiltered_total) {
+            if (total) {
+              this.tableWrapper.focus();
+            }else {
+              this.noSearchResultsWrapper.focus();
+            }
+          }else {
+            this.noDataWrapper.focus();
+          }
         this.scrollToTable = true;
 
         // update pagination
@@ -493,6 +506,7 @@ export class BaseTable {
         this.currentSortBy = sortBy;
         this.currentOrder = order;
         this.currentSearchTerm = searchTerm;
+        this.tableAnnouncmentRegion.innerHTML = '';
     })
     .catch(error => console.error('Error fetching objects:', error));
   }

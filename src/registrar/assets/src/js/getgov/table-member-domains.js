@@ -18,6 +18,7 @@ export class MemberDomainsTable extends BaseTable {
   addRow(dataObject, tbody, customTableOptions) {
     const domain = dataObject;
     const row = document.createElement('tr');
+    row.setAttribute("tabindex", "-1"); 
     row.innerHTML = `
       <th scope="row" role="rowheader" data-label="Domain name">
         ${domain.name}
