@@ -583,7 +583,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
                 reverse("domain", kwargs={"pk": self.domaintorenew.id}),
             )
 
-            print("puglesss", self.domaintorenew.is_expired)
             # Make sure we see the link as a domain manager
             self.assertContains(detail_page, "Renew to maintain access")
 

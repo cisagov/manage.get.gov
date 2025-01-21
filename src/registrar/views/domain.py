@@ -311,10 +311,39 @@ class DomainView(DomainBaseView):
         self._update_session_with_domain()
 
 
-class DomainRenewalView(DomainView):
+class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
+
+    def get_context_data(self, **kwargs):
+        """Grabbing security email information for the renewal form"""
+
+        context = super().get_context_data(**kwargs)
+
+        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+
+        context["hidden_security_emails"] = default_emails
+
+        security_email = self.object.get_security_email()
+        if security_email is None or security_email in default_emails:
+            context["security_email"] = None
+            return context
+        context["security_email"] = security_email
+        return context
+
+    def in_editable_state(self, pk):
+        """Override in_editable_state from DomainPermission
+        Allow renewal form to be accessed"""
+
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        if requested_domain and (requested_domain.is_expiring() or requested_domain.is_expired()):
+            return True
+
+        return False
 
     def post(self, request, pk):
 
