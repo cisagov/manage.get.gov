@@ -1,7 +1,7 @@
 # HOWTO Rotate the Application's Secrets
 ========================
 
-Secrets are read from the running environment.
+Below you will find sections for each of the application secrets which can & will be changed individual and expire at different times. Secrets are read from the running environment.
 
 Secrets are originally created with:
 
@@ -114,9 +114,9 @@ need to be specified in the environment.
 
 ## REGISTRY_CL_ID and REGISTRY_PASSWORD
 
-These are the login credentials for accessing the registry.
+These are the login credentials for accessing the registry and they are set by cloudflare. They should notify us if and when these ever need to be changed.
 
-## REGISTRY_CERT and REGISTRY_KEY and REGISTRY_KEY_PASSPHRASE
+## Rotating REGISTRY_CERT and REGISTRY_KEY and REGISTRY_KEY_PASSPHRASE for Cloudflare environments
 
 These are the client certificate and its private key used to identify the registrar to the registry during the establishment of a TCP connection.
 
