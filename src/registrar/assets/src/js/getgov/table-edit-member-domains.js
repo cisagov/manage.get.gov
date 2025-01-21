@@ -90,7 +90,6 @@ export class EditMemberDomainsTable extends BaseTable {
   addRow(dataObject, tbody, customTableOptions) {
     const domain = dataObject;
     const row = document.createElement('tr');
-    row.setAttribute("tabindex", "-1");
     let checked = false;
     let disabled = false;
     if (

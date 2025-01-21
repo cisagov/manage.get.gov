@@ -470,6 +470,7 @@ export class BaseTable {
 
         let dataObjects = this.getDataObjects(data);
         let customTableOptions = this.customizeTable(data);
+        console.log(`dataobjects: ${dataObjects}`)
         this.loadRows(dataObjects, tbody, customTableOptions)
 
         this.initShowMoreButtons();
@@ -506,7 +507,7 @@ export class BaseTable {
         this.currentSortBy = sortBy;
         this.currentOrder = order;
         this.currentSearchTerm = searchTerm;
-        this.tableAnnouncmentRegion.innerHTML = '';
+        this.tableAnnouncementRegion.innerHTML = '';
     })
     .catch(error => console.error('Error fetching objects:', error));
   }
