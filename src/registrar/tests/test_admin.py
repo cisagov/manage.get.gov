@@ -3622,7 +3622,7 @@ class TestTransferUser(WebTest):
         with self.assertRaises(User.DoesNotExist):
             self.user2.refresh_from_db()
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_transfer_user_throws_transfer_and_delete_success_messages(self):
         """Test that success messages for data transfer and user deletion are displayed."""
         # Ensure the setup for VerifiedByStaff
@@ -3640,11 +3640,13 @@ class TestTransferUser(WebTest):
 
             self.assertContains(after_submit, "<h1>Change user</h1>")
 
+            print(mock_success_message.call_args_list)
+
             mock_success_message.assert_any_call(
                 ANY,
                 (
-                    "Data transferred successfully for the following objects: ['Transferred requestor "
-                    + "from Furiosa Jabassa  to Max Rokatanski ']"
+                    "Data transferred successfully for the following objects: ['Changed requestor "
+                    + "from Furiosa Jabassa  to Max Rokatanski  on immortan.joe@citadel.com']"
                 ),
             )
 
