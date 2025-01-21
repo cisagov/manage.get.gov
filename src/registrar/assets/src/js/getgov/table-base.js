@@ -486,9 +486,7 @@ export class BaseTable {
           // This is slightly different in that we control this via scroll, hence we have this here.
           const { unfiltered_total, total } = data;
           if (unfiltered_total) {
-            if (total) {
-              this.tableWrapper.focus();
-            }else {
+            if (!total) {
               this.noSearchResultsWrapper.focus();
             }
           }else {
