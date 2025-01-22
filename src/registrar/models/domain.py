@@ -1329,14 +1329,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_default_administrative_contact(self):
         """Gets the default administrative contact."""
-        logger.info("get_default_administrative_contact() -> Adding administrative security contact")
+        logger.info("get_default_administrative_contact() -> Adding default administrative contact")
         contact = PublicContact.get_default_administrative()
         contact.domain = self
         return contact
 
     def get_default_technical_contact(self):
         """Gets the default technical contact."""
-        logger.info("get_default_security_contact() -> Adding technical security contact")
+        logger.info("get_default_security_contact() -> Adding default technical contact")
         contact = PublicContact.get_default_technical()
         contact.domain = self
         return contact
