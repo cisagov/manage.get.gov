@@ -162,4 +162,4 @@ class Portfolio(TimeStampedModel):
     # == Getters for suborganization == #
     def get_suborganizations(self):
         """Returns all suborganizations associated with this portfolio"""
-        return self.d.all()
+        return self.portfolio_suborganizations.all()
