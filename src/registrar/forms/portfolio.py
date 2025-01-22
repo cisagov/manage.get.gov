@@ -41,7 +41,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
-        widget=ComboboxWidget,
+        widget=ComboboxWidget(attrs={"required":True}),
     )
 
     class Meta:
