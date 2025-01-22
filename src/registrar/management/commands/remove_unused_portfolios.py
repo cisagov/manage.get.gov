@@ -8,6 +8,14 @@ from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
 )
+from registrar.models import (
+    DomainGroup,
+    DomainInformation,
+    DomainRequest,
+    PortfolioInvitation,
+    Suborganization,
+    UserPortfolioPermission
+)
 logger = logging.getLogger(__name__)
 
 ALLOWED_PORTFOLIOS = [
@@ -28,6 +36,8 @@ ALLOWED_PORTFOLIOS = [
     "Capitol Police",
     "Administrative Office of the Courts",
     "Supreme Court of the United States",
+    # "Hotel California", # for testing
+    # "Wish You Were Here" # for testing
 ]
 
 class Command(BaseCommand):
@@ -100,26 +110,118 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
+        
+        
+        # Check for portfolios with non-empty related objects
+        # (These will throw integrity errors if they are not updated)
+        portfolios_with_assignments = []
+        for portfolio in portfolios_to_delete:
+            has_assignments = any([
+                portfolio.information_portfolio.exists(),
+                DomainGroup.objects.filter(portfolio=portfolio).exists(),
+                DomainInformation.objects.filter(portfolio=portfolio).exists(),
+                DomainRequest.objects.filter(portfolio=portfolio).exists(),
+                PortfolioInvitation.objects.filter(portfolio=portfolio).exists(),
+                Suborganization.objects.filter(portfolio=portfolio).exists(),
+                UserPortfolioPermission.objects.filter(portfolio=portfolio).exists()
+            ])
+            if has_assignments:
+                portfolios_with_assignments.append(portfolio)
 
-        # Delete the entries
-        try:
-            portfolios_to_delete.delete()
-            # Output a success message
-            logger.info(
-                f"""{TerminalColors.OKGREEN}
-                Successfully removed {count} entries.
-                {TerminalColors.ENDC}
-                """
+        if portfolios_with_assignments:
+            formatted_entries = "\n\t\t".join(
+                f"{portfolio.organization_name}" for portfolio in portfolios_with_assignments
             )
+            confirm_integrity_error = TerminalHelper.query_yes_no(
+                f"""
+                {TerminalColors.FAIL}
+                WARNING: these entries have related objects. 
+
+                    {formatted_entries}
+
+                Deleting them will update any associated domains / domain requests to have no portfolio
+                and will cascade delete any associated portfolio invitations, portfolio permissions,
+                and suborganizations.  Any suborganizations that get deleted will also orphan (not delete) their
+                associated domains / domain requests.
+
+                Are you sure you want to continue?{TerminalColors.ENDC}"""
+            )
+            if not confirm_integrity_error:
+                logger.info(
+                    f"""{TerminalColors.OKCYAN}
+                    Operation canceled by the user.
+                    {TerminalColors.ENDC}
+                    """
+                )
+                return
+
+       # Try to delete the portfolios
+        try:
+            summary = []
+            for portfolio in portfolios_to_delete:
+                portfolio_summary = [f"---- CASCADE SUMMARY for {portfolio.organization_name} -----"]
+                if portfolio in portfolios_with_assignments:
+                    domain_groups = DomainGroup.objects.filter(portfolio=portfolio)
+                    domain_informations = DomainInformation.objects.filter(portfolio=portfolio)
+                    domain_requests = DomainRequest.objects.filter(portfolio=portfolio)
+                    portfolio_invitations = PortfolioInvitation.objects.filter(portfolio=portfolio)
+                    suborganizations = Suborganization.objects.filter(portfolio=portfolio)
+                    user_permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
+
+                    if domain_groups.exists():
+                        domain_groups.update(portfolio=None)
+                        portfolio_summary.append(f"Orphaned DomainGroups: {[group.name for group in domain_groups]}")
+
+                    if domain_informations.exists():
+                        domain_informations.update(portfolio=None)
+                        portfolio_summary.append(f"Orphaned DomainInformations: {[info.id for info in domain_informations]}")
+
+                    if domain_requests.exists():
+                        domain_requests.update(portfolio=None)
+                        portfolio_summary.append(f"Orphaned DomainRequests: {[req.requested_domain for req in domain_requests]}")
+
+                    if portfolio_invitations.exists():
+                        portfolio_summary.append(f"Deleted PortfolioInvitations: {[inv.id for inv in portfolio_invitations]}")
+                        portfolio_invitations.delete()
+
+                    if user_permissions.exists():
+                        portfolio_summary.append(f"Deleted UserPortfolioPermissions for the following users: {[perm.user.get_formatted_name() for perm in user_permissions]}")
+                        formatted_user_list = "\n".join([perm.user.get_formatted_name() for perm in user_permissions])
+                        portfolio_summary.append(f"{formatted_user_list}")
+                        user_permissions.delete()
+
+                    if suborganizations.exists():
+                        for suborg in suborganizations:
+                            DomainInformation.objects.filter(sub_organization=suborg).update(sub_organization=None)
+                            DomainRequest.objects.filter(sub_organization=suborg).update(sub_organization=None)
+                            portfolio_summary.append(f"...Cascade Deleted Suborganization: {suborg.name}")
+                            suborg.delete()
+
+                portfolio.delete()
+                summary.append("\n\n".join(portfolio_summary))
+                summary_string = "\n\n".join(summary)
+
+            # Output a success message with detailed summary
+            logger.info(
+                f"""{TerminalColors.OKCYAN}
+                Successfully removed {count} portfolios.
+
+                The following portfolio deletions had cascading effects;
+
+                {summary_string}
+                {TerminalColors.ENDC}
+                """)
+
         except IntegrityError as e:
             logger.info(
                 f"""{TerminalColors.FAIL}
-                Could not delete some entries due to protected relationships
+                Could not delete some portfolios due to integrity constraints: 
+                
+                {e}
+
                 {TerminalColors.ENDC}
                 """
             )
-
-
 
 
     def handle(self, *args, **options):
