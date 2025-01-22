@@ -1074,9 +1074,6 @@ class DomainUsersView(DomainBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
-        # Add conditionals to the context (such as "can_delete_users")
-        context = self._add_booleans_to_context(context)
-
         # Get portfolio from session (if set)
         portfolio = self.request.session.get("portfolio")
 
@@ -1160,20 +1157,6 @@ class DomainUsersView(DomainBaseView):
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
 
-        return context
-
-    def _add_booleans_to_context(self, context):
-        # Determine if the current user can delete managers
-        domain_pk = None
-        can_delete_users = False
-
-        if self.kwargs is not None and "pk" in self.kwargs:
-            domain_pk = self.kwargs["pk"]
-            # Prevent the end user from deleting themselves as a manager if they are the
-            # only manager that exists on a domain.
-            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
-
-        context["can_delete_users"] = can_delete_users
         return context
 
 
@@ -1341,7 +1324,16 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         return redirect(self.get_success_url())
 
     def post(self, request, *args, **kwargs):
-        """Custom post implementation to redirect to home in the event that the user deletes themselves"""
+        """Custom post implementation to ensure last userdomainrole is not removed and to
+        redirect to home in the event that the user deletes themselves"""
+        self.object = self.get_object()  # Retrieve the UserDomainRole to delete
+
+        # Check if this is the only UserDomainRole for the domain
+        if not len(UserDomainRole.objects.filter(domain=self.object.domain)) > 1:
+            messages.error(request, "Domains must have at least one domain manager.")
+            return redirect(self.get_success_url())
+
+        # normal delete processing in the event that the above condition not reached
         response = super().post(request, *args, **kwargs)
 
         # If the user is deleting themselves, redirect to home
