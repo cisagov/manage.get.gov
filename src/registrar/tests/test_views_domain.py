@@ -4,10 +4,12 @@ from unittest.mock import MagicMock, ANY, patch
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -424,6 +426,268 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "invited@example.com")
 
 
+class TestDomainDetailDomainRenewal(TestDomainOverview):
+    def setUp(self):
+        super().setUp()
+
+        self.user = get_user_model().objects.create(
+            first_name="User",
+            last_name="Test",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            username="usertest",
+        )
+
+        self.domaintorenew, _ = Domain.objects.get_or_create(
+            name="domainrenewal.gov",
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domaintorenew, role=UserDomainRole.Roles.MANAGER
+        )
+
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domaintorenew)
+
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+
+        self.user.save()
+
+    def expiration_date_one_year_out(self):
+        todays_date = datetime.today()
+        new_expiration_date = todays_date.replace(year=todays_date.year + 1)
+        return new_expiration_date
+
+    def custom_is_expired_false(self):
+        return False
+
+    def custom_is_expired_true(self):
+        return True
+
+    def custom_is_expiring(self):
+        return True
+
+    def custom_renew_domain(self):
+        self.domain_with_ip.expiration_date = self.expiration_date_one_year_out()
+        self.domain_with_ip.save()
+
+    @override_flag("domain_renewal", active=True)
+    def test_expiring_domain_on_detail_page_as_domain_manager(self):
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired_false
+        ):
+            self.assertEquals(self.domaintorenew.state, Domain.State.UNKNOWN)
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
+            )
+            self.assertContains(detail_page, "Expiring soon")
+
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            self.assertNotContains(detail_page, "DNS needed")
+            self.assertNotContains(detail_page, "Expired")
+
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        non_dom_manage_user = get_user_model().objects.create(
+            first_name="Non Domain",
+            last_name="Manager",
+            email="verybogus@example.gov",
+            phone="8003111234",
+            title="test title again",
+            username="nondomain",
+        )
+
+        non_dom_manage_user.save()
+        UserPortfolioPermission.objects.get_or_create(
+            user=non_dom_manage_user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
+        )
+        domaintorenew2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
+        DomainInformation.objects.get_or_create(
+            creator=non_dom_manage_user, domain=domaintorenew2, portfolio=self.portfolio
+        )
+        non_dom_manage_user.refresh_from_db()
+        self.client.force_login(non_dom_manage_user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired_false
+        ):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": domaintorenew2.id}),
+            )
+            self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
+
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
+
+        domaintorenew3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domaintorenew3, role=UserDomainRole.Roles.MANAGER)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domaintorenew3, portfolio=portfolio)
+        self.user.refresh_from_db()
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expired", self.custom_is_expired_false
+        ):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": domaintorenew3.id}),
+            )
+            self.assertContains(detail_page, "Renew to maintain access")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_and_sidebar_expiring(self):
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expiring", self.custom_is_expiring
+        ):
+            # Grab the detail page
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
+            )
+
+            # Make sure we see the link as a domain manager
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            # Make sure we can see Renewal form on the sidebar since it's expiring
+            self.assertContains(detail_page, "Renewal form")
+
+            # Grab link to the renewal page
+            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domaintorenew.id})
+            self.assertContains(detail_page, f'href="{renewal_form_url}"')
+
+            # Simulate clicking the link
+            response = self.client.get(renewal_form_url)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, f"Renew {self.domaintorenew.name}")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_and_sidebar_expired(self):
+
+        self.client.force_login(self.user)
+
+        with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
+            Domain, "is_expired", self.custom_is_expired_true
+        ):
+            # Grab the detail page
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"pk": self.domaintorenew.id}),
+            )
+
+            print("puglesss", self.domaintorenew.is_expired)
+            # Make sure we see the link as a domain manager
+            self.assertContains(detail_page, "Renew to maintain access")
+
+            # Make sure we can see Renewal form on the sidebar since it's expired
+            self.assertContains(detail_page, "Renewal form")
+
+            # Grab link to the renewal page
+            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domaintorenew.id})
+            self.assertContains(detail_page, f'href="{renewal_form_url}"')
+
+            # Simulate clicking the link
+            response = self.client.get(renewal_form_url)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, f"Renew {self.domaintorenew.name}")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_your_contact_info_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Your contact information" on the renewal form
+            self.assertContains(renewal_page, "Your contact information")
+
+            # Verify that the "Edit" button for Your contact is there and links to correct URL
+            edit_button_url = reverse("user-profile")
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "Review the details below and update any required information")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_security_email_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Security email" on the renewal form
+            self.assertContains(renewal_page, "Security email")
+
+            # Verify we see "strong recommend" blurb
+            self.assertContains(renewal_page, "We strongly recommend that you provide a security email.")
+
+            # Verify that the "Edit" button for Security email is there and links to correct URL
+            edit_button_url = reverse("domain-security-email", kwargs={"pk": self.domain_with_ip.id})
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "A security contact should be capable of evaluating")
+
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_form_domain_manager_edit(self):
+        with less_console_noise():
+            # Start on the Renewal page for the domain
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Verify we see "Domain managers" on the renewal form
+            self.assertContains(renewal_page, "Domain managers")
+
+            # Verify that the "Edit" button for Domain managers is there and links to correct URL
+            edit_button_url = reverse("domain-users", kwargs={"pk": self.domain_with_ip.id})
+            self.assertContains(renewal_page, f'href="{edit_button_url}"')
+
+            # Simulate clicking on edit button
+            edit_page = renewal_page.click(href=edit_button_url, index=1)
+            self.assertEqual(edit_page.status_code, 200)
+            self.assertContains(edit_page, "Domain managers can update all information related to a domain")
+
+    @override_flag("domain_renewal", active=True)
+    def test_ack_checkbox_not_checked(self):
+
+        # Grab the renewal URL
+        renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+
+        # Test that the checkbox is not checked
+        response = self.client.post(renewal_url, data={"submit_button": "next"})
+
+        error_message = "Check the box if you read and agree to the requirements for operating a .gov domain."
+        self.assertContains(response, error_message)
+
+    @override_flag("domain_renewal", active=True)
+    def test_ack_checkbox_checked(self):
+
+        # Grab the renewal URL
+        with patch.object(Domain, "renew_domain", self.custom_renew_domain):
+            renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+
+            # Click the check, and submit
+            response = self.client.post(renewal_url, data={"is_policy_acknowledged": "on", "submit_button": "next"})
+
+            # Check that it redirects after a successfully submits
+            self.assertRedirects(response, reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
+
+            # Check for the updated expiration
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
+            redirect_response = self.client.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}), follow=True)
+            self.assertContains(redirect_response, formatted_new_expiration_date)
+
+
 class TestDomainManagers(TestDomainOverview):
     @classmethod
     def setUpClass(cls):
@@ -442,6 +706,7 @@ class TestDomainManagers(TestDomainOverview):
         self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
+        self.domain_information.save()
         # Add portfolio perms to the user object
         self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -454,6 +719,9 @@ class TestDomainManagers(TestDomainOverview):
 
     def tearDown(self):
         """Ensure that the user has its original permissions"""
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -482,11 +750,12 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_user_add_form(self):
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form(self, mock_send_domain_email):
         """Adding an existing user works."""
-        other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        user = User.objects.filter(email="mayor@igorville.gov").first()
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -494,10 +763,15 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov",
+            requestor=self.user,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
 
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
@@ -510,12 +784,209 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, "mayor@igorville.gov")
 
     @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
-    def test_domain_invitation_created(self):
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation(self, mock_send_domain_email, mock_send_portfolio_email):
+        """Adding an existing user works and sends portfolio invitation when
+        user is not member of portfolio."""
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "mayor@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domains"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that the PortfolioInvitation is created and retrieved
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
+        self.assertEqual(portfolio_invitation.email, "mayor@igorville.gov")
+        self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+        # Assert that the UserPortfolioPermission is created
+        user_portfolio_permission = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(user_portfolio_permission, "User portfolio permission should be created")
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an email not associated with a user works and sends portfolio invitation."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "notauser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="notauser@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "notauser@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domains"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that the PortfolioInvitation is created
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email="notauser@igorville.gov", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
+        self.assertEqual(portfolio_invitation.email, "notauser@igorville.gov")
+        self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "notauser@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_doesnt_send_portfolio_invitation_if_already_member(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an existing user works and sends portfolio invitation when
+        user is not member of portfolio."""
+        other_user, _ = get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        UserPortfolioPermission.objects.get_or_create(
+            user=other_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_not_called()
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "mayor@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domains"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that no PortfolioInvitation is created
+        portfolio_invitation_exists = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(
+            portfolio_invitation_exists, "Portfolio invitation should not be created when the user is already a member."
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation_raises_email_sending_error(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an existing user works and attempts to send portfolio invitation when
+        user is not member of portfolio and send raises an error."""
+        mock_send_portfolio_email.side_effect = EmailSendingError("Failed to send email.")
+        get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "mayor@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_not_called()
+
+        # Assert that no PortfolioInvitation is created
+        portfolio_invitation_exists = PortfolioInvitation.objects.filter(
+            email="mayor@igorville.gov", portfolio=self.portfolio
+        ).exists()
+        self.assertFalse(
+            portfolio_invitation_exists, "Portfolio invitation should not be created when email fails to send."
+        )
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "Failed to send email.")
+
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_invitation_created(self, mock_send_domain_email):
         """Add user on a nonexistent email creates an invitation.
 
         Adding a non-existent user sends an email as a side-effect, so mock
-        out the boto3 SES email sending here.
+        out send_domain_invitation_email here.
         """
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
@@ -528,10 +999,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, domains=self.domain, is_member_of_different_org=None
+        )
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
@@ -540,13 +1012,13 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_invitation_created_for_caps_email(self):
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_invitation_created_for_caps_email(self, mock_send_domain_email):
         """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
 
         Adding a non-existent user sends an email as a side-effect, so mock
-        out the boto3 SES email sending here.
+        out send_domain_invitation_email here.
         """
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
@@ -560,9 +1032,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, domains=self.domain, is_member_of_different_org=None
+        )
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
@@ -721,39 +1195,20 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotIn("Last", email_content)
         self.assertNotIn("First Last", email_content)
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_invitation_email_displays_error_non_existent(self):
-        """Inviting a non existent user sends them an email, with email as the name."""
-        # make sure there is no user with this email
-        email_address = "mayor@igorville.gov"
-        User.objects.filter(email=email_address).delete()
-
-        # Give the user who is sending the email an invalid email address
-        self.user.email = ""
-        self.user.save()
-
+    def test_domain_invitation_email_validation_blocks_bad_email(self):
+        """Inviting a bad email blocks at validation."""
+        email_address = "mayor"
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        mock_client = MagicMock()
-        mock_error_message = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        add_page.form["email"] = email_address
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = add_page.form.submit()
 
-        expected_message_content = "Can't send invitation email. No email is associated with your account."
+        self.assertContains(response, "Enter an email address in the required format, like name@example.com.")
 
-        # Grab the message content
-        returned_error_message = mock_error_message.call_args[0][1]
-
-        # Check that the message content is what we expect
-        self.assertEqual(expected_message_content, returned_error_message)
-
-    @boto3_mocking.patching
     @less_console_noise_decorator
     def test_domain_invitation_email_displays_error(self):
         """When the requesting user has no email, an error is displayed"""
@@ -764,28 +1219,25 @@ class TestDomainManagers(TestDomainOverview):
 
         # Give the user who is sending the email an invalid email address
         self.user.email = ""
+        self.user.is_staff = False
         self.user.save()
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        mock_client = MagicMock()
+        with patch("django.contrib.messages.error") as mock_error:
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            add_page.form["email"] = email_address
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            add_page.form.submit()
 
-        mock_error_message = MagicMock()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with patch("django.contrib.messages.error") as mock_error_message:
-                add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
-                session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                add_page.form["email"] = email_address
-                self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                add_page.form.submit().follow()
+            expected_message_content = "Can't send invitation email. No email is associated with your user account."
 
-        expected_message_content = "Can't send invitation email. No email is associated with your account."
-
-        # Grab the message content
-        returned_error_message = mock_error_message.call_args[0][1]
-
-        # Check that the message content is what we expect
-        self.assertEqual(expected_message_content, returned_error_message)
+            # Assert that the error message was called with the correct argument
+            mock_error.assert_called_once_with(
+                ANY,
+                expected_message_content,
+            )
 
     @less_console_noise_decorator
     def test_domain_invitation_cancel(self):
@@ -2348,3 +2800,123 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+
+class TestDomainRenewal(TestWithUser):
+    def setUp(self):
+        super().setUp()
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        expiring_date_current = (today + timedelta(days=70)).strftime("%Y-%m-%d")
+        expired_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
+            name="igorville.gov", expiration_date=expiring_date
+        )
+        self.domain_with_expired_date, _ = Domain.objects.get_or_create(
+            name="domainwithexpireddate.com", expiration_date=expired_date
+        )
+
+        self.domain_with_current_date, _ = Domain.objects.get_or_create(
+            name="domainwithfarexpireddate.com", expiration_date=expiring_date_current
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_current_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expired_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        try:
+            UserDomainRole.objects.all().delete()
+            Domain.objects.all().delete()
+        except ValueError:
+            pass
+        super().tearDown()
+
+    # Remove test_without_domain_renewal_flag when domain renewal is released as a feature
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=False)
+    def test_without_domain_renewal_flag(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "will expire soon")
+        self.assertNotContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_domain_renewal_flag_single_domain(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "One domain will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_with_domain_renewal_flag_mulitple_domains(self):
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        self.domain_with_another_expiring, _ = Domain.objects.get_or_create(
+            name="domainwithanotherexpiringdate.com", expiration_date=expiring_date
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_another_expiring, role=UserDomainRole.Roles.MANAGER
+        )
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "Multiple domains will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    def test_with_domain_renewal_flag_no_expiring_domains(self):
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "will expire soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_domain_renewal_flag_single_domain_w_org_feature_flag(self):
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "One domain will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_with_domain_renewal_flag_mulitple_domains_w_org_feature_flag(self):
+        today = datetime.now()
+        expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
+        self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
+            name="domainwithanotherexpiringdate_orgmodel.com", expiration_date=expiring_date
+        )
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_another_expiring_org_model, role=UserDomainRole.Roles.MANAGER
+        )
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertContains(domains_page, "Multiple domains will expire soon")
+        self.assertContains(domains_page, "Expiring soon")
+
+    @less_console_noise_decorator
+    @override_flag("domain_renewal", active=True)
+    @override_flag("organization_feature", active=True)
+    def test_with_domain_renewal_flag_no_expiring_domains_w_org_feature_flag(self):
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
+        self.client.force_login(self.user)
+        domains_page = self.client.get("/")
+        self.assertNotContains(domains_page, "will expire soon")

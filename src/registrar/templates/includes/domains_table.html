@@ -1,10 +1,30 @@
 {% load static %}
 
 
-
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_domains_json' as url %}
+
+
+
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
+
+<!-- Org model banner (org manager can view, domain manager can edit)  -->
+{% if has_domain_renewal_flag and num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
+<section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+  <div class="usa-alert">
+    <div class="usa-alert__body usa-alert__body--widescreen">
+      <p class="usa-alert__text maxw-none">
+        {% if num_expiring_domains == 1%}  
+        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+        {% else%}
+        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
     {% if not portfolio %}
@@ -13,7 +33,7 @@
       <!-- Embedding the portfolio value in a data attribute -->
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
     {% endif %}
-    <div class="section-outlined__search {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6{% endif %} {% if is_widescreen_mode %} section-outlined__search--widescreen {% endif %}">
+    <div class="section-outlined__search section-outlined__search--widescreen {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %}">
       <section aria-label="Domains search component" class="margin-top-2">
         <form class="usa-search usa-search--small" method="POST" role="search">
           {% csrf_token %}
@@ -53,7 +73,24 @@
     </div>
     {% endif %}
   </div>
-  {% if portfolio %}
+
+  <!-- Non org model banner -->
+  {% if has_domain_renewal_flag and num_expiring_domains > 0 and not portfolio %}
+  <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+    <div class="usa-alert">
+      <div class="usa-alert__body usa-alert__body--widescreen">
+        <p class="usa-alert__text maxw-none">
+          {% if num_expiring_domains == 1%}  
+          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+          {% else%}
+          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <div class="display-flex flex-align-center"> 
     <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
     <div class="usa-accordion usa-accordion--select margin-right-2">
@@ -135,6 +172,19 @@
               >Deleted</label
             >
           </div>
+          {% if has_domain_renewal_flag %}
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-expiring"
+              type="checkbox"
+              name="filter-status"
+              value="expiring"
+            />
+            <label class="usa-checkbox__label" for="filter-status-expiring"
+              >Expiring soon</label>
+          </div>
+          {% endif %}
         </fieldset>
       </div>
     </div>
@@ -149,7 +199,6 @@
       </svg>
     </button>
   </div>
-  {% endif %}
   <div class="display-none usa-table-container--scrollable margin-top-0" tabindex="0" id="domains__table-wrapper">
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
@@ -165,7 +214,7 @@
             scope="col" 
             role="columnheader" 
           >
-            <span class="usa-sr-only">Action</span>
+            Action
           </th>
         </tr>
       </thead>

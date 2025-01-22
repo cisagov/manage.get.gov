@@ -146,7 +146,7 @@ urlpatterns = [
     # ),
     path(
         "members/new-member/",
-        views.NewMemberView.as_view(),
+        views.PortfolioAddMemberView.as_view(),
         name="new-member",
     ),
     path(
@@ -344,6 +344,11 @@ urlpatterns = [
         "domain/<int:pk>/security-email",
         views.DomainSecurityEmailView.as_view(),
         name="domain-security-email",
+    ),
+    path(
+        "domain/<int:pk>/renewal",
+        views.DomainRenewalView.as_view(),
+        name="domain-renewal",
     ),
     path(
         "domain/<int:pk>/users/add",

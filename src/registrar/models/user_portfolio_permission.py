@@ -171,8 +171,10 @@ class UserPortfolioPermission(TimeStampedModel):
         # The solution to this is to only grab what is only COMMONLY "forbidden".
         # This will scale if we add more roles in the future.
         # This is thes same as applying the `&` operator across all sets for each role.
-        common_forbidden_perms = set.intersection(
-            *[set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, [])) for role in roles]
+        common_forbidden_perms = (
+            set.intersection(*[set(cls.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(role, [])) for role in roles])
+            if roles
+            else set()
         )
 
         # Check if the users current permissions overlap with any forbidden permissions

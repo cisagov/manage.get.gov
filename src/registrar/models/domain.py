@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 
@@ -40,6 +40,7 @@ from .utility.time_stamped_model import TimeStampedModel
 from .public_contact import PublicContact
 
 from .user_domain_role import UserDomainRole
+from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -325,9 +326,8 @@ class Domain(TimeStampedModel, DomainHelper):
             exp_date = self.registry_expiration_date
         except KeyError:
             # if no expiration date from registry, set it to today
-            logger.warning("current expiration date not set; setting to today")
+            logger.warning("current expiration date not set; setting to today", exc_info=True)
             exp_date = date.today()
-
         # create RenewDomain request
         request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
@@ -337,13 +337,14 @@ class Domain(TimeStampedModel, DomainHelper):
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
             self.save()
+
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
-            logger.error(f"registry error renewing domain: {err}")
+            logger.error(f"Registry error renewing domain '{self.name}': {err}")
             raise (err)
         except Exception as e:
             # exception raised during the save to registrar
-            logger.error(f"error updating expiration date in registrar: {e}")
+            logger.error(f"Error updating expiration date for domain '{self.name}' in registrar: {e}")
             raise (e)
 
     @Cache
@@ -1152,14 +1153,29 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
         return self.expiration_date < now
 
-    def state_display(self):
+    def is_expiring(self):
+        """
+        Check if the domain's expiration date is within 60 days.
+        Return True if domain expiration date exists and within 60 days
+        and otherwise False bc there's no expiration date meaning so not expiring
+        """
+        if self.expiration_date is None:
+            return False
+
+        now = timezone.now().date()
+
+        threshold_date = now + timedelta(days=60)
+        return now < self.expiration_date <= threshold_date
+
+    def state_display(self, request=None):
         """Return the display status of the domain."""
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
+        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+            return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
-        else:
-            return self.state.capitalize()
+        return self.state.capitalize()
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
@@ -1559,7 +1575,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("Changing to DNS_NEEDED state")
         logger.info("able to transition to DNS_NEEDED state")
 
-    def get_state_help_text(self) -> str:
+    def get_state_help_text(self, request=None) -> str:
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
@@ -1569,6 +1585,8 @@ class Domain(TimeStampedModel, DomainHelper):
             help_text = (
                 "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
             )
+        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+            help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
         else:
             help_text = Domain.State.get_help_text(self.state)
 

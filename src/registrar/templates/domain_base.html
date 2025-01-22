@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static url_helpers %}
+
 
 {% block title %}{{ domain.name }} | {% endblock %}
 
 {% block content %}
-<div class="grid-container">
+<div class="grid-container grid-container--widescreen">
 
-  <div class="grid-row grid-gap">
-    <div class="tablet:grid-col-3">
+  <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+    <div class="tablet:grid-col-3 ">
       <p class="font-body-md margin-top-0 margin-bottom-2
                 text-primary-darker text-semibold domain-name-wrap"
       >
@@ -53,8 +55,11 @@
         {% endif %}
 
         {% block domain_content %}
-
+        {% if request.path|endswith:"renewal"%}
+        <h1>Renew {{domain.name}} </h1>
+        {%else%}
         <h1 class="break-word">Domain Overview</h1>
+        {% endif%}
 
         {% endblock %}  {# domain_content #}
       {% endif %}
