@@ -34,12 +34,9 @@ ALLOWED_PORTFOLIOS = [
     "Department of the Interior",
     "Department of State",
     "Department of Justice",
-    "Department of Veterans Affairs",
     "Capitol Police",
     "Administrative Office of the Courts",
     "Supreme Court of the United States",
-    # "Hotel California", # for testing
-    # "Wish You Were Here" # for testing
 ]
 
 
