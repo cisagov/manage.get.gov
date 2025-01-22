@@ -3,7 +3,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
-from registrar.models import Portfolio  
+from registrar.models import Portfolio
 from registrar.management.commands.utility.terminal_helper import (
     TerminalColors,
     TerminalHelper,
@@ -14,8 +14,9 @@ from registrar.models import (
     DomainRequest,
     PortfolioInvitation,
     Suborganization,
-    UserPortfolioPermission
+    UserPortfolioPermission,
 )
+
 logger = logging.getLogger(__name__)
 
 ALLOWED_PORTFOLIOS = [
@@ -40,9 +41,9 @@ ALLOWED_PORTFOLIOS = [
     # "Wish You Were Here" # for testing
 ]
 
-class Command(BaseCommand):
-    help = 'Remove all Portfolio entries with names not in the allowed list.'
 
+class Command(BaseCommand):
+    help = "Remove all Portfolio entries with names not in the allowed list."
 
     def add_arguments(self, parser):
         """
@@ -51,7 +52,6 @@ class Command(BaseCommand):
         A boolean (default to true), which activates additional print statements
         """
         parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
-
 
     def prompt_delete_entries(self, portfolios_to_delete, debug_on):
         """Brings up a prompt in the terminal asking
@@ -80,15 +80,13 @@ class Command(BaseCommand):
             self.delete_entries(portfolios_to_delete, debug_on)
         else:
             logger.info(
-            f"""{TerminalColors.OKCYAN}
+                f"""{TerminalColors.OKCYAN}
             ----------No entries deleted----------
             (exiting script)
             {TerminalColors.ENDC}"""
             )
 
-
-
-    def delete_entries(self, portfolios_to_delete, debug_on):
+    def delete_entries(self, portfolios_to_delete, debug_on):  # noqa: C901
         # Log the number of entries being removed
         count = portfolios_to_delete.count()
         if count == 0:
@@ -110,21 +108,22 @@ class Command(BaseCommand):
                 {TerminalColors.ENDC}
                 """
             )
-        
-        
+
         # Check for portfolios with non-empty related objects
         # (These will throw integrity errors if they are not updated)
         portfolios_with_assignments = []
         for portfolio in portfolios_to_delete:
-            has_assignments = any([
-                portfolio.information_portfolio.exists(),
-                DomainGroup.objects.filter(portfolio=portfolio).exists(),
-                DomainInformation.objects.filter(portfolio=portfolio).exists(),
-                DomainRequest.objects.filter(portfolio=portfolio).exists(),
-                PortfolioInvitation.objects.filter(portfolio=portfolio).exists(),
-                Suborganization.objects.filter(portfolio=portfolio).exists(),
-                UserPortfolioPermission.objects.filter(portfolio=portfolio).exists()
-            ])
+            has_assignments = any(
+                [
+                    portfolio.information_portfolio.exists(),
+                    DomainGroup.objects.filter(portfolio=portfolio).exists(),
+                    DomainInformation.objects.filter(portfolio=portfolio).exists(),
+                    DomainRequest.objects.filter(portfolio=portfolio).exists(),
+                    PortfolioInvitation.objects.filter(portfolio=portfolio).exists(),
+                    Suborganization.objects.filter(portfolio=portfolio).exists(),
+                    UserPortfolioPermission.objects.filter(portfolio=portfolio).exists(),
+                ]
+            )
             if has_assignments:
                 portfolios_with_assignments.append(portfolio)
 
@@ -135,7 +134,7 @@ class Command(BaseCommand):
             confirm_cascade_delete = TerminalHelper.query_yes_no(
                 f"""
                 {TerminalColors.FAIL}
-                WARNING: these entries have related objects. 
+                WARNING: these entries have related objects.
 
                     {formatted_entries}
 
@@ -155,7 +154,7 @@ class Command(BaseCommand):
                 )
                 return
 
-       # Try to delete the portfolios
+        # Try to delete the portfolios
         try:
             summary = []
             for portfolio in portfolios_to_delete:
@@ -174,18 +173,27 @@ class Command(BaseCommand):
 
                     if domain_informations.exists():
                         domain_informations.update(portfolio=None)
-                        portfolio_summary.append(f"Orphaned DomainInformations: {[info.id for info in domain_informations]}")
+                        portfolio_summary.append(
+                            f"Orphaned DomainInformations: {[info.id for info in domain_informations]}"
+                        )
 
                     if domain_requests.exists():
                         domain_requests.update(portfolio=None)
-                        portfolio_summary.append(f"Orphaned DomainRequests: {[req.requested_domain for req in domain_requests]}")
+                        portfolio_summary.append(
+                            f"Orphaned DomainRequests: {[req.requested_domain for req in domain_requests]}"
+                        )
 
                     if portfolio_invitations.exists():
-                        portfolio_summary.append(f"Deleted PortfolioInvitations: {[inv.id for inv in portfolio_invitations]}")
+                        portfolio_summary.append(
+                            f"Deleted PortfolioInvitations: {[inv.id for inv in portfolio_invitations]}"
+                        )
                         portfolio_invitations.delete()
 
                     if user_permissions.exists():
-                        portfolio_summary.append(f"Deleted UserPortfolioPermissions for the following users: {[perm.user.get_formatted_name() for perm in user_permissions]}")
+                        portfolio_summary.append(
+                            f"""Deleted UserPortfolioPermissions for the following users:
+                            {[perm.user.get_formatted_name() for perm in user_permissions]}"""
+                        )
                         formatted_user_list = "\n".join([perm.user.get_formatted_name() for perm in user_permissions])
                         portfolio_summary.append(f"{formatted_user_list}")
                         user_permissions.delete()
@@ -210,19 +218,17 @@ class Command(BaseCommand):
 
                 {summary_string}
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
         except IntegrityError as e:
             logger.info(
                 f"""{TerminalColors.FAIL}
-                Could not delete some portfolios due to integrity constraints: 
-                
+                Could not delete some portfolios due to integrity constraints:
                 {e}
-
                 {TerminalColors.ENDC}
                 """
             )
-
 
     def handle(self, *args, **options):
         # Get all Portfolio entries not in the allowed portfolios list
