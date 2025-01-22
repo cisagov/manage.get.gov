@@ -444,13 +444,10 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         )
 
         self.domainnotexpiring, _ = Domain.objects.get_or_create(
-            name="domainnotexpiring.gov",
-            expiration_date=timezone.now().date() + timedelta(days=65)
+            name="domainnotexpiring.gov", expiration_date=timezone.now().date() + timedelta(days=65)
         )
 
-        self.domainnodomainmanager, _ = Domain.objects.get_or_create(
-            name="domainnodomainmanager"
-        )
+        self.domainnodomainmanager, _ = Domain.objects.get_or_create(name="domainnodomainmanager")
 
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domaintorenew, role=UserDomainRole.Roles.MANAGER
@@ -664,12 +661,12 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             edit_page = renewal_page.click(href=edit_button_url, index=1)
             self.assertEqual(edit_page.status_code, 200)
             self.assertContains(edit_page, "Domain managers can update all information related to a domain")
-    
+
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_not_expired_or_expiring(self):
         with less_console_noise():
-            # Start on the Renewal page for the domain 
-            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domainnotexpiring.id})) 
+            # Start on the Renewal page for the domain
+            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domainnotexpiring.id}))
             self.assertEqual(renewal_page.status_code, 403)
 
     @override_flag("domain_renewal", active=True)
@@ -677,10 +674,9 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
             Domain, "is_expired", self.custom_is_expired_true
         ):
-            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domainnodomainmanager.id})) 
+            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domainnodomainmanager.id}))
             self.assertEqual(renewal_page.status_code, 403)
 
-    
     @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_not_checked(self):
 
