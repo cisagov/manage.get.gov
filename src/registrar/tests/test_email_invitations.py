@@ -57,7 +57,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(email, mock_requestor_email, [mock_domain], None)
         mock_user_domain_role_filter.assert_called_once_with(domain=mock_domain)
@@ -136,7 +136,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with([mock_domain1, mock_domain2])
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain1, mock_domain2])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(
             email, mock_requestor_email, [mock_domain1, mock_domain2], None
@@ -257,7 +257,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         self.assertEqual(str(context.exception), "Error sending email")
 
@@ -305,7 +305,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(email, mock_requestor_email, [mock_domain], None)
         self.assertEqual(str(context.exception), "Error sending email")
