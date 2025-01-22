@@ -132,7 +132,7 @@ class Command(BaseCommand):
             formatted_entries = "\n\t\t".join(
                 f"{portfolio.organization_name}" for portfolio in portfolios_with_assignments
             )
-            confirm_integrity_error = TerminalHelper.query_yes_no(
+            confirm_cascade_delete = TerminalHelper.query_yes_no(
                 f"""
                 {TerminalColors.FAIL}
                 WARNING: these entries have related objects. 
@@ -146,7 +146,7 @@ class Command(BaseCommand):
 
                 Are you sure you want to continue?{TerminalColors.ENDC}"""
             )
-            if not confirm_integrity_error:
+            if not confirm_cascade_delete:
                 logger.info(
                     f"""{TerminalColors.OKCYAN}
                     Operation canceled by the user.
