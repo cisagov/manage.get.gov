@@ -1258,8 +1258,8 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
-        # Assert that the Cancel link is not displayed
-        self.assertNotContains(response, "Cancel")
+        # Assert that the Cancel link (form) is not displayed
+        self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
         DomainInvitation.objects.filter(email=email_address).delete()
