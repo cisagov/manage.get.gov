@@ -118,7 +118,7 @@ def check_outside_org_membership(email, requestor, is_member_of_different_org):
         and not flag_is_active_for_user(requestor, "multiple_portfolios")
         and is_member_of_different_org
     ):
-        raise OutsideOrgMemberError()
+        raise OutsideOrgMemberError(email=email)
 
 
 def _validate_existing_invitation(email, user, domain):

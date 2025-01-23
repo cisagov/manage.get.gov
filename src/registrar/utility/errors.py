@@ -59,13 +59,18 @@ class MissingEmailError(InvitationError):
         super().__init__(message)
 
 
-class OutsideOrgMemberError(ValueError):
+class OutsideOrgMemberError(InvitationError):
     """
     Error raised when an org member tries adding a user from a different .gov org.
     To be deleted when users can be members of multiple orgs.
     """
 
-    pass
+    def __init__(self, email=None):
+        # Default message if no additional info is provided
+        message = "Can not invite member of a .gov organization to a different organization."
+        if email:
+            message = f"{email} is already a member of another .gov organization."
+        super().__init__(message)
 
 
 class ActionNotAllowed(Exception):
