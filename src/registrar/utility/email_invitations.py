@@ -132,11 +132,11 @@ def _validate_existing_invitation(email, user, domain):
             invite.save()
         else:
             raise AlreadyDomainInvitedError(email)
-        if user:
-            if UserDomainRole.objects.exists(user=user, domain=domain):
-                raise AlreadyDomainManagerError(email)
     except DomainInvitation.DoesNotExist:
         pass
+    if user:
+        if UserDomainRole.objects.filter(user=user, domain=domain).exists():
+            raise AlreadyDomainManagerError(email)
 
 
 def send_invitation_email(email, requestor_email, domains, requested_user):
