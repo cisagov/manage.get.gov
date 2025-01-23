@@ -113,7 +113,6 @@ class Command(BaseCommand):
         for portfolio in portfolios_to_delete:
             has_assignments = any(
                 [
-                    portfolio.information_portfolio.exists(),
                     DomainGroup.objects.filter(portfolio=portfolio).exists(),
                     DomainInformation.objects.filter(portfolio=portfolio).exists(),
                     DomainRequest.objects.filter(portfolio=portfolio).exists(),
