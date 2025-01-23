@@ -2222,7 +2222,7 @@ class TestRemovePortfolios(TestCase):
         # Check that the unlisted portfolio was removed
         self.assertEqual(Portfolio.objects.count(), 1)
         self.assertFalse(Portfolio.objects.filter(organization_name="Test with orphaned objects").exists())
-        self.assertFalse(Portfolio.objects.filter(organization_name="Test with orphaned objects").exists())
+        self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())
         self.assertTrue(Portfolio.objects.filter(organization_name="Department of Veterans Affairs").exists())
 
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
