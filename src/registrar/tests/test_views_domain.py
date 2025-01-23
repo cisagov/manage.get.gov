@@ -721,6 +721,7 @@ class TestDomainManagers(TestDomainOverview):
         """Ensure that the user has its original permissions"""
         PortfolioInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
         User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
 
@@ -1316,6 +1317,49 @@ class TestDomainManagers(TestDomainOverview):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete(self):
+        """Posting to the delete view deletes a user domain role."""
+        # add two managers to the domain so that one can be successfully deleted
+        email_address = "mayor@igorville.gov"
+        new_user = User.objects.create(email=email_address, username="mayor")
+        email_address_2 = "secondmayor@igorville.gov"
+        new_user_2 = User.objects.create(email=email_address_2, username="secondmayor")
+        user_domain_role = UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
+        UserDomainRole.objects.create(user=new_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
+        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": new_user.id}), follow=True)
+        # Assert that a success message is displayed to the user
+        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        # Assert that the second user is displayed
+        self.assertContains(response, f"{email_address_2}")
+        # Assert that the UserDomainRole is deleted
+        self.assertFalse(UserDomainRole.objects.filter(id=user_domain_role.id).exists())
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete_only_manager(self):
+        """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
+        # self.user is the only domain manager, so attempt to delete it
+        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True)
+        # Assert that an error message is displayed to the user
+        self.assertContains(response, "Domains must have at least one domain manager.")
+        # Assert that the user is still displayed
+        self.assertContains(response, f"{self.user.email}")
+        # Assert that the UserDomainRole still exists
+        self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete_self_delete(self):
+        """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
+        # add one manager, so there are two and the logged in user, self.user, can be deleted
+        email_address = "mayor@igorville.gov"
+        new_user = User.objects.create(email=email_address, username="mayor")
+        UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
+        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True)
+        # Assert that a success message is displayed to the user
+        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        # Assert that the UserDomainRole no longer exists
+        self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
 
 class TestDomainNameservers(TestDomainOverview, MockEppLib):
