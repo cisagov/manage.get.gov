@@ -500,6 +500,120 @@ class TestPortfolioInvitations(TestCase):
         self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
 
     @less_console_noise_decorator
+    def test_deleting_a_retrieved_invitation_has_no_side_effects(self):
+        """Deleting a retrieved portfolio invitation causes no side effects."""
+
+        domain_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_1.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+        )
+        invite_1, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_1)
+
+        domain_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+        )
+        invite_2, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_2)
+
+        domain_in_portfolio_3, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_3.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_in_portfolio_4, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        invite_3, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_not_in_portfolio_1)
+
+        domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # The domain invitations start off as INVITED
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles exist
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+        # retrieve the invitation
+        self.invitation.retrieve()
+        self.invitation.save()
+
+        # Delete member (invite)
+        self.invitation.delete()
+
+        # Reload the objects from the database
+        invite_1 = DomainInvitation.objects.get(pk=invite_1.pk)
+        invite_2 = DomainInvitation.objects.get(pk=invite_2.pk)
+        invite_3 = DomainInvitation.objects.get(pk=invite_3.pk)
+
+        # Test that no side effects have been triggered
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
     def test_delete_portfolio_invitation_deletes_user_domain_roles(self):
         """Deleting a portfolio invitation causes domain invitations for the same email on the same
         portfolio to be canceled, also deletes any exiting user domain roles on the portfolio for the
