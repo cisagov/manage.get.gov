@@ -14,6 +14,7 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -27,8 +28,12 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email import EmailSendingError
-from registrar.utility.email_invitations import send_portfolio_invitation_email
+from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from registrar.views.utility.invitation_helper import (
+    get_org_membership,
+    get_requested_user,
+    handle_invitation_exceptions,
+)
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -41,7 +46,7 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes, MissingEmailError
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -1362,6 +1367,8 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     autocomplete_fields = ["user", "domain"]
 
+    change_form_template = "django/admin/user_domain_role_change_form.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
@@ -1389,155 +1396,9 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
 
-class DomainInvitationAdmin(ListHeaderAdmin):
-    """Custom domain invitation admin class."""
-
-    class Meta:
-        model = models.DomainInvitation
-        fields = "__all__"
-
-    _meta = Meta()
-
-    # Columns
-    list_display = [
-        "email",
-        "domain",
-        "status",
-    ]
-
-    # Search
-    search_fields = [
-        "email",
-        "domain__name",
-    ]
-
-    # Filters
-    list_filter = ("status",)
-
-    search_help_text = "Search by email or domain."
-
-    # Mark the FSM field 'status' as readonly
-    # to allow admin users to create Domain Invitations
-    # without triggering the FSM Transition Not Allowed
-    # error.
-    readonly_fields = ["status"]
-
-    autocomplete_fields = ["domain"]
-
-    change_form_template = "django/admin/email_clipboard_change_form.html"
-
-    # Select domain invitations to change -> Domain invitations
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Domain invitations"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
-
-class PortfolioInvitationAdmin(ListHeaderAdmin):
-    """Custom portfolio invitation admin class."""
-
-    form = PortfolioInvitationAdminForm
-
-    class Meta:
-        model = models.PortfolioInvitation
-        fields = "__all__"
-
-    _meta = Meta()
-
-    # Columns
-    list_display = [
-        "email",
-        "portfolio",
-        "roles",
-        "additional_permissions",
-        "status",
-    ]
-
-    # Search
-    search_fields = [
-        "email",
-        "portfolio__name",
-    ]
-
-    # Filters
-    list_filter = ("status",)
-
-    search_help_text = "Search by email or portfolio."
-
-    # Mark the FSM field 'status' as readonly
-    # to allow admin users to create Domain Invitations
-    # without triggering the FSM Transition Not Allowed
-    # error.
-    readonly_fields = ["status"]
-
-    autocomplete_fields = ["portfolio"]
-
-    change_form_template = "django/admin/portfolio_invitation_change_form.html"
-
-    # Select portfolio invitations to change -> Portfolio invitations
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Portfolio invitations"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
-    def save_model(self, request, obj, form, change):
-        """
-        Override the save_model method.
-
-        Only send email on creation of the PortfolioInvitation object. Not on updates.
-        Emails sent to requested user / email.
-        When exceptions are raised, return without saving model.
-        """
-        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
-            portfolio = obj.portfolio
-            requested_email = obj.email
-            requestor = request.user
-
-            permission_exists = UserPortfolioPermission.objects.filter(
-                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
-            ).exists()
-            try:
-                if not permission_exists:
-                    # if permission does not exist for a user with requested_email, send email
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
-                    messages.success(request, f"{requested_email} has been invited.")
-                else:
-                    messages.warning(request, "User is already a member of this portfolio.")
-            except Exception as e:
-                # when exception is raised, handle and do not save the model
-                self._handle_exceptions(e, request, obj)
-                return
-        # Call the parent save method to save the object
-        super().save_model(request, obj, form, change)
-
-    def _handle_exceptions(self, exception, request, obj):
-        """Handle exceptions raised during the process.
-
-        Log warnings / errors, and message errors to the user.
-        """
-        if isinstance(exception, EmailSendingError):
-            logger.warning(
-                "Could not sent email invitation to %s for portfolio %s (EmailSendingError)",
-                obj.email,
-                obj.portfolio,
-                exc_info=True,
-            )
-            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
-        elif isinstance(exception, MissingEmailError):
-            messages.error(request, str(exception))
-            logger.error(
-                f"Can't send email to '{obj.email}' for portfolio '{obj.portfolio}'. "
-                f"No email exists for the requestor.",
-                exc_info=True,
-            )
-
-        else:
-            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.error(request, "Could not send email invitation. Portfolio invitation not saved.")
+class BaseInvitationAdmin(ListHeaderAdmin):
+    """Base class for admin classes which will customize save_model and send email invitations
+    on model adds, and require custom handling of forms and form errors."""
 
     def response_add(self, request, obj, post_url_continue=None):
         """
@@ -1546,8 +1407,9 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         Normal flow on successful save_model on add is to redirect to changelist_view.
         If there are errors, flow is modified to instead render change form.
         """
-        # Check if there are any error or warning messages in the `messages` framework
+        # store current messages from request so that they are preserved throughout the method
         storage = get_messages(request)
+        # Check if there are any error or warning messages in the `messages` framework
         has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
 
         if has_errors:
@@ -1594,7 +1456,206 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
                 change=False,
                 obj=obj,
             )
-        return super().response_add(request, obj, post_url_continue)
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        # Re-add all messages from storage after `super().response_add`
+        # as super().response_add resets the success messages in request
+        for message in storage:
+            messages.add_message(request, message.level, message.message)
+
+        return response
+
+
+class DomainInvitationAdmin(BaseInvitationAdmin):
+    """Custom domain invitation admin class."""
+
+    class Meta:
+        model = models.DomainInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "email",
+        "domain",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "domain__name",
+    ]
+
+    # Filters
+    list_filter = ("status",)
+
+    search_help_text = "Search by email or domain."
+
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
+
+    autocomplete_fields = ["domain"]
+
+    change_form_template = "django/admin/domain_invitation_change_form.html"
+
+    # Select domain invitations to change -> Domain invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        On creation of a new domain invitation, attempt to retrieve the invitation,
+        which will be successful if a single User exists for that email; otherwise, will
+        just continue to create the invitation.
+        """
+        if not change:
+            domain = obj.domain
+            domain_org = getattr(domain.domain_info, "portfolio", None)
+            requested_email = obj.email
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+            requestor = request.user
+
+            member_of_a_different_org, member_of_this_org = get_org_membership(
+                domain_org, requested_email, requested_user
+            )
+
+            try:
+                if (
+                    flag_is_active(request, "organization_feature")
+                    and not flag_is_active(request, "multiple_portfolios")
+                    and domain_org is not None
+                    and not member_of_this_org
+                    and not member_of_a_different_org
+                ):
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                    portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+                        email=requested_email,
+                        portfolio=domain_org,
+                        roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                    )
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
+                    if requested_user is not None:
+                        portfolio_invitation.retrieve()
+                        portfolio_invitation.save()
+                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+
+                send_domain_invitation_email(
+                    email=requested_email,
+                    requestor=requestor,
+                    domains=domain,
+                    is_member_of_different_org=member_of_a_different_org,
+                    requested_user=requested_user,
+                )
+                if requested_user is not None:
+                    # Domain Invitation creation for an existing User
+                    obj.retrieve()
+                # Call the parent save method to save the object
+                super().save_model(request, obj, form, change)
+                messages.success(request, f"{requested_email} has been invited to the domain: {domain}")
+            except Exception as e:
+                handle_invitation_exceptions(request, e, requested_email)
+                return
+        else:
+            # Call the parent save method to save the object
+            super().save_model(request, obj, form, change)
+
+
+class PortfolioInvitationAdmin(BaseInvitationAdmin):
+    """Custom portfolio invitation admin class."""
+
+    form = PortfolioInvitationAdminForm
+
+    class Meta:
+        model = models.PortfolioInvitation
+        fields = "__all__"
+
+    _meta = Meta()
+
+    # Columns
+    list_display = [
+        "email",
+        "portfolio",
+        "roles",
+        "additional_permissions",
+        "status",
+    ]
+
+    # Search
+    search_fields = [
+        "email",
+        "portfolio__organization_name",
+    ]
+
+    # Filters
+    list_filter = ("status",)
+
+    search_help_text = "Search by email or portfolio."
+
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
+
+    autocomplete_fields = ["portfolio"]
+
+    change_form_template = "django/admin/portfolio_invitation_change_form.html"
+
+    # Select portfolio invitations to change -> Portfolio invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Portfolio invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        Only send email on creation of the PortfolioInvitation object. Not on updates.
+        Emails sent to requested user / email.
+        When exceptions are raised, return without saving model.
+        """
+        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+            portfolio = obj.portfolio
+            requested_email = obj.email
+            requestor = request.user
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+            ).exists()
+            try:
+                if not permission_exists:
+                    # if permission does not exist for a user with requested_email, send email
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
+                    if requested_user is not None:
+                        obj.retrieve()
+                    messages.success(request, f"{requested_email} has been invited.")
+                else:
+                    messages.warning(request, "User is already a member of this portfolio.")
+            except Exception as e:
+                # when exception is raised, handle and do not save the model
+                handle_invitation_exceptions(request, e, requested_email)
+                return
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
 
 
 class DomainInformationResource(resources.ModelResource):
@@ -2768,7 +2829,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         try:
             # Retrieve and order audit log entries by timestamp in descending order
-            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
+            audit_log_entries = LogEntry.objects.filter(
+                object_id=object_id, content_type__model="domainrequest"
+            ).order_by("-timestamp")
 
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:

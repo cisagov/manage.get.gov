@@ -103,3 +103,31 @@ response = registry._client.transport.receive()
 ```
 
 This is helpful for debugging situations where epplib is not correctly or fully parsing the XML returned from the registry.
+
+### Adding in a expiring soon domain
+The below scenario is if you are NOT in org model mode (`organization_feature` waffle flag is off).
+
+1. Go to the `staging` sandbox and to `/admin`
+2. Go to Domains and find a domain that is actually expired by sorting the Expiration Date column
+3. Click into the domain to check the expiration date
+4. Click into Manage Domain to double check the expiration date as well
+5. Now hold onto that domain name, and save it for the command below
+
+6. In a terminal, run these commands:
+```
+cf ssh getgov-<your-intials>
+/tmp/lifecycle/shell
+./manage.py shell
+from registrar.models import Domain, DomainInvitation
+from registrar.models import User
+user = User.objects.filter(first_name="<your-first-name>")
+domain = Domain.objects.get_or_create(name="<that-domain-here>")
+```
+
+7. Go back to `/admin` and create Domain Information for that domain you just added in via the terminal 
+8. Go to Domain to find it 
+9. Click Manage Domain
+10. Add yourself as domain manager
+11. Go to the Registrar page and you should now see the expiring domain
+
+If you want to be in the org model mode, turn the `organization_feature` waffle flag on, and add that domain via Django Admin to a portfolio to be able to view it.
