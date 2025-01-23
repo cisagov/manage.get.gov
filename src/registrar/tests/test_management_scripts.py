@@ -3,7 +3,6 @@ import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
-from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models.senior_official import SeniorOfficial
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
@@ -28,9 +27,6 @@ from registrar.models import (
     FederalAgency,
     Portfolio,
     Suborganization,
-    DomainGroup, 
-    PortfolioInvitation, 
-    UserPortfolioPermission
 )
 import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
@@ -2183,17 +2179,31 @@ class TestRemovePortfolios(TestCase):
         self.logger_mock = self.logger_patcher.start()
 
         # Create mock database objects
-        self.portfolio_ok = Portfolio.objects.create(organization_name="Department of Veterans Affairs", creator=self.user)
-        self.unused_portfolio_with_related_objects = Portfolio.objects.create(organization_name="Test with orphaned objects", creator=self.user)
-        self.unused_portfolio_with_suborgs = Portfolio.objects.create(organization_name="Test with suborg", creator=self.user)
+        self.portfolio_ok = Portfolio.objects.create(
+            organization_name="Department of Veterans Affairs", creator=self.user
+        )
+        self.unused_portfolio_with_related_objects = Portfolio.objects.create(
+            organization_name="Test with orphaned objects", creator=self.user
+        )
+        self.unused_portfolio_with_suborgs = Portfolio.objects.create(
+            organization_name="Test with suborg", creator=self.user
+        )
 
         # Create related objects for unused_portfolio_with_related_objects
-        self.domain_information = DomainInformation.objects.create(portfolio=self.unused_portfolio_with_related_objects, creator=self.user)
-        self.domain_request = DomainRequest.objects.create(portfolio=self.unused_portfolio_with_related_objects, creator=self.user)
+        self.domain_information = DomainInformation.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+        )
+        self.domain_request = DomainRequest.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+        )
 
         # Create a suborganization and suborg related objects for unused_portfolio_with_suborgs
-        self.suborganization = Suborganization.objects.create(portfolio=self.unused_portfolio_with_suborgs, name="Test Suborg")
-        self.suborg_domain_information = DomainInformation.objects.create(sub_organization=self.suborganization, creator=self.user)
+        self.suborganization = Suborganization.objects.create(
+            portfolio=self.unused_portfolio_with_suborgs, name="Test Suborg"
+        )
+        self.suborg_domain_information = DomainInformation.objects.create(
+            sub_organization=self.suborganization, creator=self.user
+        )
 
     def tearDown(self):
         self.logger_patcher.stop()
@@ -2228,7 +2238,9 @@ class TestRemovePortfolios(TestCase):
         call_command("remove_unused_portfolios", debug=False)
 
         # Check that related objects were updated
-        self.assertEqual(DomainInformation.objects.filter(portfolio=self.unused_portfolio_with_related_objects).count(), 0)
+        self.assertEqual(
+            DomainInformation.objects.filter(portfolio=self.unused_portfolio_with_related_objects).count(), 0
+        )
         self.assertEqual(DomainRequest.objects.filter(portfolio=self.unused_portfolio_with_related_objects).count(), 0)
         self.assertEqual(DomainInformation.objects.filter(portfolio=None).count(), 2)
         self.assertEqual(DomainRequest.objects.filter(portfolio=None).count(), 1)
@@ -2256,4 +2268,3 @@ class TestRemovePortfolios(TestCase):
 
         # Check that the portfolio was deleted
         self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())
-
