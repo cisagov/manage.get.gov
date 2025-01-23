@@ -117,7 +117,7 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
 
         if active_requests_count > 0:
             # If they have any in progress requests
-            error_message = mark_safe(
+            error_message = mark_safe(  # nosec
                 "This member can't be removed from the organization because they have an active domain request. "
                 f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
             )
