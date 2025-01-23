@@ -122,7 +122,7 @@ export class EditMemberDomainsTable extends BaseTable {
         </td>
         <td data-label="Domain name">
             ${domain.name}
-            ${disabled ? '<span class="display-block margin-top-05 text-gray-50">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
+            ${disabled ? '<span class="display-block margin-top-05 text-gray-50 margin-right-neg-5">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
         </td>
     `;
     tbody.appendChild(row);
