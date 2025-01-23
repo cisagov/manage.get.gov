@@ -4,6 +4,7 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.user import User
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from django.db.models import Q
 
 from .utility.time_stamped_model import TimeStampedModel
 
@@ -144,12 +145,20 @@ class Portfolio(TimeStampedModel):
         ).values_list("user__id", flat=True)
         return User.objects.filter(id__in=admin_ids)
 
-    def portfolio_users_with_permissions(self, permissions=[]):
+    def portfolio_users_with_permissions(self, permissions=[], include_admin=False):
         """Gets all users with specified additional permissions for this particular portfolio.
         Returns a queryset of User."""
         portfolio_users = self.portfolio_users
         if permissions:
-            portfolio_users = portfolio_users.filter(additional_permissions__overlap=permissions)
+            if include_admin:
+                portfolio_users = portfolio_users.filter(
+                    Q(additional_permissions__overlap=permissions) |
+                    Q(roles__overlap=[
+                        UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                    ]),
+                )
+            else:
+                portfolio_users = portfolio_users.filter(additional_permissions__overlap=permissions)
         user_ids = portfolio_users.values_list("user__id", flat=True)
         return User.objects.filter(id__in=user_ids)
 

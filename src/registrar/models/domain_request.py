@@ -959,11 +959,12 @@ class DomainRequest(TimeStampedModel):
                 context["custom_email_content"] = custom_email_content
 
             if self.requesting_entity_is_portfolio() or self.requesting_entity_is_suborganization():
-                portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(
-                    permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+                portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions( # type: ignore
+                    permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
+                    include_admin=True
                 )
-                cc_users = self.portfolio.portfolio_admin_users | portfolio_view_requests_users
-                cc_addresses = list(cc_users.values_list("email", flat=True))
+                cc_addresses = list(portfolio_view_requests_users.values_list("email", flat=True))
+                print("cc addresses: ", cc_addresses)
 
             send_templated_email(
                 email_template,
