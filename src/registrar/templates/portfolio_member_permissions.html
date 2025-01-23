@@ -99,25 +99,19 @@
     <h2>Basic member permissions</h2>
     <p>Member permissions available for basic-level acccess.</p>
 
-    <h3 class="summary-item__title
-      text-primary-dark
-      margin-bottom-0">Domains</h3>
+    <h3 class="margin-bottom-0">Domains</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-        {% input_with_errors form.domain_permission_member %}
+        {% input_with_errors form.domain_permissions %}
       {% endwith %}
 
-    <h3 class="margin-bottom-0
-      summary-item__title
-      text-primary-dark">Domain requests</h3>
+    <h3 class="margin-bottom-0">Domain requests</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-        {% input_with_errors form.domain_request_permission_member %}
+        {% input_with_errors form.domain_request_permissions %}
       {% endwith %}
 
-    <h3 class="summary-item__title
-      text-primary-dark
-      margin-bottom-0">Organization members</h3>
+    <h3 class="margin-bottom-0">Organization members</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-        {% input_with_errors form.member_permission_member %}
+        {% input_with_errors form.member_permissions %}
       {% endwith %}
     
   </div>
