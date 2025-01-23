@@ -3,7 +3,10 @@ import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from registrar.models.domain_group import DomainGroup
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -2195,6 +2198,16 @@ class TestRemovePortfolios(TestCase):
         )
         self.domain_request = DomainRequest.objects.create(
             portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+        )
+        self.inv = PortfolioInvitation.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects
+        )
+        self.group = DomainGroup.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects,
+            name="Test Domain Group"
+        )
+        self.perm = UserPortfolioPermission.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, user=self.user
         )
 
         # Create a suborganization and suborg related objects for unused_portfolio_with_suborgs
