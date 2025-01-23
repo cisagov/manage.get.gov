@@ -92,34 +92,34 @@
 
   <!-- Admin access form -->
   <div id="member-admin-permissions" class="margin-top-2">
-      <h2>Admin access permissions</h2>
-      <p>Member permissions available for admin-level acccess.</p>
-
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-      {% input_with_errors form.domain_request_permission_admin %}
-    {% endwith %}
-
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0
-    margin-top-3">Organization members</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-      {% input_with_errors form.member_permission_admin %}
-    {% endwith %}
   </div>
 
-    <!-- Basic access form -->
-    <div id="member-basic-permissions" class="margin-top-2">
-        <h2>Basic member permissions</h2>
-        <p>Member permissions available for basic-level acccess.</p>
+  <!-- Basic access form -->
+  <div id="member-basic-permissions" class="margin-top-2">
+    <h2>Basic member permissions</h2>
+    <p>Member permissions available for basic-level acccess.</p>
 
-      <h3 class="margin-bottom-0 summary-item__title text-primary-dark">Organization domain requests</h3>
+    <h3 class="summary-item__title
+      text-primary-dark
+      margin-bottom-0">Domains</h3>
+      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
+        {% input_with_errors form.domain_permission_member %}
+      {% endwith %}
+
+    <h3 class="margin-bottom-0
+      summary-item__title
+      text-primary-dark">Domain requests</h3>
       {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
         {% input_with_errors form.domain_request_permission_member %}
       {% endwith %}
+
+    <h3 class="summary-item__title
+      text-primary-dark
+      margin-bottom-0">Organization members</h3>
+      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
+        {% input_with_errors form.member_permission_member %}
+      {% endwith %}
+    
   </div>
 
     <!-- Submit/cancel buttons -->

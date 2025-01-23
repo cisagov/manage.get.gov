@@ -125,38 +125,26 @@ class BasePortfolioMemberForm(forms.ModelForm):
         },
     )
 
-    domain_request_permission_admin = forms.ChoiceField(
+    domain_permission_member = forms.ChoiceField(
         label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
-            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
-            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
+            (UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value, "Viewer, limited"),
+            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer, all"),
         ],
         widget=forms.RadioSelect,
         required=False,
         error_messages={
-            "required": "Admin domain request permission is required",
-        },
-    )
-
-    member_permission_admin = forms.ChoiceField(
-        label=mark_safe(f"Select permission {required_star}"),  # nosec
-        choices=[
-            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "View all members"),
-            (UserPortfolioPermissionChoices.EDIT_MEMBERS.value, "View all members plus manage members"),
-        ],
-        widget=forms.RadioSelect,
-        required=False,
-        error_messages={
-            "required": "Admin member permission is required",
+            "required": "Member domain permission is required",
         },
     )
 
     domain_request_permission_member = forms.ChoiceField(
         label=mark_safe(f"Select permission {required_star}"),  # nosec
         choices=[
-            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "View all requests"),
-            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "View all requests plus create requests"),
             ("no_access", "No access"),
+            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "Viewer"),
+            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "Creator"),
+
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -165,15 +153,28 @@ class BasePortfolioMemberForm(forms.ModelForm):
         },
     )
 
+    member_permission_member = forms.ChoiceField(
+        label=mark_safe(f"Select permission {required_star}"),  # nosec
+        choices=[
+            ("no_access", "No access"),
+            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "Viewer"),
+        ],
+        widget=forms.RadioSelect,
+        required=False,
+        error_messages={
+            "required": "Admin member permission is required",
+        },
+    )
+
+
     # Tracks what form elements are required for a given role choice.
     # All of the fields included here have "required=False" by default as they are conditionally required.
     # see def clean() for more details.
     ROLE_REQUIRED_FIELDS = {
-        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
-            "domain_request_permission_admin",
-            "member_permission_admin",
-        ],
+        UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [],
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
+            "domain_permission_member",
+            "member_permission_member",
             "domain_request_permission_member",
         ],
     }
@@ -225,6 +226,10 @@ class BasePortfolioMemberForm(forms.ModelForm):
         if cleaned_data.get("domain_request_permission_member") == "no_access":
             cleaned_data["domain_request_permission_member"] = None
 
+        # Edgecase: Member uses a special form value for None called "no_access".
+        if cleaned_data.get("member_permission_member") == "no_access":
+            cleaned_data["member_permission_member"] = None
+
         # Handle roles
         cleaned_data["roles"] = [role]
 
@@ -267,12 +272,15 @@ class BasePortfolioMemberForm(forms.ModelForm):
             UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
             UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
         ]
-        domain_perms = [
+        domain_request_perms = [
             UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
+        domain_perms = [
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+        ]
         member_perms = [
-            UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
         ]
 
@@ -282,16 +290,15 @@ class BasePortfolioMemberForm(forms.ModelForm):
         roles = self.instance.roles or []
         selected_role = next((role for role in roles if role in roles), None)
         self.initial["role"] = selected_role
-        is_admin = selected_role == UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-        if is_admin:
-            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), None)
-            selected_member_permission = next((perm for perm in member_perms if perm in perms), None)
-            self.initial["domain_request_permission_admin"] = selected_domain_permission
-            self.initial["member_permission_admin"] = selected_member_permission
-        else:
-            # Edgecase: Member uses a special form value for None called "no_access". This ensures a form selection.
-            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), "no_access")
-            self.initial["domain_request_permission_member"] = selected_domain_permission
+        is_member = selected_role == UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        if is_member:
+            # Edgecase: Member and domain request use a special form value for None called "no_access". This ensures a form selection.
+            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value)
+            selected_domain_request_permission = next((perm for perm in domain_request_perms if perm in perms), "no_access")
+            selected_member_permission = next((perm for perm in member_perms if perm in perms), "no_access")
+            self.initial["domain_request_permission_member"] = selected_domain_request_permission
+            self.initial["domain_permission_member"] = selected_domain_permission
+            self.initial["member_permission_member"] = selected_member_permission
 
 
 class PortfolioMemberForm(BasePortfolioMemberForm):
