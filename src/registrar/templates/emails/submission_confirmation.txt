@@ -20,7 +20,7 @@ During our review, we’ll verify that:
 - You work at the organization and/or can make requests on its behalf 
 - Your requested domain meets our naming requirements 
 {% endif %}
-We’ll email you if we have questions. We’ll also email you as soon as we complete our review. You can check the status of your request at any time on the registrar. <https://manage.get.gov>
+We’ll email you if we have questions. We’ll also email you as soon as we complete our review. You can check the status of your request at any time on the registrar. <https://manage.get.gov>.
 
 
 NEED TO MAKE CHANGES?
