@@ -136,7 +136,7 @@ class Command(BaseCommand):
                     {formatted_entries}
 
                 Deleting them will update any associated domains / domain requests to have no portfolio
-                and will cascade delete any associated portfolio invitations, portfolio permissions,
+                and will cascade delete any associated portfolio invitations, portfolio permissions, domain groups,
                 and suborganizations.  Any suborganizations that get deleted will also orphan (not delete) their
                 associated domains / domain requests.
 
@@ -166,9 +166,9 @@ class Command(BaseCommand):
                         user_permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
 
                         if domain_groups.exists():
-                            formatted_groups = "\n".join([group.name for group in domain_groups])
-                            portfolio_summary.append(f"{len(domain_groups)} Orphaned DomainGroups:\n{formatted_groups}")
-                            domain_groups.update(portfolio=None)
+                            formatted_groups = "\n".join([str(group) for group in domain_groups])
+                            portfolio_summary.append(f"{len(domain_groups)} Deleted DomainGroups:\n{formatted_groups}")
+                            domain_groups.delete()
 
                         if domain_informations.exists():
                             formatted_domain_infos = "\n".join([str(info) for info in domain_informations])
