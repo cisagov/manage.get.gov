@@ -168,9 +168,7 @@ class Command(BaseCommand):
 
                         if domain_groups.exists():
                             formatted_groups = "\n".join([group.name for group in domain_groups])
-                            portfolio_summary.append(
-                                f"{len(domain_groups)} Orphaned DomainGroups:\n{formatted_groups}"
-                            )
+                            portfolio_summary.append(f"{len(domain_groups)} Orphaned DomainGroups:\n{formatted_groups}")
                             domain_groups.update(portfolio=None)
 
                         if domain_informations.exists():
@@ -190,19 +188,21 @@ class Command(BaseCommand):
                         if portfolio_invitations.exists():
                             formatted_portfolio_invitations = "\n".join([str(inv) for inv in portfolio_invitations])
                             portfolio_summary.append(
-                                f"{len(portfolio_invitations)} Deleted PortfolioInvitations:\n{formatted_portfolio_invitations}"
+                                f"{len(portfolio_invitations)} Deleted PortfolioInvitations:\n{formatted_portfolio_invitations}"  # noqa
                             )
                             portfolio_invitations.delete()
 
                         if user_permissions.exists():
-                            formatted_user_list = "\n".join([perm.user.get_formatted_name() for perm in user_permissions])
+                            formatted_user_list = "\n".join(
+                                [perm.user.get_formatted_name() for perm in user_permissions]
+                            )
                             portfolio_summary.append(
                                 f"Deleted UserPortfolioPermissions for the following users:\n{formatted_user_list}"
                             )
                             user_permissions.delete()
 
                         if suborganizations.exists():
-                            portfolio_summary.append(f"Cascade Deleted Suborganizations:")
+                            portfolio_summary.append("Cascade Deleted Suborganizations:")
                             for suborg in suborganizations:
                                 DomainInformation.objects.filter(sub_organization=suborg).update(sub_organization=None)
                                 DomainRequest.objects.filter(sub_organization=suborg).update(sub_organization=None)
