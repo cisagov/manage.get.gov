@@ -1326,9 +1326,13 @@ class TestDomainManagers(TestDomainOverview):
         new_user = User.objects.create(email=email_address, username="mayor")
         email_address_2 = "secondmayor@igorville.gov"
         new_user_2 = User.objects.create(email=email_address_2, username="secondmayor")
-        user_domain_role = UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
-        UserDomainRole.objects.create(user=new_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
-        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": new_user.id}), follow=True)
+        user_domain_role = UserDomainRole.objects.create(
+            user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(user=new_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": new_user.id}), follow=True
+        )
         # Assert that a success message is displayed to the user
         self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
         # Assert that the second user is displayed
@@ -1340,7 +1344,9 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_user_role_delete_only_manager(self):
         """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
         # self.user is the only domain manager, so attempt to delete it
-        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True)
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+        )
         # Assert that an error message is displayed to the user
         self.assertContains(response, "Domains must have at least one domain manager.")
         # Assert that the user is still displayed
@@ -1354,8 +1360,10 @@ class TestDomainManagers(TestDomainOverview):
         # add one manager, so there are two and the logged in user, self.user, can be deleted
         email_address = "mayor@igorville.gov"
         new_user = User.objects.create(email=email_address, username="mayor")
-        UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER )
-        response = self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True)
+        UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+        )
         # Assert that a success message is displayed to the user
         self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
         # Assert that the UserDomainRole no longer exists
