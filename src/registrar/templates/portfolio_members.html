@@ -12,7 +12,7 @@
 
 <!-- Form messages -->
 {% block messages %}
-  {% include "includes/form_messages.html" %}
+  {% include "includes/form_messages.html" with no_max_width=True %}
 {% endblock messages%}
 
 <div id="main-content">
