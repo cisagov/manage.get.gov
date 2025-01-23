@@ -40,6 +40,7 @@ from epplibwrapper import (
     ErrorCode,
     responses,
 )
+from registrar.models.suborganization import Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.user_domain_role import UserDomainRole
 
@@ -577,6 +578,13 @@ class MockDb(TestCase):
             creator=cls.custom_superuser, federal_agency=cls.federal_agency_3, organization_type="federal"
         )
 
+        cls.suborganization_1, _ = Suborganization.objects.get_or_create(
+            name="SubOrg 1",
+            portfolio=cls.portfolio_1,
+            city="Nashville",
+            state_territory="TN",
+        )
+
         current_date = get_time_aware_date(datetime(2024, 4, 2))
         # Create start and end dates using timedelta
 
@@ -847,6 +855,7 @@ class MockDb(TestCase):
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 name="city2.gov",
                 portfolio=cls.portfolio_1,
+                sub_organization=cls.suborganization_1,
             )
             cls.domain_request_3 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
@@ -862,6 +871,9 @@ class MockDb(TestCase):
             cls.domain_request_5 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.APPROVED,
                 name="city5.gov",
+                requested_suborganization="requested_suborg",
+                suborganization_city="SanFran",
+                suborganization_state_territory="CA",
             )
             cls.domain_request_6 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
@@ -911,6 +923,7 @@ class MockDb(TestCase):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         UserDomainRole.objects.all().delete()
+        Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         User.objects.all().delete()
@@ -1039,6 +1052,8 @@ def completed_domain_request(  # noqa
     federal_agency=None,
     federal_type=None,
     action_needed_reason=None,
+    city=None,
+    state_territory=None,
     portfolio=None,
     organization_name=None,
     sub_organization=None,
@@ -1081,7 +1096,7 @@ def completed_domain_request(  # noqa
         organization_name=organization_name if organization_name else "Testorg",
         address_line1="address 1",
         address_line2="address 2",
-        state_territory="NY",
+        state_territory="NY" if not state_territory else state_territory,
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
@@ -1090,6 +1105,10 @@ def completed_domain_request(  # noqa
         investigator=investigator,
         federal_agency=federal_agency,
     )
+
+    if city:
+        domain_request_kwargs["city"] = city
+
     if has_about_your_organization:
         domain_request_kwargs["about_your_organization"] = "e-Government"
     if has_anything_else:

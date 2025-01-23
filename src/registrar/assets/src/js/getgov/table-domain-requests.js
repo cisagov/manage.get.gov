@@ -52,26 +52,8 @@ export class DomainRequestsTable extends BaseTable {
     // Manage "export as CSV" visibility for domain requests
     this.toggleExportButton(data.domain_requests);
 
-    let needsDeleteColumn = data.domain_requests.some(request => request.is_deletable);
-
-    // Remove existing delete th and td if they exist
-    let existingDeleteTh =  document.querySelector('.delete-header');
-    if (!needsDeleteColumn) {
-      if (existingDeleteTh)
-        existingDeleteTh.remove();
-    } else {
-      if (!existingDeleteTh) {
-        const delheader = document.createElement('th');
-        delheader.setAttribute('scope', 'col');
-        delheader.setAttribute('role', 'columnheader');
-        delheader.setAttribute('class', 'delete-header width-5');
-        delheader.innerHTML = `
-          <span class="usa-sr-only">Delete Action</span>`;
-        let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
-        tableHeaderRow.appendChild(delheader);
-      }
-    }
-    return { 'needsAdditionalColumn': needsDeleteColumn };
+    let isDeletable = data.domain_requests.some(request => request.is_deletable);
+    return { 'hasAdditionalActions': isDeletable };
   }
 
   addRow(dataObject, tbody, customTableOptions) {
@@ -88,6 +70,7 @@ export class DomainRequestsTable extends BaseTable {
     <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
 
     let markupCreatorRow = '';
+    
 
     if (this.portfolioValue) {
       markupCreatorRow = `
@@ -98,7 +81,7 @@ export class DomainRequestsTable extends BaseTable {
     }
 
     if (request.is_deletable) {
-      // 1st path: Just a modal trigger in any screen size for non-org users
+      // 1st path (non-org): Just a modal trigger in any screen size for non-org users
       modalTrigger = `
         <a 
           role="button" 
@@ -116,7 +99,7 @@ export class DomainRequestsTable extends BaseTable {
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
 
-        // 2nd path: Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
+        // 2nd path (org model): Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
         modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
       }
     }
@@ -133,15 +116,17 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td>
-        <a href="${actionUrl}">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
-          </svg>
-          ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
-        </a>
+      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
+        <div class="tablet:display-flex tablet:flex-row">
+          <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
+            </svg>
+            ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
+          </a>
+          ${customTableOptions.hasAdditionalActions ? modalTrigger : ''}
+        </div>
       </td>
-      ${customTableOptions.needsAdditionalColumn ? '<td>'+modalTrigger+'</td>' : ''}
     `;
     tbody.appendChild(row);
     if (request.is_deletable) DomainRequestsTable.addDomainRequestsModal(request.requested_domain, request.id, request.created_at, tbody);
