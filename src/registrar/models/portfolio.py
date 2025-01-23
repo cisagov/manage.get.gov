@@ -152,10 +152,12 @@ class Portfolio(TimeStampedModel):
         if permissions:
             if include_admin:
                 portfolio_users = portfolio_users.filter(
-                    Q(additional_permissions__overlap=permissions) |
-                    Q(roles__overlap=[
-                        UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                    ]),
+                    Q(additional_permissions__overlap=permissions)
+                    | Q(
+                        roles__overlap=[
+                            UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                        ]
+                    ),
                 )
             else:
                 portfolio_users = portfolio_users.filter(additional_permissions__overlap=permissions)
