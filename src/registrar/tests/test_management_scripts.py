@@ -2199,12 +2199,9 @@ class TestRemovePortfolios(TestCase):
         self.domain_request = DomainRequest.objects.create(
             portfolio=self.unused_portfolio_with_related_objects, creator=self.user
         )
-        self.inv = PortfolioInvitation.objects.create(
-            portfolio=self.unused_portfolio_with_related_objects
-        )
+        self.inv = PortfolioInvitation.objects.create(portfolio=self.unused_portfolio_with_related_objects)
         self.group = DomainGroup.objects.create(
-            portfolio=self.unused_portfolio_with_related_objects,
-            name="Test Domain Group"
+            portfolio=self.unused_portfolio_with_related_objects, name="Test Domain Group"
         )
         self.perm = UserPortfolioPermission.objects.create(
             portfolio=self.unused_portfolio_with_related_objects, user=self.user
