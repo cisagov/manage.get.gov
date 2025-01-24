@@ -1369,9 +1369,13 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/user_domain_role_change_form.html"
 
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/user_domain_role_delete_confirmation.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
+        self.delete_confirmation_template = "django/admin/user_domain_role_delete_confirmation.html"        
         response = super().delete_view(request, object_id, extra_context)
 
         if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
