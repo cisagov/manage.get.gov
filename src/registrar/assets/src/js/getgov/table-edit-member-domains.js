@@ -236,7 +236,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Create unassigned domains list
     const unassignedDomainsList = document.createElement('ul');
     unassignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
-    this.removedDomains.forEach(removedDomain => {
+    let removedDomainsCopy = [...this.removedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    removedDomainsCopy.forEach(removedDomain => {
         const removedDomainListItem = document.createElement('li');
         removedDomainListItem.textContent = removedDomain.name; // Use textContent for security
         unassignedDomainsList.appendChild(removedDomainListItem);
@@ -245,7 +246,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Create assigned domains list
     const assignedDomainsList = document.createElement('ul');
     assignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
-    this.addedDomains.forEach(addedDomain => {
+    let addedDomainsCopy = [...this.addedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    addedDomainsCopy.forEach(addedDomain => {
         const addedDomainListItem = document.createElement('li');
         addedDomainListItem.textContent = addedDomain.name; // Use textContent for security
         assignedDomainsList.appendChild(addedDomainListItem);
