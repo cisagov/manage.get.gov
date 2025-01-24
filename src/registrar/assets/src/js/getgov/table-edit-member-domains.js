@@ -269,7 +269,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Append assigned domains section
     if (this.addedDomains.length) {
       const assignedHeader = document.createElement('h3');
-      assignedHeader.classList.add('margin-bottom-1');
+      // Make this h3 look like a h4
+      assignedHeader.classList.add('margin-bottom-1', 'h4');
       assignedHeader.textContent = 'Assigned domains';
       domainAssignmentSummary.appendChild(assignedHeader);
       domainAssignmentSummary.appendChild(assignedDomainsList);
@@ -277,7 +278,8 @@ export class EditMemberDomainsTable extends BaseTable {
 
     // Append total assigned domains section
     const totalHeader = document.createElement('h3');
-    totalHeader.classList.add('margin-bottom-1');
+    // Make this h3 look like a h4
+    totalHeader.classList.add('margin-bottom-1', 'h4');
     totalHeader.textContent = 'Total assigned domains';
     domainAssignmentSummary.appendChild(totalHeader);
     const totalCount = document.createElement('p');
