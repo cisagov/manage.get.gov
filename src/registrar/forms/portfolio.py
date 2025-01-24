@@ -4,7 +4,6 @@ import logging
 from django import forms
 from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
-from django.utils.safestring import mark_safe
 
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import (
@@ -143,7 +142,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
             ("no_access", "No access"),
             (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "Viewer"),
             (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "Creator"),
-
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -165,7 +163,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "required": "Member permission is required.",
         },
     )
-
 
     # Tracks what form elements are required for a given role choice.
     # All of the fields included here have "required=False" by default as they are conditionally required.
@@ -191,20 +188,22 @@ class BasePortfolioMemberForm(forms.ModelForm):
         Update field descriptions.
         """
         super().__init__(*args, **kwargs)
-        
+
         # Adds a <p> description beneath each option
         self.fields["domain_permissions"].descriptions = {
             UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: "Can view only the domains they manage",
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: "Can view all domains for the organization",
         }
         self.fields["domain_request_permissions"].descriptions = {
-            UserPortfolioPermissionChoices.EDIT_REQUESTS.value: "Can view all domain requests for the organization and create requests",
+            UserPortfolioPermissionChoices.EDIT_REQUESTS.value: (
+                "Can view all domain requests for the organization and create requests"
+            ),
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value: "Can view all domain requests for the organization",
-            "no_access": "Cannot view or create domain requests"
+            "no_access": "Cannot view or create domain requests",
         }
         self.fields["member_permissions"].descriptions = {
             UserPortfolioPermissionChoices.VIEW_MEMBERS.value: "Can view all members permissions",
-            "no_access": "Cannot view member permissions"
+            "no_access": "Cannot view member permissions",
         }
 
         # Map model instance values to custom form fields
@@ -299,9 +298,15 @@ class BasePortfolioMemberForm(forms.ModelForm):
         self.initial["role"] = selected_role
         is_member = selected_role == UserPortfolioRoleChoices.ORGANIZATION_MEMBER
         if is_member:
-            # Edgecase: Member and domain request use a special form value for None called "no_access". This ensures a form selection.
-            selected_domain_permission = next((perm for perm in domain_perms if perm in perms), UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value)
-            selected_domain_request_permission = next((perm for perm in domain_request_perms if perm in perms), "no_access")
+            # Edgecase: Member and domain request use a special form value for None called "no_access".
+            # This ensures a form selection.
+            selected_domain_permission = next(
+                (perm for perm in domain_perms if perm in perms),
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+            )
+            selected_domain_request_permission = next(
+                (perm for perm in domain_request_perms if perm in perms), "no_access"
+            )
             selected_member_permission = next((perm for perm in member_perms if perm in perms), "no_access")
             self.initial["domain_request_permissions"] = selected_domain_request_permission
             self.initial["domain_permissions"] = selected_domain_permission

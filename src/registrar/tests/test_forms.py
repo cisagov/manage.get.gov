@@ -572,14 +572,18 @@ class TestBasePortfolioMemberForms(TestCase):
         form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
-        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(
+            cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
+        )
         self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
         self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
 
         form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
-        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(
+            cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
+        )
         self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
         self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
 
@@ -595,7 +599,9 @@ class TestBasePortfolioMemberForms(TestCase):
         form = self._assert_form_is_valid(PortfolioNewMemberForm, data)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
-        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(
+            cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value
+        )
         self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
         self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
 

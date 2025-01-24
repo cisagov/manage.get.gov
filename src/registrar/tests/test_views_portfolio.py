@@ -1422,7 +1422,7 @@ class TestPortfolio(WebTest):
         permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
 
         # Update to basic member with view members permission
-        permission.roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         permission.additional_permissions = [
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
         ]
@@ -3564,14 +3564,10 @@ class TestEditPortfolioMemberView(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.context["form"].errors["domain_request_permissions"][0],
-            "Domain request permission is required",
+            "Domain request permission is required.",
         )
-        self.assertEqual(
-            response.context["form"].errors["member_permissions"][0], "Member permission is required"
-        )
-        self.assertEqual(
-            response.context["form"].errors["domain_permissions"][0], "Domain permission is required"
-        )
+        self.assertEqual(response.context["form"].errors["member_permissions"][0], "Member permission is required.")
+        self.assertEqual(response.context["form"].errors["domain_permissions"][0], "Domain permission is required.")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
