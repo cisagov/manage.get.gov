@@ -1507,6 +1507,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
@@ -1515,6 +1517,17 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         extra_context["tabtitle"] = "Domain invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+        
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_invitation_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
 
     def save_model(self, request, obj, form, change):
         """
