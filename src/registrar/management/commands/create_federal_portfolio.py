@@ -178,6 +178,7 @@ class Command(BaseCommand):
         also create new suborganizations"""
         portfolio, _ = self.create_portfolio(federal_agency)
         self.create_suborganizations(portfolio, federal_agency)
+
         if parse_domains or both:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
@@ -283,7 +284,7 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
             status__in=invalid_states
         )
         if not domain_requests.exists():
@@ -291,7 +292,7 @@ class Command(BaseCommand):
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
             This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
             Excluded statuses: STARTED, INELIGIBLE, REJECTED.
-            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
                 status__in=invalid_states
             )
             """
@@ -335,12 +336,12 @@ class Command(BaseCommand):
 
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
-        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
             The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency)
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
