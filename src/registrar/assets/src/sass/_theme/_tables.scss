@@ -100,14 +100,24 @@ th {
   }
 }
 
-.dotgov-table--padding-left {
+.dotgov-table--padding-2 {
   td, th {
-    padding: units(2) units(4) units(2) units(2);
+    padding: units(2);
   }
+}
+
+.usa-table--striped tbody tr:nth-child(odd) th,
+.usa-table--striped tbody tr:nth-child(odd) td {
+  background-color: color('primary-lightest');
 }
 
 .usa-table--bg-transparent {
   td, thead th {
     background-color: transparent;
   }
+}
+
+.usa-table--full-borderless td, 
+.usa-table--full-borderless th {
+  border: none !important;
 }
