@@ -292,6 +292,7 @@ export class EditMemberDomainsTable extends BaseTable {
     this.updateReadonlyDisplay();
     hideElement(this.editModeContainer);
     showElement(this.readonlyModeContainer);
+    window.scrollTo(0, 0);
   }
 
   showEditMode() {
