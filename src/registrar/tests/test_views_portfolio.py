@@ -915,9 +915,9 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
-        self.assertContains(response, "Basic access")
+        self.assertContains(response, "Basic")
         self.assertContains(response, "No access")
-        self.assertContains(response, "View all members")
+        self.assertContains(response, "Viewer")
         self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
@@ -933,15 +933,11 @@ class TestPortfolio(WebTest):
         """Test that user can access the member page with edit_members permission"""
 
         # Arrange
-        # give user permissions to view AND manage members
+        # give user admin role, which includes edit_members
         permission_obj, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
         )
 
         # Verify the page can be accessed
@@ -952,9 +948,9 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
-        self.assertContains(response, "Admin access")
-        self.assertContains(response, "View all requests plus create requests")
-        self.assertContains(response, "View all members plus manage members")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "Creator")
+        self.assertContains(response, "Manager")
         self.assertContains(
             response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
         )
@@ -1028,9 +1024,9 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "Invited")
         self.assertContains(response, portfolio_invitation.email)
-        self.assertContains(response, "Basic access")
+        self.assertContains(response, "Basic")
         self.assertContains(response, "No access")
-        self.assertContains(response, "View all members")
+        self.assertContains(response, "Viewer")
         self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
