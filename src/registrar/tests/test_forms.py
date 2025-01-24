@@ -3,6 +3,7 @@
 import json
 from django.test import TestCase, RequestFactory
 from api.views import available
+from api.tests.common import less_console_noise_decorator
 
 from registrar.forms.domain_request_wizard import (
     AlternativeDomainForm,
@@ -39,6 +40,7 @@ class TestFormValidation(MockEppLib):
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
 
+    @less_console_noise_decorator
     def test_org_contact_zip_invalid(self):
         form = OrganizationContactForm(data={"zipcode": "nah"})
         self.assertEqual(
@@ -46,11 +48,13 @@ class TestFormValidation(MockEppLib):
             ["Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789."],
         )
 
+    @less_console_noise_decorator
     def test_org_contact_zip_valid(self):
         for zipcode in ["12345", "12345-6789"]:
             form = OrganizationContactForm(data={"zipcode": zipcode})
             self.assertNotIn("zipcode", form.errors)
 
+    @less_console_noise_decorator
     def test_website_invalid(self):
         form = CurrentSitesForm(data={"website": "nah"})
         self.assertEqual(
@@ -58,33 +62,39 @@ class TestFormValidation(MockEppLib):
             ["Enter your organization's current website in the required format, like example.com."],
         )
 
+    @less_console_noise_decorator
     def test_website_valid(self):
         form = CurrentSitesForm(data={"website": "hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
 
+    @less_console_noise_decorator
     def test_website_scheme_valid(self):
         form = CurrentSitesForm(data={"website": "http://hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
         form = CurrentSitesForm(data={"website": "https://hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
 
+    @less_console_noise_decorator
     def test_requested_domain_valid(self):
         """Just a valid domain name with no .gov at the end."""
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency"})
         self.assertEqual(len(form.errors), 0)
 
+    @less_console_noise_decorator
     def test_requested_domain_starting_www(self):
         """Test a valid domain name with .www at the beginning."""
         form = DotGovDomainForm(data={"requested_domain": "www.top-level-agency"})
         self.assertEqual(len(form.errors), 0)
         self.assertEqual(form.cleaned_data["requested_domain"], "top-level-agency")
 
+    @less_console_noise_decorator
     def test_requested_domain_ending_dotgov(self):
         """Just a valid domain name with .gov at the end."""
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.gov"})
         self.assertEqual(len(form.errors), 0)
         self.assertEqual(form.cleaned_data["requested_domain"], "top-level-agency")
 
+    @less_console_noise_decorator
     def test_requested_domain_ending_dotcom_invalid(self):
         """don't accept domains ending other than .gov."""
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.com"})
@@ -93,6 +103,7 @@ class TestFormValidation(MockEppLib):
             ["Enter the .gov domain you want without any periods."],
         )
 
+    @less_console_noise_decorator
     def test_requested_domain_errors_consistent(self):
         """Tests if the errors on submit and with the check availability buttons are consistent
         for requested_domains
@@ -150,6 +161,7 @@ class TestFormValidation(MockEppLib):
                 # for good measure, test if the two objects are equal anyway
                 self.assertEqual([json_error], form_error)
 
+    @less_console_noise_decorator
     def test_alternate_domain_errors_consistent(self):
         """Tests if the errors on submit and with the check availability buttons are consistent
         for alternative_domains
@@ -200,6 +212,7 @@ class TestFormValidation(MockEppLib):
                 # for good measure, test if the two objects are equal anyway
                 self.assertEqual([json_error], form_error)
 
+    @less_console_noise_decorator
     def test_requested_domain_two_dots_invalid(self):
         """don't accept domains that are subdomains"""
         form = DotGovDomainForm(data={"requested_domain": "sub.top-level-agency.gov"})
@@ -218,6 +231,7 @@ class TestFormValidation(MockEppLib):
             ["Enter the .gov domain you want without any periods."],
         )
 
+    @less_console_noise_decorator
     def test_requested_domain_invalid_characters(self):
         """must be a valid .gov domain name."""
         form = DotGovDomainForm(data={"requested_domain": "underscores_forever"})
@@ -226,6 +240,7 @@ class TestFormValidation(MockEppLib):
             ["Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens)."],
         )
 
+    @less_console_noise_decorator
     def test_senior_official_email_invalid(self):
         """must be a valid email address."""
         form = SeniorOfficialForm(data={"email": "boss@boss"})
@@ -234,6 +249,7 @@ class TestFormValidation(MockEppLib):
             ["Enter an email address in the required format, like name@example.com."],
         )
 
+    @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
         """Response must be less than 2000 characters."""
         form = PurposeForm(
@@ -281,6 +297,7 @@ class TestFormValidation(MockEppLib):
             ["Response must be less than 2000 characters."],
         )
 
+    @less_console_noise_decorator
     def test_anything_else_form_about_your_organization_character_count_invalid(self):
         """Response must be less than 2000 characters."""
         form = AnythingElseForm(
@@ -327,6 +344,7 @@ class TestFormValidation(MockEppLib):
             ["Response must be less than 2000 characters."],
         )
 
+    @less_console_noise_decorator
     def test_anything_else_form_character_count_invalid(self):
         """Response must be less than 2000 characters."""
         form = AboutYourOrganizationForm(
@@ -375,6 +393,7 @@ class TestFormValidation(MockEppLib):
             ["Response must be less than 2000 characters."],
         )
 
+    @less_console_noise_decorator
     def test_other_contact_email_invalid(self):
         """must be a valid email address."""
         form = OtherContactsForm(data={"email": "splendid@boss"})
@@ -383,11 +402,13 @@ class TestFormValidation(MockEppLib):
             ["Enter an email address in the required format, like name@example.com."],
         )
 
+    @less_console_noise_decorator
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "super@boss"})
         self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
 
+    @less_console_noise_decorator
     def test_requirements_form_blank(self):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={})
@@ -396,6 +417,7 @@ class TestFormValidation(MockEppLib):
             ["Check the box if you read and agree to the requirements for operating a .gov domain."],
         )
 
+    @less_console_noise_decorator
     def test_requirements_form_unchecked(self):
         """Requirements box unchecked is an error."""
         form = RequirementsForm(data={"is_policy_acknowledged": False})
@@ -404,6 +426,7 @@ class TestFormValidation(MockEppLib):
             ["Check the box if you read and agree to the requirements for operating a .gov domain."],
         )
 
+    @less_console_noise_decorator
     def test_tribal_government_unrecognized(self):
         """Not state or federally recognized is an error."""
         form = TribalGovernmentForm(data={"state_recognized": False, "federally_recognized": False})
@@ -411,10 +434,12 @@ class TestFormValidation(MockEppLib):
 
 
 class TestContactForm(TestCase):
+    @less_console_noise_decorator
     def test_contact_form_email_invalid(self):
         form = ContactForm(data={"email": "example.net"})
         self.assertEqual(form.errors["email"], ["Enter a valid email address."])
 
+    @less_console_noise_decorator
     def test_contact_form_email_invalid2(self):
         form = ContactForm(data={"email": "@"})
         self.assertEqual(form.errors["email"], ["Enter a valid email address."])
@@ -442,7 +467,6 @@ class TestBasePortfolioMemberForms(TestCase):
         if instance is not None:
             form = form_class(data=data, instance=instance)
         else:
-            print("no instance")
             form = form_class(data=data)
         self.assertTrue(form.is_valid(), f"Form {form_class.__name__} failed validation with data: {data}")
         return form
@@ -465,38 +489,30 @@ class TestBasePortfolioMemberForms(TestCase):
         for permission in expected_permissions:
             self.assertIn(permission, cleaned_data["additional_permissions"])
 
-    def test_required_field_for_admin(self):
-        """Test that required fields are validated for an admin role."""
-        data = {
-            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
-            "domain_request_permission_admin": "",  # Simulate missing field
-            "member_permission_admin": "",  # Simulate missing field
-        }
-
-        # Check required fields for all forms
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_admin")
-        self._assert_form_has_error(PortfolioMemberForm, data, "member_permission_admin")
-
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permission_admin")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permission_admin")
-
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permission_admin")
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "member_permission_admin")
-
+    @less_console_noise_decorator
     def test_required_field_for_member(self):
         """Test that required fields are validated for a member role."""
         data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-            "domain_request_permission_member": "",  # Simulate missing field
+            "domain_request_permissions": "",  # Simulate missing field
+            "domain_permissions": "",  # Simulate missing field
+            "member_permissions": "",  # Simulate missing field
         }
 
         # Check required fields for all forms
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_member")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permission_member")
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permission_member")
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions")
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_permissions")
+        self._assert_form_has_error(PortfolioMemberForm, data, "member_permissions")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permissions")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_permissions")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions")
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permissions")
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_permissions")
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "member_permissions")
 
-    def test_clean_validates_required_fields_for_role(self):
-        """Test that the `clean` method validates the correct fields for each role.
+    @less_console_noise_decorator
+    def test_clean_validates_required_fields_for_admin_role(self):
+        """Test that the `clean` method validates the correct fields for admin role.
 
         For PortfolioMemberForm and PortfolioInvitedMemberForm, we pass an object as the instance to the form.
         For UserPortfolioPermissionChoices, we add a portfolio and an email to the POST data.
@@ -510,34 +526,80 @@ class TestBasePortfolioMemberForms(TestCase):
 
         data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
-            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
-            "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS.value,
         }
 
         # Check form validity for all forms
         form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
-        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
 
         form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
-        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
 
         data = {
             "email": "hi@ho.com",
             "portfolio": self.portfolio.id,
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
-            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
-            "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS.value,
         }
 
         form = self._assert_form_is_valid(PortfolioNewMemberForm, data)
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value])
-        self.assertEqual(cleaned_data["additional_permissions"], [UserPortfolioPermissionChoices.EDIT_MEMBERS])
 
+    @less_console_noise_decorator
+    def test_clean_validates_required_fields_for_basic_role(self):
+        """Test that the `clean` method validates the correct fields for basic role.
+
+        For PortfolioMemberForm and PortfolioInvitedMemberForm, we pass an object as the instance to the form.
+        For UserPortfolioPermissionChoices, we add a portfolio and an email to the POST data.
+
+        These things are handled in the views."""
+
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=self.user
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
+
+        data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value,
+            "member_permissions": UserPortfolioPermissionChoices.VIEW_MEMBERS.value,
+        }
+
+        # Check form validity for all forms
+        form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
+        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
+        self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
+
+        form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
+        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
+        self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
+
+        data = {
+            "email": "hi@ho.com",
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value,
+            "member_permissions": UserPortfolioPermissionChoices.VIEW_MEMBERS.value,
+        }
+
+        form = self._assert_form_is_valid(PortfolioNewMemberForm, data)
+        cleaned_data = form.cleaned_data
+        self.assertEqual(cleaned_data["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value])
+        self.assertEqual(cleaned_data["domain_request_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value)
+        self.assertEqual(cleaned_data["domain_permissions"], UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value)
+        self.assertEqual(cleaned_data["member_permissions"], UserPortfolioPermissionChoices.VIEW_MEMBERS.value)
+
+    @less_console_noise_decorator
     def test_clean_member_permission_edgecase(self):
         """Test that the clean method correctly handles the special "no_access" value for members.
         We'll need to add a portfolio, which in the app is handled by the view post."""
@@ -549,38 +611,38 @@ class TestBasePortfolioMemberForms(TestCase):
 
         data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-            "domain_request_permission_member": "no_access",  # Simulate no access permission
+            "domain_request_permissions": "no_access",  # Simulate no access permission
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value,
+            "member_permissions": UserPortfolioPermissionChoices.VIEW_MEMBERS.value,
         }
 
         form = self._assert_form_is_valid(PortfolioMemberForm, data, user_portfolio_permission)
         cleaned_data = form.cleaned_data
-        self.assertEqual(cleaned_data["domain_request_permission_member"], None)
+        self.assertEqual(cleaned_data["domain_request_permissions"], None)
 
         form = self._assert_form_is_valid(PortfolioInvitedMemberForm, data, portfolio_invitation)
         cleaned_data = form.cleaned_data
-        self.assertEqual(cleaned_data["domain_request_permission_member"], None)
+        self.assertEqual(cleaned_data["domain_request_permissions"], None)
 
+    @less_console_noise_decorator
     def test_map_instance_to_initial_admin_role(self):
         """Test that instance data is correctly mapped to the initial form values for an admin role."""
         user_portfolio_permission = UserPortfolioPermission(
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
         )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
             portfolio=self.portfolio,
             email="hi@ho",
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
         )
 
         expected_initial_data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-            "domain_request_permission_admin": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-            "member_permission_admin": UserPortfolioPermissionChoices.VIEW_MEMBERS,
         }
         self._assert_initial_data(PortfolioMemberForm, user_portfolio_permission, expected_initial_data)
         self._assert_initial_data(PortfolioInvitedMemberForm, portfolio_invitation, expected_initial_data)
 
+    @less_console_noise_decorator
     def test_map_instance_to_initial_member_role(self):
         """Test that instance data is correctly mapped to the initial form values for a member role."""
         user_portfolio_permission = UserPortfolioPermission(
@@ -595,19 +657,21 @@ class TestBasePortfolioMemberForms(TestCase):
         )
         expected_initial_data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
-            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         }
         self._assert_initial_data(PortfolioMemberForm, user_portfolio_permission, expected_initial_data)
         self._assert_initial_data(PortfolioInvitedMemberForm, portfolio_invitation, expected_initial_data)
 
-    def test_invalid_data_for_admin(self):
-        """Test invalid form submission for an admin role with missing permissions."""
+    @less_console_noise_decorator
+    def test_invalid_data_for_member(self):
+        """Test invalid form submission for a member role with missing permissions."""
         data = {
             "email": "hi@ho.com",
             "portfolio": self.portfolio.id,
-            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
-            "domain_request_permission_admin": "",  # Missing field
-            "member_permission_admin": "",  # Missing field
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+            "domain_request_permissions": "",  # Missing field
+            "member_permissions": "",  # Missing field
+            "domain_permissions": "",  # Missing field
         }
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permission_admin")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permission_admin")
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions")
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions")
