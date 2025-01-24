@@ -99,6 +99,11 @@ th {
     text-transform: none;
   }
 
+  // usa-tag overrides any color by default. This is a workaround.
+  .usa-tag.primary-dark {
+    background-color: color('primary-dark');
+  }
+
   @include at-media(tablet-lg) {
     th[data-sortable] .usa-table__header__button {
       right: auto;
