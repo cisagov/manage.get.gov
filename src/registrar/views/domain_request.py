@@ -107,15 +107,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
         Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
         Step.ORGANIZATION_ELECTION: lambda self: self.domain_request.is_election_board is not None,
-        Step.ORGANIZATION_CONTACT: lambda self: (
-            self.domain_request.federal_agency is not None
-            or self.domain_request.organization_name is not None
-            or self.domain_request.address_line1 is not None
-            or self.domain_request.city is not None
-            or self.domain_request.state_territory is not None
-            or self.domain_request.zipcode is not None
-            or self.domain_request.urbanization is not None
-        ),
+        Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (

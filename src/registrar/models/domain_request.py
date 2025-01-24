@@ -14,8 +14,7 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user
-
+from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -1288,6 +1287,29 @@ class DomainRequest(TimeStampedModel):
         if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
             return True
         return False
+
+    def unlock_organization_contact(self) -> bool:
+        """Unlocks the organization_contact step."""
+
+        # NOTE: This check may struggle with a high number of portfolios, consider something else then.
+        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
+            # Check if the current federal agency is an outlawed one
+            Portfolio = apps.get_model("registrar.Portfolio")
+            return FederalAgency.objects.exclude(
+                agency__in=Portfolio.objects.values_list("organization_name", flat=True),
+            ).filter(agency=self.federal_agency).exists()
+
+        # NOTE: Shouldn't this be an AND on all required fields?
+        return (
+            self.domain_request.federal_agency is not None
+            or self.domain_request.organization_name is not None
+            or self.domain_request.address_line1 is not None
+            or self.domain_request.city is not None
+            or self.domain_request.state_territory is not None
+            or self.domain_request.zipcode is not None
+            or self.domain_request.urbanization is not None
+        )
+
 
     # ## Form policies ## #
     #
