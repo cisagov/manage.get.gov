@@ -200,8 +200,17 @@ class BasePortfolioMemberForm(forms.ModelForm):
         # }
 
         self.fields["domain_permissions"].descriptions = {
-            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: "test1",
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: "test2",
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: "Can view only the domains they manage",
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: "Can view all domains for the organization",
+        }
+        self.fields["domain_request_permissions"].descriptions = {
+            UserPortfolioPermissionChoices.EDIT_REQUESTS.value: "Can view all domain requests for the organization and create requests",
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value: "Can view all domain requests for the organization",
+            "no_access": "Cannot view or create domain requests"
+        }
+        self.fields["member_permissions"].descriptions = {
+            UserPortfolioPermissionChoices.VIEW_MEMBERS.value: "Can view all members permissions",
+            "no_access": "Cannot view member permissions"
         }
 
         # Map model instance values to custom form fields
