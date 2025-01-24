@@ -25,11 +25,9 @@ ALLOWED_PORTFOLIOS = [
     "Department of the Treasury",
     "National Archives and Records Administration",
     "Department of Defense",
-    "Department of Defense",
     "Office of Personnel Management",
     "National Aeronautics and Space Administration",
     "City and County of San Francisco",
-    "State of Arizona, Executive Branch",
     "State of Arizona, Executive Branch",
     "Department of the Interior",
     "Department of State",
@@ -205,7 +203,7 @@ class Command(BaseCommand):
                             for suborg in suborganizations:
                                 DomainInformation.objects.filter(sub_organization=suborg).update(sub_organization=None)
                                 DomainRequest.objects.filter(sub_organization=suborg).update(sub_organization=None)
-                                portfolio_summary.append(f"{suborg.name}\n")
+                                portfolio_summary.append(f"{suborg.name}")
                                 suborg.delete()
 
                     portfolio.delete()
