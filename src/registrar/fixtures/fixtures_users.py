@@ -361,22 +361,28 @@ class UserFixture:
 
     @staticmethod
     def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers):
-        return [
-            User(
-                id=user_data.get("id"),
-                first_name=user_data.get("first_name"),
-                last_name=user_data.get("last_name"),
-                username=user_data.get("username"),
-                email=user_data.get("email", ""),
-                title=user_data.get("title", "Peon"),
-                phone=user_data.get("phone", "2022222222"),
-                is_active=user_data.get("is_active", True),
-                is_staff=True,
-                is_superuser=are_superusers,
-            )
-            for user_data in users
-            if user_data.get("username") not in existing_usernames and user_data.get("id") not in existing_user_ids
-        ]
+        new_users = []
+        for user_data in users:
+            username = user_data.get("username")
+            id = user_data.get("id")
+            first_name = user_data.get("first_name")
+            last_name = user_data.get("last_name")
+            email = user_data.get("email", f"placeholder.{first_name}.{last_name}@igorville.gov")
+            if username not in existing_usernames and id not in existing_user_ids:
+                user = User(
+                    id=id,
+                    first_name=first_name,
+                    last_name=last_name,
+                    username=username,
+                    email=email,
+                    title=user_data.get("title", "Peon"),
+                    phone=user_data.get("phone", "2022222222"),
+                    is_active=user_data.get("is_active", True),
+                    is_staff=True,
+                    is_superuser=are_superusers,
+                )
+                new_users.append(user)
+        return new_users
 
     @staticmethod
     def _create_new_users(new_users):

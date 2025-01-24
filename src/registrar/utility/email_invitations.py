@@ -7,7 +7,6 @@ from registrar.utility.errors import (
     MissingEmailError,
     OutsideOrgMemberError,
 )
-from django.db.models import Q
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.utility.email import EmailSendingError, send_templated_email
 import logging
@@ -61,9 +60,6 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(
         domain=domain, 
-    ).exclude(
-        Q(user__email__isnull=True) | 
-        Q(user__email="")
     )
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
