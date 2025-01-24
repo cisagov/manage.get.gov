@@ -1043,27 +1043,19 @@ class TestPortfolio(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_can_view_invitedmember_page_when_user_has_edit_members(self):
-        """Test that user can access the invitedmember page with edit_members permission"""
+        """Test that user can access the invitedmember page with org admin role"""
 
         # Arrange
-        # give user permissions to view AND manage members
+        # give user admin role
         permission_obj, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
         )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
             email="info@example.com",
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
         )
 
         # Verify the page can be accessed
@@ -1074,9 +1066,10 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "Invited")
         self.assertContains(response, portfolio_invitation.email)
-        self.assertContains(response, "Admin access")
-        self.assertContains(response, "View all requests plus create requests")
-        self.assertContains(response, "View all members plus manage members")
+        self.assertContains(response, "Admin")
+        self.assertContains(response, "Viewer, all")
+        self.assertContains(response, "Creator")
+        self.assertContains(response, "Manager")
         self.assertContains(
             response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
         )
@@ -1404,15 +1397,11 @@ class TestPortfolio(WebTest):
         # In the members_table.html we use data-has-edit-permission as a boolean
         # to indicate if a user has permission to edit members in the specific portfolio
 
-        # 1. User w/ edit permission
+        # 1. User w/ edit permission. This permission is included in Organization admin role
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            ],
         )
 
         # Create a member under same portfolio
@@ -1433,12 +1422,13 @@ class TestPortfolio(WebTest):
 
         self.assertContains(response, 'data-has-edit-permission="True"')
 
-        # 2. User w/o edit permission (additional permission of EDIT_MEMBERS removed)
+        # 2. User w/o edit permission.
         permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
 
-        # Remove the EDIT_MEMBERS additional permission
+        # Update to basic member with view members permission
+        permission.roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         permission.additional_permissions = [
-            perm for perm in permission.additional_permissions if perm != UserPortfolioPermissionChoices.EDIT_MEMBERS
+            UserPortfolioPermissionChoices.VIEW_MEMBERS,
         ]
 
         # Save the updated permissions list
@@ -3123,7 +3113,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
                 reverse("new-member"),
                 {
                     "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                    "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                    "member_permissions": "no_access",
                     "email": self.new_member_email,
                 },
             )
@@ -3164,7 +3156,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
                 reverse("new-member"),
                 {
                     "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                    "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                    "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                    "member_permissions": "no_access",
                     "email": self.new_member_email,
                 },
                 HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -3241,7 +3235,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         form_data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+            "member_permissions": "no_access",
             "email": self.new_member_email,
         }
 
@@ -3280,7 +3276,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         form_data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+            "member_permissions": "no_access",
             "email": self.new_member_email,
         }
 
@@ -3322,7 +3320,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
         form_data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-            "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+            "member_permissions": "no_access",
             "email": self.new_member_email,
         }
 
@@ -3448,7 +3448,9 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             reverse("new-member"),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                "member_permissions": "no_access",
                 "email": "newuser@example.com",
             },
         )
@@ -3532,8 +3534,6 @@ class TestEditPortfolioMemberView(WebTest):
             reverse("member-permissions", kwargs={"pk": basic_permission.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
             },
         )
 
@@ -3543,13 +3543,6 @@ class TestEditPortfolioMemberView(WebTest):
         # Verify database changes
         basic_permission.refresh_from_db()
         self.assertEqual(basic_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-        self.assertEqual(
-            set(basic_permission.additional_permissions),
-            {
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            },
-        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -3567,18 +3560,21 @@ class TestEditPortfolioMemberView(WebTest):
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": permission.id}),
             {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
                 # Missing required admin fields
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.context["form"].errors["domain_request_permission_admin"][0],
-            "Admin domain request permission is required",
+            response.context["form"].errors["domain_request_permissions"][0],
+            "Domain request permission is required",
         )
         self.assertEqual(
-            response.context["form"].errors["member_permission_admin"][0], "Admin member permission is required"
+            response.context["form"].errors["member_permissions"][0], "Member permission is required"
+        )
+        self.assertEqual(
+            response.context["form"].errors["domain_permissions"][0], "Domain permission is required"
         )
 
     @less_console_noise_decorator
@@ -3593,8 +3589,6 @@ class TestEditPortfolioMemberView(WebTest):
             reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                "domain_request_permission_admin": UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                "member_permission_admin": UserPortfolioPermissionChoices.EDIT_MEMBERS,
             },
         )
 
@@ -3603,13 +3597,6 @@ class TestEditPortfolioMemberView(WebTest):
         # Verify invitation was updated
         updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
         self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-        self.assertEqual(
-            set(updated_invitation.additional_permissions),
-            {
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            },
-        )
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -3631,7 +3618,9 @@ class TestEditPortfolioMemberView(WebTest):
             reverse("member-permissions", kwargs={"pk": admin_permission.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
-                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
             },
         )
 
