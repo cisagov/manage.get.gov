@@ -94,7 +94,7 @@ export function initAddNewMemberPageListeners() {
     const permissionDetailsContainer = document.getElementById("permission_details");
     permissionDetailsContainer.innerHTML = ""; // Clear previous content
 
-    if (permission_details_div_id == 'new-member-basic-permissions') {
+    if (permission_details_div_id == 'member-basic-permissions') {
       // for basic users, display values are based on selections in the form
       // Get all permission sections (divs with h3 and radio inputs)
       const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
@@ -181,7 +181,7 @@ export function initAddNewMemberPageListeners() {
       if (selectedAccess && selectedAccess.value === 'organization_admin') {
         populatePermissionDetails('admin');
       } else {
-        populatePermissionDetails('new-member-basic-permissions');
+        populatePermissionDetails('member-basic-permissions');
       }
 
       //------- Show the modal
@@ -198,20 +198,12 @@ export function initPortfolioMemberPageRadio() {
   document.addEventListener("DOMContentLoaded", () => {
       let memberForm = document.getElementById("member_form");
       let newMemberForm = document.getElementById("add_member_form")
-      if (memberForm) {
+      if (memberForm || newMemberForm) {
         hookupRadioTogglerListener(
           'role', 
           {
             'organization_admin': '',
             'organization_member': 'member-basic-permissions'
-          }
-        );
-      }else if (newMemberForm){
-        hookupRadioTogglerListener(
-          'role', 
-          {
-              'organization_admin': '',
-              'organization_member': 'new-member-basic-permissions'
           }
         );
       }

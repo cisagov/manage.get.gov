@@ -132,6 +132,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         ],
         widget=forms.RadioSelect,
         required=False,
+        initial=UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
         error_messages={
             "required": "Member domain permission is required",
         },
@@ -146,6 +147,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         ],
         widget=forms.RadioSelect,
         required=False,
+        initial="no_access",
         error_messages={
             "required": "Basic member permission is required",
         },
@@ -158,6 +160,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         ],
         widget=forms.RadioSelect,
         required=False,
+        initial="no_access",
         error_messages={
             "required": "Admin member permission is required",
         },

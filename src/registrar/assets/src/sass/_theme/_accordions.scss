@@ -49,3 +49,29 @@ tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
     bottom: -10px;
     right: 30px;
 }
+
+.usa-accordion--show-more {
+    width: auto;
+    .usa-accordion__button[aria-expanded=false],
+    .usa-accordion__button[aria-expanded=false]:hover,
+    .usa-accordion__button[aria-expanded=true],
+    .usa-accordion__button[aria-expanded=true]:hover {
+        background-image: none;
+        background-color: transparent;
+        padding-right: 0;
+        padding-left: 0;
+        font-weight: normal;
+    }
+    .usa-accordion__button[aria-expanded=true] .expand-more {
+        display: inline-block;
+    }
+    .usa-accordion__button[aria-expanded=true] .expand-less {
+        display: none;
+    }
+    .usa-accordion__button[aria-expanded=false] .expand-more {
+        display: none;
+    }
+    .usa-accordion__button[aria-expanded=false] .expand-less {
+        display: inline-block;
+    }
+}
