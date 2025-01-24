@@ -50,6 +50,7 @@ tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
     right: 30px;
 }
 
+// A CSS only show-more/show-less based on usa-accordion
 .usa-accordion--show-more {
     width: auto;
     .usa-accordion__button[aria-expanded=false],

@@ -1,0 +1,20 @@
+{% load field_helpers %}
+<div id="member-basic-permissions" class="margin-top-2">
+    <h2>What permissions do you want to add?</h2>
+    <p>Configure the permissions for this member. Basic members cannot manage member permissions or organization metadata.</p>
+
+    <h3 class="margin-bottom-0">Domains <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="usa-form-editable bg-gray-1 border-top-0 margin-top-0 border-bottom padding-top-0" add_legend_class="usa-sr-only" %}
+        {% input_with_errors form.domain_permissions %}
+      {% endwith %}
+
+    <h3 class="margin-bottom-0">Domain requests <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" add_legend_class="usa-sr-only" %}
+        {% input_with_errors form.domain_request_permissions %}
+      {% endwith %}
+
+    <h3 class="margin-bottom-0">Members <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" add_legend_class="usa-sr-only" %}
+        {% input_with_errors form.member_permissions %}
+      {% endwith %}
+</div>

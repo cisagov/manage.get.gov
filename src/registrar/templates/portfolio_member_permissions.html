@@ -90,27 +90,10 @@
 
   </fieldset>
 
+  {% include "includes/member_permissions_matrix.html" %}
+
   <!-- Basic access form -->
-  <div id="member-basic-permissions" class="margin-top-2">
-    <h2>Basic member permissions</h2>
-    <p>Member permissions available for basic-level acccess.</p>
-
-    <h3 class="margin-bottom-0">Domains <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" add_legend_class="usa-sr-only" %}
-        {% input_with_errors form.domain_permissions %}
-      {% endwith %}
-
-    <h3 class="margin-bottom-0">Domain requests <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" add_legend_class="usa-sr-only" %}
-        {% input_with_errors form.domain_request_permissions %}
-      {% endwith %}
-
-    <h3 class="margin-bottom-0">Members <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" add_legend_class="usa-sr-only" %}
-        {% input_with_errors form.member_permissions %}
-      {% endwith %}
-    
-  </div>
+  {% include "includes/member_basic_permissions.html" %}
 
     <!-- Submit/cancel buttons -->
     <div class="margin-top-3">
