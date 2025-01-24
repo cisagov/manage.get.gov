@@ -270,7 +270,7 @@ export class MembersTable extends BaseTable {
     // Only generate HTML if the member has one or more assigned domains
     if (num_domains > 0) {
       domainsHTML += "<div class='desktop:grid-col-5 margin-bottom-2 desktop:margin-bottom-0'>";
-      domainsHTML += "<h4 class='font-body-xs margin-y-0 text-primary'>Domains assigned</h4>";
+      domainsHTML += "<h4 class='font-body-xs margin-y-0'>Domains assigned</h4>";
       domainsHTML += `<p class='font-body-xs text-base-dark margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
       domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
 
@@ -431,7 +431,7 @@ export class MembersTable extends BaseTable {
     }
 
     // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = `<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0 text-primary'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
+    permissionsHTML = `<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
     
     return permissionsHTML;
   }
