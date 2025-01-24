@@ -133,7 +133,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=False,
         error_messages={
-            "required": "Member domain permission is required",
+            "required": "Domain permission is required",
         },
     )
 
@@ -147,7 +147,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=False,
         error_messages={
-            "required": "Basic member permission is required",
+            "required": "Domain request permission is required",
         },
     )
 
@@ -159,7 +159,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=False,
         error_messages={
-            "required": "Admin member permission is required",
+            "required": "Member permission is required",
         },
     )
 
