@@ -121,7 +121,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Member access level is required",
+            "required": "Select the level of access you would like to grant this member.",
         },
     )
 
@@ -134,7 +134,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         required=False,
         initial=UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
         error_messages={
-            "required": "Domain permission is required",
+            "required": "Domain permission is required.",
         },
     )
 
@@ -149,7 +149,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         required=False,
         initial="no_access",
         error_messages={
-            "required": "Domain request permission is required",
+            "required": "Domain request permission is required.",
         },
     )
 
@@ -162,7 +162,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         required=False,
         initial="no_access",
         error_messages={
-            "required": "Member permission is required",
+            "required": "Member permission is required.",
         },
     )
 
@@ -192,16 +192,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
         """
         super().__init__(*args, **kwargs)
         
-        # Adds a <p> description beneath each role option
-        # self.fields["role"].descriptions = {
-        #     "organization_admin": UserPortfolioRoleChoices.get_role_description(
-        #         UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-        #     ),
-        #     "organization_member": UserPortfolioRoleChoices.get_role_description(
-        #         UserPortfolioRoleChoices.ORGANIZATION_MEMBER
-        #     ),
-        # }
-
+        # Adds a <p> description beneath each option
         self.fields["domain_permissions"].descriptions = {
             UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: "Can view only the domains they manage",
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: "Can view all domains for the organization",
