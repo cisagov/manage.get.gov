@@ -1693,7 +1693,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty results and return sorted list of unique values
-            return sorted([(org, org) for org in queryset if org])
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
         def queryset(self, request, queryset):
             if self.value():
@@ -2049,7 +2049,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty results and return sorted list of unique values
-            return sorted([(org, org) for org in queryset if org])
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
         def queryset(self, request, queryset):
             if self.value():
@@ -3264,7 +3264,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty results and return sorted list of unique values
-            return sorted([(org, org) for org in queryset if org])
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
         def queryset(self, request, queryset):
             if self.value():
