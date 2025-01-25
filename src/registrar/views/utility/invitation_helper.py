@@ -67,14 +67,8 @@ def handle_invitation_exceptions(request, exception, email):
         messages.error(request, str(exception))
         logger.error(str(exception), exc_info=True)
     elif isinstance(exception, OutsideOrgMemberError):
-        logger.warning(
-            "Could not send email. Can not invite member of a .gov organization to a different organization.",
-            exc_info=True,
-        )
-        messages.error(
-            request,
-            f"{email} is already a member of another .gov organization.",
-        )
+        messages.error(request, str(exception))
+        logger.warning(str(exception), exc_info=True)
     elif isinstance(exception, AlreadyDomainManagerError):
         messages.warning(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
