@@ -1,7 +1,7 @@
 # HOWTO Rotate the Application's Secrets
 ========================
 
-Below you will find sections for each of the application secrets which can & will be changed individual and expire at different times. Secrets are read from the running environment.
+Below you will find sections for each of the application secrets which can & will be changed individually and expire at different times. Secrets are read from the running environment.
 
 Secrets are originally created with:
 
