@@ -1,1 +1,0 @@
-A domain manager was removed from {{ domain.name }}
