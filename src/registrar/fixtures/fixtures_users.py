@@ -196,6 +196,7 @@ class UserFixture:
             "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
             "first_name": "Alysia-Analyst",
             "last_name": "Alysia-Analyst",
+            "email": "abroddrick+1@truss.works",
         },
         {
             "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
@@ -362,12 +363,14 @@ class UserFixture:
     @staticmethod
     def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers):
         new_users = []
-        for user_data in users:
+        for i, user_data in enumerate(users):
             username = user_data.get("username")
             id = user_data.get("id")
-            first_name = user_data.get("first_name")
-            last_name = user_data.get("last_name")
-            email = user_data.get("email", f"placeholder.{first_name}.{last_name}@igorville.gov")
+            first_name = user_data.get("first_name", "Bob")
+            last_name = user_data.get("last_name", "Builder")
+
+            default_email = f"placeholder.{first_name.lower()}.{last_name.lower()}+{i}@igorville.gov"
+            email = user_data.get("email", default_email)
             if username not in existing_usernames and id not in existing_user_ids:
                 user = User(
                     id=id,
