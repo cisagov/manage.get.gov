@@ -122,6 +122,16 @@ class Portfolio(TimeStampedModel):
         if self.state_territory != self.StateTerritoryChoices.PUERTO_RICO and self.urbanization:
             self.urbanization = None
 
+        # If the org type is federal, and org federal agency is not blank, and is a federal agency
+        # overwrite the organization name with the federal agency's agency
+        if (
+            self.organization_type == self.OrganizationChoices.FEDERAL
+            and self.federal_agency
+            and self.federal_agency != FederalAgency.get_non_federal_agency()
+            and self.federal_agency.agency
+        ):
+            self.organization_name = self.federal_agency.agency
+
         super().save(*args, **kwargs)
 
     @property
