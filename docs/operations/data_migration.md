@@ -907,13 +907,14 @@ Example (only requests): `./manage.py create_federal_portfolio --branch "executi
 ```docker-compose exec app ./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
 
 ##### Parameters
-|   | Parameter                  | Description                                                                                |
-|:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
-| 1 | **agency_name**            | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
-| 2 | **branch**                 | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
-| 3 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
-| 4 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
-| 5 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
+|   | Parameter                    | Description                                                                                |
+|:-:|:---------------------------- |:-------------------------------------------------------------------------------------------|
+| 1 | **agency_name**              | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
+| 2 | **branch**                   | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
+| 3 | **both**                     | If True, runs parse_requests and parse_domains.                                            |
+| 4 | **parse_requests**           | If True, then the created portfolio is added to all related DomainRequests.                |
+| 5 | **parse_domains**            | If True, then the created portfolio is added to all related Domains.                       |
+| 6 | **skip_existing_portfolios** | If True, then the script will only iterate through DomainRequest / DomainInfo records with portfolio__isnull=True         |
 
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
 - Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
