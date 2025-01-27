@@ -103,6 +103,7 @@ export class EditMemberDomainsTable extends BaseTable {
       disabled = true;
     }
     
+    // uses margin-right-neg-5 as a hack to increase the text-wrapping width on this table
     row.innerHTML = `
         <th scope="row" role="rowheader" data-label="Selection" data-sort-value="0" class="padding-right-105">
             <div class="usa-checkbox">

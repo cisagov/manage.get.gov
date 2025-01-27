@@ -197,7 +197,7 @@ export class MembersTable extends BaseTable {
         if (ariaLabelPlaceholder) {
           ariaLabelText = `Expand for additional information for ${ariaLabelPlaceholder}`;
         }
-        toggleButton.setAttribute('aria-label', 'Expand for additional information');
+        toggleButton.setAttribute('aria-label', ariaLabelText);
       }
     }
   
@@ -398,7 +398,7 @@ export class MembersTable extends BaseTable {
    * - If no relevant permissions are found, the function returns a message stating that the user has no additional permissions.
    * - The resulting HTML always includes a header "Additional permissions for this member" and appends the relevant permission descriptions.
    */
-  generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices, unique_id) {
+  generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices) {
     let permissionsHTML = '';
 
     // Define shared classes across elements for easier refactoring
