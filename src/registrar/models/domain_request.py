@@ -963,7 +963,6 @@ class DomainRequest(TimeStampedModel):
                     permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS], include_admin=True
                 )
                 cc_addresses = list(portfolio_view_requests_users.values_list("email", flat=True))
-                print("cc addresses: ", cc_addresses)
 
             send_templated_email(
                 email_template,
