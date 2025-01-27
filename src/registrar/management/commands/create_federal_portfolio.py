@@ -184,14 +184,22 @@ class Command(BaseCommand):
     def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
-        portfolio, _ = self.create_portfolio(federal_agency)
-        self.create_suborganizations(portfolio, federal_agency)
+        portfolio, created = self.create_portfolio(federal_agency)
+        if skip_existing_portfolios and not created:
+            TerminalHelper.colorful_logger(
+                logger.warning,
+                TerminalColors.YELLOW,
+                "Skipping modifications to suborgs, domain requests, and "
+                "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
+            )
+            return portfolio
 
+        self.create_suborganizations(portfolio, federal_agency)
         if parse_domains or both:
-            self.handle_portfolio_domains(portfolio, federal_agency, skip_existing_portfolios)
+            self.handle_portfolio_domains(portfolio, federal_agency)
 
         if parse_requests or both:
-            self.handle_portfolio_requests(portfolio, federal_agency, skip_existing_portfolios)
+            self.handle_portfolio_requests(portfolio, federal_agency)
 
         return portfolio
 
@@ -282,9 +290,7 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-    def handle_portfolio_requests(
-        self, portfolio: Portfolio, federal_agency: FederalAgency, skip_existing_portfolios: bool
-    ):
+    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
@@ -294,16 +300,7 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-
-        if skip_existing_portfolios:
-            domain_requests = DomainRequest.objects.filter(
-                federal_agency=federal_agency, portfolio__isnull=True
-            ).exclude(status__in=invalid_states)
-        else:
-            domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
-                status__in=invalid_states
-            )
-
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
@@ -346,20 +343,14 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-    def handle_portfolio_domains(
-        self, portfolio: Portfolio, federal_agency: FederalAgency, skip_existing_portfolios: bool
-    ):
+    def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domains for a federal agency.
         Updates all relevant domain information records.
 
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
-        if skip_existing_portfolios:
-            domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
-        else:
-            domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
-
+        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
