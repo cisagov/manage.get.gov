@@ -14,7 +14,8 @@ The person who received the invitation will become a domain manager once they lo
 .gov registrar. They'll need to access the registrar using a Login.gov account that's
 associated with the invited email address.
 
-If you need to cancel this invitation or remove the domain manager, you can do that by going to this domain in the .gov registrar <https://manage.get.gov/>.
+If you need to cancel this invitation or remove the domain manager, you can do that by going to 
+this domain in the .gov registrar <https://manage.get.gov/>.
 
 
 WHY DID YOU RECEIVE THIS EMAIL? 
