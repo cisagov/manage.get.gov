@@ -341,7 +341,11 @@ class DomainRenewalView(DomainBaseView):
         if Domain.objects.filter(id=pk).exists():
             requested_domain = Domain.objects.get(id=pk)
 
-        return requested_domain and requested_domain.is_editable() and (requested_domain.is_expiring() or requested_domain.is_expired())
+        return (
+            requested_domain
+            and requested_domain.is_editable()
+            and (requested_domain.is_expiring() or requested_domain.is_expired())
+        )
 
     def post(self, request, pk):
 
