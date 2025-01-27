@@ -2091,12 +2091,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty values and return sorted unique entries
-            return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
+            return sorted([(federal_type, DomainRequest.BranchChoices.get_branch_label(federal_type)) for federal_type in queryset if federal_type])
 
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_type=self.value()) | Q(portfolio__isnull=True, federal_type=self.value())
+                    Q(portfolio__federal_agency__federal_type=self.value()) | Q(portfolio__isnull=True, federal_type=self.value())
                 )
             return queryset
 
@@ -3307,7 +3307,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty values and return sorted unique entries
-            return sorted([(federal_type, federal_type) for federal_type in queryset if federal_type])
+            return sorted([(federal_type, DomainRequest.BranchChoices.get_branch_label(federal_type)) for federal_type in queryset if federal_type])
 
         def queryset(self, request, queryset):
             if self.value():

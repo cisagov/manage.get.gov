@@ -325,7 +325,7 @@ class DomainRequestFixture:
     @classmethod
     def _create_domain_requests(cls, users):  # noqa: C901
         """Creates DomainRequests given a list of users."""
-        total_domain_requests_to_make = users.count()  # 100000
+        total_domain_requests_to_make = len(users)  # 100000
 
         # Check if the database is already populated with the desired
         # number of entries.
