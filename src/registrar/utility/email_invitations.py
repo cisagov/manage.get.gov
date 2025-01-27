@@ -58,9 +58,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
         EmailSendingError
     """
     # Get each domain manager from list
-    user_domain_roles = UserDomainRole.objects.filter(
-        domain=domain,
-    )
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
