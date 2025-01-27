@@ -116,7 +116,7 @@ need to be specified in the environment.
 
 These are the login credentials for accessing the registry and they are set by cloudflare. They should notify us if and when these ever need to be changed.
 
-## Rotating REGISTRY_CERT and REGISTRY_KEY and REGISTRY_KEY_PASSPHRASE for Cloudflare environments
+## Rotating REGISTRY_CERT, REGISTRY_KEY, and REGISTRY_KEY_PASSPHRASE for Cloudflare environments
 
 These are the client certificate and its private key used to identify the registrar to the registry during the establishment of a TCP connection.
 
