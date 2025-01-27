@@ -434,12 +434,8 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             requested_domain_name = self.domain_request.requested_domain.name
 
         context = {}
-
-        # Note: we will want to consolidate the non_org_steps_complete check into the same check that
-        # org_steps_complete is using at some point.
-        non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
         org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
-        if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
+        if org_steps_complete:
             context = {
                 "form_titles": self.titles,
                 "steps": self.steps,
@@ -774,7 +770,8 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
-        if DomainRequest._form_complete(self.domain_request, self.request) is False:
+        form_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
+        if form_complete is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
