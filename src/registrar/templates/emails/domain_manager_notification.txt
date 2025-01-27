@@ -2,27 +2,22 @@
 Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
 
 A domain manager was invited to {{ domain.name }}.
-DOMAIN: {{ domain.name }}
+
 INVITED BY: {{ requestor_email }}
 INVITED ON: {{date}}
 MANAGER INVITED: {{ invited_email_address }}
 
-
 ----------------------------------------------------------------
 
-
 NEXT STEPS
-
 The person who received the invitation will become a domain manager once they log in to the
 .gov registrar. They'll need to access the registrar using a Login.gov account that's
 associated with the invited email address.
 
-If you need to cancel this invitation or remove the domain manager (because they've already
-logged in), you can do that by going to this domain in the .gov registrar <https://manage.get.gov/>.
+If you need to cancel this invitation or remove the domain manager, you can do that by going to this domain in the .gov registrar <https://manage.get.gov/>.
 
 
 WHY DID YOU RECEIVE THIS EMAIL? 
-
 You’re listed as a domain manager for {{ domain.name }}, so you’ll receive a notification whenever
 someone is invited to manage that domain.
 
