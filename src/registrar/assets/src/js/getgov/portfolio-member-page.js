@@ -22,7 +22,7 @@ export function initPortfolioNewMemberPageToggle() {
     
             // This easter egg is only for fixtures that dont have names as we are displaying their emails
             // All prod users will have emails linked to their account
-            MembersTable.addMemberDeleteModal(num_domains, member_email || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
+            MembersTable.addMemberDeleteModal(num_domains, member_email || member_name || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
     
             uswdsInitializeModals();
     
