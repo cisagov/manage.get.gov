@@ -64,6 +64,11 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
+        parser.add_argument(
+            "--skip_existing_portfolios",
+            action=argparse.BooleanOptionalAction,
+            help="Only add suborganizations to newly created portfolios, skip existing ones.",
+        )
 
     def handle(self, **options):
         agency_name = options.get("agency_name")
@@ -71,6 +76,7 @@ class Command(BaseCommand):
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
+        skip_existing_portfolios = options.get("skip_existing_portfolios")
 
         if not both:
             if not parse_requests and not parse_domains:
@@ -97,7 +103,9 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+                portfolio = self.handle_populate_portfolio(
+                    federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios
+                )
                 portfolios.append(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
@@ -173,16 +181,17 @@ class Command(BaseCommand):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
         portfolio, _ = self.create_portfolio(federal_agency)
         self.create_suborganizations(portfolio, federal_agency)
+
         if parse_domains or both:
-            self.handle_portfolio_domains(portfolio, federal_agency)
+            self.handle_portfolio_domains(portfolio, federal_agency, skip_existing_portfolios)
 
         if parse_requests or both:
-            self.handle_portfolio_requests(portfolio, federal_agency)
+            self.handle_portfolio_requests(portfolio, federal_agency, skip_existing_portfolios)
 
         return portfolio
 
@@ -273,7 +282,9 @@ class Command(BaseCommand):
         else:
             TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
 
-    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
+    def handle_portfolio_requests(
+        self, portfolio: Portfolio, federal_agency: FederalAgency, skip_existing_portfolios: bool
+    ):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
@@ -283,15 +294,22 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
-            status__in=invalid_states
-        )
+
+        if skip_existing_portfolios:
+            domain_requests = DomainRequest.objects.filter(
+                federal_agency=federal_agency, portfolio__isnull=True
+            ).exclude(status__in=invalid_states)
+        else:
+            domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
+                status__in=invalid_states
+            )
+
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
             This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
             Excluded statuses: STARTED, INELIGIBLE, REJECTED.
-            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
                 status__in=invalid_states
             )
             """
@@ -328,19 +346,25 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
-    def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
+    def handle_portfolio_domains(
+        self, portfolio: Portfolio, federal_agency: FederalAgency, skip_existing_portfolios: bool
+    ):
         """
         Associate portfolio with domains for a federal agency.
         Updates all relevant domain information records.
 
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
-        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+        if skip_existing_portfolios:
+            domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+        else:
+            domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
+
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
             The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency)
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
