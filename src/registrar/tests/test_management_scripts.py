@@ -3,7 +3,10 @@ import boto3_mocking  # type: ignore
 from datetime import date, datetime, time
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from registrar.models.domain_group import DomainGroup
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -2238,3 +2241,116 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         self.assertEqual(self.domain_information_1.sub_organization, keep_org)
         self.assertEqual(self.domain_request_2.sub_organization, unrelated_org)
         self.assertEqual(self.domain_information_2.sub_organization, unrelated_org)
+
+
+class TestRemovePortfolios(TestCase):
+    """Test the remove_unused_portfolios command"""
+
+    def setUp(self):
+        self.user = User.objects.create(username="testuser")
+
+        self.logger_patcher = patch("registrar.management.commands.export_tables.logger")
+        self.logger_mock = self.logger_patcher.start()
+
+        # Create mock database objects
+        self.portfolio_ok = Portfolio.objects.create(
+            organization_name="Department of Veterans Affairs", creator=self.user
+        )
+        self.unused_portfolio_with_related_objects = Portfolio.objects.create(
+            organization_name="Test with orphaned objects", creator=self.user
+        )
+        self.unused_portfolio_with_suborgs = Portfolio.objects.create(
+            organization_name="Test with suborg", creator=self.user
+        )
+
+        # Create related objects for unused_portfolio_with_related_objects
+        self.domain_information = DomainInformation.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+        )
+        self.domain_request = DomainRequest.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+        )
+        self.inv = PortfolioInvitation.objects.create(portfolio=self.unused_portfolio_with_related_objects)
+        self.group = DomainGroup.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, name="Test Domain Group"
+        )
+        self.perm = UserPortfolioPermission.objects.create(
+            portfolio=self.unused_portfolio_with_related_objects, user=self.user
+        )
+
+        # Create a suborganization and suborg related objects for unused_portfolio_with_suborgs
+        self.suborganization = Suborganization.objects.create(
+            portfolio=self.unused_portfolio_with_suborgs, name="Test Suborg"
+        )
+        self.suborg_domain_information = DomainInformation.objects.create(
+            sub_organization=self.suborganization, creator=self.user
+        )
+
+    def tearDown(self):
+        self.logger_patcher.stop()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
+    def test_delete_unlisted_portfolios(self, mock_query_yes_no):
+        """Test that portfolios not on the allowed list are deleted."""
+        mock_query_yes_no.return_value = True
+
+        # Ensure all portfolios exist before running the command
+        self.assertEqual(Portfolio.objects.count(), 3)
+
+        # Run the command
+        call_command("remove_unused_portfolios", debug=False)
+
+        # Check that the unlisted portfolio was removed
+        self.assertEqual(Portfolio.objects.count(), 1)
+        self.assertFalse(Portfolio.objects.filter(organization_name="Test with orphaned objects").exists())
+        self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())
+        self.assertTrue(Portfolio.objects.filter(organization_name="Department of Veterans Affairs").exists())
+
+    @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
+    def test_delete_entries_with_related_objects(self, mock_query_yes_no):
+        """Test deletion with related objects being handled properly."""
+        mock_query_yes_no.return_value = True
+
+        # Ensure related objects exist before running the command
+        self.assertEqual(DomainInformation.objects.count(), 2)
+        self.assertEqual(DomainRequest.objects.count(), 1)
+
+        # Run the command
+        call_command("remove_unused_portfolios", debug=False)
+
+        # Check that related objects were updated
+        self.assertEqual(
+            DomainInformation.objects.filter(portfolio=self.unused_portfolio_with_related_objects).count(), 0
+        )
+        self.assertEqual(DomainRequest.objects.filter(portfolio=self.unused_portfolio_with_related_objects).count(), 0)
+        self.assertEqual(DomainInformation.objects.filter(portfolio=None).count(), 2)
+        self.assertEqual(DomainRequest.objects.filter(portfolio=None).count(), 1)
+
+        # Check that the portfolio was deleted
+        self.assertFalse(Portfolio.objects.filter(organization_name="Test with orphaned objects").exists())
+
+    @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
+    def test_delete_entries_with_suborganizations(self, mock_query_yes_no):
+        """Test that suborganizations and their related objects are deleted along with the portfolio."""
+        mock_query_yes_no.return_value = True
+
+        # Ensure suborganization and related objects exist before running the command
+        self.assertEqual(Suborganization.objects.count(), 1)
+        self.assertEqual(DomainInformation.objects.filter(sub_organization=self.suborganization).count(), 1)
+
+        # Run the command
+        call_command("remove_unused_portfolios", debug=False)
+
+        # Check that the suborganization was deleted
+        self.assertEqual(Suborganization.objects.filter(portfolio=self.unused_portfolio_with_suborgs).count(), 0)
+
+        # Check that deletion of suborganization had cascading effects (orphaned DomainInformation)
+        self.assertEqual(DomainInformation.objects.filter(sub_organization=self.suborganization).count(), 0)
+
+        # Check that the portfolio was deleted
+        self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())

@@ -954,3 +954,40 @@ To create a specific portfolio:
 
 #### Step 1: Running the script
 ```docker-compose exec app ./manage.py patch_suborganizations```
+
+
+## Remove Non-whitelisted Portfolios
+This script removes Portfolio entries from the database that are not part of a predefined list of allowed portfolios (`ALLOWED_PORTFOLIOS`).
+It performs the following actions:
+1. Prompts the user for confirmation before proceeding with deletions.
+2. Updates related objects such as `DomainInformation`, `Domain`, and `DomainRequest` to set their `portfolio` field to `None` to prevent integrity errors.
+3. Deletes associated objects such as `PortfolioInvitation`, `UserPortfolioPermission`, and `Suborganization`.
+4. Logs a detailed summary of all cascading deletions and orphaned objects.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-nl`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+To remove portfolios: 
+```./manage.py remove_unused_portfolios```
+
+If you wish to enable debug mode for additional logging: 
+```./manage.py remove_unused_portfolios --debug```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py remove_unused_portfolios```
+
+To enable debug mode locally:
+```docker-compose exec app ./manage.py remove_unused_portfolios --debug```
