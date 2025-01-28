@@ -1300,8 +1300,6 @@ class DomainRequest(TimeStampedModel):
                 .filter(agency=self.federal_agency)
                 .exists()
             )
-
-        # NOTE: Shouldn't this be an AND on all required fields?
         return (
             self.federal_agency is not None
             or self.organization_name is not None
@@ -1311,6 +1309,17 @@ class DomainRequest(TimeStampedModel):
             or self.zipcode is not None
             or self.urbanization is not None
         )
+
+    def unlock_other_contacts(self) -> bool:
+        """Unlocks the other contacts step"""
+        other_contacts_filled_out = self.other_contacts.filter(
+            first_name__isnull=False,
+            last_name__isnull=False,
+            title__isnull=False,
+            email__isnull=False,
+            phone__isnull=False,
+        ).exists()
+        return (self.has_other_contacts() and other_contacts_filled_out) or self.no_other_contacts_rationale is not None
 
     # ## Form policies ## #
     #

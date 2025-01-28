@@ -115,9 +115,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         ),
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
-        Step.OTHER_CONTACTS: lambda self: (
-            self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
-        ),
+        Step.OTHER_CONTACTS: lambda self: self.from_model("unlock_other_contacts", False),
         Step.ADDITIONAL_DETAILS: lambda self: (
             # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
             (
@@ -425,16 +423,38 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """Helper for get_context_data.
         Queries the DB for a domain request and returns a list of unlocked steps."""
         return [key for key, is_unlocked_checker in self.unlocking_steps.items() if is_unlocked_checker(self)]
+    
+    def form_is_complete(self):
+        """
+        Determines if all required steps in the domain request form are complete.
+        
+        This method:
+        1. Gets a list of all steps that have been completed (unlocked_steps)
+        2. Filters the full step list to only include steps that should be shown based on
+        the wizard conditions. For example, federal-specific steps are only required
+        if the organization type is federal.
+        3. Compares the number of completed steps to required steps to determine if
+        the form is complete.
+
+        Returns:
+            bool: True if all required steps are complete, False otherwise
+        """
+        unlockable_steps = {step.value for step in self.db_check_for_unlocking_steps()}
+        required_steps = set(self.steps.all)
+        unlocked_steps = set()
+        for step in required_steps:
+            if step in unlockable_steps:
+                unlocked_steps.add(step)
+        return required_steps == unlocked_steps
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-
         requested_domain_name = None
         if self.domain_request.requested_domain is not None:
             requested_domain_name = self.domain_request.requested_domain.name
 
         context = {}
-        org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
+        org_steps_complete = self.form_is_complete()
         if org_steps_complete:
             context = {
                 "form_titles": self.titles,
@@ -770,7 +790,7 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
-        form_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
+        form_complete = self.form_is_complete()
         if form_complete is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()

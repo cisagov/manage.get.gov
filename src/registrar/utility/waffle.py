@@ -22,7 +22,10 @@ def flag_is_active_anywhere(flag_name):
     If said flag is enabled for someone, somewhere - return true.
     Otherwise - return false.
     """
-    flag = get_waffle_flag_model().get(flag_name)
-    if flag.everyone is None:
-        return flag.users.exists()
-    return flag.everyone
+    try:
+        flag = get_waffle_flag_model().get(flag_name)
+        if flag.everyone is None:
+            return flag.users.exists()
+        return flag.everyone
+    except get_waffle_flag_model().DoesNotExist:
+        return False
