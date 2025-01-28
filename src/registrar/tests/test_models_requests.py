@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 
 from registrar.models import (
-    AllowedEmail,
     Contact,
     DomainRequest,
     DomainInformation,
@@ -1107,13 +1106,14 @@ class TestDomainRequest(TestCase):
             federal_agency=fed_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
-        user_portfolio_permission = UserPortfolioPermission.objects.create(
+        user_portfolio_permission = UserPortfolioPermission.objects.create( # ignore
             user=self.dummy_user_3, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         # Adds cc'ed email in this test's allow list
         AllowedEmail.objects.create(email="portfolioadmin@igorville.com")
 
-        msg = "Create a domain request and submit it and see if email cc's portfolio admin and members who can view requests."
+        msg = "Create a domain request and submit it and see if email cc's portfolio admin and members who can view \
+            requests."
         domain_request = completed_domain_request(
             name="test.gov", user=self.dummy_user_2, portfolio=portfolio, organization_name="Test Portfolio"
         )
