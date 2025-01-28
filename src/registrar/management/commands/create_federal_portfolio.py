@@ -117,22 +117,29 @@ class Command(BaseCommand):
         updated_suborg_count = self.post_process_all_suborganization_fields(agencies)
         message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
         TerminalHelper.log_script_run_summary(
             self.updated_portfolios,
             self.failed_portfolios,
             self.skipped_portfolios,
             debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERENT CREATED -----",
+            log_header="============= FINISHED HANDLE PORTFOLIO STEP ===============",
+            skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
             display_as_str=True,
         )
 
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
         if parse_requests or both:
+            prompt_message = (
+                "This action will update domain requests even if they aren't on a portfolio."
+                "\nNOTE: This will modify domain requests, even if no portfolios were created."
+                "\nIn the event no portfolios *are* created, then this step will target "
+                "the existing portfolios with your given params."
+                "\nThis step is entirely optional, and is just for extra data cleanup."
+            )
             TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=True,
-                prompt_message="This action will update domain requests even if they aren't on a portfolio.",
+                prompt_message=prompt_message,
                 prompt_title=(
                     "POST PROCESS STEP: Do you want to clear federal agency on (related) started domain requests?"
                 ),
