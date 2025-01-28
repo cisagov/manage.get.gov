@@ -2217,6 +2217,11 @@ class TestRemovePortfolios(TestCase):
 
     def tearDown(self):
         self.logger_patcher.stop()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
 
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
     def test_delete_unlisted_portfolios(self, mock_query_yes_no):
