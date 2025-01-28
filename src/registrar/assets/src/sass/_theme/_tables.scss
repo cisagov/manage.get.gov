@@ -61,10 +61,9 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders):not(:last-of-type) {
-      td, th {
-        border-bottom: 1px solid color('base-lighter');
-      }
+    tr:not(.hide-td-borders):not(:last-child) td,
+    tr:not(.hide-td-borders):not(:last-child) th {
+      border-bottom: 1px solid color('base-lighter');
     }
 
     thead th {
