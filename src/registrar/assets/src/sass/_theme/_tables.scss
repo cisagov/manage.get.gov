@@ -41,12 +41,9 @@ th {
   }
 }
 
-.members__table-wrapper .dotgov-table {
-  tr:not(.hide-td-borders):not(:last-of-type) {
-    td, th {
-      border-bottom: 1px solid color('base-lighter');
-    }
-  }
+.members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
+.members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+  border-bottom: none !important;
 }
 
 .dotgov-table {
@@ -64,7 +61,7 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders) {
+    tr:not(.hide-td-borders):not(:last-of-type) {
       td, th {
         border-bottom: 1px solid color('base-lighter');
       }
