@@ -327,9 +327,6 @@ class DomainRenewalView(DomainBaseView):
         context["hidden_security_emails"] = default_emails
 
         security_email = self.object.get_security_email()
-        if security_email is None or security_email in default_emails:
-            context["security_email"] = None
-            return context
         context["security_email"] = security_email
         return context
 
