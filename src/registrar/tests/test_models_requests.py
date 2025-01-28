@@ -16,7 +16,9 @@ from registrar.models import (
     AllowedEmail,
     Portfolio,
     Suborganization,
+    UserPortfolioPermission,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 import boto3_mocking
 from registrar.utility.constants import BranchChoices
@@ -46,6 +48,14 @@ class TestDomainRequest(TestCase):
         self.dummy_user_2, _ = User.objects.get_or_create(
             username="intern@igorville.com", email="intern@igorville.com", first_name="Lava", last_name="World"
         )
+
+        self.dummy_user_3, _ = User.objects.get_or_create(
+            username="portfolioadmin@igorville.com",
+            email="portfolioadmin@igorville.com",
+            first_name="Portfolio",
+            last_name="Admin",
+        )
+
         self.started_domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
@@ -273,7 +283,14 @@ class TestDomainRequest(TestCase):
         self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
     def check_email_sent(
-        self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
+        self,
+        domain_request,
+        msg,
+        action,
+        expected_count,
+        expected_content=None,
+        expected_email="mayor@igorville.com",
+        expected_cc=[],
     ):
         """Check if an email was sent after performing an action."""
         email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
@@ -291,6 +308,11 @@ class TestDomainRequest(TestCase):
                 if expected_email in email["kwargs"]["Destination"]["ToAddresses"]
             ]
             self.assertEqual(len(sent_emails), expected_count)
+
+            if expected_cc:
+                sent_cc_adddresses = sent_emails[0]["kwargs"]["Destination"]["CcAddresses"]
+                for cc_address in expected_cc:
+                    self.assertIn(cc_address, sent_cc_adddresses)
 
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
@@ -1073,6 +1095,36 @@ class TestDomainRequest(TestCase):
         )
         self.assertEqual(domain_request2.generic_org_type, domain_request2.converted_generic_org_type)
         self.assertEqual(domain_request2.federal_agency, domain_request2.converted_federal_agency)
+
+    @less_console_noise_decorator
+    def test_portfolio_domain_requests_cc_requests_viewers(self):
+        """test that portfolio domain request emails cc portfolio members who have read requests access"""
+        fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Portfolio",
+            creator=self.dummy_user_2,
+            federal_agency=fed_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        user_portfolio_permission = UserPortfolioPermission.objects.create(  # noqa: F841
+            user=self.dummy_user_3, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # Adds cc'ed email in this test's allow list
+        AllowedEmail.objects.create(email="portfolioadmin@igorville.com")
+
+        msg = "Create a domain request and submit it and see if email cc's portfolio admin and members who can view \
+            requests."
+        domain_request = completed_domain_request(
+            name="test.gov", user=self.dummy_user_2, portfolio=portfolio, organization_name="Test Portfolio"
+        )
+        self.check_email_sent(
+            domain_request,
+            msg,
+            "submit",
+            1,
+            expected_email="intern@igorville.com",
+            expected_cc=["portfolioadmin@igorville.com"],
+        )
 
 
 class TestDomainRequestSuborganization(TestCase):
