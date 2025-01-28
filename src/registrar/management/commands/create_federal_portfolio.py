@@ -143,7 +143,7 @@ class Command(BaseCommand):
                 prompt_title=(
                     "POST PROCESS STEP: Do you want to clear federal agency on (related) started domain requests?"
                 ),
-                verify_message=None,
+                verify_message="*** THIS STEP IS OPTIONAL ***",
             )
             self.post_process_started_domain_requests(agencies, portfolios)
 
@@ -166,6 +166,11 @@ class Command(BaseCommand):
             status=DomainRequest.DomainRequestStatus.STARTED,
             organization_name__isnull=False,
         )
+
+        if domain_requests_to_update.count() == 0:
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "No domain requests to update.")
+            return
+
         portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
 
         # Update the request, assuming the given agency name matches the portfolio name
