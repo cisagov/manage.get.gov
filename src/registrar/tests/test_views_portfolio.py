@@ -1468,7 +1468,9 @@ class TestPortfolio(WebTest):
 
         # Create a member under same portfolio
         member_email = "a_member@example.com"
-        member, _ = User.objects.get_or_create(username="a_member", email=member_email)
+        member, _ = User.objects.get_or_create(
+            username="a_member", email=member_email, first_name="First", last_name="Last"
+        )
 
         upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
@@ -1485,7 +1487,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Check for email AND member type (which here is just member)
-        self.assertContains(response, f'data-member-name="{member_email}"')
+        self.assertContains(response, f'data-member-email="{member_email}"')
+        self.assertContains(response, 'data-member-name="First Last"')
         self.assertContains(response, 'data-member-type="member"')
 
     @less_console_noise_decorator
