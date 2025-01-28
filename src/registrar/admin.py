@@ -3307,7 +3307,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
             # Filter out empty values and return sorted unique entries
-            return sorted([(federal_type, DomainRequest.BranchChoices.get_branch_label(federal_type)) for federal_type in queryset if federal_type])
+            return sorted([(federal_type, BranchChoices.get_branch_label(federal_type)) for federal_type in queryset if federal_type])
 
         def queryset(self, request, queryset):
             if self.value():
