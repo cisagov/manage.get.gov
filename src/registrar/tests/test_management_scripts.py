@@ -33,7 +33,6 @@ from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
 from .common import (
-    MockDb,
     MockEppLib,
     less_console_noise,
     completed_domain_request,
