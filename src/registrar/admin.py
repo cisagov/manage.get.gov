@@ -3297,7 +3297,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=False,
-                            then=F("domain_info__portfolio__organization_type"),
+                            then=F("domain_info__portfolio__federal_agency__federal_type"),
                         ),
                         When(
                             domain_info__isnull=False,
