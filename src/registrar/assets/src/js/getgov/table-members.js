@@ -87,7 +87,7 @@ export class MembersTable extends BaseTable {
 
     // generate html blocks for domains and permissions for the member
     let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
-    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices, unique_id);
+    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices);
 
     // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
     let showMoreButton = '';
