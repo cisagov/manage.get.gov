@@ -41,9 +41,9 @@ th {
   }
 }
 
-.members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
-.members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
-  border-bottom: none !important;
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+  border-bottom: none;
 }
 
 .dotgov-table {
