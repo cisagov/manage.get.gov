@@ -85,3 +85,24 @@ jobs:
               cf_org: cisa-dotgov
               cf_space: ${{ github.event.inputs.environment }}
               cf_command: "cf bind-service getgov-env getgov-${{ github.event.inputs.environment }}"
+    -name: Wait for it to be created
+            with:
+              cf_username: ${{ secrets[env.CF_USERNAME] }}
+              cf_password: ${{ secrets[env.CF_PASSWORD] }}
+              cf_org: cisa-dotgov
+              cf_space: ${{ github.event.inputs.environment }}
+              cf_command: "until cf service getgov-$1-database | grep -q 'The service instance status is succeeded' do echo "Database not up yet, waiting..." sleep 30 done" 
+    -name: Rebind the service
+            with:
+              cf_username: ${{ secrets[env.CF_USERNAME] }}
+              cf_password: ${{ secrets[env.CF_PASSWORD] }}
+              cf_org: cisa-dotgov
+              cf_space: ${{ github.event.inputs.environment }}
+              cf_command: "cf bind-service getgov-env getgov-env-${{ github.event.inputs.environment }}"
+    # -name: Wait for the above command to finish
+    #           with:
+    #           cf_username: ${{ secrets[env.CF_USERNAME] }}
+    #           cf_password: ${{ secrets[env.CF_PASSWORD] }}
+    #           cf_org: cisa-dotgov
+    #           cf_space: ${{ github.event.inputs.environment }}
+    #           cf_command:
