@@ -423,11 +423,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """Helper for get_context_data.
         Queries the DB for a domain request and returns a list of unlocked steps."""
         return [key for key, is_unlocked_checker in self.unlocking_steps.items() if is_unlocked_checker(self)]
-    
+
     def form_is_complete(self):
         """
         Determines if all required steps in the domain request form are complete.
-        
+
         This method:
         1. Gets a list of all steps that have been completed (unlocked_steps)
         2. Filters the full step list to only include steps that should be shown based on
