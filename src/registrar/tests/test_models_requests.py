@@ -1106,7 +1106,7 @@ class TestDomainRequest(TestCase):
             federal_agency=fed_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
-        user_portfolio_permission = UserPortfolioPermission.objects.create(  # type: ignore
+        user_portfolio_permission = UserPortfolioPermission.objects.create(  # noqa: F841
             user=self.dummy_user_3, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         # Adds cc'ed email in this test's allow list
