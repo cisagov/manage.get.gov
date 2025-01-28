@@ -1293,9 +1293,13 @@ class DomainRequest(TimeStampedModel):
         if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
             # Check if the current federal agency is an outlawed one
             Portfolio = apps.get_model("registrar.Portfolio")
-            return FederalAgency.objects.exclude(
-                agency__in=Portfolio.objects.values_list("organization_name", flat=True),
-            ).filter(agency=self.federal_agency).exists()
+            return (
+                FederalAgency.objects.exclude(
+                    agency__in=Portfolio.objects.values_list("organization_name", flat=True),
+                )
+                .filter(agency=self.federal_agency)
+                .exists()
+            )
 
         # NOTE: Shouldn't this be an AND on all required fields?
         return (

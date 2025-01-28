@@ -3228,18 +3228,12 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         """Tests unlock_organization_contact when agency exists in a portfolio"""
         # Create a federal agency
         federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
-        
+
         # Create a portfolio with matching organization name
-        Portfolio.objects.create(
-            creator=self.user,
-            organization_name=federal_agency.agency
-        )
-        
+        Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
+
         # Create domain request with the portfolio agency
-        domain_request = completed_domain_request(
-            federal_agency=federal_agency,
-            user=self.user
-        )
+        domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertFalse(domain_request.unlock_organization_contact())
 
     @override_flag("organization_feature", active=False)
@@ -3247,19 +3241,13 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
         """Tests unlock_organization_contact when organization flags are disabled"""
-                # Create a federal agency
+        # Create a federal agency
         federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
-        
-        # Create a portfolio with matching organization name
-        Portfolio.objects.create(
-            creator=self.user,
-            organization_name=federal_agency.agency
-        )
 
-        domain_request = completed_domain_request(
-            federal_agency=federal_agency,
-            user=self.user
-        )
+        # Create a portfolio with matching organization name
+        Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
+
+        domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertTrue(domain_request.unlock_organization_contact())
 
 

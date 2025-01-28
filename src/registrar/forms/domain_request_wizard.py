@@ -367,7 +367,7 @@ class OrganizationContactForm(RegistrarForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Set the queryset for federal agency.
         # If the organization_requests flag is active, we hide data that exists in portfolios.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
@@ -376,7 +376,7 @@ class OrganizationContactForm(RegistrarForm):
             federal_agency_queryset = federal_agency_queryset.exclude(
                 agency__in=Portfolio.objects.values_list("organization_name", flat=True)
             )
-        
+
         self.fields["federal_agency"].queryset = federal_agency_queryset
 
     def clean_federal_agency(self):
