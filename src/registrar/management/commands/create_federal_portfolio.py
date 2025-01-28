@@ -6,11 +6,14 @@ from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
 from registrar.models.domain import Domain
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import normalize_string
 from django.db.models import F, Q
+
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 
 logger = logging.getLogger(__name__)
@@ -114,7 +117,9 @@ class Command(BaseCommand):
                 portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
                 portfolios.append(portfolio)
 
+                logger.debug(f"add_managers: {add_managers}")
                 if add_managers:
+                    logger.debug("Adding managers to portfolio")
                     self.add_managers_to_portfolio(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
@@ -154,11 +159,11 @@ class Command(BaseCommand):
         Add all domain managers of the portfolio's domains to the organization.
         This includes adding them to the correct group and creating portfolio invitations.
         """
-        logger.info("Adding managers for portfolio '{portfolio}'")
+        logger.info(f"Adding managers for portfolio {portfolio}")
         
         # Fetch all domains associated with the portfolio
-        domains = portfolio.get_domains()
-
+        domains = Domain.objects.filter(domain_info__portfolio=portfolio)
+        logger.debug(f"domains: {domains}")
         domain_managers = set()
 
         # Fetch all users with manager roles for the domains
@@ -166,51 +171,53 @@ class Command(BaseCommand):
             domain__in=domains,
             role=UserDomainRole.Roles.MANAGER
         ).values_list('user', flat=True)
-
         domain_managers.update(managers)
 
-        # Fetch PortfolioInvitations with manager roles for the portfolio
-        manager_invitations = PortfolioInvitation.objects.filter(
-            portfolio=portfolio,
-            roles__contains=[UserPortfolioPermission.RoleChoices.MANAGER]
-        ).values_list('email', flat=True)
+        invited_managers = set()
 
-        # Fetch user IDs for existing users with emails in manager_invitations
-        invited_users = User.objects.filter(email__in=manager_invitations)
-        invited_user_ids = invited_users.values_list('id', flat=True)
-        domain_managers.update(invited_user_ids)
+        # Get the emails of invited managers
+        for domain in domains:
+            domain_invitations = DomainInvitation.objects.filter(domain=domain, status=DomainInvitation.DomainInvitationStatus.INVITED).values_list('email', flat=True)
+            invited_managers.update(domain_invitations)
 
-        for user_id in domain_managers:
+        logger.debug(f"invited_managers: {invited_managers}")
+        for manager in domain_managers:
             try:
-                user = User.objects.get(id=user_id)
+                # manager is a user id
+                user = User.objects.get(id=manager)
                 _, created = UserPortfolioPermission.objects.get_or_create(
                     portfolio=portfolio,
                     user=user,
-                    defaults={"role": UserPortfolioPermission.RoleChoices.MANAGER},
+                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
                 )
                 if created:
-                    logger.info("Added manager '{user}' to portfolio '{portfolio}'")
+                    logger.info(f"Added manager '{user}' to portfolio '{portfolio}'")
                 else:
-                    logger.info("Manager '{user}' already exists in portfolio '{portfolio}'")
+                    logger.info(f"Manager '{user}' already exists in portfolio '{portfolio}'")
             except User.DoesNotExist:
-                self.create_portfolio_invitation(portfolio, user)
+                logger.debug(f"User '{user}' does not exist")
+        
+        for manager in invited_managers:
+            self.create_portfolio_invitation(portfolio, manager)
 
-    def create_portfolio_invitation(self, portfolio: Portfolio, user: User):
+    def create_portfolio_invitation(self, portfolio: Portfolio, email: str):
         """
         Create a portfolio invitation for the given user.
         If the user already has a portfolio invitation, retreive their invitation and create a portfolio permission.
         """
         try:
-            user = User.objects.get(email=user.email)
+            logger.debug(f"Creating portfolio invitation for user '{email}'")
+            user = User.objects.get(email=email)
+            logger.debug(f"user: {user}")
             _, created = PortfolioInvitation.objects.get_or_create(
                 portfolio=portfolio,
                 user=user,
-                defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.PENDING},
+                defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED},
             )
             if created:
-                logger.info("Created portfolio invitation for '{user}' to portfolio '{portfolio}'")
+                logger.info(f"Created portfolio invitation for '{user}' to portfolio '{portfolio}'")
             else:
-                logger.info("Retrieved existing portfolio invitation for '{user}' to portfolio '{portfolio}'")
+                logger.info(f"Retrieved existing portfolio invitation for '{user}' to portfolio '{portfolio}'")
             
             # Assign portfolio permissions
             _, created = UserPortfolioPermission.objects.get_or_create(
@@ -219,16 +226,16 @@ class Command(BaseCommand):
                 defaults={"role": UserPortfolioPermission.RoleChoices.MANAGER},
             )
             if created:
-                logger.info("Created portfolio permission for '{user}' to portfolio '{portfolio}'")
+                logger.info(f"Created portfolio permission for '{user}' to portfolio '{portfolio}'")
             else:
-                logger.info("Retrieved existing portfolio permission for '{user}' to portfolio '{portfolio}'")
+                logger.info(f"Retrieved existing portfolio permission for '{user}' to portfolio '{portfolio}'")
         except User.DoesNotExist:
-            PortfolioInvitation.objects.create(
+            PortfolioInvitation.objects.get_or_create(
                 portfolio=portfolio,
-                user=user,
-                status=PortfolioInvitation.PortfolioInvitationStatus.PENDING,
+                email=email,
+                defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED},
             )
-            logger.info("Created portfolio invitation for '{user}' to portfolio '{portfolio}'")
+            logger.info(f"Created portfolio invitation for '{email}' to portfolio '{portfolio}'")
 
     def post_process_started_domain_requests(self, agencies, portfolios):
         """
