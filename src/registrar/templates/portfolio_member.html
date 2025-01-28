@@ -41,7 +41,7 @@ Organization member
     {% if has_edit_members_portfolio_permission %}
       {% if member %}
         <div id="wrapper-delete-action"
-        data-member-name="{{ member.email }}"
+        data-member-name="{{ member.get_formatted_name }}"
         data-member-type="member"
         data-member-id="{{ member.id }}"
         data-num-domains="{{ portfolio_permission.get_managed_domains_count }}"
