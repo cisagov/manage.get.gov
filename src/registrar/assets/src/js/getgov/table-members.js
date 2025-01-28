@@ -137,7 +137,7 @@ export class MembersTable extends BaseTable {
     }
     // This easter egg is only for fixtures that dont have names as we are displaying their emails
     // All prod users will have emails linked to their account
-    if (customTableOptions.hasAdditionalActions) MembersTable.addMemberDeleteModal(num_domains, member.email || "Samwise Gamgee", member_delete_url, unique_id, row);
+    if (customTableOptions.hasAdditionalActions) MembersTable.addMemberDeleteModal(num_domains, member.email || member.name || "Samwise Gamgee", member_delete_url, unique_id, row);
   }
 
   /**
