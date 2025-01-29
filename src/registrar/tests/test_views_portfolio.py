@@ -211,11 +211,11 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
+            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
             # The read only label for city will be a h4
-            self.assertContains(response, '<h4 class="read-only-label">City</h4>')
+            self.assertContains(response, '<h4 class="margin-bottom-05">City</h4>')
             self.assertNotContains(response, 'for="id_city"')
-            self.assertContains(response, '<p class="read-only-value">Los Angeles</p>')
+            self.assertContains(response, '<p class="margin-top-0">Los Angeles</p>')
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_edit_access(self):
@@ -236,10 +236,10 @@ class TestPortfolio(WebTest):
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="read-only-label">Organization name</h4>')
+            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
             # The read only label for city will be a h4
-            self.assertNotContains(response, '<h4 class="read-only-label">City</h4>')
-            self.assertNotContains(response, '<p class="read-only-value">Los Angeles</p>')
+            self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
+            self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
@@ -1468,7 +1468,9 @@ class TestPortfolio(WebTest):
 
         # Create a member under same portfolio
         member_email = "a_member@example.com"
-        member, _ = User.objects.get_or_create(username="a_member", email=member_email)
+        member, _ = User.objects.get_or_create(
+            username="a_member", email=member_email, first_name="First", last_name="Last"
+        )
 
         upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
@@ -1485,7 +1487,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Check for email AND member type (which here is just member)
-        self.assertContains(response, f'data-member-name="{member_email}"')
+        self.assertContains(response, f'data-member-email="{member_email}"')
+        self.assertContains(response, 'data-member-name="First Last"')
         self.assertContains(response, 'data-member-type="member"')
 
     @less_console_noise_decorator
@@ -1676,8 +1679,9 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 400)  # Bad request due to active requests
             support_url = "https://get.gov/contact/"
             expected_error_message = (
-                f"This member has an active domain request and can't be removed from the organization. "
-                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                "This member can't be removed from the organization because they have an active domain request. "
+                f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
+                "to remove this member."
             )
 
             self.assertContains(response, expected_error_message, status_code=400)
@@ -1799,8 +1803,9 @@ class TestPortfolio(WebTest):
 
                 support_url = "https://get.gov/contact/"
                 expected_error_message = (
-                    f"This member has an active domain request and can't be removed from the organization. "
-                    f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                    "This member can't be removed from the organization because they have an active domain request. "
+                    f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
+                    "to remove this member."
                 )
 
                 args, kwargs = mock_error.call_args

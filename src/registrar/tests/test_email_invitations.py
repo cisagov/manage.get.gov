@@ -12,7 +12,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.validate_invitation")
+    @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations.get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
@@ -57,7 +57,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(email, mock_requestor_email, [mock_domain], None)
         mock_user_domain_role_filter.assert_called_once_with(domain=mock_domain)
@@ -77,7 +77,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.validate_invitation")
+    @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations.get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
@@ -136,7 +136,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with([mock_domain1, mock_domain2])
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain1, mock_domain2])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(
             email, mock_requestor_email, [mock_domain1, mock_domain2], None
@@ -175,7 +175,7 @@ class DomainInvitationEmail(unittest.TestCase):
         self.assertEqual(mock_send_templated_email.call_count, 2)
 
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.validate_invitation")
+    @patch("registrar.utility.email_invitations._validate_invitation")
     def test_send_domain_invitation_email_raises_invite_validation_exception(self, mock_validate_invitation):
         """Test sending domain invitation email for one domain and assert exception
         when invite validation fails.
@@ -213,7 +213,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_get_requestor_email.assert_called_once()
 
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.validate_invitation")
+    @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations.get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
@@ -257,13 +257,13 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         self.assertEqual(str(context.exception), "Error sending email")
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_emails_to_domain_managers")
-    @patch("registrar.utility.email_invitations.validate_invitation")
+    @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations.get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
@@ -305,7 +305,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
         mock_validate_invitation.assert_called_once_with(
-            email, [mock_domain], mock_requestor, is_member_of_different_org
+            email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(email, mock_requestor_email, [mock_domain], None)
         self.assertEqual(str(context.exception), "Error sending email")
