@@ -171,11 +171,14 @@ class User(AbstractUser):
         now = timezone.now().date()
         expiration_window = 60
         threshold_date = now + timedelta(days=expiration_window)
+        acceptable_statuses = [Domain.State.UNKNOWN, Domain.State.DNS_NEEDED, Domain.State.READY]
+
         num_of_expiring_domains = Domain.objects.filter(
             id__in=domain_ids,
             expiration_date__isnull=False,
             expiration_date__lte=threshold_date,
             expiration_date__gt=now,
+            state__in=acceptable_statuses,
         ).count()
         return num_of_expiring_domains
 
