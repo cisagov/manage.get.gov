@@ -98,7 +98,7 @@
             {% if form.is_policy_acknowledged.errors %}
             {% for error in form.is_policy_acknowledged.errors %}
             <div class="usa-error-message display-flex" role="alert">
-              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: Check the box if you read and agree to the requirements for operating a .gov domain.">
                 <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
               </svg>
               <span class="margin-left-05">{{ error }}</span>
