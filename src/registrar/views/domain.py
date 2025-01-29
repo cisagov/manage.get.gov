@@ -1335,16 +1335,16 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
         # Is the user deleting themselves? If so, display a different message
         delete_self = self.request.user == self.object.user
-    
+
         # Email all domain managers that domain manager has been removed
         domain = self.object.domain
 
         context = {
             "domain": domain,
             "removed_by": self.request.user,
-            "manager_removed": self.object.user, 
+            "manager_removed": self.object.user,
             "date": date.today(),
-            "changes": "Domain Manager"
+            "changes": "Domain Manager",
         }
         self.email_domain_managers(
             domain,
@@ -1356,7 +1356,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         # Add a success message
         messages.success(self.request, self.get_success_message(delete_self))
         return redirect(self.get_success_url())
-    
+
     def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
         manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
             "user", flat=True
@@ -1368,7 +1368,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
                 send_templated_email(
                     template,
                     subject_template,
-                    to_address=email,  # type: ignore
+                    to_address=email,
                     context=context,
                 )
             except EmailSendingError:
