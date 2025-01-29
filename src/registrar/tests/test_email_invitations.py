@@ -311,7 +311,7 @@ class DomainInvitationEmail(unittest.TestCase):
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
         mock_send_invitation_email.assert_called_once_with(email, mock_requestor_email, [mock_domain], None)
-        
+
         # Assert that the result is False
         self.assertFalse(result)
 
@@ -320,7 +320,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.models.UserDomainRole.objects.filter")
     def test_send_emails_to_domain_managers_all_emails_sent_successfully(self, mock_filter, mock_send_templated_email):
         """Test when all emails are sent successfully."""
-        
+
         # Setup mocks
         mock_domain = MagicMock(spec=Domain)
         mock_requestor_email = "requestor@example.com"
@@ -360,7 +360,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.models.UserDomainRole.objects.filter")
     def test_send_emails_to_domain_managers_email_send_fails(self, mock_filter, mock_send_templated_email):
         """Test when sending an email fails (raises EmailSendingError)."""
-        
+
         # Setup mocks
         mock_domain = MagicMock(spec=Domain)
         mock_requestor_email = "requestor@example.com"
@@ -400,7 +400,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.models.UserDomainRole.objects.filter")
     def test_send_emails_to_domain_managers_no_domain_managers(self, mock_filter, mock_send_templated_email):
         """Test when there are no domain managers."""
-        
+
         # Setup mocks
         mock_domain = MagicMock(spec=Domain)
         mock_requestor_email = "requestor@example.com"
@@ -421,7 +421,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.models.UserDomainRole.objects.filter")
     def test_send_emails_to_domain_managers_some_emails_fail(self, mock_filter, mock_send_templated_email):
         """Test when some emails fail to send."""
-        
+
         # Setup mocks
         mock_domain = MagicMock(spec=Domain)
         mock_requestor_email = "requestor@example.com"
