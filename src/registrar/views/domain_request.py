@@ -425,26 +425,16 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return [key for key, is_unlocked_checker in self.unlocking_steps.items() if is_unlocked_checker(self)]
 
     def form_is_complete(self):
-        """
-        Determines if all required steps in the domain request form are complete.
-
-        This method:
-        1. Gets a list of all steps that have been completed (unlocked_steps)
-        2. Filters the full step list to only include steps that should be shown based on
-        the wizard conditions. For example, federal-specific steps are only required
-        if the organization type is federal.
-        3. Compares the number of completed steps to required steps to determine if
-        the form is complete.
-
+        """Determines if all required steps in the domain request form are complete.
         Returns:
             bool: True if all required steps are complete, False otherwise
         """
-        unlockable_steps = {step.value for step in self.db_check_for_unlocking_steps()}
+        # 1. Get all steps visibly present to the user (required steps)
+        # 2. Return every possible step that is "unlocked" (even hidden, conditional ones)
+        # 3. Narrows down the list to remove hidden conditional steps
         required_steps = set(self.steps.all)
-        unlocked_steps = set()
-        for step in required_steps:
-            if step in unlockable_steps:
-                unlocked_steps.add(step)
+        unlockable_steps = {step.value for step in self.db_check_for_unlocking_steps()}
+        unlocked_steps = {step for step in required_steps if step in unlockable_steps}
         return required_steps == unlocked_steps
 
     def get_context_data(self):

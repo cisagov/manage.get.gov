@@ -1719,7 +1719,7 @@ class TestDomainRequestIncomplete(TestCase):
         super().tearDownClass()
         cls.user.delete()
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_is_federal_complete(self):
         self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.federal_type = None
@@ -1747,7 +1747,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
         self.domain_request.tribe_name = "Tribe Name"
