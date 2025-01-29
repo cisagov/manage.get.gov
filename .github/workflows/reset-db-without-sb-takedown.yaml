@@ -14,95 +14,89 @@ on:
         type: choice
         description: Which environment should we flush and re-load data for?
         options:
-          - staging
-          - development
-          - el
-          - ad
-          - ms
-          - ag
-          - litterbox
-          - hotgov
-          - cb
-          - bob
-          - meoward
-          - backup
-          - ky
-          - es
-          - nl
-          - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
-
+        - staging
+        - development
+        - el
+        - ad
+        - ms
+        - ag
+        - litterbox
+        - hotgov
+        - cb
+        - bob
+        - meoward
+        - backup
+        - ky
+        - es
+        - nl
+        - rh
+        - za
+        - gd
+        - rb
+        - ko
+        - ab
+        - rjm
+        - dk
 jobs:
-  reset-db:
+  reset-db-without-sb:
     runs-on: ubuntu-latest
     env:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
-      - name: Unbind the database service
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "cf unbind-service getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
+    - name: Unbind the database service
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "cf unbind-service getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
     - name: Delete the service
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "cf unbind-service getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
-    -name: Recreate the service
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "cf create-service aws-rds micro-psql getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
-    -name: Recreate the service
-          uses: cloud-gov/cg-cli-tools@main
-          with:
-            cf_username: ${{ secrets[env.CF_USERNAME] }}
-            cf_password: ${{ secrets[env.CF_PASSWORD] }}
-            cf_org: cisa-dotgov
-            cf_space: ${{ github.event.inputs.environment }}
-            cf_command: "cf create-service aws-rds micro-psql getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
-    -name: Rebind the service
-            uses: cloud-gov/cg-cli-tools@main
-            with:
-              cf_username: ${{ secrets[env.CF_USERNAME] }}
-              cf_password: ${{ secrets[env.CF_PASSWORD] }}
-              cf_org: cisa-dotgov
-              cf_space: ${{ github.event.inputs.environment }}
-              cf_command: "cf bind-service getgov-env getgov-${{ github.event.inputs.environment }}"
-    -name: Wait for it to be created
-            with:
-              cf_username: ${{ secrets[env.CF_USERNAME] }}
-              cf_password: ${{ secrets[env.CF_PASSWORD] }}
-              cf_org: cisa-dotgov
-              cf_space: ${{ github.event.inputs.environment }}
-              cf_command: "until cf service getgov-$1-database | grep -q 'The service instance status is succeeded' do echo "Database not up yet, waiting..." sleep 30 done" 
-    -name: Rebind the service
-            with:
-              cf_username: ${{ secrets[env.CF_USERNAME] }}
-              cf_password: ${{ secrets[env.CF_PASSWORD] }}
-              cf_org: cisa-dotgov
-              cf_space: ${{ github.event.inputs.environment }}
-              cf_command: "cf bind-service getgov-env getgov-env-${{ github.event.inputs.environment }}"
-    # -name: Wait for the above command to finish
-    #           with:
-    #           cf_username: ${{ secrets[env.CF_USERNAME] }}
-    #           cf_password: ${{ secrets[env.CF_PASSWORD] }}
-    #           cf_org: cisa-dotgov
-    #           cf_space: ${{ github.event.inputs.environment }}
-    #           cf_command:
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "cf delete-service getgov-${{ github.event.inputs.environment }}-database"
+    - name: Recreate the service
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "cf create-service aws-rds micro-psql getgov-${{ github.event.inputs.environment }} getgov-${{ github.event.inputs.environment }}-database"
+    - name: Rebind the service
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "cf bind-service getgov-env getgov-${{ github.event.inputs.environment }}"
+    - name: Wait for it to be created
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "until cf service getgov-$1-database | grep -q 'The service instance status is succeeded' do echo 'Database not up yet, waiting...' sleep 30 done"
+    - name: Rebind the service
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "cf bind-service getgov-env getgov-env-${{ github.event.inputs.environment }}"
+    - name: Wait for the above command to finish
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "until grep -q 'OK'"
