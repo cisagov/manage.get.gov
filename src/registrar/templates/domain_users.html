@@ -69,7 +69,6 @@
         </th>
         {% if not portfolio %}<td data-label="Role">{{ item.permission.role|title }}</td>{% endif %}
         <td>
-        {% if can_delete_users %}
           <a
             id="button-toggle-user-alert-{{ forloop.counter }}"
             href="#toggle-user-alert-{{ forloop.counter }}"
@@ -77,6 +76,7 @@
             aria-controls="toggle-user-alert-{{ forloop.counter }}"
             data-open-modal
             aria-disabled="false"
+            aria-label="Remove {{ item.permission.user.email }}""
           >
             Remove
           </a>
@@ -112,18 +112,6 @@
               {% csrf_token %}
             </form>
           {% endif %}
-        {% else %}
-          <input 
-          type="submit" 
-          class="usa-button--unstyled disabled-button usa-tooltip usa-tooltip--registrar" 
-          value="Remove"
-          data-position="bottom"
-          title="Domains must have at least one domain manager"
-          data-tooltip="true"
-          aria-disabled="true"
-          role="button"
-          >
-        {% endif %}
         </td>
       </tr>
       {% endfor %}
