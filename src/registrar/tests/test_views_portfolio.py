@@ -1468,7 +1468,9 @@ class TestPortfolio(WebTest):
 
         # Create a member under same portfolio
         member_email = "a_member@example.com"
-        member, _ = User.objects.get_or_create(username="a_member", email=member_email)
+        member, _ = User.objects.get_or_create(
+            username="a_member", email=member_email, first_name="First", last_name="Last"
+        )
 
         upp, _ = UserPortfolioPermission.objects.get_or_create(
             user=member,
@@ -1485,7 +1487,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
 
         # Check for email AND member type (which here is just member)
-        self.assertContains(response, f'data-member-name="{member_email}"')
+        self.assertContains(response, f'data-member-email="{member_email}"')
+        self.assertContains(response, 'data-member-name="First Last"')
         self.assertContains(response, 'data-member-type="member"')
 
     @less_console_noise_decorator
@@ -1676,8 +1679,9 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 400)  # Bad request due to active requests
             support_url = "https://get.gov/contact/"
             expected_error_message = (
-                f"This member has an active domain request and can't be removed from the organization. "
-                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                "This member can't be removed from the organization because they have an active domain request. "
+                f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
+                "to remove this member."
             )
 
             self.assertContains(response, expected_error_message, status_code=400)
@@ -1799,8 +1803,9 @@ class TestPortfolio(WebTest):
 
                 support_url = "https://get.gov/contact/"
                 expected_error_message = (
-                    f"This member has an active domain request and can't be removed from the organization. "
-                    f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                    "This member can't be removed from the organization because they have an active domain request. "
+                    f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
+                    "to remove this member."
                 )
 
                 args, kwargs = mock_error.call_args
