@@ -27,6 +27,9 @@ def send_domain_invitation_email(
         is_member_of_different_org (bool): if an email belongs to a different org
         requested_user (User | None): The recipient if the email belongs to a user in the registrar
 
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
         AlreadyDomainManagerError: If the email corresponds to an existing domain manager.
@@ -41,22 +44,28 @@ def send_domain_invitation_email(
 
     send_invitation_email(email, requestor_email, domains, requested_user)
 
+    all_manager_emails_sent = True
     # send emails to domain managers
     for domain in domains:
-        send_emails_to_domain_managers(
+        if not send_emails_to_domain_managers(
             email=email,
             requestor_email=requestor_email,
             domain=domain,
             requested_user=requested_user,
-        )
+        ):
+            all_manager_emails_sent = False
+
+    return all_manager_emails_sent
 
 
 def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, requested_user=None):
     """
     Notifies all domain managers of the provided domain of a change
-    Raises:
-        EmailSendingError
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
     """
+    all_emails_sent = True
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
@@ -76,9 +85,9 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
                 },
             )
         except EmailSendingError as err:
-            raise EmailSendingError(
-                f"Could not send email manager notification to {user.email} for domain: {domain.name}"
-            ) from err
+            logger.warning(f"Could not send email manager notification to {user.email} for domain: {domain.name}")
+            all_emails_sent = False
+    return all_emails_sent
 
 
 def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
