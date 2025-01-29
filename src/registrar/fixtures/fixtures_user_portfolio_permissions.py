@@ -26,56 +26,55 @@ class UserPortfolioPermissionFixture:
 
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
-        with transaction.atomic():
-            try:
-                # Get the usernames of users created in the UserFixture
-                created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
+        try:
+            # Get the usernames of users created in the UserFixture
+            created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
 
-                # Filter users to only include those created by the fixture
-                users = list(User.objects.filter(username__in=created_usernames))
+            # Filter users to only include those created by the fixture
+            users = list(User.objects.filter(username__in=created_usernames))
 
-                organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
+            organization_names = [portfolio["organization_name"] for portfolio in PortfolioFixture.PORTFOLIOS]
 
-                portfolios = list(Portfolio.objects.filter(organization_name__in=organization_names))
+            portfolios = list(Portfolio.objects.filter(organization_name__in=organization_names))
 
-                if not users:
-                    logger.warning("User fixtures missing.")
-                    return
-
-                if not portfolios:
-                    logger.warning("Portfolio fixtures missing.")
-                    return
-
-            except Exception as e:
-                logger.warning(e)
+            if not users:
+                logger.warning("User fixtures missing.")
                 return
 
-            user_portfolio_permissions_to_create = []
-            for user in users:
-                # Assign a random portfolio to a user
-                portfolio = random.choice(portfolios)  # nosec
-                try:
-                    if not UserPortfolioPermission.objects.filter(user=user, portfolio=portfolio).exists():
-                        user_portfolio_permission = UserPortfolioPermission(
-                            user=user,
-                            portfolio=portfolio,
-                            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                            additional_permissions=[
-                                UserPortfolioPermissionChoices.EDIT_MEMBERS,
-                                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                            ],
-                        )
-                        user_portfolio_permissions_to_create.append(user_portfolio_permission)
-                    else:
-                        logger.info(
-                            f"Permission exists for user '{user.username}' "
-                            f"on portfolio '{portfolio.organization_name}'."
-                        )
-                except Exception as e:
-                    logger.warning(e)
+            if not portfolios:
+                logger.warning("Portfolio fixtures missing.")
+                return
 
-            # Bulk create permissions
-            cls._bulk_create_permissions(user_portfolio_permissions_to_create)
+        except Exception as e:
+            logger.warning(e)
+            return
+
+        user_portfolio_permissions_to_create = []
+        for user in users:
+            # Assign a random portfolio to a user
+            portfolio = random.choice(portfolios)  # nosec
+            try:
+                if not UserPortfolioPermission.objects.filter(user=user, portfolio=portfolio).exists():
+                    user_portfolio_permission = UserPortfolioPermission(
+                        user=user,
+                        portfolio=portfolio,
+                        roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                        additional_permissions=[
+                            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+                            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                        ],
+                    )
+                    user_portfolio_permissions_to_create.append(user_portfolio_permission)
+                else:
+                    logger.info(
+                        f"Permission exists for user '{user.username}' "
+                        f"on portfolio '{portfolio.organization_name}'."
+                    )
+            except Exception as e:
+                logger.warning(e)
+
+        # Bulk create permissions
+        cls._bulk_create_permissions(user_portfolio_permissions_to_create)
 
     @classmethod
     def _bulk_create_permissions(cls, user_portfolio_permissions_to_create):

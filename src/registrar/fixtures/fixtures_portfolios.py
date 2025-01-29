@@ -87,39 +87,40 @@ class PortfolioFixture:
 
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
-        with transaction.atomic():
-            try:
+        try:
+            with transaction.atomic():
                 user = User.objects.all().last()
+        except Exception as e:
+            logger.warning(e)
+            return
+
+        portfolios_to_create = []
+        for portfolio_data in cls.PORTFOLIOS:
+            organization_name = portfolio_data["organization_name"]
+
+            # Check if portfolio with the organization name already exists
+            if Portfolio.objects.filter(organization_name=organization_name).exists():
+                logger.info(
+                    f"Portfolio with organization name '{organization_name}' already exists, skipping creation."
+                )
+                continue
+
+        try:
+            with transaction.atomic():
+                portfolio = Portfolio(
+                    creator=user,
+                    organization_name=portfolio_data["organization_name"],
+                )
+                cls._set_non_foreign_key_fields(portfolio, portfolio_data)
+                cls._set_foreign_key_fields(portfolio, portfolio_data, user)
+                portfolios_to_create.append(portfolio)
+        except Exception as e:
+            logger.warning(e)
+
+        # Bulk create domain requests
+        if len(portfolios_to_create) > 0:
+            try:
+                Portfolio.objects.bulk_create(portfolios_to_create)
+                logger.info(f"Successfully created {len(portfolios_to_create)} portfolios")
             except Exception as e:
-                logger.warning(e)
-                return
-
-            portfolios_to_create = []
-            for portfolio_data in cls.PORTFOLIOS:
-                organization_name = portfolio_data["organization_name"]
-
-                # Check if portfolio with the organization name already exists
-                if Portfolio.objects.filter(organization_name=organization_name).exists():
-                    logger.info(
-                        f"Portfolio with organization name '{organization_name}' already exists, skipping creation."
-                    )
-                    continue
-
-                try:
-                    portfolio = Portfolio(
-                        creator=user,
-                        organization_name=portfolio_data["organization_name"],
-                    )
-                    cls._set_non_foreign_key_fields(portfolio, portfolio_data)
-                    cls._set_foreign_key_fields(portfolio, portfolio_data, user)
-                    portfolios_to_create.append(portfolio)
-                except Exception as e:
-                    logger.warning(e)
-
-            # Bulk create domain requests
-            if len(portfolios_to_create) > 0:
-                try:
-                    Portfolio.objects.bulk_create(portfolios_to_create)
-                    logger.info(f"Successfully created {len(portfolios_to_create)} portfolios")
-                except Exception as e:
-                    logger.warning(f"Error bulk creating portfolios: {e}")
+                logger.warning(f"Error bulk creating portfolios: {e}")

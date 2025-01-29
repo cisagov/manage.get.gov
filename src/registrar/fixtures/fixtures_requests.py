@@ -309,18 +309,18 @@ class DomainRequestFixture:
         # The atomic block will cause the code to stop executing if one instance in the
         # nested iteration fails, which will cause an early exit and make it hard to debug.
         # Comment out with transaction.atomic() when debugging.
-        with transaction.atomic():
-            try:
+        try:
+            with transaction.atomic():
                 # Get the usernames of users created in the UserFixture
                 created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
 
                 # Filter users to only include those created by the fixture
                 users = list(User.objects.filter(username__in=created_usernames))
-            except Exception as e:
-                logger.warning(e)
-                return
+        except Exception as e:
+            logger.warning(e)
+            return
 
-            cls._create_domain_requests(users)
+        cls._create_domain_requests(users)
 
     @classmethod
     def _create_domain_requests(cls, users):  # noqa: C901
