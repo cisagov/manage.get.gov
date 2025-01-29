@@ -1336,6 +1336,8 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         # Is the user deleting themselves? If so, display a different message
         delete_self = self.request.user == self.object.user
 
+        # Email domain managers
+
         # Add a success message
         messages.success(self.request, self.get_success_message(delete_self))
         return redirect(self.get_success_url())

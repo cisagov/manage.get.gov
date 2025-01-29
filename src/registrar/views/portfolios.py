@@ -118,8 +118,8 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         if active_requests_count > 0:
             # If they have any in progress requests
             error_message = mark_safe(  # nosec
-                f"This member has an active domain request and can't be removed from the organization. "
-                f"<a href='{support_url}' target='_blank'>Contact the .gov team</a> to remove them."
+                "This member can't be removed from the organization because they have an active domain request. "
+                f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
             )
         elif member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
             # If they are the last manager of a domain
