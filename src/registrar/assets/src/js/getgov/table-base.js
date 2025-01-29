@@ -129,7 +129,7 @@ export class BaseTable {
     this.displayName = itemName;
     this.sectionSelector = itemName + 's';
     this.tableWrapper = document.getElementById(`${this.sectionSelector}__table-wrapper`);
-    this.tableHeaders = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable]`);
+    this.tableHeaderSortButtons = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable] button`);
     this.currentSortBy = 'id';
     this.currentOrder = 'asc';
     this.currentStatus = [];
@@ -303,13 +303,18 @@ export class BaseTable {
    * A helper that resets sortable table headers
    *
   */
-  unsetHeader = (header) => {
-    header.removeAttribute('aria-sort');
-    let headerName = header.innerText;
-    const headerLabel = `${headerName}, sortable column, currently unsorted"`;
-    const headerButtonLabel = `Click to sort by ascending order.`;
-    header.setAttribute("aria-label", headerLabel);
-    header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+  unsetHeader = (headerSortButton) => {
+    let header = headerSortButton.closest('th');
+    if (header) {
+      header.removeAttribute('aria-sort');
+      let headerName = header.innerText;
+      const headerLabel = `${headerName}, sortable column, currently unsorted"`;
+      const headerButtonLabel = `Click to sort by ascending order.`;
+      header.setAttribute("aria-label", headerLabel);
+      header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+    } else {
+      console.warn('Issue with DOM');
+    }
   };
 
   /**
@@ -505,24 +510,21 @@ export class BaseTable {
 
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
-    this.tableHeaders.forEach(header => {
-      header.addEventListener('click', event => {
-        let button = header.querySelector('.usa-table__header__button')
-        const sortBy = header.getAttribute('data-sortable');
-        let order = 'asc';
-        // sort order will be ascending, unless the currently sorted column is ascending, and the user
-        // is selecting the same column to sort in descending order
-        if (sortBy === this.currentSortBy) {
-          order = this.currentOrder === 'asc' ? 'desc' : 'asc';
-        }
-        // load the results with the updated sort
-        this.loadTable(1, sortBy, order);
-        // If the click occurs outside of the button, need to simulate a button click in order
-        // for USWDS listener on the button to execute.
-        // Check first to see if click occurs outside of the button
-        if (!button.contains(event.target)) {
-            // Simulate a button click
-            button.click();
+    this.tableHeaderSortButtons.forEach(tableHeader => {
+      tableHeader.addEventListener('click', event => {
+        let header = tableHeader.closest('th');
+        if (header) {
+          const sortBy = header.getAttribute('data-sortable');
+          let order = 'asc';
+          // sort order will be ascending, unless the currently sorted column is ascending, and the user
+          // is selecting the same column to sort in descending order
+          if (sortBy === this.currentSortBy) {
+            order = this.currentOrder === 'asc' ? 'desc' : 'asc';
+          }
+          // load the results with the updated sort
+          this.loadTable(1, sortBy, order);
+        } else {
+          console.warn('Issue with DOM');
         }
       });
     });
@@ -587,9 +589,9 @@ export class BaseTable {
 
   // Reset UI and accessibility
   resetHeaders() {
-    this.tableHeaders.forEach(header => {
+    this.tableHeaderSortButtons.forEach(headerSortButton => {
       // Unset sort UI in headers
-      this.unsetHeader(header);
+      this.unsetHeader(headerSortButton);
     });
     // Reset the announcement region
     this.tableAnnouncementRegion.innerHTML = '';
