@@ -85,7 +85,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
                 },
             )
         except EmailSendingError as err:
-            logger.warning(f"Could not send email manager notification to {user.email} for domain: {domain.name}")
+            logger.warning(f"Could not send email manager notification to {user.email} for domain: {domain.name}", exc_info=True)
             all_emails_sent = False
     return all_emails_sent
 

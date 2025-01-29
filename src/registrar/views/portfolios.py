@@ -801,7 +801,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
@@ -810,4 +810,4 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")

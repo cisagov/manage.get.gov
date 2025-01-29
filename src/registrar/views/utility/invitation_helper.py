@@ -68,7 +68,6 @@ def handle_invitation_exceptions(request, exception, email):
         logger.error(str(exception), exc_info=True)
     elif isinstance(exception, OutsideOrgMemberError):
         messages.error(request, str(exception))
-        logger.warning(str(exception), exc_info=True)
     elif isinstance(exception, AlreadyDomainManagerError):
         messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
