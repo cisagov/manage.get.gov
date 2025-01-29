@@ -3262,7 +3262,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -3343,7 +3343,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
