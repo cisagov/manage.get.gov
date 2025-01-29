@@ -352,12 +352,37 @@ class UserFixture:
 
     @staticmethod
     def _get_existing_users(users):
+        # if users match existing users in db by email address, update the users with the username
+        # from the db. this will prevent duplicate users (with same email) from being added to db.
+        # it is ok to keep the old username in the db because the username will be updated by oidc process during login
+
+        # Extract email addresses from users
+        emails = [user.get("email") for user in users]
+
+        # Fetch existing users by email
+        existing_users_by_email = User.objects.filter(email__in=emails).values_list("email", "username", "id")
+        print(existing_users_by_email)
+        # Create a dictionary to map emails to existing usernames
+        email_to_existing_user = {user[0]: user[1] for user in existing_users_by_email}
+
+        # Update the users list with the usernames from existing users by email
+        for user in users:
+            email = user.get("email")
+            if email and email in email_to_existing_user:
+                user["username"] = email_to_existing_user[email]  # Update username with the existing one
+
+        # Get the user identifiers (username, id) for the existing users to query the database
         user_identifiers = [(user.get("username"), user.get("id")) for user in users]
+
+        # Fetch existing users by username or id
         existing_users = User.objects.filter(
             username__in=[user[0] for user in user_identifiers] + [user[1] for user in user_identifiers]
         ).values_list("username", "id")
+
+        # Create sets for usernames and ids that exist
         existing_usernames = set(user[0] for user in existing_users)
         existing_user_ids = set(user[1] for user in existing_users)
+
         return existing_usernames, existing_user_ids
 
     @staticmethod
