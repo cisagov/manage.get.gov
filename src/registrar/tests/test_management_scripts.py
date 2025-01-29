@@ -35,7 +35,13 @@ import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 
-from .common import MockEppLib, less_console_noise, completed_domain_request, MockSESClient, MockDbForIndividualTests
+from .common import (
+    MockEppLib,
+    less_console_noise,
+    completed_domain_request,
+    MockSESClient,
+    MockDbForIndividualTests,
+)
 from api.tests.common import less_console_noise_decorator
 
 
@@ -1825,7 +1831,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.run_create_federal_portfolio(agency_name="Non-existent Agency", parse_requests=True)
 
     def test_does_not_update_existing_portfolio(self):
-        """Tests that an existing portfolio is not updated"""
+        """Tests that an existing portfolio is not updated when"""
         # Create an existing portfolio
         existing_portfolio = Portfolio.objects.create(
             federal_agency=self.federal_agency,
@@ -1847,6 +1853,71 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
         self.assertEqual(existing_portfolio.creator, self.user)
+
+    def test_skip_existing_portfolios(self):
+        """Tests the skip_existing_portfolios to ensure that it doesn't add
+        suborgs, domain requests, and domain info."""
+        # Create an existing portfolio with a suborganization
+        existing_portfolio = Portfolio.objects.create(
+            federal_agency=self.federal_agency,
+            organization_name="Test Federal Agency",
+            organization_type=DomainRequest.OrganizationChoices.CITY,
+            creator=self.user,
+            notes="Old notes",
+        )
+
+        existing_suborg = Suborganization.objects.create(
+            portfolio=existing_portfolio, name="Existing Suborg", city="Old City", state_territory="CA"
+        )
+
+        # Create a domain request that would normally be associated
+        domain_request = completed_domain_request(
+            name="wackytaco.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+            user=self.user,
+            organization_name="would_create_suborg",
+        )
+        domain_request.approve()
+        domain = Domain.objects.get(name="wackytaco.gov").domain_info
+
+        # Run the command with skip_existing_portfolios=True
+        self.run_create_federal_portfolio(
+            agency_name="Test Federal Agency", parse_requests=True, skip_existing_portfolios=True
+        )
+
+        # Refresh objects from database
+        existing_portfolio.refresh_from_db()
+        existing_suborg.refresh_from_db()
+        domain_request.refresh_from_db()
+        domain.refresh_from_db()
+
+        # Verify nothing was changed on the portfolio itself
+        # SANITY CHECK: if the portfolio updates, it will change to FEDERAL.
+        # if this case fails, it means we are overriding data (and not simply just other weirdness)
+        self.assertNotEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
+
+        # Notes and creator should be untouched
+        self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
+        self.assertEqual(existing_portfolio.notes, "Old notes")
+        self.assertEqual(existing_portfolio.creator, self.user)
+
+        # Verify suborganization wasn't modified
+        self.assertEqual(existing_suborg.city, "Old City")
+        self.assertEqual(existing_suborg.state_territory, "CA")
+
+        # Verify that the domain request wasn't modified
+        self.assertIsNone(domain_request.portfolio)
+        self.assertIsNone(domain_request.sub_organization)
+
+        # Verify that the domain wasn't modified
+        self.assertIsNone(domain.portfolio)
+        self.assertIsNone(domain.sub_organization)
+
+        # Verify that a new suborg wasn't created
+        self.assertFalse(Suborganization.objects.filter(name="would_create_suborg").exists())
 
     @less_console_noise_decorator
     def test_post_process_suborganization_fields(self):
@@ -2217,6 +2288,11 @@ class TestRemovePortfolios(TestCase):
 
     def tearDown(self):
         self.logger_patcher.stop()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
 
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
     def test_delete_unlisted_portfolios(self, mock_query_yes_no):

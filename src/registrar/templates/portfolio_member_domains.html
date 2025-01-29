@@ -21,7 +21,7 @@
         {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
         {% url 'invitedmember-domains-edit' pk=portfolio_invitation.id as url3 %}
     {% endif %}
-    <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
+    <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
     <ol class="usa-breadcrumb__list">
         <li class="usa-breadcrumb__list-item">
         <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
@@ -37,7 +37,7 @@
 
     <div class="grid-row grid-gap">
         <div class="mobile:grid-col-12 tablet:grid-col-7">
-            <h1 class="margin-bottom-3">Domain assignments</h1>
+            <h1>Domain assignments</h1>
         </div>
         {% if has_edit_members_portfolio_permission %}
             <div class="mobile:grid-col-12 tablet:grid-col-5">
@@ -51,7 +51,7 @@
         {% endif %}
     </div>
 
-    <p>
+    <p class="margin-top-0 margin-bottom-4 maxw-none">
         A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
     </p>
 

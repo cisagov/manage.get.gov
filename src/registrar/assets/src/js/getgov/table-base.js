@@ -93,7 +93,6 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
         <use xlink:href="/public/img/sprite.svg#delete"></use>
       </svg>` : ''}
       ${modal_button_text}
-      <span class="usa-sr-only">${screen_reader_text}</span>
     </a>
   `;
 
@@ -107,6 +106,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
           class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
           aria-expanded="false"
           aria-controls="more-actions-${unique_id}"
+          aria-label="${screen_reader_text}"
         >
           <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#more_vert"></use>
@@ -284,15 +284,18 @@ export class BaseTable {
         showElement(dataWrapper);
         hideElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = '';
       } else {
         hideElement(dataWrapper);
         showElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = this.noSearchResultsWrapper.innerHTML;
       }
     } else {
       hideElement(dataWrapper);
       hideElement(noSearchResultsWrapper);
       showElement(noDataWrapper);
+      this.tableAnnouncementRegion.innerHTML = this.noDataWrapper.innerHTML;
     }
   };
 
@@ -448,6 +451,7 @@ export class BaseTable {
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
 
+    this.tableAnnouncementRegion.innerHTML = '<p>Loading table.</p>';
     let url = `${baseUrlValue}?${searchParams.toString()}`
     fetch(url)
       .then(response => response.json())
@@ -469,7 +473,6 @@ export class BaseTable {
 
         let dataObjects = this.getDataObjects(data);
         let customTableOptions = this.customizeTable(data);
-
         dataObjects.forEach(dataObject => {
           this.addRow(dataObject, tbody, customTableOptions);
         });
