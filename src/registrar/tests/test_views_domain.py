@@ -988,7 +988,7 @@ class TestDomainManagers(TestDomainOverview):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
-        response = self.client.post(
+        response = self.client.post(  # noqa: F841
             reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.manager.id})
         )
 
