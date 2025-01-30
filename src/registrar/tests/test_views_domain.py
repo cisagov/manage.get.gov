@@ -479,6 +479,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
+        """If a user is a domain manager and their domain is expiring soon,
+        user should be able to see the "Renew to maintain access" link domain overview detail box."""
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
             Domain, "is_expired", self.custom_is_expired_false
@@ -497,6 +499,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
+        """In org model: If a user is NOT a domain manager and their domain is expiring soon,
+        user be notified to contact a domain manager in the domain overview detail box."""
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
         non_dom_manage_user = get_user_model().objects.create(
             first_name="Non Domain",
@@ -533,6 +537,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
+        """Inorg model: If a user is a domain manager and their domain is expiring soon,
+        user should be able to see the "Renew to maintain access" link domain overview detail box."""
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
 
         domain_to_renew3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
@@ -551,6 +557,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_and_sidebar_expiring(self):
+        """If a user is a domain manager and their domain is expiring soon,
+        user should be able to see Renewal Form on the sidebar."""
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
             Domain, "is_expiring", self.custom_is_expiring
@@ -578,7 +586,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_and_sidebar_expired(self):
-
+        """If a user is a domain manager and their domain is expired,
+        user should be able to see Renewal Form on the sidebar."""
         self.client.force_login(self.user)
 
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
@@ -607,6 +616,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_your_contact_info_edit(self):
+        """Checking that if a user is a domain manager they can edit the
+        Your Profile portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
@@ -625,6 +636,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_security_email_edit(self):
+        """Checking that if a user is a domain manager they can edit the
+        Security Email portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
@@ -646,6 +659,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_domain_manager_edit(self):
+        """Checking that if a user is a domain manager they can edit the
+        Domain Manager portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
@@ -664,6 +679,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_not_expired_or_expiring(self):
+        """Checking that if the user's domain is not expired or expiring that user should not be able
+        to access /renewal and that it should receive a 403."""
         with less_console_noise():
             # Start on the Renewal page for the domain
             renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domain_not_expiring.id}))
@@ -671,6 +688,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_does_not_appear_if_not_domain_manager(self):
+        """If user is not a domain manager and tries to access /renewal, user should receive a 403."""
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
             Domain, "is_expired", self.custom_is_expired_true
         ):
@@ -679,7 +697,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_not_checked(self):
-
+        """If user don't check the checkbox, user should receive an error message."""
         # Grab the renewal URL
         renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
 
@@ -691,7 +709,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
     @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_checked(self):
-
+        """If user check the checkbox and submits the form,
+        user should be redirected Domain Over page with an updated by 1 year expiration date"""
         # Grab the renewal URL
         with patch.object(Domain, "renew_domain", self.custom_renew_domain):
             renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
