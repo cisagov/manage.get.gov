@@ -1102,9 +1102,6 @@ class DomainUsersView(DomainBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
-        # Add conditionals to the context (such as "can_delete_users")
-        context = self._add_booleans_to_context(context)
-
         # Get portfolio from session (if set)
         portfolio = self.request.session.get("portfolio")
 
@@ -1188,20 +1185,6 @@ class DomainUsersView(DomainBaseView):
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
 
-        return context
-
-    def _add_booleans_to_context(self, context):
-        # Determine if the current user can delete managers
-        domain_pk = None
-        can_delete_users = False
-
-        if self.kwargs is not None and "pk" in self.kwargs:
-            domain_pk = self.kwargs["pk"]
-            # Prevent the end user from deleting themselves as a manager if they are the
-            # only manager that exists on a domain.
-            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
-
-        context["can_delete_users"] = can_delete_users
         return context
 
 
@@ -1338,7 +1321,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         """Refreshes the page after a delete is successful"""
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self, delete_self=False):
+    def get_success_message(self):
         """Returns confirmation content for the deletion event"""
 
         # Grab the text representation of the user we want to delete
@@ -1348,7 +1331,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
-        if delete_self:
+        if self.delete_self:
             message = f"You are no longer managing the domain {self.object.domain}."
         else:
             message = f"Removed {email_or_name} as a manager for this domain."
@@ -1361,20 +1344,35 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         # Delete the object
         super().form_valid(form)
 
-        # Is the user deleting themselves? If so, display a different message
-        delete_self = self.request.user == self.object.user
-
         # Add a success message
-        messages.success(self.request, self.get_success_message(delete_self))
+        messages.success(self.request, self.get_success_message())
         return redirect(self.get_success_url())
 
     def post(self, request, *args, **kwargs):
-        """Custom post implementation to redirect to home in the event that the user deletes themselves"""
+        """Custom post implementation to ensure last userdomainrole is not removed and to
+        redirect to home in the event that the user deletes themselves"""
+        self.object = self.get_object()  # Retrieve the UserDomainRole to delete
+
+        # Is the user deleting themselves?
+        self.delete_self = self.request.user == self.object.user
+
+        # Check if this is the only UserDomainRole for the domain
+        if not len(UserDomainRole.objects.filter(domain=self.object.domain)) > 1:
+            if self.delete_self:
+                messages.error(
+                    request,
+                    "Domains must have at least one domain manager. "
+                    "To remove yourself, the domain needs another domain manager.",
+                )
+            else:
+                messages.error(request, "Domains must have at least one domain manager.")
+            return redirect(self.get_success_url())
+
+        # normal delete processing in the event that the above condition not reached
         response = super().post(request, *args, **kwargs)
 
         # If the user is deleting themselves, redirect to home
-        delete_self = self.request.user == self.object.user
-        if delete_self:
+        if self.delete_self:
             return redirect(reverse("home"))
 
         return response
