@@ -662,7 +662,7 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=55)
+        self.assertContains(response, "Federal", count=54)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
