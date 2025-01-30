@@ -115,17 +115,13 @@ export function initAddNewMemberPageListeners() {
           if (selectedRadio) {
             const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
             if (label) {
-                // Get only the text node content (excluding subtext in <p>)
-                const mainText = Array.from(label.childNodes)
-                    .filter(node => node.nodeType === Node.TEXT_NODE)
-                    .map(node => node.textContent.trim())
-                    .join(""); // Combine and trim whitespace
-                selectedPermission = mainText || "No permission selected";
+              // Get only the text node content (excluding subtext in <p>)
+              const mainText = Array.from(label.childNodes)
+                  .filter(node => node.nodeType === Node.TEXT_NODE)
+                  .map(node => node.textContent.trim())
+                  .join(""); // Combine and trim whitespace
+              selectedPermission = mainText || "No permission selected";
             }
-
-
-              // const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
-              // selectedPermission = label ? label.textContent : "No permission selected";
           }
           appendPermissionInContainer(sectionTitle, selectedPermission, permissionDetailsContainer);
         }
@@ -142,8 +138,7 @@ export function initAddNewMemberPageListeners() {
     // Create new elements for the content
     const titleElement = document.createElement("h4");
     titleElement.textContent = sectionTitle;
-    titleElement.classList.add("text-primary");
-    titleElement.classList.add("margin-bottom-0");
+    titleElement.classList.add("text-primary", "margin-bottom-0");
 
     const permissionElement = document.createElement("p");
     permissionElement.textContent = permissionDisplay;
