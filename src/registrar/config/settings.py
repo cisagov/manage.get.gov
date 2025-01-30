@@ -498,16 +498,18 @@ console_handler = {
 if 'localhost' in env_base_url:
     django_handlers = ["console"]
     console_filter = []
+    json_log_level = "ERROR"
 elif env_log_format == "json":
     # in production we need everything to be logged as json so that log levels are parsed correctly
     django_handlers = ["json"]
     console_filter = []
+    json_log_level = env_log_level
 else:
     # for non-production non-local environments, send non-error messages to console handler
     # we do this because json clutters logs when debugging
     django_handlers = ["console", "json"]
     console_filter = ["below_error"]
-
+    json_log_level = "ERROR"
 LOGGING = {
     "version": 1,
     # Don't import Django's existing loggers
@@ -549,7 +551,7 @@ LOGGING = {
             "formatter": "django.server",
         },
         "json": {
-            "level": "ERROR" if env_log_format == "console" else env_log_level,
+            "level": json_log_level,
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
