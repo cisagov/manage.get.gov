@@ -82,6 +82,9 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         member_has_edit_members_portfolio_permission = member.has_edit_members_portfolio_permission(
             portfolio_permission.portfolio
         )
+        member_has_view_all_domains_portfolio_permission = member.has_view_all_domains_portfolio_permission(
+            portfolio_permission.portfolio
+        )
 
         return render(
             request,
@@ -95,6 +98,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+                "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
             },
         )
 
@@ -347,6 +351,9 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
         member_has_edit_members_portfolio_permission = (
             UserPortfolioPermissionChoices.EDIT_MEMBERS in portfolio_invitation.get_portfolio_permissions()
         )
+        member_has_view_all_domains_portfolio_permission = (
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS in portfolio_invitation.get_portfolio_permissions()
+        )
 
         return render(
             request,
@@ -359,6 +366,7 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+                "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
             },
         )
 
