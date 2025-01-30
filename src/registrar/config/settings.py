@@ -487,29 +487,19 @@ class JsonServerFormatter(ServerFormatter):
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
     
-# Define console handler outside LOGGING so we can conditionally enablefilters
-console_handler = {
-    "level": env_log_level,
-    "class": "logging.StreamHandler",
-    "formatter": "verbose",
-}
-
 # If we're running locally we don't want json formatting
 if 'localhost' in env_base_url:
     django_handlers = ["console"]
-    console_filter = []
-    json_log_level = "ERROR"
 elif env_log_format == "json":
     # in production we need everything to be logged as json so that log levels are parsed correctly
     django_handlers = ["json"]
-    console_filter = []
-    json_log_level = env_log_level
 else:
-    # for non-production non-local environments, send non-error messages to console handler
-    # we do this because json clutters logs when debugging
-    django_handlers = ["console", "json"]
-    console_filter = ["below_error"]
-    json_log_level = "ERROR"
+    # for non-production non-local environments:
+    # - send ERROR and above to json handler
+    # - send below ERROR to console handler with verbose formatting
+    # yes this is janky but it's the best we can do for now
+    django_handlers = ["split_console", "split_json"]
+
 LOGGING = {
     "version": 1,
     # Don't import Django's existing loggers
@@ -543,7 +533,18 @@ LOGGING = {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            "filters": console_filter,
+        },
+        # Special handlers for split logging case
+        "split_console": {
+            "level": env_log_level,
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "filters": ["below_error"],
+        },
+        "split_json": {
+            "level": "ERROR",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
         "django.server": {
             "level": "INFO",
@@ -551,7 +552,7 @@ LOGGING = {
             "formatter": "django.server",
         },
         "json": {
-            "level": json_log_level,
+            "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
