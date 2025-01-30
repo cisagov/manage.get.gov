@@ -40,7 +40,7 @@ def send_domain_invitation_email(
         EmailSendingError: If there is an error while sending the email.
     """
     domains = normalize_domains(domains)
-    requestor_email = get_requestor_email(requestor, domains)
+    requestor_email = get_requestor_email(requestor, domains=domains)
 
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
@@ -99,17 +99,22 @@ def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
     return [domains] if isinstance(domains, Domain) else domains
 
 
-def get_requestor_email(requestor, domains):
+def get_requestor_email(requestor, domains=None, portfolio=None):
     """Get the requestor's email or raise an error if it's missing.
 
     If the requestor is staff, default email is returned.
+
+    Raises:
+        MissingEmailError
     """
     if requestor.is_staff:
         return settings.DEFAULT_FROM_EMAIL
 
     if not requestor.email or requestor.email.strip() == "":
-        domain_names = ", ".join([domain.name for domain in domains])
-        raise MissingEmailError(email=requestor.email, domain=domain_names)
+        domain_names = None
+        if domains:
+            domain_names = ", ".join([domain.name for domain in domains])
+        raise MissingEmailError(email=requestor.email, domain=domain_names, portfolio=portfolio)
 
     return requestor.email
 
@@ -191,15 +196,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         EmailSendingError: If there is an error while sending the email.
     """
 
-    # Default email address for staff
-    requestor_email = settings.DEFAULT_FROM_EMAIL
-
-    # Check if the requestor is staff and has an email
-    if not requestor.is_staff:
-        if not requestor.email or requestor.email.strip() == "":
-            raise MissingEmailError(email=email, portfolio=portfolio)
-        else:
-            requestor_email = requestor.email
+    requestor_email = get_requestor_email(requestor, portfolio=portfolio)
 
     try:
         send_templated_email(

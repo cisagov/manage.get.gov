@@ -293,6 +293,32 @@ class BasePortfolioMemberForm(forms.ModelForm):
             selected_domain_permission = next((perm for perm in domain_perms if perm in perms), "no_access")
             self.initial["domain_request_permission_member"] = selected_domain_permission
 
+    def is_change_from_member_to_admin(self) -> bool:
+        """
+        Checks if the roles have changed from not containing ORGANIZATION_ADMIN
+        to containing ORGANIZATION_ADMIN.
+        """
+        previous_roles = set(self.initial.get("roles", []))  # Initial roles before change
+        new_roles = set(self.cleaned_data.get("roles", []))  # New roles after change
+
+        return (
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in previous_roles
+            and UserPortfolioRoleChoices.ORGANIZATION_ADMIN in new_roles
+        )
+
+    def is_change_from_admin_to_member(self) -> bool:
+        """
+        Checks if the roles have changed from containing ORGANIZATION_ADMIN
+        to not containing ORGANIZATION_ADMIN.
+        """
+        previous_roles = set(self.initial.get("roles", []))  # Initial roles before change
+        new_roles = set(self.cleaned_data.get("roles", []))  # New roles after change
+
+        return (
+            UserPortfolioRoleChoices.ORGANIZATION_ADMIN in previous_roles
+            and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in new_roles
+        )
+
 
 class PortfolioMemberForm(BasePortfolioMemberForm):
     """
