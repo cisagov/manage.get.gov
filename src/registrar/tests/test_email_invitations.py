@@ -16,7 +16,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
     def test_send_domain_invitation_email(
@@ -81,7 +81,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
     def test_send_domain_invitation_email_multiple_domains(
@@ -197,7 +197,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_validate_invitation.assert_called_once()
 
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     def test_send_domain_invitation_email_raises_get_requestor_email_exception(self, mock_get_requestor_email):
         """Test sending domain invitation email for one domain and assert exception
         when get_requestor_email fails.
@@ -217,7 +217,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
     def test_send_domain_invitation_email_raises_sending_email_exception(
@@ -267,7 +267,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_emails_to_domain_managers")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
     @patch("registrar.utility.email_invitations.normalize_domains")
     def test_send_domain_invitation_email_manager_emails_send_mail_exception(

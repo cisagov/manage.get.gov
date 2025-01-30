@@ -1,6 +1,7 @@
 from datetime import date
 from django.conf import settings
 from registrar.models import Domain, DomainInvitation, UserDomainRole
+from registrar.models.portfolio import Portfolio
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.errors import (
@@ -40,7 +41,7 @@ def send_domain_invitation_email(
         EmailSendingError: If there is an error while sending the email.
     """
     domains = normalize_domains(domains)
-    requestor_email = get_requestor_email(requestor, domains=domains)
+    requestor_email = _get_requestor_email(requestor, domains=domains)
 
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
@@ -99,7 +100,7 @@ def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
     return [domains] if isinstance(domains, Domain) else domains
 
 
-def get_requestor_email(requestor, domains=None, portfolio=None):
+def _get_requestor_email(requestor, domains=None, portfolio=None):
     """Get the requestor's email or raise an error if it's missing.
 
     If the requestor is staff, default email is returned.
@@ -196,7 +197,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         EmailSendingError: If there is an error while sending the email.
     """
 
-    requestor_email = get_requestor_email(requestor, portfolio=portfolio)
+    requestor_email = _get_requestor_email(requestor, portfolio=portfolio)
 
     try:
         send_templated_email(
@@ -217,18 +218,29 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
     all_admin_emails_sent = True
     # send emails to portfolio admins
     if is_admin_invitation:
-        all_admin_emails_sent = send_portfolio_admin_addition_emails_to_portfolio_admins(
+        all_admin_emails_sent = _send_portfolio_admin_addition_emails_to_portfolio_admins(
             email=email,
             requestor_email=requestor_email,
             portfolio=portfolio,
-            requested_user=None,
         )
     return all_admin_emails_sent
 
 
-def send_portfolio_admin_addition_emails_to_portfolio_admins(
-    email: str, requestor_email, portfolio: Domain, requested_user=None
-):
+def send_portfolio_admin_addition_emails(email: str, requestor, portfolio: Portfolio):
+    """
+    Notifies all portfolio admins of the provided portfolio of a newly invited portfolio admin
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+
+    Raises:
+        MissingEmailError
+    """
+    requestor_email = _get_requestor_email(requestor, portfolio=portfolio)
+    return _send_portfolio_admin_addition_emails_to_portfolio_admins(email, requestor_email, portfolio)
+
+
+def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, requestor_email, portfolio: Portfolio):
     """
     Notifies all portfolio admins of the provided portfolio of a newly invited portfolio admin
 

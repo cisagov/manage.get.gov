@@ -15,7 +15,11 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
-from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_admin_addition_emails, send_portfolio_invitation_email
+from registrar.utility.email_invitations import (
+    send_domain_invitation_email,
+    send_portfolio_admin_addition_emails,
+    send_portfolio_invitation_email,
+)
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
@@ -418,9 +422,11 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
                     if not send_portfolio_admin_addition_emails(
                         email=portfolio_invitation.email,
                         requestor=request.user,
-                        portfolio=portfolio_invitation.portfolio
+                        portfolio=portfolio_invitation.portfolio,
                     ):
-                        messages.warning(self.request, "Could not send email notification to existing organization admins.")
+                        messages.warning(
+                            self.request, "Could not send email notification to existing organization admins."
+                        )
                 elif form.is_change_from_admin_to_member():
                     # NOTE: need to add portfolio_admin_removal_emails when ready
                     pass

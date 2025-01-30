@@ -1543,7 +1543,9 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     and not member_of_this_org
                     and not member_of_a_different_org
                 ):
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                    send_portfolio_invitation_email(
+                        email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    )
                     portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                         email=requested_email,
                         portfolio=domain_org,
@@ -1638,6 +1640,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
+            is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
 
@@ -1647,7 +1650,15 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
             try:
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    if not send_portfolio_invitation_email(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                        is_admin_invitation=is_admin_invitation,
+                    ):
+                        messages.warning(
+                            self.request, "Could not send email notification to existing organization admins."
+                        )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
