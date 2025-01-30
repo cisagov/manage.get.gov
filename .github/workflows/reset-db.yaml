@@ -14,29 +14,29 @@ on:
         type: choice
         description: Which environment should we flush and re-load data for?
         options:
-          - staging
-          - development
-          - el
-          - ad
-          - ms
-          - ag
-          - litterbox
-          - hotgov
-          - cb
-          - bob
-          - meoward
-          - backup
-          - ky
-          - es
-          - nl
-          - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
+        - staging
+        - development
+        - el
+        - ad
+        - ms
+        - ag
+        - litterbox
+        - hotgov
+        - cb
+        - bob
+        - meoward
+        - backup
+        - ky
+        - es
+        - nl
+        - rh
+        - za
+        - gd
+        - rb
+        - ko
+        - ab
+        - rjm
+        - dk
 
 jobs:
   reset-db:
@@ -45,29 +45,29 @@ jobs:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
-      - name: Delete existing data for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
+    - name: Delete existing data for ${{ github.event.inputs.environment }}
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
-      - name: Run Django migrations for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
+    - name: Run Django migrations for ${{ github.event.inputs.environment }}
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
 
-      - name: Load fake data for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ github.event.inputs.environment }}
-          cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name loaddata"
+    - name: Load fake data for ${{ github.event.inputs.environment }}
+      uses: cloud-gov/cg-cli-tools@main
+      with:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+        cf_org: cisa-dotgov
+        cf_space: ${{ github.event.inputs.environment }}
+        cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py load' --name loaddata"
