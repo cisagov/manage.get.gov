@@ -201,7 +201,6 @@ class ExportMembersPortfolio(PortfolioReportsPermission, View):
         return response
 
 
-
 @method_decorator(staff_member_required, name="dispatch")
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
