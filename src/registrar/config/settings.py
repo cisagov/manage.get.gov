@@ -607,7 +607,7 @@ LOGGING = {
         },
         # Our app!
         "registrar": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "DEBUG",
             "propagate": False,
         },
