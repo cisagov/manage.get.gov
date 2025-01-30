@@ -1,7 +1,6 @@
 import logging
 import random
 from faker import Faker
-from django.db import transaction
 
 from registrar.fixtures.fixtures_portfolios import PortfolioFixture
 from registrar.fixtures.fixtures_users import UserFixture
