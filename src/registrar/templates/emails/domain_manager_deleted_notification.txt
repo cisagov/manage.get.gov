@@ -1,14 +1,12 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
 
-A domain manager was was removed from {{ domain.name }}.
+A domain manager was removed from {{ domain.name }}.
 REMOVED BY: {{ removed_by.email }}
 REMOVED ON: {{ date }}
 MANAGER REMOVED: {{ manager_removed.email }}
 
-
 ----------------------------------------------------------------
-
 
 WHY DID YOU RECEIVE THIS EMAIL? 
 You’re listed as a domain manager for {{ domain.name }}, so you’ll receive a notification whenever a domain manager is removed from that domain.
@@ -16,7 +14,6 @@ If you have questions or concerns, reach out to the person who removed the domai
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
-
 
 ----------------------------------------------------------------
 
