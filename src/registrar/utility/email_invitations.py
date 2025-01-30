@@ -275,3 +275,54 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
             )
         all_emails_sent = False
     return all_emails_sent
+
+
+def send_portfolio_admin_removal_emails(email: str, requestor, portfolio: Portfolio):
+    """
+    Notifies all portfolio admins of the provided portfolio of a removed portfolio admin
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+
+    Raises:
+        MissingEmailError
+    """
+    requestor_email = _get_requestor_email(requestor, portfolio=portfolio)
+    return _send_portfolio_admin_removal_emails_to_portfolio_admins(email, requestor_email, portfolio)
+
+
+def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, requestor_email, portfolio: Portfolio):
+    """
+    Notifies all portfolio admins of the provided portfolio of a removed portfolio admin
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+    """
+    all_emails_sent = True
+    # Get each portfolio admin from list
+    user_portfolio_permissions = UserPortfolioPermission.objects.filter(
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+    ).exclude(user__email=email)
+    for user_portfolio_permission in user_portfolio_permissions:
+        # Send email to each portfolio_admin
+        user = user_portfolio_permission.user
+        try:
+            send_templated_email(
+                "emails/portfolio_admin_removal_notification.txt",
+                "emails/portfolio_admin_removal_notification_subject.txt",
+                to_address=user.email,
+                context={
+                    "portfolio": portfolio,
+                    "requestor_email": requestor_email,
+                    "removed_email_address": email,
+                    "portfolio_admin": user,
+                    "date": date.today(),
+                },
+            )
+        except EmailSendingError:
+            logger.warning(
+                f"Could not send email organization admin notification to {user.email} for portfolio: {portfolio.name}",
+                exc_info=True,
+            )
+        all_emails_sent = False
+    return all_emails_sent

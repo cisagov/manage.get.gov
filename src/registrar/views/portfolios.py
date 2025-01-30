@@ -148,6 +148,21 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
                 messages.error(request, error_message)
                 return redirect(reverse("member", kwargs={"pk": pk}))
 
+        # if member being removed is an admin
+        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
+            try:
+                # attempt to send notification emails of the removal to other portfolio admins
+                if not send_portfolio_admin_removal_emails(
+                    email=portfolio_member_permission.user.email,
+                    requestor=request.user,
+                    portfolio=portfolio_member_permission.portfolio
+                ):
+                    messages.warning(
+                        self.request, "Could not send email notification to existing organization admins."
+                    )
+            except Exception as e:
+                self._handle_exceptions(e)
+
         # passed all error conditions
         portfolio_member_permission.delete()
 
@@ -158,6 +173,18 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         else:
             messages.success(request, success_message)
             return redirect(reverse("members"))
+
+    def _handle_exceptions(self, exception):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, MissingEmailError):
+            messages.warning(self.request, "Could not send email notification to existing organization admins.")
+            logger.warning(
+                f"Could not send email notification to existing organization admins.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email notification to existing organization admins.", exc_info=True)
+            messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
 class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
@@ -182,7 +209,6 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
 
     def post(self, request, pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
-        user_initially_is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         if form.is_valid():
@@ -415,6 +441,21 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
         """
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
 
+        # if invitation being removed is an admin
+        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
+            try:
+                # attempt to send notification emails of the removal to portfolio admins
+                if not send_portfolio_admin_removal_emails(
+                    email=portfolio_invitation.email,
+                    requestor=request.user,
+                    portfolio=portfolio_invitation.portfolio
+                ):
+                    messages.warning(
+                        self.request, "Could not send email notification to existing organization admins."
+                    )
+            except Exception as e:
+                self._handle_exceptions(e)
+
         portfolio_invitation.delete()
 
         success_message = f"You've removed {portfolio_invitation.email} from the organization."
@@ -425,6 +466,18 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
             messages.success(request, success_message)
             return redirect(reverse("members"))
 
+    def _handle_exceptions(self, exception):
+        """Handle exceptions raised during the process."""
+        if isinstance(exception, MissingEmailError):
+            messages.warning(self.request, "Could not send email notification to existing organization admins.")
+            logger.warning(
+                f"Could not send email notification to existing organization admins.",
+                exc_info=True,
+            )
+        else:
+            logger.warning("Could not send email notification to existing organization admins.", exc_info=True)
+            messages.warning(self.request, "Could not send email notification to existing organization admins.")
+            
 
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 
