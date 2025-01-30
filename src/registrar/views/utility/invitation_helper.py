@@ -68,13 +68,12 @@ def handle_invitation_exceptions(request, exception, email):
         logger.error(str(exception), exc_info=True)
     elif isinstance(exception, OutsideOrgMemberError):
         messages.error(request, str(exception))
-        logger.warning(str(exception), exc_info=True)
     elif isinstance(exception, AlreadyDomainManagerError):
-        messages.warning(request, str(exception))
+        messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
-        messages.warning(request, str(exception))
+        messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.warning(request, f"{email} is already a manager for this domain")
+        messages.error(request, f"{email} is already a manager for this domain")
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-        messages.warning(request, "Could not send email invitation.")
+        messages.error(request, "Could not send email invitation.")
