@@ -577,7 +577,7 @@ LOGGING = {
         },
         # Django's template processor
         "django.template": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
@@ -607,7 +607,7 @@ LOGGING = {
         },
         # Our app!
         "registrar": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "DEBUG",
             "propagate": False,
         },
