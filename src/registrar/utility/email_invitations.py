@@ -1,6 +1,8 @@
 from datetime import date
 from django.conf import settings
 from registrar.models import Domain, DomainInvitation, UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -169,7 +171,7 @@ def send_invitation_email(email, requestor_email, domains, requested_user):
         raise EmailSendingError(f"Could not send email invitation to {email} for domains: {domain_names}") from err
 
 
-def send_portfolio_invitation_email(email: str, requestor, portfolio):
+def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_invitation):
     """
     Sends a portfolio member invitation email to the specified address.
 
@@ -179,6 +181,10 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
         email (str): Email address of the recipient
         requestor (User): The user initiating the invitation.
         portfolio (Portfolio): The portfolio object for which the invitation is being sent.
+        is_admin_invitation (boolean): boolean indicating if the invitation is an admin invitation
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
 
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
@@ -210,3 +216,53 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio):
         raise EmailSendingError(
             f"Could not sent email invitation to {email} for portfolio {portfolio}. Portfolio invitation not saved."
         ) from err
+
+    all_admin_emails_sent = True
+    # send emails to portfolio admins
+    if is_admin_invitation:
+        all_admin_emails_sent = send_portfolio_admin_addition_emails_to_portfolio_admins(
+            email=email,
+            requestor_email=requestor_email,
+            portfolio=portfolio,
+            requested_user=None,
+        )
+    return all_admin_emails_sent
+
+
+def send_portfolio_admin_addition_emails_to_portfolio_admins(
+    email: str, requestor_email, portfolio: Domain, requested_user=None
+):
+    """
+    Notifies all portfolio admins of the provided portfolio of a newly invited portfolio admin
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+    """
+    all_emails_sent = True
+    # Get each portfolio admin from list
+    user_portfolio_permissions = UserPortfolioPermission.objects.filter(
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+    ).exclude(user__email=email)
+    for user_portfolio_permission in user_portfolio_permissions:
+        # Send email to each portfolio_admin
+        user = user_portfolio_permission.user
+        try:
+            send_templated_email(
+                "emails/portfolio_admin_addition_notification.txt",
+                "emails/portfolio_admin_addition_notification_subject.txt",
+                to_address=user.email,
+                context={
+                    "portfolio": portfolio,
+                    "requestor_email": requestor_email,
+                    "invited_email_address": email,
+                    "portfolio_admin": user,
+                    "date": date.today(),
+                },
+            )
+        except EmailSendingError:
+            logger.warning(
+                f"Could not send email organization admin notification to {user.email} for portfolio: {portfolio.name}",
+                exc_info=True,
+            )
+        all_emails_sent = False
+    return all_emails_sent
