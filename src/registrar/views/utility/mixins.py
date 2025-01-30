@@ -191,7 +191,7 @@ class PortfolioReportsPermission(PermissionsLoginMixin):
         portfolio = self.request.session.get("portfolio")
         if not self.request.user.has_view_members_portfolio_permission(
             portfolio
-        ) and not self.request.user.has_edit_members_portfolio_permission(portfolio):
+        ):
             return False
 
         return self.request.user.is_org_user(self.request)
