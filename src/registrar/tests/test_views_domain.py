@@ -988,9 +988,7 @@ class TestDomainManagers(TestDomainOverview):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
-        self.client.post(
-            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.manager.id})
-        )
+        self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.manager.id}))
 
         # Verify that the notification emails were sent to domain manager
         mock_send_templated_email.assert_called_once_with(
