@@ -2073,13 +2073,18 @@ class TestPortfolio(TestCase):
         self.user, _ = User.objects.get_or_create(
             username="intern@igorville.com", email="intern@igorville.com", first_name="Lava", last_name="World"
         )
+        self.non_federal_agency, _ = FederalAgency.objects.get_or_create(agency="Non-Federal Agency")
+        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="Federal Agency")
         super().setUp()
 
     def tearDown(self):
         super().tearDown()
         Portfolio.objects.all().delete()
+        self.federal_agency.delete()
+        # not deleting non_federal_agency so as not to interfere potentially with other tests
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_urbanization_field_resets_when_not_puetro_rico(self):
         """The urbanization field should only be populated when the state is puetro rico.
         Otherwise, this field should be empty."""
@@ -2100,6 +2105,7 @@ class TestPortfolio(TestCase):
         self.assertEqual(portfolio.urbanization, None)
         self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.ALABAMA)
 
+    @less_console_noise_decorator
     def test_can_add_urbanization_field(self):
         """Ensures that you can populate the urbanization field when conditions are right"""
         # Create a portfolio that cannot have this field
@@ -2120,6 +2126,32 @@ class TestPortfolio(TestCase):
 
         self.assertEqual(portfolio.urbanization, "test123")
         self.assertEqual(portfolio.state_territory, DomainRequest.StateTerritoryChoices.PUERTO_RICO)
+
+    @less_console_noise_decorator
+    def test_organization_name_updates_for_federal_agency(self):
+        # Create a Portfolio instance with a federal agency
+        portfolio = Portfolio(
+            creator=self.user,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.federal_agency,
+        )
+        portfolio.save()
+
+        # Assert that organization_name is updated to the federal agency's name
+        self.assertEqual(portfolio.organization_name, "Federal Agency")
+
+    @less_console_noise_decorator
+    def test_organization_name_does_not_update_for_non_federal_agency(self):
+        # Create a Portfolio instance with a non-federal agency
+        portfolio = Portfolio(
+            creator=self.user,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.non_federal_agency,
+        )
+        portfolio.save()
+
+        # Assert that organization_name remains None
+        self.assertIsNone(portfolio.organization_name)
 
 
 class TestAllowedEmail(TestCase):

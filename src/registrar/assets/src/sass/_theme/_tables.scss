@@ -41,6 +41,13 @@ th {
   }
 }
 
+// The member table has an extra "expand" row, which looks like a single row.
+// But the DOM disagrees - so we basically need to hide the border on both rows.
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+  border-bottom: none;
+}
+
 .dotgov-table {
   width: 100%;
 
@@ -56,10 +63,9 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders) {
-      td, th {
-        border-bottom: 1px solid color('base-lighter');
-      }
+    tr:not(.hide-td-borders):not(:last-child) td,
+    tr:not(.hide-td-borders):not(:last-child) th {
+      border-bottom: 1px solid color('base-lighter');
     }
 
     thead th {
