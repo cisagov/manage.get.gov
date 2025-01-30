@@ -666,7 +666,7 @@ OIDC_PROVIDERS = {
 # region: Routing-----------------------------------------------------------###
 
 # ~ Set by django.middleware.common.CommonMiddleware
-# APPEND_SLASH = True
+APPEND_SLASH = True
 # PREPEND_WWW = False
 
 # full Python import path to the root URLconf
