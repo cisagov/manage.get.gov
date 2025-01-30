@@ -21,7 +21,7 @@
         {% if field and field.field and field.field.descriptions %}
           {% with description=field.field.descriptions|get_dict_value:option.value %}
             {% if description %}
-                <p class="margin-0 margin-top-1">{{ description }}</p>
+                <p class="margin-0 margin-top-1 font-body-2xs">{{ description }}</p>
             {% endif %}
           {% endwith %}
         {% endif %}
