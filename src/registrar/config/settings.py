@@ -595,13 +595,13 @@ LOGGING = {
         },
         # OpenID Connect logger
         "oic": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
@@ -615,7 +615,7 @@ LOGGING = {
     # root logger catches anything, unless
     # defined by a more specific logger
     "root": {
-        "handlers": ["console"],
+        "handlers": django_handlers,
         "level": "INFO",
     },
 }
