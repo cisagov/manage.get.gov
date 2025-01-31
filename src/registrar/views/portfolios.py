@@ -211,6 +211,7 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
+        removing_admin_role_on_self = False
         if form.is_valid():
             try:
                 if form.is_change_from_member_to_admin():
@@ -477,7 +478,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
         else:
             logger.warning("Could not send email notification to existing organization admins.", exc_info=True)
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
-            
+
 
 class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
 

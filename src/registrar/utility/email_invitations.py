@@ -273,7 +273,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
                 f"Could not send email organization admin notification to {user.email} for portfolio: {portfolio.name}",
                 exc_info=True,
             )
-        all_emails_sent = False
+            all_emails_sent = False
     return all_emails_sent
 
 
@@ -324,5 +324,5 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
                 f"Could not send email organization admin notification to {user.email} for portfolio: {portfolio.name}",
                 exc_info=True,
             )
-        all_emails_sent = False
+            all_emails_sent = False
     return all_emails_sent
