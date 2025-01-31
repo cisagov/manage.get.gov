@@ -520,7 +520,7 @@ LOGGING = {
             "()": JsonFormatter,
         },
     },
-    # define where log messages will be sent;
+    # define where log messages will be sent
     # each logger can have one or more handlers
     "handlers": {
         "console": {
