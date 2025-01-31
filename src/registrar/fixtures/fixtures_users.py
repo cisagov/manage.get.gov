@@ -361,7 +361,7 @@ class UserFixture:
 
         # Fetch existing users by email
         existing_users_by_email = User.objects.filter(email__in=emails).values_list("email", "username", "id")
-        print(existing_users_by_email)
+
         # Create a dictionary to map emails to existing usernames
         email_to_existing_user = {user[0]: user[1] for user in existing_users_by_email}
 
