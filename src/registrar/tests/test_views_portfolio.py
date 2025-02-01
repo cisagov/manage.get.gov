@@ -4303,7 +4303,9 @@ class TestPortfolioInvitedMemberEditView(WebTest):
     @patch("django.contrib.messages.warning")
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_invited_member_permissions_basic_to_admin_notification_fails(self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning):
+    def test_edit_invited_member_permissions_basic_to_admin_notification_fails(
+        self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
+    ):
         """Tests editing permissions for an invited (but not yet joined) member.
         Update basic member to admin."""
         self.client.force_login(self.user)
@@ -4393,7 +4395,9 @@ class TestPortfolioInvitedMemberEditView(WebTest):
     @patch("django.contrib.messages.warning")
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_invited_member_permissions_admin_to_basic_notification_fails(self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning):
+    def test_edit_invited_member_permissions_admin_to_basic_notification_fails(
+        self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
+    ):
         """Tests editing permissions for an invited (but not yet joined) admin.
         Update basic member to admin. At least one notification email fails."""
         self.client.force_login(self.user)
@@ -4436,7 +4440,6 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         warning_args, _ = mock_messages_warning.call_args
         self.assertIsInstance(warning_args[0], WSGIRequest)
         self.assertEqual(warning_args[1], "Could not send email notification to existing organization admins.")
-
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -4488,6 +4491,3 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         # Assert that addition and removal emails are not sent
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
-
-
-
