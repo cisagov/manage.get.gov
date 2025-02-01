@@ -254,6 +254,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert success message
@@ -504,6 +505,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -567,6 +569,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -693,6 +696,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve was not called
@@ -918,6 +922,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -979,6 +984,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called

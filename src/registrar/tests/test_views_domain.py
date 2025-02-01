@@ -810,7 +810,10 @@ class TestDomainManagers(TestDomainOverview):
 
         # Verify that the invitation emails were sent
         mock_send_portfolio_email.assert_called_once_with(
-            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+            email="mayor@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -864,7 +867,10 @@ class TestDomainManagers(TestDomainOverview):
 
         # Verify that the invitation emails were sent
         mock_send_portfolio_email.assert_called_once_with(
-            email="notauser@igorville.gov", requestor=self.user, portfolio=self.portfolio
+            email="notauser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -999,7 +1005,10 @@ class TestDomainManagers(TestDomainOverview):
 
         # Verify that the invitation emails were sent
         mock_send_portfolio_email.assert_called_once_with(
-            email="mayor@igorville.gov", requestor=self.user, portfolio=self.portfolio
+            email="mayor@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
         mock_send_domain_email.assert_not_called()
 

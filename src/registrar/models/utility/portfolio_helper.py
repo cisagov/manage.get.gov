@@ -137,11 +137,9 @@ def validate_user_portfolio_permission(user_portfolio_permission):
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
 
-        existing_invitations = PortfolioInvitation.objects.filter(
-            email=user_portfolio_permission.user.email
-        ).exclude(
-            Q(portfolio=user_portfolio_permission.portfolio) | 
-            Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email).exclude(
+            Q(portfolio=user_portfolio_permission.portfolio)
+            | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         )
         if existing_invitations.exists():
             raise ValidationError(
@@ -199,11 +197,8 @@ def validate_portfolio_invitation(portfolio_invitation):
     if not flag_is_active_for_user(user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.filter(user=user)
 
-        existing_invitations = PortfolioInvitation.objects.filter(
-            email=portfolio_invitation.email
-        ).exclude(
-            Q(id=portfolio_invitation.id) |
-            Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        existing_invitations = PortfolioInvitation.objects.filter(email=portfolio_invitation.email).exclude(
+            Q(id=portfolio_invitation.id) | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         )
 
         if existing_permissions.exists():

@@ -3290,7 +3290,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
-                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio, is_admin_invitation=False
             )
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
@@ -3334,7 +3334,10 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
-                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+                email=self.new_member_email,
+                requestor=self.user,
+                portfolio=self.portfolio,
+                is_admin_invitation=False,
             )
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))

@@ -28,7 +28,11 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_admin_addition_emails, send_portfolio_invitation_email
+from registrar.utility.email_invitations import (
+    send_domain_invitation_email,
+    send_portfolio_admin_addition_emails,
+    send_portfolio_invitation_email,
+)
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,

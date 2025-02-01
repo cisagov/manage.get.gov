@@ -58,7 +58,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -137,7 +137,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with([mock_domain1, mock_domain2])
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain1, mock_domain2])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain1, mock_domain2])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
         )
@@ -258,7 +258,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -306,7 +306,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
