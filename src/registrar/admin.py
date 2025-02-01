@@ -28,7 +28,7 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_admin_addition_emails, send_portfolio_invitation_email
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
@@ -1636,18 +1636,18 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         Emails sent to requested user / email.
         When exceptions are raised, return without saving model.
         """
-        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+        try:
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
-            # Look up a user with that email
-            requested_user = get_requested_user(requested_email)
+            if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+                # Look up a user with that email
+                requested_user = get_requested_user(requested_email)
 
-            permission_exists = UserPortfolioPermission.objects.filter(
-                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
-            ).exists()
-            try:
+                permission_exists = UserPortfolioPermission.objects.filter(
+                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
@@ -1665,10 +1665,28 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
                     messages.warning(request, "User is already a member of this portfolio.")
-            except Exception as e:
-                # when exception is raised, handle and do not save the model
-                handle_invitation_exceptions(request, e, requested_email)
-                return
+            else:  # Handle the case when updating an existing PortfolioInvitation
+                # Retrieve the existing object from the database
+                existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
+
+                # Check if the previous roles did NOT include ORGANIZATION_ADMIN
+                # and the new roles DO include ORGANIZATION_ADMIN
+                was_not_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in existing_obj.roles
+                # Check also if status is INVITED, ignore role changes for other statuses
+                is_invited = obj.status == PortfolioInvitation.PortfolioInvitationStatus.INVITED
+
+                if was_not_admin and is_admin_invitation and is_invited:
+                    # send email to existing portfolio admins if new admin
+                    if not send_portfolio_admin_addition_emails(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                    ):
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
+        except Exception as e:
+            # when exception is raised, handle and do not save the model
+            handle_invitation_exceptions(request, e, requested_email)
+            return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
 
