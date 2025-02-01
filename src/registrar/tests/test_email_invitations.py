@@ -711,7 +711,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         )
 
 
-class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
+class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
     """Unit tests for _send_portfolio_admin_removal_emails_to_portfolio_admins function."""
 
     def setUp(self):

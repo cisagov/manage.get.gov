@@ -1631,10 +1631,33 @@ class TestPortfolio(WebTest):
         # Assert that the toggleable alert ID exists
         self.assertContains(response, '<div id="toggleable-alert"')
 
+
+class TestPortfolioMemberDeleteView(WebTest):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.user = create_test_user()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_portfolio_member_delete_view_members_table_active_requests(self):
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_delete_view_members_table_active_requests(self, send_removal_emails):
         """Error state w/ deleting a member with active request on Members Table"""
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
@@ -1672,10 +1695,14 @@ class TestPortfolio(WebTest):
 
             self.assertContains(response, expected_error_message, status_code=400)
 
+            # assert that send_portfolio_admin_removal_emails is not called
+            send_removal_emails.assert_not_called()
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_portfolio_member_delete_view_members_table_only_admin(self):
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_delete_view_members_table_only_admin(self, send_removal_emails):
         """Error state w/ deleting a member that's the only admin on Members Table"""
 
         # I'm a user with admin permission
@@ -1703,10 +1730,14 @@ class TestPortfolio(WebTest):
             )
             self.assertContains(response, expected_error_message, status_code=400)
 
+            # assert that send_portfolio_admin_removal_emails is not called
+            send_removal_emails.assert_not_called()
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_portfolio_member_table_delete_view_success(self):
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_table_delete_member_success(self, mock_send_removal_emails):
         """Success state with deleting on Members Table page bc no active request AND not only admin"""
 
         # I'm a user
@@ -1749,6 +1780,134 @@ class TestPortfolio(WebTest):
 
             expected_success_message = f"You've removed {member.email} from the organization."
             self.assertContains(response, expected_success_message, status_code=200)
+
+            # assert that send_portfolio_admin_removal_emails is not called
+            # because member being removed is not an admin
+            mock_send_removal_emails.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_table_delete_admin_success(self, mock_send_removal_emails):
+        """Success state with deleting on Members Table page bc no active request AND
+        not only admin. Because admin, removal emails are sent."""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Creating an admin that can be deleted (see patch)
+        member_email = "deleteable_admin@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        # Set up the member in the portfolio
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        mock_send_removal_emails.return_value = True
+
+        # And set that the member has no active requests AND it's not the only admin
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
+            User, "is_only_admin_of_portfolio", return_value=False
+        ):
+
+            # Attempt to delete
+            self.client.force_login(self.user)
+            response = self.client.post(
+                # We check X_REQUESTED_WITH bc those return JSON responses
+                reverse("member-delete", kwargs={"pk": upp.pk}),
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+
+            # Check for a successful deletion
+            self.assertEqual(response.status_code, 200)
+
+            expected_success_message = f"You've removed {member.email} from the organization."
+            self.assertContains(response, expected_success_message, status_code=200)
+
+            # assert that send_portfolio_admin_removal_emails is called
+            mock_send_removal_emails.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_admin_addition_emails
+            _, called_kwargs = mock_send_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["email"], member_email)
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_table_delete_admin_success_removal_email_fail(self, mock_send_removal_emails):
+        """Success state with deleting on Members Table page bc no active request AND
+        not only admin. Because admin, removal emails are sent, but fail to send."""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Creating an admin that can be deleted (see patch)
+        member_email = "deleteable_admin@example.com"
+        member, _ = User.objects.get_or_create(email=member_email)
+
+        # Set up the member in the portfolio
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        mock_send_removal_emails.return_value = False
+
+        # And set that the member has no active requests AND it's not the only admin
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
+            User, "is_only_admin_of_portfolio", return_value=False
+        ):
+
+            # Attempt to delete
+            self.client.force_login(self.user)
+            response = self.client.post(
+                # We check X_REQUESTED_WITH bc those return JSON responses
+                reverse("member-delete", kwargs={"pk": upp.pk}),
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+
+            # Check for a successful deletion
+            self.assertEqual(response.status_code, 200)
+
+            expected_success_message = f"You've removed {member.email} from the organization."
+            self.assertContains(response, expected_success_message, status_code=200)
+
+            # assert that send_portfolio_admin_removal_emails is called
+            mock_send_removal_emails.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_admin_addition_emails
+            _, called_kwargs = mock_send_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["email"], member_email)
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -1848,10 +2007,33 @@ class TestPortfolio(WebTest):
                 # and then confirm that we're still on the Manage Members page
                 self.assertEqual(response.headers["Location"], reverse("member", kwargs={"pk": admin_perm_user.pk}))
 
+
+class TestPortfolioInvitedMemberDeleteView(WebTest):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.user = create_test_user()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self):
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self, mock_send_removal_emails):
         """Success state w/ deleting invited member on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -1891,6 +2073,128 @@ class TestPortfolio(WebTest):
             # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
             # and then confirm that we're now on Members Table page
             self.assertEqual(response.headers["Location"], reverse("members"))
+
+            # assert send_portfolio_admin_removal_emails not called since invitation
+            # is for a basic member
+            mock_send_removal_emails.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin(self, mock_send_removal_emails):
+        """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        mock_send_removal_emails.return_value = True
+
+        # Invite an admin under same portfolio
+        invited_member_email = "invited_member@example.com"
+        invitation = PortfolioInvitation.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        with patch("django.contrib.messages.success") as mock_success:
+            self.client.force_login(self.user)
+            response = self.client.post(
+                reverse("invitedmember-delete", kwargs={"pk": invitation.pk}),
+            )
+
+            self.assertEqual(response.status_code, 302)
+
+            expected_success_message = f"You've removed {invitation.email} from the organization."
+            args, kwargs = mock_success.call_args
+            # Check if first arg is a WSGIRequest, confirms request object passed correctly
+            # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
+            self.assertIsInstance(args[0], WSGIRequest)
+            # Check that the error message matches the expected error message
+            self.assertEqual(args[1], expected_success_message)
+
+            # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
+            # and then confirm that we're now on Members Table page
+            self.assertEqual(response.headers["Location"], reverse("members"))
+
+            # assert send_portfolio_admin_removal_emails is called since invitation
+            # is for an admin
+            mock_send_removal_emails.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_admin_addition_emails
+            _, called_kwargs = mock_send_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["email"], invited_member_email)
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin_email_fails(self, mock_send_removal_emails):
+        """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
+
+        # I'm a user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        mock_send_removal_emails.return_value = False
+
+        # Invite an admin under same portfolio
+        invited_member_email = "invited_member@example.com"
+        invitation = PortfolioInvitation.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        with patch("django.contrib.messages.success") as mock_success:
+            self.client.force_login(self.user)
+            response = self.client.post(
+                reverse("invitedmember-delete", kwargs={"pk": invitation.pk}),
+            )
+
+            self.assertEqual(response.status_code, 302)
+
+            expected_success_message = f"You've removed {invitation.email} from the organization."
+            args, kwargs = mock_success.call_args
+            # Check if first arg is a WSGIRequest, confirms request object passed correctly
+            # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
+            self.assertIsInstance(args[0], WSGIRequest)
+            # Check that the error message matches the expected error message
+            self.assertEqual(args[1], expected_success_message)
+
+            # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
+            # and then confirm that we're now on Members Table page
+            self.assertEqual(response.headers["Location"], reverse("members"))
+
+            # assert send_portfolio_admin_removal_emails is called since invitation
+            # is for an admin
+            mock_send_removal_emails.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_admin_addition_emails
+            _, called_kwargs = mock_send_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["email"], invited_member_email)
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
