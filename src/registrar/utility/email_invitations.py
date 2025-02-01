@@ -40,7 +40,7 @@ def send_domain_invitation_email(
         OutsideOrgMemberError: If the requested_user is part of a different organization.
         EmailSendingError: If there is an error while sending the email.
     """
-    domains = normalize_domains(domains)
+    domains = _normalize_domains(domains)
     requestor_email = _get_requestor_email(requestor, domains=domains)
 
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
@@ -95,7 +95,7 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
     return all_emails_sent
 
 
-def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
+def _normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
     """Ensures domains is always a list."""
     return [domains] if isinstance(domains, Domain) else domains
 
