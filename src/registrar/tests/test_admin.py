@@ -1210,7 +1210,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
+    @patch("django.contrib.messages.success")  # Mock the `messages.success` call
     def test_save_sends_email(self, mock_messages_success, mock_send_email):
         """On save_model, an email is sent if an invitation already exists."""
 
@@ -1460,6 +1460,94 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_admin_addition_emails")
+    def test_save_existing_sends_email_notification(self, mock_send_email):
+        """On save_model to an existing invitation, an email is set to notify existing
+        admins, if the invitation changes from member to admin."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Mock the response value of the email send
+        mock_send_email.return_value = True
+
+        # Create and save a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation.objects.create(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],  # Initially NOT an admin
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,  # Must be "INVITED"
+        )
+
+        # Create a request object
+        request = self.factory.post(f"/admin/registrar/PortfolioInvitation/{portfolio_invitation.pk}/change/")
+        request.user = self.superuser
+
+        # Change roles from MEMBER to ADMIN
+        portfolio_invitation.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, True)
+
+        # Assert that send_portfolio_admin_addition_emails is called
+        mock_send_email.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_admin_addition_emails")
+    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
+    def test_save_existing_email_notification_warning(self, mock_messages_warning, mock_send_email):
+        """On save_model for an existing invitation, a warning is displayed if method to
+        send email to notify admins returns False."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Mock the response value of the email send
+        mock_send_email.return_value = False
+
+        # Create and save a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation.objects.create(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],  # Initially NOT an admin
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,  # Must be "INVITED"
+        )
+
+        # Create a request object
+        request = self.factory.post(f"/admin/registrar/PortfolioInvitation/{portfolio_invitation.pk}/change/")
+        request.user = self.superuser
+
+        # Change roles from MEMBER to ADMIN
+        portfolio_invitation.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, True)
+
+        # Assert that send_portfolio_admin_addition_emails is called
+        mock_send_email.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert that messages.error was called with the correct message
+        mock_messages_warning.assert_called_once_with(
+            request, "Could not send email notification to existing organization admins."
+        )
 
 
 class TestHostAdmin(TestCase):
