@@ -3,7 +3,6 @@ from django.db import IntegrityError
 from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
-import traceback
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -11,7 +10,7 @@ from registrar.utility.errors import (
     OutsideOrgMemberError,
 )
 
-logger = logging.getLogger(__name__)    
+logger = logging.getLogger(__name__)
 
 # These methods are used by multiple views which share similar logic and function
 # when creating invitations and sending associated emails. These can be reused in
