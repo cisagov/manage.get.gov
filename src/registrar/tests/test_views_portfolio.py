@@ -3243,18 +3243,21 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         }
 
         # Act
-        with patch("django.contrib.messages.warning") as mock_warning:
+        with patch("django.contrib.messages.error") as mock_error:
             response = self.client.post(reverse("new-member"), data=form_data)
 
             # Assert
             # assert that the send_portfolio_invitation_email called
             mock_send_email.assert_called_once_with(
-                email=self.new_member_email, requestor=self.user, portfolio=self.portfolio
+                email=self.new_member_email,
+                requestor=self.user,
+                portfolio=self.portfolio,
+                is_admin_invitation=False,
             )
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
+            mock_error.assert_called_once_with(response.wsgi_request, "Could not send organization invitation email.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
