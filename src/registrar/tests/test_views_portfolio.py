@@ -3892,6 +3892,7 @@ class TestPortfolioMemberEditView(WebTest):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
 
+        # return indicator that notification emails sent successfully
         mock_send_addition_emails.return_value = True
 
         response = self.client.post(
@@ -3910,12 +3911,13 @@ class TestPortfolioMemberEditView(WebTest):
 
         # assert addition emails are sent to portfolio admins
         mock_send_addition_emails.assert_called_once()
+        # assert removal emails are not sent
         mock_send_removal_emails.assert_not_called()
 
         # Get the arguments passed to send_portfolio_admin_addition_emails
         _, called_kwargs = mock_send_addition_emails.call_args
 
-        # Assert the email content
+        # Assert the notification email content
         self.assertEqual(called_kwargs["email"], basic_member.email)
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
@@ -3929,7 +3931,8 @@ class TestPortfolioMemberEditView(WebTest):
     def test_edit_member_permissions_basic_to_admin_notification_fails(
         self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
     ):
-        """Tests converting a basic member to admin with full permissions."""
+        """Tests converting a basic member to admin with full permissions.
+        Handle when notification emails fail to send."""
         self.client.force_login(self.user)
 
         # Create a basic member to edit
@@ -3941,6 +3944,7 @@ class TestPortfolioMemberEditView(WebTest):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
 
+        # At least one notification email failed to send
         mock_send_addition_emails.return_value = False
 
         response = self.client.post(
@@ -3959,6 +3963,7 @@ class TestPortfolioMemberEditView(WebTest):
 
         # assert addition emails are sent to portfolio admins
         mock_send_addition_emails.assert_called_once()
+        # assert no removal emails are sent
         mock_send_removal_emails.assert_not_called()
 
         # Get the arguments passed to send_portfolio_admin_addition_emails
@@ -4002,7 +4007,7 @@ class TestPortfolioMemberEditView(WebTest):
         # Verify redirect and success message
         self.assertEqual(response.status_code, 302)
 
-        # assert addition emails are not sent to portfolio admins
+        # assert addition and removal emails are not sent to portfolio admins
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
 
@@ -4010,30 +4015,36 @@ class TestPortfolioMemberEditView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
-    def test_edit_member_permissions_basic_to_basic(self, mock_send_addition_emails):
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_member_permissions_basic_to_basic(self, mock_send_removal_emails, mock_send_addition_emails):
         """Tests updating an admin without changing permissions."""
         self.client.force_login(self.user)
 
-        # Create an admin member to edit
-        admin_member = create_test_user()
-        admin_permission = UserPortfolioPermission.objects.create(
-            user=admin_member,
+        # Create a basic member to edit
+        basic_member = create_test_user()
+        basic_permission = UserPortfolioPermission.objects.create(
+            user=basic_member,
             portfolio=self.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
 
         response = self.client.post(
-            reverse("member-permissions", kwargs={"pk": admin_permission.id}),
+            reverse("member-permissions", kwargs={"pk": basic_permission.id}),
             {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
             },
         )
 
         # Verify redirect and success message
         self.assertEqual(response.status_code, 302)
 
-        # assert addition emails are not sent to portfolio admins
+        # assert addition and removal emails are not sent to portfolio admins
         mock_send_addition_emails.assert_not_called()
+        mock_send_removal_emails.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -4050,7 +4061,6 @@ class TestPortfolioMemberEditView(WebTest):
             user=admin_member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
 
         mock_send_removal_emails.return_value = True
@@ -4175,27 +4185,6 @@ class TestPortfolioMemberEditView(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
-    def test_edit_invited_member_permissions(self):
-        """Tests editing permissions for an invited (but not yet joined) member."""
-        self.client.force_login(self.user)
-
-        # Test updating invitation permissions
-        response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
-            {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-
-        # Verify invitation was updated
-        updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
-        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_admin_removing_own_admin_role(self):
         """Tests an admin removing their own admin role redirects to home.
 
@@ -4221,3 +4210,284 @@ class TestPortfolioMemberEditView(WebTest):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], reverse("home"))
+
+
+class TestPortfolioInvitedMemberEditView(WebTest):
+    """Tests for the edit invited member page on portfolios"""
+
+    def setUp(self):
+        self.user = create_user()
+        # Create Portfolio
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+
+        # Add an invited member who has been invited to manage domains
+        self.invited_member_email = "invited@example.com"
+        self.invitation = PortfolioInvitation.objects.create(
+            email=self.invited_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        # Add an invited admin who has been invited to manage domains
+        self.invited_admin_email = "invitedadmin@example.com"
+        self.admin_invitation = PortfolioInvitation.objects.create(
+            email=self.invited_admin_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[],
+        )
+
+        # Assign permissions to the user making requests
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    def tearDown(self):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_basic_to_admin(self, mock_send_removal_emails, mock_send_addition_emails):
+        """Tests editing permissions for an invited (but not yet joined) member.
+        Update basic member to admin."""
+        self.client.force_login(self.user)
+
+        # email notifications send successfully
+        mock_send_addition_emails.return_value = True
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify invitation was updated
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+
+        # Assert that addition emails are sent
+        mock_send_addition_emails.assert_called_once()
+        # Assert that removal emails are not sent
+        mock_send_removal_emails.assert_not_called()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_addition_emails.call_args
+
+        # Assert the notification email content
+        self.assertEqual(called_kwargs["email"], self.invited_member_email)
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("django.contrib.messages.warning")
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_basic_to_admin_notification_fails(self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning):
+        """Tests editing permissions for an invited (but not yet joined) member.
+        Update basic member to admin."""
+        self.client.force_login(self.user)
+
+        # at least one email notification not sent successfully
+        mock_send_addition_emails.return_value = False
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify invitation was updated
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+
+        # Assert that addition emails are sent
+        mock_send_addition_emails.assert_called_once()
+        # Assert that removal emails are not sent
+        mock_send_removal_emails.assert_not_called()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_addition_emails.call_args
+
+        # Assert the notification email content
+        self.assertEqual(called_kwargs["email"], self.invited_member_email)
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert warning message is called correctly
+        mock_messages_warning.assert_called_once()
+        warning_args, _ = mock_messages_warning.call_args
+        self.assertIsInstance(warning_args[0], WSGIRequest)
+        self.assertEqual(warning_args[1], "Could not send email notification to existing organization admins.")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_admin_to_basic(self, mock_send_removal_emails, mock_send_addition_emails):
+        """Tests editing permissions for an invited (but not yet joined) admin.
+        Update admin to basic member."""
+        self.client.force_login(self.user)
+
+        # email notifications send successfully
+        mock_send_addition_emails.return_value = True
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.admin_invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify invitation was updated
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.admin_invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+        # Assert that addition emails are not sent
+        mock_send_addition_emails.assert_not_called()
+        # Assert that removal emails are sent
+        mock_send_removal_emails.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_removal_emails
+        _, called_kwargs = mock_send_removal_emails.call_args
+
+        # Assert the notification email content
+        self.assertEqual(called_kwargs["email"], self.invited_admin_email)
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("django.contrib.messages.warning")
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_admin_to_basic_notification_fails(self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning):
+        """Tests editing permissions for an invited (but not yet joined) admin.
+        Update basic member to admin. At least one notification email fails."""
+        self.client.force_login(self.user)
+
+        # at least one email notification not sent successfully
+        mock_send_removal_emails.return_value = False
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.admin_invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify invitation was updated
+        updated_invitation = PortfolioInvitation.objects.get(pk=self.admin_invitation.id)
+        self.assertEqual(updated_invitation.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+        # Assert that addition emails are not sent
+        mock_send_addition_emails.assert_not_called()
+        # Assert that removal emails are sent
+        mock_send_removal_emails.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_removal_emails
+        _, called_kwargs = mock_send_removal_emails.call_args
+
+        # Assert the notification email content
+        self.assertEqual(called_kwargs["email"], self.invited_admin_email)
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert warning message is called correctly
+        mock_messages_warning.assert_called_once()
+        warning_args, _ = mock_messages_warning.call_args
+        self.assertIsInstance(warning_args[0], WSGIRequest)
+        self.assertEqual(warning_args[1], "Could not send email notification to existing organization admins.")
+
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_basic_to_basic(self, mock_send_removal_emails, mock_send_addition_emails):
+        """Tests editing permissions for an invited (but not yet joined) member.
+        Update basic member without changing role."""
+        self.client.force_login(self.user)
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Assert that addition and removal emails are not sent
+        mock_send_addition_emails.assert_not_called()
+        mock_send_removal_emails.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    def test_edit_invited_member_permissions_admin_to_admin(self, mock_send_removal_emails, mock_send_addition_emails):
+        """Tests editing permissions for an invited (but not yet joined) admin.
+        Update admin member without changing role."""
+        self.client.force_login(self.user)
+
+        # Test updating invitation permissions
+        response = self.client.post(
+            reverse("invitedmember-permissions", kwargs={"pk": self.admin_invitation.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        # Assert that addition and removal emails are not sent
+        mock_send_addition_emails.assert_not_called()
+        mock_send_removal_emails.assert_not_called()
+
+
+
