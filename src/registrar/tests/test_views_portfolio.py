@@ -3484,6 +3484,55 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
         self.assertEqual(call_args["requestor"], self.user)
         self.assertIsNone(call_args.get("is_member_of_different_org"))
 
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_admin_invite_for_new_users(self, mock_send_email):
+        """Tests the member invitation flow for new admin."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        mock_send_email.return_value = True
+
+        # Simulate submission of member invite for new admin
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
+                "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                "member_permissions": "no_access",
+                "email": self.new_member_email,
+            },
+        )
+
+        # Ensure the final submission is successful
+        self.assertEqual(final_response.status_code, 302)  # Redirects
+
+        # Validate Database Changes
+        # Validate that portfolio invitation was created but not retrieved
+        portfolio_invite = PortfolioInvitation.objects.filter(
+            email=self.new_member_email, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, self.new_member_email)
+        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+        # Check that an email was sent
+        mock_send_email.assert_called()
+
+        # Get the arguments passed to send_portfolio_invitation_email
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], self.new_member_email)
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
 
 class TestEditPortfolioMemberView(WebTest):
     """Tests for the edit member page on portfolios"""
