@@ -1460,14 +1460,11 @@ class TestCreateFederalPortfolio(TestCase):
             first_name="first", last_name="last", email="mango@igorville.gov", federal_agency=self.executive_agency_2
         )
         
-        self.portfolio = Portfolio.objects.create(organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user)
-
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             self.domain_request = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
-                portfolio=self.portfolio,
                 user=self.user,
             )
             self.domain_request.approve()
@@ -1479,26 +1476,22 @@ class TestCreateFederalPortfolio(TestCase):
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
-                portfolio=self.portfolio,
                 user=self.user,
                 organization_name="Test Federal Agency",
             )
             self.domain_request_2.approve()
             self.domain_info_2 = DomainInformation.objects.filter(domain_request=self.domain_request_2).get()
-            self.domain_2 = Domain.objects.get(name="icecreamforigorville.gov")
 
             self.domain_request_3 = completed_domain_request(
                 name="exec_1.gov",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
                 generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
                 federal_agency=self.executive_agency_1,
-                portfolio=self.portfolio,
                 user=self.user,
                 organization_name="Executive Agency 1",
             )
             self.domain_request_3.approve()
             self.domain_info_3 = self.domain_request_3.DomainRequest_info
-            self.domain = Domain.objects.get(name="exec_1.gov")
 
             self.domain_request_4 = completed_domain_request(
                 name="exec_2.gov",
@@ -1506,12 +1499,10 @@ class TestCreateFederalPortfolio(TestCase):
                 generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
                 federal_agency=self.executive_agency_2,
                 user=self.user,
-                portfolio=self.portfolio,
                 organization_name="Executive Agency 2",
             )
             self.domain_request_4.approve()
             self.domain_info_4 = self.domain_request_4.DomainRequest_info
-            self.domain_4 = Domain.objects.get(name="exec_2.gov")
 
     def tearDown(self):
         DomainInformation.objects.all().delete()
@@ -1529,7 +1520,7 @@ class TestCreateFederalPortfolio(TestCase):
         ):
             call_command("create_federal_portfolio", **kwargs)
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_post_process_started_domain_requests_existing_portfolio(self):
         """Ensures that federal agency is cleared when agency name matches portfolio name.
         As the name implies, this implicitly tests the "post_process_started_domain_requests" function.
@@ -1869,7 +1860,10 @@ class TestCreateFederalPortfolio(TestCase):
         UserDomainRole.objects.create(user=manager2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         
         # Run the management command
-        self.run_create_federal_portfolio(agency_name=self.portfolio.organization_name, parse_requests=True, add_managers=True)
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True)
+
+        # Check that the portfolio was created
+        self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
         
         # Check that the users have been added as portfolio managers
         permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user__in=[manager1, manager2])
@@ -1890,13 +1884,13 @@ class TestCreateFederalPortfolio(TestCase):
                 email="manager1@example.com", 
                 status=DomainInvitation.DomainInvitationStatus.INVITED
             )
-
-        # Ensure no existing PortfolioInvitation for the invited email
-        self.assertFalse(PortfolioInvitation.objects.filter(email="manager1@example.com", portfolio=self.portfolio).exists())
-        
+          
         # Run the management command
         self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True)
         
+        # Check that the portfolio was created
+        self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
+
         # Check that a PortfolioInvitation has been created for the invited email
         invitation = PortfolioInvitation.objects.get(email="manager1@example.com", portfolio=self.portfolio)
         
@@ -1909,9 +1903,9 @@ class TestCreateFederalPortfolio(TestCase):
         
         # Verify that no duplicate invitations are created
         self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True)
-        duplicated_invitations = PortfolioInvitation.objects.filter(email="manager1@example.com", portfolio=self.portfolio)
+        invitations = PortfolioInvitation.objects.filter(email="manager1@example.com", portfolio=self.portfolio)
         self.assertEqual(
-            duplicated_invitations.count(),
+            invitations.count(),
             1,
             "Duplicate PortfolioInvitation should not be created for the same email and portfolio."
         )
@@ -1922,6 +1916,9 @@ class TestCreateFederalPortfolio(TestCase):
         # Create a manager
         manager = User.objects.create(username="manager", email="manager@example.com")
         UserDomainRole.objects.create(user=manager, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Create a pre-existing portfolio  
+        self.portfolio = Portfolio.objects.create(organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user)
         
         # Manually add the manager to the portfolio
         UserPortfolioPermission.objects.create(portfolio=self.portfolio, user=manager, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
@@ -1932,3 +1929,25 @@ class TestCreateFederalPortfolio(TestCase):
         # Ensure that the manager is not duplicated
         permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user=manager)
         self.assertEqual(permissions.count(), 1)
+
+    @less_console_noise_decorator
+    def test_add_managers_portfolio_already_exists(self):
+        """Test that managers are skipped when the portfolio already exists."""
+        
+        # Create a pre-existing portfolio  
+        self.portfolio = Portfolio.objects.create(organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user)
+        
+        # Create users and assign them as domain managers
+        manager1 = User.objects.create(username="manager1", email="manager1@example.com")
+        manager2 = User.objects.create(username="manager2", email="manager2@example.com")
+        UserDomainRole.objects.create(user=manager1, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=manager2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Run the management command
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True)
+        
+        # Check that managers were added to the portfolio
+        permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user__in=[manager1, manager2])
+        self.assertEqual(permissions.count(), 2)
+        for perm in permissions:
+            self.assertIn(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, perm.roles)

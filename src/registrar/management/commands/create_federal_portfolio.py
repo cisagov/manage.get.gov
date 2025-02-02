@@ -30,6 +30,8 @@ class Command(BaseCommand):
         self.failed_portfolios = set()
         self.added_managers = set()
         self.added_invitations = set()
+        self.failed_managers = set()
+        self.failed_invitations = set()
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -114,9 +116,15 @@ class Command(BaseCommand):
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
-                portfolios.append(portfolio)
-
+                # if the portfolio is already created, we don't want to create it again
+                portfolio = Portfolio.objects.filter(organization_name=federal_agency.agency)
+                if portfolio.exists():
+                    portfolio = portfolio.first()
+                    message = f"Portfolio '{federal_agency.agency}' already exists. Skipping create."
+                    TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+                else:
+                    portfolio = self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+                    portfolios.append(portfolio)
                 logger.debug(f"add_managers: {add_managers}")
                 if add_managers:
                     logger.debug("Adding managers to portfolio")
@@ -140,6 +148,25 @@ class Command(BaseCommand):
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED -----",
             display_as_str=True,
         )
+
+        if add_managers:
+            TerminalHelper.log_script_run_summary(
+                self.added_managers,
+                self.failed_managers,
+                [],  # can't skip managers, can only add or fail
+                log_header="----- MANAGERS ADDED -----",
+                debug=False,
+                display_as_str=True,
+            )
+
+            TerminalHelper.log_script_run_summary(
+                self.added_invitations,
+                self.failed_invitations,
+                [],  # can't skip invitations, can only add or fail
+                log_header="----- INVITATIONS ADDED -----",
+                debug=False,
+                display_as_str=True,
+            )
 
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
@@ -190,11 +217,13 @@ class Command(BaseCommand):
                     user=user,
                     defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
                 )
+                self.added_managers.add(user)
                 if created:
                     logger.info(f"Added manager '{user}' to portfolio '{portfolio}'")
                 else:
                     logger.info(f"Manager '{user}' already exists in portfolio '{portfolio}'")
             except User.DoesNotExist:
+                self.failed_managers.add(user)
                 logger.debug(f"User '{user}' does not exist")
         
         for manager in invited_managers:
@@ -229,13 +258,20 @@ class Command(BaseCommand):
                 logger.info(f"Created portfolio permission for '{user}' to portfolio '{portfolio}'")
             else:
                 logger.info(f"Retrieved existing portfolio permission for '{user}' to portfolio '{portfolio}'")
+            
+            self.added_invitations.add(user)
         except User.DoesNotExist:
             PortfolioInvitation.objects.get_or_create(
                 portfolio=portfolio,
                 email=email,
                 defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED},
             )
+            self.added_invitations.add(email)
             logger.info(f"Created portfolio invitation for '{email}' to portfolio '{portfolio}'")
+        except Exception as exc:
+            self.failed_invitations.add(email)
+            logger.error(exc, exc_info=True)
+            logger.error(f"Failed to create portfolio invitation for '{email}' to portfolio '{portfolio}'")
 
     def post_process_started_domain_requests(self, agencies, portfolios):
         """
@@ -250,13 +286,20 @@ class Command(BaseCommand):
         # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
         # 3. The domain request is in status "started".
         # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
+        message = f"agencies: {agencies}"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
         domain_requests_to_update = DomainRequest.objects.filter(
             federal_agency__in=agencies,
             federal_agency__agency__isnull=False,
             status=DomainRequest.DomainRequestStatus.STARTED,
             organization_name__isnull=False,
         )
+        message = (f"domain_requests_to_update: {domain_requests_to_update}") 
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
         portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
+        message = f"portfolio_set: {portfolio_set}"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         # Update the request, assuming the given agency name matches the portfolio name
         updated_requests = []
@@ -265,6 +308,9 @@ class Command(BaseCommand):
             if agency_name in portfolio_set:
                 req.federal_agency = None
                 updated_requests.append(req)
+            
+        message = f"updated_requests: {updated_requests}"
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         # Execute the update and Log the results
         if TerminalHelper.prompt_for_execution(
@@ -275,6 +321,8 @@ class Command(BaseCommand):
             ),
             prompt_title="Do you wish to commit this update to the database?",
         ):
+            message = f"prompted for execution"
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
