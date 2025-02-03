@@ -2,6 +2,7 @@
 Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
 
 A domain manager was removed from {{ domain.name }}. 
+
 REMOVED BY: {{ removed_by.email }}
 REMOVED ON: {{ date }}
 MANAGER REMOVED: {{ manager_removed.email }}
