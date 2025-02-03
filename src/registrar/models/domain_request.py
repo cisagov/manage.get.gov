@@ -1302,15 +1302,16 @@ class DomainRequest(TimeStampedModel):
         """Unlocks the organization_contact step."""
         if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
             # Check if the current federal agency is an outlawed one
-            Portfolio = apps.get_model("registrar.Portfolio")
-            return (
-                FederalAgency.objects.exclude(
-                    agency__in=Portfolio.objects.values_list("organization_name", flat=True),
+            if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
+                Portfolio = apps.get_model("registrar.Portfolio")
+                return (
+                    FederalAgency.objects.exclude(
+                        agency__in=Portfolio.objects.values_list("organization_name", flat=True),
+                    )
+                    .filter(agency=self.federal_agency)
+                    .exists()
                 )
-                .filter(agency=self.federal_agency)
-                .exists()
-            )
-        return (
+        return bool(
             self.federal_agency is not None
             or self.organization_name is not None
             or self.address_line1 is not None
