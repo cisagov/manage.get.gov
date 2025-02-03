@@ -925,6 +925,40 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_fails_to_send_to_some_managers(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an email not associated with a user works and sends portfolio invitation,
+        and when domain managers email(s) fail to send, assert proper warning displayed."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "notauser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        mock_send_domain_email.return_value = False
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once()
+        mock_send_domain_email.assert_called_once()
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
+
     @boto3_mocking.patching
     @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
