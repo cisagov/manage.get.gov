@@ -1255,24 +1255,26 @@ class DomainAddUserView(DomainFormBaseView):
 
     def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
         """Handle invitation for a new user who does not exist in the system."""
-        send_domain_invitation_email(
+        if not send_domain_invitation_email(
             email=email,
             requestor=requestor,
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
-        )
+        ):
+            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
-        send_domain_invitation_email(
+        if not send_domain_invitation_email(
             email=email,
             requestor=requestor,
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
-        )
+        ):
+            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,

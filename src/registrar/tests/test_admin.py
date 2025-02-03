@@ -1427,7 +1427,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.warning")  # Mock the `messages.error` call
+    @patch("django.contrib.messages.error")  # Mock the `messages.error` call
     def test_save_exception_generic_error(self, mock_messages_error, mock_send_email):
         """Handle generic exceptions correctly during portfolio invitation."""
         self.client.force_login(self.superuser)
