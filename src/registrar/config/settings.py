@@ -491,9 +491,10 @@ class JsonServerFormatter(ServerFormatter):
 
         log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
         return json.dumps(log_entry)
-    
+
+
 # If we're running locally we don't want json formatting
-if 'localhost' in env_base_url:
+if "localhost" in env_base_url:
     django_handlers = ["console"]
 elif env_log_format == "json":
     # in production we need everything to be logged as json so that log levels are parsed correctly
@@ -533,7 +534,7 @@ LOGGING = {
     },
     # define where log messages will be sent
     # each logger can have one or more handlers
-    "handlers": { 
+    "handlers": {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
