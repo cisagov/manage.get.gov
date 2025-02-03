@@ -56,7 +56,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td class="${ this.portfolioValue ? '' : "width--action-column"}">
+      <td class="width--action-column">
         <a href="${actionUrl}">
           <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
