@@ -252,10 +252,10 @@ export function initCopyRequestSummary() {
             //------ Senior Official
             const seniorOfficialDiv = document.querySelector('.form-row.field-senior_official');
             const seniorOfficialElement = document.getElementById('id_senior_official');
-            const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex].text;
-            const seniorOfficialTitle = seniorOfficialDiv.querySelector('.contact_info_title');
-            const seniorOfficialEmail = seniorOfficialDiv.querySelector('.contact_info_email');
-            const seniorOfficialPhone = seniorOfficialDiv.querySelector('.contact_info_phone');
+            const seniorOfficialName = seniorOfficialElement.options[seniorOfficialElement.selectedIndex]?.text;
+            const seniorOfficialTitle = seniorOfficialDiv.querySelector('.contact_info_title')?.textContent;
+            const seniorOfficialEmail = seniorOfficialDiv.querySelector('.contact_info_email')?.textContent;
+            const seniorOfficialPhone = seniorOfficialDiv.querySelector('.contact_info_phone')?.textContent;
             let seniorOfficialInfo = `${seniorOfficialName}${seniorOfficialTitle}${seniorOfficialEmail}${seniorOfficialPhone}`;
 
             const html_summary = `<strong>Recommendation:</strong></br>` +

@@ -1883,6 +1883,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "domain",
         "portfolio",
         "sub_organization",
+        "federal_agency",
     ]
 
     # Table ordering
@@ -2440,8 +2441,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "requested_domain",
         "creator",
         "investigator",
+        "senior_official",
         "portfolio",
         "sub_organization",
+        "federal_agency",
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
