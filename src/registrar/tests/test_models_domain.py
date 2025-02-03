@@ -7,7 +7,7 @@ This file tests the various ways in which the registrar interacts with the regis
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
-import datetime
+from datetime import datetime, date, timedelta
 from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
@@ -348,6 +348,70 @@ class TestDomainCache(MockEppLib):
 
 class TestDomainCreation(MockEppLib):
     """Rule: An approved domain request must result in a domain"""
+
+    @less_console_noise_decorator
+    def test_get_or_create_public_contact_race_condition(self):
+        """
+        Scenario: Two processes try to create the same security contact simultaneously
+            Given a domain in UNKNOWN state
+            When a race condition occurs during contact creation
+            Then no IntegrityError is raised
+            And only one security contact exists in database
+            And the correct public contact is returned
+
+        CONTEXT: We ran into an intermittent but somewhat rare issue where IntegrityError
+        was raised when creating PublicContact.
+        Per our logs, this seemed to appear during periods of high app activity.
+        """
+        domain, _ = Domain.objects.get_or_create(name="defaultsecurity.gov")
+
+        self.first_call = True
+
+        def mock_filter(*args, **kwargs):
+            """Simulates a race condition by creating a
+            duplicate contact between the first filter and save.
+            """
+            # Return an empty queryset for the first call. Otherwise just proceed as normal.
+            if self.first_call:
+                self.first_call = False
+                duplicate = PublicContact(
+                    domain=domain,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                    registry_id="defaultSec",
+                    email="dotgov@cisa.dhs.gov",
+                    name="Registry Customer Service",
+                )
+                duplicate.save(skip_epp_save=True)
+                return PublicContact.objects.none()
+
+            return PublicContact.objects.filter(*args, **kwargs)
+
+        with patch.object(PublicContact.objects, "filter", side_effect=mock_filter):
+            try:
+                public_contact = PublicContact(
+                    domain=domain,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                    registry_id="defaultSec",
+                    email="dotgov@cisa.dhs.gov",
+                    name="Registry Customer Service",
+                )
+                returned_public_contact = domain._get_or_create_public_contact(public_contact)
+            except IntegrityError:
+                self.fail(
+                    "IntegrityError was raised during contact creation due to a race condition. "
+                    "This indicates that concurrent contact creation is not working in some cases. "
+                    "The error occurs when two processes try to create the same contact simultaneously. "
+                    "Expected behavior: gracefully handle duplicate creation and return existing contact."
+                )
+
+        # Verify that only one contact exists and its correctness
+        security_contacts = PublicContact.objects.filter(
+            domain=domain, contact_type=PublicContact.ContactTypeChoices.SECURITY
+        )
+        self.assertEqual(security_contacts.count(), 1)
+        self.assertEqual(returned_public_contact, security_contacts.get())
+        self.assertEqual(returned_public_contact.registry_id, "defaultSec")
+        self.assertEqual(returned_public_contact.email, "dotgov@cisa.dhs.gov")
 
     @boto3_mocking.patching
     def test_approved_domain_request_creates_domain_locally(self):
@@ -2267,13 +2331,13 @@ class TestExpirationDate(MockEppLib):
         """assert that the setter for expiration date is not implemented and will raise error"""
         with less_console_noise():
             with self.assertRaises(NotImplementedError):
-                self.domain.registry_expiration_date = datetime.date.today()
+                self.domain.registry_expiration_date = date.today()
 
     def test_renew_domain(self):
         """assert that the renew_domain sets new expiration date in cache and saves to registrar"""
         with less_console_noise():
             self.domain.renew_domain()
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain._cache["ex_date"], test_date)
             self.assertEquals(self.domain.expiration_date, test_date)
 
@@ -2295,18 +2359,42 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             # to do this, need to mock value returned from timezone.now
             # set now to 2023-01-01
-            mocked_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
             # force fetch_cache which sets the expiration date to 2023-05-25
             self.domain.statuses
             with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
                 self.assertFalse(self.domain.is_expired())
+
+    def test_is_expiring_within_threshold(self):
+        """assert that is_expiring returns true when expiration date is within 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=30)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertTrue(self.domain.is_expiring())
+
+    def test_is_not_expiring_outside_threshold(self):
+        """assert that is_expiring returns false when expiration date is outside 60 days"""
+        with less_console_noise():
+            mocked_datetime = datetime(2023, 1, 1, 12, 0, 0)
+            expiration_date = mocked_datetime.date() + timedelta(days=61)
+
+            # set domain's expiration date
+            self.domain.expiration_date = expiration_date
+
+            with patch("registrar.models.domain.timezone.now", return_value=mocked_datetime):
+                self.assertFalse(self.domain.is_expiring())
 
     def test_expiration_date_updated_on_info_domain_call(self):
         """assert that expiration date in db is updated on info domain call"""
         with less_console_noise():
             # force fetch_cache to be called
             self.domain.statuses
-            test_date = datetime.date(2023, 5, 25)
+            test_date = date(2023, 5, 25)
             self.assertEquals(self.domain.expiration_date, test_date)
 
 
@@ -2322,7 +2410,7 @@ class TestCreationDate(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # creation_date returned from mockDataInfoDomain with creation date:
         # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime.datetime(2023, 5, 25, 19, 45, 35))
+        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2331,7 +2419,7 @@ class TestCreationDate(MockEppLib):
     def test_creation_date_setter_not_implemented(self):
         """assert that the setter for creation date is not implemented and will raise error"""
         with self.assertRaises(NotImplementedError):
-            self.domain.creation_date = datetime.date.today()
+            self.domain.creation_date = date.today()
 
     def test_creation_date_updated_on_info_domain_call(self):
         """assert that creation date in db is updated on info domain call"""

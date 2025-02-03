@@ -176,10 +176,19 @@ html[data-theme="dark"] {
     color: var(--primary-fg);
 }
 
+// Reset the USWDS styles for alerts
+@include at-media(desktop) {
+    .dashboard .usa-alert__body--widescreen {
+        padding-left: 4rem !important;
+    }
 
+    .dashboard .usa-alert__body--widescreen::before {
+        left: 1.5rem !important;
+    }
+}
 
 #branding h1,
-h1, h2, h3,
+.dashboard h1, .dashboard h2, .dashboard h3,
 .module h2 {
     font-weight: font-weight('bold');
 }
@@ -342,6 +351,40 @@ div#content > h2 {
     }
 }
 
+.module {
+    .margin-left-0 {
+        margin-left: 0;
+    }
+    .margin-top-0 {
+        margin-top: 0;
+    }
+    .padding-left-0 {
+        padding-left: 0;
+    }
+}
+
+.admin-list-inline {
+    li {
+        float: left;
+        padding-top: 0;
+        margin-right: 4px;
+    }
+    li:not(:last-child)::after {
+        content: ",";
+    }
+}
+
+.form-row {
+    .margin-y-0 {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .padding-y-0 {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
 // Fixes a display issue where the list was entirely white, or had too much whitespace
 .select2-dropdown {
     display: inline-grid !important;
@@ -471,10 +514,6 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     margin-bottom: 0;
     margin-top: 0;
     max-width: 68ex;
-}
-
-.usa-summary-box__dhs-color {
-    color: $dhs-blue-70;
 }
 
 details.dja-detail-table {
@@ -769,18 +808,6 @@ div.dja__model-description{
     text-decoration: underline !important;
 }
 
-//-- Override some styling for the USWDS summary box (per design quidance for ticket #2055
-.usa-summary-box {
-    background: #{$dhs-blue-10};
-    border-color: #{$dhs-blue-30};
-    max-width: 72ex;
-    word-wrap: break-word;
-}
-
-.usa-summary-box h3 {
-    color: #{$dhs-blue-60};
-}
-
 .module caption, .inline-group h2 {
     text-transform: capitalize;
 }
@@ -884,14 +911,6 @@ ul.add-list-reset {
 
 .dl-dja dt {
     font-size: 14px;
-}
-
-.domain-name-wrap {
-    white-space: normal;
-    word-wrap: break-word;
-    overflow: visible; 
-    word-break: break-all;
-    max-width: 100%; 
 }
 
 .organization-admin-label {

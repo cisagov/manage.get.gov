@@ -6,7 +6,12 @@
 {% load static %}
 
 {% block portfolio_content %}
-<div id="main-content">
+<div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
+    <!-- Form messages -->
+    {% include "includes/form_errors.html" with form=form %}
+    {% block messages %}
+      {% include "includes/form_messages.html" %}
+    {% endblock messages%}
 
     {% url 'members' as url %}
     {% if portfolio_permission %}
@@ -16,54 +21,110 @@
         {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
         {% url 'invitedmember-domains' pk=portfolio_invitation.id as url3 %}
     {% endif %}
-    <nav class="usa-breadcrumb padding-top-0 margin-bottom-3" aria-label="Portfolio member breadcrumb">
-    <ol class="usa-breadcrumb__list">
-        <li class="usa-breadcrumb__list-item">
-        <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item">
-            <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item">
-            <a href="{{ url3 }}" class="usa-breadcrumb__link"><span>Domain assignments</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item usa-current edit-domain-assignments-breadcrumb" aria-current="page">
-            <span>Edit domain assignments</span>
-        </li>
-    </ol>
+    <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
+        <ol class="usa-breadcrumb__list">
+            <li class="usa-breadcrumb__list-item">
+            <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item">
+                <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item">
+                <a href="{{ url3 }}" class="usa-breadcrumb__link"><span>Domain assignments</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item usa-current domain-assignments-edit-breadcrumb" aria-current="page">
+                <span>Edit domain assignments</span>
+            </li>
+        </ol>
     </nav>
 
-    <h1 class="margin-bottom-3">Edit domain assignments</h1>
+    <section id="domain-assignments-edit-view">
+        <h1>Edit domain assignments</h1>
 
-    <p class="margin-bottom-0">
-        A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
-    </p>
-    <p>
-        When you save this form the member will get an email to notify them of any changes.
-    </p>
+        <p class="margin-top-0 margin-bottom-4 maxw-none">
+            A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
+            When you save this form the member will get an email to notify them of any changes.
+        </p>
 
-    {% include "includes/member_domains_edit_table.html" %}
+        {% include "includes/member_domains_edit_table.html" %}
 
-    <ul class="usa-button-group">
-        <li class="usa-button-group__item">
-            <button
-                id="cancel-edit-domain-assignments"
-                type="button"
-                class="usa-button usa-button--outline"
-            >
-                Cancel
-            </button>
+        <ul class="usa-button-group">
+            <li class="usa-button-group__item">
+                <button
+                    id="cancel-edit-domain-assignments"
+                    type="button"
+                    class="usa-button usa-button--outline"
+                >
+                    Cancel
+                </button>
 
-        </li>      
-        <li class="usa-button-group__item">
-            <button
-                type="button"
-                class="usa-button"
-            >
-                Review
-            </button>
-        </li>
-    </ul>
+            </li>      
+            <li class="usa-button-group__item">
+                <button
+                    id="review-domain-assignments"
+                    type="button"
+                    class="usa-button"
+                >
+                    Review
+                </button>
+            </li>
+        </ul>
+    </section>
+
+    <section id="domain-assignments-readonly-view" class="display-none">
+        <h1 class="margin-bottom-3">Review domain assignments</h1>
+
+        <h2 class="margin-top-0">Would you like to continue with the following domain assignment changes for 
+            {% if member %}
+                {{ member.email }}
+            {% else %}
+                {{ portfolio_invitation.email }}
+            {% endif %}
+        </h2>
+
+        <p class="margin-bottom-4">
+            When you save this form the member will get an email to notify them of any changes.
+        </p>
+
+        <div id="domain-assignments-summary" class="margin-bottom-5">
+             <!-- AJAX will populate this summary -->
+              <h3 class="margin-bottom-1 h4">Unassigned domains</h3>
+              <ul class="usa-list usa-list--unstyled">
+                <li>item1</li>
+                <li>item2</li>
+              </ul>
+
+              <h3 class="margin-bottom-0 h4">Assigned domains</h3>
+              <ul class="usa-list usa-list--unstyled">
+                <li>item1</li>
+                <li>item2</li>
+              </ul>
+        </div>
+
+        <ul class="usa-button-group">
+            <li class="usa-button-group__item">
+                <button
+                    type="button"
+                    class="usa-button usa-button--outline"
+                    id="back-to-edit-domain-assignments"
+                >
+                    Back
+                </button>
+
+            </li>      
+            <li class="usa-button-group__item">
+                <button
+                    id="save-domain-assignments"
+                    type="button"
+                    class="usa-button"
+                >
+                    Save
+                </button>
+            </li>
+        </ul>
+    </section>
+
+    <form method="post" id="member-domains-edit-form" action="{{ request.path }}"> {% csrf_token %} </form>
 
 </div>
 {% endblock %}

@@ -15,7 +15,10 @@ from registrar.models import (
     FederalAgency,
     AllowedEmail,
     Portfolio,
+    Suborganization,
+    UserPortfolioPermission,
 )
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 import boto3_mocking
 from registrar.utility.constants import BranchChoices
@@ -23,6 +26,8 @@ from registrar.utility.errors import FSMDomainRequestError
 
 from .common import (
     MockSESClient,
+    create_user,
+    create_superuser,
     less_console_noise,
     completed_domain_request,
     set_domain_request_investigators,
@@ -43,6 +48,14 @@ class TestDomainRequest(TestCase):
         self.dummy_user_2, _ = User.objects.get_or_create(
             username="intern@igorville.com", email="intern@igorville.com", first_name="Lava", last_name="World"
         )
+
+        self.dummy_user_3, _ = User.objects.get_or_create(
+            username="portfolioadmin@igorville.com",
+            email="portfolioadmin@igorville.com",
+            first_name="Portfolio",
+            last_name="Admin",
+        )
+
         self.started_domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
@@ -270,7 +283,14 @@ class TestDomainRequest(TestCase):
         self.assertEqual(domain_request.status, domain_request.DomainRequestStatus.SUBMITTED)
 
     def check_email_sent(
-        self, domain_request, msg, action, expected_count, expected_content=None, expected_email="mayor@igorville.com"
+        self,
+        domain_request,
+        msg,
+        action,
+        expected_count,
+        expected_content=None,
+        expected_email="mayor@igorville.com",
+        expected_cc=[],
     ):
         """Check if an email was sent after performing an action."""
         email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
@@ -288,6 +308,11 @@ class TestDomainRequest(TestCase):
                 if expected_email in email["kwargs"]["Destination"]["ToAddresses"]
             ]
             self.assertEqual(len(sent_emails), expected_count)
+
+            if expected_cc:
+                sent_cc_adddresses = sent_emails[0]["kwargs"]["Destination"]["CcAddresses"]
+                for cc_address in expected_cc:
+                    self.assertIn(cc_address, sent_cc_adddresses)
 
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
@@ -1070,3 +1095,172 @@ class TestDomainRequest(TestCase):
         )
         self.assertEqual(domain_request2.generic_org_type, domain_request2.converted_generic_org_type)
         self.assertEqual(domain_request2.federal_agency, domain_request2.converted_federal_agency)
+
+    @less_console_noise_decorator
+    def test_portfolio_domain_requests_cc_requests_viewers(self):
+        """test that portfolio domain request emails cc portfolio members who have read requests access"""
+        fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Portfolio",
+            creator=self.dummy_user_2,
+            federal_agency=fed_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        user_portfolio_permission = UserPortfolioPermission.objects.create(  # noqa: F841
+            user=self.dummy_user_3, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        # Adds cc'ed email in this test's allow list
+        AllowedEmail.objects.create(email="portfolioadmin@igorville.com")
+
+        msg = "Create a domain request and submit it and see if email cc's portfolio admin and members who can view \
+            requests."
+        domain_request = completed_domain_request(
+            name="test.gov", user=self.dummy_user_2, portfolio=portfolio, organization_name="Test Portfolio"
+        )
+        self.check_email_sent(
+            domain_request,
+            msg,
+            "submit",
+            1,
+            expected_email="intern@igorville.com",
+            expected_cc=["portfolioadmin@igorville.com"],
+        )
+
+
+class TestDomainRequestSuborganization(TestCase):
+    """Tests for the suborganization fields on domain requests"""
+
+    def setUp(self):
+        super().setUp()
+        self.user = create_user()
+        self.superuser = create_superuser()
+
+    def tearDown(self):
+        super().tearDown()
+        DomainInformation.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        Domain.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_approve_creates_requested_suborganization(self):
+        """Test that approving a domain request with a requested suborganization creates it"""
+        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+
+        domain_request = completed_domain_request(
+            name="test.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            requested_suborganization="Boom",
+            suborganization_city="Explody town",
+            suborganization_state_territory=DomainRequest.StateTerritoryChoices.OHIO,
+        )
+        domain_request.investigator = self.superuser
+        domain_request.save()
+
+        domain_request.approve()
+
+        created_suborg = Suborganization.objects.filter(
+            name="Boom",
+            city="Explody town",
+            state_territory=DomainRequest.StateTerritoryChoices.OHIO,
+            portfolio=portfolio,
+        ).first()
+
+        self.assertIsNotNone(created_suborg)
+        self.assertEqual(domain_request.sub_organization, created_suborg)
+
+    @less_console_noise_decorator
+    def test_approve_without_requested_suborganization_makes_no_changes(self):
+        """Test that approving without a requested suborganization doesn't create one"""
+        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+
+        domain_request = completed_domain_request(
+            name="test.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        domain_request.investigator = self.superuser
+        domain_request.save()
+
+        initial_suborg_count = Suborganization.objects.count()
+        domain_request.approve()
+
+        self.assertEqual(Suborganization.objects.count(), initial_suborg_count)
+        self.assertIsNone(domain_request.sub_organization)
+
+    @less_console_noise_decorator
+    def test_approve_with_existing_suborganization_makes_no_changes(self):
+        """Test that approving with an existing suborganization doesn't create a new one"""
+        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        existing_suborg = Suborganization.objects.create(name="Existing Division", portfolio=portfolio)
+
+        domain_request = completed_domain_request(
+            name="test.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            sub_organization=existing_suborg,
+        )
+        domain_request.investigator = self.superuser
+        domain_request.save()
+
+        initial_suborg_count = Suborganization.objects.count()
+        domain_request.approve()
+
+        self.assertEqual(Suborganization.objects.count(), initial_suborg_count)
+        self.assertEqual(domain_request.sub_organization, existing_suborg)
+
+    @less_console_noise_decorator
+    def test_cleanup_dangling_suborg_with_single_reference(self):
+        """Test that a suborganization is deleted when it's only referenced once"""
+        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        suborg = Suborganization.objects.create(name="Test Division", portfolio=portfolio)
+
+        domain_request = completed_domain_request(
+            name="test.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            sub_organization=suborg,
+        )
+        domain_request.approve()
+
+        # set it back to in review
+        domain_request.in_review()
+        domain_request.refresh_from_db()
+
+        # Verify the suborganization was deleted
+        self.assertFalse(Suborganization.objects.filter(id=suborg.id).exists())
+        self.assertIsNone(domain_request.sub_organization)
+
+    @less_console_noise_decorator
+    def test_cleanup_dangling_suborg_with_multiple_references(self):
+        """Test that a suborganization is preserved when it has multiple references"""
+        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        suborg = Suborganization.objects.create(name="Test Division", portfolio=portfolio)
+
+        # Create two domain requests using the same suborganization
+        domain_request1 = completed_domain_request(
+            name="test1.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            sub_organization=suborg,
+        )
+        domain_request2 = completed_domain_request(
+            name="test2.gov",
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            sub_organization=suborg,
+        )
+
+        domain_request1.approve()
+        domain_request2.approve()
+
+        # set one back to in review
+        domain_request1.in_review()
+        domain_request1.refresh_from_db()
+
+        # Verify the suborganization still exists
+        self.assertTrue(Suborganization.objects.filter(id=suborg.id).exists())
+        self.assertEqual(domain_request1.sub_organization, suborg)
+        self.assertEqual(domain_request2.sub_organization, suborg)

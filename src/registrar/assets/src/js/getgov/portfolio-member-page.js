@@ -2,9 +2,10 @@ import { uswdsInitializeModals } from './helpers-uswds.js';
 import { getCsrfToken } from './helpers.js';
 import { generateKebabHTML } from './table-base.js';
 import { MembersTable } from './table-members.js';
+import { hookupRadioTogglerListener } from './radios.js';
 
 // This is specifically for the Member Profile (Manage Member) Page member/invitation removal
-export function initPortfolioMemberPageToggle() {
+export function initPortfolioNewMemberPageToggle() {
     document.addEventListener("DOMContentLoaded", () => {
         const wrapperDeleteAction = document.getElementById("wrapper-delete-action")
         if (wrapperDeleteAction) {
@@ -17,11 +18,11 @@ export function initPortfolioMemberPageToggle() {
             const unique_id = `${member_type}-${member_id}`;
     
             let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
-            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `for ${member_name}`);
+            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `More Options for ${member_name}`);
     
             // This easter egg is only for fixtures that dont have names as we are displaying their emails
             // All prod users will have emails linked to their account
-            MembersTable.addMemberModal(num_domains, member_email || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
+            MembersTable.addMemberDeleteModal(num_domains, member_email || member_name || "Samwise Gamgee", member_delete_url, unique_id, wrapperDeleteAction);
     
             uswdsInitializeModals();
     
@@ -87,24 +88,18 @@ export function initAddNewMemberPageListeners() {
   });
 
   /*
-    Helper function to capitalize the first letter in a string (for display purposes)
-  */
-  function capitalizeFirstLetter(text) {
-    if (!text) return ''; // Return empty string if input is falsy
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
-
-  /*
     Populates contents of the "Add Member" confirmation modal
   */
   function populatePermissionDetails(permission_details_div_id) {
     const permissionDetailsContainer = document.getElementById("permission_details");
     permissionDetailsContainer.innerHTML = ""; // Clear previous content
 
-    // Get all permission sections (divs with h3 and radio inputs)
-    const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
+    if (permission_details_div_id == 'member-basic-permissions') {
+      // for basic users, display values are based on selections in the form
+      // Get all permission sections (divs with h3 and radio inputs)
+      const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
 
-    permissionSections.forEach(section => {
+      permissionSections.forEach(section => {
         // Find the <h3> element text
         const sectionTitle = section.textContent;
 
@@ -112,31 +107,46 @@ export function initAddNewMemberPageListeners() {
         const fieldset = section.nextElementSibling;
 
         if (fieldset && fieldset.tagName.toLowerCase() === 'fieldset') {
-            // Get the selected radio button within this fieldset
-            const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
+          // Get the selected radio button within this fieldset
+          const selectedRadio = fieldset.querySelector('input[type="radio"]:checked');
 
-            // If a radio button is selected, get its label text
-            let selectedPermission = "No permission selected";
-            if (selectedRadio) {
-                const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
-                selectedPermission = label ? label.textContent : "No permission selected";
+          // If a radio button is selected, get its label text
+          let selectedPermission = "No permission selected";
+          if (selectedRadio) {
+            const label = fieldset.querySelector(`label[for="${selectedRadio.id}"]`);
+            if (label) {
+              // Get only the text node content (excluding subtext in <p>)
+              const mainText = Array.from(label.childNodes)
+                  .filter(node => node.nodeType === Node.TEXT_NODE)
+                  .map(node => node.textContent.trim())
+                  .join(""); // Combine and trim whitespace
+              selectedPermission = mainText || "No permission selected";
             }
-
-            // Create new elements for the modal content
-            const titleElement = document.createElement("h4");
-            titleElement.textContent = sectionTitle;
-            titleElement.classList.add("text-primary");
-            titleElement.classList.add("margin-bottom-0");
-
-            const permissionElement = document.createElement("p");
-            permissionElement.textContent = selectedPermission;
-            permissionElement.classList.add("margin-top-0");
-
-            // Append to the modal content container
-            permissionDetailsContainer.appendChild(titleElement);
-            permissionDetailsContainer.appendChild(permissionElement);
+          }
+          appendPermissionInContainer(sectionTitle, selectedPermission, permissionDetailsContainer);
         }
-    });
+      });
+    } else {
+      // for admin users, the permissions are always the same
+      appendPermissionInContainer('Domains', 'Viewer, all', permissionDetailsContainer);
+      appendPermissionInContainer('Domain requests', 'Creator', permissionDetailsContainer);
+      appendPermissionInContainer('Members', 'Manager', permissionDetailsContainer);
+    }
+  }
+
+  function appendPermissionInContainer(sectionTitle, permissionDisplay, permissionContainer) {
+    // Create new elements for the content
+    const titleElement = document.createElement("h4");
+    titleElement.textContent = sectionTitle;
+    titleElement.classList.add("text-primary", "margin-bottom-0");
+
+    const permissionElement = document.createElement("p");
+    permissionElement.textContent = permissionDisplay;
+    permissionElement.classList.add("margin-top-0");
+
+    // Append to the content container
+    permissionContainer.appendChild(titleElement);
+    permissionContainer.appendChild(permissionElement);
   }
 
   /*
@@ -148,18 +158,25 @@ export function initAddNewMemberPageListeners() {
       let emailValue = document.getElementById('id_email').value;
       document.getElementById('modalEmail').textContent = emailValue;
 
-      // Get selected radio button for access level
-      let selectedAccess = document.querySelector('input[name="member_access_level"]:checked');
-      // Set the selected permission text to 'Basic' or 'Admin' (the value of the selected radio button)
-      // This value does not have the first letter capitalized so let's capitalize it
-      let accessText = selectedAccess ? capitalizeFirstLetter(selectedAccess.value) : "No access level selected";
+      // Get selected radio button for member access level
+      let selectedAccess = document.querySelector('input[name="role"]:checked');
+      // Map the access level values to user-friendly labels
+      const accessLevelMapping = {
+        organization_admin: "Admin",
+        organization_member: "Basic",
+      };
+      // Determine the access text based on the selected value
+      let accessText = selectedAccess 
+        ? accessLevelMapping[selectedAccess.value] || "Unknown access level" 
+        : "No access level selected";
+      // Update the modal with the appropriate member access level text
       document.getElementById('modalAccessLevel').textContent = accessText;
 
       // Populate permission details based on access level
-      if (selectedAccess && selectedAccess.value === 'admin') {
-        populatePermissionDetails('new-member-admin-permissions');
+      if (selectedAccess && selectedAccess.value === 'organization_admin') {
+        populatePermissionDetails('admin');
       } else {
-        populatePermissionDetails('new-member-basic-permissions');
+        populatePermissionDetails('member-basic-permissions');
       }
 
       //------- Show the modal
@@ -169,4 +186,21 @@ export function initAddNewMemberPageListeners() {
         }
   }
 
+}
+
+// Initalize the radio for the member pages
+export function initPortfolioMemberPageRadio() {
+  document.addEventListener("DOMContentLoaded", () => {
+      let memberForm = document.getElementById("member_form");
+      let newMemberForm = document.getElementById("add_member_form")
+      if (memberForm || newMemberForm) {
+        hookupRadioTogglerListener(
+          'role', 
+          {
+            'organization_admin': '',
+            'organization_member': 'member-basic-permissions'
+          }
+        );
+      }
+  });
 }

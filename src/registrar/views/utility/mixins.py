@@ -192,7 +192,8 @@ class DomainPermission(PermissionsLoginMixin):
     def can_access_domain_via_portfolio(self, pk):
         """Most views should not allow permission to portfolio users.
         If particular views allow access to the domain pages, they will need to override
-        this function."""
+        this function.
+        """
         return False
 
     def in_editable_state(self, pk):
@@ -341,12 +342,6 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
         ) or self.request.user.has_perm("registrar.full_access_permission")
 
         if not (has_delete_permission or user_is_analyst_or_superuser):
-            return False
-
-        # Check if more than one manager exists on the domain.
-        # If only one exists, prevent this from happening
-        has_multiple_managers = len(UserDomainRole.objects.filter(domain=domain_pk)) > 1
-        if not has_multiple_managers:
             return False
 
         return True

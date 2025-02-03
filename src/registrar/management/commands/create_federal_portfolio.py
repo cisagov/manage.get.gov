@@ -5,6 +5,8 @@ import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
+from registrar.models.utility.generic_helper import normalize_string
+from django.db.models import F, Q
 
 
 logger = logging.getLogger(__name__)
@@ -21,10 +23,21 @@ class Command(BaseCommand):
         self.failed_portfolios = set()
 
     def add_arguments(self, parser):
-        """Add three arguments:
-        1. agency_name => the value of FederalAgency.agency
-        2. --parse_requests => if true, adds the given portfolio to each related DomainRequest
-        3. --parse_domains => if true, adds the given portfolio to each related DomainInformation
+        """Add command line arguments to create federal portfolios.
+
+        Required (mutually exclusive) arguments:
+            --agency_name: Name of a specific FederalAgency to create a portfolio for
+            --branch: Federal branch to process ("executive", "legislative", or "judicial").
+                    Creates portfolios for all FederalAgencies in that branch.
+
+        Required (at least one):
+            --parse_requests: Add the created portfolio(s) to related DomainRequest records
+            --parse_domains: Add the created portfolio(s) to related DomainInformation records
+            Note: You can use both --parse_requests and --parse_domains together
+
+        Optional (mutually exclusive with parse options):
+            --both: Shorthand for using both --parse_requests and --parse_domains
+                Cannot be used with --parse_requests or --parse_domains
         """
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
@@ -51,6 +64,11 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Adds portfolio to both requests and domains",
         )
+        parser.add_argument(
+            "--skip_existing_portfolios",
+            action=argparse.BooleanOptionalAction,
+            help="Only add suborganizations to newly created portfolios, skip existing ones.",
+        )
 
     def handle(self, **options):
         agency_name = options.get("agency_name")
@@ -58,6 +76,7 @@ class Command(BaseCommand):
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
+        skip_existing_portfolios = options.get("skip_existing_portfolios")
 
         if not both:
             if not parse_requests and not parse_domains:
@@ -78,38 +97,123 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
+        portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             try:
                 # C901 'Command.handle' is too complex (12)
-                self.handle_populate_portfolio(federal_agency, parse_domains, parse_requests, both)
+                portfolio = self.handle_populate_portfolio(
+                    federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios
+                )
+                portfolios.append(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
                 message = f"Failed to create portfolio '{federal_agency.agency}'"
                 TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
 
+        # POST PROCESS STEP: Add additional suborg info where applicable.
+        updated_suborg_count = self.post_process_all_suborganization_fields(agencies)
+        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
         TerminalHelper.log_script_run_summary(
             self.updated_portfolios,
             self.failed_portfolios,
             self.skipped_portfolios,
             debug=False,
-            skipped_header="----- SOME PORTFOLIOS WERE SKIPPED -----",
+            log_header="============= FINISHED HANDLE PORTFOLIO STEP ===============",
+            skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
             display_as_str=True,
         )
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both):
+        # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
+        # We only do this for started domain requests.
+        if parse_requests or both:
+            prompt_message = (
+                "This action will update domain requests even if they aren't on a portfolio."
+                "\nNOTE: This will modify domain requests, even if no portfolios were created."
+                "\nIn the event no portfolios *are* created, then this step will target "
+                "the existing portfolios with your given params."
+                "\nThis step is entirely optional, and is just for extra data cleanup."
+            )
+            TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=True,
+                prompt_message=prompt_message,
+                prompt_title=(
+                    "POST PROCESS STEP: Do you want to clear federal agency on (related) started domain requests?"
+                ),
+                verify_message="*** THIS STEP IS OPTIONAL ***",
+            )
+            self.post_process_started_domain_requests(agencies, portfolios)
+
+    def post_process_started_domain_requests(self, agencies, portfolios):
+        """
+        Removes duplicate organization data by clearing federal_agency when it matches the portfolio name.
+        Only processes domain requests in STARTED status.
+        """
+        message = "Removing duplicate portfolio and federal_agency values from domain requests..."
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+
+        # For each request, clear the federal agency under these conditions:
+        # 1. A portfolio *already exists* with the same name as the federal agency.
+        # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
+        # 3. The domain request is in status "started".
+        # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
+        domain_requests_to_update = DomainRequest.objects.filter(
+            federal_agency__in=agencies,
+            federal_agency__agency__isnull=False,
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            organization_name__isnull=False,
+        )
+
+        if domain_requests_to_update.count() == 0:
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "No domain requests to update.")
+            return
+
+        portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
+
+        # Update the request, assuming the given agency name matches the portfolio name
+        updated_requests = []
+        for req in domain_requests_to_update:
+            agency_name = normalize_string(req.federal_agency.agency)
+            if agency_name in portfolio_set:
+                req.federal_agency = None
+                updated_requests.append(req)
+
+        # Execute the update and Log the results
+        if TerminalHelper.prompt_for_execution(
+            system_exit_on_terminate=False,
+            prompt_message=(
+                f"{len(domain_requests_to_update)} domain requests will be updated. "
+                f"These records will be changed: {[str(req) for req in updated_requests]}"
+            ),
+            prompt_title="Do you wish to commit this update to the database?",
+        ):
+            DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
+
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
         portfolio, created = self.create_portfolio(federal_agency)
-        if created:
-            self.create_suborganizations(portfolio, federal_agency)
-            if parse_domains or both:
-                self.handle_portfolio_domains(portfolio, federal_agency)
+        if skip_existing_portfolios and not created:
+            TerminalHelper.colorful_logger(
+                logger.warning,
+                TerminalColors.YELLOW,
+                "Skipping modifications to suborgs, domain requests, and "
+                "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
+            )
+            return portfolio
+
+        self.create_suborganizations(portfolio, federal_agency)
+        if parse_domains or both:
+            self.handle_portfolio_domains(portfolio, federal_agency)
 
         if parse_requests or both:
             self.handle_portfolio_requests(portfolio, federal_agency)
+
+        return portfolio
 
     def create_portfolio(self, federal_agency):
         """Creates a portfolio if it doesn't presently exist.
@@ -161,7 +265,6 @@ class Command(BaseCommand):
             federal_agency=federal_agency, organization_name__isnull=False
         )
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
-
         if not org_names:
             message = (
                 "Could not add any suborganizations."
@@ -172,7 +275,7 @@ class Command(BaseCommand):
             return
 
         # Check for existing suborgs on the current portfolio
-        existing_suborgs = Suborganization.objects.filter(name__in=org_names)
+        existing_suborgs = Suborganization.objects.filter(name__in=org_names, name__isnull=False)
         if existing_suborgs.exists():
             message = f"Some suborganizations already exist for portfolio '{portfolio}'."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
@@ -180,9 +283,7 @@ class Command(BaseCommand):
         # Create new suborgs, as long as they don't exist in the db already
         new_suborgs = []
         for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
-            # Stored in variables due to linter wanting type information here.
-            portfolio_name: str = portfolio.organization_name if portfolio.organization_name is not None else ""
-            if name is not None and name.lower() == portfolio_name.lower():
+            if normalize_string(name) == normalize_string(portfolio.organization_name):
                 # You can use this to populate location information, when this occurs.
                 # However, this isn't needed for now so we can skip it.
                 message = (
@@ -211,15 +312,13 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
-            status__in=invalid_states
-        )
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
         if not domain_requests.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domain requests: no valid records found.
             This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
             Excluded statuses: STARTED, INELIGIBLE, REJECTED.
-            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency, portfolio__isnull=True).exclude(
+            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
                 status__in=invalid_states
             )
             """
@@ -229,12 +328,30 @@ class Command(BaseCommand):
         # Get all suborg information and store it in a dict to avoid doing a db call
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_request in domain_requests:
+            # Set the portfolio
             domain_request.portfolio = portfolio
-            if domain_request.organization_name in suborgs:
-                domain_request.sub_organization = suborgs.get(domain_request.organization_name)
+
+            # Set suborg info
+            domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
+            if domain_request.sub_organization is None:
+                domain_request.requested_suborganization = normalize_string(
+                    domain_request.organization_name, lowercase=False
+                )
+                domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
+                domain_request.suborganization_state_territory = domain_request.state_territory
+
             self.updated_portfolios.add(portfolio)
 
-        DomainRequest.objects.bulk_update(domain_requests, ["portfolio", "sub_organization"])
+        DomainRequest.objects.bulk_update(
+            domain_requests,
+            [
+                "portfolio",
+                "sub_organization",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ],
+        )
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
@@ -242,13 +359,15 @@ class Command(BaseCommand):
         """
         Associate portfolio with domains for a federal agency.
         Updates all relevant domain information records.
+
+        Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
-        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
             The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency, portfolio__isnull=True)
+            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency)
             """
             TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
             return None
@@ -257,9 +376,146 @@ class Command(BaseCommand):
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_info in domain_infos:
             domain_info.portfolio = portfolio
-            if domain_info.organization_name in suborgs:
-                domain_info.sub_organization = suborgs.get(domain_info.organization_name)
+            domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
+
+    def post_process_all_suborganization_fields(self, agencies):
+        """Batch updates suborganization locations from domain and request data.
+
+        Args:
+            agencies: List of FederalAgency objects to process
+
+        Returns:
+            int: Number of suborganizations updated
+
+        Priority for location data:
+        1. Domain information
+        2. Domain request suborganization fields
+        3. Domain request standard fields
+        """
+        # Common filter between domaininformation / domain request.
+        # Filter by only the agencies we've updated thus far.
+        # Then, only process records without null portfolio, org name, or suborg name.
+        base_filter = Q(
+            federal_agency__in=agencies,
+            portfolio__isnull=False,
+            organization_name__isnull=False,
+            sub_organization__isnull=False,
+        ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
+
+        # First: Remove null city / state_territory values on domain info / domain requests.
+        # We want to add city data if there is data to add to begin with!
+        domains = DomainInformation.objects.filter(
+            base_filter,
+            Q(city__isnull=False, state_territory__isnull=False),
+        )
+        requests = DomainRequest.objects.filter(
+            base_filter,
+            (
+                Q(city__isnull=False, state_territory__isnull=False)
+                | Q(suborganization_city__isnull=False, suborganization_state_territory__isnull=False)
+            ),
+        )
+
+        # Second: Group domains and requests by normalized organization name.
+        # This means that later down the line we have to account for "duplicate" org names.
+        domains_dict = {}
+        requests_dict = {}
+        for domain in domains:
+            normalized_name = normalize_string(domain.organization_name)
+            domains_dict.setdefault(normalized_name, []).append(domain)
+
+        for request in requests:
+            normalized_name = normalize_string(request.organization_name)
+            requests_dict.setdefault(normalized_name, []).append(request)
+
+        # Third: Get suborganizations to update
+        suborgs_to_edit = Suborganization.objects.filter(
+            Q(id__in=domains.values_list("sub_organization", flat=True))
+            | Q(id__in=requests.values_list("sub_organization", flat=True))
+        )
+
+        # Fourth: Process each suborg to add city / state territory info
+        for suborg in suborgs_to_edit:
+            self.post_process_suborganization_fields(suborg, domains_dict, requests_dict)
+
+        # Fifth: Perform a bulk update
+        return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
+
+    def post_process_suborganization_fields(self, suborg, domains_dict, requests_dict):
+        """Updates a single suborganization's location data if valid.
+
+        Args:
+            suborg: Suborganization to update
+            domains_dict: Dict of domain info records grouped by org name
+            requests_dict: Dict of domain requests grouped by org name
+
+        Priority matches parent method. Updates are skipped if location data conflicts
+        between multiple records of the same type.
+        """
+        normalized_suborg_name = normalize_string(suborg.name)
+        domains = domains_dict.get(normalized_suborg_name, [])
+        requests = requests_dict.get(normalized_suborg_name, [])
+
+        # Try to get matching domain info
+        domain = None
+        if domains:
+            reference = domains[0]
+            use_location_for_domain = all(
+                d.city == reference.city and d.state_territory == reference.state_territory for d in domains
+            )
+            if use_location_for_domain:
+                domain = reference
+
+        # Try to get matching request info
+        # Uses consensus: if all city / state_territory info matches, then we can assume the data is "good".
+        # If not, take the safe route and just skip updating this particular record.
+        request = None
+        use_suborg_location_for_request = True
+        use_location_for_request = True
+        if requests:
+            reference = requests[0]
+            use_suborg_location_for_request = all(
+                r.suborganization_city
+                and r.suborganization_state_territory
+                and r.suborganization_city == reference.suborganization_city
+                and r.suborganization_state_territory == reference.suborganization_state_territory
+                for r in requests
+            )
+            use_location_for_request = all(
+                r.city
+                and r.state_territory
+                and r.city == reference.city
+                and r.state_territory == reference.state_territory
+                for r in requests
+            )
+            if use_suborg_location_for_request or use_location_for_request:
+                request = reference
+
+        if not domain and not request:
+            message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data."
+            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+            return
+
+        # PRIORITY:
+        # 1. Domain info
+        # 2. Domain request requested suborg fields
+        # 3. Domain request normal fields
+        if domain:
+            suborg.city = normalize_string(domain.city, lowercase=False)
+            suborg.state_territory = domain.state_territory
+        elif request and use_suborg_location_for_request:
+            suborg.city = normalize_string(request.suborganization_city, lowercase=False)
+            suborg.state_territory = request.suborganization_state_territory
+        elif request and use_location_for_request:
+            suborg.city = normalize_string(request.city, lowercase=False)
+            suborg.state_territory = request.state_territory
+
+        message = (
+            f"Added city/state_territory to suborg: {suborg}. "
+            f"city - {suborg.city}, state - {suborg.state_territory}"
+        )
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)

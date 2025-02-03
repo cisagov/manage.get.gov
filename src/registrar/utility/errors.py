@@ -23,13 +23,54 @@ class InvalidDomainError(ValueError):
     pass
 
 
-class OutsideOrgMemberError(ValueError):
+class InvitationError(Exception):
+    """Base exception for invitation-related errors."""
+
+    pass
+
+
+class AlreadyDomainManagerError(InvitationError):
+    """Raised when the user is already a manager for the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} is already a manager for this domain.")
+
+
+class AlreadyDomainInvitedError(InvitationError):
+    """Raised when the user has already been invited to the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} has already been invited to this domain.")
+
+
+class MissingEmailError(InvitationError):
+    """Raised when the requestor has no email associated with their account."""
+
+    def __init__(self, email=None, domain=None, portfolio=None):
+        # Default message if no additional info is provided
+        message = "Can't send invitation email. No email is associated with your user account."
+
+        # Customize message based on provided arguments
+        if email and domain:
+            message = f"Can't send email to '{email}' on domain '{domain}'. No email exists for the requestor."
+        elif email and portfolio:
+            message = f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor."
+
+        super().__init__(message)
+
+
+class OutsideOrgMemberError(InvitationError):
     """
     Error raised when an org member tries adding a user from a different .gov org.
     To be deleted when users can be members of multiple orgs.
     """
 
-    pass
+    def __init__(self, email=None):
+        # Default message if no additional info is provided
+        message = "Can not invite member of a .gov organization to a different organization."
+        if email:
+            message = f"{email} is already a member of another .gov organization."
+        super().__init__(message)
 
 
 class ActionNotAllowed(Exception):

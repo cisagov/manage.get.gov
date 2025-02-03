@@ -4,6 +4,9 @@ from django.apps import apps
 from django.forms import ValidationError
 from registrar.utility.waffle import flag_is_active_for_user
 from django.contrib.auth import get_user_model
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserPortfolioRoleChoices(models.TextChoices):
@@ -16,7 +19,11 @@ class UserPortfolioRoleChoices(models.TextChoices):
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
-        return cls(user_portfolio_role).label if user_portfolio_role else None
+        try:
+            return cls(user_portfolio_role).label if user_portfolio_role else None
+        except ValueError:
+            logger.warning(f"Invalid portfolio role: {user_portfolio_role}")
+            return f"Unknown ({user_portfolio_role})"
 
 
 class UserPortfolioPermissionChoices(models.TextChoices):
@@ -129,7 +136,9 @@ def validate_user_portfolio_permission(user_portfolio_permission):
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
 
-        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email)
+        existing_invitations = PortfolioInvitation.objects.exclude(
+            portfolio=user_portfolio_permission.portfolio
+        ).filter(email=user_portfolio_permission.user.email)
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "

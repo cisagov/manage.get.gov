@@ -4,6 +4,9 @@
 {% block title %}Add a domain manager | {% endblock %}
 
 {% block domain_content %}
+
+  {% include "includes/form_errors.html" with form=form %}
+
   {% block breadcrumb %}
     {% if portfolio %}
     <!-- Navigation breadcrumbs -->
@@ -37,6 +40,7 @@
     </nav>
     {% endif %}
   {% endblock breadcrumb %}
+
   <h1>Add a domain manager</h1>
 {% if has_organization_feature_flag %}
   <p>

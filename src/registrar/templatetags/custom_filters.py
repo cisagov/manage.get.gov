@@ -200,6 +200,7 @@ def is_domain_subpage(path):
         "domain-users-add",
         "domain-request-delete",
         "domain-user-delete",
+        "domain-renewal",
         "invitation-cancel",
     ]
     return get_url_name(path) in url_names
@@ -282,3 +283,17 @@ def display_requesting_entity(domain_request):
         )
 
     return display
+
+
+@register.filter
+def get_dict_value(dictionary, key):
+    """Get a value from a dictionary. Returns a string on empty."""
+    if isinstance(dictionary, dict):
+        return dictionary.get(key, "")
+    return ""
+
+
+@register.filter
+def button_class(custom_class):
+    default_class = "usa-button"
+    return f"{default_class} {custom_class}" if custom_class else default_class

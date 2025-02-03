@@ -65,7 +65,6 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
     def is_editable(self):
         """Returns whether domain is editable in the context of the view"""
-        logger.info("checking if is_editable")
         domain_editable = self.object.is_editable()
         if not domain_editable:
             return False

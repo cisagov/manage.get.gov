@@ -14,6 +14,7 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -21,10 +22,18 @@ from registrar.utility.admin_helpers import (
     get_field_links_as_list,
 )
 from django.conf import settings
+from django.contrib.messages import get_messages
+from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from registrar.views.utility.invitation_helper import (
+    get_org_membership,
+    get_requested_user,
+    handle_invitation_exceptions,
+)
 from waffle.decorators import flag_is_active
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -1213,9 +1222,9 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 class SeniorOfficialAdmin(ListHeaderAdmin):
     """Custom Senior Official Admin class."""
 
-    search_fields = ["first_name", "last_name", "email"]
+    search_fields = ["first_name", "last_name", "email", "federal_agency__agency"]
     search_help_text = "Search by first name, last name or email."
-    list_display = ["first_name", "last_name", "email", "federal_agency"]
+    list_display = ["federal_agency", "first_name", "last_name", "email"]
 
     # this ordering effects the ordering of results
     # in autocomplete_fields for Senior Official
@@ -1312,6 +1321,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     search_fields = ["user__first_name", "user__last_name", "user__email", "portfolio__organization_name"]
     search_help_text = "Search by first name, last name, email, or portfolio."
 
+    change_form_template = "django/admin/user_portfolio_permission_change_form.html"
+
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
@@ -1356,6 +1367,8 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     autocomplete_fields = ["user", "domain"]
 
+    change_form_template = "django/admin/user_domain_role_change_form.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
@@ -1383,7 +1396,81 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
 
 
-class DomainInvitationAdmin(ListHeaderAdmin):
+class BaseInvitationAdmin(ListHeaderAdmin):
+    """Base class for admin classes which will customize save_model and send email invitations
+    on model adds, and require custom handling of forms and form errors."""
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Override response_add to handle rendering when exceptions are raised during add model.
+
+        Normal flow on successful save_model on add is to redirect to changelist_view.
+        If there are errors, flow is modified to instead render change form.
+        """
+        # store current messages from request in storage so that they are preserved throughout the
+        # method, as some flows remove and replace all messages, and so we store here to retrieve
+        # later
+        storage = get_messages(request)
+        # Check if there are any error messages in the `messages` framework
+        # error messages stop the workflow; other message levels allow flow to continue as normal
+        has_errors = any(message.level_tag in ["error"] for message in storage)
+
+        if has_errors:
+            # Re-render the change form if there are errors or warnings
+            # Prepare context for rendering the change form
+
+            # Get the model form
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+
+            # Create an AdminForm instance
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.get_prepopulated_fields(request, obj),
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+            media = self.media + form.media
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),  # Add admin context
+                "title": f"Add {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": True,  # Indicate this is an "Add" form
+                "change": False,  # Indicate this is not a "Change" form
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,  # Pass the AdminForm instance
+                "media": media,
+                "errors": None,
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=True,
+                change=False,
+                obj=obj,
+            )
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        # Re-add all messages from storage after `super().response_add`
+        # as super().response_add resets the success messages in request
+        for message in storage:
+            messages.add_message(request, message.level, message.message)
+
+        return response
+
+
+class DomainInvitationAdmin(BaseInvitationAdmin):
     """Custom domain invitation admin class."""
 
     class Meta:
@@ -1418,7 +1505,7 @@ class DomainInvitationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = ["domain"]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/domain_invitation_change_form.html"
 
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
@@ -1428,8 +1515,69 @@ class DomainInvitationAdmin(ListHeaderAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
 
-class PortfolioInvitationAdmin(ListHeaderAdmin):
+        On creation of a new domain invitation, attempt to retrieve the invitation,
+        which will be successful if a single User exists for that email; otherwise, will
+        just continue to create the invitation.
+        """
+        if not change:
+            domain = obj.domain
+            domain_org = getattr(domain.domain_info, "portfolio", None)
+            requested_email = obj.email
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+            requestor = request.user
+
+            member_of_a_different_org, member_of_this_org = get_org_membership(
+                domain_org, requested_email, requested_user
+            )
+
+            try:
+                if (
+                    flag_is_active(request, "organization_feature")
+                    and not flag_is_active(request, "multiple_portfolios")
+                    and domain_org is not None
+                    and not member_of_this_org
+                    and not member_of_a_different_org
+                ):
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                    portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+                        email=requested_email,
+                        portfolio=domain_org,
+                        roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                    )
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
+                    if requested_user is not None:
+                        portfolio_invitation.retrieve()
+                        portfolio_invitation.save()
+                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+
+                if not send_domain_invitation_email(
+                    email=requested_email,
+                    requestor=requestor,
+                    domains=domain,
+                    is_member_of_different_org=member_of_a_different_org,
+                    requested_user=requested_user,
+                ):
+                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                if requested_user is not None:
+                    # Domain Invitation creation for an existing User
+                    obj.retrieve()
+                # Call the parent save method to save the object
+                super().save_model(request, obj, form, change)
+                messages.success(request, f"{requested_email} has been invited to the domain: {domain}")
+            except Exception as e:
+                handle_invitation_exceptions(request, e, requested_email)
+                return
+        else:
+            # Call the parent save method to save the object
+            super().save_model(request, obj, form, change)
+
+
+class PortfolioInvitationAdmin(BaseInvitationAdmin):
     """Custom portfolio invitation admin class."""
 
     form = PortfolioInvitationAdminForm
@@ -1452,7 +1600,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
     # Search
     search_fields = [
         "email",
-        "portfolio__name",
+        "portfolio__organization_name",
     ]
 
     # Filters
@@ -1468,7 +1616,7 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
 
     autocomplete_fields = ["portfolio"]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/portfolio_invitation_change_form.html"
 
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):
@@ -1477,6 +1625,41 @@ class PortfolioInvitationAdmin(ListHeaderAdmin):
         extra_context["tabtitle"] = "Portfolio invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override the save_model method.
+
+        Only send email on creation of the PortfolioInvitation object. Not on updates.
+        Emails sent to requested user / email.
+        When exceptions are raised, return without saving model.
+        """
+        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+            portfolio = obj.portfolio
+            requested_email = obj.email
+            requestor = request.user
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+            ).exists()
+            try:
+                if not permission_exists:
+                    # if permission does not exist for a user with requested_email, send email
+                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    # if user exists for email, immediately retrieve portfolio invitation upon creation
+                    if requested_user is not None:
+                        obj.retrieve()
+                    messages.success(request, f"{requested_email} has been invited.")
+                else:
+                    messages.warning(request, "User is already a member of this portfolio.")
+            except Exception as e:
+                # when exception is raised, handle and do not save the model
+                handle_invitation_exceptions(request, e, requested_email)
+                return
+        # Call the parent save method to save the object
+        super().save_model(request, obj, form, change)
 
 
 class DomainInformationResource(resources.ModelResource):
@@ -1499,22 +1682,25 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = (
+                DomainInformation.objects.annotate(
+                    converted_generic_org=Case(
+                        When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
+                )
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
                     | Q(portfolio__isnull=True, generic_org_type=self.value())
@@ -1830,10 +2016,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     form = DomainRequestAdminForm
     change_form_template = "django/admin/domain_request_change_form.html"
 
+    # ------ Filters ------
+    # Define custom filters
     class StatusListFilter(MultipleChoiceListFilter):
         """Custom status filter which is a multiple choice filter"""
 
-        title = "Status"
+        title = "status"
         parameter_name = "status__in"
 
         template = "django/admin/multiple_choice_list_filter.html"
@@ -1850,22 +2038,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = (
+                DomainRequest.objects.annotate(
+                    converted_generic_org=Case(
+                        When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
+                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
+                )
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
-            # Populate the set with tuples of (value, display value)
-            for domain_request in DomainRequest.objects.all():
-                converted_generic_org = domain_request.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_request.converted_generic_org_type_display  # Display value
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
                     | Q(portfolio__isnull=True, generic_org_type=self.value())
@@ -1877,28 +2068,43 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         If we have a portfolio, use the portfolio's federal type.  If not, use the
         organization in the Domain Request object."""
 
-        title = "federal Type"
+        title = "federal type"
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            converted_federal_types = set()
-
-            # Populate the set with tuples of (value, display value)
-            for domain_request in DomainRequest.objects.all():
-                converted_federal_type = domain_request.converted_federal_type  # Actual value
-                converted_federal_type_display = domain_request.converted_federal_type_display  # Display value
-
-                if converted_federal_type:
-                    converted_federal_types.add(
-                        (converted_federal_type, converted_federal_type_display)  # Value, Display
+            # Annotate the queryset for efficient filtering
+            queryset = (
+                DomainRequest.objects.annotate(
+                    converted_federal_type=Case(
+                        When(
+                            portfolio__isnull=False,
+                            portfolio__federal_agency__federal_type__isnull=False,
+                            then="portfolio__federal_agency__federal_type",
+                        ),
+                        When(
+                            portfolio__isnull=True,
+                            federal_agency__federal_type__isnull=False,
+                            then="federal_agency__federal_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
                     )
+                )
+                .values_list("converted_federal_type", flat=True)
+                .distinct()
+            )
 
-            # Sort the set by display value
-            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
+            # Filter out empty values and return sorted unique entries
+            return sorted(
+                [
+                    (federal_type, BranchChoices.get_branch_label(federal_type))
+                    for federal_type in queryset
+                    if federal_type
+                ]
+            )
 
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a federal type is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(portfolio__federal_agency__federal_type=self.value())
                     | Q(portfolio__isnull=True, federal_type=self.value())
@@ -1965,13 +2171,58 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value() == "0":
                 return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
 
+    class PortfolioFilter(admin.SimpleListFilter):
+        """Define a custom filter for portfolio"""
+
+        title = _("portfolio")
+        parameter_name = "portfolio__isnull"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(Q(portfolio__isnull=False))
+            if self.value() == "0":
+                return queryset.filter(Q(portfolio__isnull=True))
+
+    # ------ Custom fields ------
+    def custom_election_board(self, obj):
+        return "Yes" if obj.is_election_board else "No"
+
+    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
+    custom_election_board.short_description = "Election office"  # type: ignore
+
+    @admin.display(description=_("Requested Domain"))
+    def custom_requested_domain(self, obj):
+        # Example: Show different icons based on `status`
+        url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
+        text = obj.requested_domain
+        if obj.portfolio:
+            return format_html('<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>', url, text)
+        return format_html('<a href="{}">{}</a>', url, text)
+
+    custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
+
+    # ------ Converted fields ------
+    # These fields map to @Property methods and
+    # require these custom definitions to work properly
     @admin.display(description=_("Generic Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
     @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
-        return obj.converted_organization_name
+        # Example: Show different icons based on `status`
+        if obj.portfolio:
+            url = reverse("admin:registrar_portfolio_change", args=[obj.portfolio.id])
+            text = obj.converted_organization_name
+            return format_html('<a href="{}">{}</a>', url, text)
+        else:
+            return obj.converted_organization_name
 
     @admin.display(description=_("Federal Agency"))
     def converted_federal_agency(self, obj):
@@ -1989,34 +2240,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def converted_state_territory(self, obj):
         return obj.converted_state_territory
 
-    # Columns
-    list_display = [
-        "requested_domain",
-        "first_submitted_date",
-        "last_submitted_date",
-        "last_status_update",
-        "status",
-        "custom_election_board",
-        "converted_generic_org_type",
-        "converted_organization_name",
-        "converted_federal_agency",
-        "converted_federal_type",
-        "converted_city",
-        "converted_state_territory",
-        "investigator",
-    ]
-
-    orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
-    ]
-
-    def custom_election_board(self, obj):
-        return "Yes" if obj.is_election_board else "No"
-
-    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
-
+    # ------ Portfolio fields ------
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
@@ -2086,10 +2310,33 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def status_history(self, obj):
         return "No changelog to display."
 
-    status_history.short_description = "Status History"  # type: ignore
+    status_history.short_description = "Status history"  # type: ignore
+
+    # Columns
+    list_display = [
+        "custom_requested_domain",
+        "first_submitted_date",
+        "last_submitted_date",
+        "last_status_update",
+        "status",
+        "custom_election_board",
+        "converted_generic_org_type",
+        "converted_organization_name",
+        "converted_federal_agency",
+        "converted_federal_type",
+        "converted_city",
+        "converted_state_territory",
+        "investigator",
+    ]
+
+    orderable_fk_fields = [
+        ("requested_domain", "name"),
+        ("investigator", ["first_name", "last_name"]),
+    ]
 
     # Filters
     list_filter = (
+        PortfolioFilter,
         StatusListFilter,
         GenericOrgFilter,
         FederalTypeFilter,
@@ -2099,13 +2346,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     )
 
     # Search
+    # NOTE: converted fields are included in the override for get_search_results
     search_fields = [
         "requested_domain__name",
         "creator__email",
         "creator__first_name",
         "creator__last_name",
     ]
-    search_help_text = "Search by domain or creator."
+    search_help_text = "Search by domain, creator, or organization name."
 
     fieldsets = [
         (
@@ -2271,9 +2519,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_first_name",
         "cisa_representative_last_name",
         "cisa_representative_email",
-        "requested_suborganization",
-        "suborganization_city",
-        "suborganization_state_territory",
     ]
 
     autocomplete_fields = [
@@ -2577,8 +2822,30 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Display restricted warning,
-        Setup the auditlog trail and pass it in extra context."""
+        """Display restricted warning, setup the auditlog trail and pass it in extra context,
+        display warning that status cannot be changed from 'Approved' if domain is in Ready state"""
+
+        # Fetch the domain request instance
+        domain_request: models.DomainRequest = models.DomainRequest.objects.get(pk=object_id)
+        if domain_request.approved_domain and domain_request.approved_domain.state == models.Domain.State.READY:
+            domain = domain_request.approved_domain
+            # get change url for domain
+            app_label = domain_request.approved_domain._meta.app_label
+            model_name = domain._meta.model_name
+            obj_id = domain.id
+            change_url = reverse("admin:%s_%s_change" % (app_label, model_name), args=[obj_id])
+
+            message = format_html(
+                "The status of this domain request cannot be changed because it has been joined to a domain in Ready status: "  # noqa: E501
+                "<a href='{}'>{}</a>",
+                mark_safe(change_url),  # nosec
+                escape(str(domain)),
+            )
+            messages.warning(
+                request,
+                message,
+            )
+
         obj = self.get_object(request, object_id)
         self.display_restricted_warning(request, obj)
 
@@ -2587,7 +2854,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         try:
             # Retrieve and order audit log entries by timestamp in descending order
-            audit_log_entries = LogEntry.objects.filter(object_id=object_id).order_by("-timestamp")
+            audit_log_entries = LogEntry.objects.filter(
+                object_id=object_id, content_type__model="domainrequest"
+            ).order_by("-timestamp")
 
             # Process each log entry to filter based on the change criteria
             for log_entry in audit_log_entries:
@@ -2691,6 +2960,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
         return qs
+
+    def get_search_results(self, request, queryset, search_term):
+        # Call the parent's method to apply default search logic
+        base_queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+
+        # Add custom search logic for the annotated field
+        if search_term:
+            annotated_queryset = queryset.filter(
+                # converted_organization_name
+                Q(portfolio__organization_name__icontains=search_term)
+                | Q(portfolio__isnull=True, organization_name__icontains=search_term)
+            )
+
+            # Combine the two querysets using union
+            combined_queryset = base_queryset | annotated_queryset
+        else:
+            combined_queryset = base_queryset
+
+        return combined_queryset, use_distinct
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -2963,59 +3251,86 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         parameter_name = "converted_generic_orgs"
 
         def lookups(self, request, model_admin):
-            converted_generic_orgs = set()
+            # Annotate the queryset to avoid Python-side iteration
+            queryset = (
+                Domain.objects.annotate(
+                    converted_generic_org=Case(
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__organization_type__isnull=False,
+                            then="domain_info__portfolio__organization_type",
+                        ),
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=True,
+                            domain_info__generic_org_type__isnull=False,
+                            then="domain_info__generic_org_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
+                    )
+                )
+                .values_list("converted_generic_org", flat=True)
+                .distinct()
+            )
 
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_generic_org = domain_info.converted_generic_org_type  # Actual value
-                converted_generic_org_display = domain_info.converted_generic_org_type_display  # Display value
+            # Filter out empty results and return sorted list of unique values
+            return sorted([(org, DomainRequest.OrganizationChoices.get_org_label(org)) for org in queryset if org])
 
-                if converted_generic_org:
-                    converted_generic_orgs.add((converted_generic_org, converted_generic_org_display))  # Value, Display
-
-            # Sort the set by display value
-            return sorted(converted_generic_orgs, key=lambda x: x[1])  # x[1] is the display value
-
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a generic org is selected in the filter
+            if self.value():
                 return queryset.filter(
                     Q(domain_info__portfolio__organization_type=self.value())
                     | Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())
                 )
-
             return queryset
 
     class FederalTypeFilter(admin.SimpleListFilter):
         """Custom Federal Type filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's federal type.  If not, use the
-        federal type in the Domain Information object."""
+        organization in the Domain Request object."""
 
         title = "federal type"
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            converted_federal_types = set()
-
-            # Populate the set with tuples of (value, display value)
-            for domain_info in DomainInformation.objects.all():
-                converted_federal_type = domain_info.converted_federal_type  # Actual value
-                converted_federal_type_display = domain_info.converted_federal_type_display  # Display value
-
-                if converted_federal_type:
-                    converted_federal_types.add(
-                        (converted_federal_type, converted_federal_type_display)  # Value, Display
+            # Annotate the queryset for efficient filtering
+            queryset = (
+                Domain.objects.annotate(
+                    converted_federal_type=Case(
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=False,
+                            then=F("domain_info__portfolio__federal_agency__federal_type"),
+                        ),
+                        When(
+                            domain_info__isnull=False,
+                            domain_info__portfolio__isnull=True,
+                            domain_info__federal_type__isnull=False,
+                            then="domain_info__federal_agency__federal_type",
+                        ),
+                        default=Value(""),
+                        output_field=CharField(),
                     )
+                )
+                .values_list("converted_federal_type", flat=True)
+                .distinct()
+            )
 
-            # Sort the set by display value
-            return sorted(converted_federal_types, key=lambda x: x[1])  # x[1] is the display value
+            # Filter out empty values and return sorted unique entries
+            return sorted(
+                [
+                    (federal_type, BranchChoices.get_branch_label(federal_type))
+                    for federal_type in queryset
+                    if federal_type
+                ]
+            )
 
-        # Filter queryset
         def queryset(self, request, queryset):
-            if self.value():  # Check if a federal type is selected in the filter
+            if self.value():
                 return queryset.filter(
-                    Q(domain_info__portfolio__federal_agency__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+                    Q(domain_info__portfolio__federal_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_type=self.value())
                 )
             return queryset
 
@@ -3746,9 +4061,9 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
-    analyst_readonly_fields = [
-        "organization_name",
-    ]
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
 
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio

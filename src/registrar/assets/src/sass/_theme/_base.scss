@@ -2,6 +2,8 @@
 @use "cisa_colors" as *;
 
 $widescreen-max-width: 1920px;
+$widescreen-x-padding: 4.5rem;
+
 $hot-pink: #FFC3F9;
 
 /* Styles for making visible to screen reader / AT users only. */
@@ -39,7 +41,8 @@ body {
   padding-top: units(5)!important;
 }
 
-#wrapper.dashboard--grey-1 {
+#wrapper.dashboard--grey-1,
+.bg-gray-1 {
   background-color: color('gray-1');
 }
 
@@ -56,7 +59,6 @@ body {
   }
 
   h2 {
-    color: color('primary-dark');
     margin-top: units(2);
     margin-bottom: units(2);
   }
@@ -127,16 +129,6 @@ grid column to the max-width of the searchbar, which was calculated to be 33rem.
   word-break: break-word;
 }
 
-.dotgov-status-box {
-  background-color: color('primary-lightest'); 
-  border-color: color('accent-cool-lighter');
-}
-
-.dotgov-status-box--action-need {
-  background-color: color('warning-lighter'); 
-  border-color: color('warning');
-}
-
 footer {
   border-top: 1px solid color('primary-darker');
 }
@@ -147,6 +139,11 @@ footer {
 
 .usa-footer__secondary-section a {
   color: color('primary');
+}
+
+.usa-radio {
+  margin-top: 1rem;
+  font-size: 1.06rem;
 }
 
 abbr[title] {
@@ -220,14 +217,6 @@ abbr[title] {
   max-width: 23ch;
 }
 
-.ellipsis--30 {
-  max-width: 30ch;
-}
-
-.ellipsis--50 {
-  max-width: 50ch;
-}
-
 .vertical-align-middle {
   vertical-align: middle;
 }
@@ -247,6 +236,15 @@ abbr[title] {
   max-width: $widescreen-max-width;
 }
 
+// This is used in cases where we want to align content to widescreen margins
+// but we don't want the content itself to have widescreen widths
+@include at-media(desktop) {
+  .padding-x--widescreen {
+    padding-left: $widescreen-x-padding !important;
+    padding-right: $widescreen-x-padding !important;
+  }
+}
+
 .margin-right-neg-4px {
   margin-right: -4px;
 }
@@ -255,9 +253,25 @@ abbr[title] {
   word-break: break-word;
 }
 
+.string-wrap {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: visible; 
+  word-break: break-all;
+  max-width: 100%; 
+}
+
 //Icon size adjustment used by buttons and form errors
 .usa-icon.usa-icon--large {
   margin: 0;
   height: 1.5em;
   width: 1.5em;
+}
+
+.maxw-fit-content {
+  max-width: fit-content;
+}
+
+.width-quarter {
+  width: 25%;
 }

@@ -1,9 +1,17 @@
 export function hideElement(element) {
-    element.classList.add('display-none');
+    if (element) {
+        element.classList.add('display-none');
+    } else {
+        throw new Error('hideElement expected a passed DOM element as an argument, but none was provided.');
+    }
 };
   
 export function showElement(element) {
-    element.classList.remove('display-none');
+    if (element) {
+        element.classList.remove('display-none');
+    } else {
+        throw new Error('showElement expected a passed DOM element as an argument, but none was provided.');
+    }
 };
 
 /**
@@ -74,4 +82,17 @@ export function debounce(handler, cooldown=600) {
 */
 export function getCsrfToken() {
     return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+}
+
+/**
+ * Helper function to submit a form
+ * @param {} form_id - the id of the form to be submitted
+ */
+export function submitForm(form_id) {
+    let form = document.getElementById(form_id);
+    if (form) {
+        form.submit();
+    } else {
+        console.error("Form '" + form_id + "' not found.");
+    }
 }

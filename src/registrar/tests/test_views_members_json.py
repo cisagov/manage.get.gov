@@ -54,6 +54,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             title="Admin",
         )
         self.email6 = "fifth@example.com"
+        self.email7 = "sixth@example.com"
 
         # Create Portfolio
         self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
@@ -157,7 +158,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invited_json_authenticated(self):
         """Test that portfolio invitees are returned properly for an authenticated user."""
-        """Also tests that reposnse is 200 when no domains"""
+        """Also tests that response is 200 when no domains"""
         UserPortfolioPermission.objects.create(
             user=self.user,
             portfolio=self.portfolio,
@@ -258,17 +259,32 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             role=UserDomainRole.Roles.MANAGER,
         )
 
-        # create domain for which user is manager and domain not in portfolio
+        # create another domain in the portfolio
         domain2 = Domain.objects.create(
-            name="somedomain2.com",
+            name="thissecondpermtestsmultipleperms@lets.notbreak",
         )
         DomainInformation.objects.create(
             creator=self.user,
             domain=domain2,
+            portfolio=self.portfolio,
         )
         UserDomainRole.objects.create(
             user=self.user,
             domain=domain2,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        # create domain for which user is manager and domain not in portfolio
+        domain3 = Domain.objects.create(
+            name="somedomain3.com",
+        )
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain3,
+        )
+        UserDomainRole.objects.create(
+            user=self.user,
+            domain=domain3,
             role=UserDomainRole.Roles.MANAGER,
         )
 
@@ -279,14 +295,15 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         # Check if the domain appears in the response JSON and that domain2 does not
         domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
-        self.assertNotIn("somedomain2.com", domain_names)
+        self.assertIn("thissecondpermtestsmultipleperms@lets.notbreak", domain_names)
+        self.assertNotIn("somedomain3.com", domain_names)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_get_portfolio_invited_json_with_domains(self):
         """Test that portfolio invited members are returned properly for an authenticated user and the response includes
-        the domains that the member manages.."""
+        the domains that the member manages. Test also verifies that retrieved invitations are not included."""
         UserPortfolioPermission.objects.create(
             user=self.user,
             portfolio=self.portfolio,
@@ -303,6 +320,16 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
+        PortfolioInvitation.objects.create(
+            email=self.email7,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+            status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+        )
 
         # create a domain in the portfolio
         domain = Domain.objects.create(
@@ -318,17 +345,31 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             domain=domain,
         )
 
-        # create a domain not in the portfolio
+        # create another domain in the portfolio
         domain2 = Domain.objects.create(
-            name="somedomain2.com",
+            name="thissecondinvitetestsasubqueryinjson@lets.notbreak",
         )
         DomainInformation.objects.create(
             creator=self.user,
             domain=domain2,
+            portfolio=self.portfolio,
         )
         DomainInvitation.objects.create(
             email=self.email6,
             domain=domain2,
+        )
+
+        # create a domain not in the portfolio
+        domain3 = Domain.objects.create(
+            name="somedomain3.com",
+        )
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain3,
+        )
+        DomainInvitation.objects.create(
+            email=self.email6,
+            domain=domain3,
         )
 
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
@@ -338,7 +379,8 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         # Check if the domain appears in the response JSON and domain2 does not
         domain_names = [domain_name for member in data["members"] for domain_name in member.get("domain_names", [])]
         self.assertIn("somedomain1.com", domain_names)
-        self.assertNotIn("somedomain2.com", domain_names)
+        self.assertIn("thissecondinvitetestsasubqueryinjson@lets.notbreak", domain_names)
+        self.assertNotIn("somedomain3.com", domain_names)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

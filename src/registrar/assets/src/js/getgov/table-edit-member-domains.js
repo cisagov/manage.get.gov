@@ -1,5 +1,6 @@
 
 import { BaseTable } from './table-base.js';
+import { hideElement, showElement } from './helpers.js';
 
 /**
  * EditMemberDomainsTable is used for PortfolioMember and PortfolioInvitedMember
@@ -18,8 +19,14 @@ export class EditMemberDomainsTable extends BaseTable {
     this.initialDomainAssignmentsOnlyMember = []; // list of initially assigned domains which are readonly
     this.addedDomains = []; // list of domains added to member
     this.removedDomains = []; // list of domains removed from member
+    this.editModeContainer =  document.getElementById('domain-assignments-edit-view');
+    this.readonlyModeContainer = document.getElementById('domain-assignments-readonly-view');
+    this.reviewButton = document.getElementById('review-domain-assignments');
+    this.backButton = document.getElementById('back-to-edit-domain-assignments');
+    this.saveButton = document.getElementById('save-domain-assignments');
     this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
+    this.initEventListeners();
   }
   getBaseUrl() {
     return document.getElementById("get_member_domains_json_url");
@@ -55,6 +62,14 @@ export class EditMemberDomainsTable extends BaseTable {
   getSearchParams(page, sortBy, order, searchTerm, status, portfolio) {
     let searchParams = super.getSearchParams(page, sortBy, order, searchTerm, status, portfolio);
     // Add checkedDomains to searchParams
+    let checkedDomains = this.getCheckedDomains();
+    // Append updated checkedDomain IDs to searchParams
+    if (checkedDomains.length > 0) {
+        searchParams.append("checkedDomainIds", checkedDomains.join(","));
+    }
+    return searchParams;
+  }
+  getCheckedDomains() {
     // Clone the initial domains to avoid mutating them
     let checkedDomains = [...this.initialDomainAssignments];
     // Add IDs from addedDomains that are not already in checkedDomains
@@ -70,11 +85,7 @@ export class EditMemberDomainsTable extends BaseTable {
             checkedDomains.splice(index, 1);
         }
     });
-    // Append updated checkedDomain IDs to searchParams
-    if (checkedDomains.length > 0) {
-        searchParams.append("checkedDomainIds", checkedDomains.join(","));
-    }
-    return searchParams;
+    return checkedDomains
   }
   addRow(dataObject, tbody, customTableOptions) {
     const domain = dataObject;
@@ -92,8 +103,9 @@ export class EditMemberDomainsTable extends BaseTable {
       disabled = true;
     }
     
+    // uses margin-right-neg-5 as a hack to increase the text-wrapping width on this table
     row.innerHTML = `
-        <td data-label="Selection" data-sort-value="0" class="padding-right-105">
+        <th scope="row" role="rowheader" data-label="Selection" data-sort-value="0" class="padding-right-105">
             <div class="usa-checkbox">
                 <input
                     class="usa-checkbox__input"
@@ -101,6 +113,7 @@ export class EditMemberDomainsTable extends BaseTable {
                     type="checkbox"
                     name="${domain.name}"
                     value="${domain.id}"
+                    aria-label="${domain.name}"
                     ${checked ? 'checked' : ''}
                     ${disabled ? 'disabled' : ''}
                 />
@@ -108,10 +121,10 @@ export class EditMemberDomainsTable extends BaseTable {
                     <span class="sr-only">${domain.id}</span>
                 </label>
             </div>
-        </td>
+        </th>
         <td data-label="Domain name">
             ${domain.name}
-            ${disabled ? '<span class="display-block margin-top-05 text-gray-50">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
+            ${disabled ? '<span class="display-block margin-top-05 text-gray-50 margin-right-neg-5">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
         </td>
     `;
     tbody.appendChild(row);
@@ -217,7 +230,128 @@ export class EditMemberDomainsTable extends BaseTable {
       }
     });
   }
+
+  updateReadonlyDisplay() {
+    let totalAssignedDomains = this.getCheckedDomains().length;
+
+    // Create unassigned domains list
+    const unassignedDomainsList = document.createElement('ul');
+    unassignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
+    let removedDomainsCopy = [...this.removedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    removedDomainsCopy.forEach(removedDomain => {
+        const removedDomainListItem = document.createElement('li');
+        removedDomainListItem.textContent = removedDomain.name; // Use textContent for security
+        unassignedDomainsList.appendChild(removedDomainListItem);
+    });
+
+    // Create assigned domains list
+    const assignedDomainsList = document.createElement('ul');
+    assignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
+    let addedDomainsCopy = [...this.addedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    addedDomainsCopy.forEach(addedDomain => {
+        const addedDomainListItem = document.createElement('li');
+        addedDomainListItem.textContent = addedDomain.name; // Use textContent for security
+        assignedDomainsList.appendChild(addedDomainListItem);
+    });
+
+    // Get the summary container
+    const domainAssignmentSummary = document.getElementById('domain-assignments-summary');
     
+    // Clear existing content
+    domainAssignmentSummary.innerHTML = '';
+
+    // Append unassigned domains section
+    if (this.removedDomains.length) {
+      const unassignedHeader = document.createElement('h3');
+      unassignedHeader.classList.add('margin-bottom-05', 'h4');
+      unassignedHeader.textContent = 'Unassigned domains';
+      domainAssignmentSummary.appendChild(unassignedHeader);
+      domainAssignmentSummary.appendChild(unassignedDomainsList);
+    }
+
+    // Append assigned domains section
+    if (this.addedDomains.length) {
+      const assignedHeader = document.createElement('h3');
+      // Make this h3 look like a h4
+      assignedHeader.classList.add('margin-bottom-05', 'h4');
+      assignedHeader.textContent = 'Assigned domains';
+      domainAssignmentSummary.appendChild(assignedHeader);
+      domainAssignmentSummary.appendChild(assignedDomainsList);
+    }
+
+    // Append total assigned domains section
+    const totalHeader = document.createElement('h3');
+    // Make this h3 look like a h4
+    totalHeader.classList.add('margin-bottom-05', 'h4');
+    totalHeader.textContent = 'Total assigned domains';
+    domainAssignmentSummary.appendChild(totalHeader);
+    const totalCount = document.createElement('p');
+    totalCount.classList.add('margin-y-0');
+    totalCount.textContent = totalAssignedDomains;
+    domainAssignmentSummary.appendChild(totalCount);
+  }
+
+  showReadonlyMode() {
+    this.updateReadonlyDisplay();
+    hideElement(this.editModeContainer);
+    showElement(this.readonlyModeContainer);
+    window.scrollTo(0, 0);
+  }
+
+  showEditMode() {
+    hideElement(this.readonlyModeContainer);
+    showElement(this.editModeContainer);
+  }
+
+  submitChanges() {
+    let memberDomainsEditForm = document.getElementById("member-domains-edit-form");
+    if (memberDomainsEditForm) {
+      // Serialize data to send
+      const addedDomainIds = this.addedDomains.map(domain => domain.id);
+      const addedDomainsInput = document.createElement('input');
+      addedDomainsInput.type = 'hidden';
+      addedDomainsInput.name = 'added_domains'; // Backend will use this key to retrieve data
+      addedDomainsInput.value = JSON.stringify(addedDomainIds); // Stringify the array
+      
+      const removedDomainsIds = this.removedDomains.map(domain => domain.id);
+      const removedDomainsInput = document.createElement('input');
+      removedDomainsInput.type = 'hidden';
+      removedDomainsInput.name = 'removed_domains'; // Backend will use this key to retrieve data
+      removedDomainsInput.value = JSON.stringify(removedDomainsIds); // Stringify the array
+
+      // Append input to the form
+      memberDomainsEditForm.appendChild(addedDomainsInput);
+      memberDomainsEditForm.appendChild(removedDomainsInput);
+
+      memberDomainsEditForm.submit();
+    }
+  }
+
+  initEventListeners() {
+    if (this.reviewButton) {
+      this.reviewButton.addEventListener('click', () => {
+        this.showReadonlyMode();
+      });
+    } else {
+      console.warn('Missing DOM element. Expected element with id review-domain-assignments');
+    }
+
+    if (this.backButton) {
+      this.backButton.addEventListener('click', () => {
+        this.showEditMode();
+      });
+    } else {
+      console.warn('Missing DOM element. Expected element with id back-to-edit-domain-assignments');
+    }
+
+    if (this.saveButton) {
+      this.saveButton.addEventListener('click', () => {
+        this.submitChanges();
+      });
+    } else {
+      console.warn('Missing DOM element. Expected element with id save-domain-assignments');
+    }
+  }
 }
 
 export function initEditMemberDomainsTable() {

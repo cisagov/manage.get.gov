@@ -3,8 +3,8 @@
 
 {% block title %}{{form_titles|get_item:steps.current}} | Request a .gov | {% endblock %}
 {% block content %}
-<div class="grid-container">
-  <div class="grid-row grid-gap">
+<div class="grid-container grid-container--widescreen">
+  <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
     <div class="tablet:grid-col-3">
       {% include 'domain_request_sidebar.html' %}
     </div>
@@ -130,8 +130,16 @@
           aria-describedby="Are you sure you want to submit a domain request?"
           data-force-action
         >
-            {% include 'includes/modal.html' with is_domain_request_form=True review_form_is_complete=review_form_is_complete modal_heading=modal_heading|safe modal_description=modal_description|safe modal_button=modal_button|safe %}
+          {% if review_form_is_complete %}
+            {% include 'includes/modal.html' with modal_heading="You are about to submit a domain request for " domain_name_modal=requested_domain__name modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button_id="domain-request-form-submit-button" modal_button_text="Submit request" %}
+          {% else %}
+            {% include 'includes/modal.html' with modal_heading="Your request form is incomplete" modal_description='This request cannot be submitted yet. Return to the request and visit the steps that are marked as "incomplete."' modal_button_text="Return to request" cancel_button_only=True %}
+          {% endif %}
         </div>
+
+        <form method="post" id="submit-domain-request-form">
+          {% csrf_token %}
+        </form>
 
 {% block after_form_content %}{% endblock %}
 

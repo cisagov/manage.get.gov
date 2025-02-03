@@ -18,7 +18,7 @@
 
       <li class="usa-sidenav__item">
         {% url 'domain-dns' pk=domain.id as url %}
-        <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}>
+        <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}">
           DNS
         </a>
         {% if request.path|startswith:url %}
@@ -80,6 +80,15 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain managers" %}
       {% endwith %}
 
+  
+      {% if has_domain_renewal_flag and is_domain_manager%}
+       {% if domain.is_expiring or domain.is_expired %}
+          {% with url_name="domain-renewal" %}
+            {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
+          {% endwith %}
+        {% endif %}
+      {% endif %}
+      
       {% endif %}
     </ul>
   </nav>

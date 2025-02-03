@@ -1,3 +1,5 @@
+{% load static custom_filters %}
+
 <div class="{{ uswds_input_class }}">
   {% for group, options, index in widget.optgroups %}
     {% if group %}<div><label>{{ group }}</label>{% endif %}
@@ -13,7 +15,17 @@
       <label
         class="{{ uswds_input_class }}__label{% if label_classes %} {{ label_classes }}{% endif %}"
         for="{{ option.attrs.id }}"
-      >{{ option.label }}</label>
+      >
+        {{ option.label }}
+        {% comment %} Add a description on each, if available {% endcomment %}
+        {% if field and field.field and field.field.descriptions %}
+          {% with description=field.field.descriptions|get_dict_value:option.value %}
+            {% if description %}
+                <p class="margin-0 margin-top-1 font-body-2xs">{{ description }}</p>
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+      </label>
     {% endfor %}
     {% if group %}</div>{% endif %}
   {% endfor %}

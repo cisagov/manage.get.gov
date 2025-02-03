@@ -93,7 +93,6 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
         <use xlink:href="/public/img/sprite.svg#delete"></use>
       </svg>` : ''}
       ${modal_button_text}
-      <span class="usa-sr-only">${screen_reader_text}</span>
     </a>
   `;
 
@@ -107,6 +106,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
           class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
           aria-expanded="false"
           aria-controls="more-actions-${unique_id}"
+          aria-label="${screen_reader_text}"
         >
           <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#more_vert"></use>
@@ -129,7 +129,7 @@ export class BaseTable {
     this.displayName = itemName;
     this.sectionSelector = itemName + 's';
     this.tableWrapper = document.getElementById(`${this.sectionSelector}__table-wrapper`);
-    this.tableHeaders = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable]`);
+    this.tableHeaderSortButtons = document.querySelectorAll(`#${this.sectionSelector} th[data-sortable] button`);
     this.currentSortBy = 'id';
     this.currentOrder = 'asc';
     this.currentStatus = [];
@@ -143,7 +143,7 @@ export class BaseTable {
     this.statusCheckboxes = document.querySelectorAll(`.${this.sectionSelector} input[name="filter-status"]`);
     this.statusIndicator = document.getElementById(`${this.sectionSelector}__filter-indicator`);
     this.statusToggle = document.getElementById(`${this.sectionSelector}__usa-button--filter`);
-    this.noTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
+    this.noDataTableWrapper = document.getElementById(`${this.sectionSelector}__no-data`);
     this.noSearchResultsWrapper = document.getElementById(`${this.sectionSelector}__no-search-results`);
     this.portfolioElement = document.getElementById('portfolio-js-value');
     this.portfolioValue = this.portfolioElement ? this.portfolioElement.getAttribute('data-portfolio') : null;
@@ -284,15 +284,18 @@ export class BaseTable {
         showElement(dataWrapper);
         hideElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = '';
       } else {
         hideElement(dataWrapper);
         showElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = this.noSearchResultsWrapper.innerHTML;
       }
     } else {
       hideElement(dataWrapper);
       hideElement(noSearchResultsWrapper);
       showElement(noDataWrapper);
+      this.tableAnnouncementRegion.innerHTML = this.noDataWrapper.innerHTML;
     }
   };
 
@@ -300,13 +303,18 @@ export class BaseTable {
    * A helper that resets sortable table headers
    *
   */
-  unsetHeader = (header) => {
-    header.removeAttribute('aria-sort');
-    let headerName = header.innerText;
-    const headerLabel = `${headerName}, sortable column, currently unsorted"`;
-    const headerButtonLabel = `Click to sort by ascending order.`;
-    header.setAttribute("aria-label", headerLabel);
-    header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+  unsetHeader = (headerSortButton) => {
+    let header = headerSortButton.closest('th');
+    if (header) {
+      header.removeAttribute('aria-sort');
+      let headerName = header.innerText;
+      const headerLabel = `${headerName}, sortable column, currently unsorted"`;
+      const headerButtonLabel = `Click to sort by ascending order.`;
+      header.setAttribute("aria-label", headerLabel);
+      header.querySelector('.usa-table__header__button').setAttribute("title", headerButtonLabel);
+    } else {
+      console.warn('Issue with DOM');
+    }
   };
 
   /**
@@ -376,13 +384,20 @@ export class BaseTable {
   loadModals(page, total, unfiltered_total) {}
 
   /**
+   * Loads tooltips + sets up event listeners
+   * "Activates" the tooltips after the DOM updates 
+   * Utilizes "uswdsInitializeTooltips"
+  */
+  initializeTooltips() {}
+
+  /**
    * Allows us to customize the table display based on specific conditions and a user's permissions
    * Dynamically manages the visibility set up of columns, adding/removing headers 
    * (ie if a domain request is deleteable, we include the kebab column or if a user has edit permissions
    * for a member, they will also see the kebab column)
    * @param {Object} dataObjects - Data which contains info on domain requests or a user's permission
    * Currently returns a dictionary of either:
-   * - "needsAdditionalColumn": If a new column should be displayed 
+   * - "hasAdditionalActions": If additional elements need to be added to the Action column 
    * - "UserPortfolioPermissionChoices": A user's portfolio permission choices 
    */
   customizeTable(dataObjects){ return {}; }
@@ -406,7 +421,7 @@ export class BaseTable {
    * Returns either: data.members, data.domains or data.domain_requests
    * @param {Object} dataObject - The data used to populate the row content 
    * @param {HTMLElement} tbody - The table body to which the new row is appended to 
-   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie needsAdditionalColumn)
+   * @param {Object} customTableOptions - Additional options for customizing row appearance (ie hasAdditionalActions)
    */
   addRow(dataObject, tbody, customTableOptions) {
     throw new Error('addRow must be defined');
@@ -441,6 +456,7 @@ export class BaseTable {
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) return;
 
+    this.tableAnnouncementRegion.innerHTML = '<p>Loading table.</p>';
     let url = `${baseUrlValue}?${searchParams.toString()}`
     fetch(url)
       .then(response => response.json())
@@ -451,7 +467,7 @@ export class BaseTable {
         }
 
         // handle the display of proper messaging in the event that no members exist in the list or search returns no results
-        this.updateDisplay(data, this.tableWrapper, this.noTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
+        this.updateDisplay(data, this.tableWrapper, this.noDataTableWrapper, this.noSearchResultsWrapper, this.currentSearchTerm);
         // identify the DOM element where the list of results will be inserted into the DOM
         const tbody = this.tableWrapper.querySelector('tbody');
         tbody.innerHTML = '';
@@ -462,7 +478,6 @@ export class BaseTable {
 
         let dataObjects = this.getDataObjects(data);
         let customTableOptions = this.customizeTable(data);
-
         dataObjects.forEach(dataObject => {
           this.addRow(dataObject, tbody, customTableOptions);
         });
@@ -471,6 +486,7 @@ export class BaseTable {
         this.initCheckboxListeners();
 
         this.loadModals(data.page, data.total, data.unfiltered_total);
+        this.initializeTooltips();
 
         // Do not scroll on first page load
         if (scroll)
@@ -494,17 +510,22 @@ export class BaseTable {
 
   // Add event listeners to table headers for sorting
   initializeTableHeaders() {
-    this.tableHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const sortBy = header.getAttribute('data-sortable');
-        let order = 'asc';
-        // sort order will be ascending, unless the currently sorted column is ascending, and the user
-        // is selecting the same column to sort in descending order
-        if (sortBy === this.currentSortBy) {
-          order = this.currentOrder === 'asc' ? 'desc' : 'asc';
+    this.tableHeaderSortButtons.forEach(tableHeader => {
+      tableHeader.addEventListener('click', event => {
+        let header = tableHeader.closest('th');
+        if (header) {
+          const sortBy = header.getAttribute('data-sortable');
+          let order = 'asc';
+          // sort order will be ascending, unless the currently sorted column is ascending, and the user
+          // is selecting the same column to sort in descending order
+          if (sortBy === this.currentSortBy) {
+            order = this.currentOrder === 'asc' ? 'desc' : 'asc';
+          }
+          // load the results with the updated sort
+          this.loadTable(1, sortBy, order);
+        } else {
+          console.warn('Issue with DOM');
         }
-        // load the results with the updated sort
-        this.loadTable(1, sortBy, order);
       });
     });
   }
@@ -568,9 +589,9 @@ export class BaseTable {
 
   // Reset UI and accessibility
   resetHeaders() {
-    this.tableHeaders.forEach(header => {
+    this.tableHeaderSortButtons.forEach(headerSortButton => {
       // Unset sort UI in headers
-      this.unsetHeader(header);
+      this.unsetHeader(headerSortButton);
     });
     // Reset the announcement region
     this.tableAnnouncementRegion.innerHTML = '';

@@ -9,7 +9,7 @@
       <li><strong>We typically don’t reach out to these employees</strong>, but if contact is necessary, our practice is to coordinate with you first.</li>
     </ul>
   </p>
-
+  {% include "includes/required_fields.html" %}
 {% endblock %}
 
 {% block form_required_fields_help_text %}
@@ -17,33 +17,27 @@
 {% endblock %}
 
 {% block form_fields %}
-    <fieldset class="usa-fieldset margin-top-2">
-      <legend>
-        <h2>Are there other employees who can help verify your request?</h2>
-      </legend>
-
-      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+    <div class="margin-top-2">
+      {% with add_class="usa-radio__input--tile" add_legend_heading="Are there other employees who can help verify your request?" %}
         {% input_with_errors forms.0.has_other_contacts %}
       {% endwith %}
       {# forms.0 is a small yes/no form that toggles the visibility of "other contact" formset #}
-
-    </fieldset>
+    </div>
 
     <div id="other-employees" class="other-contacts-form">
-        {% include "includes/required_fields.html" %}
         {{ forms.1.management_form }}
         {# forms.1 is a formset and this iterates over its forms #}
         {% for form in forms.1.forms %}
             <fieldset class="usa-fieldset repeatable-form padding-y-1">
             
               <legend class="float-left-tablet">
-                  <h2 class="margin-top-1">Organization contact {{ forloop.counter }}</h2>
+                  <h3 class="margin-top-05">Organization contact {{ forloop.counter }}</h2>
               </legend>
 
-              <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-bottom-2 text-secondary line-height-sans-5">
+              <button type="button" class="usa-button usa-button--unstyled display-block float-right-tablet delete-record margin-top-1 text-secondary line-height-sans-5 usa-button--with-icon">
                   <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-                  </svg><span class="margin-left-05">Delete</span>
+                  </svg>Delete
               </button>
 
 
@@ -76,7 +70,7 @@
             </fieldset>
         {% endfor %}
 
-        <button type="button" class="usa-button usa-button--unstyled" id="add-form">
+        <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
             </svg><span class="margin-left-05">Add another contact</span>

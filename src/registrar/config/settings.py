@@ -25,6 +25,7 @@ from typing import Final
 from botocore.config import Config
 import json
 import logging
+import traceback
 from django.utils.log import ServerFormatter
 
 # # #                          ###
@@ -252,7 +253,7 @@ TEMPLATES = [
                 "registrar.context_processors.org_user_status",
                 "registrar.context_processors.add_path_to_context",
                 "registrar.context_processors.portfolio_permissions",
-                "registrar.context_processors.is_widescreen_mode",
+                "registrar.context_processors.is_widescreen_centered",
             ],
         },
     },
@@ -472,7 +473,11 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "message": record.getMessage(),
         }
-        return json.dumps(log_record)
+        # Capture exception info if it exists
+        if record.exc_info:
+            log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
+
+        return json.dumps(log_record, ensure_ascii=False)
 
 
 class JsonServerFormatter(ServerFormatter):
@@ -526,7 +531,7 @@ LOGGING = {
             "()": JsonFormatter,
         },
     },
-    # define where log messages will be sent;
+    # define where log messages will be sent
     # each logger can have one or more handlers
     "handlers": { 
         "console": {

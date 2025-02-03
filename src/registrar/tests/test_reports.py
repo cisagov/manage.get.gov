@@ -16,7 +16,7 @@ from registrar.utility.csv_export import (
     DomainDataType,
     DomainDataFederal,
     DomainDataTypeUser,
-    DomainRequestsDataType,
+    DomainRequestDataType,
     DomainGrowth,
     DomainManaged,
     DomainUnmanaged,
@@ -71,8 +71,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
@@ -93,8 +93,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -255,10 +255,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Organization name,City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
             "meoward@rocks.com,squeaker@rocks.com\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,"
             "World War I Centennial Commission,,,, ,,(blank),"
@@ -280,6 +280,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -316,9 +317,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,"
+            "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,"
+            "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
 
@@ -326,6 +329,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -456,11 +460,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         portfolio.delete()
 
     def _run_domain_request_data_type_user_export(self, request):
-        """Helper function to run the exporting_dr_data_to_csv function on DomainRequestsDataType"""
+        """Helper function to run the export_data_to_csv function on DomainRequestDataType"""
 
         csv_file = StringIO()
 
-        DomainRequestsDataType.exporting_dr_data_to_csv(csv_file, request=request)
+        DomainRequestDataType.export_data_to_csv(csv_file, request=request)
 
         csv_file.seek(0)
 
@@ -493,17 +497,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "defaultsecurity.gov,Federal - Executive,Portfolio1FederalAgency,,,,(blank)\n"
-            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
-            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
-            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -533,16 +537,16 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "defaultsecurity.gov,Federal - Executive,Portfolio1FederalAgency,,,,(blank)\n"
-            "cdomain11.gov,Federal - Executive,WorldWarICentennialCommission,,,,(blank)\n"
-            "adomain10.gov,Federal,ArmedForcesRetirementHome,,,,(blank)\n"
-            "ddomain3.gov,Federal,ArmedForcesRetirementHome,,,,security@mail.gov\n"
+            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
+            "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -587,7 +591,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 expected_content = (
                     "Domain name,Domain type,Agency,Organization name,City,"
                     "State,Status,Expiration date, Deleted\n"
-                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Ready,(blank)\n"
+                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Portfolio1FederalAgency,Ready,(blank)\n"
                     "adomain10.gov,Federal,ArmedForcesRetirementHome,Ready,(blank)\n"
                     "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank)\n"
                     "zdomain12.gov,Interstate,Ready,(blank)\n"
@@ -601,6 +605,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                     csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
                 )
                 expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+                self.maxDiff = None
                 self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -729,6 +734,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             # "Submitted at",
             "Status",
             "Domain type",
+            "Portfolio",
             "Federal type",
             "Federal agency",
             "Organization name",
@@ -736,6 +742,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "City",
             "State/territory",
             "Region",
+            "Suborganization",
+            "Requested suborg",
+            "Suborg city",
+            "Suborg state/territory",
             "Creator first name",
             "Creator last name",
             "Creator email",
@@ -765,35 +775,40 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
             expected_content = (
                 # Header
-                "Domain request,Status,Domain type,Federal type,Federal agency,Organization name,Election office,"
-                "City,State/territory,Region,Creator first name,Creator last name,Creator email,"
+                "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
+                "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
+                "Suborg state/territory,Creator first name,Creator last name,Creator email,"
                 "Creator approved domains count,Creator active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
-                "city5.gov,Approved,Federal,Executive,,Testorg,N/A,,NY,2,,,,1,0,city1.gov,Testy,Tester,testy@town.com,"
-                "Chief Tester,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
-                "city2.gov,In review,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,city1.gov,,,,,"
-                "Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
-                "city3.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,"
+                "city5.gov,Approved,Federal,No,Executive,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
+                "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There is more,"
+                "Testy Tester testy2@town.com,,city.com,\n"
+                "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
+                "N/A,,,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
+                "Testy Tester testy2@town.com,,city.com,\n"
+                "city3.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
+                "N/A,,,2,,,,,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
                 'test@igorville.com,"city.com, https://www.example2.com, https://www.example.com",\n'
-                "city4.gov,Submitted,City,Executive,,Testorg,Yes,,NY,2,,,,0,1,city1.gov,Testy,"
+                "city4.gov,Submitted,City,No,Executive,,Testorg,Yes,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
                 "Tester,testy@town.com,"
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,0,1,city1.gov,,,,,"
-                "Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
-                "cisaRep@igorville.gov,city.com,\n"
+                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,N/A,"
+                ",,2,,,,,,,,0,1,city1.gov,,,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
+                "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,\n"
             )
 
             # Normalize line endings and remove commas,
             # spaces and leading/trailing whitespace
             csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+            self.maxDiff = None
             self.assertEqual(csv_content, expected_content)
 
 
@@ -877,7 +892,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
             "Viewer,True,1,cdomain1.gov\n"
             "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer,Viewer,False,0,\n"
+            "Viewer Requester,Manager,False,0,\n"
             "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
             "Viewer Requester,Manager,False,0,\n"
             "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
@@ -891,7 +906,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
             "Viewer Requester,Manager,False,0,\n"
             "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer,Viewer,False,0,\n"
+            "Viewer Requester,Manager,False,0,\n"
             "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,"
             "None,False,0,\n"
         )
@@ -899,6 +914,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
 

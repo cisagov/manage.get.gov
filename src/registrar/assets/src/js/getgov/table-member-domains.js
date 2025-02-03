@@ -1,4 +1,5 @@
 
+import { showElement, hideElement } from './helpers.js';
 import { BaseTable } from './table-base.js';
 
 export class MemberDomainsTable extends BaseTable {
@@ -18,13 +19,37 @@ export class MemberDomainsTable extends BaseTable {
     const domain = dataObject;
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td scope="row" data-label="Domain name">
+      <th scope="row" role="rowheader" data-label="Domain name">
         ${domain.name}
-      </td>
+      </th>
     `;
     tbody.appendChild(row);
   }
-
+  updateDisplay = (data, dataWrapper, noDataWrapper, noSearchResultsWrapper) => {
+    const { unfiltered_total, total } = data;
+    const searchSection = document.getElementById('edit-member-domains__search');
+    if (!searchSection) console.warn('MemberDomainsTable updateDisplay expected an element with id edit-member-domains__search but none was found');
+    if (unfiltered_total) {
+      showElement(searchSection);
+      if (total) {
+        showElement(dataWrapper);
+        hideElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = '';
+      } else {
+        hideElement(dataWrapper);
+        showElement(noSearchResultsWrapper);
+        hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = this.noSearchResultsWrapper.innerHTML;
+      }
+    } else {
+      hideElement(searchSection);
+      hideElement(dataWrapper);
+      hideElement(noSearchResultsWrapper);
+      showElement(noDataWrapper);
+      this.tableAnnouncementRegion.innerHTML = this.noDataWrapper.innerHTML;
+    }
+  };
 }
   
 export function initMemberDomainsTable() {

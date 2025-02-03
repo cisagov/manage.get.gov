@@ -907,14 +907,87 @@ Example (only requests): `./manage.py create_federal_portfolio --branch "executi
 ```docker-compose exec app ./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
 
 ##### Parameters
-|   | Parameter                  | Description                                                                                |
-|:-:|:-------------------------- |:-------------------------------------------------------------------------------------------|
-| 1 | **agency_name**            | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
-| 2 | **branch**                 | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
-| 3 | **both**                   | If True, runs parse_requests and parse_domains.                                            |
-| 4 | **parse_requests**         | If True, then the created portfolio is added to all related DomainRequests.                |
-| 5 | **parse_domains**          | If True, then the created portfolio is added to all related Domains.                       |
+|   | Parameter                    | Description                                                                                |
+|:-:|:---------------------------- |:-------------------------------------------------------------------------------------------|
+| 1 | **agency_name**              | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
+| 2 | **branch**                   | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
+| 3 | **both**                     | If True, runs parse_requests and parse_domains.                                            |
+| 4 | **parse_requests**           | If True, then the created portfolio is added to all related DomainRequests.                |
+| 5 | **parse_domains**            | If True, then the created portfolio is added to all related Domains.                       |
+| 6 | **skip_existing_portfolios** | If True, then the script will only create suborganizations, modify DomainRequest, and modify DomainInformation records only when creating a new portfolio. Use this flag when you do not want to modify existing records.       |
 
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
 - Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
 you must specify at least one to run this script.
+
+
+## Patch suborganizations
+This script deletes some duplicate suborganization data that exists in our database (one-time use).
+It works in two ways:
+1. If the only name difference between two suborg records is extra spaces or a capitalization difference,
+then we delete all duplicate records of this type.
+2. If the suborg name is one we manually specify to delete via the script.
+
+Before it deletes records, it goes through each DomainInformation and DomainRequest object and updates the reference to "sub_organization" to match the non-duplicative record.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-za`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Upload your csv to the desired sandbox
+[Follow these steps](#use-scp-to-transfer-data-to-sandboxes) to upload the federal_cio csv to a sandbox of your choice.
+
+#### Step 5: Running the script
+To create a specific portfolio: 
+```./manage.py patch_suborganizations```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py patch_suborganizations```
+
+
+## Remove Non-whitelisted Portfolios
+This script removes Portfolio entries from the database that are not part of a predefined list of allowed portfolios (`ALLOWED_PORTFOLIOS`).
+It performs the following actions:
+1. Prompts the user for confirmation before proceeding with deletions.
+2. Updates related objects such as `DomainInformation`, `Domain`, and `DomainRequest` to set their `portfolio` field to `None` to prevent integrity errors.
+3. Deletes associated objects such as `PortfolioInvitation`, `UserPortfolioPermission`, and `Suborganization`.
+4. Logs a detailed summary of all cascading deletions and orphaned objects.
+
+### Running on sandboxes
+
+#### Step 1: Login to CloudFoundry
+```cf login -a api.fr.cloud.gov --sso```
+
+#### Step 2: SSH into your environment
+```cf ssh getgov-{space}```
+
+Example: `cf ssh getgov-nl`
+
+#### Step 3: Create a shell instance
+```/tmp/lifecycle/shell```
+
+#### Step 4: Running the script
+To remove portfolios: 
+```./manage.py remove_unused_portfolios```
+
+If you wish to enable debug mode for additional logging: 
+```./manage.py remove_unused_portfolios --debug```
+
+### Running locally
+
+#### Step 1: Running the script
+```docker-compose exec app ./manage.py remove_unused_portfolios```
+
+To enable debug mode locally:
+```docker-compose exec app ./manage.py remove_unused_portfolios --debug```

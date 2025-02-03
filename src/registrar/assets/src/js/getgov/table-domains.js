@@ -1,4 +1,5 @@
 import { BaseTable } from './table-base.js';
+import { uswdsInitializeTooltips } from './helpers-uswds.js';
 
 export class DomainsTable extends BaseTable {
 
@@ -31,6 +32,9 @@ export class DomainsTable extends BaseTable {
         </td>
       `
     }
+    const isExpiring = domain.state_display === "Expiring soon"
+    const iconType = isExpiring ? "error_outline" : "info_outline";
+    const iconColor = isExpiring ? "text-secondary-vivid" : "text-accent-cool"
     row.innerHTML = `
       <th scope="row" role="rowheader" data-label="Domain name">
         ${domain.name}
@@ -41,18 +45,18 @@ export class DomainsTable extends BaseTable {
       <td data-label="Status">
         ${domain.state_display}
         <svg 
-          class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
-          data-position="top"
+        class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 ${iconColor} no-click-outline-and-cursor-help" 
+        data-position="top"
           title="${domain.get_state_help_text}"
           focusable="true"
           aria-label="${domain.get_state_help_text}"
           role="tooltip"
         >
-          <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
+        <use aria-hidden="true" xlink:href="/public/img/sprite.svg#${iconType}"></use>
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td>
+      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
         <a href="${actionUrl}">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#${domain.svg_icon}"></use>
@@ -62,6 +66,9 @@ export class DomainsTable extends BaseTable {
       </td>
     `;
     tbody.appendChild(row);
+  }
+  initializeTooltips() {
+    uswdsInitializeTooltips();
   }
 }
 
@@ -77,3 +84,30 @@ export function initDomainsTable() {
     }
   });
 }
+
+// For clicking the "Expiring" checkbox
+document.addEventListener('DOMContentLoaded', () => {
+  const expiringLink = document.getElementById('link-expiring-domains');
+
+  if (expiringLink) {
+      // Grab the selection for the status filter by
+      const statusCheckboxes = document.querySelectorAll('input[name="filter-status"]');
+
+      expiringLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          // Loop through all statuses
+          statusCheckboxes.forEach(checkbox => {  
+            // To find the for checkbox for "Expiring soon"
+            if (checkbox.value === "expiring") {
+                // If the checkbox is not already checked, check it
+                if (!checkbox.checked) {
+                    checkbox.checked = true;
+                    // Do the checkbox action
+                    let event = new Event('change');
+                    checkbox.dispatchEvent(event)  
+                }
+            }
+          });
+      });
+  }
+});
