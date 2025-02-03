@@ -3,8 +3,8 @@
 
 {% block form_instructions %}
   <p>We can better evaluate your request if we know about domains you’re already using.</p>
-  <h2>What are the current websites for your organization?</h2>
-  <p>Enter your organization’s current public websites. If you already have a .gov domain, include that in your list. This question is optional.</p>
+  <h2 id="id_current_sites_header">What are the current websites for your organization?</h2>
+  <p id="id_current_sites_body">Enter your organization’s current public websites. If you already have a .gov domain, include that in your list. This question is optional.</p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
@@ -20,7 +20,7 @@
   {% endwith %} 
   {% endfor %}
 
-  <button type="submit" name="submit_button" value="save" class="usa-button usa-button--unstyled">
+  <button type="submit" name="submit_button" value="save" class="usa-button usa-button--with-icon usa-button--unstyled">
     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
       <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
     </svg><span class="margin-left-05">Add another site</span>

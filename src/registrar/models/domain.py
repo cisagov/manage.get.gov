@@ -4,9 +4,9 @@ import ipaddress
 import re
 from datetime import date, timedelta
 from typing import Optional
+from django.db import transaction
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
-
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
 from registrar.models.host import Host
@@ -1329,14 +1329,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def get_default_administrative_contact(self):
         """Gets the default administrative contact."""
-        logger.info("get_default_security_contact() -> Adding administrative security contact")
+        logger.info("get_default_administrative_contact() -> Adding default administrative contact")
         contact = PublicContact.get_default_administrative()
         contact.domain = self
         return contact
 
     def get_default_technical_contact(self):
         """Gets the default technical contact."""
-        logger.info("get_default_security_contact() -> Adding technical security contact")
+        logger.info("get_default_security_contact() -> Adding default technical contact")
         contact = PublicContact.get_default_technical()
         contact.domain = self
         return contact
@@ -1582,11 +1582,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
-            help_text = (
-                "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-            )
+            help_text = "This domain has expired. Complete the online renewal process to maintain access."
         elif flag_is_active(request, "domain_renewal") and self.is_expiring():
-            help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
+            help_text = "This domain is expiring soon. Complete the online renewal process to maintain access."
         else:
             help_text = Domain.State.get_help_text(self.state)
 
@@ -1678,9 +1676,11 @@ class Domain(TimeStampedModel, DomainHelper):
         for domainContact in contact_data:
             req = commands.InfoContact(id=domainContact.contact)
             data = registry.send(req, cleaned=True).res_data[0]
+            logger.info(f"_fetch_contacts => this is the data: {data}")
 
             # Map the object we recieved from EPP to a PublicContact
             mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
+            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
 
             # Find/create it in the DB
             in_db = self._get_or_create_public_contact(mapped_object)
@@ -1871,8 +1871,9 @@ class Domain(TimeStampedModel, DomainHelper):
         missingSecurity = True
         missingTech = True
 
-        if len(cleaned.get("_contacts")) < 3:
-            for contact in cleaned.get("_contacts"):
+        contacts = cleaned.get("_contacts", [])
+        if len(contacts) < 3:
+            for contact in contacts:
                 if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     missingAdmin = False
                 if contact.type == PublicContact.ContactTypeChoices.SECURITY:
@@ -1890,6 +1891,11 @@ class Domain(TimeStampedModel, DomainHelper):
             if missingTech:
                 technical_contact = self.get_default_technical_contact()
                 technical_contact.save()
+
+            logger.info(
+                "_add_missing_contacts_if_unknown => Adding contacts. Values are "
+                f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
+            )
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
@@ -2104,8 +2110,21 @@ class Domain(TimeStampedModel, DomainHelper):
         # Save to DB if it doesn't exist already.
         if db_contact.count() == 0:
             # Doesn't run custom save logic, just saves to DB
-            public_contact.save(skip_epp_save=True)
-            logger.info(f"Created a new PublicContact: {public_contact}")
+            try:
+                with transaction.atomic():
+                    public_contact.save(skip_epp_save=True)
+                    logger.info(f"Created a new PublicContact: {public_contact}")
+            except IntegrityError as err:
+                logger.error(
+                    f"_get_or_create_public_contact() => tried to create a duplicate public contact: {err}",
+                    exc_info=True,
+                )
+                return PublicContact.objects.get(
+                    registry_id=public_contact.registry_id,
+                    contact_type=public_contact.contact_type,
+                    domain=self,
+                )
+
             # Append the item we just created
             return public_contact
 
@@ -2115,7 +2134,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if existing_contact.email != public_contact.email or existing_contact.registry_id != public_contact.registry_id:
             existing_contact.delete()
             public_contact.save()
-            logger.warning("Requested PublicContact is out of sync " "with DB.")
+            logger.warning("Requested PublicContact is out of sync with DB.")
             return public_contact
 
         # If it already exists, we can assume that the DB instance was updated during set, so we should just use that.

@@ -27,6 +27,9 @@ def send_domain_invitation_email(
         is_member_of_different_org (bool): if an email belongs to a different org
         requested_user (User | None): The recipient if the email belongs to a user in the registrar
 
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
         AlreadyDomainManagerError: If the email corresponds to an existing domain manager.
@@ -37,26 +40,32 @@ def send_domain_invitation_email(
     domains = normalize_domains(domains)
     requestor_email = get_requestor_email(requestor, domains)
 
-    validate_invitation(email, domains, requestor, is_member_of_different_org)
+    _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
     send_invitation_email(email, requestor_email, domains, requested_user)
 
+    all_manager_emails_sent = True
     # send emails to domain managers
     for domain in domains:
-        send_emails_to_domain_managers(
+        if not send_emails_to_domain_managers(
             email=email,
             requestor_email=requestor_email,
             domain=domain,
             requested_user=requested_user,
-        )
+        ):
+            all_manager_emails_sent = False
+
+    return all_manager_emails_sent
 
 
 def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, requested_user=None):
     """
     Notifies all domain managers of the provided domain of a change
-    Raises:
-        EmailSendingError
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
     """
+    all_emails_sent = True
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
@@ -75,10 +84,12 @@ def send_emails_to_domain_managers(email: str, requestor_email, domain: Domain, 
                     "date": date.today(),
                 },
             )
-        except EmailSendingError as err:
-            raise EmailSendingError(
-                f"Could not send email manager notification to {user.email} for domain: {domain.name}"
-            ) from err
+        except EmailSendingError:
+            logger.warning(
+                f"Could not send email manager notification to {user.email} for domain: {domain.name}", exc_info=True
+            )
+            all_emails_sent = False
+    return all_emails_sent
 
 
 def normalize_domains(domains: Domain | list[Domain]) -> list[Domain]:
@@ -101,12 +112,12 @@ def get_requestor_email(requestor, domains):
     return requestor.email
 
 
-def validate_invitation(email, domains, requestor, is_member_of_different_org):
+def _validate_invitation(email, user, domains, requestor, is_member_of_different_org):
     """Validate the invitation conditions."""
     check_outside_org_membership(email, requestor, is_member_of_different_org)
 
     for domain in domains:
-        validate_existing_invitation(email, domain)
+        _validate_existing_invitation(email, user, domain)
 
         # NOTE: should we also be validating against existing user_domain_roles
 
@@ -121,7 +132,7 @@ def check_outside_org_membership(email, requestor, is_member_of_different_org):
         raise OutsideOrgMemberError(email=email)
 
 
-def validate_existing_invitation(email, domain):
+def _validate_existing_invitation(email, user, domain):
     """Check for existing invitations and handle their status."""
     try:
         invite = DomainInvitation.objects.get(email=email, domain=domain)
@@ -134,6 +145,9 @@ def validate_existing_invitation(email, domain):
             raise AlreadyDomainInvitedError(email)
     except DomainInvitation.DoesNotExist:
         pass
+    if user:
+        if UserDomainRole.objects.filter(user=user, domain=domain).exists():
+            raise AlreadyDomainManagerError(email)
 
 
 def send_invitation_email(email, requestor_email, domains, requested_user):
