@@ -10,14 +10,14 @@
 
 <!-- Org model banner (org manager can view, domain manager can edit)  -->
 {% if has_domain_renewal_flag and num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
-<section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+<section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
-    <div class="usa-alert__body usa-alert__body--widescreen">
+    <div class="usa-alert__body">
       <p class="usa-alert__text maxw-none">
         {% if num_expiring_domains == 1%}  
-        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
         {% else%}
-        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
         {% endif %}
       </p>
     </div>
@@ -76,14 +76,14 @@
 
   <!-- Non org model banner -->
   {% if has_domain_renewal_flag and num_expiring_domains > 0 and not portfolio %}
-  <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+  <section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
-      <div class="usa-alert__body usa-alert__body--widescreen">
+      <div class="usa-alert__body">
         <p class="usa-alert__text maxw-none">
           {% if num_expiring_domains == 1%}  
-          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
           {% else%}
-          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
           {% endif %}
         </p>
       </div>
