@@ -64,7 +64,7 @@
     {% if user_domain_count and user_domain_count > 0 %}
     <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
       <section aria-label="Domains report component" class="margin-top-205">
-        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
+        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
           <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
           </svg>Export as CSV
@@ -101,6 +101,7 @@
           id="domains__usa-button--filter"
           aria-expanded="false"
           aria-controls="filter-status"
+          aria-label="Status, list 5 items"
         >
           <span class="text-bold display-none" id="domains__filter-indicator"></span> Status
           <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
