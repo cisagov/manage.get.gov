@@ -234,7 +234,8 @@ class DomainPermission(PermissionsLoginMixin):
     def can_access_domain_via_portfolio(self, pk):
         """Most views should not allow permission to portfolio users.
         If particular views allow access to the domain pages, they will need to override
-        this function."""
+        this function.
+        """
         return False
 
     def in_editable_state(self, pk):
