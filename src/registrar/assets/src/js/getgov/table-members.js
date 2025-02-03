@@ -110,9 +110,9 @@ export class MembersTable extends BaseTable {
         ${last_active.display_value}
       </td>
       <td headers="header-action row-header-${unique_id}" class="width--action-column">
-        <div class="tablet:display-flex tablet:flex-row">
+        <div class="tablet:display-flex tablet:flex-row flex-align-center">
           <a href="${member.action_url}">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
             </svg>
             ${member.action_label} <span class="usa-sr-only">${member.name}</span>

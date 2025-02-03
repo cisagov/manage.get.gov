@@ -119,7 +119,7 @@ export class DomainRequestsTable extends BaseTable {
       <td class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row flex-wrap">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
             </svg>
             ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>
