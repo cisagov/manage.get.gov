@@ -293,8 +293,6 @@ class Command(BaseCommand):
         # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
         # 3. The domain request is in status "started".
         # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
-        message = f"agencies: {agencies}"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         domain_requests_to_update = DomainRequest.objects.filter(
             federal_agency__in=agencies,
@@ -308,8 +306,6 @@ class Command(BaseCommand):
             return
 
         portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
-        message = f"portfolio_set: {portfolio_set}"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         # Update the request, assuming the given agency name matches the portfolio name
         updated_requests = []
@@ -318,9 +314,6 @@ class Command(BaseCommand):
             if agency_name in portfolio_set:
                 req.federal_agency = None
                 updated_requests.append(req)
-
-        message = f"updated_requests: {updated_requests}"
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
         # Execute the update and Log the results
         if TerminalHelper.prompt_for_execution(
@@ -331,8 +324,6 @@ class Command(BaseCommand):
             ),
             prompt_title="Do you wish to commit this update to the database?",
         ):
-            message = "prompted for execution"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
