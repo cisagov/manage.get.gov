@@ -103,8 +103,9 @@ export class EditMemberDomainsTable extends BaseTable {
       disabled = true;
     }
     
+    // uses margin-right-neg-5 as a hack to increase the text-wrapping width on this table
     row.innerHTML = `
-        <td data-label="Selection" data-sort-value="0" class="padding-right-105">
+        <th scope="row" role="rowheader" data-label="Selection" data-sort-value="0" class="padding-right-105">
             <div class="usa-checkbox">
                 <input
                     class="usa-checkbox__input"
@@ -112,6 +113,7 @@ export class EditMemberDomainsTable extends BaseTable {
                     type="checkbox"
                     name="${domain.name}"
                     value="${domain.id}"
+                    aria-label="${domain.name}"
                     ${checked ? 'checked' : ''}
                     ${disabled ? 'disabled' : ''}
                 />
@@ -119,10 +121,10 @@ export class EditMemberDomainsTable extends BaseTable {
                     <span class="sr-only">${domain.id}</span>
                 </label>
             </div>
-        </td>
+        </th>
         <td data-label="Domain name">
             ${domain.name}
-            ${disabled ? '<span class="display-block margin-top-05 text-gray-50">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
+            ${disabled ? '<span class="display-block margin-top-05 text-gray-50 margin-right-neg-5">Domains must have one domain manager. To unassign this member, the domain needs another domain manager.</span>' : ''}
         </td>
     `;
     tbody.appendChild(row);
@@ -235,7 +237,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Create unassigned domains list
     const unassignedDomainsList = document.createElement('ul');
     unassignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
-    this.removedDomains.forEach(removedDomain => {
+    let removedDomainsCopy = [...this.removedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    removedDomainsCopy.forEach(removedDomain => {
         const removedDomainListItem = document.createElement('li');
         removedDomainListItem.textContent = removedDomain.name; // Use textContent for security
         unassignedDomainsList.appendChild(removedDomainListItem);
@@ -244,7 +247,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Create assigned domains list
     const assignedDomainsList = document.createElement('ul');
     assignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
-    this.addedDomains.forEach(addedDomain => {
+    let addedDomainsCopy = [...this.addedDomains].sort((a, b) => a.name.localeCompare(b.name));
+    addedDomainsCopy.forEach(addedDomain => {
         const addedDomainListItem = document.createElement('li');
         addedDomainListItem.textContent = addedDomain.name; // Use textContent for security
         assignedDomainsList.appendChild(addedDomainListItem);
@@ -259,7 +263,7 @@ export class EditMemberDomainsTable extends BaseTable {
     // Append unassigned domains section
     if (this.removedDomains.length) {
       const unassignedHeader = document.createElement('h3');
-      unassignedHeader.classList.add('header--body', 'text-primary', 'margin-bottom-1');
+      unassignedHeader.classList.add('margin-bottom-05', 'h4');
       unassignedHeader.textContent = 'Unassigned domains';
       domainAssignmentSummary.appendChild(unassignedHeader);
       domainAssignmentSummary.appendChild(unassignedDomainsList);
@@ -268,7 +272,8 @@ export class EditMemberDomainsTable extends BaseTable {
     // Append assigned domains section
     if (this.addedDomains.length) {
       const assignedHeader = document.createElement('h3');
-      assignedHeader.classList.add('header--body', 'text-primary', 'margin-bottom-1');
+      // Make this h3 look like a h4
+      assignedHeader.classList.add('margin-bottom-05', 'h4');
       assignedHeader.textContent = 'Assigned domains';
       domainAssignmentSummary.appendChild(assignedHeader);
       domainAssignmentSummary.appendChild(assignedDomainsList);
@@ -276,7 +281,8 @@ export class EditMemberDomainsTable extends BaseTable {
 
     // Append total assigned domains section
     const totalHeader = document.createElement('h3');
-    totalHeader.classList.add('header--body', 'text-primary', 'margin-bottom-1');
+    // Make this h3 look like a h4
+    totalHeader.classList.add('margin-bottom-05', 'h4');
     totalHeader.textContent = 'Total assigned domains';
     domainAssignmentSummary.appendChild(totalHeader);
     const totalCount = document.createElement('p');
@@ -289,6 +295,7 @@ export class EditMemberDomainsTable extends BaseTable {
     this.updateReadonlyDisplay();
     hideElement(this.editModeContainer);
     showElement(this.readonlyModeContainer);
+    window.scrollTo(0, 0);
   }
 
   showEditMode() {

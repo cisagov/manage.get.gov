@@ -9,7 +9,7 @@ from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, MockSESClient, create_user  # type: ignore
+from .common import MockEppLib, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -720,6 +720,9 @@ class TestDomainManagers(TestDomainOverview):
     def tearDown(self):
         """Ensure that the user has its original permissions"""
         PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -748,11 +751,12 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_user_add_form(self):
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form(self, mock_send_domain_email):
         """Adding an existing user works."""
         get_user_model().objects.get_or_create(email="mayor@igorville.gov")
+        user = User.objects.filter(email="mayor@igorville.gov").first()
         add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
@@ -760,10 +764,15 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov",
+            requestor=self.user,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=user,
+        )
 
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
@@ -807,20 +816,75 @@ class TestDomainManagers(TestDomainOverview):
         call_args = mock_send_domain_email.call_args.kwargs
         self.assertEqual(call_args["email"], "mayor@igorville.gov")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertEqual(call_args["domain"], self.domain)
+        self.assertEqual(call_args["domains"], self.domain)
         self.assertIsNone(call_args.get("is_member_of_different_org"))
 
-        # Assert that the PortfolioInvitation is created
+        # Assert that the PortfolioInvitation is created and retrieved
         portfolio_invitation = PortfolioInvitation.objects.filter(
             email="mayor@igorville.gov", portfolio=self.portfolio
         ).first()
         self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
         self.assertEqual(portfolio_invitation.email, "mayor@igorville.gov")
         self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+        # Assert that the UserPortfolioPermission is created
+        user_portfolio_permission = UserPortfolioPermission.objects.filter(
+            user=self.user, portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(user_portfolio_permission, "User portfolio permission should be created")
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
+
+    @boto3_mocking.patching
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding an email not associated with a user works and sends portfolio invitation."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "notauser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        success_result = add_page.form.submit()
+
+        self.assertEqual(success_result.status_code, 302)
+        self.assertEqual(
+            success_result["Location"],
+            reverse("domain-users", kwargs={"pk": self.domain.id}),
+        )
+
+        # Verify that the invitation emails were sent
+        mock_send_portfolio_email.assert_called_once_with(
+            email="notauser@igorville.gov", requestor=self.user, portfolio=self.portfolio
+        )
+        mock_send_domain_email.assert_called_once()
+        call_args = mock_send_domain_email.call_args.kwargs
+        self.assertEqual(call_args["email"], "notauser@igorville.gov")
+        self.assertEqual(call_args["requestor"], self.user)
+        self.assertEqual(call_args["domains"], self.domain)
+        self.assertIsNone(call_args.get("is_member_of_different_org"))
+
+        # Assert that the PortfolioInvitation is created
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email="notauser@igorville.gov", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invitation, "Portfolio invitation should be created.")
+        self.assertEqual(portfolio_invitation.email, "notauser@igorville.gov")
+        self.assertEqual(portfolio_invitation.portfolio, self.portfolio)
+        self.assertEqual(portfolio_invitation.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_page = success_result.follow()
+        self.assertContains(success_page, "notauser@igorville.gov")
 
     @boto3_mocking.patching
     @override_flag("organization_feature", active=True)
@@ -857,7 +921,7 @@ class TestDomainManagers(TestDomainOverview):
         call_args = mock_send_domain_email.call_args.kwargs
         self.assertEqual(call_args["email"], "mayor@igorville.gov")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertEqual(call_args["domain"], self.domain)
+        self.assertEqual(call_args["domains"], self.domain)
         self.assertIsNone(call_args.get("is_member_of_different_org"))
 
         # Assert that no PortfolioInvitation is created
@@ -915,15 +979,15 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email invitation.")
+        self.assertContains(success_page, "Failed to send email.")
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_invitation_created(self):
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_invitation_created(self, mock_send_domain_email):
         """Add user on a nonexistent email creates an invitation.
 
         Adding a non-existent user sends an email as a side-effect, so mock
-        out the boto3 SES email sending here.
+        out send_domain_invitation_email here.
         """
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
@@ -936,10 +1000,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            with less_console_noise():
-                success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, domains=self.domain, is_member_of_different_org=None
+        )
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
@@ -948,13 +1013,13 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_domain_invitation_created_for_caps_email(self):
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_invitation_created_for_caps_email(self, mock_send_domain_email):
         """Add user on a nonexistent email with CAPS creates an invitation to lowercase email.
 
         Adding a non-existent user sends an email as a side-effect, so mock
-        out the boto3 SES email sending here.
+        out send_domain_invitation_email here.
         """
         # make sure there is no user with this email
         email_address = "mayor@igorville.gov"
@@ -968,9 +1033,11 @@ class TestDomainManagers(TestDomainOverview):
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client = MockSESClient()
-        with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            success_result = add_page.form.submit()
+        success_result = add_page.form.submit()
+
+        mock_send_domain_email.assert_called_once_with(
+            email="mayor@igorville.gov", requestor=self.user, domains=self.domain, is_member_of_different_org=None
+        )
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
@@ -1192,8 +1259,8 @@ class TestDomainManagers(TestDomainOverview):
         response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
-        # Assert that the Cancel link is not displayed
-        self.assertNotContains(response, "Cancel")
+        # Assert that the Cancel link (form) is not displayed
+        self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
         DomainInvitation.objects.filter(email=email_address).delete()
@@ -1250,6 +1317,57 @@ class TestDomainManagers(TestDomainOverview):
         # Now load the home page and make sure our domain appears there
         home_page = self.app.get(reverse("home"))
         self.assertContains(home_page, self.domain.name)
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete(self):
+        """Posting to the delete view deletes a user domain role."""
+        # add two managers to the domain so that one can be successfully deleted
+        email_address = "mayor@igorville.gov"
+        new_user = User.objects.create(email=email_address, username="mayor")
+        email_address_2 = "secondmayor@igorville.gov"
+        new_user_2 = User.objects.create(email=email_address_2, username="secondmayor")
+        user_domain_role = UserDomainRole.objects.create(
+            user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(user=new_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": new_user.id}), follow=True
+        )
+        # Assert that a success message is displayed to the user
+        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        # Assert that the second user is displayed
+        self.assertContains(response, f"{email_address_2}")
+        # Assert that the UserDomainRole is deleted
+        self.assertFalse(UserDomainRole.objects.filter(id=user_domain_role.id).exists())
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete_only_manager(self):
+        """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
+        # self.user is the only domain manager, so attempt to delete it
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+        )
+        # Assert that an error message is displayed to the user
+        self.assertContains(response, "Domains must have at least one domain manager.")
+        # Assert that the user is still displayed
+        self.assertContains(response, f"{self.user.email}")
+        # Assert that the UserDomainRole still exists
+        self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
+
+    @less_console_noise_decorator
+    def test_domain_user_role_delete_self_delete(self):
+        """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
+        # add one manager, so there are two and the logged in user, self.user, can be deleted
+        email_address = "mayor@igorville.gov"
+        new_user = User.objects.create(email=email_address, username="mayor")
+        UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        response = self.client.post(
+            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+        )
+        # Assert that a success message is displayed to the user
+        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        # Assert that the UserDomainRole no longer exists
+        self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
 
 class TestDomainNameservers(TestDomainOverview, MockEppLib):

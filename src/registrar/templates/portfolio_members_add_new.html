@@ -30,90 +30,67 @@
 </nav>
 
   <!-- Page header -->
-  {% block new_member_header %}
   <h1>Add a new member</h1>
-  {% endblock new_member_header %}
+
+  <p>After adding a new member, an email invitation will be sent to that user with instructions on how to set up an account. All members must keep their contact information updated and be responsive if contacted by the .gov team.</p>
 
   {% include "includes/required_fields.html" %}
 
   <form class="usa-form usa-form--large" method="post" id="add_member_form" novalidate>
+    {% csrf_token %}
     
-  <fieldset class="usa-fieldset margin-top-2">
-    <legend>
-      <h2>Email</h2>
-    </legend>
-    <!-- Member email -->
-      {% csrf_token %}
+    <fieldset class="usa-fieldset margin-top-2">
+      <legend>
+        <h2>Who would you like to add to the organization?</h2>
+      </legend>
+      <!-- Member email -->
       {% with group_classes="usa-form-editable usa-form-editable--no-border padding-top-0" %}
         {% input_with_errors form.email %}
       {% endwith %}
-  </fieldset>
+    </fieldset>
 
-  <!-- Member access radio buttons (Toggles other sections) -->
-  <fieldset class="usa-fieldset margin-top-2">
-    <legend>
-      <h2>Member Access</h2>
-    </legend>
+    <!-- Member access radio buttons (Toggles other sections) -->
+    <fieldset class="usa-fieldset margin-top-2">
+      <legend>
+        <h2>What level of access would you like to grant this member?</h2>
+      </legend>
 
-    <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+      <p class="margin-y-0">Select one <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
 
-  {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-    {% input_with_errors form.role %}
-  {% endwith %}
+      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% input_with_errors form.role %}
+      {% endwith %}
+    </fieldset>
 
-  </fieldset>
+    {% include "includes/member_permissions_matrix.html" %}
 
-  <!-- Admin access form -->
-  <div id="new-member-admin-permissions" class="margin-top-2">
-      <h2>Admin access permissions</h2>
-      <p>Member permissions available for admin-level acccess.</p>
+    <!-- Basic access form -->
+    {% include "includes/member_basic_permissions.html" %}
+    
+    <h3 class="margin-bottom-1">Domain management</h3>
 
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-      {% input_with_errors form.domain_request_permission_admin %}
-    {% endwith %}
+    <p class="margin-top-0">After you invite this person to your organization, you can assign domain management permissions on their member profile.</p>
 
-    <h3 class="summary-item__title
-    text-primary-dark
-    margin-bottom-0
-    margin-top-3">Organization members</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-      {% input_with_errors form.member_permission_admin %}
-    {% endwith %}
-  </div>
+    <!-- Submit/cancel buttons -->
+    <div class="margin-top-3">
+      <a
+        type="button"
+        href="{% url 'members' %}"
+        class="usa-button usa-button--outline"
+        name="btn-cancel-click"
+        aria-label="Cancel adding new member"
+      >Cancel
+    </a>
+      <a
+        id="invite_member_trigger"
+        href="#invite-member-modal"
+        class="usa-button usa-button--outline margin-top-1 display-none"
+        aria-controls="invite-member-modal"
+        data-open-modal
+        >Trigger invite member modal</a>
+        <button id="invite_new_member_submit" type="submit" class="usa-button">Invite Member</button>
+    </div>
 
-  <!-- Basic access form -->
-  <div id="new-member-basic-permissions" class="margin-top-2">
-      <h2>Basic member permissions</h2>
-      <p>Member permissions available for basic-level acccess.</p>
-
-    <h3 class="margin-bottom-0">Organization domain requests</h3>
-    {% with group_classes="usa-form-editable usa-form-editable--no-border bg-gray-1 padding-top-0" %}
-      {% input_with_errors form.domain_request_permission_member %}
-    {% endwith %}
-</div>
-
-  <!-- Submit/cancel buttons -->
-  <div class="margin-top-3">
-    <a
-      type="button"
-      href="{% url 'members' %}"
-      class="usa-button usa-button--outline"
-      name="btn-cancel-click"
-      aria-label="Cancel adding new member"
-    >Cancel
-  </a>
-    <a
-      id="invite_member_trigger"
-      href="#invite-member-modal"
-      class="usa-button usa-button--outline margin-top-1 display-none"
-      aria-controls="invite-member-modal"
-      data-open-modal
-      >Trigger invite member modal</a>
-      <button id="invite_new_member_submit" type="submit" class="usa-button">Invite Member</button>
-  </div>
   </form>
 
 <div
@@ -127,37 +104,34 @@
             <h2 class="usa-modal__heading" id="invite-member-heading">
                 Invite this member to the organization?
             </h2>
-            <h3 class="summary-item__title
-            text-primary-dark">Member information and permissions</h3>
-            <div class="usa-prose">
-                <!-- Display email as a header and access level -->
-                <h4 class="text-primary">Email</h4>
-                <p class="margin-top-0" id="modalEmail"></p>
+            <h3>Member information and permissions</h3>
+            <!-- Display email as a header and access level -->
+            <h4 class="margin-bottom-0">Email</h4>
+            <p class="margin-top-0" id="modalEmail"></p>
 
-                  <h4 class="text-primary">Member Access</h4>
-                  <p class="margin-top-0" id="modalAccessLevel"></p>
+            <h4 class="margin-bottom-0">Member Access</h4>
+            <p class="margin-top-0" id="modalAccessLevel"></p>
 
-                  <!-- Dynamic Permissions Details -->
-                  <div id="permission_details"></div>
-              </div>
+            <!-- Dynamic Permissions Details -->
+            <div id="permission_details"></div>
 
-              <div class="usa-modal__footer">
-                  <ul class="usa-button-group">
-                      <li class="usa-button-group__item">
-                          <button id="confirm_new_member_submit" type="submit" class="usa-button">Yes, invite member</button>
-                      </li>
-                      <li class="usa-button-group__item">
-                          <button
-                              type="button"
-                              class="usa-button usa-button--unstyled"
-                              data-close-modal
-                              onclick="closeModal()"
-                          >
-                              Cancel
-                          </button>
-                      </li>
-                  </ul>
-              </div>
+            <div class="usa-modal__footer">
+                <ul class="usa-button-group">
+                    <li class="usa-button-group__item">
+                        <button id="confirm_new_member_submit" type="submit" class="usa-button">Yes, invite member</button>
+                    </li>
+                    <li class="usa-button-group__item">
+                        <button
+                            type="button"
+                            class="usa-button usa-button--unstyled"
+                            data-close-modal
+                            onclick="closeModal()"
+                        >
+                            Cancel
+                        </button>
+                    </li>
+                </ul>
+            </div>
           </div>
           <button
               type="button"

@@ -10,7 +10,6 @@ import logging
 import requests
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
@@ -31,22 +30,23 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
-    AlreadyDomainInvitedError,
-    AlreadyDomainManagerError,
     GenericError,
     GenericErrorCodes,
-    MissingEmailError,
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
     DsDataError,
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
-    OutsideOrgMemberError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 from registrar.utility.waffle import flag_is_active_for_user
+from registrar.views.utility.invitation_helper import (
+    get_org_membership,
+    get_requested_user,
+    handle_invitation_exceptions,
+)
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -1074,9 +1074,6 @@ class DomainUsersView(DomainBaseView):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
 
-        # Add conditionals to the context (such as "can_delete_users")
-        context = self._add_booleans_to_context(context)
-
         # Get portfolio from session (if set)
         portfolio = self.request.session.get("portfolio")
 
@@ -1162,20 +1159,6 @@ class DomainUsersView(DomainBaseView):
 
         return context
 
-    def _add_booleans_to_context(self, context):
-        # Determine if the current user can delete managers
-        domain_pk = None
-        can_delete_users = False
-
-        if self.kwargs is not None and "pk" in self.kwargs:
-            domain_pk = self.kwargs["pk"]
-            # Prevent the end user from deleting themselves as a manager if they are the
-            # only manager that exists on a domain.
-            can_delete_users = UserDomainRole.objects.filter(domain__id=domain_pk).count() > 1
-
-        context["can_delete_users"] = can_delete_users
-        return context
-
 
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
@@ -1190,43 +1173,13 @@ class DomainAddUserView(DomainFormBaseView):
     def get_success_url(self):
         return reverse("domain-users", kwargs={"pk": self.object.pk})
 
-    def _get_org_membership(self, requestor_org, requested_email, requested_user):
-        """
-        Verifies if an email belongs to a different organization as a member or invited member.
-        Verifies if an email belongs to this organization as a member or invited member.
-        User does not belong to any org can be deduced from the tuple returned.
-
-        Returns a tuple (member_of_a_different_org, member_of_this_org).
-        """
-
-        # COMMENT: this code does not take into account multiple portfolios flag
-
-        # COMMENT: shouldn't this code be based on the organization of the domain, not the org
-        # of the requestor? requestor could have multiple portfolios
-
-        # Check for existing permissions or invitations for the requested user
-        existing_org_permission = UserPortfolioPermission.objects.filter(user=requested_user).first()
-        existing_org_invitation = PortfolioInvitation.objects.filter(email=requested_email).first()
-
-        # Determine membership in a different organization
-        member_of_a_different_org = (
-            existing_org_permission and existing_org_permission.portfolio != requestor_org
-        ) or (existing_org_invitation and existing_org_invitation.portfolio != requestor_org)
-
-        # Determine membership in the same organization
-        member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == requestor_org) or (
-            existing_org_invitation and existing_org_invitation.portfolio == requestor_org
-        )
-
-        return member_of_a_different_org, member_of_this_org
-
     def form_valid(self, form):
         """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
 
         # Look up a user with that email
-        requested_user = self._get_requested_user(requested_email)
+        requested_user = get_requested_user(requested_email)
         # NOTE: This does not account for multiple portfolios flag being set to True
         domain_org = self.object.domain_info.portfolio
 
@@ -1237,55 +1190,47 @@ class DomainAddUserView(DomainFormBaseView):
             or requestor.is_staff
         )
 
-        member_of_a_different_org, member_of_this_org = self._get_org_membership(
-            domain_org, requested_email, requested_user
-        )
-
-        # determine portfolio of the domain (code currently is looking at requestor's portfolio)
-        # if requested_email/user is not member or invited member of this portfolio
-        # COMMENT: this code does not take into account multiple portfolios flag
-        #   send portfolio invitation email
-        #   create portfolio invitation
-        #   create message to view
-        if (
-            flag_is_active_for_user(requestor, "organization_feature")
-            and not flag_is_active_for_user(requestor, "multiple_portfolios")
-            and domain_org is not None
-            and requestor_can_update_portfolio
-            and not member_of_this_org
-        ):
-            try:
-                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
-                PortfolioInvitation.objects.get_or_create(email=requested_email, portfolio=domain_org)
-                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
-            except Exception as e:
-                self._handle_portfolio_exceptions(e, requested_email, domain_org)
-                # If that first invite does not succeed take an early exit
-                return redirect(self.get_success_url())
-
+        member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
+            # COMMENT: this code does not take into account multiple portfolios flag being set to TRUE
+
+            # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+            # if requested_email/user is not member or invited member of this portfolio
+            #   send portfolio invitation email
+            #   create portfolio invitation
+            #   create message to view
+            if (
+                flag_is_active_for_user(requestor, "organization_feature")
+                and not flag_is_active_for_user(requestor, "multiple_portfolios")
+                and domain_org is not None
+                and requestor_can_update_portfolio
+                and not member_of_this_org
+            ):
+                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+                    email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+                )
+                # if user exists for email, immediately retrieve portfolio invitation upon creation
+                if requested_user is not None:
+                    portfolio_invitation.retrieve()
+                    portfolio_invitation.save()
+                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
                 self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
         except Exception as e:
-            self._handle_exceptions(e, requested_email)
+            handle_invitation_exceptions(self.request, e, requested_email)
 
         return redirect(self.get_success_url())
-
-    def _get_requested_user(self, email):
-        """Retrieve a user by email or return None if the user doesn't exist."""
-        try:
-            return User.objects.get(email=email)
-        except User.DoesNotExist:
-            return None
 
     def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
         """Handle invitation for a new user who does not exist in the system."""
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
-            domain=self.object,
+            domains=self.object,
             is_member_of_different_org=member_of_different_org,
         )
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
@@ -1296,8 +1241,9 @@ class DomainAddUserView(DomainFormBaseView):
         send_domain_invitation_email(
             email=email,
             requestor=requestor,
-            domain=self.object,
+            domains=self.object,
             is_member_of_different_org=member_of_different_org,
+            requested_user=requested_user,
         )
         UserDomainRole.objects.create(
             user=requested_user,
@@ -1305,57 +1251,6 @@ class DomainAddUserView(DomainFormBaseView):
             role=UserDomainRole.Roles.MANAGER,
         )
         messages.success(self.request, f"Added user {email}.")
-
-    def _handle_exceptions(self, exception, email):
-        """Handle exceptions raised during the process."""
-        if isinstance(exception, EmailSendingError):
-            logger.warning(
-                "Could not send email invitation to %s for domain %s (EmailSendingError)",
-                email,
-                self.object,
-                exc_info=True,
-            )
-            messages.warning(self.request, "Could not send email invitation.")
-        elif isinstance(exception, OutsideOrgMemberError):
-            logger.warning(
-                "Could not send email. Can not invite member of a .gov organization to a different organization.",
-                self.object,
-                exc_info=True,
-            )
-            messages.error(
-                self.request,
-                f"{email} is already a member of another .gov organization.",
-            )
-        elif isinstance(exception, AlreadyDomainManagerError):
-            messages.warning(self.request, str(exception))
-        elif isinstance(exception, AlreadyDomainInvitedError):
-            messages.warning(self.request, str(exception))
-        elif isinstance(exception, MissingEmailError):
-            messages.error(self.request, str(exception))
-            logger.error(
-                f"Can't send email to '{email}' on domain '{self.object}'. No email exists for the requestor.",
-                exc_info=True,
-            )
-        elif isinstance(exception, IntegrityError):
-            messages.warning(self.request, f"{email} is already a manager for this domain")
-        else:
-            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
-
-    def _handle_portfolio_exceptions(self, exception, email, portfolio):
-        """Handle exceptions raised during the process."""
-        if isinstance(exception, EmailSendingError):
-            logger.warning("Could not send email invitation (EmailSendingError)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
-        elif isinstance(exception, MissingEmailError):
-            messages.error(self.request, str(exception))
-            logger.error(
-                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
-                exc_info=True,
-            )
-        else:
-            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
 
 
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
@@ -1398,7 +1293,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         """Refreshes the page after a delete is successful"""
         return reverse("domain-users", kwargs={"pk": self.object.domain.id})
 
-    def get_success_message(self, delete_self=False):
+    def get_success_message(self):
         """Returns confirmation content for the deletion event"""
 
         # Grab the text representation of the user we want to delete
@@ -1408,7 +1303,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
-        if delete_self:
+        if self.delete_self:
             message = f"You are no longer managing the domain {self.object.domain}."
         else:
             message = f"Removed {email_or_name} as a manager for this domain."
@@ -1421,20 +1316,35 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         # Delete the object
         super().form_valid(form)
 
-        # Is the user deleting themselves? If so, display a different message
-        delete_self = self.request.user == self.object.user
-
         # Add a success message
-        messages.success(self.request, self.get_success_message(delete_self))
+        messages.success(self.request, self.get_success_message())
         return redirect(self.get_success_url())
 
     def post(self, request, *args, **kwargs):
-        """Custom post implementation to redirect to home in the event that the user deletes themselves"""
+        """Custom post implementation to ensure last userdomainrole is not removed and to
+        redirect to home in the event that the user deletes themselves"""
+        self.object = self.get_object()  # Retrieve the UserDomainRole to delete
+
+        # Is the user deleting themselves?
+        self.delete_self = self.request.user == self.object.user
+
+        # Check if this is the only UserDomainRole for the domain
+        if not len(UserDomainRole.objects.filter(domain=self.object.domain)) > 1:
+            if self.delete_self:
+                messages.error(
+                    request,
+                    "Domains must have at least one domain manager. "
+                    "To remove yourself, the domain needs another domain manager.",
+                )
+            else:
+                messages.error(request, "Domains must have at least one domain manager.")
+            return redirect(self.get_success_url())
+
+        # normal delete processing in the event that the above condition not reached
         response = super().post(request, *args, **kwargs)
 
         # If the user is deleting themselves, redirect to home
-        delete_self = self.request.user == self.object.user
-        if delete_self:
+        if self.delete_self:
             return redirect(reverse("home"))
 
         return response
