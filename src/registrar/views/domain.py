@@ -1353,7 +1353,7 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
                 )
             except EmailSendingError:
                 logger.warning(
-                    "Could not sent notification email to %s for domain %s",
+                    "Could not send notification email to %s for domain %s",
                     email,
                     domain.name,
                     exc_info=True,
