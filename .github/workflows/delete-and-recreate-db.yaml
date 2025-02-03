@@ -1,0 +1,91 @@
+# This workflow can be run from the CLI
+#     gh workflow run reset-db.yaml -f environment=ENVIRONMENT
+
+name: Reset database
+run-name: Reset database for ${{ github.event.inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Which environment should we flush and re-load data for?
+        options:
+        - el
+        - ad
+        - ms
+        - ag
+        - litterbox
+        - hotgov
+        - cb
+        - bob
+        - meoward
+        - backup
+        - ky
+        - es
+        - nl
+        - rh
+        - za
+        - gd
+        - rb
+        - ko
+        - ab
+        - rjm
+        - dk
+
+jobs:
+  reset-db:
+    runs-on: ubuntu-latest
+    env:
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+      DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
+    steps:
+    - name: Dekete and Recreate Database
+      env:
+        cf_username: ${{ secrets[env.CF_USERNAME] }}
+        cf_password: ${{ secrets[env.CF_PASSWORD] }}
+      run: |
+        # install cf cli and other tools
+         wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+         echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+
+         sudo apt-get update
+         sudo apt-get install cf8-cli
+         cf api api.fr.cloud.gov
+         cf auth "$CF_USERNAME" "$CF_PASSWORD"
+         cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT   
+
+
+
+         #unbind the service
+         cf unbind-service getgov-$DESTINATION_ENVIRONMENT getgov-$DESTINATION_ENVIRONMENT-database
+         #delete the service key
+         yes Y | cf delete-service-key getgov-$DESTINATION_ENVIRONMENT-database SERVICE_CONNECT 
+         #delete the service
+         yes Y | cf delete-service getgov-$DESTINATION_ENVIRONMENT-database
+         #create it again
+         cf create-service aws-rds micro-psql getgov-$DESTINATION_ENVIRONMENT-database
+         # wait for it be created (up to 5 mins)
+         # this checks the creation cf service getgov-$DESTINATION_ENVIRONMENT-database
+         # the below command with check “status” line using cf service command mentioned above. if it says “create in progress” it will keep waiting otherwise the next steps fail
+
+         until cf service getgov-$DESTINATION_ENVIRONMENT-database | grep -q 'The service instance status is succeeded'
+         do
+         echo "Database not up yet, waiting..."
+         sleep 30
+        done
+
+         #rebind the service
+         cf bind-service getgov-$DESTINATION_ENVIRONMENT getgov-$DESTINATION_ENVIRONMENT-database
+         #restage the app or it will not connect to the database right for the next commands
+         cf restage getgov-$DESTINATION_ENVIRONMENT
+         #wait for the above command to finish
+         #if it is taking way to long and the annoying “instance starting” line that keeps repeating, then run following two commands in a separate window. This will interrupt the death loop where it keeps hitting an error with it failing health checks
+         #create the cache table and run migrations
+         cf run-task getgov-$DESTINATION_ENVIRONMENT --command 'python manage.py createcachetable' --name createcachetable
+         cf run-task getgov-$DESTINATION_ENVIRONMENT --command 'python manage.py migrate' --name migrate
+
+         #check that your cloud.gov logs show this is done before you run the following command (or be like me and you have to run the command again because you were impatient. Running this before the migrate finishes will cause an error)
+         #load fixtures
+         cf run-task getgov-$DESTINATION_ENVIRONMENT --command 'python manage.py load' --name loaddata
