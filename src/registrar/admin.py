@@ -1411,10 +1411,13 @@ class BaseInvitationAdmin(ListHeaderAdmin):
         Normal flow on successful save_model on add is to redirect to changelist_view.
         If there are errors, flow is modified to instead render change form.
         """
-        # store current messages from request so that they are preserved throughout the method
+        # store current messages from request in storage so that they are preserved throughout the
+        # method, as some flows remove and replace all messages, and so we store here to retrieve
+        # later
         storage = get_messages(request)
-        # Check if there are any error or warning messages in the `messages` framework
-        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
+        # Check if there are any error messages in the `messages` framework
+        # error messages stop the workflow; other message levels allow flow to continue as normal
+        has_errors = any(message.level_tag in ["error"] for message in storage)
 
         if has_errors:
             # Re-render the change form if there are errors or warnings
@@ -1568,13 +1571,14 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                         portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
 
-                send_domain_invitation_email(
+                if not send_domain_invitation_email(
                     email=requested_email,
                     requestor=requestor,
                     domains=domain,
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
-                )
+                ):
+                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()

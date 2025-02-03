@@ -311,10 +311,38 @@ class DomainView(DomainBaseView):
         self._update_session_with_domain()
 
 
-class DomainRenewalView(DomainView):
+class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
+
+    def get_context_data(self, **kwargs):
+        """Grabs the security email information and adds security_email to the renewal form context
+        sets it to None if it uses a default email"""
+
+        context = super().get_context_data(**kwargs)
+
+        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+
+        context["hidden_security_emails"] = default_emails
+
+        security_email = self.object.get_security_email()
+        context["security_email"] = security_email
+        return context
+
+    def in_editable_state(self, pk):
+        """Override in_editable_state from DomainPermission
+        Allow renewal form to be accessed
+        returns boolean"""
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        return (
+            requested_domain
+            and requested_domain.is_editable()
+            and (requested_domain.is_expiring() or requested_domain.is_expired())
+        )
 
     def post(self, request, pk):
 
@@ -1227,24 +1255,26 @@ class DomainAddUserView(DomainFormBaseView):
 
     def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
         """Handle invitation for a new user who does not exist in the system."""
-        send_domain_invitation_email(
+        if not send_domain_invitation_email(
             email=email,
             requestor=requestor,
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
-        )
+        ):
+            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
-        send_domain_invitation_email(
+        if not send_domain_invitation_email(
             email=email,
             requestor=requestor,
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
-        )
+        ):
+            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,
