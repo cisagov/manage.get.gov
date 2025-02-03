@@ -21,16 +21,18 @@ class UserPortfolioPermission(TimeStampedModel):
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
             UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            # Domain: field specific permissions
             UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
             UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
         # NOTE: Check FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS before adding roles here.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
     }
 
@@ -38,9 +40,9 @@ class UserPortfolioPermission(TimeStampedModel):
     # Used to throw a ValidationError on clean() for UserPortfolioPermission and PortfolioInvitation.
     FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
-            UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
     }
 
