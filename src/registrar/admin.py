@@ -571,56 +571,6 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     #     return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 
-# TODO #2571 - this should be refactored. This is shared among every class that inherits this,
-# and it breaks the senior_official field because it exists both as model "Contact" and "SeniorOfficial".
-class AdminSortFields:
-    _name_sort = ["first_name", "last_name", "email"]
-
-    # Define a mapping of field names to model querysets and sort expressions.
-    # A dictionary is used for specificity, but the downside is some degree of repetition.
-    # To eliminate this, this list can be generated dynamically but the readability of that
-    # is impacted.
-    sort_mapping = {
-        # == Contact == #
-        "other_contacts": (Contact, _name_sort),
-        # == Senior Official == #
-        "senior_official": (SeniorOfficial, _name_sort),
-        # == User == #
-        "creator": (User, _name_sort),
-        "user": (User, _name_sort),
-        "investigator": (User, _name_sort),
-        # == Website == #
-        "current_websites": (Website, "website"),
-        "alternative_domains": (Website, "website"),
-        # == DraftDomain == #
-        "requested_domain": (DraftDomain, "name"),
-        # == DomainRequest == #
-        "domain_request": (DomainRequest, "requested_domain__name"),
-        # == Domain == #
-        "domain": (Domain, "name"),
-        "approved_domain": (Domain, "name"),
-    }
-
-    @classmethod
-    def get_queryset(cls, db_field):
-        """This is a helper function for formfield_for_manytomany and formfield_for_foreignkey"""
-        queryset_info = cls.sort_mapping.get(db_field.name, None)
-        if queryset_info is None:
-            return None
-
-        # Grab the model we want to order, and grab how we want to order it
-        model, order_by = queryset_info
-        match db_field.name:
-            case "investigator":
-                # We should only return users who are staff.
-                return model.objects.filter(is_staff=True).order_by(*order_by)
-            case _:
-                if isinstance(order_by, list) or isinstance(order_by, tuple):
-                    return model.objects.order_by(*order_by)
-                else:
-                    return model.objects.order_by(order_by)
-
-
 class AuditedAdmin(admin.ModelAdmin):
     """Custom admin to make auditing easier."""
 
@@ -634,18 +584,9 @@ class AuditedAdmin(admin.ModelAdmin):
             )
         )
 
-    def formfield_for_manytomany(self, db_field, request, use_admin_sort_fields=True, **kwargs):
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
-        behavior includes sorting of objects in lists as well as customizing helper text"""
-
-        # Define a queryset. Note that in the super of this,
-        # a new queryset will only be generated if one does not exist.
-        # Thus, the order in which we define queryset matters.
-
-        queryset = AdminSortFields.get_queryset(db_field)
-        if queryset and use_admin_sort_fields:
-            kwargs["queryset"] = queryset
-
+        behavior includes customizing helper text"""
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
         # customize the help text for all formfields for manytomany
         formfield.help_text = (
@@ -653,19 +594,6 @@ class AuditedAdmin(admin.ModelAdmin):
             + " If more than one value is selected, the change/delete/view actions will be disabled."
         )
         return formfield
-
-    def formfield_for_foreignkey(self, db_field, request, use_admin_sort_fields=True, **kwargs):
-        """Customize the behavior of formfields with foreign key relationships. This will customize
-        the behavior of selects. Customized behavior includes sorting of objects in list."""
-
-        # Define a queryset. Note that in the super of this,
-        # a new queryset will only be generated if one does not exist.
-        # Thus, the order in which we define queryset matters.
-        queryset = AdminSortFields.get_queryset(db_field)
-        if queryset and use_admin_sort_fields:
-            kwargs["queryset"] = queryset
-
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
@@ -1249,6 +1177,7 @@ class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "website",
     ]
     search_help_text = "Search by website."
+    ordering = ["website"]
 
     def get_model_perms(self, request):
         """
@@ -1983,17 +1912,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         extra_context["tabtitle"] = "Domain information"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """Customize the behavior of formfields with foreign key relationships. This will customize
-        the behavior of selects. Customized behavior includes sorting of objects in list."""
-        # TODO #2571
-        # Remove this check on senior_official if this underlying model changes from
-        # "Contact" to "SeniorOfficial" or if we refactor AdminSortFields.
-        # Removing this will cause the list on django admin to return SeniorOffical
-        # objects rather than Contact objects.
-        use_sort = db_field.name != "senior_official"
-        return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
 
 
 class DomainRequestResource(FsmModelResource):
@@ -2935,16 +2853,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         return None
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """Customize the behavior of formfields with foreign key relationships. This will customize
-        the behavior of selects. Customized behavior includes sorting of objects in list."""
-        # TODO #2571
-        # Remove this check on senior_official if this underlying model changes from
-        # "Contact" to "SeniorOfficial" or if we refactor AdminSortFields.
-        # Removing this will cause the list on django admin to return SeniorOffical
-        # objects rather than Contact objects.
-        use_sort = db_field.name != "senior_official"
-        return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+    def get_field_queryset(self, db, db_field, request):
+        """Override of the base get_field_queryset to order the return of 
+        formfield_for_foreignkey and formfield_for_manytomany.
+        
+        We currently use this to narrow down the investigator list to is_staff.
+        Field ordering is done on the ordering property on each related admin class (self.ordering)
+        """
+        queryset = super().get_field_queryset(db, db_field, request)
+        match db_field.name:
+            case "investigator":
+                # We should only return staff users
+                return queryset.filter(is_staff=True)
+        return queryset
 
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
@@ -3138,10 +3059,6 @@ class DomainInformationInline(admin.StackedInline):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """customize the behavior of formfields with manytomany relationships.  the customized
         behavior includes sorting of objects in lists as well as customizing helper text"""
-
-        queryset = AdminSortFields.get_queryset(db_field)
-        if queryset:
-            kwargs["queryset"] = queryset
         formfield = super().formfield_for_manytomany(db_field, request, **kwargs)
         # customize the help text for all formfields for manytomany
         formfield.help_text = (
@@ -3149,18 +3066,6 @@ class DomainInformationInline(admin.StackedInline):
             + " If more than one value is selected, the change/delete/view actions will be disabled."
         )
         return formfield
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """Customize the behavior of formfields with foreign key relationships. This will customize
-        the behavior of selects. Customized behavior includes sorting of objects in list."""
-        # Remove this check on senior_official if this underlying model changes from
-        # "Contact" to "SeniorOfficial" or if we refactor AdminSortFields.
-        # Removing this will cause the list on django admin to return SeniorOffical
-        # objects rather than Contact objects.
-        queryset = AdminSortFields.get_queryset(db_field)
-        if queryset and db_field.name != "senior_official":
-            kwargs["queryset"] = queryset
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = copy.deepcopy(DomainInformationAdmin.get_readonly_fields(self, request, obj=None))
