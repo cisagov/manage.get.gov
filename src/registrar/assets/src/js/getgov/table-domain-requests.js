@@ -116,8 +116,8 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
-        <div class="tablet:display-flex tablet:flex-row">
+      <td class="width--action-column">
+        <div class="tablet:display-flex tablet:flex-row flex-wrap">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>

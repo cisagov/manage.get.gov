@@ -1,7 +1,7 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 
-$widescreen-max-width: 1920px;
+$widescreen-max-width: 1536px; //1920px;
 $widescreen-x-padding: 4.5rem;
 
 $hot-pink: #FFC3F9;
@@ -274,4 +274,8 @@ abbr[title] {
 
 .width-quarter {
   width: 25%;
+}
+
+.width--action-column {
+  max-width: 80px;
 }

@@ -48,18 +48,6 @@ export class MembersTable extends BaseTable {
     // Get whether the logged in user has edit members permission
     const hasEditPermission = this.portfolioElement ? this.portfolioElement.getAttribute('data-has-edit-permission')==='True' : null;
 
-    let existingExtraActionsHeader =  document.querySelector('.extra-actions-header');
-
-    if (hasEditPermission && !existingExtraActionsHeader) {
-      const extraActionsHeader = document.createElement('th');
-      extraActionsHeader.setAttribute('id', 'extra-actions');
-      extraActionsHeader.setAttribute('role', 'columnheader');
-      extraActionsHeader.setAttribute('class', 'extra-actions-header width-5');
-      extraActionsHeader.innerHTML = `
-        <span class="usa-sr-only">Extra Actions</span>`;
-      let tableHeaderRow = this.tableWrapper.querySelector('thead tr');
-      tableHeaderRow.appendChild(extraActionsHeader);
-    }
     return { 
       'hasAdditionalActions': hasEditPermission,
       'UserPortfolioPermissionChoices' : data.UserPortfolioPermissionChoices
@@ -121,15 +109,17 @@ export class MembersTable extends BaseTable {
       <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
         ${last_active.display_value}
       </td>
-      <td headers="header-action row-header-${unique_id}">
-        <a href="${member.action_url}">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-            <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
-          </svg>
-          ${member.action_label} <span class="usa-sr-only">${member.name}</span>
-        </a>
+      <td headers="header-action row-header-${unique_id}" class="width--action-column">
+        <div class="tablet:display-flex tablet:flex-row">
+          <a href="${member.action_url}">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+              <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
+            </svg>
+            ${member.action_label} <span class="usa-sr-only">${member.name}</span>
+          </a>
+          <span class="padding-left-1">${customTableOptions.hasAdditionalActions ? kebabHTML : ''}</span>
+        </div>
       </td>
-      ${customTableOptions.hasAdditionalActions ? '<td>'+kebabHTML+'</td>' : ''}
     `;
     tbody.appendChild(row);
     if (domainsHTML || permissionsHTML) {
