@@ -1331,8 +1331,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
-        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action, the model
-        delete does not get called. This method gets called instead.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action
+        the model delete does not get called. This method gets called instead.
         This override makes sure our code in the model gets executed in these situations."""
         for obj in queryset:
             obj.delete()  # Calls the overridden delete method on each instance
@@ -1671,8 +1671,8 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
-        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action, the model
-        delete does not get called. This method gets called instead.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action,
+        the model delete does not get called. This method gets called instead.
         This override makes sure our code in the model gets executed in these situations."""
         for obj in queryset:
             obj.delete()  # Calls the overridden delete method on each instance
