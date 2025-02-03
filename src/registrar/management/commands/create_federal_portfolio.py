@@ -89,7 +89,7 @@ class Command(BaseCommand):
             help="Only add suborganizations to newly created portfolios, skip existing ones.",
         )
 
-    def handle(self, **options):
+    def handle(self, **options):  # noqa: C901
         agency_name = options.get("agency_name")
         branch = options.get("branch")
         parse_requests = options.get("parse_requests")
@@ -116,7 +116,6 @@ class Command(BaseCommand):
                 )
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
-
         portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
@@ -127,6 +126,8 @@ class Command(BaseCommand):
                     federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios
                 )
                 portfolios.append(portfolio)
+                if add_managers:
+                    self.add_managers_to_portfolio(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -192,31 +193,32 @@ class Command(BaseCommand):
         This includes adding them to the correct group and creating portfolio invitations.
         """
         logger.info(f"Adding managers for portfolio {portfolio}")
-        
+
         # Fetch all domains associated with the portfolio
         domains = Domain.objects.filter(domain_info__portfolio=portfolio)
         logger.debug(f"domains: {domains}")
-        domain_managers = set()
+        domain_managers: set[int] = set()
 
         # Fetch all users with manager roles for the domains
-        managers = UserDomainRole.objects.filter(
-            domain__in=domains,
-            role=UserDomainRole.Roles.MANAGER
-        ).values_list('user', flat=True)
+        managers = UserDomainRole.objects.filter(domain__in=domains, role=UserDomainRole.Roles.MANAGER).values_list(
+            "user", flat=True
+        )
         domain_managers.update(managers)
 
-        invited_managers = set()
+        invited_managers: set[str] = set()
 
         # Get the emails of invited managers
         for domain in domains:
-            domain_invitations = DomainInvitation.objects.filter(domain=domain, status=DomainInvitation.DomainInvitationStatus.INVITED).values_list('email', flat=True)
+            domain_invitations = DomainInvitation.objects.filter(
+                domain=domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+            ).values_list("email", flat=True)
             invited_managers.update(domain_invitations)
 
         logger.debug(f"invited_managers: {invited_managers}")
-        for manager in domain_managers:
+        for id in domain_managers:
             try:
                 # manager is a user id
-                user = User.objects.get(id=manager)
+                user = User.objects.get(id=id)
                 _, created = UserPortfolioPermission.objects.get_or_create(
                     portfolio=portfolio,
                     user=user,
@@ -230,9 +232,9 @@ class Command(BaseCommand):
             except User.DoesNotExist:
                 self.failed_managers.add(user)
                 logger.debug(f"User '{user}' does not exist")
-        
-        for manager in invited_managers:
-            self.create_portfolio_invitation(portfolio, manager)
+
+        for email in invited_managers:
+            self.create_portfolio_invitation(portfolio, email)
 
     def create_portfolio_invitation(self, portfolio: Portfolio, email: str):
         """
@@ -252,18 +254,18 @@ class Command(BaseCommand):
                 logger.info(f"Created portfolio invitation for '{user}' to portfolio '{portfolio}'")
             else:
                 logger.info(f"Retrieved existing portfolio invitation for '{user}' to portfolio '{portfolio}'")
-            
+
             # Assign portfolio permissions
             _, created = UserPortfolioPermission.objects.get_or_create(
                 portfolio=portfolio,
                 user=user,
-                defaults={"role": UserPortfolioPermission.RoleChoices.MANAGER},
+                defaults={"role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER},
             )
             if created:
                 logger.info(f"Created portfolio permission for '{user}' to portfolio '{portfolio}'")
             else:
                 logger.info(f"Retrieved existing portfolio permission for '{user}' to portfolio '{portfolio}'")
-            
+
             self.added_invitations.add(user)
         except User.DoesNotExist:
             PortfolioInvitation.objects.get_or_create(
@@ -316,7 +318,7 @@ class Command(BaseCommand):
             if agency_name in portfolio_set:
                 req.federal_agency = None
                 updated_requests.append(req)
-            
+
         message = f"updated_requests: {updated_requests}"
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
 
@@ -329,7 +331,7 @@ class Command(BaseCommand):
             ),
             prompt_title="Do you wish to commit this update to the database?",
         ):
-            message = f"prompted for execution"
+            message = "prompted for execution"
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
