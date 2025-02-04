@@ -1177,10 +1177,10 @@ class Domain(TimeStampedModel, DomainHelper):
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
         return self.state.capitalize()
-    
+
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""
-        return self.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)    
+        return self.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
