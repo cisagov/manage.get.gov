@@ -3227,7 +3227,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
 
         # Create a portfolio with matching organization name
-        Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
+        Portfolio.objects.create(
+            creator=self.user, organization_name=federal_agency.agency, federal_agency=federal_agency
+        )
 
         # Create domain request with the portfolio agency
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
