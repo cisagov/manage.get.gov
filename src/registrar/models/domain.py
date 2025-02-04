@@ -1053,13 +1053,15 @@ class Domain(TimeStampedModel, DomainHelper):
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
 
+        # set hosts to empty list so nameservers are deleted
         (
             deleted_values,
             updated_values,
             new_values,
             oldNameservers,
         ) = self.getNameserverChanges(hosts=[])
-
+        
+        # update the hosts
         _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
         addToDomainList, _ = self.createNewHostList(new_values)
         deleteHostList, _ = self.createDeleteHostList(deleted_values)
@@ -1073,6 +1075,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
+        # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
         for contact in contacts:
@@ -1080,6 +1083,16 @@ class Domain(TimeStampedModel, DomainHelper):
                 self._update_domain_with_contact(contact, rem=True)
                 request = commands.DeleteContact(contact.registry_id)
                 registry.send(request, cleaned=True)
+
+        # delete ds data if it exists
+        if self.dnssecdata:
+            logger.debug("Deleting ds data for %s", self.name)
+            try:
+                self.dnssecdata = None
+            except RegistryError as e:
+                logger.error("Error deleting ds data for %s: %s", self.name, e)
+                e.note = "Error deleting ds data for %s" % self.name
+                raise e
 
         logger.info("Deleting domain %s", self.name)
         request = commands.DeleteDomain(name=self.name)

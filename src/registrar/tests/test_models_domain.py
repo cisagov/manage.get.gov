@@ -2863,6 +2863,42 @@ class TestAnalystDelete(MockEppLib):
         # State should have changed
         self.assertEqual(self.domain_with_contacts.state, Domain.State.DELETED)
 
+    def test_analyst_deletes_domain_with_ds_data(self):
+        """
+        Scenario: Domain with DS data is deleted
+            When `domain.deletedInEpp()` is called
+            Then `commands.DeleteDomain` is sent to the registry
+            And `state` is set to `DELETED`
+        """
+        # Create a domain with DS data
+        domain, _ = Domain.objects.get_or_create(name="dsdomain.gov", state=Domain.State.READY)
+        domain.dnssecdata = extensions.DNSSECExtension(
+            dsdata=[extensions.DSData(keytag=1, algorithm=1, digest_type=1, digest="1234567890")],
+            keydata=[extensions.DNSSECKeyData(keytag=1, algorithm=1, digest_type=1, digest="1234567890")],
+        )
+        domain.save()
+
+        # Delete the domain
+        domain.deletedInEpp()
+        domain.save()
+
+        # Check that dsdata is None
+        self.assertEqual(domain.dnssecdata, None)
+
+        # Check that the UpdateDomain command was sent to the registry with the correct extension
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateDomain(name="dsdomain.gov", add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None),
+                    cleaned=True,
+                ),
+            ]
+        )
+
+        # Check that the domain was deleted
+        self.assertEqual(domain.state, Domain.State.DELETED)
+        
+
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
         """
