@@ -34,14 +34,12 @@ class SuborganizationFixture:
     def load(cls):
         """Creates suborganizations."""
         logger.info(f"Going to load {len(cls.SUBORGS)} suborgs")
+        portfolios = cls._get_portfolios()
+        if not portfolios:
+            return
 
-        with transaction.atomic():
-            portfolios = cls._get_portfolios()
-            if not portfolios:
-                return
-
-            suborgs_to_create = cls._prepare_suborgs_to_create(portfolios)
-            cls._bulk_create_suborgs(suborgs_to_create)
+        suborgs_to_create = cls._prepare_suborgs_to_create(portfolios)
+        cls._bulk_create_suborgs(suborgs_to_create)
 
     @classmethod
     def _get_portfolios(cls):

@@ -30,12 +30,11 @@ class DomainFixture(DomainRequestFixture):
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
         try:
-            with transaction.atomic():
-                # Get the usernames of users created in the UserFixture
-                created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
+            # Get the usernames of users created in the UserFixture
+            created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
 
-                # Filter users to only include those created by the fixture
-                users = list(User.objects.filter(username__in=created_usernames))
+            # Filter users to only include those created by the fixture
+            users = list(User.objects.filter(username__in=created_usernames))
         except Exception as e:
             logger.warning(e)
             return

@@ -430,10 +430,9 @@ class UserFixture:
 
     @classmethod
     def load(cls):
-        with transaction.atomic():
-            cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
-            cls.load_users(cls.STAFF, "cisa_analysts_group")
+        cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
+        cls.load_users(cls.STAFF, "cisa_analysts_group")
 
-            # Combine ADMINS and STAFF lists
-            all_users = cls.ADMINS + cls.STAFF
-            cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)
+        # Combine ADMINS and STAFF lists
+        all_users = cls.ADMINS + cls.STAFF
+        cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)

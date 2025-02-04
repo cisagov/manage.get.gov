@@ -84,12 +84,8 @@ class PortfolioFixture:
     def load(cls):
         """Creates portfolios."""
         logger.info("Going to load %s portfolios" % len(cls.PORTFOLIOS))
-
-        # Lumped under .atomic to ensure we don't make redundant DB calls.
-        # This bundles them all together, and then saves it in a single call.
         try:
-            with transaction.atomic():
-                user = User.objects.all().last()
+            user = User.objects.all().last()
         except Exception as e:
             logger.warning(e)
             return
@@ -106,14 +102,13 @@ class PortfolioFixture:
                 continue
 
         try:
-            with transaction.atomic():
-                portfolio = Portfolio(
-                    creator=user,
-                    organization_name=portfolio_data["organization_name"],
-                )
-                cls._set_non_foreign_key_fields(portfolio, portfolio_data)
-                cls._set_foreign_key_fields(portfolio, portfolio_data, user)
-                portfolios_to_create.append(portfolio)
+            portfolio = Portfolio(
+                creator=user,
+                organization_name=portfolio_data["organization_name"],
+            )
+            cls._set_non_foreign_key_fields(portfolio, portfolio_data)
+            cls._set_foreign_key_fields(portfolio, portfolio_data, user)
+            portfolios_to_create.append(portfolio)
         except Exception as e:
             logger.warning(e)
 
