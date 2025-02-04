@@ -5,6 +5,7 @@ from registrar.models.utility.portfolio_helper import (
     UserPortfolioRoleChoices,
     DomainRequestPermissionDisplay,
     MemberPermissionDisplay,
+    cleanup_after_portfolio_member_deletion,
     validate_user_portfolio_permission,
 )
 from .utility.time_stamped_model import TimeStampedModel
@@ -188,3 +189,13 @@ class UserPortfolioPermission(TimeStampedModel):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
         validate_user_portfolio_permission(self)
+
+    def delete(self, *args, **kwargs):
+
+        user = self.user  # Capture the user before the instance is deleted
+        portfolio = self.portfolio  # Capture the portfolio before the instance is deleted
+
+        # Call the superclass delete method to actually delete the instance
+        super().delete(*args, **kwargs)
+
+        cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=user.email, user=user)
