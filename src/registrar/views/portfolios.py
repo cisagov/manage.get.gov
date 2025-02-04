@@ -82,6 +82,9 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         member_has_edit_members_portfolio_permission = member.has_edit_members_portfolio_permission(
             portfolio_permission.portfolio
         )
+        member_has_view_all_domains_portfolio_permission = member.has_view_all_domains_portfolio_permission(
+            portfolio_permission.portfolio
+        )
 
         return render(
             request,
@@ -95,6 +98,7 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+                "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
             },
         )
 
@@ -299,13 +303,14 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, member.email, member)
-            send_domain_invitation_email(
+            if not send_domain_invitation_email(
                 email=member.email,
                 requestor=requestor,
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
                 requested_user=member,
-            )
+            ):
+                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
                 [
@@ -346,6 +351,9 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
         member_has_edit_members_portfolio_permission = (
             UserPortfolioPermissionChoices.EDIT_MEMBERS in portfolio_invitation.get_portfolio_permissions()
         )
+        member_has_view_all_domains_portfolio_permission = (
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS in portfolio_invitation.get_portfolio_permissions()
+        )
 
         return render(
             request,
@@ -358,6 +366,7 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
+                "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
             },
         )
 
@@ -517,12 +526,13 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
-            send_domain_invitation_email(
+            if not send_domain_invitation_email(
                 email=email,
                 requestor=requestor,
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
-            )
+            ):
+                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
             existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
@@ -799,7 +809,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
@@ -808,4 +818,4 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")

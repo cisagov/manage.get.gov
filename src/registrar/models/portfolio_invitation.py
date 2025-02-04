@@ -8,6 +8,7 @@ from registrar.models import DomainInvitation, UserPortfolioPermission
 from .utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
+    cleanup_after_portfolio_member_deletion,
     validate_portfolio_invitation,
 )  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
@@ -115,3 +116,27 @@ class PortfolioInvitation(TimeStampedModel):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
         validate_portfolio_invitation(self)
+
+    def delete(self, *args, **kwargs):
+
+        User = get_user_model()
+
+        email = self.email  # Capture the email before the instance is deleted
+        portfolio = self.portfolio  # Capture the portfolio before the instance is deleted
+
+        # Call the superclass delete method to actually delete the instance
+        super().delete(*args, **kwargs)
+
+        if self.status == self.PortfolioInvitationStatus.INVITED:
+
+            # Query the user by email
+            users = User.objects.filter(email=email)
+
+            if users.count() > 1:
+                # This should never happen, log an error if more than one object is returned
+                logger.error(f"Multiple users found with the same email: {email}")
+
+            # Retrieve the first user, or None if no users are found
+            user = users.first()
+
+            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)

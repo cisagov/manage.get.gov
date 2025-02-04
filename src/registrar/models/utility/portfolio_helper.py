@@ -25,23 +25,6 @@ class UserPortfolioRoleChoices(models.TextChoices):
             logger.warning(f"Invalid portfolio role: {user_portfolio_role}")
             return f"Unknown ({user_portfolio_role})"
 
-    @classmethod
-    def get_role_description(cls, user_portfolio_role):
-        """Returns a detailed description for a given role."""
-        descriptions = {
-            cls.ORGANIZATION_ADMIN: (
-                "Grants this member access to the organization-wide information "
-                "on domains, domain requests, and members. Domain management can be assigned separately."
-            ),
-            cls.ORGANIZATION_MEMBER: (
-                "Grants this member access to the organization.  They can be given extra permissions to view all "
-                "organization domain requests and submit domain requests on behalf of the organization. Basic access "
-                "members can’t view all members of an organization or manage them. "
-                "Domain management can be assigned separately."
-            ),
-        }
-        return descriptions.get(user_portfolio_role)
-
 
 class UserPortfolioPermissionChoices(models.TextChoices):
     """ """
@@ -227,3 +210,32 @@ def validate_portfolio_invitation(portfolio_invitation):
                 "This user is already assigned to a portfolio invitation. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
+
+
+def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
+    """
+    Cleans up after removing a portfolio member or a portfolio invitation.
+
+    Args:
+    portfolio: portfolio
+    user: passed when removing a portfolio member.
+    email: passed when removing a portfolio invitation, or passed as user.email
+    when removing a portfolio member.
+    """
+
+    DomainInvitation = apps.get_model("registrar.DomainInvitation")
+    UserDomainRole = apps.get_model("registrar.UserDomainRole")
+
+    # Fetch domain invitations matching the criteria
+    invitations = DomainInvitation.objects.filter(
+        email=email, domain__domain_info__portfolio=portfolio, status=DomainInvitation.DomainInvitationStatus.INVITED
+    )
+
+    # Call `cancel_invitation` on each invitation
+    for invitation in invitations:
+        invitation.cancel_invitation()
+        invitation.save()
+
+    if user:
+        # Remove user's domain roles for the current portfolio
+        UserDomainRole.objects.filter(user=user, domain__domain_info__portfolio=portfolio).delete()
