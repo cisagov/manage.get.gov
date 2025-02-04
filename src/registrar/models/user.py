@@ -268,13 +268,6 @@ class User(AbstractUser):
     def has_edit_request_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
-    # Field specific permission checks
-    def has_view_suborganization_portfolio_permission(self, portfolio):
-        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    def has_edit_suborganization_portfolio_permission(self, portfolio):
-        return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
-
     def is_portfolio_admin(self, portfolio):
         return "Admin" in self.portfolio_role_summary(portfolio)
 
@@ -293,7 +286,7 @@ class User(AbstractUser):
 
         # Define the conditions and their corresponding roles
         conditions_roles = [
-            (self.has_edit_suborganization_portfolio_permission(portfolio), ["Admin"]),
+            (self.has_edit_org_portfolio_permission(portfolio), ["Admin"]),
             (
                 self.has_view_all_domains_portfolio_permission(portfolio)
                 and self.has_any_requests_portfolio_permission(portfolio)

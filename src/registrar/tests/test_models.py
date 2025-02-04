@@ -1190,8 +1190,8 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_suborganization_portfolio_permission", return_value=True)
-    def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
+    @patch.object(User, "has_edit_org_portfolio_permission", return_value=True)
+    def test_portfolio_role_summary_admin(self, mock_edit_org):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
 
@@ -1304,20 +1304,6 @@ class TestUser(TestCase):
 
         self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
