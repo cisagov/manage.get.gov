@@ -1,6 +1,6 @@
 ## Delete And Recreate Database
 
-This script destroys recreates a database. This is another troubleshooting tool for issues with the database. It 
+This script destroys and recreates a database. This is another troubleshooting tool for issues with the database.
 
 1. unbinds the database
 2. deletes it
@@ -11,3 +11,4 @@ This script destroys recreates a database. This is another troubleshooting tool 
 Addition Info in this slack thread:
 
 [Slack thread](https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1725495150772119)
+[Script](../../../../manage.get.gov/.github/workflows/delete-and-recreate-db.yaml)
