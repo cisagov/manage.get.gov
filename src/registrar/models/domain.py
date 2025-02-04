@@ -750,11 +750,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
-        try:
-            self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        except Exception as e:
-            # we don't need this part to succeed in order to continue.
-            logger.error("Failed to delete nameserver hosts: %s", e)
+        self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
         if successTotalNameservers < 2:
             try:
@@ -1848,8 +1844,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
-
-            raise e
 
     def _fix_unknown_state(self, cleaned):
         """
