@@ -1333,6 +1333,14 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     get_roles.short_description = "Roles"  # type: ignore
 
+    def delete_queryset(self, request, queryset):
+        """We override the delete method in the model.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action
+        the model delete does not get called. This method gets called instead.
+        This override makes sure our code in the model gets executed in these situations."""
+        for obj in queryset:
+            obj.delete()  # Calls the overridden delete method on each instance
+
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom user domain role admin class."""
@@ -1693,6 +1701,14 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
             return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
+
+    def delete_queryset(self, request, queryset):
+        """We override the delete method in the model.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action,
+        the model delete does not get called. This method gets called instead.
+        This override makes sure our code in the model gets executed in these situations."""
+        for obj in queryset:
+            obj.delete()  # Calls the overridden delete method on each instance
 
 
 class DomainInformationResource(resources.ModelResource):

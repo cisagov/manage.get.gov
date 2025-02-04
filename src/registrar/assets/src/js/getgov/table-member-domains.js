@@ -35,16 +35,19 @@ export class MemberDomainsTable extends BaseTable {
         showElement(dataWrapper);
         hideElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = '';
       } else {
         hideElement(dataWrapper);
         showElement(noSearchResultsWrapper);
         hideElement(noDataWrapper);
+        this.tableAnnouncementRegion.innerHTML = this.noSearchResultsWrapper.innerHTML;
       }
     } else {
       hideElement(searchSection);
       hideElement(dataWrapper);
       hideElement(noSearchResultsWrapper);
       showElement(noDataWrapper);
+      this.tableAnnouncementRegion.innerHTML = this.noDataWrapper.innerHTML;
     }
   };
 }
