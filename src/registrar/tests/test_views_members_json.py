@@ -372,6 +372,21 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             domain=domain3,
         )
 
+        # create another domain in the portfolio
+        # but make sure the domain invitation is canceled
+        domain4 = Domain.objects.create(
+            name="somedomain4.com",
+        )
+        DomainInformation.objects.create(
+            creator=self.user,
+            domain=domain4,
+        )
+        DomainInvitation.objects.create(
+            email=self.email6,
+            domain=domain4,
+            status=DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -381,6 +396,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertIn("somedomain1.com", domain_names)
         self.assertIn("thissecondinvitetestsasubqueryinjson@lets.notbreak", domain_names)
         self.assertNotIn("somedomain3.com", domain_names)
+        self.assertNotIn("somedomain4.com", domain_names)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

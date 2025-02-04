@@ -197,8 +197,8 @@ def validate_portfolio_invitation(portfolio_invitation):
     if not flag_is_active_for_user(user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.filter(user=user)
 
-        existing_invitations = PortfolioInvitation.objects.exclude(id=portfolio_invitation.id).filter(
-            email=portfolio_invitation.email
+        existing_invitations = PortfolioInvitation.objects.filter(email=portfolio_invitation.email).exclude(
+            Q(id=portfolio_invitation.id) | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         )
 
         if existing_permissions.exists():
