@@ -4,6 +4,12 @@
 {% block title %}DNS name servers | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
+
+  {# this is right after the messages block in the parent template #}
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
+  
   {% block breadcrumb %}
   {% if portfolio %}
   <!-- Navigation breadcrumbs -->
@@ -25,11 +31,6 @@
   </nav>
   {% endif %}
   {% endblock breadcrumb %}
-
-  {# this is right after the messages block in the parent template #}
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
 
   <h1>DNS name servers</h1>
 

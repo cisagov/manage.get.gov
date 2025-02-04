@@ -5,6 +5,8 @@
 
 {% block domain_content %}
 
+    {% include "includes/form_errors.html" with form=form %}
+
     {% block breadcrumb %}
     {% if portfolio %}
     <!-- Navigation breadcrumbs -->
@@ -23,10 +25,6 @@
     </nav>
     {% endif %}
     {% endblock breadcrumb %}
-
-    {# this is right after the messages block in the parent template #}
-    {% include "includes/form_errors.html" with form=form %}
-
 
     <h1>Suborganization</h1>
 

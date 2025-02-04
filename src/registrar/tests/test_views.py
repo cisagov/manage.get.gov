@@ -214,7 +214,7 @@ class HomeTests(TestWithUser):
     @less_console_noise_decorator
     def test_state_help_text_expired(self):
         """Tests if each domain state has help text when expired"""
-        expired_text = "This domain has expired, but it is still online. "
+        expired_text = "This domain has expired. "
         test_domain, _ = Domain.objects.get_or_create(name="expired.gov", state=Domain.State.READY)
         test_domain.expiration_date = date(2011, 10, 10)
         test_domain.save()
@@ -240,7 +240,7 @@ class HomeTests(TestWithUser):
         """Tests if each domain state has help text when expiration date is None"""
 
         # == Test a expiration of None for state ready. This should be expired. == #
-        expired_text = "This domain has expired, but it is still online. "
+        expired_text = "This domain has expired. "
         test_domain, _ = Domain.objects.get_or_create(name="imexpired.gov", state=Domain.State.READY)
         test_domain.expiration_date = None
         test_domain.save()

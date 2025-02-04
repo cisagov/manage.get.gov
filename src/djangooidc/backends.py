@@ -21,48 +21,65 @@ class OpenIdConnectBackend(ModelBackend):
     """
 
     def authenticate(self, request, **kwargs):
-        logger.debug("kwargs %s" % kwargs)
-        user = None
-        if not kwargs or "sub" not in kwargs.keys():
-            return user
+        logger.debug("kwargs %s", kwargs)
+
+        if not kwargs or "sub" not in kwargs:
+            return None
 
         UserModel = get_user_model()
         username = self.clean_username(kwargs["sub"])
+        openid_data = self.extract_openid_data(kwargs)
 
-        # Some OP may actually choose to withhold some information, so we must
-        # test if it is present
-        openid_data = {"last_login": timezone.now()}
-        openid_data["first_name"] = kwargs.get("given_name", "")
-        openid_data["last_name"] = kwargs.get("family_name", "")
-        openid_data["email"] = kwargs.get("email", "")
-        openid_data["phone"] = kwargs.get("phone", "")
-
-        # Note that this could be accomplished in one try-except clause, but
-        # instead we use get_or_create when creating unknown users since it has
-        # built-in safeguards for multiple threads.
         if getattr(settings, "OIDC_CREATE_UNKNOWN_USER", True):
-            args = {
-                UserModel.USERNAME_FIELD: username,
-                # defaults _will_ be updated, these are not fallbacks
-                "defaults": openid_data,
-            }
-
-            user, created = UserModel.objects.get_or_create(**args)
-
-            if not created:
-                # If user exists, update existing user
-                self.update_existing_user(user, args["defaults"])
-            else:
-                # If user is created, configure the user
-                user = self.configure_user(user, **kwargs)
+            user = self.get_or_create_user(UserModel, username, openid_data, kwargs)
         else:
-            try:
-                user = UserModel.objects.get_by_natural_key(username)
-            except UserModel.DoesNotExist:
-                return None
-        # run this callback for a each login
-        user.on_each_login()
+            user = self.get_user_by_username(UserModel, username)
+
+        if user:
+            user.on_each_login()
+
         return user
+
+    def extract_openid_data(self, kwargs):
+        """Extract OpenID data from authentication kwargs."""
+        return {
+            "last_login": timezone.now(),
+            "first_name": kwargs.get("given_name", ""),
+            "last_name": kwargs.get("family_name", ""),
+            "email": kwargs.get("email", ""),
+            "phone": kwargs.get("phone", ""),
+        }
+
+    def get_or_create_user(self, UserModel, username, openid_data, kwargs):
+        """Retrieve user by username or email, or create a new user."""
+        user = self.get_user_by_username(UserModel, username)
+
+        if not user and openid_data["email"]:
+            user = self.get_user_by_email(UserModel, openid_data["email"])
+            if user:
+                # if found by email, update the username
+                setattr(user, UserModel.USERNAME_FIELD, username)
+
+        if not user:
+            user = UserModel.objects.create(**{UserModel.USERNAME_FIELD: username}, **openid_data)
+            return self.configure_user(user, **kwargs)
+
+        self.update_existing_user(user, openid_data)
+        return user
+
+    def get_user_by_username(self, UserModel, username):
+        """Retrieve user by username."""
+        try:
+            return UserModel.objects.get(**{UserModel.USERNAME_FIELD: username})
+        except UserModel.DoesNotExist:
+            return None
+
+    def get_user_by_email(self, UserModel, email):
+        """Retrieve user by email."""
+        try:
+            return UserModel.objects.get(email=email)
+        except UserModel.DoesNotExist:
+            return None
 
     def update_existing_user(self, user, kwargs):
         """

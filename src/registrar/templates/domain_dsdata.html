@@ -5,6 +5,10 @@
 
 {% block domain_content %}
 
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
+
   {% block breadcrumb %}
   {% if portfolio %}
   <!-- Navigation breadcrumbs -->
@@ -37,10 +41,6 @@
     </div>
   </div>
   {% endif %}
-
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
 
   <h1 id="domain-dsdata">DS data</h1>
 

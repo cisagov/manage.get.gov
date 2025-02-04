@@ -38,7 +38,7 @@
       </div>
       <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
         <section aria-label="Domains report component" class="margin-top-205">
-          <a href="{% url 'export_members_portfolio' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
+          <a href="{% url 'export_members_portfolio' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
             <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
             </svg>Export as CSV
@@ -54,7 +54,7 @@
         <thead>
           <tr>
             <th data-sortable="member" role="columnheader" id="header-member">Member</th>
-            <th data-sortable="last_active" role="columnheader" id="header-last-active">Last Active</th>
+            <th data-sortable="last_active" role="columnheader" id="header-last-active">Last active</th>
             <th 
               role="columnheader"
               id="header-action"

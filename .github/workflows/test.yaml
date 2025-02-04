@@ -3,10 +3,6 @@ name: Testing
 
 on:
   push:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.gitignore'
     branches:
       - main
   pull_request:

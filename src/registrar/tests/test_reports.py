@@ -255,10 +255,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Organization name,City,State,SO,SO email,"
             "Security contact email,Domain managers,Invited domain managers\n"
             "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
             "meoward@rocks.com,squeaker@rocks.com\n"
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
             "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,"
             "World War I Centennial Commission,,,, ,,(blank),"
@@ -280,6 +280,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -316,9 +317,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,"
+            "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,"
+            "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
 
@@ -326,6 +329,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -587,7 +591,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 expected_content = (
                     "Domain name,Domain type,Agency,Organization name,City,"
                     "State,Status,Expiration date, Deleted\n"
-                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Ready,(blank)\n"
+                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Portfolio1FederalAgency,Ready,(blank)\n"
                     "adomain10.gov,Federal,ArmedForcesRetirementHome,Ready,(blank)\n"
                     "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank)\n"
                     "zdomain12.gov,Interstate,Ready,(blank)\n"
@@ -601,6 +605,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                     csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
                 )
                 expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+                self.maxDiff = None
                 self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
@@ -780,9 +785,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "city5.gov,Approved,Federal,No,Executive,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
                 "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
-                "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,,N/A,,,2,SubOrg 1,,,,,,,0,"
-                "1,city1.gov,,,,,Purpose of the site,There is more,Testy Tester testy2@town.com,,city.com,\n"
-                "city3.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,,,,,0,1,"
+                "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
+                "N/A,,,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
+                "Testy Tester testy2@town.com,,city.com,\n"
+                "city3.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
+                "N/A,,,2,,,,,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
@@ -792,9 +799,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,,N/A,,,2,,,,,,,,0,1,city1.gov,"
-                ",,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,Testy Tester testy2@town.com,"
-                "cisaRep@igorville.gov,city.com,\n"
+                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,N/A,"
+                ",,2,,,,,,,,0,1,city1.gov,,,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
+                "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,\n"
             )
 
             # Normalize line endings and remove commas,
@@ -885,7 +892,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
             "Viewer,True,1,cdomain1.gov\n"
             "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer,Viewer,False,0,\n"
+            "Viewer Requester,Manager,False,0,\n"
             "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
             "Viewer Requester,Manager,False,0,\n"
             "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
@@ -899,7 +906,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
             "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
             "Viewer Requester,Manager,False,0,\n"
             "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer,Viewer,False,0,\n"
+            "Viewer Requester,Manager,False,0,\n"
             "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,"
             "None,False,0,\n"
         )

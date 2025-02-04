@@ -55,7 +55,9 @@ class SeniorOfficial(TimeStampedModel):
         return " ".join(names) if names else "Unknown"
 
     def __str__(self):
-        if self.first_name or self.last_name:
+        if self.federal_agency and (self.first_name or self.last_name):
+            return self.get_formatted_name() + " of " + self.federal_agency.__str__()
+        elif self.first_name or self.last_name:
             return self.get_formatted_name()
         elif self.pk:
             return str(self.pk)

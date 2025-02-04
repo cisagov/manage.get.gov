@@ -9,6 +9,7 @@ from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
@@ -903,6 +904,7 @@ class DomainRequest(TimeStampedModel):
         email_template,
         email_template_subject,
         bcc_address="",
+        cc_addresses: list[str] = [],
         context=None,
         send_email=True,
         wrap_email=False,
@@ -955,12 +957,20 @@ class DomainRequest(TimeStampedModel):
 
             if custom_email_content:
                 context["custom_email_content"] = custom_email_content
+
+            if self.requesting_entity_is_portfolio() or self.requesting_entity_is_suborganization():
+                portfolio_view_requests_users = self.portfolio.portfolio_users_with_permissions(  # type: ignore
+                    permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS], include_admin=True
+                )
+                cc_addresses = list(portfolio_view_requests_users.values_list("email", flat=True))
+
             send_templated_email(
                 email_template,
                 email_template_subject,
                 recipient.email,
                 context=context,
                 bcc_address=bcc_address,
+                cc_addresses=cc_addresses,
                 wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {recipient.email}")

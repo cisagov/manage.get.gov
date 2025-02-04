@@ -1,5 +1,6 @@
 from django.test import TestCase
 from registrar.models import User
+from api.tests.common import less_console_noise_decorator
 from ..backends import OpenIdConnectBackend  # Adjust the import path based on your project structure
 
 
@@ -17,6 +18,7 @@ class OpenIdConnectBackendTestCase(TestCase):
     def tearDown(self) -> None:
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     def test_authenticate_with_create_user(self):
         """Test that authenticate creates a new user if it does not find
         existing user"""
@@ -32,6 +34,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         self.assertEqual(user.email, "john.doe@example.com")
         self.assertEqual(user.phone, "123456789")
 
+    @less_console_noise_decorator
     def test_authenticate_with_existing_user(self):
         """Test that authenticate updates an existing user if it finds one.
         For this test, given_name and family_name are supplied"""
@@ -50,6 +53,30 @@ class OpenIdConnectBackendTestCase(TestCase):
         self.assertEqual(user.email, "john.doe@example.com")
         self.assertEqual(user.phone, "123456789")
 
+    @less_console_noise_decorator
+    def test_authenticate_with_existing_user_same_email_different_username(self):
+        """Test that authenticate updates an existing user if it finds one.
+        In this case, match is to an existing record with matching email but
+        a non-matching username. The existing record's username should be udpated.
+        For this test, given_name and family_name are supplied"""
+        # Create an existing user with the same username
+        User.objects.create_user(username="old_username", email="john.doe@example.com")
+
+        # Ensure that the authenticate method updates the existing user
+        user = self.backend.authenticate(request=None, **self.kwargs)
+        self.assertIsNotNone(user)
+        self.assertIsInstance(user, User)
+
+        # Verify that user fields are correctly updated
+        self.assertEqual(user.first_name, "John")
+        self.assertEqual(user.last_name, "Doe")
+        self.assertEqual(user.email, "john.doe@example.com")
+        self.assertEqual(user.phone, "123456789")
+        self.assertEqual(user.username, "test_user")
+        # Assert that a user no longer exists by the old username
+        self.assertFalse(User.objects.filter(username="old_username").exists())
+
+    @less_console_noise_decorator
     def test_authenticate_with_existing_user_with_existing_first_last_phone(self):
         """Test that authenticate updates an existing user if it finds one.
         For this test, given_name and family_name are not supplied.
@@ -79,6 +106,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         self.assertEqual(user.email, "john.doe@example.com")
         self.assertEqual(user.phone, "9999999999")
 
+    @less_console_noise_decorator
     def test_authenticate_with_existing_user_different_name_phone(self):
         """Test that authenticate updates an existing user if it finds one.
         For this test, given_name and family_name are supplied and overwrite"""
@@ -100,6 +128,7 @@ class OpenIdConnectBackendTestCase(TestCase):
         self.assertEqual(user.email, "john.doe@example.com")
         self.assertEqual(user.phone, "123456789")
 
+    @less_console_noise_decorator
     def test_authenticate_with_unknown_user(self):
         """Test that authenticate returns None when no kwargs are supplied"""
         # Ensure that the authenticate method handles the case when the user is not found

@@ -1,7 +1,7 @@
 {% if messages %}
 {% for message in messages %}
 <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
-    <div class="usa-alert__body">
+    <div class="usa-alert__body {% if no_max_width %} maxw-none {% endif %}">
         {{ message }}
     </div>
 </div>

@@ -5,17 +5,20 @@ from django.views import View
 from django.shortcuts import render
 from django.contrib import admin
 from django.db.models import Avg, F
+
+from registrar.views.utility.mixins import DomainAndRequestsReportsPermission, PortfolioReportsPermission
 from .. import models
 import datetime
 from django.utils import timezone
-
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
 from registrar.utility import csv_export
-
 import logging
 
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class AnalyticsView(View):
     def get(self, request):
         thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
@@ -149,6 +152,7 @@ class AnalyticsView(View):
         return render(request, "admin/analytics.html", context)
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataType(View):
     def get(self, request, *args, **kwargs):
         # match the CSV example with all the fields
@@ -158,7 +162,7 @@ class ExportDataType(View):
         return response
 
 
-class ExportDataTypeUser(View):
+class ExportDataTypeUser(DomainAndRequestsReportsPermission, View):
     """Returns a domain report for a given user on the request"""
 
     def get(self, request, *args, **kwargs):
@@ -169,7 +173,7 @@ class ExportDataTypeUser(View):
         return response
 
 
-class ExportMembersPortfolio(View):
+class ExportMembersPortfolio(PortfolioReportsPermission, View):
     """Returns a members report for a given portfolio"""
 
     def get(self, request, *args, **kwargs):
@@ -197,7 +201,7 @@ class ExportMembersPortfolio(View):
         return response
 
 
-class ExportDataTypeRequests(View):
+class ExportDataTypeRequests(DomainAndRequestsReportsPermission, View):
     """Returns a domain requests report for a given user on the request"""
 
     def get(self, request, *args, **kwargs):
@@ -208,6 +212,7 @@ class ExportDataTypeRequests(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
         # Smaller export based on 1
@@ -217,6 +222,7 @@ class ExportDataFull(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataFederal(View):
     def get(self, request, *args, **kwargs):
         # Federal only
@@ -226,6 +232,7 @@ class ExportDataFederal(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDomainRequestDataFull(View):
     """Generates a downloaded report containing all Domain Requests (except started)"""
 
@@ -237,6 +244,7 @@ class ExportDomainRequestDataFull(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataDomainsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -249,6 +257,7 @@ class ExportDataDomainsGrowth(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataRequestsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -261,6 +270,7 @@ class ExportDataRequestsGrowth(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataManagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -272,6 +282,7 @@ class ExportDataManagedDomains(View):
         return response
 
 
+@method_decorator(staff_member_required, name="dispatch")
 class ExportDataUnmanagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")

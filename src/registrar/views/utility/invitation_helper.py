@@ -3,7 +3,6 @@ from django.db import IntegrityError
 from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
-
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
@@ -61,20 +60,19 @@ def get_requested_user(email):
 def handle_invitation_exceptions(request, exception, email):
     """Handle exceptions raised during the process."""
     if isinstance(exception, EmailSendingError):
-        logger.warning(str(exception), exc_info=True)
+        logger.warning(exception, exc_info=True)
         messages.error(request, str(exception))
     elif isinstance(exception, MissingEmailError):
         messages.error(request, str(exception))
-        logger.error(str(exception), exc_info=True)
+        logger.error(exception, exc_info=True)
     elif isinstance(exception, OutsideOrgMemberError):
         messages.error(request, str(exception))
-        logger.warning(str(exception), exc_info=True)
     elif isinstance(exception, AlreadyDomainManagerError):
-        messages.warning(request, str(exception))
+        messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
-        messages.warning(request, str(exception))
+        messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.warning(request, f"{email} is already a manager for this domain")
+        messages.error(request, f"{email} is already a manager for this domain")
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-        messages.warning(request, "Could not send email invitation.")
+        messages.error(request, "Could not send email invitation.")
