@@ -196,7 +196,6 @@ class Command(BaseCommand):
 
         # Fetch all domains associated with the portfolio
         domains = Domain.objects.filter(domain_info__portfolio=portfolio)
-        logger.debug(f"domains: {domains}")
         domain_managers: set[int] = set()
 
         # Fetch all users with manager roles for the domains
@@ -214,7 +213,6 @@ class Command(BaseCommand):
             ).values_list("email", flat=True)
             invited_managers.update(domain_invitations)
 
-        logger.debug(f"invited_managers: {invited_managers}")
         for id in domain_managers:
             try:
                 # manager is a user id
@@ -242,9 +240,7 @@ class Command(BaseCommand):
         If the user already has a portfolio invitation, retreive their invitation and create a portfolio permission.
         """
         try:
-            logger.debug(f"Creating portfolio invitation for user '{email}'")
             user = User.objects.get(email=email)
-            logger.debug(f"user: {user}")
             _, created = PortfolioInvitation.objects.get_or_create(
                 portfolio=portfolio,
                 user=user,
