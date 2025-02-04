@@ -10,5 +10,5 @@ This script destroys and recreates a database. This is another troubleshooting t
 
 Addition Info in this slack thread:
 
-[Slack thread](https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1725495150772119)
-[Script](../../../../manage.get.gov/.github/workflows/delete-and-recreate-db.yaml)
+- [Slack thread](https://cisa-corp.slack.com/archives/C05BGB4L5NF/p1725495150772119)
+- [Script](.github/workflows/delete-and-recreate-db.yaml)
