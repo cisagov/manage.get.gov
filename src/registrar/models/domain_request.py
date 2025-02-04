@@ -1306,9 +1306,9 @@ class DomainRequest(TimeStampedModel):
                 Portfolio = apps.get_model("registrar.Portfolio")
                 return (
                     FederalAgency.objects.exclude(
-                        agency__in=Portfolio.objects.values_list("organization_name", flat=True),
+                        id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
                     )
-                    .filter(agency=self.federal_agency)
+                    .filter(id=self.federal_agency.id)
                     .exists()
                 )
         return bool(

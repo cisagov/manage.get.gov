@@ -322,7 +322,7 @@ class OrganizationContactForm(RegistrarForm):
         # if it has been filled in when required.
         # uncomment to see if modelChoiceField can be an arg later
         required=False,
-        # We populate this queryset in init. We want to exclude agencies with a portfolio.
+        # We populate this queryset in init.
         queryset=FederalAgency.objects.none(),
         widget=ComboboxWidget,
     )
@@ -369,12 +369,12 @@ class OrganizationContactForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         # Set the queryset for federal agency.
-        # If the organization_requests flag is active, we hide data that exists in portfolios.
+        # If the organization_requests flag is active, We want to exclude agencies with a portfolio.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
         if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
-            # Exclude both predefined agencies and those matching portfolio names in one query
+            # Exclude both predefined agencies and those matching portfolio records in one query
             federal_agency_queryset = federal_agency_queryset.exclude(
-                agency__in=Portfolio.objects.values_list("organization_name", flat=True)
+                id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
             )
 
         self.fields["federal_agency"].queryset = federal_agency_queryset
