@@ -3079,19 +3079,16 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
 
         # Create the site and contacts to delete (orphaned)
         contact = Contact.objects.create(
-            first_name="Henry",
-            last_name="Mcfakerson",
+            first_name="Henry", last_name="Mcfakerson", title="test", email="moar@igorville.gov", phone="1234567890"
         )
         # Create two non-orphaned contacts
         contact_2 = Contact.objects.create(
-            first_name="Saturn",
-            last_name="Mars",
+            first_name="Saturn", last_name="Mars", title="test", email="moar@igorville.gov", phone="1234567890"
         )
 
         # Attach a user object to a contact (should not be deleted)
         contact_user, _ = Contact.objects.get_or_create(
-            first_name="Hank",
-            last_name="McFakey",
+            first_name="Hank", last_name="McFakey", title="test", email="moar@igorville.gov", phone="1234567890"
         )
 
         site = DraftDomain.objects.create(name="igorville.gov")
@@ -3220,6 +3217,37 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         portfolio.delete()
         federal_agency.delete()
         domain_request.delete()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_requests", active=True)
+    @less_console_noise_decorator
+    def test_unlock_organization_contact_flags_enabled(self):
+        """Tests unlock_organization_contact when agency exists in a portfolio"""
+        # Create a federal agency
+        federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
+
+        # Create a portfolio with matching organization name
+        Portfolio.objects.create(
+            creator=self.user, organization_name=federal_agency.agency, federal_agency=federal_agency
+        )
+
+        # Create domain request with the portfolio agency
+        domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
+        self.assertFalse(domain_request.unlock_organization_contact())
+
+    @override_flag("organization_feature", active=False)
+    @override_flag("organization_requests", active=False)
+    @less_console_noise_decorator
+    def test_unlock_organization_contact_flags_disabled(self):
+        """Tests unlock_organization_contact when organization flags are disabled"""
+        # Create a federal agency
+        federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
+
+        # Create a portfolio with matching organization name
+        Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
+
+        domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
+        self.assertTrue(domain_request.unlock_organization_contact())
 
 
 class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
