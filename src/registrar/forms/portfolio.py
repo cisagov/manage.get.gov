@@ -351,8 +351,8 @@ class BasePortfolioMemberForm(forms.ModelForm):
         new_roles = set(self.cleaned_data.get("roles", []))
 
         # Compare additional permissions values
-        previous_permissions = set(self.initial.get("additional_permissions", []))
-        new_permissions = set(self.cleaned_data.get("additional_permissions", []))
+        previous_permissions = set(self.initial.get("additional_permissions") or [])
+        new_permissions = set(self.cleaned_data.get("additional_permissions") or [])
 
         return previous_roles != new_roles or previous_permissions != new_permissions
 
