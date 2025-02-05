@@ -1,6 +1,5 @@
 import logging
 from faker import Faker
-from django.db import transaction
 
 from registrar.models import (
     User,

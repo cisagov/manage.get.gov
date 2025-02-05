@@ -1,7 +1,6 @@
 import logging
 import random
 from faker import Faker
-from django.db import transaction
 
 from registrar.models import User, DomainRequest, FederalAgency
 from registrar.models.portfolio import Portfolio

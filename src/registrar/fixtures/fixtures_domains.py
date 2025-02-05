@@ -3,7 +3,6 @@ from django.utils import timezone
 import logging
 import random
 from faker import Faker
-from django.db import transaction
 
 from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
