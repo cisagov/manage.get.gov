@@ -98,7 +98,9 @@ class EPPLibWrapper:
         the client will be closed and a LoginError raised."""
         self._client.connect()  # type: ignore
         response = self._client.send(self._login)  # type: ignore
+        logger.info(f"Connecting: ctrid is {response.cl_tr_id} svtrid is {response.sv_tr_id}")
         if response.code >= 2000:  # type: ignore
+            logger.info(f"login failed error code {response.code} message is {response.msg}")
             self._client.close()  # type: ignore
             raise LoginError(response.msg)  # type: ignore
 
@@ -131,6 +133,8 @@ class EPPLibWrapper:
             if self._client is None:
                 self._initialize_client()
             response = self._client.send(command)
+            logger.info(f"In standard send. Command was {command}")
+            logger.info(f"ctrid is {response.cl_tr_id} svtrid is {response.sv_tr_id}")
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.error(f"{message} Error: {err}")
@@ -185,6 +189,8 @@ class EPPLibWrapper:
                 logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
+                logging.warning("In send, skipping retry")
+                logger.error(f"In send, Error was {err}")
                 raise err
         finally:
             self.connection_lock.release()
