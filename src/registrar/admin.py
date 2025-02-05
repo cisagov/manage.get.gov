@@ -1533,43 +1533,11 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     # # error.
     # readonly_fields = ["status"]
 
-    # Now it can be edited
-    readonly_fields = ["status"]
+    readonly_fields = []
 
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
-
-    # # Custom status filter within DomainInvitationAdmin
-    # class StatusListFilter(admin.SimpleListFilter):
-    #     # custom filter for status field
-
-    #     title = _("status")
-    #     parameter_name = "status"
-
-    #     def lookups(self, request, model_admin):
-    #         # only return cancel as option
-    #         return [
-    #             ('canceled', _('Canceled')),
-    #             ('invited', _('Invited')),
-    #             ('retrieved', _('Retrieved')),
-    #         ]
-
-    #     def queryset(self, request, queryset):
-    #         """Filter the queryset based on the selected status."""
-    #         if self.value():
-    #             return queryset.filter(status=self.value())  # Apply the filter based on the selected status
-    #         return queryset
-
-    # list_filter = (StatusListFilter,)  # Apply the custom filter to the list view
-
-    # # Select domain invitations to change -> Domain invitations
-    # def changelist_view(self, request, extra_context=None):
-    #     if extra_context is None:
-    #         extra_context = {}
-    #     extra_context["tabtitle"] = "Domain invitations"
-    #     # Get the filtered values
-    #     return super().changelist_view(request, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
         """
@@ -1579,22 +1547,6 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         which will be successful if a single User exists for that email; otherwise, will
         just continue to create the invitation.
         """
-
-        # print("***** IN SAVE_MODEL, OUTSIDE OF CHANGE")
-
-        # # If there is a change and it's related to status, look for canceled
-        # if change and "status" in form.changed_data:
-        #     print("********* DO WE COME INTO THE CHANGE SECTION")
-        #     if obj.status == DomainInvitation.DomainInvitationStatus.CANCELED:
-        #         # Call the transition method to change the status
-        #         obj.cancel_invitation()
-        #         messages.success(request, f"Invitation for {obj.email} has been canceled.")
-        #         return super().save_model(request, obj, form, change)
-
-        # # if invited/retrieved dont alow manual changes
-        # if obj.status not in [DomainInvitation.DomainInvitationStatus.INVITED, DomainInvitation.DomainInvitationStatus.RETRIEVED]:
-        #     messages.error(request, "You cannot manually set the status to anything other than 'invited' or 'retrieved'.")
-        #     return
 
         if not change:
             domain = obj.domain
