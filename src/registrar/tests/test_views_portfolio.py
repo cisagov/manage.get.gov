@@ -3148,7 +3148,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # Check that an email was sent
             self.assertTrue(mock_client.send_email.called)
 
-    @boto3_mocking.patching
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
@@ -3189,49 +3188,44 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         session_id = self.client.session.session_key
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        mock_client_class = MagicMock()
-        mock_client = mock_client_class.return_value
+        # Simulate submission of member invite for previously retrieved/removed member
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                "member_permissions": "no_access",
+                "email": retrieved_member_email,
+            },
+        )
 
-        with boto3_mocking.clients.handler_for("sesv2", mock_client_class):
-            # Simulate submission of member invite for previously retrieved/removed member
-            final_response = self.client.post(
-                reverse("new-member"),
-                {
-                    "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                    "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
-                    "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
-                    "member_permissions": "no_access",
-                    "email": retrieved_member_email,
-                },
-            )
+        # Ensure the final submission is successful
+        self.assertEqual(final_response.status_code, 302)  # Redirects
 
-            # Ensure the final submission is successful
-            self.assertEqual(final_response.status_code, 302)  # Redirects
-
-            # Validate Database Changes
-            # Validate that portfolio invitation was created and retrieved
-            self.assertFalse(
-                PortfolioInvitation.objects.filter(
-                    email=retrieved_member_email,
-                    portfolio=self.portfolio,
-                    status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-                ).exists()
-            )
-            # at least one retrieved invitation
-            self.assertTrue(
-                PortfolioInvitation.objects.filter(
-                    email=retrieved_member_email,
-                    portfolio=self.portfolio,
-                    status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
-                ).exists()
-            )
-            # Ensure exactly one UserPortfolioPermission exists for the retrieved user
-            self.assertEqual(
-                UserPortfolioPermission.objects.filter(user=retrieved_user, portfolio=self.portfolio).count(),
-                1,
-                "Expected exactly one UserPortfolioPermission for the retrieved user."
-            )
-
+        # Validate Database Changes
+        # Validate that portfolio invitation was created and retrieved
+        self.assertFalse(
+            PortfolioInvitation.objects.filter(
+                email=retrieved_member_email,
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
+        # at least one retrieved invitation
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email=retrieved_member_email,
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+            ).exists()
+        )
+        # Ensure exactly one UserPortfolioPermission exists for the retrieved user
+        self.assertEqual(
+            UserPortfolioPermission.objects.filter(user=retrieved_user, portfolio=self.portfolio).count(),
+            1,
+            "Expected exactly one UserPortfolioPermission for the retrieved user.",
+        )
 
     @boto3_mocking.patching
     @less_console_noise_decorator
