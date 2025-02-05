@@ -36,47 +36,9 @@
 
   <div class="section-outlined__header margin-bottom-3 grid-row">
     <!-- ---------- SEARCH ---------- -->
-    <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-9">
-      <section aria-label="Member domains search component">
-        <form class="usa-search usa-search--show-label" method="POST" role="search">
-          {% csrf_token %}
-          <label class="usa-label display-block margin-bottom-05" for="edit-member-domains__search-field">
-            {% if has_edit_members_portfolio_permission %}
-              Search all domains
-            {% else %}
-              Search domains assigned to
-              {% if member %}
-                {{ member.email }}
-              {% else %}
-                {{ portfolio_invitation.email }}
-              {% endif %}
-            {% endif %}
-          </label>            
-          <div class="usa-search--show-label__input-wrapper">
-              <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="edit-member-domains__reset-search" type="button">
-                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-                  </svg>
-                  Reset
-              </button>
-              <input
-              class="usa-input"
-              id="edit-member-domains__search-field"
-              type="search"
-              name="member-domains-search"
-              />
-              <button class="usa-button" type="submit" id="edit-member-domains__search-field-submit">
-                  <span class="usa-search__submit-text">Search </span>
-                  <img
-                      src="{% static 'img/usa-icons-bg/search--white.svg' %}"
-                      class="usa-search__submit-icon"
-                      alt="Search"
-                  />
-              </button>
-          </div>
-        </form>
-      </section>
-    </div>
+    {% with label_text="Search all domains" item_name="edit-member-domains" aria_label_text="Member domains search component" %}
+      {% include "includes/search.html" %}
+    {% endwith %}
   </div>
 
   <!-- ---------- MAIN TABLE ---------- -->
@@ -85,7 +47,7 @@
       <caption class="sr-only">member domains</caption>
       <thead>
         <tr>
-          <th data-sortable="checked" scope="col" role="columnheader" class="padding-right-105"><span class="sr-only">Assigned domains</span></th>
+          <th data-sortable="checked" scope="col" role="columnheader" class="padding-right-105 width-6"><span class="sr-only">Assigned domains</span></th>
           <!-- We override default sort to be name/ascending in the JSON endpoint. We add the correct aria-sort attribute here to reflect that in the UI -->
           <th data-sortable="name" scope="col" role="columnheader" aria-sort="descending">Domains</th>
         </tr>
