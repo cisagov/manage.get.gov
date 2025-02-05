@@ -215,8 +215,7 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
             try:
                 if form.is_change():
                     if not send_portfolio_member_permission_update_email(
-                        requestor=request.user,
-                        permissions=form.instance
+                        requestor=request.user, permissions=form.instance
                     ):
                         messages.warning(self.request, f"Could not send email notification to {user.email}.")
                 if form.is_change_from_member_to_admin():

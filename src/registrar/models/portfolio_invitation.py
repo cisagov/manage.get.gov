@@ -101,41 +101,41 @@ class PortfolioInvitation(TimeStampedModel):
             str: The display name of the user's role.
         """
         return get_role_display(self.roles)
-    
+
     @property
     def domains_display(self):
         """
         Returns a string representation of the user's domain access level.
 
-        Uses the `get_domains_display` function to determine whether the user has 
+        Uses the `get_domains_display` function to determine whether the user has
         "Viewer, all" access (can view all domains) or "Viewer, limited" access.
 
         Returns:
             str: The display name of the user's domain permissions.
         """
         return get_domains_display(self.roles, self.additional_permissions)
-    
+
     @property
     def domain_requests_display(self):
         """
         Returns a string representation of the user's access to domain requests.
 
-        Uses the `get_domain_requests_display` function to determine if the user 
-        is a "Creator" (can create and edit requests), a "Viewer" (can only view requests), 
+        Uses the `get_domain_requests_display` function to determine if the user
+        is a "Creator" (can create and edit requests), a "Viewer" (can only view requests),
         or has "No access" to domain requests.
 
         Returns:
             str: The display name of the user's domain request permissions.
         """
         return get_domain_requests_display(self.roles, self.additional_permissions)
-    
+
     @property
     def members_display(self):
         """
         Returns a string representation of the user's access to managing members.
 
-        Uses the `get_members_display` function to determine if the user is a 
-        "Manager" (can edit members), a "Viewer" (can view members), or has "No access" 
+        Uses the `get_members_display` function to determine if the user is a
+        "Manager" (can edit members), a "Viewer" (can view members), or has "No access"
         to member management.
 
         Returns:

@@ -82,6 +82,7 @@ class MemberPermissionDisplay(StrEnum):
     VIEWER = "Viewer"
     NONE = "None"
 
+
 def get_role_display(roles):
     """
     Returns a user-friendly display name for a given list of user roles.
@@ -103,6 +104,7 @@ def get_role_display(roles):
     else:
         return "-"
 
+
 def get_domains_display(roles, permissions):
     """
     Determines the display name for a user's domain viewing permissions.
@@ -123,6 +125,7 @@ def get_domains_display(roles, permissions):
         return "Viewer, all"
     else:
         return "Viewer, limited"
+
 
 def get_domain_requests_display(roles, permissions):
     """
@@ -148,6 +151,7 @@ def get_domain_requests_display(roles, permissions):
     else:
         return "No access"
 
+
 def get_members_display(roles, permissions):
     """
     Determines the display name for a user's member management permissions.
@@ -171,6 +175,7 @@ def get_members_display(roles, permissions):
         return "Viewer"
     else:
         return "No access"
+
 
 def validate_user_portfolio_permission(user_portfolio_permission):
     """

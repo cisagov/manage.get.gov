@@ -337,21 +337,21 @@ class BasePortfolioMemberForm(forms.ModelForm):
             UserPortfolioRoleChoices.ORGANIZATION_ADMIN in previous_roles
             and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in new_roles
         )
-    
+
     def is_change(self) -> bool:
         """
-        Determines if the form has changed by comparing the initial data 
+        Determines if the form has changed by comparing the initial data
         with the submitted cleaned data.
-        
+
         Returns:
             bool: True if the form has changed, False otherwise.
         """
         # Compare role values
-        previous_roles = set(self.initial.get("roles", []))  
+        previous_roles = set(self.initial.get("roles", []))
         new_roles = set(self.cleaned_data.get("roles", []))
 
         # Compare additional permissions values
-        previous_permissions = set(self.initial.get("additional_permissions", []))  
+        previous_permissions = set(self.initial.get("additional_permissions", []))
         new_permissions = set(self.cleaned_data.get("additional_permissions", []))
 
         return previous_roles != new_roles or previous_permissions != new_permissions

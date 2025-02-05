@@ -225,6 +225,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         )
     return all_admin_emails_sent
 
+
 def send_portfolio_member_permission_update_email(requestor, permissions: UserPortfolioPermission):
     """
     Sends an email notification to a portfolio member when their permissions are updated.
@@ -234,7 +235,7 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
 
     Args:
         requestor (User): The user initiating the permission update.
-        permissions (UserPortfolioPermission): The updated permissions object containing the affected user 
+        permissions (UserPortfolioPermission): The updated permissions object containing the affected user
                                               and the portfolio details.
 
     Returns:
@@ -254,17 +255,18 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
                 "portfolio": permissions.portfolio,
                 "requestor_email": requestor_email,
                 "permissions": permissions,
-            }
+            },
         )
-    except EmailSendingError as err:
+    except EmailSendingError:
         logger.warning(
             "Could not send email organization member update notification to %s " "for portfolio: %s",
-                permissions.user.email,
-                permissions.portfolio.organization_name,
-                exc_info=True,
-            )
+            permissions.user.email,
+            permissions.portfolio.organization_name,
+            exc_info=True,
+        )
         return False
     return True
+
 
 def send_portfolio_admin_addition_emails(email: str, requestor, portfolio: Portfolio):
     """
