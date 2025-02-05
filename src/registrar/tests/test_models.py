@@ -1190,7 +1190,7 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_org_portfolio_permission", return_value=True)
+    @patch.object(User, "has_edit_portfolio_permission", return_value=True)
     def test_portfolio_role_summary_admin(self, mock_edit_org):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
@@ -1216,7 +1216,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
@@ -1226,7 +1226,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
@@ -1235,14 +1235,14 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain manager"])
 
-    @patch.multiple(User, has_base_portfolio_permission=lambda self, portfolio: True)
+    @patch.multiple(User, has_view_portfolio_permission=lambda self, portfolio: True)
     def test_portfolio_role_summary_member(self):
         # Test if the user is recognized as a Member
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Member"])
@@ -1252,17 +1252,17 @@ class TestUser(TestCase):
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_base_portfolio_permission(self, mock_has_permission):
+    def test_has_view_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_view_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+    def test_has_edit_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_edit_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
