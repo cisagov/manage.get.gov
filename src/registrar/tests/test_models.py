@@ -1,9 +1,10 @@
 from django.forms import ValidationError
 from django.test import TestCase
 from unittest.mock import patch
-
+from unittest.mock import Mock
 from django.test import RequestFactory
-
+from waffle.models import get_waffle_flag_model
+from registrar.views.domain_request import DomainRequestWizard
 from registrar.models import (
     Contact,
     DomainRequest,
@@ -1190,8 +1191,8 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_suborganization_portfolio_permission", return_value=True)
-    def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
+    @patch.object(User, "has_edit_portfolio_permission", return_value=True)
+    def test_portfolio_role_summary_admin(self, mock_edit_org):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
 
@@ -1216,7 +1217,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
@@ -1226,7 +1227,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
@@ -1235,14 +1236,14 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain manager"])
 
-    @patch.multiple(User, has_base_portfolio_permission=lambda self, portfolio: True)
+    @patch.multiple(User, has_view_portfolio_permission=lambda self, portfolio: True)
     def test_portfolio_role_summary_member(self):
         # Test if the user is recognized as a Member
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Member"])
@@ -1252,17 +1253,17 @@ class TestUser(TestCase):
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_base_portfolio_permission(self, mock_has_permission):
+    def test_has_view_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_view_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+    def test_has_edit_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_edit_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
@@ -1304,20 +1305,6 @@ class TestUser(TestCase):
 
         self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
@@ -2105,11 +2092,20 @@ class TestDomainRequestIncomplete(TestCase):
             anything_else="Anything else",
             is_policy_acknowledged=True,
             creator=self.user,
+            city="fake",
         )
-
         self.domain_request.other_contacts.add(other)
         self.domain_request.current_websites.add(current)
         self.domain_request.alternative_domains.add(alt)
+        self.wizard = DomainRequestWizard()
+        self.wizard._domain_request = self.domain_request
+        self.wizard.request = Mock(user=self.user, session={})
+        self.wizard.kwargs = {"id": self.domain_request.id}
+
+        # We use both of these flags in the test. In the normal app these are generated normally.
+        # The alternative syntax is adding the decorator to each test.
+        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
+        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     def tearDown(self):
         super().tearDown()
@@ -2124,30 +2120,31 @@ class TestDomainRequestIncomplete(TestCase):
 
     @less_console_noise_decorator
     def test_is_federal_complete(self):
-        self.assertTrue(self.domain_request._is_federal_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.federal_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_federal_complete())
+        self.domain_request.refresh_from_db()
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_interstate_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_interstate_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_interstate_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         self.domain_request.is_election_board = True
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_state_or_territory_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_state_or_territory_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_tribal_complete(self):
@@ -2155,33 +2152,33 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.tribe_name = "Tribe Name"
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_tribal_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_tribal_complete())
+        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.tribe_name = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_tribal_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_county_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_county_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_city_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_city_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_special_district_complete(self):
@@ -2189,55 +2186,55 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_special_district_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_special_district_complete())
+        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_special_district_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_organization_name_and_address_complete(self):
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.organization_name = None
         self.domain_request.address_line1 = None
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_senior_official_complete(self):
-        self.assertTrue(self.domain_request._is_senior_official_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.senior_official = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_senior_official_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_requested_domain_complete(self):
-        self.assertTrue(self.domain_request._is_requested_domain_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.requested_domain = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_requested_domain_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_purpose_complete(self):
-        self.assertTrue(self.domain_request._is_purpose_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.purpose = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_purpose_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):
-        self.assertTrue(self.domain_request._is_other_contacts_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         contact = self.domain_request.other_contacts.first()
         contact.first_name = None
         contact.save()
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_all_none(self):
         self.domain_request.other_contacts.clear()
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_False_and_has_rationale(self):
@@ -2245,7 +2242,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.other_contacts.clear()
         self.domain_request.other_contacts.exists = False
         self.domain_request.no_other_contacts_rationale = "Some rationale"
-        self.assertTrue(self.domain_request._is_other_contacts_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_False_and_NO_rationale(self):
@@ -2253,7 +2250,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.other_contacts.clear()
         self.domain_request.other_contacts.exists = False
         self.domain_request.no_other_contacts_rationale = None
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_additional_details_complete(self):
@@ -2457,28 +2454,28 @@ class TestDomainRequestIncomplete(TestCase):
                 self.domain_request.save()
                 self.domain_request.refresh_from_db()
                 self.assertEqual(
-                    self.domain_request._is_additional_details_complete(),
+                    self.wizard.form_is_complete(),
                     case["expected"],
                     msg=f"Failed for case: {case}",
                 )
 
     @less_console_noise_decorator
     def test_is_policy_acknowledgement_complete(self):
-        self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_policy_acknowledged = False
-        self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_policy_acknowledged = None
-        self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_form_complete(self):
         request = self.factory.get("/")
         request.user = self.user
 
-        self.assertTrue(self.domain_request._form_complete(request))
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.generic_org_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._form_complete(request))
+        self.assertFalse(self.wizard.form_is_complete())
 
 
 class TestPortfolio(TestCase):

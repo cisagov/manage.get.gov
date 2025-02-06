@@ -56,12 +56,11 @@ def add_path_to_context(request):
 def portfolio_permissions(request):
     """Make portfolio permissions for the request user available in global context"""
     portfolio_context = {
-        "has_base_portfolio_permission": False,
+        "has_view_portfolio_permission": False,
+        "has_edit_portfolio_permission": False,
         "has_any_domains_portfolio_permission": False,
         "has_any_requests_portfolio_permission": False,
         "has_edit_request_portfolio_permission": False,
-        "has_view_suborganization_portfolio_permission": False,
-        "has_edit_suborganization_portfolio_permission": False,
         "has_view_members_portfolio_permission": False,
         "has_edit_members_portfolio_permission": False,
         "portfolio": None,
@@ -82,15 +81,11 @@ def portfolio_permissions(request):
             }
         )
 
-        # Linting: line too long
-        view_suborg = request.user.has_view_suborganization_portfolio_permission(portfolio)
-        edit_suborg = request.user.has_edit_suborganization_portfolio_permission(portfolio)
         if portfolio:
             return {
-                "has_base_portfolio_permission": request.user.has_base_portfolio_permission(portfolio),
+                "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
+                "has_edit_portfolio_permission": request.user.has_edit_portfolio_permission(portfolio),
                 "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_view_suborganization_portfolio_permission": view_suborg,
-                "has_edit_suborganization_portfolio_permission": edit_suborg,
                 "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
                 "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
                 "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),

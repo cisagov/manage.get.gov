@@ -2,7 +2,8 @@ from __future__ import annotations  # allows forward references in annotations
 import logging
 from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
-
+from registrar.models.portfolio import Portfolio
+from registrar.utility.waffle import flag_is_active_anywhere
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
@@ -321,7 +322,8 @@ class OrganizationContactForm(RegistrarForm):
         # if it has been filled in when required.
         # uncomment to see if modelChoiceField can be an arg later
         required=False,
-        queryset=FederalAgency.objects.exclude(agency__in=excluded_agencies),
+        # We populate this queryset in init.
+        queryset=FederalAgency.objects.none(),
         widget=ComboboxWidget,
     )
     organization_name = forms.CharField(
@@ -362,6 +364,20 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         label="Urbanization (required for Puerto Rico only)",
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set the queryset for federal agency.
+        # If the organization_requests flag is active, We want to exclude agencies with a portfolio.
+        federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
+        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
+            # Exclude both predefined agencies and those matching portfolio records in one query
+            federal_agency_queryset = federal_agency_queryset.exclude(
+                id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
+            )
+
+        self.fields["federal_agency"].queryset = federal_agency_queryset
 
     def clean_federal_agency(self):
         """Require something to be selected when this is a federal agency."""

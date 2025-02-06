@@ -113,10 +113,10 @@
             </ul>
           {% endif %}
         {% endif %}
-        {% if value.invitations.all %}
+        {% if value.active_invitations.all %}
           <h4 class="margin-bottom-05">Invited domain managers</h4>
           <ul class="usa-list usa-list--unstyled margin-top-0">
-          {% for item in value.invitations.all %}
+          {% for item in value.active_invitations.all %}
             <li>{{ item.email }}</li>
           {% endfor %}
           </ul>

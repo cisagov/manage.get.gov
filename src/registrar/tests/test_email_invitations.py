@@ -2,12 +2,24 @@ import unittest
 from unittest.mock import patch, MagicMock
 from datetime import date
 from registrar.models.domain import Domain
+from registrar.models.portfolio import Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
-from registrar.utility.email_invitations import send_domain_invitation_email, send_emails_to_domain_managers
+from registrar.utility.email_invitations import (
+    _send_portfolio_admin_addition_emails_to_portfolio_admins,
+    _send_portfolio_admin_removal_emails_to_portfolio_admins,
+    send_domain_invitation_email,
+    send_emails_to_domain_managers,
+    send_portfolio_admin_addition_emails,
+    send_portfolio_admin_removal_emails,
+    send_portfolio_invitation_email,
+)
 
 from api.tests.common import less_console_noise_decorator
+from registrar.utility.errors import MissingEmailError
 
 
 class DomainInvitationEmail(unittest.TestCase):
@@ -16,9 +28,9 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
-    @patch("registrar.utility.email_invitations.normalize_domains")
+    @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email(
         self,
         mock_normalize_domains,
@@ -58,7 +70,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -81,9 +93,9 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
-    @patch("registrar.utility.email_invitations.normalize_domains")
+    @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_multiple_domains(
         self,
         mock_normalize_domains,
@@ -137,7 +149,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with([mock_domain1, mock_domain2])
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain1, mock_domain2])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain1, mock_domain2])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain1, mock_domain2], mock_requestor, is_member_of_different_org
         )
@@ -197,7 +209,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_validate_invitation.assert_called_once()
 
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     def test_send_domain_invitation_email_raises_get_requestor_email_exception(self, mock_get_requestor_email):
         """Test sending domain invitation email for one domain and assert exception
         when get_requestor_email fails.
@@ -217,9 +229,9 @@ class DomainInvitationEmail(unittest.TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
-    @patch("registrar.utility.email_invitations.normalize_domains")
+    @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_raises_sending_email_exception(
         self,
         mock_normalize_domains,
@@ -258,7 +270,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -267,9 +279,9 @@ class DomainInvitationEmail(unittest.TestCase):
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_emails_to_domain_managers")
     @patch("registrar.utility.email_invitations._validate_invitation")
-    @patch("registrar.utility.email_invitations.get_requestor_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_invitation_email")
-    @patch("registrar.utility.email_invitations.normalize_domains")
+    @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_manager_emails_send_mail_exception(
         self,
         mock_normalize_domains,
@@ -306,7 +318,7 @@ class DomainInvitationEmail(unittest.TestCase):
 
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
-        mock_get_requestor_email.assert_called_once_with(mock_requestor, [mock_domain])
+        mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -469,3 +481,410 @@ class DomainInvitationEmail(unittest.TestCase):
                 "date": date.today(),
             },
         )
+
+
+class PortfolioInvitationEmailTests(unittest.TestCase):
+
+    def setUp(self):
+        """Setup common test data for all test cases"""
+        self.email = "invitee@example.com"
+        self.requestor = MagicMock(name="User")
+        self.requestor.email = "requestor@example.com"
+        self.portfolio = MagicMock(name="Portfolio")
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_send_portfolio_invitation_email_success(self, mock_send_templated_email):
+        """Test successful email sending"""
+        is_admin_invitation = False
+
+        result = send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+
+    @less_console_noise_decorator
+    @patch(
+        "registrar.utility.email_invitations.send_templated_email",
+        side_effect=EmailSendingError("Failed to send email"),
+    )
+    def test_send_portfolio_invitation_email_failure(self, mock_send_templated_email):
+        """Test failure when sending email"""
+        is_admin_invitation = False
+
+        with self.assertRaises(EmailSendingError) as context:
+            send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
+
+        self.assertIn("Could not sent email invitation to", str(context.exception))
+
+    @less_console_noise_decorator
+    @patch(
+        "registrar.utility.email_invitations._get_requestor_email",
+        side_effect=MissingEmailError("Requestor has no email"),
+    )
+    @less_console_noise_decorator
+    def test_send_portfolio_invitation_email_missing_requestor_email(self, mock_get_email):
+        """Test when requestor has no email"""
+        is_admin_invitation = False
+
+        with self.assertRaises(MissingEmailError) as context:
+            send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
+
+        self.assertIn(
+            "Can't send invitation email. No email is associated with your user account.", str(context.exception)
+        )
+
+    @less_console_noise_decorator
+    @patch(
+        "registrar.utility.email_invitations._send_portfolio_admin_addition_emails_to_portfolio_admins",
+        return_value=False,
+    )
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_send_portfolio_invitation_email_admin_invitation(self, mock_send_templated_email, mock_admin_email):
+        """Test admin invitation email logic"""
+        is_admin_invitation = True
+
+        result = send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
+
+        self.assertFalse(result)  # Admin email sending failed
+        mock_send_templated_email.assert_called_once()
+        mock_admin_email.assert_called_once()
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    @patch("registrar.utility.email_invitations._send_portfolio_admin_addition_emails_to_portfolio_admins")
+    def test_send_email_success(self, mock_send_admin_emails, mock_get_requestor_email):
+        """Test successful sending of admin addition emails."""
+        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_send_admin_emails.return_value = True
+
+        result = send_portfolio_admin_addition_emails(self.email, self.requestor, self.portfolio)
+
+        mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
+        mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch(
+        "registrar.utility.email_invitations._get_requestor_email",
+        side_effect=MissingEmailError("Requestor email missing"),
+    )
+    def test_missing_requestor_email_raises_exception(self, mock_get_requestor_email):
+        """Test exception raised if requestor email is missing."""
+        with self.assertRaises(MissingEmailError):
+            send_portfolio_admin_addition_emails(self.email, self.requestor, self.portfolio)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    @patch("registrar.utility.email_invitations._send_portfolio_admin_addition_emails_to_portfolio_admins")
+    def test_send_email_failure(self, mock_send_admin_emails, mock_get_requestor_email):
+        """Test handling of failure in sending admin addition emails."""
+        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_send_admin_emails.return_value = False  # Simulate failure
+
+        result = send_portfolio_admin_addition_emails(self.email, self.requestor, self.portfolio)
+
+        self.assertFalse(result)
+        mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
+        mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
+
+
+class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
+    """Unit tests for _send_portfolio_admin_addition_emails_to_portfolio_admins function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.email = "new.admin@example.com"
+        self.requestor_email = "requestor@example.com"
+        self.portfolio = MagicMock(spec=Portfolio)
+        self.portfolio.organization_name = "Test Organization"
+
+        # Mock portfolio admin users
+        self.admin_user1 = MagicMock(spec=User)
+        self.admin_user1.email = "admin1@example.com"
+
+        self.admin_user2 = MagicMock(spec=User)
+        self.admin_user2.email = "admin2@example.com"
+
+        self.portfolio_admin1 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin1.user = self.admin_user1
+        self.portfolio_admin1.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        self.portfolio_admin2 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin2.user = self.admin_user2
+        self.portfolio_admin2.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of admin addition emails."""
+        mock_filter.return_value.exclude.return_value = [self.portfolio_admin1, self.portfolio_admin2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = _send_portfolio_admin_addition_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_addition_notification.txt",
+            "emails/portfolio_admin_addition_notification_subject.txt",
+            to_address=self.admin_user1.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "invited_email_address": self.email,
+                "portfolio_admin": self.admin_user1,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_addition_notification.txt",
+            "emails/portfolio_admin_addition_notification_subject.txt",
+            to_address=self.admin_user2.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "invited_email_address": self.email,
+                "portfolio_admin": self.admin_user2,
+                "date": date.today(),
+            },
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+        """Test handling of failure in sending admin addition emails."""
+        mock_filter.return_value.exclude.return_value = [self.portfolio_admin1, self.portfolio_admin2]
+
+        result = _send_portfolio_admin_addition_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        self.assertFalse(result)
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_addition_notification.txt",
+            "emails/portfolio_admin_addition_notification_subject.txt",
+            to_address=self.admin_user1.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "invited_email_address": self.email,
+                "portfolio_admin": self.admin_user1,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_addition_notification.txt",
+            "emails/portfolio_admin_addition_notification_subject.txt",
+            to_address=self.admin_user2.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "invited_email_address": self.email,
+                "portfolio_admin": self.admin_user2,
+                "date": date.today(),
+            },
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_no_admins_to_notify(self, mock_filter):
+        """Test case where there are no portfolio admins to notify."""
+        mock_filter.return_value.exclude.return_value = []  # No admins
+
+        result = _send_portfolio_admin_addition_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        self.assertTrue(result)  # No emails sent, but also no failures
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+
+class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
+    """Unit tests for _send_portfolio_admin_removal_emails_to_portfolio_admins function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.email = "removed.admin@example.com"
+        self.requestor_email = "requestor@example.com"
+        self.portfolio = MagicMock(spec=Portfolio)
+        self.portfolio.organization_name = "Test Organization"
+
+        # Mock portfolio admin users
+        self.admin_user1 = MagicMock(spec=User)
+        self.admin_user1.email = "admin1@example.com"
+
+        self.admin_user2 = MagicMock(spec=User)
+        self.admin_user2.email = "admin2@example.com"
+
+        self.portfolio_admin1 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin1.user = self.admin_user1
+        self.portfolio_admin1.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        self.portfolio_admin2 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin2.user = self.admin_user2
+        self.portfolio_admin2.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of admin removal emails."""
+        mock_filter.return_value.exclude.return_value = [self.portfolio_admin1, self.portfolio_admin2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = _send_portfolio_admin_removal_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_removal_notification.txt",
+            "emails/portfolio_admin_removal_notification_subject.txt",
+            to_address=self.admin_user1.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "removed_email_address": self.email,
+                "portfolio_admin": self.admin_user1,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_removal_notification.txt",
+            "emails/portfolio_admin_removal_notification_subject.txt",
+            to_address=self.admin_user2.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "removed_email_address": self.email,
+                "portfolio_admin": self.admin_user2,
+                "date": date.today(),
+            },
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+        """Test handling of failure in sending admin removal emails."""
+        mock_filter.return_value.exclude.return_value = [self.portfolio_admin1, self.portfolio_admin2]
+
+        result = _send_portfolio_admin_removal_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        self.assertFalse(result)
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_removal_notification.txt",
+            "emails/portfolio_admin_removal_notification_subject.txt",
+            to_address=self.admin_user1.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "removed_email_address": self.email,
+                "portfolio_admin": self.admin_user1,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_admin_removal_notification.txt",
+            "emails/portfolio_admin_removal_notification_subject.txt",
+            to_address=self.admin_user2.email,
+            context={
+                "portfolio": self.portfolio,
+                "requestor_email": self.requestor_email,
+                "removed_email_address": self.email,
+                "portfolio_admin": self.admin_user2,
+                "date": date.today(),
+            },
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_no_admins_to_notify(self, mock_filter):
+        """Test case where there are no portfolio admins to notify."""
+        mock_filter.return_value.exclude.return_value = []  # No admins
+
+        result = _send_portfolio_admin_removal_emails_to_portfolio_admins(
+            self.email, self.requestor_email, self.portfolio
+        )
+
+        self.assertTrue(result)  # No emails sent, but also no failures
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+
+class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
+    """Unit tests for send_portfolio_admin_removal_emails function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.email = "removed.admin@example.com"
+        self.requestor = MagicMock(spec=User)
+        self.requestor.email = "requestor@example.com"
+        self.portfolio = MagicMock(spec=Portfolio)
+        self.portfolio.organization_name = "Test Organization"
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    @patch("registrar.utility.email_invitations._send_portfolio_admin_removal_emails_to_portfolio_admins")
+    def test_send_email_success(self, mock_send_removal_emails, mock_get_requestor_email):
+        """Test successful execution of send_portfolio_admin_removal_emails."""
+        mock_get_requestor_email.return_value = self.requestor.email
+        mock_send_removal_emails.return_value = True  # Simulating success
+
+        result = send_portfolio_admin_removal_emails(self.email, self.requestor, self.portfolio)
+
+        mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
+        mock_send_removal_emails.assert_called_once_with(self.email, self.requestor.email, self.portfolio)
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=MissingEmailError("No email found"))
+    @patch("registrar.utility.email_invitations._send_portfolio_admin_removal_emails_to_portfolio_admins")
+    def test_missing_email_error(self, mock_send_removal_emails, mock_get_requestor_email):
+        """Test handling of MissingEmailError when requestor has no email."""
+        with self.assertRaises(MissingEmailError) as context:
+            send_portfolio_admin_removal_emails(self.email, self.requestor, self.portfolio)
+
+        mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
+        mock_send_removal_emails.assert_not_called()  # Should not proceed if email retrieval fails
+        self.assertEqual(
+            str(context.exception), "Can't send invitation email. No email is associated with your user account."
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    @patch(
+        "registrar.utility.email_invitations._send_portfolio_admin_removal_emails_to_portfolio_admins",
+        return_value=False,
+    )
+    def test_send_email_failure(self, mock_send_removal_emails, mock_get_requestor_email):
+        """Test handling of failure when admin removal emails fail to send."""
+        mock_get_requestor_email.return_value = self.requestor.email
+        mock_send_removal_emails.return_value = False  # Simulating failure
+
+        result = send_portfolio_admin_removal_emails(self.email, self.requestor, self.portfolio)
+
+        mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
+        mock_send_removal_emails.assert_called_once_with(self.email, self.requestor.email, self.portfolio)
+        self.assertFalse(result)

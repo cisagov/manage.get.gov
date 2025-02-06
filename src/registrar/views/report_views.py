@@ -201,17 +201,6 @@ class ExportMembersPortfolio(PortfolioReportsPermission, View):
         return response
 
 
-class ExportDataTypeRequests(DomainAndRequestsReportsPermission, View):
-    """Returns a domain requests report for a given user on the request"""
-
-    def get(self, request, *args, **kwargs):
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="domain-requests.csv"'
-        csv_export.DomainRequestDataType.export_data_to_csv(response, request=request)
-
-        return response
-
-
 @method_decorator(staff_member_required, name="dispatch")
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
