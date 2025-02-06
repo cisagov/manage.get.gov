@@ -207,11 +207,10 @@ class Command(BaseCommand):
         invited_managers: set[str] = set()
 
         # Get the emails of invited managers
-        for domain in domains:
-            domain_invitations = DomainInvitation.objects.filter(
-                domain=domain, status=DomainInvitation.DomainInvitationStatus.INVITED
-            ).values_list("email", flat=True)
-            invited_managers.update(domain_invitations)
+        domain_invitations = DomainInvitation.objects.filter(
+            domain__in=domains, status=DomainInvitation.DomainInvitationStatus.INVITED
+        ).values_list("email", flat=True)
+        invited_managers.update(domain_invitations)
 
         for id in domain_managers:
             try:
