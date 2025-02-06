@@ -1549,6 +1549,24 @@ class TestPortfolioInvitationAdmin(TestCase):
             request, "Could not send email notification to existing organization admins."
         )
 
+    @less_console_noise_decorator
+    def test_delete_confirmation_page_contains_static_message(self):
+        """Ensure the custom message appears in the delete confirmation page."""
+        self.client.force_login(self.superuser)
+        # Create a test portfolio invitation
+        self.invitation = PortfolioInvitation.objects.create(
+            email="testuser@example.com",
+            portfolio=self.portfolio,
+            roles=["organization_member"]
+        )
+        delete_url = reverse(
+            "admin:registrar_portfolioinvitation_delete", args=[self.invitation.pk]
+        )
+        response = self.client.get(delete_url)
+
+        # Check if the response contains the expected static message
+        expected_message = "If you cancel the portfolio invitation here"
+        self.assertIn(expected_message, response.content.decode("utf-8"))
 
 class TestHostAdmin(TestCase):
     """Tests for the HostAdmin class as super user
