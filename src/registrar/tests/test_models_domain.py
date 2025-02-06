@@ -2863,6 +2863,7 @@ class TestAnalystDelete(MockEppLib):
         # State should have changed
         self.assertEqual(self.domain_with_contacts.state, Domain.State.DELETED)
 
+    # @less_console_noise
     def test_analyst_deletes_domain_with_ds_data(self):
         """
         Scenario: Domain with DS data is deleted
@@ -2872,9 +2873,10 @@ class TestAnalystDelete(MockEppLib):
         """
         # Create a domain with DS data
         domain, _ = Domain.objects.get_or_create(name="dsdomain.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
         domain.dnssecdata = extensions.DNSSECExtension(
-            dsdata=[extensions.DSData(keytag=1, algorithm=1, digest_type=1, digest="1234567890")],
-            keydata=[extensions.DNSSECKeyData(keytag=1, algorithm=1, digest_type=1, digest="1234567890")],
+            dsData=[extensions.DSData(keyTag=1, alg=1, digestType=1, digest="1234567890")],
         )
         domain.save()
 
@@ -2884,6 +2886,11 @@ class TestAnalystDelete(MockEppLib):
 
         # Check that dsdata is None
         self.assertEqual(domain.dnssecdata, None)
+
+        # Print out all calls from the mockedSendFunction
+        print("\nAll calls to mockedSendFunction:")
+        for call in self.mockedSendFunction.call_args_list:
+            print(f"- {call}")
 
         # Check that the UpdateDomain command was sent to the registry with the correct extension
         self.mockedSendFunction.assert_has_calls(
