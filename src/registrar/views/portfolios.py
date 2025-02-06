@@ -119,65 +119,82 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
         """
         portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         member = portfolio_member_permission.user
+        portfolio = portfolio_member_permission.portfolio
 
+        # Validate if the member can be removed
+        error_message = self._validate_member_removal(request, member, portfolio)
+        if error_message:
+            return self._handle_error_response(request, error_message, pk)
+
+        # Attempt to send notification emails
+        self._send_removal_notifications(request, portfolio_member_permission)
+
+        # Passed all error conditions, proceed with deletion
+        portfolio_member_permission.delete()
+
+        # Return success response
+        return self._handle_success_response(request, member.email)
+
+    def _validate_member_removal(self, request, member, portfolio):
+        """
+        Check whether the member can be removed from the portfolio.
+        Returns an error message if removal is not allowed; otherwise, returns None.
+        """
         active_requests_count = member.get_active_requests_count_in_portfolio(request)
-
         support_url = "https://get.gov/contact/"
 
-        error_message = ""
-
         if active_requests_count > 0:
-            # If they have any in progress requests
-            error_message = mark_safe(  # nosec
+            return mark_safe(  # nosec
                 "This member can't be removed from the organization because they have an active domain request. "
                 f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
             )
-        elif member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
-            # If they are the last manager of a domain
-            error_message = (
+        if member.is_only_admin_of_portfolio(portfolio):
+            return (
                 "There must be at least one admin in your organization. Give another member admin "
                 "permissions, make sure they log into the registrar, and then remove this member."
             )
+        return None
 
-        # From the Members Table page Else the Member Page
-        if error_message:
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return JsonResponse(
-                    {"error": error_message},
-                    status=400,
-                )
-            else:
-                messages.error(request, error_message)
-                return redirect(reverse("member", kwargs={"pk": pk}))
+    def _handle_error_response(self, request, error_message, pk):
+        """
+        Return an error response (JSON or redirect with messages).
+        """
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"error": error_message}, status=400)
+        messages.error(request, error_message)
+        return redirect(reverse("member", kwargs={"pk": pk}))
 
+    def _send_removal_notifications(self, request, portfolio_member_permission):
+        """
+        Attempt to send notification emails about the member's removal.
+        """
         try:
-            # if member being removed is an admin
+            # Notify other portfolio admins if removing an admin
             if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
-                # attempt to send notification emails of the removal to other portfolio admins
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_member_permission.user.email,
                     requestor=request.user,
                     portfolio=portfolio_member_permission.portfolio,
                 ):
                     messages.warning(request, "Could not send email notification to existing organization admins.")
-            # send notification email to member being removed
+
+            # Notify the member being removed
             if not send_portfolio_member_permission_remove_email(
                 requestor=request.user, permissions=portfolio_member_permission
             ):
-                messages.warning(request, f"Could not send email notification to {member.email}")
+                messages.warning(request, f"Could not send email notification to {portfolio_member_permission.user.email}")
         except Exception as e:
             self._handle_exceptions(e)
 
-        # passed all error conditions
-        portfolio_member_permission.delete()
-
-        # From the Members Table page Else the Member Page
-        success_message = f"You've removed {member.email} from the organization."
+    def _handle_success_response(self, request, member_email):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You've removed {member_email} from the organization."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
-        else:
-            messages.success(request, success_message)
-            return redirect(reverse("members"))
+        messages.success(request, success_message)
+        return redirect(reverse("members"))
 
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""
