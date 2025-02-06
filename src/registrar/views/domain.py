@@ -1234,7 +1234,9 @@ class DomainAddUserView(DomainFormBaseView):
                 and requestor_can_update_portfolio
                 and not member_of_this_org
             ):
-                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                send_portfolio_invitation_email(
+                    email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                )
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                     email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
                 )
