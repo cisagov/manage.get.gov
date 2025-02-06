@@ -42,10 +42,6 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_PORTFOLIO = "view_portfolio", "View organization"
     EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
-    # Domain: field specific permissions
-    VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
-    EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"
-
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
         return cls(user_portfolio_permission).label if user_portfolio_permission else None
