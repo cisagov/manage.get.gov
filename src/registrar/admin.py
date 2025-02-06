@@ -28,7 +28,11 @@ from django.shortcuts import redirect
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from registrar.utility.email_invitations import (
+    send_domain_invitation_email,
+    send_portfolio_admin_addition_emails,
+    send_portfolio_invitation_email,
+)
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
@@ -1329,6 +1333,14 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     get_roles.short_description = "Roles"  # type: ignore
 
+    def delete_queryset(self, request, queryset):
+        """We override the delete method in the model.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action
+        the model delete does not get called. This method gets called instead.
+        This override makes sure our code in the model gets executed in these situations."""
+        for obj in queryset:
+            obj.delete()  # Calls the overridden delete method on each instance
+
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom user domain role admin class."""
@@ -1407,10 +1419,13 @@ class BaseInvitationAdmin(ListHeaderAdmin):
         Normal flow on successful save_model on add is to redirect to changelist_view.
         If there are errors, flow is modified to instead render change form.
         """
-        # store current messages from request so that they are preserved throughout the method
+        # store current messages from request in storage so that they are preserved throughout the
+        # method, as some flows remove and replace all messages, and so we store here to retrieve
+        # later
         storage = get_messages(request)
-        # Check if there are any error or warning messages in the `messages` framework
-        has_errors = any(message.level_tag in ["error", "warning"] for message in storage)
+        # Check if there are any error messages in the `messages` framework
+        # error messages stop the workflow; other message levels allow flow to continue as normal
+        has_errors = any(message.level_tag in ["error"] for message in storage)
 
         if has_errors:
             # Re-render the change form if there are errors or warnings
@@ -1540,7 +1555,9 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     and not member_of_this_org
                     and not member_of_a_different_org
                 ):
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                    send_portfolio_invitation_email(
+                        email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    )
                     portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                         email=requested_email,
                         portfolio=domain_org,
@@ -1552,13 +1569,14 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                         portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
 
-                send_domain_invitation_email(
+                if not send_domain_invitation_email(
                     email=requested_email,
                     requestor=requestor,
                     domains=domain,
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
-                )
+                ):
+                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()
@@ -1630,32 +1648,67 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         Emails sent to requested user / email.
         When exceptions are raised, return without saving model.
         """
-        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+        try:
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
-            # Look up a user with that email
-            requested_user = get_requested_user(requested_email)
+            is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
+            if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+                # Look up a user with that email
+                requested_user = get_requested_user(requested_email)
 
-            permission_exists = UserPortfolioPermission.objects.filter(
-                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
-            ).exists()
-            try:
+                permission_exists = UserPortfolioPermission.objects.filter(
+                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    if not send_portfolio_invitation_email(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                        is_admin_invitation=is_admin_invitation,
+                    ):
+                        messages.warning(
+                            self.request, "Could not send email notification to existing organization admins."
+                        )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
                     messages.warning(request, "User is already a member of this portfolio.")
-            except Exception as e:
-                # when exception is raised, handle and do not save the model
-                handle_invitation_exceptions(request, e, requested_email)
-                return
+            else:  # Handle the case when updating an existing PortfolioInvitation
+                # Retrieve the existing object from the database
+                existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
+
+                # Check if the previous roles did NOT include ORGANIZATION_ADMIN
+                # and the new roles DO include ORGANIZATION_ADMIN
+                was_not_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in existing_obj.roles
+                # Check also if status is INVITED, ignore role changes for other statuses
+                is_invited = obj.status == PortfolioInvitation.PortfolioInvitationStatus.INVITED
+
+                if was_not_admin and is_admin_invitation and is_invited:
+                    # send email to existing portfolio admins if new admin
+                    if not send_portfolio_admin_addition_emails(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                    ):
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
+        except Exception as e:
+            # when exception is raised, handle and do not save the model
+            handle_invitation_exceptions(request, e, requested_email)
+            return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
+
+    def delete_queryset(self, request, queryset):
+        """We override the delete method in the model.
+        When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action,
+        the model delete does not get called. This method gets called instead.
+        This override makes sure our code in the model gets executed in these situations."""
+        for obj in queryset:
+            obj.delete()  # Calls the overridden delete method on each instance
 
 
 class DomainInformationResource(resources.ModelResource):
