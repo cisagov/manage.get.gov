@@ -70,7 +70,7 @@ jobs:
          # this checks the creation cf service getgov-$DESTINATION_ENVIRONMENT-database
          # the below command with check “status” line using cf service command mentioned above. if it says “create in progress” it will keep waiting otherwise the next steps fail
 
-        timeout 10 bash -c  "until cf service getgov-$DESTINATION_ENVIRONMENT-database | grep -q 'The service instance status is succeeded'
+        timeout 480 bash -c  "until cf service getgov-$DESTINATION_ENVIRONMENT-database | grep -q 'The service instance status is succeeded'
          do
          echo 'Database not up yet, waiting...'
          sleep 30
