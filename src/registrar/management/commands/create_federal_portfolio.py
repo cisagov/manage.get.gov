@@ -166,6 +166,7 @@ class Command(BaseCommand):
                 self.skipped_invitations,
                 log_header="----- INVITATIONS ADDED -----",
                 debug=False,
+                skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
                 display_as_str=True,
             )
 
