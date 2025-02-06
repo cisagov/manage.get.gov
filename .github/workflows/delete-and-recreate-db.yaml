@@ -62,7 +62,7 @@ jobs:
          cf unbind-service getgov-$DESTINATION_ENVIRONMENT getgov-$DESTINATION_ENVIRONMENT-database
          #delete the service key
          yes Y | cf delete-service-key getgov-$DESTINATION_ENVIRONMENT-database SERVICE_CONNECT 
-         #delete the service
+         # delete the service
          yes Y | cf delete-service getgov-$DESTINATION_ENVIRONMENT-database
          # create it again
          cf create-service aws-rds micro-psql getgov-$DESTINATION_ENVIRONMENT-database
