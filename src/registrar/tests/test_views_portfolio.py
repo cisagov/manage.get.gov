@@ -1896,7 +1896,9 @@ class TestPortfolioMemberDeleteView(WebTest):
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_table_delete_admin_success_removal_email_fail(self, send_member_removal, mock_send_removal_emails):
+    def test_portfolio_member_table_delete_admin_success_removal_email_fail(
+        self, send_member_removal, mock_send_removal_emails
+    ):
         """Success state with deleting on Members Table page bc no active request AND
         not only admin. Because admin, removal emails are sent, but fail to send.
         Email to removed member also fails to send."""
@@ -1957,7 +1959,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["email"], member_email)
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
-            
+
             # Get the arguments passed to send_portfolio_member_permission_remove_email
             _, called_kwargs = send_member_removal.call_args
 
@@ -1965,7 +1967,6 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["permissions"].user, upp.user)
             self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
-
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
