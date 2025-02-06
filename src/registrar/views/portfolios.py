@@ -182,7 +182,9 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
             if not send_portfolio_member_permission_remove_email(
                 requestor=request.user, permissions=portfolio_member_permission
             ):
-                messages.warning(request, f"Could not send email notification to {portfolio_member_permission.user.email}")
+                messages.warning(
+                    request, f"Could not send email notification to {portfolio_member_permission.user.email}"
+                )
         except Exception as e:
             self._handle_exceptions(e)
 
