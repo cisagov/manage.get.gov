@@ -214,13 +214,21 @@ export function initFormsetsForms() {
   let addButton = document.querySelector("#add-form");
   let cloneIndex = 0;
   let formLabel = '';
+  // remove nameservers
+  // clean up wherever nameservers are 
   let isNameserversForm = document.querySelector(".nameservers-form");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let isDsDataForm = document.querySelector(".ds-data-form");
   let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   // The Nameservers formset features 2 required and 11 optionals
+  // if not is other contactsform or dsdataform or isdotgovdomain
+  // remove nameservers form, start el
+  if( !(isOtherContactsForm || isDotgovDomain || isDsDataForm) ){
+    console.log("we reached inside the if statement")
+    return
+  }
   if (isNameserversForm) {
-    // cloneIndex = 2;
+    // cloneInex = 2;
     formLabel = "Name server";
   // DNSSEC: DS Data
   } else if (isDsDataForm) {
@@ -240,7 +248,7 @@ export function initFormsetsForms() {
     addButton.setAttribute("disabled", "true");
   }
 
-  // Hide forms which have previously been deleted
+  // Hide forms which have prevnniously been deleted
   hideDeletedForms()
 
   // Attach click event listener on the delete buttons of the existing forms

@@ -20,7 +20,7 @@ initDomainValidators();
 
 initFormsetsForms();
 triggerModalOnDsDataForm();
-nameserversFormListener();
+//nameserversFormListener();
 
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
