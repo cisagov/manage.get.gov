@@ -54,6 +54,7 @@ from registrar.models import (
 from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
+    MockEppLib,
     completed_domain_request,
     generic_domain_object,
     less_console_noise,
@@ -120,23 +121,35 @@ class TestFsmModelResource(TestCase):
         fsm_field_mock.save.assert_not_called()
 
 
-class TestDomainInvitationAdmin(TestCase):
+class TestDomainInvitationAdmin(MockEppLib, WebTest):
     """Tests for the DomainInvitationAdmin class as super user
 
     Notes:
       all tests share superuser; do not change this model in tests
       tests have available superuser, client, and admin
     """
+    # csrf checks do not work with WebTest.
+    # We disable them here. TODO for another ticket.
+    csrf_checks = False
+
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
+        self.site = AdminSite()
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
 
     def setUp(self):
-        self.factory = RequestFactory()
+        super().setUp()
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
-        self.superuser = create_superuser()
         self.domain = Domain.objects.create(name="example.com")
         self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
         DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
+
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1065,6 +1078,49 @@ class TestDomainInvitationAdmin(TestCase):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
+    @less_console_noise_decorator
+    def test_custom_delete_confirmation_page(self):
+        """Tests if custom alerts display on Domain Invitation delete page"""
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_invitation, _ = DomainInvitation.objects.get_or_create(domain=domain)
+
+        domain_invitation_change_page = self.app.get(
+            reverse("admin:registrar_domaininvitation_change", args=[domain_invitation.pk])
+        )
+
+        self.assertContains(domain_invitation_change_page, "domain-invitation-test.gov")
+        # click the "Delete" link
+        confirmation_page = domain_invitation_change_page.click("Delete", index=0)
+
+        custom_alert_content = "If you cancel the domain invitation here"
+        self.assertContains(confirmation_page, custom_alert_content)
+
+    @less_console_noise_decorator
+    def test_custom_selected_delete_confirmation_page(self):
+        """Tests if custom alerts display on Domain Invitation selected delete page from Domain Invitation table"""
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_invitation, _ = DomainInvitation.objects.get_or_create(domain=domain)
+
+        # Get the index. The post expects the index to be encoded as a string
+        index = f"{domain_invitation.id}"
+
+        test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url=reverse("admin:registrar_domaininvitation_changelist"),
+            model=Domain,
+            client=self.client,
+        )
+
+        # Simulate selecting a single record, then clicking "Delete selected domains"
+        response = test_helper.get_table_delete_confirmation_page("0", index)
+
+        # Check for custom alert message
+        custom_alert_content = "If you cancel the domain invitation here"
+        self.assertContains(response, custom_alert_content)
 
 class TestUserPortfolioPermissionAdmin(TestCase):
     """Tests for the PortfolioInivtationAdmin class"""
@@ -1922,7 +1978,7 @@ class TestDomainInformationAdmin(TestCase):
             self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
 
 
-class TestUserDomainRoleAdmin(TestCase):
+class TestUserDomainRoleAdmin(MockEppLib, WebTest):
     """Tests for the UserDomainRoleAdmin class as super user
 
     Notes:
@@ -1949,6 +2005,8 @@ class TestUserDomainRoleAdmin(TestCase):
         """Setup environment for a mock admin user"""
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
@@ -2110,6 +2168,48 @@ class TestUserDomainRoleAdmin(TestCase):
 
             # We only need to check for the end of the HTML string
             self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
+
+    @less_console_noise_decorator
+    def test_custom_delete_confirmation_page(self):
+        """Tests if custom alerts display on User Domain Role delete page"""
+        domain, _ = Domain.objects.get_or_create(name="user-domain-role-test.gov", state=Domain.State.READY)
+        domain_role, _ = UserDomainRole.objects.get_or_create(domain=domain, user=self.superuser)
+
+        domain_invitation_change_page = self.app.get(
+            reverse("admin:registrar_userdomainrole_change", args=[domain_role.pk])
+        )
+
+        self.assertContains(domain_invitation_change_page, "user-domain-role-test.gov")
+        # click the "Delete" link
+        confirmation_page = domain_invitation_change_page.click("Delete", index=0)
+
+        custom_alert_content = "If you remove someone from a domain here"
+        self.assertContains(confirmation_page, custom_alert_content)
+
+    @less_console_noise_decorator
+    def test_custom_selected_delete_confirmation_page(self):
+        """Tests if custom alerts display on selected delete page from User Domain Roles table"""
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_role, _ = UserDomainRole.objects.get_or_create(domain=domain, user=self.superuser)
+
+        # Get the index. The post expects the index to be encoded as a string
+        index = f"{domain_role.id}"
+
+        test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url=reverse("admin:registrar_userdomainrole_changelist"),
+            model=Domain,
+            client=self.client,
+        )
+
+        # Simulate selecting a single record, then clicking "Delete selected domains"
+        response = test_helper.get_table_delete_confirmation_page("0", index)
+
+        # Check for custom alert message
+        custom_alert_content = "If you remove someone from a domain here"
+        self.assertContains(response, custom_alert_content)
 
 
 class TestListHeaderAdmin(TestCase):
