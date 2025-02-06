@@ -80,7 +80,7 @@
                     borderWidth: 1,
                     data: listOne,
                     backgroundColor: [
-                        pattern.draw('square', '#1f77b4'),
+                        pattern.draw('zigzag-vertical', '#1f77b4'),
                     ]
                 },
                 {
@@ -90,7 +90,7 @@
                     borderWidth: 1,
                     data: listTwo,
                     backgroundColor: [
-                        pattern.draw('square', '#1f77b4'),
+                        pattern.draw('diagonal', '#1f77b4'),
                     ]
                 },
             ],
