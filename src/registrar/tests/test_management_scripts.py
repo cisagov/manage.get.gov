@@ -1814,12 +1814,12 @@ class TestCreateFederalPortfolio(TestCase):
 
         # We expect a error to be thrown when we dont pass parse requests or domains
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
         ):
             self.run_create_federal_portfolio(branch="executive")
 
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
         ):
             self.run_create_federal_portfolio(agency_name="test")
 

@@ -198,13 +198,13 @@ class Command(BaseCommand):
 
         # Fetch all domains associated with the portfolio
         domains = Domain.objects.filter(domain_info__portfolio=portfolio)
-        domain_managers: set[int] = set()
+        domain_managers: set[UserDomainRole] = set()
 
         # Fetch all users with manager roles for the domains
         # select_related means that a db query will not be occur when you do user_domain_role.user
         # Its similar to a set or dict in that it costs slightly more upfront in exchange for perf later
         user_domain_roles = UserDomainRole.objects.select_related("user").filter(domain__in=domains, role=UserDomainRole.Roles.MANAGER)
-        domain_managers.update(managers)
+        domain_managers.update(user_domain_roles)
 
         invited_managers: set[str] = set()
 
@@ -214,10 +214,10 @@ class Command(BaseCommand):
         ).values_list("email", flat=True)
         invited_managers.update(domain_invitations)
 
-        for id in domain_managers:
+        for user_domain_role in domain_managers:
             try:
                 # manager is a user id
-                user = User.objects.get(id=id)
+                user = user_domain_role.user
                 _, created = UserPortfolioPermission.objects.get_or_create(
                     portfolio=portfolio,
                     user=user,
