@@ -61,6 +61,7 @@ env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
+env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
 env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
@@ -492,12 +493,18 @@ class JsonServerFormatter(ServerFormatter):
         return json.dumps(log_entry)
 
 
-# default to json formatted logs
-server_formatter, console_formatter = "json.server", "json"
-
-# don't use json format locally, it makes logs hard to read in console
+# If we're running locally we don't want json formatting
 if "localhost" in env_base_url:
-    server_formatter, console_formatter = "django.server", "verbose"
+    django_handlers = ["console"]
+elif env_log_format == "json":
+    # in production we need everything to be logged as json so that log levels are parsed correctly
+    django_handlers = ["json"]
+else:
+    # for non-production non-local environments:
+    # - send ERROR and above to json handler
+    # - send below ERROR to console handler with verbose formatting
+    # yes this is janky but it's the best we can do for now
+    django_handlers = ["split_console", "split_json"]
 
 LOGGING = {
     "version": 1,
@@ -531,29 +538,52 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": console_formatter,
+            "formatter": "verbose",
+        },
+        # Special handlers for split logging case
+        "split_console": {
+            "level": env_log_level,
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "filters": ["below_error"],
+        },
+        "split_json": {
+            "level": "ERROR",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": server_formatter,
+            "formatter": "django.server",
+        },
+        "json": {
+            "level": env_log_level,
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
+    },
+    "filters": {
+        "below_error": {
+            "()": "django.utils.log.CallbackFilter",
+            "callback": lambda record: record.levelno < logging.ERROR,
+        }
     },
     # define loggers: these are "sinks" into which
     # messages are sent for processing
     "loggers": {
         # Django's generic logger
         "django": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
         # Django's template processor
         "django.template": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
@@ -571,19 +601,19 @@ LOGGING = {
         },
         # OpenID Connect logger
         "oic": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
         # Django wrapper for OpenID Connect
         "djangooidc": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "INFO",
             "propagate": False,
         },
         # Our app!
         "registrar": {
-            "handlers": ["console"],
+            "handlers": django_handlers,
             "level": "DEBUG",
             "propagate": False,
         },
@@ -591,7 +621,7 @@ LOGGING = {
     # root logger catches anything, unless
     # defined by a more specific logger
     "root": {
-        "handlers": ["console"],
+        "handlers": django_handlers,
         "level": "INFO",
     },
 }
