@@ -10,14 +10,14 @@
 
 <!-- Org model banner (org manager can view, domain manager can edit)  -->
 {% if has_domain_renewal_flag and num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
-<section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+<section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
-    <div class="usa-alert__body usa-alert__body--widescreen">
+    <div class="usa-alert__body">
       <p class="usa-alert__text maxw-none">
         {% if num_expiring_domains == 1%}  
-        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+        One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
         {% else%}
-        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+        Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
         {% endif %}
       </p>
     </div>
@@ -64,7 +64,7 @@
     {% if user_domain_count and user_domain_count > 0 %}
     <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
       <section aria-label="Domains report component" class="margin-top-205">
-        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" role="button">
+        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
           <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
           </svg>Export as CSV
@@ -76,14 +76,14 @@
 
   <!-- Non org model banner -->
   {% if has_domain_renewal_flag and num_expiring_domains > 0 and not portfolio %}
-  <section class="usa-site-alert usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
+  <section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
-      <div class="usa-alert__body usa-alert__body--widescreen">
+      <div class="usa-alert__body">
         <p class="usa-alert__text maxw-none">
           {% if num_expiring_domains == 1%}  
-          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domain.</a>
+          One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
           {% else%}
-          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link">Show expiring domains.</a>
+          Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
           {% endif %}
         </p>
       </div>
@@ -101,6 +101,7 @@
           id="domains__usa-button--filter"
           aria-expanded="false"
           aria-controls="filter-status"
+          aria-label="Status, list 5 items"
         >
           <span class="text-bold display-none" id="domains__filter-indicator"></span> Status
           <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
@@ -207,7 +208,7 @@
           <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
           <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
           <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-          {% if portfolio and has_view_suborganization_portfolio_permission %}
+          {% if portfolio and has_view_portfolio_permission %}
             <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
           {% endif %}
           <th 

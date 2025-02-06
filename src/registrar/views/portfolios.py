@@ -303,13 +303,14 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, member.email, member)
-            send_domain_invitation_email(
+            if not send_domain_invitation_email(
                 email=member.email,
                 requestor=requestor,
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
                 requested_user=member,
-            )
+            ):
+                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
                 [
@@ -525,12 +526,13 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
-            send_domain_invitation_email(
+            if not send_domain_invitation_email(
                 email=email,
                 requestor=requestor,
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
-            )
+            ):
+                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
             existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
@@ -639,7 +641,7 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
         portfolio = self.request.session.get("portfolio")
-        context["has_edit_org_portfolio_permission"] = self.request.user.has_edit_org_portfolio_permission(portfolio)
+        context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         return context
 
     def get_object(self, queryset=None):
@@ -807,7 +809,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
@@ -816,4 +818,4 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send email invitation.")
+            messages.warning(self.request, "Could not send portfolio email invitation.")

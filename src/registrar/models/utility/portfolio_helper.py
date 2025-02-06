@@ -41,10 +41,6 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_PORTFOLIO = "view_portfolio", "View organization"
     EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
 
-    # Domain: field specific permissions
-    VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
-    EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"
-
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
         return cls(user_portfolio_permission).label if user_portfolio_permission else None
@@ -210,3 +206,32 @@ def validate_portfolio_invitation(portfolio_invitation):
                 "This user is already assigned to a portfolio invitation. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
+
+
+def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
+    """
+    Cleans up after removing a portfolio member or a portfolio invitation.
+
+    Args:
+    portfolio: portfolio
+    user: passed when removing a portfolio member.
+    email: passed when removing a portfolio invitation, or passed as user.email
+    when removing a portfolio member.
+    """
+
+    DomainInvitation = apps.get_model("registrar.DomainInvitation")
+    UserDomainRole = apps.get_model("registrar.UserDomainRole")
+
+    # Fetch domain invitations matching the criteria
+    invitations = DomainInvitation.objects.filter(
+        email=email, domain__domain_info__portfolio=portfolio, status=DomainInvitation.DomainInvitationStatus.INVITED
+    )
+
+    # Call `cancel_invitation` on each invitation
+    for invitation in invitations:
+        invitation.cancel_invitation()
+        invitation.save()
+
+    if user:
+        # Remove user's domain roles for the current portfolio
+        UserDomainRole.objects.filter(user=user, domain__domain_info__portfolio=portfolio).delete()

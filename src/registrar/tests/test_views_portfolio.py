@@ -1097,8 +1097,10 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
+    @override_flag("organization_members", active=True)
     def test_main_nav_when_user_has_no_permissions(self):
-        """Test the nav contains a link to the no requests page"""
+        """Test the nav contains a link to the no requests page
+        Also test that members link not present"""
         UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
@@ -1118,20 +1120,23 @@ class TestPortfolio(WebTest):
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
         self.assertNotContains(portfolio_landing_page, 'href="/requests/')
-        # link to create
+        # link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
+        # link to members
+        self.assertNotContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
+    @override_flag("organization_members", active=True)
     def test_main_nav_when_user_has_all_permissions(self):
         """Test the nav contains a dropdown with a link to create and another link to view requests
-        Also test for the existence of the Create a new request btn on the requests page"""
+        Also test for the existence of the Create a new request btn on the requests page
+        Also test for the existence of the members link"""
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
         self.client.force_login(self.user)
         # create and submit a domain request
@@ -1151,6 +1156,8 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_landing_page, 'href="/requests/')
         # link to create
         self.assertContains(portfolio_landing_page, 'href="/request/')
+        # link to members
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
         requests_page = self.client.get(reverse("domain-requests"))
 
@@ -1160,15 +1167,18 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
+    @override_flag("organization_members", active=True)
     def test_main_nav_when_user_has_view_but_not_edit_permissions(self):
         """Test the nav contains a simple link to view requests
-        Also test for the existence of the Create a new request btn on the requests page"""
+        Also test for the existence of the Create a new request btn on the requests page
+        Also test for the existence of members link"""
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
         self.client.force_login(self.user)
@@ -1189,6 +1199,8 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_landing_page, 'href="/requests/')
         # link to create
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
+        # link to members
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
         requests_page = self.client.get(reverse("domain-requests"))
 
@@ -3254,7 +3266,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -3339,7 +3351,7 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send email invitation.")
+            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),

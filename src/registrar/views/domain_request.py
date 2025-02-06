@@ -107,15 +107,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
         Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
         Step.ORGANIZATION_ELECTION: lambda self: self.domain_request.is_election_board is not None,
-        Step.ORGANIZATION_CONTACT: lambda self: (
-            self.domain_request.federal_agency is not None
-            or self.domain_request.organization_name is not None
-            or self.domain_request.address_line1 is not None
-            or self.domain_request.city is not None
-            or self.domain_request.state_territory is not None
-            or self.domain_request.zipcode is not None
-            or self.domain_request.urbanization is not None
-        ),
+        Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (
@@ -123,9 +115,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         ),
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
-        Step.OTHER_CONTACTS: lambda self: (
-            self.domain_request.other_contacts.exists() or self.domain_request.no_other_contacts_rationale is not None
-        ),
+        Step.OTHER_CONTACTS: lambda self: self.from_model("unlock_other_contacts", False),
         Step.ADDITIONAL_DETAILS: lambda self: (
             # Additional details is complete as long as "has anything else" and "has cisa rep" are not None
             (
@@ -434,20 +424,28 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         Queries the DB for a domain request and returns a list of unlocked steps."""
         return [key for key, is_unlocked_checker in self.unlocking_steps.items() if is_unlocked_checker(self)]
 
+    def form_is_complete(self):
+        """Determines if all required steps in the domain request form are complete.
+        Returns:
+            bool: True if all required steps are complete, False otherwise
+        """
+        # 1. Get all steps visibly present to the user (required steps)
+        # 2. Return every possible step that is "unlocked" (even hidden, conditional ones)
+        # 3. Narrows down the list to remove hidden conditional steps
+        required_steps = set(self.steps.all)
+        unlockable_steps = {step.value for step in self.db_check_for_unlocking_steps()}
+        unlocked_steps = {step for step in required_steps if step in unlockable_steps}
+        return required_steps == unlocked_steps
+
     def get_context_data(self):
         """Define context for access on all wizard pages."""
-
         requested_domain_name = None
         if self.domain_request.requested_domain is not None:
             requested_domain_name = self.domain_request.requested_domain.name
 
         context = {}
-
-        # Note: we will want to consolidate the non_org_steps_complete check into the same check that
-        # org_steps_complete is using at some point.
-        non_org_steps_complete = DomainRequest._form_complete(self.domain_request, self.request)
-        org_steps_complete = len(self.db_check_for_unlocking_steps()) == len(self.steps)
-        if (not self.is_portfolio and non_org_steps_complete) or (self.is_portfolio and org_steps_complete):
+        org_steps_complete = self.form_is_complete()
+        if org_steps_complete:
             context = {
                 "form_titles": self.titles,
                 "steps": self.steps,
@@ -782,7 +780,8 @@ class Review(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get_context_data(self):
-        if DomainRequest._form_complete(self.domain_request, self.request) is False:
+        form_complete = self.form_is_complete()
+        if form_complete is False:
             logger.warning("User arrived at review page with an incomplete form.")
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
