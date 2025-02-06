@@ -51,9 +51,60 @@
     {% csrf_token %}
     {{ formset.management_form }}
 
-    {% for form in formset %}
+    <!--
+    if no data in formset: 
+      build 2 blank forms
+    --> 
+
+    <!--
+    else if data in formset: 
+      build 1 blank form using the last form in the formset
+
+      build a table of records using for form in formset-1
+
+
+            <table .......>
+              <thead>....</thead>
+              <tbody>  
+                {% for form in formset %}
+                  <tr class="repeatable-form">
+                    <td>
+                      {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                        {% if forloop.counter <= 2 %}
+                          {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+                          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+                            {% input_with_errors form.server %}
+                          {% endwith %}
+                        {% else %}
+                          {% with span_for_text=True %}
+                            {% input_with_errors form.server %}
+                            {% endwith %}
+                        {% endif %}
+                      {% endwith %}
+                    </td>
+                    <td>
+                      {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+                        {% input_with_errors form.ip %}
+                      {% endwith %}
+                    </td>
+                    <td>
+                      <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                          <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+                        </svg>Delete
+                        <span class="sr-only">Name server {{forloop.counter}}</span>
+                      </button>
+                    </div>
+                  </td>
+                  </tr>
+                  {% endfor %}
+                </tboby>
+              </table>        
+
+    --> 
+
+    <!-- {% for form in formset %}
     <div class="repeatable-form">
-      <div class="grid-row">Domain Name</div>
       <div class="grid-row grid-gap-2 flex-end">
         <div class="tablet:grid-col-5">
           {{ form.domain }}
@@ -85,7 +136,7 @@
         </div>
       </div>
     </div>
-    {% endfor %}
+    {% endfor %} -->
 
     <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
