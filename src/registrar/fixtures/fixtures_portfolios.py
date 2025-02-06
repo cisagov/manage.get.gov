@@ -111,7 +111,7 @@ class PortfolioFixture:
         except Exception as e:
             logger.warning(e)
 
-        # Bulk create domain requests
+        # Bulk create portfolios
         if len(portfolios_to_create) > 0:
             try:
                 Portfolio.objects.bulk_create(portfolios_to_create)
