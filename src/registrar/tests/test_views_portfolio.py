@@ -22,7 +22,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from .common import MockSESClient, completed_domain_request, create_test_user, create_user
+from .common import MockEppLib, MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
@@ -3412,34 +3412,35 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "kepler, AL")
 
 
-class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
+class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
+        super().setUp()
+
+        self.user = create_test_user()
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
 
         # Add an invited member who has been invited to manage domains
-        cls.invited_member_email = "invited@example.com"
-        cls.invitation = PortfolioInvitation.objects.create(
-            email=cls.invited_member_email,
-            portfolio=cls.portfolio,
+        self.invited_member_email = "invited@example.com"
+        self.invitation = PortfolioInvitation.objects.create(
+            email=self.invited_member_email,
+            portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
-        cls.new_member_email = "newmember@example.com"
+        self.new_member_email = "newmember@example.com"
 
-        AllowedEmail.objects.get_or_create(email=cls.new_member_email)
+        AllowedEmail.objects.get_or_create(email=self.new_member_email)
 
         # Assign permissions to the user making requests
         UserPortfolioPermission.objects.create(
-            user=cls.user,
-            portfolio=cls.portfolio,
+            user=self.user,
+            portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
@@ -3447,14 +3448,13 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
             ],
         )
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         PortfolioInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
-        super().tearDownClass()
+        super().tearDown()
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -3498,6 +3498,85 @@ class TestPortfolioInviteNewMemberView(TestWithUser, WebTest):
 
             # Check that an email was sent
             self.assertTrue(mock_client.send_email.called)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_previously_removed_user(self, mock_send_email):
+        """Tests the member invitation flow for an existing member which was previously removed."""
+        self.client.force_login(self.user)
+
+        # invite, then retrieve an existing user, then remove the user from the portfolio
+        retrieved_member_email = "retrieved@example.com"
+        retrieved_user = User.objects.create(
+            username="retrieved_user",
+            first_name="Retrieved",
+            last_name="User",
+            email=retrieved_member_email,
+            phone="8003111234",
+            title="retrieved",
+        )
+
+        retrieved_invitation = PortfolioInvitation.objects.create(
+            email=retrieved_member_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+        retrieved_invitation.retrieve()
+        retrieved_invitation.save()
+        upp = UserPortfolioPermission.objects.filter(
+            user=retrieved_user,
+            portfolio=self.portfolio,
+        )
+        upp.delete()
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        # Simulate submission of member invite for previously retrieved/removed member
+        final_response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "domain_request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                "member_permissions": "no_access",
+                "email": retrieved_member_email,
+            },
+        )
+
+        # Ensure the final submission is successful
+        self.assertEqual(final_response.status_code, 302)  # Redirects
+
+        # Validate Database Changes
+        # Validate that portfolio invitation was created and retrieved
+        self.assertFalse(
+            PortfolioInvitation.objects.filter(
+                email=retrieved_member_email,
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
+        # at least one retrieved invitation
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email=retrieved_member_email,
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+            ).exists()
+        )
+        # Ensure exactly one UserPortfolioPermission exists for the retrieved user
+        self.assertEqual(
+            UserPortfolioPermission.objects.filter(user=retrieved_user, portfolio=self.portfolio).count(),
+            1,
+            "Expected exactly one UserPortfolioPermission for the retrieved user.",
+        )
 
     @boto3_mocking.patching
     @less_console_noise_decorator
