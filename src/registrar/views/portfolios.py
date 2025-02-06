@@ -20,6 +20,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
+    send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
 )
 from registrar.utility.errors import MissingEmailError
@@ -149,18 +150,23 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
                 messages.error(request, error_message)
                 return redirect(reverse("member", kwargs={"pk": pk}))
 
-        # if member being removed is an admin
-        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
-            try:
+        try:
+            # if member being removed is an admin
+            if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
                 # attempt to send notification emails of the removal to other portfolio admins
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_member_permission.user.email,
                     requestor=request.user,
                     portfolio=portfolio_member_permission.portfolio,
                 ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
-            except Exception as e:
-                self._handle_exceptions(e)
+                    messages.warning(request, "Could not send email notification to existing organization admins.")
+            # send notification email to member being removed
+            if not send_portfolio_member_permission_remove_email(
+                requestor=request.user, permissions=portfolio_member_permission
+            ):
+                messages.warning(request, f"Could not send email notification to {member.email}")
+        except Exception as e:
+            self._handle_exceptions(e)
 
         # passed all error conditions
         portfolio_member_permission.delete()
