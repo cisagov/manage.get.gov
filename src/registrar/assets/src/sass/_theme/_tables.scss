@@ -1,4 +1,5 @@
 @use "uswds-core" as *;
+@use "cisa_colors" as *;
 
 td,
 th {
@@ -68,7 +69,9 @@ th {
       border-bottom: 1px solid color('base-lighter');
     }
 
-    thead th {
+    thead th,
+    thead th[aria-sort],
+    thead th[aria-sort] {
       color: color('primary-darker');
       border-bottom: 2px solid color('base-light');
     }
@@ -93,15 +96,33 @@ th {
     }
   }
 
-  @include at-media(tablet-lg) {
-    th[data-sortable] .usa-table__header__button {
-      right: auto;
-  
-      &[aria-sort=ascending],
-      &[aria-sort=descending],
-      &:not([aria-sort]) {
-        right: auto;
+  th[aria-sort],
+  th[data-sortable][aria-sort=ascending],
+  th[data-sortable][aria-sort=descending] {
+    background-color: transparent;
+    .usa-table__header__button {
+      background-color: rgba(214, 233, 242, 0.6);
+      background-color: $theme-color-accent-cool-lightest;
+      border-radius: 4px;
+      // position: relative;
+      // left: 4px;
+      // top: 16px;
+      color: color('primary-darker');
+      
+      &:hover {
+        background-color: rgba(214, 233, 242, 0.6);
       }
+    }
+  }
+
+  @include at-media(tablet-lg) {
+    th[data-sortable] .usa-table__header__button,
+    th[data-sortable] .usa-table__header__button:not([aria-sort]),
+    th[data-sortable][aria-sort=ascending] .usa-table__header__button,
+    th[data-sortable][aria-sort=descending] .usa-table__header__button {
+      right: auto;
+      top: 12px;
+      transform: translateX(10px);
     }
   }
 }

@@ -208,6 +208,7 @@ function hideDeletedForms() {
  * it everywhere.
  */
 export function initFormsetsForms() {
+  console.log('init formsets');
   let formIdentifier = "form"
   let repeatableForm = document.querySelectorAll(".repeatable-form");
   let container = document.querySelector("#form-container");
