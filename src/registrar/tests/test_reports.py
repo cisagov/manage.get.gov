@@ -725,7 +725,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_domain_request_data_full(self):
         """Tests the full domain request report."""
         # Remove "Submitted at" because we can't guess this immutable, dynamically generated test data
