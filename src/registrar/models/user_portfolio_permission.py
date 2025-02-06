@@ -27,13 +27,10 @@ class UserPortfolioPermission(TimeStampedModel):
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
-            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
         # NOTE: Check FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS before adding roles here.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-            UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION,
         ],
     }
 
@@ -43,7 +40,6 @@ class UserPortfolioPermission(TimeStampedModel):
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             UserPortfolioPermissionChoices.EDIT_MEMBERS,
-            UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION,
         ],
     }
 
