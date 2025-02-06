@@ -128,6 +128,7 @@ class TestDomainInvitationAdmin(MockEppLib, WebTest):
       all tests share superuser; do not change this model in tests
       tests have available superuser, client, and admin
     """
+
     # csrf checks do not work with WebTest.
     # We disable them here. TODO for another ticket.
     csrf_checks = False
@@ -149,7 +150,6 @@ class TestDomainInvitationAdmin(MockEppLib, WebTest):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.superuser)
         self.app.set_user(self.superuser.username)
-
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1127,6 +1127,7 @@ class TestDomainInvitationAdmin(MockEppLib, WebTest):
         # Check for custom alert message
         custom_alert_content = "If you cancel the domain invitation here"
         self.assertContains(response, custom_alert_content)
+
 
 class TestUserPortfolioPermissionAdmin(TestCase):
     """Tests for the PortfolioInivtationAdmin class"""
