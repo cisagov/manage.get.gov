@@ -1,7 +1,20 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
+{% load i18n %}
 
 {% block content_title %}<h1>Registrar Analytics</h1>{% endblock %}
+
+{% block breadcrumbs %}
+{% comment %} 
+Overrides the breadcrumb styles found in this file: 
+https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/base.html
+{% endcomment %}
+<div class="breadcrumbs">
+  <a href="{% url "admin:index" %}">{% trans "Home" %}</a>
+  &rsaquo;
+  <span>{% trans "Analytics Dashboard" %}</span>
+</div>
+{% endblock %}
 
 {% block content %}
 
@@ -112,7 +125,7 @@
               </button>
             </li>
             <li class="usa-button-group__item">
-              <button class="usa-button usa-button--dja exportLink usa-button--secondary" data-export-url="{% url 'analytics' %}" type="button">
+              <button class="usa-button usa-button--dja exportLink usa-button--secondary" data-export-url="{% url 'admin:analytics-dashboard' %}" type="button">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                   <use xlink:href="{%static 'img/sprite.svg'%}#assessment"></use>
                 </svg><span class="margin-left-05">Update charts</span>

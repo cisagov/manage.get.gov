@@ -17,7 +17,6 @@ from registrar.views.report_views import (
     ExportDataRequestsGrowth,
     ExportDataType,
     ExportDataUnmanagedDomains,
-    AnalyticsView,
     ExportDomainRequestDataFull,
     ExportDataTypeUser,
     ExportMembersPortfolio,
@@ -211,11 +210,6 @@ urlpatterns = [
         "admin/analytics/export_unmanaged_domains/",
         ExportDataUnmanagedDomains.as_view(),
         name="export_unmanaged_domains",
-    ),
-    path(
-        "admin/analytics/",
-        AnalyticsView.as_view(),
-        name="analytics",
     ),
     path("admin/registrar/user/<int:user_id>/transfer/", TransferUserView.as_view(), name="transfer_user"),
     path(
