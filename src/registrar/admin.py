@@ -11,6 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
+
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
@@ -24,7 +25,7 @@ from registrar.utility.admin_helpers import (
 from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -1478,26 +1479,6 @@ class BaseInvitationAdmin(ListHeaderAdmin):
         return response
 
 
-# class DomainInvitationAdminForm(forms.ModelForm):
-#     """Custom form for DomainInvitation in admin to only allow cancellations."""
-
-#     STATUS_CHOICES = [
-#         ("", "------"), # no action
-#         ("canceled", "Canceled"),
-#     ]
-
-#     status = forms.ChoiceField(choices=STATUS_CHOICES, required=False, label="Status")
-
-#     class Meta:
-#         model = models.DomainInvitation
-#         fields = "__all__"
-
-#     def clean_status(self):
-#         # Clean status - we purposely dont edit anything so we dont mess with the state
-#         status = self.cleaned_data.get("status")
-#         return status
-
-
 class DomainInvitationAdmin(BaseInvitationAdmin):
     """Custom domain invitation admin class."""
 
@@ -1527,17 +1508,28 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
     search_help_text = "Search by email or domain."
 
-    # # Mark the FSM field 'status' as readonly
-    # # to allow admin users to create Domain Invitations
-    # # without triggering the FSM Transition Not Allowed
-    # # error.
-    # readonly_fields = ["status"]
-
-    readonly_fields = []
+    # Mark the FSM field 'status' as readonly
+    # to allow admin users to create Domain Invitations
+    # without triggering the FSM Transition Not Allowed
+    # error.
+    readonly_fields = ["status"]
 
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Override the change_view to add the invitation obj for the
+        change_form_object_tools template"""
+
+        if extra_context is None:
+            extra_context = {}
+
+        # Get the domain invitation object
+        invitation = get_object_or_404(DomainInvitation, id=object_id)
+        extra_context["invitation"] = invitation
+
+        return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
         """

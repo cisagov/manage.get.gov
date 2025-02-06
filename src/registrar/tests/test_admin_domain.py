@@ -12,6 +12,7 @@ from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DomainInvitation,
     User,
     Host,
     Portfolio,
@@ -29,6 +30,9 @@ from .common import (
     GenericTestHelper,
 )
 from unittest.mock import ANY, call, patch
+
+from django.contrib.messages import get_messages
+
 
 import boto3_mocking  # type: ignore
 import logging
@@ -493,6 +497,63 @@ class TestDomainInformationInline(MockEppLib):
         self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
         self.assertIn("Arnold Poopy", domain_managers)
         self.assertIn("poopy@gov.gov", domain_managers)
+
+
+class DomainInvitationAdminTest(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.staffuser = create_user(email="staffdomainmanager@meoward.com", is_staff=True)
+        cls.site = AdminSite()
+        cls.admin = DomainAdmin(model=Domain, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.staffuser)
+        super().setUp()
+
+    def test_cancel_invitation_flow_in_admin(self):
+        """Testing canceling a domain invitation in Django Admin."""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="cancelinvitationflowviaadmin.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain
+        invitation = DomainInvitation.objects.create(
+            email="inviteddomainmanager@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you can see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cancel invitation")
+
+        # 5. Click the "Cancel invitation" button (a POST)
+        cancel_invitation_url = reverse("invitation-cancel", args=[invitation.id])
+        response = self.client.post(cancel_invitation_url, follow=True)
+
+        # 6.Confirm we're redirected to the domain managers page for the domain
+        expected_redirect_url = reverse("domain-users", args=[domain.id])
+        self.assertRedirects(response, expected_redirect_url)
+
+        # 7. Get the messages
+        messages = list(get_messages(response.wsgi_request))
+        message_texts = [str(message) for message in messages]
+
+        # 8. Check that the success banner text is in the messages
+        expected_message = f"Canceled invitation to {invitation.email}."
+        self.assertIn(expected_message, message_texts)
 
 
 class TestDomainAdminWithClient(TestCase):

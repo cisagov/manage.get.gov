@@ -78,10 +78,6 @@ class DomainInvitation(TimeStampedModel):
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
         """When an invitation is canceled, change the status to canceled"""
-        # print("***** IN CANCEL_INVITATION SECTION")
-        # logger.info(f"Invitation for {self.email} to {self.domain} has been canceled.")
-        # print("WHEN INVITATION IS CANCELED > CHANGE STATUS TO CANCELED")
-        # Send email here maybe?
         pass
 
     @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)

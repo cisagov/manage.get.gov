@@ -7,8 +7,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% block field_other %}
     {% if field.field.name == "email" %}
         {% include "admin/input_with_clipboard.html" with field=field.field %}
-    {% elif field.field.name == "status" %}
-        {% include "admin/status_with_clipboard.html" with field=field.field %}
     {% else %}
         {{ block.super }}
     {% endif %}

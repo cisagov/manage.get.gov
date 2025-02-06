@@ -15,13 +15,28 @@
         </ul>
     {% else %}
         <ul>
+            {% if opts.model_name == 'domaininvitation' %}
+            <li>
+                <form method="post" action="{% url 'invitation-cancel' pk=invitation.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="usa-button--dja">
+                        <svg class="usa-icon">
+                            <use xlink:href="{%static 'img/sprite.svg'%}#cancel"></use>
+                        </svg>
+                        <span>{% translate "Cancel invitation" %}</span>
+                    </button>
+                </form>
+            </li>
+            {% endif %}
+
             <li>
                 <a href="{% add_preserved_filters history_url %}">{% translate "History" %}</a>
             </li>
+
             {% if opts.model_name == 'domainrequest' %}
             <li>
                 <a id="id-copy-to-clipboard-summary" class="usa-button--dja" type="button" href="#">
-                    <svg class="usa-icon" >
+                    <svg class="usa-icon">
                         <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                     </svg>
                     <!-- the span is targeted in JS, do not remove -->
@@ -32,4 +47,3 @@
         </ul>
     {% endif %}
 {% endblock %}
-
