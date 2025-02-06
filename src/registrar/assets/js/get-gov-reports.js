@@ -1,3 +1,4 @@
+
 /** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
  * attach the seleted start and end dates to a url that'll trigger the view, and finally
  * redirect to that url.
@@ -78,6 +79,9 @@
                     borderColor: "rgba(255, 99, 132, 1)",
                     borderWidth: 1,
                     data: listOne,
+                    backgroundColor: [
+                        pattern.draw('square', '#1f77b4'),
+                    ]
                 },
                 {
                     label: labelTwo,
@@ -85,6 +89,9 @@
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
+                    backgroundColor: [
+                        pattern.draw('square', '#1f77b4'),
+                    ]
                 },
             ],
         };
