@@ -99,8 +99,10 @@ class Command(BaseCommand):
         skip_existing_portfolios = options.get("skip_existing_portfolios")
 
         if not both:
-            if not parse_requests and not parse_domains:
-                raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
+            if not (parse_requests or parse_domains or add_managers):
+                raise CommandError(
+                    "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
+                )
         else:
             if parse_requests or parse_domains:
                 raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
