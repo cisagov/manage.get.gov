@@ -30,8 +30,8 @@ class Command(BaseCommand):
         self.failed_portfolios = set()
         self.added_managers = set()
         self.added_invitations = set()
+        self.skipped_invitations = set()
         self.failed_managers = set()
-        self.failed_invitations = set()
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -162,8 +162,8 @@ class Command(BaseCommand):
 
             TerminalHelper.log_script_run_summary(
                 self.added_invitations,
-                self.failed_invitations,
-                [],  # can't skip invitations, can only add or fail
+                [],
+                self.skipped_invitations,
                 log_header="----- INVITATIONS ADDED -----",
                 debug=False,
                 display_as_str=True,
@@ -237,45 +237,21 @@ class Command(BaseCommand):
 
     def create_portfolio_invitation(self, portfolio: Portfolio, email: str):
         """
-        Create a portfolio invitation for the given user.
-        If the user already has a portfolio invitation, retreive their invitation and create a portfolio permission.
+        Create a portfolio invitation for the given email.
         """
-        try:
-            user = User.objects.get(email=email)
-            _, created = PortfolioInvitation.objects.get_or_create(
-                portfolio=portfolio,
-                user=user,
-                defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED},
-            )
-            if created:
-                logger.info(f"Created portfolio invitation for '{user}' to portfolio '{portfolio}'")
-            else:
-                logger.info(f"Retrieved existing portfolio invitation for '{user}' to portfolio '{portfolio}'")
-
-            # Assign portfolio permissions
-            _, created = UserPortfolioPermission.objects.get_or_create(
-                portfolio=portfolio,
-                user=user,
-                defaults={"role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER},
-            )
-            if created:
-                logger.info(f"Created portfolio permission for '{user}' to portfolio '{portfolio}'")
-            else:
-                logger.info(f"Retrieved existing portfolio permission for '{user}' to portfolio '{portfolio}'")
-
-            self.added_invitations.add(user)
-        except User.DoesNotExist:
-            PortfolioInvitation.objects.get_or_create(
-                portfolio=portfolio,
-                email=email,
-                defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED},
-            )
+        _, created = PortfolioInvitation.objects.get_or_create(
+            portfolio=portfolio,
+            email=email,
+            defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+                        "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+                        },
+        )
+        if created:
             self.added_invitations.add(email)
             logger.info(f"Created portfolio invitation for '{email}' to portfolio '{portfolio}'")
-        except Exception as exc:
-            self.failed_invitations.add(email)
-            logger.error(exc, exc_info=True)
-            logger.error(f"Failed to create portfolio invitation for '{email}' to portfolio '{portfolio}'")
+        else:
+            self.skipped_invitations.add(email)
+            logger.info(f"Found existing portfolio invitation for '{email}' to portfolio '{portfolio}'")
 
     def post_process_started_domain_requests(self, agencies, portfolios):
         """
