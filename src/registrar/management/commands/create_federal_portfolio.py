@@ -199,9 +199,9 @@ class Command(BaseCommand):
         domain_managers: set[int] = set()
 
         # Fetch all users with manager roles for the domains
-        managers = UserDomainRole.objects.filter(domain__in=domains, role=UserDomainRole.Roles.MANAGER).values_list(
-            "user", flat=True
-        )
+        # select_related means that a db query will not be occur when you do user_domain_role.user
+        # Its similar to a set or dict in that it costs slightly more upfront in exchange for perf later
+        user_domain_roles = UserDomainRole.objects.select_related("user").filter(domain__in=domains, role=UserDomainRole.Roles.MANAGER)
         domain_managers.update(managers)
 
         invited_managers: set[str] = set()
