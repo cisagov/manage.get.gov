@@ -1063,6 +1063,23 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "Failed to send email.")
 
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    @patch("registrar.views.domain.send_templated_email")
+    def test_domain_remove_manager(self, mock_send_templated_email):
+        """Removing a domain manager sends notification email to other domain managers."""
+        self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
+        self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
+        self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.manager.id}))
+
+        # Verify that the notification emails were sent to domain manager
+        mock_send_templated_email.assert_called_once_with(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_address="info@example.com",
+            context=ANY,
+        )
+
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_invitation_created(self, mock_send_domain_email):
