@@ -1068,6 +1068,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
+        
+        logger.info("Finished removing nameservers from domain")
 
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
@@ -1077,13 +1079,19 @@ class Domain(TimeStampedModel, DomainHelper):
         # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
+        logger.info(f"retrieved contacts for domain: {contacts}")
         
         for contact in contacts:
             try:
                 if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-                    self._update_domain_with_contact(contact, rem=True)
+                    logger.info(f"Deleting contact: {contact}")
+                    try:
+                        self._update_domain_with_contact(contact, rem=True)
+                    except Exception as e:
+                        logger.error(f"Error while updateing domain with contact: {contact}, e: {e}", exc_info=True)
                     request = commands.DeleteContact(contact.registry_id)
                     registry.send(request, cleaned=True)
+                    logger.info(f"sent DeleteContact for {contact}")
             except RegistryError as e:
                 logger.error(f"Error deleting contact: {contact}, {e}", exec_info=True)
         
@@ -1094,8 +1102,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.debug("Deleting ds data for %s", self.name)
             try:
                 # set and unset client hold to be able to change ds data
+                logger.info("removing client hold")
                 self._remove_client_hold()
                 self.dnssecdata = None
+                logger.info("placing client hold")
                 self._place_client_hold()
             except RegistryError as e:
                 logger.error("Error deleting ds data for %s: %s", self.name, e)
