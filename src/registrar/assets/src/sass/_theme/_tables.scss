@@ -1,5 +1,4 @@
 @use "uswds-core" as *;
-@use "cisa_colors" as *;
 
 td,
 th {
@@ -42,13 +41,8 @@ th {
   }
 }
 
-// The member table has an extra "expand" row, which looks like a single row.
-// But the DOM disagrees - so we basically need to hide the border on both rows.
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
-  border-bottom: none;
-}
-
+// .dotgov-table allows us to customize .usa-table on the user-facing pages,
+// while leaving the default styles for use on the admin pages
 .dotgov-table {
   width: 100%;
 
@@ -96,35 +90,44 @@ th {
     }
   }
 
-  th[aria-sort],
+  // Sortable headers
   th[data-sortable][aria-sort=ascending],
   th[data-sortable][aria-sort=descending] {
     background-color: transparent;
     .usa-table__header__button {
-      background-color: rgba(214, 233, 242, 0.6);
-      background-color: $theme-color-accent-cool-lightest;
-      border-radius: 4px;
-      // position: relative;
-      // left: 4px;
-      // top: 16px;
+      background-color: color('accent-cool-lightest');
+      border-radius: units(.5);
       color: color('primary-darker');
-      
       &:hover {
-        background-color: rgba(214, 233, 242, 0.6);
+        background-color: color('accent-cool-lightest');
       }
     }
   }
-
   @include at-media(tablet-lg) {
     th[data-sortable] .usa-table__header__button,
-    th[data-sortable] .usa-table__header__button:not([aria-sort]),
-    th[data-sortable][aria-sort=ascending] .usa-table__header__button,
-    th[data-sortable][aria-sort=descending] .usa-table__header__button {
+    th[data-sortable] .usa-table__header__button:not([aria-sort]) {
+      // position next to the copy
       right: auto;
-      top: 12px;
-      transform: translateX(10px);
+      // slide left to mock a margin between the copy and the icon
+      transform: translateX(units(1));
+      // fix vertical alignment
+      top: units(1.5);
     }
   }
+
+  // Currently the 'flash' when sort is clicked,
+  // this will become persistent if the double-sort bug is fixed
+  td[data-sort-active],
+  th[data-sort-active] {
+    background-color: color('primary-lightest');
+  }
+}
+
+// The member table has an extra "expand" row, which looks like a single row.
+// But the DOM disagrees - so we basically need to hide the border on both rows.
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+  border-bottom: none;
 }
 
 .dotgov-table--cell-padding-2 {
