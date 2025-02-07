@@ -33,7 +33,6 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_invitation_email,
 )
-from registrar.views.report_views import AnalyticsView
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
@@ -44,7 +43,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.urls import path, reverse
+from django.urls import reverse
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
