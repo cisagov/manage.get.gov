@@ -1074,17 +1074,24 @@ class Domain(TimeStampedModel, DomainHelper):
         # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
+        
         for contact in contacts:
-            if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-                self._update_domain_with_contact(contact, rem=True)
-                request = commands.DeleteContact(contact.registry_id)
-                registry.send(request, cleaned=True)
+            try:
+                if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
+                    self._update_domain_with_contact(contact, rem=True)
+                    request = commands.DeleteContact(contact.registry_id)
+                    registry.send(request, cleaned=True)
+            except RegistryError as e:
+                logger.error(f"Error deleting contact: {contact}, {e}", exec_info=True)
 
         # delete ds data if it exists
         if self.dnssecdata:
             logger.debug("Deleting ds data for %s", self.name)
             try:
+                # set and unset client hold to be able to change ds data
+                self._remove_client_hold()
                 self.dnssecdata = None
+                self._place_client_hold()
             except RegistryError as e:
                 logger.error("Error deleting ds data for %s: %s", self.name, e)
                 e.note = "Error deleting ds data for %s" % self.name
