@@ -54,7 +54,6 @@ from registrar.models import (
 from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
-    MockEppLib,
     completed_domain_request,
     generic_domain_object,
     less_console_noise,
@@ -121,7 +120,7 @@ class TestFsmModelResource(TestCase):
         fsm_field_mock.save.assert_not_called()
 
 
-class TestDomainInvitationAdmin(MockEppLib, WebTest):
+class TestDomainInvitationAdmin(WebTest):
     """Tests for the DomainInvitationAdmin class as super user
 
     Notes:
@@ -2073,7 +2072,7 @@ class TestDomainInformationAdmin(TestCase):
             self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
 
 
-class TestUserDomainRoleAdmin(MockEppLib, WebTest):
+class TestUserDomainRoleAdmin(WebTest):
     """Tests for the UserDomainRoleAdmin class as super user
 
     Notes:
