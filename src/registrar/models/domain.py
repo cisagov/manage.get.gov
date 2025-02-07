@@ -1040,7 +1040,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("Deleting subdomains for %s", self.name)
         # check if any subdomains are in use by another domain
-        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
+        hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
             if host.domain != self:
                 logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
