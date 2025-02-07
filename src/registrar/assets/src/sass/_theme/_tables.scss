@@ -64,7 +64,6 @@ th {
     }
 
     thead th,
-    thead th[aria-sort],
     thead th[aria-sort] {
       color: color('primary-darker');
       border-bottom: 2px solid color('base-light');
