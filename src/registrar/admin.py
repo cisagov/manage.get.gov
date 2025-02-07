@@ -4451,38 +4451,3 @@ admin.site.register(models.WaffleFlag, WaffleFlagAdmin)
 # Unregister Switch and Sample from the waffle library
 admin.site.unregister(Switch)
 admin.site.unregister(Sample)
-
-# -----------------------------------------------------------------------------
-# Monkey Patch: Extend Django Admin URLs to include our Analytics dashboard.
-# -----------------------------------------------------------------------------
-def get_custom_admin_urls(original_get_urls):
-    """
-    Wrap the original admin site's get_urls() method to include a custom URL for the
-    Analytics dashboard. By doing this, the dashboard will be integrated into the admin
-    navigation with the correct context (breadcrumbs, header, etc.) and will behave like
-    a admin page.
-    """
-    def get_urls():
-        # Retrieve the default admin URL patterns.
-        urls = original_get_urls()
-
-        # Define our custom URL for the Analytics dashboard.
-        # The admin_view wrapper applies admin-specific authorization and context.
-        custom_urls = [
-            path(
-                "dashboard/",
-                admin.site.admin_view(AnalyticsView.as_view()),
-                name="analytics-dashboard"
-            )
-        ]
-
-        # Prepend our custom URLs to the admin URL patterns.
-        # This way, when navigating the admin, the analytics dashboard is available
-        # via its own integrated URL.
-        return custom_urls + urls
-
-    return get_urls
-
-# Apply the monkey patch to the admin site's get_urls method.
-# This ensures that our custom URL for the Analytics dashboard is added.
-admin.site.get_urls = get_custom_admin_urls(admin.site.get_urls)
