@@ -1,62 +1,26 @@
-{{ data }}
 <table>
     <thead>
         <tr>
             <th>Type</th>
-            <th>For start date</th>
-            <th>for end date</th>
+            <th>Start date {{ data.start_date }}</th>
+            <th>End date {{ data.end_date }} </th>
         <tr>
     </thead>
     <tbody>
-        <tr>
-            <th class="padding-left-1" scope="row">Total</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">Federal</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">Interstate</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">State/Territory</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">Tribal</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">County</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">City</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">Special District</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">School District</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
-        <tr>
-            <th class="padding-left-1" scope="row">Election Board</th>
-            <td class="padding-left-1">data</td>
-            <td class="padding-left-1">data</td>
-        </tr>
+        {% comment %} 
+        This ugly notation is equivalent to data.property_name.start_date_count.index.
+        Or represented in the pure python way: data[property_name]["start_date_count"][index]
+        {% endcomment %}
+        {% with start_counts=data|get_item:property_name|get_item:"start_date_count" end_counts=data|get_item:property_name|get_item:"end_date_count" %}
+            {% for org_count_type in data.org_count_types %}
+                {% with index=forloop.counter %}
+                    <tr>
+                        <th class="padding-left-1" scope="row">{{ org_count_type }}</th>
+                        <td class="padding-left-1">{{ start_counts|slice:index|last }}</td>
+                        <td class="padding-left-1">{{ end_counts|slice:index|last }}</td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+        {% endwith %}
     </tbody>
 </table>
