@@ -120,7 +120,7 @@
             </li>
           </ul>
 
-          <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-row grid-gap-2 margin-y-2 margin-bottom-0">
             <div class="grid-col">
               <canvas id="myChart1" width="400" height="200"
                 aria-label="Chart: {{ data.managed_domains_sliced_at_end_date.0 }} managed domains for {{ data.end_date }}"
@@ -144,8 +144,27 @@
             </canvas>
             </div>
           </div>
+          
+          <div class="grid-row grid-gap-2 margin-y-2 margin-top-0">
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for managed domains</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
+            </div>
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for unmanaged domains</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
+            </div>
+          </div>
 
-          <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-row grid-gap-2 margin-y-2 margin-bottom-0">
             <div class="grid-col">
               <canvas id="myChart3" width="400" height="200"
                 aria-label="Chart: {{ data.deleted_domains_sliced_at_end_date.0 }} deleted domains for {{ data.end_date }}"
@@ -170,7 +189,26 @@
             </div>
           </div>
 
-          <div class="grid-row grid-gap-2 margin-y-2">
+          <div class="grid-row grid-gap-2 margin-y-2 margin-top-0">
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for deleted domains</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
+            </div>
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for ready domains</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div class="grid-row grid-gap-2 margin-y-2 margin-bottom-0">
             <div class="grid-col">
               <canvas id="myChart5" width="400" height="200"
                 aria-label="Chart: {{ data.submitted_requests_sliced_at_end_date.0 }} submitted requests for {{ data.end_date }}"
@@ -192,6 +230,25 @@
                 <h2>Chart: All requests</h2>
                 <p>{{ data.requests_sliced_at_end_date.0 }} requests for {{ data.end_date }}</p>
             </canvas>
+            </div>
+          </div>
+
+          <div class="grid-row grid-gap-2 margin-y-2 margin-top-0">
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for submitted requests</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
+            </div>
+            <div class="grid-col">
+              <details class="margin-top-1 dja-detail-table" aria-role="button" closed>
+                <summary class="padding-1 padding-left-0 dja-details-summary">Details for all requests</summary>
+                <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
+                    {% include "admin/analytics_graph_table.html" with data=None %}
+                </div>
+              </details>
             </div>
           </div>
 
