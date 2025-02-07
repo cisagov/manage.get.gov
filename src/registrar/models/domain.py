@@ -1088,12 +1088,12 @@ class Domain(TimeStampedModel, DomainHelper):
                     try:
                         self._update_domain_with_contact(contact, rem=True)
                     except Exception as e:
-                        logger.error(f"Error while updateing domain with contact: {contact}, e: {e}", exc_info=True)
+                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
                     request = commands.DeleteContact(contact.registry_id)
                     registry.send(request, cleaned=True)
                     logger.info(f"sent DeleteContact for {contact}")
             except RegistryError as e:
-                logger.error(f"Error deleting contact: {contact}, {e}", exec_info=True)
+                logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
         
         logger.info("Finished deleting contacts")
 
