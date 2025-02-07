@@ -1048,21 +1048,23 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-
-        # set hosts to empty list so nameservers are deleted
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.getNameserverChanges(hosts=[])
-        
-        # update the hosts
-        _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
-        addToDomainList, _ = self.createNewHostList(new_values)
-        deleteHostList, _ = self.createDeleteHostList(deleted_values)
-        responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
-
+        try:
+            # set hosts to empty list so nameservers are deleted
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.getNameserverChanges(hosts=[])
+            
+            # update the hosts
+            _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
+            addToDomainList, _ = self.createNewHostList(new_values)
+            deleteHostList, _ = self.createDeleteHostList(deleted_values)
+            responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
+        except RegistryError as e:
+            logger.error(f"Error trying to delete hosts from domain {self}: {e}")
+            raise e
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
@@ -1070,6 +1072,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
+        logger.info("Finished _delete_host_if_not_used inside _delete_domain()")
 
         # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
@@ -1083,6 +1086,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     registry.send(request, cleaned=True)
             except RegistryError as e:
                 logger.error(f"Error deleting contact: {contact}, {e}", exec_info=True)
+        
+        logger.info("Finished deleting contacts")
 
         # delete ds data if it exists
         if self.dnssecdata:
@@ -1097,9 +1102,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
-        logger.info("Deleting domain %s", self.name)
-        request = commands.DeleteDomain(name=self.name)
-        registry.send(request, cleaned=True)
+        try:
+            logger.info("Deleting domain %s", self.name)
+            request = commands.DeleteDomain(name=self.name)
+            registry.send(request, cleaned=True)
+        except RegistryError as e:
+            logger.error(f"Error deleting domain {self}: {e}")
+            raise e
 
     def __str__(self) -> str:
         return self.name
