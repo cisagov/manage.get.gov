@@ -536,9 +536,15 @@ details.dja-detail-table {
         background-color: transparent;
     }
 
+    thead tr {
+        background-color: var(--darkened-bg);
+    }
+
     td, th {
         padding-left: 12px;
-        border: none
+        border: none;
+        background-color: var(--darkened-bg);
+        color: var(--body-quiet-color);
     }
 
     thead > tr > th {
