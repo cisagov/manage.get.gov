@@ -2,7 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from typing import Optional
 from django.db import transaction
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -1114,12 +1114,34 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
+        # Previous deletions have to complete before we can delete the domain
+        # This is a polling mechanism to ensure that the domain is deleted
         try:
-            logger.info("Deleting domain %s", self.name)
-            request = commands.DeleteDomain(name=self.name)
-            registry.send(request, cleaned=True)
+            logger.info("Attempting to delete domain %s", self.name)
+            delete_request = commands.DeleteDomain(name=self.name)
+            max_attempts = 5  # maximum number of retries
+            wait_interval = 1  # seconds to wait between attempts
+
+            for attempt in range(max_attempts):
+                try:
+                    registry.send(delete_request, cleaned=True)
+                    logger.info("Domain %s deleted successfully.", self.name)
+                    break  # exit the loop on success
+                except RegistryError as e:
+                    error = e
+                    logger.warning(
+                        "Attempt %d of %d: Domain deletion not possible yet: %s. Retrying in %d seconds.",
+                        attempt + 1,
+                        max_attempts,
+                        e,
+                        wait_interval,
+                    )
+                    time.sleep(wait_interval)
+            else:
+                logger.error("Exceeded maximum attempts to delete domain %s", self.name)
+                raise error
         except RegistryError as e:
-            logger.error(f"Error deleting domain {self}: {e}")
+            logger.error("Error deleting domain %s after polling: %s", self.name, e)
             raise e
 
     def __str__(self) -> str:
