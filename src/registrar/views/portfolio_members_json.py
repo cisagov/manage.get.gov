@@ -123,7 +123,11 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
 
         # Subquery to get concatenated domain information for each email
         domain_invitations = (
-            DomainInvitation.objects.filter(email=OuterRef("email"), domain__domain_info__portfolio=portfolio)
+            DomainInvitation.objects.filter(
+                email=OuterRef("email"),
+                domain__domain_info__portfolio=portfolio,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            )
             .annotate(
                 concatenated_info=Concat(F("domain__id"), Value(":"), F("domain__name"), output_field=CharField())
             )

@@ -3,7 +3,6 @@ from django.utils import timezone
 import logging
 import random
 from faker import Faker
-from django.db import transaction
 
 from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
@@ -29,19 +28,18 @@ class DomainFixture(DomainRequestFixture):
     def load(cls):
         # Lumped under .atomic to ensure we don't make redundant DB calls.
         # This bundles them all together, and then saves it in a single call.
-        with transaction.atomic():
-            try:
-                # Get the usernames of users created in the UserFixture
-                created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
+        try:
+            # Get the usernames of users created in the UserFixture
+            created_usernames = [user_data["username"] for user_data in UserFixture.ADMINS + UserFixture.STAFF]
 
-                # Filter users to only include those created by the fixture
-                users = list(User.objects.filter(username__in=created_usernames))
-            except Exception as e:
-                logger.warning(e)
-                return
+            # Filter users to only include those created by the fixture
+            users = list(User.objects.filter(username__in=created_usernames))
+        except Exception as e:
+            logger.warning(e)
+            return
 
-            # Approve each user associated with `in review` status domains
-            cls._approve_domain_requests(users)
+        # Approve each user associated with `in review` status domains
+        cls._approve_domain_requests(users)
 
     @staticmethod
     def _generate_fake_expiration_date(days_in_future=365):
