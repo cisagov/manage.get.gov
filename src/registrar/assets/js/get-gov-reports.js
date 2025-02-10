@@ -59,6 +59,8 @@
 /** An IIFE to initialize the analytics page
 */
 (function () {
+    // Store chart instances globally within this IIFE
+    const chartInstances = new Map();
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) {
@@ -80,17 +82,16 @@
                     borderWidth: 1,
                     data: listOne,
                     backgroundColor: [
-                        pattern.draw('zigzag-vertical', '#1f77b4'),
+                        pattern.draw("zigzag-vertical", "#1f77b4"),
                     ]
                 },
                 {
                     label: labelTwo,
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
                     backgroundColor: [
-                        pattern.draw('diagonal', '#1f77b4'),
+                        pattern.draw("diagonal", "#1f77b4"),
                     ]
                 },
             ],
@@ -98,7 +99,6 @@
 
         var options = {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'top',
@@ -115,11 +115,34 @@
             },
         };
 
-        new Chart(ctx, {
+        // Destroy existing chart instance if it exists
+        if (chartInstances.has(canvasId)) {
+            chartInstances.get(canvasId).destroy();
+        }
+
+        // Create and store new chart instance
+        const chart = new Chart(ctx, {
             type: "bar",
             data: data,
             options: options,
         });
+        
+        chartInstances.set(canvasId, chart);
+    }
+
+    function handleResize() {
+        // Debounce the resize handler
+        if (handleResize.timeout) {
+            clearTimeout(handleResize.timeout);
+        }
+        
+        handleResize.timeout = setTimeout(() => {
+            chartInstances.forEach((chart, canvasId) => {
+                if (chart && chart.canvas) {
+                    chart.resize();
+                }
+            });
+        }, 100);
     }
 
     function initComparativeColumnCharts() {
@@ -130,6 +153,8 @@
             createComparativeColumnChart("myChart4", "Ready domains", "Start Date", "End Date");
             createComparativeColumnChart("myChart5", "Submitted requests", "Start Date", "End Date");
             createComparativeColumnChart("myChart6", "All requests", "Start Date", "End Date");
+
+            //window.addEventListener("resize", handleResize);
         });
     };
 
