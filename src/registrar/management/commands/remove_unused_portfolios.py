@@ -149,9 +149,9 @@ class Command(BaseCommand):
                 )
                 return
 
-        with transaction.atomic():
-            # Try to delete the portfolios
-            try:
+        # Try to delete the portfolios
+        try:
+            with transaction.atomic():
                 summary = []
                 for portfolio in portfolios_to_delete:
                     portfolio_summary = [f"---- CASCADE SUMMARY for {portfolio.organization_name} -----"]
@@ -222,14 +222,14 @@ class Command(BaseCommand):
                     """
                 )
 
-            except IntegrityError as e:
-                logger.info(
-                    f"""{TerminalColors.FAIL}
-                    Could not delete some portfolios due to integrity constraints:
-                    {e}
-                    {TerminalColors.ENDC}
-                    """
-                )
+        except IntegrityError as e:
+            logger.info(
+                f"""{TerminalColors.FAIL}
+                Could not delete some portfolios due to integrity constraints:
+                {e}
+                {TerminalColors.ENDC}
+                """
+            )
 
     def handle(self, *args, **options):
         # Get all Portfolio entries not in the allowed portfolios list

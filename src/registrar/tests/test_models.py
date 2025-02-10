@@ -1,9 +1,10 @@
 from django.forms import ValidationError
 from django.test import TestCase
 from unittest.mock import patch
-
+from unittest.mock import Mock
 from django.test import RequestFactory
-
+from waffle.models import get_waffle_flag_model
+from registrar.views.domain_request import DomainRequestWizard
 from registrar.models import (
     Contact,
     DomainRequest,
@@ -164,6 +165,7 @@ class TestPortfolioInvitations(TestCase):
         DomainInformation.objects.all().delete()
         Domain.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
         Portfolio.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
         User.objects.all().delete()
@@ -442,6 +444,294 @@ class TestPortfolioInvitations(TestCase):
 
         pass
 
+    @less_console_noise_decorator
+    def test_delete_portfolio_invitation_deletes_portfolio_domain_invitations(self):
+        """Deleting a portfolio invitation causes domain invitations for the same email on the same
+        portfolio to be canceled."""
+
+        email_with_no_user = "email-with-no-user@email.gov"
+
+        domain_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_1.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+        )
+        invite_1, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_1)
+
+        domain_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+        )
+        invite_2, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_2)
+
+        domain_not_in_portfolio, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio)
+        invite_3, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_not_in_portfolio)
+
+        invitation_of_email_with_no_user, _ = PortfolioInvitation.objects.get_or_create(
+            email=email_with_no_user,
+            portfolio=self.portfolio,
+            roles=[self.portfolio_role_base, self.portfolio_role_admin],
+            additional_permissions=[self.portfolio_permission_1, self.portfolio_permission_2],
+        )
+
+        # The domain invitations start off as INVITED
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # Delete member (invite)
+        invitation_of_email_with_no_user.delete()
+
+        # Reload the objects from the database
+        invite_1 = DomainInvitation.objects.get(pk=invite_1.pk)
+        invite_2 = DomainInvitation.objects.get(pk=invite_2.pk)
+        invite_3 = DomainInvitation.objects.get(pk=invite_3.pk)
+
+        # The domain invitations to the portfolio domains have been canceled
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+
+        # Invite 3 is unaffected
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+    @less_console_noise_decorator
+    def test_deleting_a_retrieved_invitation_has_no_side_effects(self):
+        """Deleting a retrieved portfolio invitation causes no side effects."""
+
+        domain_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_1.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+        )
+        invite_1, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_1)
+
+        domain_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+        )
+        invite_2, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_2)
+
+        domain_in_portfolio_3, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_3.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_in_portfolio_4, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        invite_3, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_not_in_portfolio_1)
+
+        domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # The domain invitations start off as INVITED
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles exist
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+        # retrieve the invitation
+        self.invitation.retrieve()
+        self.invitation.save()
+
+        # Delete member (invite)
+        self.invitation.delete()
+
+        # Reload the objects from the database
+        invite_1 = DomainInvitation.objects.get(pk=invite_1.pk)
+        invite_2 = DomainInvitation.objects.get(pk=invite_2.pk)
+        invite_3 = DomainInvitation.objects.get(pk=invite_3.pk)
+
+        # Test that no side effects have been triggered
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_delete_portfolio_invitation_deletes_user_domain_roles(self):
+        """Deleting a portfolio invitation causes domain invitations for the same email on the same
+        portfolio to be canceled, also deletes any exiting user domain roles on the portfolio for the
+        user if the user exists."""
+
+        domain_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_1.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+        )
+        invite_1, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_1)
+
+        domain_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+        )
+        invite_2, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_2)
+
+        domain_in_portfolio_3, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_3.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_in_portfolio_4, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        invite_3, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_not_in_portfolio_1)
+
+        domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # The domain invitations start off as INVITED
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles exist
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+        # Delete member (invite)
+        self.invitation.delete()
+
+        # Reload the objects from the database
+        invite_1 = DomainInvitation.objects.get(pk=invite_1.pk)
+        invite_2 = DomainInvitation.objects.get(pk=invite_2.pk)
+        invite_3 = DomainInvitation.objects.get(pk=invite_3.pk)
+
+        # The domain invitations to the portfolio domains have been canceled
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+
+        # Invite 3 is unaffected
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles have been deleted for the domains in portfolio
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+
+        # The user domain role on the domain not in portfolio still exists
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
 
 class TestUserPortfolioPermission(TestCase):
     @less_console_noise_decorator
@@ -457,6 +747,7 @@ class TestUserPortfolioPermission(TestCase):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+        DomainInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
@@ -750,6 +1041,129 @@ class TestUserPortfolioPermission(TestCase):
         # Should return the forbidden permissions for member role
         self.assertEqual(member_only_permissions, set(member_forbidden))
 
+    @less_console_noise_decorator
+    def test_delete_portfolio_permission_deletes_user_domain_roles(self):
+        """Deleting a user portfolio permission causes domain invitations for the same email on the same
+        portfolio to be canceled, also deletes any exiting user domain roles on the portfolio for the
+        user if the user exists."""
+
+        domain_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_1.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+        )
+        invite_1, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_in_portfolio_1)
+
+        domain_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+        )
+        invite_2, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_in_portfolio_2)
+
+        domain_in_portfolio_3, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_3.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_in_portfolio_4, _ = Domain.objects.get_or_create(
+            name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(
+            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
+        )
+
+        domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        invite_3, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_not_in_portfolio_1)
+
+        domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
+            name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
+        )
+        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Create portfolio permission
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # The domain invitations start off as INVITED
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.INVITED)
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles exist
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
+        # Delete member (user portfolio permission)
+        portfolio_permission.delete()
+
+        # Reload the objects from the database
+        invite_1 = DomainInvitation.objects.get(pk=invite_1.pk)
+        invite_2 = DomainInvitation.objects.get(pk=invite_2.pk)
+        invite_3 = DomainInvitation.objects.get(pk=invite_3.pk)
+
+        # The domain invitations to the portfolio domains have been canceled
+        self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+        self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+
+        # Invite 3 is unaffected
+        self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
+
+        # The user domain roles have been deleted for the domains in portfolio
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_3,
+            ).exists()
+        )
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_in_portfolio_4,
+            ).exists()
+        )
+
+        # The user domain role on the domain not in portfolio still exists
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user,
+                domain=domain_not_in_portfolio_2,
+            ).exists()
+        )
+
 
 class TestUser(TestCase):
     """Test actions that occur on user login,
@@ -777,8 +1191,8 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_suborganization_portfolio_permission", return_value=True)
-    def test_portfolio_role_summary_admin(self, mock_edit_suborganization):
+    @patch.object(User, "has_edit_portfolio_permission", return_value=True)
+    def test_portfolio_role_summary_admin(self, mock_edit_org):
         # Test if the user is recognized as an Admin
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
 
@@ -803,7 +1217,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
@@ -813,7 +1227,7 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_edit_request_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_requestor(self):
@@ -822,14 +1236,14 @@ class TestUser(TestCase):
 
     @patch.multiple(
         User,
-        has_base_portfolio_permission=lambda self, portfolio: True,
+        has_view_portfolio_permission=lambda self, portfolio: True,
         has_any_domains_portfolio_permission=lambda self, portfolio: True,
     )
     def test_portfolio_role_summary_member_domain_manager(self):
         # Test if the user has 'Member' and 'Domain manager' roles
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain manager"])
 
-    @patch.multiple(User, has_base_portfolio_permission=lambda self, portfolio: True)
+    @patch.multiple(User, has_view_portfolio_permission=lambda self, portfolio: True)
     def test_portfolio_role_summary_member(self):
         # Test if the user is recognized as a Member
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Member"])
@@ -839,17 +1253,17 @@ class TestUser(TestCase):
         self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_base_portfolio_permission(self, mock_has_permission):
+    def test_has_view_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_base_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_view_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_org_portfolio_permission(self, mock_has_permission):
+    def test_has_edit_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True
 
-        self.assertTrue(self.user.has_edit_org_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_edit_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
     @patch("registrar.models.User._has_portfolio_permission")
@@ -891,20 +1305,6 @@ class TestUser(TestCase):
 
         self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_view_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_view_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_SUBORGANIZATION)
-
-    @patch("registrar.models.User._has_portfolio_permission")
-    def test_has_edit_suborganization_portfolio_permission(self, mock_has_permission):
-        mock_has_permission.return_value = True
-
-        self.assertTrue(self.user.has_edit_suborganization_portfolio_permission(self.portfolio))
-        mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_SUBORGANIZATION)
 
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
@@ -1692,11 +2092,20 @@ class TestDomainRequestIncomplete(TestCase):
             anything_else="Anything else",
             is_policy_acknowledged=True,
             creator=self.user,
+            city="fake",
         )
-
         self.domain_request.other_contacts.add(other)
         self.domain_request.current_websites.add(current)
         self.domain_request.alternative_domains.add(alt)
+        self.wizard = DomainRequestWizard()
+        self.wizard._domain_request = self.domain_request
+        self.wizard.request = Mock(user=self.user, session={})
+        self.wizard.kwargs = {"id": self.domain_request.id}
+
+        # We use both of these flags in the test. In the normal app these are generated normally.
+        # The alternative syntax is adding the decorator to each test.
+        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
+        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     def tearDown(self):
         super().tearDown()
@@ -1711,30 +2120,31 @@ class TestDomainRequestIncomplete(TestCase):
 
     @less_console_noise_decorator
     def test_is_federal_complete(self):
-        self.assertTrue(self.domain_request._is_federal_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.federal_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_federal_complete())
+        self.domain_request.refresh_from_db()
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_interstate_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_interstate_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_interstate_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         self.domain_request.is_election_board = True
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_state_or_territory_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_state_or_territory_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_tribal_complete(self):
@@ -1742,33 +2152,33 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.tribe_name = "Tribe Name"
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_tribal_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_tribal_complete())
+        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.tribe_name = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_tribal_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_county_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_county_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_city_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_city_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_special_district_complete(self):
@@ -1776,55 +2186,55 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.is_election_board = False
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_special_district_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_special_district_complete())
+        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_special_district_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_organization_name_and_address_complete(self):
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.organization_name = None
         self.domain_request.address_line1 = None
         self.domain_request.save()
-        self.assertTrue(self.domain_request._is_organization_name_and_address_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_senior_official_complete(self):
-        self.assertTrue(self.domain_request._is_senior_official_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.senior_official = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_senior_official_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_requested_domain_complete(self):
-        self.assertTrue(self.domain_request._is_requested_domain_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.requested_domain = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_requested_domain_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_purpose_complete(self):
-        self.assertTrue(self.domain_request._is_purpose_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.purpose = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._is_purpose_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_missing_one_field(self):
-        self.assertTrue(self.domain_request._is_other_contacts_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         contact = self.domain_request.other_contacts.first()
         contact.first_name = None
         contact.save()
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_complete_all_none(self):
         self.domain_request.other_contacts.clear()
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_False_and_has_rationale(self):
@@ -1832,7 +2242,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.other_contacts.clear()
         self.domain_request.other_contacts.exists = False
         self.domain_request.no_other_contacts_rationale = "Some rationale"
-        self.assertTrue(self.domain_request._is_other_contacts_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_other_contacts_False_and_NO_rationale(self):
@@ -1840,7 +2250,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.domain_request.other_contacts.clear()
         self.domain_request.other_contacts.exists = False
         self.domain_request.no_other_contacts_rationale = None
-        self.assertFalse(self.domain_request._is_other_contacts_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_additional_details_complete(self):
@@ -2044,28 +2454,28 @@ class TestDomainRequestIncomplete(TestCase):
                 self.domain_request.save()
                 self.domain_request.refresh_from_db()
                 self.assertEqual(
-                    self.domain_request._is_additional_details_complete(),
+                    self.wizard.form_is_complete(),
                     case["expected"],
                     msg=f"Failed for case: {case}",
                 )
 
     @less_console_noise_decorator
     def test_is_policy_acknowledgement_complete(self):
-        self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_policy_acknowledged = False
-        self.assertTrue(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_policy_acknowledged = None
-        self.assertFalse(self.domain_request._is_policy_acknowledgement_complete())
+        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_form_complete(self):
         request = self.factory.get("/")
         request.user = self.user
 
-        self.assertTrue(self.domain_request._form_complete(request))
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.generic_org_type = None
         self.domain_request.save()
-        self.assertFalse(self.domain_request._form_complete(request))
+        self.assertFalse(self.wizard.form_is_complete())
 
 
 class TestPortfolio(TestCase):
