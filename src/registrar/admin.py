@@ -1482,8 +1482,6 @@ class BaseInvitationAdmin(ListHeaderAdmin):
 class DomainInvitationAdmin(BaseInvitationAdmin):
     """Custom domain invitation admin class."""
 
-    # form = DomainInvitationAdminForm
-
     class Meta:
         model = models.DomainInvitation
         fields = "__all__"
