@@ -204,7 +204,9 @@ class Command(BaseCommand):
         # Fetch all users with manager roles for the domains
         # select_related means that a db query will not be occur when you do user_domain_role.user
         # Its similar to a set or dict in that it costs slightly more upfront in exchange for perf later
-        user_domain_roles = UserDomainRole.objects.select_related("user").filter(domain__in=domains, role=UserDomainRole.Roles.MANAGER)
+        user_domain_roles = UserDomainRole.objects.select_related("user").filter(
+            domain__in=domains, role=UserDomainRole.Roles.MANAGER
+        )
         domain_managers.update(user_domain_roles)
 
         invited_managers: set[str] = set()
@@ -243,9 +245,10 @@ class Command(BaseCommand):
         _, created = PortfolioInvitation.objects.get_or_create(
             portfolio=portfolio,
             email=email,
-            defaults={"status": PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-                        "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-                        },
+            defaults={
+                "status": PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+                "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            },
         )
         if created:
             self.added_invitations.add(email)
