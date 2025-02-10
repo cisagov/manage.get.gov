@@ -16,18 +16,22 @@
     {% else %}
         <ul>
             {% if opts.model_name == 'domaininvitation' %}
-            <li>
-                <form method="post" action="{% url 'invitation-cancel' pk=invitation.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="usa-button--dja">
-                        <svg class="usa-icon">
-                            <use xlink:href="{%static 'img/sprite.svg'%}#cancel"></use>
-                        </svg>
-                        <span>{% translate "Cancel invitation" %}</span>
-                    </button>
-                </form>
-            </li>
+                {% if invitation.status == invitation.DomainInvitationStatus.INVITED %}
+                    <li>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="cancel_invitation" value="true">
+                            <button type="submit" class="usa-button--dja">
+                                <svg class="usa-icon">
+                                    <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+                                </svg>
+                                <span>{% translate "Cancel invitation" %}</span>
+                            </button>
+                        </form>
+                    </li>
+                {% endif %}
             {% endif %}
+        
 
             <li>
                 <a href="{% add_preserved_filters history_url %}">{% translate "History" %}</a>

@@ -514,7 +514,7 @@ class DomainInvitationAdminTest(TestCase):
         self.client.force_login(self.staffuser)
         super().setUp()
 
-    def test_cancel_invitation_flow_in_admin(self):
+    def test_successful_cancel_invitation_flow_in_admin(self):
         """Testing canceling a domain invitation in Django Admin."""
 
         # 1. Create a domain and assign staff user role + domain manager
@@ -539,21 +539,65 @@ class DomainInvitationAdminTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cancel invitation")
 
-        # 5. Click the "Cancel invitation" button (a POST)
-        cancel_invitation_url = reverse("invitation-cancel", args=[invitation.id])
-        response = self.client.post(cancel_invitation_url, follow=True)
+        # 5. Click the cancel invitation button
+        response = self.client.post(domain_invitation_change_url, {"cancel_invitation": "true"}, follow=True)
 
-        # 6.Confirm we're redirected to the domain managers page for the domain
-        expected_redirect_url = reverse("domain-users", args=[domain.id])
-        self.assertRedirects(response, expected_redirect_url)
+        # 6. Make sure we're redirect back to the change view page in /admin
+        self.assertRedirects(response, domain_invitation_change_url)
 
-        # 7. Get the messages
-        messages = list(get_messages(response.wsgi_request))
-        message_texts = [str(message) for message in messages]
+        # 7. Confirm cancellation confirmation message appears
+        expected_message = f"Invitation for {invitation.email} on {domain.name} is canceled"
+        self.assertContains(response, expected_message)
 
-        # 8. Check that the success banner text is in the messages
-        expected_message = f"Canceled invitation to {invitation.email}."
-        self.assertIn(expected_message, message_texts)
+    def test_no_cancel_invitation_button_in_retrieved_state(self):
+        """Shouldn't be able to see the "Cancel invitation" button if invitation is RETRIEVED state"""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="retrieved.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain and NOT in invited state
+        invitation = DomainInvitation.objects.create(
+            email="retrievedinvitation@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you CANNOT see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cancel invitation")
+
+    def test_no_cancel_invitation_button_in_canceled_state(self):
+        """Shouldn't be able to see the "Cancel invitation" button if invitation is CANCELED state"""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="canceled.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain and NOT in invited state
+        invitation = DomainInvitation.objects.create(
+            email="canceledinvitation@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you CANNOT see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cancel invitation")
 
 
 class TestDomainAdminWithClient(TestCase):

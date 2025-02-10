@@ -1519,8 +1519,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     change_form_template = "django/admin/domain_invitation_change_form.html"
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Override the change_view to add the invitation obj for the
-        change_form_object_tools template"""
+        """Override the change_view to add the invitation obj for the change_form_object_tools template"""
 
         if extra_context is None:
             extra_context = {}
@@ -1528,6 +1527,15 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         # Get the domain invitation object
         invitation = get_object_or_404(DomainInvitation, id=object_id)
         extra_context["invitation"] = invitation
+
+        if request.method == "POST" and "cancel_invitation" in request.POST:
+            if invitation.status == DomainInvitation.DomainInvitationStatus.INVITED:
+                invitation.cancel_invitation()
+                invitation.save(update_fields=["status"])
+                messages.success(request, _("Invitation canceled successfully."))
+
+                # Redirect back to the change view
+                return redirect(reverse("admin:registrar_domaininvitation_change", args=[object_id]))
 
         return super().change_view(request, object_id, form_url, extra_context)
 
