@@ -51,7 +51,7 @@ body {
   background-color: color('white');
   border: 1px solid color('base-lighter');
   border-radius: 4px;
-  padding: 0 units(4) units(3) units(2);
+  padding: 0 units(2) units(3) units(2);
   margin-top: units(3);
 
   &.margin-top-0 {
@@ -276,6 +276,11 @@ abbr[title] {
   width: 25%;
 }
 
+/* 
+NOTE: width: 3% basically forces a fit-content effect in the table.
+Fit-content itself does not work.
+*/
 .width--action-column {
-  max-width: 80px;
+  width: 3%;
+  padding-right: 0px !important;
 }
