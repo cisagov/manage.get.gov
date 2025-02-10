@@ -951,9 +951,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Admin")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
-        self.assertContains(
-            response, 'This member does not manage any domains.'
-        )
+        self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
@@ -1066,9 +1064,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Viewer")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
-        self.assertContains(
-            response, 'This member does not manage any domains.'
-        )
+        self.assertContains(response, "This member does not manage any domains.")
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
