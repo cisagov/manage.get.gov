@@ -1518,6 +1518,14 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
 
+    # Select domain invitations to change -> Domain invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Override the change_view to add the invitation obj for the change_form_object_tools template"""
 
