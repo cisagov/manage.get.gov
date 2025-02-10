@@ -21,6 +21,8 @@ applications:
     DJANGO_BASE_URL: https://getgov-litterbox.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
+    # tell django what log format to use: console or json. See settings.py for more details.
+    DJANGO_LOG_FORMAT: console    
     # default public site location
     GETGOV_PUBLIC_SITE_URL: https://get.gov
     # Flag to disable/enable features in prod environments
