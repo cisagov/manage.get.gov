@@ -154,7 +154,7 @@
             createComparativeColumnChart("myChart5", "Submitted requests", "Start Date", "End Date");
             createComparativeColumnChart("myChart6", "All requests", "Start Date", "End Date");
 
-            //window.addEventListener("resize", handleResize);
+            window.addEventListener("resize", handleResize);
         });
     };
 
