@@ -1097,7 +1097,7 @@ class Domain(TimeStampedModel, DomainHelper):
             except RegistryError as e:
                 logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
 
-        logger.info("Finished deleting contacts")
+        logger.info(f"Finished deleting contacts for {self.name}")
 
         # delete ds data if it exists
         if self.dnssecdata:
