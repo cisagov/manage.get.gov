@@ -65,16 +65,6 @@ Organization member
 
   <form method="post" id="member-delete-form" action="{{ request.path }}/delete"> {% csrf_token %} </form>
   <address>
-    <strong class="text-primary-darker">Last active:</strong>
-    {% if member and member.last_login %}
-        {{ member.last_login }}
-      {% elif portfolio_invitation %}
-        Invited
-      {% else %}
-        ⎯
-      {% endif %}
-    <br />
-
     <strong class="text-primary-darker">Full name:</strong>
     {% if member %}
       {% if member.first_name or member.last_name %}
