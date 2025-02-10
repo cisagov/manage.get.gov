@@ -103,12 +103,12 @@
     {% endif %}
 
     {% if portfolio %}
-      {% if has_any_domains_portfolio_permission and has_edit_suborganization_portfolio_permission %}
+      {% if has_any_domains_portfolio_permission and has_edit_portfolio_permission %}
         {% url 'domain-suborganization' pk=domain.id as url %}
-        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_suborganization_portfolio_permission %}
-    {% elif has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
+        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_portfolio_permission %}
+    {% elif has_any_domains_portfolio_permission and has_view_portfolio_permission %}
         {% url 'domain-suborganization' pk=domain.id as url %}
-        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_view_suborganization_portfolio_permission view_button=True %}
+        {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_view_portfolio_permission view_button=True %}
         {% endif %}
     {% else %}
       {% url 'domain-org-name-address' pk=domain.id as url %}
