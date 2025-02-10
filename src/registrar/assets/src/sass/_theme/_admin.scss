@@ -930,12 +930,12 @@ ul.add-list-reset {
     }
 }
 
-// Break at tablet view
-@media (min-width: 768px) {
+@media (min-width: 1080px) {
     .analytics-dashboard-charts {
         // Desktop layout - charts in top row, details in bottom row
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        // Equal columns each gets 1/2 of the space
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
             "chart1 chart2"
             "details1 details2"
