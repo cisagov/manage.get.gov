@@ -934,6 +934,7 @@ ul.add-list-reset {
     .analytics-dashboard-charts {
         // Desktop layout - charts in top row, details in bottom row
         display: grid;
+        gap: 2rem;
         // Equal columns each gets 1/2 of the space
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
