@@ -31,9 +31,6 @@ from .common import (
 )
 from unittest.mock import ANY, call, patch
 
-from django.contrib.messages import get_messages
-
-
 import boto3_mocking  # type: ignore
 import logging
 
