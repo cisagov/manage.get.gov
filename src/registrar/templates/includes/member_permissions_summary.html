@@ -9,25 +9,25 @@
 
 <h4 class="margin-bottom-0 text-primary">Domains</h4>
 {% if member_has_view_all_domains_portfolio_permission %}
-    <p class="margin-top-0">Viewer, all</p>
+    <p class="margin-top-0">Viewer: Can view all domains for the organization</p>
 {% else %}
-    <p class="margin-top-0">Viewer, limited</p>
+    <p class="margin-top-0">Viewer, limited: Can view only the domains they manage</p>
 {% endif %}
 
 <h4 class="margin-bottom-0 text-primary">Domain requests</h4>
 {% if member_has_edit_request_portfolio_permission %}
-    <p class="margin-top-0">Creator</p>
+    <p class="margin-top-0">Creator: Can view all domain requests for the organization and create requests</p>
 {% elif member_has_view_all_requests_portfolio_permission %}
-    <p class="margin-top-0">Viewer</p>
+    <p class="margin-top-0">Viewer: Can view all domain requests for the organization</p>
 {% else %}
-    <p class="margin-top-0">No access</p>
+    <p class="margin-top-0">No access: Cannot view or create domain requests</p>
 {% endif %}
 
 <h4 class="margin-bottom-0 text-primary">Members</h4>
 {% if member_has_edit_members_portfolio_permission %}
-    <p class="margin-top-0">Manager</p>
+    <p class="margin-top-0">Manager: Can view and manage all member permissions</p>
 {% elif member_has_view_members_portfolio_permission %}
-    <p class="margin-top-0">Viewer</p>
+    <p class="margin-top-0">Viewer: Can view all members permissions</p>
 {% else %}
-    <p class="margin-top-0">No access</p>
+    <p class="margin-top-0">No access: Cannot view member permissions</p>
 {% endif %}

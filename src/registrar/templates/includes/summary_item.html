@@ -134,18 +134,26 @@
       {% endif %}
     </div>
 
-    {% if editable and edit_link %}
+    {% if editable and edit_link or view_button %}
       <div class="text-right">
-      <a
-          href="{{ edit_link }}"
+        <a
+          {% if edit_link %} href="{{ edit_link }}" {% endif %}
           class="usa-link usa-link--icon font-sans-sm line-height-sans-4"
-      >
-        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-          <use xlink:href="{% static 'img/sprite.svg' %}#{% if manage_button %}settings{% elif view_button %}visibility{% else %}edit{% endif %}"></use>
-        </svg>
-        {% if manage_button %}Manage{% elif view_button %}View{% else %}Edit{% endif %}<span class="sr-only"> {{ title }}</span>
-      </a>
+        >
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <use xlink:href="{% static 'img/sprite.svg' %}#{% if manage_button %}settings{% elif editable and edit_link %}edit{% else %}visibility{% endif %}"></use>
+          </svg>
+          {% if manage_button %}
+            Manage
+          {% elif editable and edit_link %}
+            Edit
+          {% else %}
+            View
+          {% endif %}
+          <span class="sr-only"> {{ title|default:"Page" }}</span>
+        </a>
       </div>
     {% endif %}
+
  </div>
 </section>
