@@ -108,7 +108,7 @@ export class MembersTable extends BaseTable {
         </button>
       `;
 
-      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
+      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row grid-gap-1'>${domainsHTML} ${permissionsHTML}</div></td>`;
       showMoreRow.classList.add('show-more-content');
       showMoreRow.classList.add('display-none');
       showMoreRow.id = unique_id;
@@ -258,7 +258,7 @@ export class MembersTable extends BaseTable {
 
     // Only generate HTML if the member has one or more assigned domains
     
-    domainsHTML += "<div class='desktop:grid-col-5 margin-bottom-2 desktop:margin-bottom-0'>";
+    domainsHTML += "<div class='desktop:grid-col-4 margin-bottom-2 desktop:margin-bottom-0'>";
     domainsHTML += "<h4 class='font-body-xs margin-y-0'>Domains assigned</h4>";
     if (num_domains > 0) {
       domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
@@ -275,7 +275,7 @@ export class MembersTable extends BaseTable {
     }
 
     // If there are more than 6 domains, display a "View assigned domains" link
-    domainsHTML += `<p class="font-body-xs"><a href="${action_url}/domains">View domains assigned</a></p>`;
+    domainsHTML += `<p class="font-body-xs"><a href="${action_url}/domains">View domain assignments</a></p>`;
 
     domainsHTML += "</div>";
 
@@ -434,7 +434,7 @@ export class MembersTable extends BaseTable {
     }
 
     // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = `<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0'>Member access and permissions</h4>${permissionsHTML}</div>`;
+    permissionsHTML = `<div class='desktop:grid-col-8'><h4 class='font-body-xs margin-y-0'>Member access and permissions</h4>${permissionsHTML}</div>`;
     
     return permissionsHTML;
   }
