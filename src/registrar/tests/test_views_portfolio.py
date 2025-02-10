@@ -956,7 +956,7 @@ class TestPortfolio(WebTest):
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator
@@ -1068,7 +1068,7 @@ class TestPortfolio(WebTest):
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator

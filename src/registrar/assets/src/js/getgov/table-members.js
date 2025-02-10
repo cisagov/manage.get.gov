@@ -108,7 +108,7 @@ export class MembersTable extends BaseTable {
         </button>
       `;
 
-      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row grid-gap-1'>${domainsHTML} ${permissionsHTML}</div></td>`;
+      showMoreRow.innerHTML = `<td colspan='4' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row grid-gap-2'>${domainsHTML} ${permissionsHTML}</div></td>`;
       showMoreRow.classList.add('show-more-content');
       showMoreRow.classList.add('display-none');
       showMoreRow.id = unique_id;
