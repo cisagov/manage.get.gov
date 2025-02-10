@@ -757,8 +757,9 @@ class DomainNameserversView(DomainFormBaseView):
             initial_data.extend({"server": name, "ip": ",".join(ip)} for name, ip in nameservers)
 
         # Ensure at least 3 fields, filled or empty
-        while len(initial_data) < 2:
-            initial_data.append({})
+        if len(initial_data) == 0:
+            while len(initial_data) < 2:
+                initial_data.append({})
 
         return initial_data
 

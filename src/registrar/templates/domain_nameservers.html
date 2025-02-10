@@ -50,7 +50,18 @@
   <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
-
+    {% for form in formset %}
+    <fieldset class="usa-fieldset">
+      <label class="usa-label" for="given-name">Name server {{forloop.counter}} </label>
+      <div class="usa-hint" id="gnHint">Example: ns{{forloop.counter}}.example.com</div>
+      <input
+        class="usa-input usa-input--xl"
+        id="given-name"
+        name="first-name"
+        aria-describedby="gnHint"
+      />
+  </form>
+    {% endfor %}
     <!--
     if no data in formset: 
       build 2 blank forms
