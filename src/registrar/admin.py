@@ -1381,9 +1381,13 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/user_domain_role_change_form.html"
 
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/user_domain_role_delete_selected_confirmation.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
+        self.delete_confirmation_template = "django/admin/user_domain_role_delete_confirmation.html"
         response = super().delete_view(request, object_id, extra_context)
 
         if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
@@ -1518,6 +1522,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
@@ -1526,6 +1532,16 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         extra_context["tabtitle"] = "Domain invitations"
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_invitation_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
 
     def save_model(self, request, obj, form, change):
         """
