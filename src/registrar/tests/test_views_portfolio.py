@@ -952,7 +952,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
         self.assertContains(
-            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
+            response, 'This member does not manage any domains. To assign this member a domain, click "Edit"'
         )
 
         # Assert buttons and links within the page are correct
@@ -1067,7 +1067,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
         self.assertContains(
-            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
+            response, 'This member does not manage any domains. To assign this member a domain, click "Edit"'
         )
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
