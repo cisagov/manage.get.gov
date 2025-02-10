@@ -202,7 +202,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
             "no_access": "Cannot view or create domain requests",
         }
         self.fields["member_permissions"].descriptions = {
-            UserPortfolioPermissionChoices.VIEW_MEMBERS.value: "Can view all members permissions",
+            UserPortfolioPermissionChoices.VIEW_MEMBERS.value: "Can view all member permissions",
             "no_access": "Cannot view member permissions",
         }
 
