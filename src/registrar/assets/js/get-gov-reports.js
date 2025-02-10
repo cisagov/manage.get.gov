@@ -59,7 +59,6 @@
 /** An IIFE to initialize the analytics page
 */
 (function () {
-    // Store chart instances globally within this IIFE
     const chartInstances = new Map();
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
         var canvas = document.getElementById(canvasId);
@@ -117,12 +116,10 @@
             },
         };
 
-        // Destroy existing chart instance if it exists
         if (chartInstances.has(canvasId)) {
             chartInstances.get(canvasId).destroy();
         }
 
-        // Create and store new chart instance
         const chart = new Chart(ctx, {
             type: "bar",
             data: data,
