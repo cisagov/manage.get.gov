@@ -2887,16 +2887,13 @@ class TestAnalystDelete(MockEppLib):
         # Check that dsdata is None
         self.assertEqual(domain.dnssecdata, None)
 
-        # Print out all calls from the mockedSendFunction
-        print("\nAll calls to mockedSendFunction:")
-        for call in self.mockedSendFunction.call_args_list:
-            print(f"- {call}")
-
         # Check that the UpdateDomain command was sent to the registry with the correct extension
         self.mockedSendFunction.assert_has_calls(
             [
                 call(
-                    commands.UpdateDomain(name="dsdomain.gov", add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None),
+                    commands.UpdateDomain(
+                        name="dsdomain.gov", add=[], rem=[], nsset=None, keyset=None, registrant=None, auth_info=None
+                    ),
                     cleaned=True,
                 ),
             ]
@@ -2904,7 +2901,6 @@ class TestAnalystDelete(MockEppLib):
 
         # Check that the domain was deleted
         self.assertEqual(domain.state, Domain.State.DELETED)
-        
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):

@@ -1034,7 +1034,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
 
-    def _delete_domain(self):
+    def _delete_domain(self):  # noqa
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
 
@@ -1056,9 +1056,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 new_values,
                 oldNameservers,
             ) = self.getNameserverChanges(hosts=[])
-            
+
             # update the hosts
-            _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
+            _ = self._update_host_values(
+                updated_values, oldNameservers
+            )  # returns nothing, just need to be run and errors
             addToDomainList, _ = self.createNewHostList(new_values)
             deleteHostList, _ = self.createDeleteHostList(deleted_values)
             responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
@@ -1068,7 +1070,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
-        
+
         logger.info("Finished removing nameservers from domain")
 
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
@@ -1080,7 +1082,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
         logger.info(f"retrieved contacts for domain: {contacts}")
-        
+
         for contact in contacts:
             try:
                 if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
@@ -1094,7 +1096,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info(f"sent DeleteContact for {contact}")
             except RegistryError as e:
                 logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
-        
+
         logger.info("Finished deleting contacts")
 
         # delete ds data if it exists
