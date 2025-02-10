@@ -77,21 +77,22 @@
             datasets: [
                 {
                     label: labelOne,
-                    backgroundColor: "rgba(255, 99, 132, 0.2)",
+                    backgroundColor: "rgba(255, 99, 132, 0.3)",
                     borderColor: "rgba(255, 99, 132, 1)",
                     borderWidth: 1,
                     data: listOne,
                     backgroundColor: [
-                        pattern.draw("zigzag-vertical", "#1f77b4"),
+                        pattern.draw('diagonal-right-left', 'rgba(255, 99, 132, 0.3)'),
                     ]
                 },
                 {
                     label: labelTwo,
+                    backgroundColor: "rgba(75, 192, 192, 0.3)",
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
                     backgroundColor: [
-                        pattern.draw("diagonal", "#1f77b4"),
+                        pattern.draw('diagonal', 'rgba(75, 192, 192, 0.3)'),
                     ]
                 },
             ],
