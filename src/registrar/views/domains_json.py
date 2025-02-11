@@ -1,6 +1,7 @@
 import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from registrar.decorators import grant_access, ALL
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
@@ -9,7 +10,7 @@ from django.db.models import Q
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@grant_access(ALL)
 def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""

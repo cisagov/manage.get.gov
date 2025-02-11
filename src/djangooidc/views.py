@@ -5,12 +5,14 @@ import logging
 from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import authenticate, login
+from login_required import login_not_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
+from registrar.decorators import grant_access
 from registrar.models import User
 from registrar.views.utility.error_views import custom_500_error_view, custom_401_error_view
 

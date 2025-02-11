@@ -3,9 +3,13 @@ Contains middleware used in settings.py
 """
 
 import logging
+import re
 from urllib.parse import parse_qs
+from django.conf import settings
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.http import JsonResponse
+from django.urls import resolve
 from registrar.models import User
 from waffle.decorators import flag_is_active
 
@@ -170,3 +174,38 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = request.user.get_first_portfolio()
         else:
             request.session["portfolio"] = request.user.get_first_portfolio()
+
+
+class RestrictAccessMiddleware:
+    """ Middleware that blocks all views unless explicitly permitted """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.ignored_paths = [re.compile(pattern) for pattern in getattr(settings, "LOGIN_REQUIRED_IGNORE_PATHS", [])]
+
+    def __call__(self, request):
+        # Allow requests that match LOGIN_REQUIRED_IGNORE_PATHS
+        if any(pattern.match(request.path) for pattern in self.ignored_paths):
+            return self.get_response(request)
+        
+        # Try to resolve the view function
+        try:
+            resolver_match = resolve(request.path_info)
+            view_func = resolver_match.func
+            app_name = resolver_match.app_name  # Get app name of resolved view
+        except Exception:
+            return JsonResponse({"error": "Not Found"}, status=404)
+
+        # Auto-allow Django's built-in admin views (but NOT custom /admin/* views)
+        if app_name == "admin":
+            return self.get_response(request)
+        
+        # Skip access restriction if the view explicitly allows unauthenticated access
+        if getattr(view_func, "login_required", True) is False:
+            return self.get_response(request)
+        
+        # Enforce explicit access fules for other views
+        if not getattr(view_func, "has_explicit_access", False):
+            return JsonResponse({"error": "Access Denied"}, status=403)
+
+        return self.get_response(request)
