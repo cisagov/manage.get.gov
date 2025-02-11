@@ -60,8 +60,10 @@
 */
 (function () {
 
-    // This code is adapted from here:
+    // These functions are adapted from here:
     // https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
+    // Additionally, code is also adapted from the patternomaly library:
+    // https://github.com/ashiguruma/patternomaly
     function createDiagonalPattern(backgroundColor, lineColor="white") {
         // create a 10x10 px canvas for the pattern's base shape
         let shape = document.createElement("canvas")
