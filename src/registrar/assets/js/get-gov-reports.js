@@ -64,8 +64,8 @@
      * Creates a diagonal stripe pattern for chart.js
      * Inspired by https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
      * and https://github.com/ashiguruma/patternomaly
-     * @param {string} [lineColor="white"] - Color of the diagonal lines
      * @param {string} backgroundColor - Background color of the pattern
+     * @param {string} [lineColor="white"] - Color of the diagonal lines
      * @param {boolean} [rightToLeft=false] - Direction of the diagonal lines
      * @param {number} [lineGap=1] - Gap between lines
      * @returns {CanvasPattern} A canvas pattern object for use with backgroundColor
