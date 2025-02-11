@@ -60,6 +60,82 @@
 */
 (function () {
     const chartInstances = new Map();
+
+    // These functions are adapted from here:
+    // https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
+    // Additionally, code is also adapted from the patternomaly library:
+    // https://github.com/ashiguruma/patternomaly
+    function createDiagonalPattern(backgroundColor, lineColor="white") {
+        // create a 10x10 px canvas for the pattern's base shape
+        let shape = document.createElement("canvas")
+        shape.width = 20
+        shape.height = 20
+        // get the context for drawing
+        let c = shape.getContext("2d")
+        
+        // Fill with specified background color
+        c.fillStyle = backgroundColor
+        c.fillRect(0, 0, shape.width, shape.height)
+        
+        // Set stroke properties
+        c.strokeStyle = lineColor
+        c.lineWidth = 2
+        
+        // Draw diagonal lines similarly to the patternomaly library
+        c.beginPath()
+        
+        // First diagonal line
+        let halfSize = shape.width / 2
+        let gap = 1
+        
+        c.moveTo(halfSize - gap, -gap)
+        c.lineTo(shape.width + 1, halfSize + 1)
+        
+        // Second diagonal line (offset)
+        c.moveTo(halfSize - gap - halfSize, halfSize - gap)
+        c.lineTo(shape.width + 1 - halfSize, halfSize + 1 + halfSize)
+        
+        c.stroke()
+        
+        return c.createPattern(shape, "repeat")
+    }
+
+    function createDiagonalRightLeftPattern(backgroundColor, lineColor="white") {
+        // create a 20x20 px canvas for larger pattern repeat
+        let shape = document.createElement("canvas")
+        shape.width = 20
+        shape.height = 20
+        // get the context for drawing
+        let c = shape.getContext("2d")
+        
+        // Fill with specified background color
+        c.fillStyle = backgroundColor
+        c.fillRect(0, 0, shape.width, shape.height)
+        
+        // Translate and rotate context
+        c.translate(shape.width, 0)
+        c.rotate(90 * Math.PI / 180)
+        
+        // Set stroke properties
+        c.strokeStyle = lineColor
+        c.lineWidth = 2
+        
+        // First diagonal line
+        let halfSize = shape.width / 2
+        let gap = 1
+        
+        c.moveTo(halfSize - gap, -gap)
+        c.lineTo(shape.width + 1, halfSize + 1)
+        
+        // Second diagonal line (offset)
+        c.moveTo(halfSize - gap - halfSize, halfSize - gap)
+        c.lineTo(shape.width + 1 - halfSize, halfSize + 1 + halfSize)
+        
+        c.stroke()
+        
+        return c.createPattern(shape, "repeat")
+    }
+
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) {
@@ -80,9 +156,7 @@
                     borderColor: "rgba(255, 99, 132, 1)",
                     borderWidth: 1,
                     data: listOne,
-                    backgroundColor: [
-                        pattern.draw('diagonal-right-left', 'rgba(255, 99, 132, 0.3)'),
-                    ]
+                    backgroundColor: createDiagonalRightLeftPattern('rgba(255, 99, 132, 0.3)')
                 },
                 {
                     label: labelTwo,
@@ -90,9 +164,7 @@
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
-                    backgroundColor: [
-                        pattern.draw('diagonal', 'rgba(75, 192, 192, 0.3)'),
-                    ]
+                    backgroundColor: createDiagonalPattern('rgba(75, 192, 192, 0.3)')
                 },
             ],
         };
