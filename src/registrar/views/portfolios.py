@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+from registrar.decorators import HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM, grant_access
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.domain import Domain
@@ -25,7 +26,6 @@ from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
-    PortfolioDomainRequestsPermissionView,
     PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
     NoPortfolioDomainsPermissionView,
@@ -58,7 +58,8 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
         return render(request, "portfolio_domains.html", context)
 
 
-class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM)
+class PortfolioDomainRequestsView(View):
 
     template_name = "portfolio_requests.html"
 

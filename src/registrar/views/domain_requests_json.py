@@ -155,9 +155,9 @@ def serialize_domain_request(request, domain_request, user):
 
     # Map the action label to corresponding URLs and icons
     action_url_map = {
-        "Edit": reverse("edit-domain-request", kwargs={"id": domain_request.id}),
-        "Manage": reverse("domain-request-status", kwargs={"pk": domain_request.id}),
-        "View": reverse("domain-request-status-viewonly", kwargs={"pk": domain_request.id}),
+        "Edit": reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.id}),
+        "Manage": reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.id}),
+        "View": reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.id}),
     }
 
     svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}

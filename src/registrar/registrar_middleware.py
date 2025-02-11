@@ -184,6 +184,11 @@ class RestrictAccessMiddleware:
         self.ignored_paths = [re.compile(pattern) for pattern in getattr(settings, "LOGIN_REQUIRED_IGNORE_PATHS", [])]
 
     def __call__(self, request):
+
+        # Allow Django Debug Toolbar requests
+        if request.path.startswith("/__debug__/"):
+            return self.get_response(request)
+
         # Allow requests that match LOGIN_REQUIRED_IGNORE_PATHS
         if any(pattern.match(request.path) for pattern in self.ignored_paths):
             return self.get_response(request)

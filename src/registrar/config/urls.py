@@ -68,7 +68,7 @@ for step, view in [
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
     (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
-    domain_request_urls.append(path(f"<int:id>/{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"<int:domain_request_pk>/{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -260,27 +260,27 @@ urlpatterns = [
         name="export_data_type_user",
     ),
     path(
-        "domain-request/<int:id>/edit/",
+        "domain-request/<int:domain_request_pk>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
     ),
     path(
-        "domain-request/<int:pk>",
+        "domain-request/<int:domain_request_pk>",
         views.DomainRequestStatus.as_view(),
         name="domain-request-status",
     ),
     path(
-        "domain-request/viewonly/<int:pk>",
+        "domain-request/viewonly/<int:domain_request_pk>",
         views.PortfolioDomainRequestStatusViewOnly.as_view(),
         name="domain-request-status-viewonly",
     ),
     path(
-        "domain-request/<int:pk>/withdraw",
+        "domain-request/<int:domain_request_pk>/withdraw",
         views.DomainRequestWithdrawConfirmation.as_view(),
         name="domain-request-withdraw-confirmation",
     ),
     path(
-        "domain-request/<int:pk>/withdrawconfirmed",
+        "domain-request/<int:domain_request_pk>/withdrawconfirmed",
         views.DomainRequestWithdrawn.as_view(),
         name="domain-request-withdrawn",
     ),
@@ -369,7 +369,7 @@ urlpatterns = [
         name="invitation-cancel",
     ),
     path(
-        "domain-request/<int:pk>/delete",
+        "domain-request/<int:domain_request_pk>/delete",
         views.DomainRequestDeleteView.as_view(http_method_names=["post"]),
         name="domain-request-delete",
     ),

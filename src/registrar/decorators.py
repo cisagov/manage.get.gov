@@ -8,10 +8,14 @@ ALL = "all"
 IS_SUPERUSER = "is_superuser"
 IS_STAFF = "is_staff"
 IS_DOMAIN_MANAGER = "is_domain_manager"
+IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
 HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
+HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
+HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
+HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
 # HAS_PORTFOLIO_DOMAINS_VIEW_MANAGED = "has_portfolio_domains_view_managed"
 
 
@@ -70,7 +74,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     # Ensure user is authenticated
     if not user.is_authenticated:
         return False
-    
+
     # Ensure user is not restricted
     if user.is_restricted():
         return False
@@ -108,13 +112,50 @@ def _user_has_permission(user, request, rules, **kwargs):
         has_permission = _is_domain_manager(user, domain_id) and not _is_portfolio_member(request)
         conditions_met.append(has_permission)
 
+    if not any(conditions_met) and IS_DOMAIN_REQUEST_CREATOR in rules:
+        domain_request_id = kwargs.get("domain_request_pk")
+        has_permission = _is_domain_request_creator(user, domain_request_id)
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM in rules:
+        has_permission = user.is_org_user(request) and user.has_any_requests_portfolio_permission(
+            request.session.get("portfolio")
+        )
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL in rules:
+        has_permission = user.is_org_user(request) and user.has_view_all_domain_requests_portfolio_permission(
+            request.session.get("portfolio")
+        )
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT in rules:
+        domain_request_id = kwargs.get("domain_request_pk")
+        has_permission = _has_portfolio_domain_requests_edit(user, request, domain_request_id)
+        print(has_permission)
+        conditions_met.append(has_permission)
+
     return any(conditions_met)
 
+
+def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
+    if domain_request_id and not _is_domain_request_creator(user, domain_request_id):
+        return False
+    return user.is_org_user(request) and user.has_edit_request_portfolio_permission(request.session.get("portfolio"))
+    
 
 def _is_domain_manager(user, domain_pk):
     """Checks to see if the user is a domain manager of the
     domain with domain_pk."""
     return UserDomainRole.objects.filter(user=user, domain_id=domain_pk).exists()
+
+
+def _is_domain_request_creator(user, domain_request_pk):
+    """Checks to see if the user is the creator of a domain request
+    with domain_request_pk."""
+    if domain_request_pk:
+        return DomainRequest.objects.filter(creator=user, id=domain_request_pk).exists()
+    return True
 
 
 def _is_portfolio_member(request):

@@ -2,18 +2,14 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView, TemplateView, UpdateView
-from registrar.models import Domain, DomainRequest, DomainInvitation, Portfolio
+from django.views.generic import DetailView, DeleteView, UpdateView
+from registrar.models import Domain, DomainInvitation, Portfolio
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 
 from .mixins import (
     DomainPermission,
-    DomainRequestPermission,
-    DomainRequestPermissionWithdraw,
     DomainInvitationPermission,
-    DomainRequestWizardPermission,
-    PortfolioDomainRequestsPermission,
     PortfolioDomainsPermission,
     PortfolioMemberDomainsPermission,
     PortfolioMemberDomainsEditPermission,
@@ -23,7 +19,6 @@ from .mixins import (
     PortfolioBasePermission,
     PortfolioMembersPermission,
     PortfolioMemberPermission,
-    DomainRequestPortfolioViewonlyPermission,
 )
 import logging
 
@@ -86,89 +81,11 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         raise NotImplementedError
 
 
-class DomainRequestPermissionView(DomainRequestPermission, DetailView, abc.ABC):
-    """Abstract base view for domain requests that enforces permissions
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = DomainRequest
-    # variable name in template context for the model object
-    context_object_name = "DomainRequest"
-
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
-
-
-class DomainRequestPortfolioViewonlyView(DomainRequestPortfolioViewonlyPermission, DetailView, abc.ABC):
-    """Abstract base view for domain requests that enforces permissions
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = DomainRequest
-    # variable name in template context for the model object
-    context_object_name = "DomainRequest"
-
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
-
-
-class DomainRequestPermissionWithdrawView(DomainRequestPermissionWithdraw, DetailView, abc.ABC):
-    """Abstract base view for domain request withdraw function
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = DomainRequest
-    # variable name in template context for the model object
-    context_object_name = "DomainRequest"
-
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
-
-
-class DomainRequestWizardPermissionView(DomainRequestWizardPermission, TemplateView, abc.ABC):
-    """Abstract base view for the domain request form that enforces permissions
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
-
-
 class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
     """Abstract view for cancelling a DomainInvitation."""
 
     model = DomainInvitation
     object: DomainInvitation
-
-
-class DomainRequestPermissionDeleteView(DomainRequestPermission, DeleteView, abc.ABC):
-    """Abstract view for deleting a DomainRequest."""
-
-    model = DomainRequest
-    object: DomainRequest
 
 
 class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteView, abc.ABC):
@@ -236,14 +153,6 @@ class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePe
 class NoPortfolioDomainsPermissionView(PortfolioBasePermissionView, abc.ABC):
     """Abstract base view for a user without access to the
     portfolio domains views that enforces permissions.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-
-class PortfolioDomainRequestsPermissionView(PortfolioDomainRequestsPermission, PortfolioBasePermissionView, abc.ABC):
-    """Abstract base view for portfolio domain request views that enforces permissions.
 
     This abstract view cannot be instantiated. Actual views must specify
     `template_name`.

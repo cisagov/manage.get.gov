@@ -286,51 +286,6 @@ class DomainPermission(PermissionsLoginMixin):
         return True
 
 
-class DomainRequestPermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to domain request if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to this domain request.
-
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
-        """
-        if not self.request.user.is_authenticated:
-            return False
-
-        # user needs to be the creator of the domain request
-        # this query is empty if there isn't a domain request with this
-        # id and this user as creator
-        if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
-            return False
-
-        return True
-
-
-class DomainRequestPortfolioViewonlyPermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to domain request if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to this domain request.
-
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
-        """
-        if not self.request.user.is_authenticated:
-            return False
-
-        if not self.request.user.is_org_user(self.request):
-            return False
-
-        portfolio = self.request.session.get("portfolio")
-        if not self.request.user.has_view_all_requests_portfolio_permission(portfolio):
-            return False
-
-        return True
-
-
 class UserDeleteDomainRolePermission(PermissionsLoginMixin):
     """Permission mixin for UserDomainRole if user
     has access, otherwise 403"""
@@ -361,67 +316,6 @@ class UserDeleteDomainRolePermission(PermissionsLoginMixin):
 
         if not (has_delete_permission or user_is_analyst_or_superuser):
             return False
-
-        return True
-
-
-class DomainRequestPermissionWithdraw(PermissionsLoginMixin):
-    """Permission mixin that redirects to withdraw action on domain request
-    if user has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to withdraw this domain request."""
-        if not self.request.user.is_authenticated:
-            return False
-
-        # user needs to be the creator of the domain request
-        # this query is empty if there isn't a domain request with this
-        # id and this user as creator
-        if not DomainRequest.objects.filter(creator=self.request.user, id=self.kwargs["pk"]).exists():
-            return False
-
-        # Restricted users should not be able to withdraw domain requests
-        if self.request.user.is_restricted():
-            return False
-
-        return True
-
-
-class DomainRequestWizardPermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to start or edit domain request if
-    user has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has permission to start or edit a domain request.
-
-        The user is in self.request.user
-        """
-
-        if not self.request.user.is_authenticated:
-            return False
-
-        # The user has an ineligible flag
-        if self.request.user.is_restricted():
-            return False
-
-        # If the user is an org user and doesn't have add/edit perms, forbid this
-        if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
-            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
-                return False
-
-        # user needs to be the creator of the domain request to edit it.
-        id = self.kwargs.get("id") if hasattr(self, "kwargs") else None
-        if not id:
-            domain_request_wizard = self.request.session.get("wizard_domain_request")
-            if domain_request_wizard:
-                id = domain_request_wizard.get("domain_request_id")
-
-        # If no id is provided, we can assume that the user is starting a new request.
-        # If one IS provided, check that they are the original creator of it.
-        if id:
-            if not DomainRequest.objects.filter(creator=self.request.user, id=id).exists():
-                return False
 
         return True
 
@@ -491,23 +385,6 @@ class PortfolioDomainsPermission(PortfolioBasePermission):
 
         portfolio = self.request.session.get("portfolio")
         if not self.request.user.has_any_domains_portfolio_permission(portfolio):
-            return False
-
-        return super().has_permission()
-
-
-class PortfolioDomainRequestsPermission(PortfolioBasePermission):
-    """Permission mixin that allows access to portfolio domain request pages if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to domain requests for this portfolio.
-
-        The user is in self.request.user and the portfolio can be looked
-        up from the portfolio's primary key in self.kwargs["pk"]"""
-
-        portfolio = self.request.session.get("portfolio")
-        if not self.request.user.has_any_requests_portfolio_permission(portfolio):
             return False
 
         return super().has_permission()
