@@ -512,6 +512,12 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-radius: 15px;
+    cursor: pointer;
+    border: none;
+    line-height: 20px;
+    &:focus, &:hover{
+        background: var(--object-tools-hover-bg) !important;
+    }
 }
 
 .module--custom {

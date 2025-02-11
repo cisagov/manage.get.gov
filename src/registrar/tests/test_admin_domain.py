@@ -496,7 +496,7 @@ class TestDomainInformationInline(MockEppLib):
         self.assertIn("poopy@gov.gov", domain_managers)
 
 
-class DomainInvitationAdminTest(TestCase):
+class TestDomainInvitationAdmin(TestCase):
 
     @classmethod
     def setUpClass(cls):

@@ -22,10 +22,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="cancel_invitation" value="true">
                             <button type="submit" class="usa-button--dja">
-                                <svg class="usa-icon">
-                                    <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
-                                </svg>
-                                <span>{% translate "Cancel invitation" %}</span>
+                                Cancel invitation
                             </button>
                         </form>
                     </li>
