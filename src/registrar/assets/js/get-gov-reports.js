@@ -60,79 +60,48 @@
 */
 (function () {
 
-    // These functions are adapted from here:
-    // https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
-    // Additionally, code is also adapted from the patternomaly library:
-    // https://github.com/ashiguruma/patternomaly
-    function createDiagonalPattern(backgroundColor, lineColor="white") {
-        // create a 10x10 px canvas for the pattern's base shape
-        let shape = document.createElement("canvas")
-        shape.width = 20
-        shape.height = 20
-        // get the context for drawing
-        let c = shape.getContext("2d")
-        
-        // Fill with specified background color
-        c.fillStyle = backgroundColor
-        c.fillRect(0, 0, shape.width, shape.height)
-        
-        // Set stroke properties
-        c.strokeStyle = lineColor
-        c.lineWidth = 2
-        
-        // Draw diagonal lines similarly to the patternomaly library
-        c.beginPath()
-        
-        // First diagonal line
-        let halfSize = shape.width / 2
-        let gap = 1
-        
-        c.moveTo(halfSize - gap, -gap)
-        c.lineTo(shape.width + 1, halfSize + 1)
-        
-        // Second diagonal line (offset)
-        c.moveTo(halfSize - gap - halfSize, halfSize - gap)
-        c.lineTo(shape.width + 1 - halfSize, halfSize + 1 + halfSize)
-        
-        c.stroke()
-        
-        return c.createPattern(shape, "repeat")
-    }
+    /**
+     * Creates a diagonal stripe pattern for chart.js
+     * Inspired by https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
+     * and https://github.com/ashiguruma/patternomaly
+     * @param {string} [lineColor="white"] - Color of the diagonal lines
+     * @param {string} backgroundColor - Background color of the pattern
+     * @param {boolean} [rightToLeft=false] - Direction of the diagonal lines
+     * @param {number} [lineGap=1] - Gap between lines
+     * @returns {CanvasPattern} A canvas pattern object for use with backgroundColor
+     */
+    function createDiagonalPattern(backgroundColor, lineColor, rightToLeft=false, lineGap=1) {
+        // Define the canvas and the 2d context so we can draw on it
+        let shape = document.createElement("canvas");
+        shape.width = 20;
+        shape.height = 20;
+        let context = shape.getContext("2d");
 
-    function createDiagonalRightLeftPattern(backgroundColor, lineColor="white") {
-        // create a 20x20 px canvas for larger pattern repeat
-        let shape = document.createElement("canvas")
-        shape.width = 20
-        shape.height = 20
-        // get the context for drawing
-        let c = shape.getContext("2d")
-        
         // Fill with specified background color
-        c.fillStyle = backgroundColor
-        c.fillRect(0, 0, shape.width, shape.height)
-        
-        // Translate and rotate context
-        c.translate(shape.width, 0)
-        c.rotate(90 * Math.PI / 180)
-        
+        context.fillStyle = backgroundColor;
+        context.fillRect(0, 0, shape.width, shape.height);
+
         // Set stroke properties
-        c.strokeStyle = lineColor
-        c.lineWidth = 2
-        
+        context.strokeStyle = lineColor;
+        context.lineWidth = 2;
+
+        // Rotate canvas for a right-to-left pattern
+        if (rightToLeft) {
+            context.translate(shape.width, 0);
+            context.rotate(90 * Math.PI / 180);
+        };
+
         // First diagonal line
-        let halfSize = shape.width / 2
-        let gap = 1
-        
-        c.moveTo(halfSize - gap, -gap)
-        c.lineTo(shape.width + 1, halfSize + 1)
-        
-        // Second diagonal line (offset)
-        c.moveTo(halfSize - gap - halfSize, halfSize - gap)
-        c.lineTo(shape.width + 1 - halfSize, halfSize + 1 + halfSize)
-        
-        c.stroke()
-        
-        return c.createPattern(shape, "repeat")
+        let halfSize = shape.width / 2;
+        context.moveTo(halfSize - lineGap, -lineGap);
+        context.lineTo(shape.width + lineGap, halfSize + lineGap);
+
+        // Second diagonal line (x,y are swapped)
+        context.moveTo(-lineGap, halfSize - lineGap);
+        context.lineTo(halfSize + lineGap, shape.width + lineGap);
+
+        context.stroke();
+        return context.createPattern(shape, "repeat");
     }
 
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
@@ -155,7 +124,8 @@
                     borderColor: "rgba(255, 99, 132, 1)",
                     borderWidth: 1,
                     data: listOne,
-                    backgroundColor: createDiagonalRightLeftPattern('rgba(255, 99, 132, 0.3)')
+                    // Set this line style to be rightToLeft for visual distinction
+                    backgroundColor: createDiagonalPattern('rgba(255, 99, 132, 0.3)', 'white', true)
                 },
                 {
                     label: labelTwo,
@@ -163,7 +133,7 @@
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
-                    backgroundColor: createDiagonalPattern('rgba(75, 192, 192, 0.3)')
+                    backgroundColor: createDiagonalPattern('rgba(75, 192, 192, 0.3)', 'white')
                 },
             ],
         };
