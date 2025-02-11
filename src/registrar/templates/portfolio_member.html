@@ -31,7 +31,7 @@ Organization member
   <h1 class="margin-bottom-3">Manage member</h1>
 
   <div class="tablet:display-flex tablet:flex-justify">
-    <h2 class="margin-top-0 margin-bottom-3 break-word">
+    <h2 class="margin-top-0 margin-bottom-3 break-word flex-align-self-baseline">
       {% if member %}
         {{ member.email }}
       {% elif portfolio_invitation %}
@@ -46,6 +46,7 @@ Organization member
         data-member-id="{{ member.id }}"
         data-num-domains="{{ portfolio_permission.get_managed_domains_count }}"
         data-member-email="{{ member.email }}"
+        class="flex-align-self-baseline"
       >
         <!-- JS should inject member kebob here -->
         </div>
@@ -56,6 +57,7 @@ Organization member
         data-member-id="{{ portfolio_invitation.id }}"
         data-num-domains="{{ portfolio_invitation.get_managed_domains_count }}"
         data-member-email="{{ portfolio_invitation.email }}"
+        class="flex-align-self-baseline"
       >
         <!-- JS should inject invited kebob here -->
       </div>
