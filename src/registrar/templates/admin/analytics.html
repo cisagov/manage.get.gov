@@ -1,7 +1,18 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block content_title %}
-<h1>Registrar Analytics</h1>
+{% load i18n %}
+{% block content_title %}<h1>Registrar Analytics</h1>{% endblock %}
+
+{% block breadcrumbs %}
+{% comment %} 
+Overrides the breadcrumb styles found in this file: 
+https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/base.html
+{% endcomment %}
+<div class="breadcrumbs">
+  <a href="{% url "admin:index" %}">{% trans "Home" %}</a>
+  &rsaquo;
+  <span>{% trans "Analytics Dashboard" %}</span>
+</div>
 {% endblock %}
 {% block content %}
 <div id="content-main" class="custom-admin-template">
