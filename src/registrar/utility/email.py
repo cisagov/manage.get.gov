@@ -3,6 +3,7 @@
 import boto3
 import logging
 import textwrap
+import re
 from datetime import datetime
 from django.apps import apps
 from django.conf import settings
@@ -48,6 +49,24 @@ def send_templated_email(  # noqa
         No valid recipient addresses are provided
     """
 
+    if context is None:
+        context = {}
+
+    env_base_url = settings.BASE_URL
+    # The regular expresstion is to get both http (localhost) and https (everything else)
+    env_name = re.sub(r"^https?://", "", env_base_url).split(".")[0]
+    # To add to subject lines ie [GETGOV-RH]
+    prefix = f"[{env_name.upper()}] " if not settings.IS_PRODUCTION else ""
+    # For email links
+    manage_url = env_base_url if not settings.IS_PRODUCTION else "https://manage.get.gov"
+
+    # Adding to context
+    context.update(
+        {
+            "prefix": prefix,
+            "manage_url": manage_url,
+        }
+    )
     # by default assume we can send to all addresses (prod has no whitelist)
     sendable_cc_addresses = cc_addresses
 

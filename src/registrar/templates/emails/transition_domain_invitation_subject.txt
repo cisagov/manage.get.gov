@@ -1,1 +1,1 @@
-(Action required) Manage your .gov domain{% if domains|length > 1 %}s{% endif %} in the new registrar
+{{ prefix }}(Action required) Manage your .gov domain{% if domains|length > 1 %}s{% endif %} in the new registrar

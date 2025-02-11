@@ -1,1 +1,1 @@
-An admin was removed from your .gov organization
+{{ prefix}}An admin was removed from your .gov organization

@@ -1,2 +1,2 @@
-Domain metadata - {{current_date_str}}
+{{ prefix }}Domain metadata - {{current_date_str}}
 

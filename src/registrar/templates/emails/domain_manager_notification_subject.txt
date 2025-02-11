@@ -1,1 +1,1 @@
-A domain manager was invited to {{ domain.name }}
+{{ prefix }}A domain manager was invited to {{ domain.name }}
