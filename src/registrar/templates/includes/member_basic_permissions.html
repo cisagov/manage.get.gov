@@ -3,18 +3,18 @@
     <h2>What permissions do you want to add?</h2>
     <p>Configure the permissions for this member. Basic members cannot manage member permissions or organization metadata.</p>
 
-    <h3 class="margin-bottom-0">Domains <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="bg-gray-1 border-bottom-2px border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" %}
+    <h3 class="margin-bottom-neg-1 margin-top-4">Domains <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="bg-gray-1 border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" label_classes="margin-top-1" %}
         {% input_with_errors form.domain_permissions %}
       {% endwith %}
 
-    <h3 class="margin-bottom-0">Domain requests <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="bg-gray-1 border-bottom-2px border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" %}
+    <h3 class="margin-bottom-neg-1">Domain requests <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="bg-gray-1 border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" label_classes="margin-top-1" %}
         {% input_with_errors form.domain_request_permissions %}
       {% endwith %}
 
-    <h3 class="margin-bottom-0">Members <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
-      {% with group_classes="bg-gray-1 border-bottom-2px border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" %}
+    <h3 class="margin-bottom-neg-1">Members <abbr class="usa-hint usa-hint--required" title="required">*</abbr></h3>
+      {% with group_classes="bg-gray-1 border-base-lighter padding-bottom-2 margin-top-0" add_legend_class="usa-sr-only" label_classes="margin-top-1" %}
         {% input_with_errors form.member_permissions %}
       {% endwith %}
 </div>
