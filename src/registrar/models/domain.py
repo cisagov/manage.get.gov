@@ -1076,7 +1076,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        logger.info("Finished _delete_host_if_not_used inside _delete_domain()")
+        logger.info("Finished _delete_hosts_if_not_used inside _delete_domain()")
 
         # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
@@ -1113,36 +1113,49 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.error("Error deleting ds data for %s: %s", self.name, e)
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
-
-        # Previous deletions have to complete before we can delete the domain
-        # This is a polling mechanism to ensure that the domain is deleted
+        
+        # check if the domain can be deleted
+        if not self._domain_can_be_deleted():
+            raise RegistryError(code=ErrorCode.UNKNOWN, note="Domain cannot be deleted.")
+        
+        # delete the domain
+        request = commands.DeleteDomain(name=self.name)
         try:
-            logger.info("Attempting to delete domain %s", self.name)
-            delete_request = commands.DeleteDomain(name=self.name)
-            max_attempts = 5  # maximum number of retries
-            wait_interval = 1  # seconds to wait between attempts
-
-            for attempt in range(max_attempts):
-                try:
-                    registry.send(delete_request, cleaned=True)
-                    logger.info("Domain %s deleted successfully.", self.name)
-                    break  # exit the loop on success
-                except RegistryError as e:
-                    error = e
-                    logger.warning(
-                        "Attempt %d of %d: Domain deletion not possible yet: %s. Retrying in %d seconds.",
-                        attempt + 1,
-                        max_attempts,
-                        e,
-                        wait_interval,
-                    )
-                    time.sleep(wait_interval)
-            else:
-                logger.error("Exceeded maximum attempts to delete domain %s", self.name)
-                raise error
+            registry.send(request, cleaned=True)
+            logger.info("Domain %s deleted successfully.", self.name)
         except RegistryError as e:
-            logger.error("Error deleting domain %s after polling: %s", self.name, e)
+            logger.error("Error deleting domain %s: %s", self.name, e)
             raise e
+
+    def _domain_can_be_deleted(self, max_attempts=5, wait_interval=2) -> bool:
+        """
+        Polls the registry using InfoDomain calls to confirm that the domain can be deleted.
+        Returns True if the domain can be deleted, False otherwise. Includes a retry mechanism
+        using wait_interval and max_attempts, which may be necessary if subdomains and other 
+        associated objects were only recently deleted as the registry may not be immediately updated.
+        """
+        logger.info("Polling registry to confirm deletion pre-conditions for %s", self.name)
+        last_info_error = None
+        for attempt in range(max_attempts):
+            try:
+                info_response = registry.send(commands.InfoDomain(name=self.name), cleaned=True)
+                domain_info = info_response.res_data[0]
+                hosts_associated = getattr(domain_info, "hosts", None)
+                if hosts_associated is None or len(hosts_associated) == 0:
+                    logger.info("InfoDomain reports no associated hosts for %s. Proceeding with deletion.", self.name)
+                    return True
+                else:
+                    logger.info("Attempt %d: Domain %s still has hosts: %s", attempt + 1, self.name, hosts_associated)
+            except RegistryError as info_e:
+                # If the domain is already gone, we can assume deletion already occurred.
+                if info_e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                    logger.info("InfoDomain check indicates domain %s no longer exists.", self.name)
+                    raise info_e
+                logger.warning("Attempt %d: Error during InfoDomain check: %s", attempt + 1, info_e)
+            time.sleep(wait_interval)
+        else:
+            logger.error("Exceeded max attempts waiting for domain %s to clear associated objects; last error: %s", self.name, last_info_error)
+            return False
 
     def __str__(self) -> str:
         return self.name
