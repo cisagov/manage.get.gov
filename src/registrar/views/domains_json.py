@@ -143,7 +143,7 @@ def serialize_domain(domain, request):
         "state": domain.state,
         "state_display": domain.state_display(request),
         "get_state_help_text": domain.get_state_help_text(),
-        "action_url": reverse("domain", kwargs={"pk": domain.id}),
+        "action_url": reverse("domain", kwargs={"domain_pk": domain.id}),
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
         "domain_info__sub_organization": suborganization_name,

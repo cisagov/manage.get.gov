@@ -15,6 +15,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from registrar.decorators import IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, grant_access
 from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
@@ -95,7 +96,7 @@ class DomainBaseView(DomainPermissionView):
         self.session = request.session
         # domain:private_key is the session key to use for
         # caching the domain in the session
-        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         cached_domain = self.session.get(domain_pk)
 
         if cached_domain:
@@ -108,7 +109,7 @@ class DomainBaseView(DomainPermissionView):
         """
         update domain in the session cache
         """
-        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
 
 
@@ -256,7 +257,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 exc_info=True,
             )
 
-
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -310,7 +311,7 @@ class DomainView(DomainBaseView):
         self.object = self.get_object()
         self._update_session_with_domain()
 
-
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -344,9 +345,9 @@ class DomainRenewalView(DomainBaseView):
             and (requested_domain.is_expiring() or requested_domain.is_expired())
         )
 
-    def post(self, request, pk):
+    def post(self, request, domain_pk):
 
-        domain = get_object_or_404(Domain, id=pk)
+        domain = get_object_or_404(Domain, id=domain_pk)
 
         form = DomainRenewalForm(request.POST)
 
@@ -363,7 +364,7 @@ class DomainRenewalView(DomainBaseView):
                         "This domain has not been renewed for one year, "
                         "please email help@get.gov if this problem persists.",
                     )
-            return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
+            return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
         # if not valid, render the template with error messages
         # passing editable, has_domain_renewal_flag, and is_editable for re-render
@@ -379,7 +380,7 @@ class DomainRenewalView(DomainBaseView):
             },
         )
 
-
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
 
@@ -396,7 +397,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-org-name-address", kwargs={"pk": self.object.pk})
+        return reverse("domain-org-name-address", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
@@ -455,7 +456,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-suborganization", kwargs={"pk": self.object.pk})
+        return reverse("domain-suborganization", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
@@ -494,7 +495,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-senior-official", kwargs={"pk": self.object.pk})
+        return reverse("domain-senior-official", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the senior official."""
@@ -587,7 +588,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
-        return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
+        return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -764,7 +765,7 @@ class DomainNameserversView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
-        return reverse("domain-dns-nameservers", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-nameservers", kwargs={"domain_pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         """Adjust context from FormMixin for formsets."""
@@ -885,7 +886,7 @@ class DomainDNSSECView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the DNSSEC page for the domain."""
-        return reverse("domain-dns-dnssec", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-dnssec", kwargs={"domain_pk": self.object.pk})
 
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view."""
@@ -936,7 +937,7 @@ class DomainDsDataView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the DS data page for the domain."""
-        return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         """Adjust context from FormMixin for formsets."""
@@ -1042,7 +1043,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the security email page for the domain."""
-        return reverse("domain-security-email", kwargs={"pk": self.object.pk})
+        return reverse("domain-security-email", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, call setter in model."""
@@ -1199,7 +1200,7 @@ class DomainAddUserView(DomainFormBaseView):
     form_class = DomainAddUserForm
 
     def get_success_url(self):
-        return reverse("domain-users", kwargs={"pk": self.object.pk})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """Add the specified user to this domain."""
@@ -1304,7 +1305,7 @@ class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermission
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
         return f"Canceled invitation to {self.object.email}."
@@ -1317,13 +1318,13 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
-        domain_id = self.kwargs.get("pk")
+        domain_id = self.kwargs.get("domain_pk")
         user_id = self.kwargs.get("user_pk")
         return UserDomainRole.objects.get(domain=domain_id, user=user_id)
 
     def get_success_url(self):
         """Refreshes the page after a delete is successful"""
-        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self):
         """Returns confirmation content for the deletion event"""

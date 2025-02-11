@@ -203,7 +203,7 @@ class DomainPermission(PermissionsLoginMixin):
         """Check if this user has access to this domain.
 
         The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
+        up from the domain's primary key in self.kwargs["domain_pk"]
         """
 
         if not self.request.user.is_authenticated:
@@ -212,7 +212,7 @@ class DomainPermission(PermissionsLoginMixin):
         if self.request.user.is_restricted():
             return False
 
-        pk = self.kwargs["pk"]
+        pk = self.kwargs["domain_pk"]
         # If pk is none then something went very wrong...
         if pk is None:
             raise ValueError("Primary key is None")

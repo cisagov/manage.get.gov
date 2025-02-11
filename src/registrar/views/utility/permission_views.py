@@ -39,6 +39,7 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
 
     # DetailView property for what model this is viewing
     model = Domain
+    pk_url_kwarg = "domain_pk"
     # variable name in template context for the model object
     context_object_name = "domain"
 
