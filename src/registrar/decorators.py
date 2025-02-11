@@ -70,6 +70,10 @@ def _user_has_permission(user, request, rules, **kwargs):
     # Ensure user is authenticated
     if not user.is_authenticated:
         return False
+    
+    # Ensure user is not restricted
+    if user.is_restricted():
+        return False
 
     conditions_met = []
 

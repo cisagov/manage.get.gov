@@ -205,38 +205,14 @@ class DomainPermission(PermissionsLoginMixin):
         The user is in self.request.user and the domain needs to be looked
         up from the domain's primary key in self.kwargs["domain_pk"]
         """
-
-        if not self.request.user.is_authenticated:
-            return False
-
-        if self.request.user.is_restricted():
-            return False
-
         pk = self.kwargs["domain_pk"]
-        # If pk is none then something went very wrong...
-        if pk is None:
-            raise ValueError("Primary key is None")
 
         # test if domain in editable state
         if not self.in_editable_state(pk):
             return False
 
-        if self.can_access_other_user_domains(pk):
-            return True
-
-        # user needs to have a role on the domain
-        if not UserDomainRole.objects.filter(user=self.request.user, domain__id=pk).exists():
-            return self.can_access_domain_via_portfolio(pk)
-
         # if we need to check more about the nature of role, do it here.
         return True
-
-    def can_access_domain_via_portfolio(self, pk):
-        """Most views should not allow permission to portfolio users.
-        If particular views allow access to the domain pages, they will need to override
-        this function.
-        """
-        return False
 
     def in_editable_state(self, pk):
         """Is the domain in an editable state"""
