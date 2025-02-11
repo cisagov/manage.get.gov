@@ -1,7 +1,7 @@
 import functools
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
-from registrar.models import DomainInformation, DomainRequest, UserDomainRole
+from registrar.models import Domain, DomainInformation, DomainRequest, UserDomainRole
 
 # Constants for clarity
 ALL = "all"
@@ -9,6 +9,11 @@ IS_SUPERUSER = "is_superuser"
 IS_STAFF = "is_staff"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
+IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
+IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
+HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
+# HAS_PORTFOLIO_DOMAINS_VIEW_MANAGED = "has_portfolio_domains_view_managed"
+
 
 def grant_access(*rules):
     """
@@ -28,7 +33,7 @@ def grant_access(*rules):
                 if not _user_has_permission(request.user, request, rules, **kwargs):
                     raise PermissionDenied
                 return original_dispatch(self, request, *args, **kwargs)
-            
+
             view.dispatch = wrapped_dispatch  # replace dispatch with wrapped version
             return view
 
@@ -43,11 +48,11 @@ def grant_access(*rules):
                 if not _user_has_permission(request.user, request, rules, **kwargs):
                     raise PermissionDenied
                 return view(request, *args, **kwargs)
-            
+
             return wrapper
-        
+
     return decorator
-    
+
 
 def _user_has_permission(user, request, rules, **kwargs):
     """
@@ -75,17 +80,43 @@ def _user_has_permission(user, request, rules, **kwargs):
         conditions_met.append(user.is_superuser)
 
     if not any(conditions_met) and IS_DOMAIN_MANAGER in rules:
-        domain_id = kwargs.get('domain_pk')
-        # Check UserDomainRole directly instead of fetching Domain
-        has_permission = UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
+        domain_id = kwargs.get("domain_pk")
+        has_permission = _is_domain_manager(user, domain_id)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_STAFF_MANAGING_DOMAIN in rules:
-        domain_id = kwargs.get('domain_pk')
+        domain_id = kwargs.get("domain_pk")
         has_permission = _can_access_other_user_domains(request, domain_id)
         conditions_met.append(has_permission)
 
+    if not any(conditions_met) and HAS_PORTFOLIO_DOMAINS_VIEW_ALL in rules:
+        domain_id = kwargs.get("domain_pk")
+        has_permission = _can_access_domain_via_portfolio_view_all_domains(request, domain_id)
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER in rules:
+        domain_id = kwargs.get("domain_pk")
+        has_permission = _is_domain_manager(user, domain_id) and _is_portfolio_member(request)
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER in rules:
+        domain_id = kwargs.get("domain_pk")
+        has_permission = _is_domain_manager(user, domain_id) and not _is_portfolio_member(request)
+        conditions_met.append(has_permission)
+
     return any(conditions_met)
+
+
+def _is_domain_manager(user, domain_pk):
+    """Checks to see if the user is a domain manager of the
+    domain with domain_pk."""
+    return UserDomainRole.objects.filter(user=user, domain_id=domain_pk).exists()
+
+
+def _is_portfolio_member(request):
+    """Checks to see if the user in the request is a member of the
+    portfolio in the request's session."""
+    return request.user.is_org_user(request)
 
 
 def _can_access_other_user_domains(request, domain_pk):
@@ -144,3 +175,17 @@ def _can_access_other_user_domains(request, domain_pk):
     # the user is permissioned,
     # and it is in a valid status
     return True
+
+
+def _can_access_domain_via_portfolio_view_all_domains(request, domain_pk):
+    """Returns whether the user in the request can access the domain
+    via portfolio view all domains permission."""
+    # NOTE: determine if in practice this ever needs to be called on its own
+    # or if it can be combined with view_managed_domains
+    portfolio = request.session.get("portfolio")
+    if request.user.has_view_all_domains_portfolio_permission(portfolio):
+        if Domain.objects.filter(id=domain_pk).exists():
+            domain = Domain.objects.get(id=domain_pk)
+            if domain.domain_info.portfolio == portfolio:
+                return True
+    return False

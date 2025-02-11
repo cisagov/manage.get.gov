@@ -177,17 +177,17 @@ class CheckPortfolioMiddleware:
 
 
 class RestrictAccessMiddleware:
-    """ Middleware that blocks all views unless explicitly permitted """
+    """Middleware that blocks all views unless explicitly permitted"""
 
     def __init__(self, get_response):
         self.get_response = get_response
         self.ignored_paths = [re.compile(pattern) for pattern in getattr(settings, "LOGIN_REQUIRED_IGNORE_PATHS", [])]
-    
+
     def __call__(self, request):
         # Allow requests that match LOGIN_REQUIRED_IGNORE_PATHS
         if any(pattern.match(request.path) for pattern in self.ignored_paths):
             return self.get_response(request)
-        
+
         # Try to resolve the view function
         try:
             resolver_match = resolve(request.path_info)
@@ -199,11 +199,11 @@ class RestrictAccessMiddleware:
         # Auto-allow Django's built-in admin views (but NOT custom /admin/* views)
         if app_name == "admin":
             return self.get_response(request)
-        
+
         # Skip access restriction if the view explicitly allows unauthenticated access
         if getattr(view_func, "login_required", True) is False:
             return self.get_response(request)
-        
+
         # Enforce explicit access fules for other views
         if not getattr(view_func, "has_explicit_access", False):
             raise PermissionDenied

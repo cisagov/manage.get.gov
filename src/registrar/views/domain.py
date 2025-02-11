@@ -15,7 +15,14 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-from registrar.decorators import IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, grant_access
+from registrar.decorators import (
+    HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
+    IS_DOMAIN_MANAGER,
+    IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
+    IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+    IS_STAFF_MANAGING_DOMAIN,
+    grant_access,
+)
 from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
@@ -257,7 +264,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 exc_info=True,
             )
 
-@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -310,6 +318,7 @@ class DomainView(DomainBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
@@ -380,6 +389,7 @@ class DomainRenewalView(DomainBaseView):
             },
         )
 
+
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
@@ -422,6 +432,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
             return super().has_permission()
 
 
+@grant_access(IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER)
 class DomainSubOrganizationView(DomainFormBaseView):
     """Suborganization view"""
 
@@ -468,6 +479,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
         return super().form_valid(form)
 
 
+@grant_access(IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER)
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""
 
@@ -525,6 +537,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
             return super().has_permission()
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
@@ -741,6 +754,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return super().post(request)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
 
@@ -868,6 +882,7 @@ class DomainNameserversView(DomainFormBaseView):
         return super().form_valid(formset)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSSECView(DomainFormBaseView):
     """Domain DNSSEC editing view."""
 
@@ -905,6 +920,7 @@ class DomainDNSSECView(DomainFormBaseView):
         return self.form_valid(form)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDsDataView(DomainFormBaseView):
     """Domain DNSSEC ds data editing view."""
 
@@ -1023,6 +1039,7 @@ class DomainDsDataView(DomainFormBaseView):
             return super().form_valid(formset)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSecurityEmailView(DomainFormBaseView):
     """Domain security email editing view."""
 
@@ -1094,6 +1111,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
@@ -1189,6 +1207,7 @@ class DomainUsersView(DomainBaseView):
         return context
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
 
@@ -1286,6 +1305,7 @@ class DomainAddUserView(DomainFormBaseView):
         messages.success(self.request, f"Added user {email}.")
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
     object: DomainInvitation
     fields = []
@@ -1311,6 +1331,7 @@ class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermission
         return f"Canceled invitation to {self.object.email}."
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
     """Inside of a domain's user management, a form for deleting users."""
 
