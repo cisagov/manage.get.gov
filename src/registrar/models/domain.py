@@ -2,7 +2,8 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
-from datetime import date, time, timedelta
+import time
+from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
@@ -161,12 +162,12 @@ class Domain(TimeStampedModel, DomainHelper):
             """Returns a help message for a desired state. If none is found, an empty string is returned"""
             help_texts = {
                 # For now, unknown has the same message as DNS_NEEDED
-                cls.UNKNOWN: ("Before this domain can be used, " "you’ll need to add name server addresses."),
-                cls.DNS_NEEDED: ("Before this domain can be used, " "you’ll need to add name server addresses."),
+                cls.UNKNOWN: ("Before this domain can be used, " "you'll need to add name server addresses."),
+                cls.DNS_NEEDED: ("Before this domain can be used, " "you'll need to add name server addresses."),
                 cls.READY: "This domain has name servers and is ready for use.",
                 cls.ON_HOLD: (
                     "This domain is administratively paused, "
-                    "so it can’t be edited and won’t resolve in DNS. "
+                    "so it can't be edited and won't resolve in DNS. "
                     "Contact help@get.gov for details."
                 ),
                 cls.DELETED: ("This domain has been removed and " "is no longer registered to your organization."),
@@ -1113,11 +1114,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.error("Error deleting ds data for %s: %s", self.name, e)
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
-        
+
         # check if the domain can be deleted
         if not self._domain_can_be_deleted():
-            raise RegistryError(code=ErrorCode.UNKNOWN, note="Domain cannot be deleted.")
-        
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED, note="Associated objects were not cleared.")
+
         # delete the domain
         request = commands.DeleteDomain(name=self.name)
         try:
@@ -1131,7 +1132,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         Polls the registry using InfoDomain calls to confirm that the domain can be deleted.
         Returns True if the domain can be deleted, False otherwise. Includes a retry mechanism
-        using wait_interval and max_attempts, which may be necessary if subdomains and other 
+        using wait_interval and max_attempts, which may be necessary if subdomains and other
         associated objects were only recently deleted as the registry may not be immediately updated.
         """
         logger.info("Polling registry to confirm deletion pre-conditions for %s", self.name)
@@ -1154,7 +1155,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.warning("Attempt %d: Error during InfoDomain check: %s", attempt + 1, info_e)
             time.sleep(wait_interval)
         else:
-            logger.error("Exceeded max attempts waiting for domain %s to clear associated objects; last error: %s", self.name, last_info_error)
+            logger.error(
+                "Exceeded max attempts waiting for domain %s to clear associated objects; last error: %s",
+                self.name,
+                last_info_error,
+            )
             return False
 
     def __str__(self) -> str:
