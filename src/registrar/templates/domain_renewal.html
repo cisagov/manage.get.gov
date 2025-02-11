@@ -38,11 +38,11 @@
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
     <h2 class="domain-name-wrap">Confirm the following information for accuracy</h2>
-    <p>Review these details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link">
+    <p>Review the details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link" target="_blank">
       require</a> that you maintain accurate information for the domain.
       The details you provide will only be used to support the administration of .gov and won't be made public.
     </p>
-    <p>If you would like to retire your domain instead, please <a href="https://get.gov/contact/" class="usa-link">
+    <p>If you would like to retire your domain instead, please <a href="https://get.gov/contact/" class="usa-link" target="_blank">
       contact us</a>. </p>
     <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
     </p>
@@ -98,7 +98,7 @@
             {% if form.is_policy_acknowledged.errors %}
             {% for error in form.is_policy_acknowledged.errors %}
             <div class="usa-error-message display-flex" role="alert">
-              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: Check the box if you read and agree to the requirements for operating a .gov domain.">
                 <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
               </svg>
               <span class="margin-left-05">{{ error }}</span>
@@ -119,10 +119,8 @@
             >
             <label class="usa-checkbox__label" for="renewal-checkbox">
               I read and agree to the 
-              <a href="https://get.gov/domains/requirements/" class="usa-link">
-              requirements for operating a .gov domain
-              </a>.
-              <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+              <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
+              requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
           </div>
 
@@ -131,7 +129,7 @@
             name="submit_button"
             value="next"
             class="usa-button margin-top-3"
-          > Submit
+          > Submit and renew
           </button>
         </form>
       </fieldset>

@@ -9,6 +9,7 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
+from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
@@ -1177,6 +1178,10 @@ class Domain(TimeStampedModel, DomainHelper):
             return "DNS needed"
         return self.state.capitalize()
 
+    def active_invitations(self):
+        """Returns only the active invitations (those with status 'invited')."""
+        return self.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.
 
@@ -1582,11 +1587,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
-            help_text = (
-                "This domain has expired, but it is still online. " "To renew this domain, contact help@get.gov."
-            )
+            help_text = "This domain has expired. Complete the online renewal process to maintain access."
         elif flag_is_active(request, "domain_renewal") and self.is_expiring():
-            help_text = "This domain will expire soon. Contact one of the listed domain managers to renew the domain."
+            help_text = "This domain is expiring soon. Complete the online renewal process to maintain access."
         else:
             help_text = Domain.State.get_help_text(self.state)
 
