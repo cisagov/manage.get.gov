@@ -1,5 +1,6 @@
 from registrar.utility import StrEnum
 from django.db import models
+from django.db.models import Q
 from django.apps import apps
 from django.forms import ValidationError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -40,10 +41,6 @@ class UserPortfolioPermissionChoices(models.TextChoices):
 
     VIEW_PORTFOLIO = "view_portfolio", "View organization"
     EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
-
-    # Domain: field specific permissions
-    VIEW_SUBORGANIZATION = "view_suborganization", "View suborganization"
-    EDIT_SUBORGANIZATION = "edit_suborganization", "Edit suborganization"
 
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
@@ -136,9 +133,10 @@ def validate_user_portfolio_permission(user_portfolio_permission):
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
             )
 
-        existing_invitations = PortfolioInvitation.objects.exclude(
-            portfolio=user_portfolio_permission.portfolio
-        ).filter(email=user_portfolio_permission.user.email)
+        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email).exclude(
+            Q(portfolio=user_portfolio_permission.portfolio)
+            | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        )
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
@@ -195,8 +193,8 @@ def validate_portfolio_invitation(portfolio_invitation):
     if not flag_is_active_for_user(user, "multiple_portfolios"):
         existing_permissions = UserPortfolioPermission.objects.filter(user=user)
 
-        existing_invitations = PortfolioInvitation.objects.exclude(id=portfolio_invitation.id).filter(
-            email=portfolio_invitation.email
+        existing_invitations = PortfolioInvitation.objects.filter(email=portfolio_invitation.email).exclude(
+            Q(id=portfolio_invitation.id) | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         )
 
         if existing_permissions.exists():
