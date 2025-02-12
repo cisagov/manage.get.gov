@@ -65,7 +65,8 @@ jobs:
 
       - name: run pa11y
         working-directory: ./src
+        # Use our existing docker container to run pa11y tests
         run: |
           sleep 20;
-          npm i -g pa11y-ci
-          pa11y-ci 
+          docker compose exec node npm i -g pa11y-ci
+          docker compose exec node pa11y-ci 
