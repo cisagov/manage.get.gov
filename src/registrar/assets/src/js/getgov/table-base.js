@@ -79,7 +79,7 @@ export function addModal(id, ariaLabelledby, ariaDescribedby, modalHeading, moda
  * @param {string} modal_button_text - The action button's text
  * @param {string} screen_reader_text - A screen reader helper
  */
-export function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_text) {
+export function generateKebabHTML(action, unique_id, modal_button_text, screen_reader_text, icon_class) {
   const generateModalButton = (mobileOnly = false) => `
     <a 
       role="button" 
@@ -108,12 +108,12 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
           aria-controls="more-actions-${unique_id}"
           aria-label="${screen_reader_text}"
         >
-          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+          <svg class="usa-icon${icon_class ? " " + icon_class : ""}" aria-hidden="true" focusable="false" role="img" width="24">
             <use xlink:href="/public/img/sprite.svg#more_vert"></use>
           </svg>
         </button>
       </div>
-      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
         <h2>More options</h2>
         ${generateModalButton()} <!-- Desktop button -->
       </div>

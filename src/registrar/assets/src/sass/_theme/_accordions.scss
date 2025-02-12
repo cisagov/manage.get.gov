@@ -5,11 +5,21 @@
     display: inline-block;
     width: auto;
     position: relative;
+    .usa-accordion__button {
+        border-radius: units(.5);
+    }
+    .usa-accordion__button:focus {
+        outline-offset: 0;
+        outline-width: 3px;
+    }
     .usa-accordion__button[aria-expanded=false],
     .usa-accordion__button[aria-expanded=false]:hover,
     .usa-accordion__button[aria-expanded=true],
     .usa-accordion__button[aria-expanded=true]:hover {
         background-image: none;
+    }
+    .usa-accordion__button[aria-expanded=true] {
+        background-color: color('primary-lighter');
     }
     .usa-accordion__content {
         // Note, width is determined by a custom width class on one of the children
@@ -37,7 +47,7 @@
 }
 
 .usa-accordion--more-actions .usa-accordion__content {
-    top: 25px;
+    top: 28px;
 }
 
 // Special positioning for the kabob menu popup in the last row on a given page

@@ -18,7 +18,7 @@ export function initPortfolioNewMemberPageToggle() {
             const unique_id = `${member_type}-${member_id}`;
     
             let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
-            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `More Options for ${member_name}`);
+            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `More Options for ${member_name}`, "usa-icon--large");
     
             // This easter egg is only for fixtures that dont have names as we are displaying their emails
             // All prod users will have emails linked to their account
