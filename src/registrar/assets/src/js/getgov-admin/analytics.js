@@ -41,7 +41,6 @@ function initAnalyticsExportButtons() {
             });
         });
     }
-
 };
 
 /**
@@ -88,8 +87,8 @@ function createDiagonalPattern(backgroundColor, lineColor, rightToLeft=false, li
     return context.createPattern(shape, "repeat");
 }
 
-function createComparativeColumnChart(canvasId, title, labelOne, labelTwo, chartInstances) {
-    var canvas = document.getElementById(canvasId);
+function createComparativeColumnChart(id, title, labelOne, labelTwo) {
+    var canvas = document.getElementById(id);
     if (!canvas) {
         return
     }
@@ -140,57 +139,43 @@ function createComparativeColumnChart(canvasId, title, labelOne, labelTwo, chart
             },
         },
     };
-
-    if (chartInstances.has(canvasId)) {
-        chartInstances.get(canvasId).destroy();
-    }
-
-    const chart = new Chart(ctx, {
+    return new Chart(ctx, {
         type: "bar",
         data: data,
         options: options,
     });
-    
-    chartInstances.set(canvasId, chart);
 }
-
-function initComparativeColumnCharts(chartInstances) {
-    // Create charts
-    const charts = [
-        { id: "managed-domains-chart", title: "Managed domains" },
-        { id: "unmanaged-domains-chart", title: "Unmanaged domains" },
-        { id: "deleted-domains-chart", title: "Deleted domains" },
-        { id: "ready-domains-chart", title: "Ready domains" },
-        { id: "submitted-requests-chart", title: "Submitted requests" },
-        { id: "all-requests-chart", title: "All requests" }
-    ];
-    charts.forEach(chart => {
-        createComparativeColumnChart(
-            chart.id, 
-            chart.title, 
-            "Start Date", 
-            "End Date", 
-            chartInstances
-        );
-    });
-
-    // Add resize listener to each chart
-    window.addEventListener("resize", debounce(() => {
-        chartInstances.forEach((chart) => {
-            if (chart?.canvas) chart.resize();
-        });
-    }, 200));
-};
 
 /** An IIFE to initialize the analytics page
 */
 export function initAnalyticsDashboard() {
-    const chartInstances = new Map();
     const analyticsPageContainer = document.querySelector('.analytics-dashboard .analytics-dashboard-charts');
     if (analyticsPageContainer) {
         document.addEventListener("DOMContentLoaded", function () {
             initAnalyticsExportButtons();
-            initComparativeColumnCharts(chartInstances);
+
+            // Create charts and store each instance of it
+            const chartInstances = new Map();
+            const charts = [
+                { id: "managed-domains-chart", title: "Managed domains" },
+                { id: "unmanaged-domains-chart", title: "Unmanaged domains" },
+                { id: "deleted-domains-chart", title: "Deleted domains" },
+                { id: "ready-domains-chart", title: "Ready domains" },
+                { id: "submitted-requests-chart", title: "Submitted requests" },
+                { id: "all-requests-chart", title: "All requests" }
+            ];
+            charts.forEach(chart => {
+                if (chartInstances.has(chart.id)) chartInstances.get(chart.id).destroy();
+                let chart = createComparativeColumnChart(...chart, "Start Date", "End Date");
+                chartInstances.set(chart.id, chart);
+            });
+
+            // Add resize listener to each chart
+            window.addEventListener("resize", debounce(() => {
+                chartInstances.forEach((chart) => {
+                    if (chart?.canvas) chart.resize();
+                });
+            }, 200));
         });
     }
 };
