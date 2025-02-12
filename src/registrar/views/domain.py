@@ -1233,7 +1233,9 @@ class DomainAddUserView(DomainFormBaseView):
                 and requestor_can_update_portfolio
                 and not member_of_this_org
             ):
-                send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                send_portfolio_invitation_email(
+                    email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                )
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                     email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
                 )
@@ -1345,9 +1347,48 @@ class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
         # Delete the object
         super().form_valid(form)
 
+        # Email all domain managers that domain manager has been removed
+        domain = self.object.domain
+
+        context = {
+            "domain": domain,
+            "removed_by": self.request.user,
+            "manager_removed": self.object.user,
+            "date": date.today(),
+            "changes": "Domain Manager",
+        }
+        self.email_domain_managers(
+            domain,
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            context,
+        )
+
         # Add a success message
         messages.success(self.request, self.get_success_message())
         return redirect(self.get_success_url())
+
+    def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
+        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
+            "user", flat=True
+        )
+        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
+
+        for email in emails:
+            try:
+                send_templated_email(
+                    template,
+                    subject_template,
+                    to_address=email,
+                    context=context,
+                )
+            except EmailSendingError:
+                logger.warning(
+                    "Could not send notification email to %s for domain %s",
+                    email,
+                    domain.name,
+                    exc_info=True,
+                )
 
     def post(self, request, *args, **kwargs):
         """Custom post implementation to ensure last userdomainrole is not removed and to

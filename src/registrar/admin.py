@@ -11,6 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
+
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
@@ -24,11 +25,15 @@ from registrar.utility.admin_helpers import (
 from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from registrar.utility.email_invitations import (
+    send_domain_invitation_email,
+    send_portfolio_admin_addition_emails,
+    send_portfolio_invitation_email,
+)
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
@@ -1377,9 +1382,13 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/user_domain_role_change_form.html"
 
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/user_domain_role_delete_selected_confirmation.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
+        self.delete_confirmation_template = "django/admin/user_domain_role_delete_confirmation.html"
         response = super().delete_view(request, object_id, extra_context)
 
         if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
@@ -1514,6 +1523,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
@@ -1523,6 +1534,37 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Override the change_view to add the invitation obj for the change_form_object_tools template"""
+
+        if extra_context is None:
+            extra_context = {}
+
+        # Get the domain invitation object
+        invitation = get_object_or_404(DomainInvitation, id=object_id)
+        extra_context["invitation"] = invitation
+
+        if request.method == "POST" and "cancel_invitation" in request.POST:
+            if invitation.status == DomainInvitation.DomainInvitationStatus.INVITED:
+                invitation.cancel_invitation()
+                invitation.save(update_fields=["status"])
+                messages.success(request, _("Invitation canceled successfully."))
+
+                # Redirect back to the change view
+                return redirect(reverse("admin:registrar_domaininvitation_change", args=[object_id]))
+
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_invitation_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method.
@@ -1531,6 +1573,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         which will be successful if a single User exists for that email; otherwise, will
         just continue to create the invitation.
         """
+
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
@@ -1551,7 +1594,9 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     and not member_of_this_org
                     and not member_of_a_different_org
                 ):
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=domain_org)
+                    send_portfolio_invitation_email(
+                        email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    )
                     portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                         email=requested_email,
                         portfolio=domain_org,
@@ -1642,30 +1687,57 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         Emails sent to requested user / email.
         When exceptions are raised, return without saving model.
         """
-        if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+        try:
             portfolio = obj.portfolio
             requested_email = obj.email
             requestor = request.user
-            # Look up a user with that email
-            requested_user = get_requested_user(requested_email)
+            is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
+            if not change:  # Only send email if this is a new PortfolioInvitation (creation)
+                # Look up a user with that email
+                requested_user = get_requested_user(requested_email)
 
-            permission_exists = UserPortfolioPermission.objects.filter(
-                user__email=requested_email, portfolio=portfolio, user__email__isnull=False
-            ).exists()
-            try:
+                permission_exists = UserPortfolioPermission.objects.filter(
+                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
-                    send_portfolio_invitation_email(email=requested_email, requestor=requestor, portfolio=portfolio)
+                    if not send_portfolio_invitation_email(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                        is_admin_invitation=is_admin_invitation,
+                    ):
+                        messages.warning(
+                            self.request, "Could not send email notification to existing organization admins."
+                        )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
                     messages.warning(request, "User is already a member of this portfolio.")
-            except Exception as e:
-                # when exception is raised, handle and do not save the model
-                handle_invitation_exceptions(request, e, requested_email)
-                return
+            else:  # Handle the case when updating an existing PortfolioInvitation
+                # Retrieve the existing object from the database
+                existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
+
+                # Check if the previous roles did NOT include ORGANIZATION_ADMIN
+                # and the new roles DO include ORGANIZATION_ADMIN
+                was_not_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in existing_obj.roles
+                # Check also if status is INVITED, ignore role changes for other statuses
+                is_invited = obj.status == PortfolioInvitation.PortfolioInvitationStatus.INVITED
+
+                if was_not_admin and is_admin_invitation and is_invited:
+                    # send email to existing portfolio admins if new admin
+                    if not send_portfolio_admin_addition_emails(
+                        email=requested_email,
+                        requestor=requestor,
+                        portfolio=portfolio,
+                    ):
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
+        except Exception as e:
+            # when exception is raised, handle and do not save the model
+            handle_invitation_exceptions(request, e, requested_email)
+            return
         # Call the parent save method to save the object
         super().save_model(request, obj, form, change)
 

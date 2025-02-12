@@ -120,7 +120,7 @@ class TestFsmModelResource(TestCase):
         fsm_field_mock.save.assert_not_called()
 
 
-class TestDomainInvitationAdmin(TestCase):
+class TestDomainInvitationAdmin(WebTest):
     """Tests for the DomainInvitationAdmin class as super user
 
     Notes:
@@ -128,15 +128,27 @@ class TestDomainInvitationAdmin(TestCase):
       tests have available superuser, client, and admin
     """
 
-    def setUp(self):
+    # csrf checks do not work with WebTest.
+    # We disable them here. TODO for another ticket.
+    csrf_checks = False
+
+    @classmethod
+    def setUpClass(self):
+        super().setUpClass()
+        self.site = AdminSite()
         self.factory = RequestFactory()
-        self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.superuser = create_superuser()
+
+    def setUp(self):
+        super().setUp()
+        self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.domain = Domain.objects.create(name="example.com")
         self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
         DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -254,6 +266,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert success message
@@ -504,6 +517,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -567,6 +581,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="test@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -693,6 +708,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve was not called
@@ -918,6 +934,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -979,6 +996,7 @@ class TestDomainInvitationAdmin(TestCase):
             email="nonexistent@example.com",
             requestor=self.superuser,
             portfolio=self.portfolio,
+            is_admin_invitation=False,
         )
 
         # Assert retrieve on domain invite only was called
@@ -1064,6 +1082,50 @@ class TestDomainInvitationAdmin(TestCase):
         # Assert the invitations were saved
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
+
+    @less_console_noise_decorator
+    def test_custom_delete_confirmation_page(self):
+        """Tests if custom alerts display on Domain Invitation delete page"""
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_invitation, _ = DomainInvitation.objects.get_or_create(domain=domain)
+
+        domain_invitation_change_page = self.app.get(
+            reverse("admin:registrar_domaininvitation_change", args=[domain_invitation.pk])
+        )
+
+        self.assertContains(domain_invitation_change_page, "domain-invitation-test.gov")
+        # click the "Delete" link
+        confirmation_page = domain_invitation_change_page.click("Delete", index=0)
+
+        custom_alert_content = "If you cancel the domain invitation here"
+        self.assertContains(confirmation_page, custom_alert_content)
+
+    @less_console_noise_decorator
+    def test_custom_selected_delete_confirmation_page(self):
+        """Tests if custom alerts display on Domain Invitation selected delete page from Domain Invitation table"""
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_invitation, _ = DomainInvitation.objects.get_or_create(domain=domain)
+
+        # Get the index. The post expects the index to be encoded as a string
+        index = f"{domain_invitation.id}"
+
+        test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url=reverse("admin:registrar_domaininvitation_changelist"),
+            model=Domain,
+            client=self.client,
+        )
+
+        # Simulate selecting a single record, then clicking "Delete selected domains"
+        response = test_helper.get_table_delete_confirmation_page("0", index)
+
+        # Check for custom alert message
+        custom_alert_content = "If you cancel the domain invitation here"
+        self.assertContains(response, custom_alert_content)
 
 
 class TestUserPortfolioPermissionAdmin(TestCase):
@@ -1204,7 +1266,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.success")  # Mock the `messages.warning` call
+    @patch("django.contrib.messages.success")  # Mock the `messages.success` call
     def test_save_sends_email(self, mock_messages_success, mock_send_email):
         """On save_model, an email is sent if an invitation already exists."""
 
@@ -1454,6 +1516,94 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_admin_addition_emails")
+    def test_save_existing_sends_email_notification(self, mock_send_email):
+        """On save_model to an existing invitation, an email is set to notify existing
+        admins, if the invitation changes from member to admin."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Mock the response value of the email send
+        mock_send_email.return_value = True
+
+        # Create and save a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation.objects.create(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],  # Initially NOT an admin
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,  # Must be "INVITED"
+        )
+
+        # Create a request object
+        request = self.factory.post(f"/admin/registrar/PortfolioInvitation/{portfolio_invitation.pk}/change/")
+        request.user = self.superuser
+
+        # Change roles from MEMBER to ADMIN
+        portfolio_invitation.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, True)
+
+        # Assert that send_portfolio_admin_addition_emails is called
+        mock_send_email.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+    @less_console_noise_decorator
+    @patch("registrar.admin.send_portfolio_admin_addition_emails")
+    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
+    def test_save_existing_email_notification_warning(self, mock_messages_warning, mock_send_email):
+        """On save_model for an existing invitation, a warning is displayed if method to
+        send email to notify admins returns False."""
+
+        # Create an instance of the admin class
+        admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
+
+        # Mock the response value of the email send
+        mock_send_email.return_value = False
+
+        # Create and save a PortfolioInvitation instance
+        portfolio_invitation = PortfolioInvitation.objects.create(
+            email="james.gordon@gotham.gov",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],  # Initially NOT an admin
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,  # Must be "INVITED"
+        )
+
+        # Create a request object
+        request = self.factory.post(f"/admin/registrar/PortfolioInvitation/{portfolio_invitation.pk}/change/")
+        request.user = self.superuser
+
+        # Change roles from MEMBER to ADMIN
+        portfolio_invitation.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        # Call the save_model method
+        admin_instance.save_model(request, portfolio_invitation, None, True)
+
+        # Assert that send_portfolio_admin_addition_emails is called
+        mock_send_email.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_admin_addition_emails
+        _, called_kwargs = mock_send_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["email"], "james.gordon@gotham.gov")
+        self.assertEqual(called_kwargs["requestor"], self.superuser)
+        self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+        # Assert that messages.error was called with the correct message
+        mock_messages_warning.assert_called_once_with(
+            request, "Could not send email notification to existing organization admins."
+        )
 
 
 class TestHostAdmin(TestCase):
@@ -1922,7 +2072,7 @@ class TestDomainInformationAdmin(TestCase):
             self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
 
 
-class TestUserDomainRoleAdmin(TestCase):
+class TestUserDomainRoleAdmin(WebTest):
     """Tests for the UserDomainRoleAdmin class as super user
 
     Notes:
@@ -1949,6 +2099,8 @@ class TestUserDomainRoleAdmin(TestCase):
         """Setup environment for a mock admin user"""
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.superuser)
+        self.app.set_user(self.superuser.username)
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
@@ -2110,6 +2262,48 @@ class TestUserDomainRoleAdmin(TestCase):
 
             # We only need to check for the end of the HTML string
             self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
+
+    @less_console_noise_decorator
+    def test_custom_delete_confirmation_page(self):
+        """Tests if custom alerts display on User Domain Role delete page"""
+        domain, _ = Domain.objects.get_or_create(name="user-domain-role-test.gov", state=Domain.State.READY)
+        domain_role, _ = UserDomainRole.objects.get_or_create(domain=domain, user=self.superuser)
+
+        domain_invitation_change_page = self.app.get(
+            reverse("admin:registrar_userdomainrole_change", args=[domain_role.pk])
+        )
+
+        self.assertContains(domain_invitation_change_page, "user-domain-role-test.gov")
+        # click the "Delete" link
+        confirmation_page = domain_invitation_change_page.click("Delete", index=0)
+
+        custom_alert_content = "If you remove someone from a domain here"
+        self.assertContains(confirmation_page, custom_alert_content)
+
+    @less_console_noise_decorator
+    def test_custom_selected_delete_confirmation_page(self):
+        """Tests if custom alerts display on selected delete page from User Domain Roles table"""
+        domain, _ = Domain.objects.get_or_create(name="domain-invitation-test.gov", state=Domain.State.READY)
+        domain_role, _ = UserDomainRole.objects.get_or_create(domain=domain, user=self.superuser)
+
+        # Get the index. The post expects the index to be encoded as a string
+        index = f"{domain_role.id}"
+
+        test_helper = GenericTestHelper(
+            factory=self.factory,
+            user=self.superuser,
+            admin=self.admin,
+            url=reverse("admin:registrar_userdomainrole_changelist"),
+            model=Domain,
+            client=self.client,
+        )
+
+        # Simulate selecting a single record, then clicking "Delete selected domains"
+        response = test_helper.get_table_delete_confirmation_page("0", index)
+
+        # Check for custom alert message
+        custom_alert_content = "If you remove someone from a domain here"
+        self.assertContains(response, custom_alert_content)
 
 
 class TestListHeaderAdmin(TestCase):
