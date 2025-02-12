@@ -2,6 +2,7 @@ from datetime import date
 import logging
 import requests
 from django.contrib import messages
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
@@ -73,7 +74,7 @@ from django import forms
 logger = logging.getLogger(__name__)
 
 
-class DomainBaseView(DetailView):
+class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
     in session cache on GETs. Also provides methods for getting
@@ -174,7 +175,6 @@ class DomainBaseView(DetailView):
 
     def in_editable_state(self, pk):
         """Is the domain in an editable state"""
-
         requested_domain = None
         if Domain.objects.filter(id=pk).exists():
             requested_domain = Domain.objects.get(id=pk)
@@ -1240,7 +1240,7 @@ class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
-
+    
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)

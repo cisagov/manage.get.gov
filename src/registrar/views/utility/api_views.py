@@ -1,6 +1,7 @@
 import logging
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
+from registrar.decorators import IS_STAFF, grant_access
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -11,8 +12,7 @@ from registrar.utility.constants import BranchChoices
 logger = logging.getLogger(__name__)
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_senior_official_from_federal_agency_json(request):
     """Returns federal_agency information as a JSON"""
 
@@ -39,8 +39,7 @@ def get_senior_official_from_federal_agency_json(request):
         return JsonResponse({"error": "Senior Official not found"}, status=404)
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_portfolio_json(request):
     """Returns portfolio information as a JSON"""
 
@@ -96,8 +95,7 @@ def get_portfolio_json(request):
     return JsonResponse(portfolio_dict)
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_suborganization_list_json(request):
     """Returns suborganization list information for a portfolio as a JSON"""
 
@@ -119,8 +117,7 @@ def get_suborganization_list_json(request):
     return JsonResponse({"results": results, "pagination": {"more": False}})
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_federal_and_portfolio_types_from_federal_agency_json(request):
     """Returns specific portfolio information as a JSON. Request must have
     both agency_name and organization_type."""
@@ -148,8 +145,7 @@ def get_federal_and_portfolio_types_from_federal_agency_json(request):
     return JsonResponse(response_data)
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_action_needed_email_for_user_json(request):
     """Returns a default action needed email for a given user"""
 
@@ -173,8 +169,7 @@ def get_action_needed_email_for_user_json(request):
     return JsonResponse({"email": email}, status=200)
 
 
-@login_required
-@staff_member_required
+@grant_access(IS_STAFF)
 def get_rejection_email_for_user_json(request):
     """Returns a default rejection email for a given user"""
 

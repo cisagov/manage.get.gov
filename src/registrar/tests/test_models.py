@@ -2100,7 +2100,7 @@ class TestDomainRequestIncomplete(TestCase):
         self.wizard = DomainRequestWizard()
         self.wizard._domain_request = self.domain_request
         self.wizard.request = Mock(user=self.user, session={})
-        self.wizard.kwargs = {"id": self.domain_request.id}
+        self.wizard.kwargs = {"domain_request_pk": self.domain_request.id}
 
         # We use both of these flags in the test. In the normal app these are generated normally.
         # The alternative syntax is adding the decorator to each test.
