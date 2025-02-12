@@ -64,7 +64,7 @@ jobs:
         run: | 
           docker compose up -d 
           docker compose exec app apt-get update
-          docker compose exec app apt-get install -y libnss3
+          docker compose exec app apt-get install chromium-browser
 
       - name: run pa11y
         working-directory: ./src
