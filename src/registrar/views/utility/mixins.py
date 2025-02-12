@@ -185,20 +185,3 @@ class PortfolioReportsPermission(PermissionsLoginMixin):
             return False
 
         return self.request.user.is_org_user(self.request)
-
-
-class UserProfilePermission(PermissionsLoginMixin):
-    """Permission mixin that redirects to user profile if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access.
-
-        If the user is authenticated, they have access
-        """
-
-        # Check if the user is authenticated
-        if not self.request.user.is_authenticated:
-            return False
-
-        return True
