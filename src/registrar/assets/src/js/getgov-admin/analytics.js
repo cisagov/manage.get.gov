@@ -1,7 +1,5 @@
-
 import { debounce } from '../getgov/helpers.js';
 import { getParameterByName } from './helpers-admin.js';
-
 
 /** This function also sets the start and end dates to match the url params if they exist
 */
@@ -94,7 +92,6 @@ function createComparativeColumnChart(id, title, labelOne, labelTwo) {
     }
 
     var ctx = canvas.getContext("2d");
-
     var listOne = JSON.parse(canvas.getAttribute('data-list-one'));
     var listTwo = JSON.parse(canvas.getAttribute('data-list-two'));
 
