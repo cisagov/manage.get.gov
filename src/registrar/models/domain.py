@@ -1583,7 +1583,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
-        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+        elif self.is_expiring():
             help_text = "This domain is expiring soon. Complete the online renewal process to maintain access."
         else:
             help_text = Domain.State.get_help_text(self.state)
