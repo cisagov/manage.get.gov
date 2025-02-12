@@ -1,6 +1,4 @@
-"""Permissions-related mixin classes."""
-
-from django.contrib.auth.mixins import PermissionRequiredMixin
+"""Mixin classes."""
 import logging
 
 
@@ -135,53 +133,3 @@ class OrderableFieldsMixin:
         # Infer the column name in a similar manner to how Django does
         method.short_description = field.replace("_", " ")
         return method
-
-
-class PermissionsLoginMixin(PermissionRequiredMixin):
-    """Mixin that redirects to login page if not logged in, otherwise 403."""
-
-    def handle_no_permission(self):
-        self.raise_exception = self.request.user.is_authenticated
-        return super().handle_no_permission()
-
-
-class DomainAndRequestsReportsPermission(PermissionsLoginMixin):
-    """Permission mixin for domain and requests csv downloads"""
-
-    def has_permission(self):
-        """Check if this user has access to this domain.
-
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
-        """
-
-        if not self.request.user.is_authenticated:
-            return False
-
-        if self.request.user.is_restricted():
-            return False
-
-        return True
-
-
-class PortfolioReportsPermission(PermissionsLoginMixin):
-    """Permission mixin for portfolio csv downloads"""
-
-    def has_permission(self):
-        """Check if this user has access to this domain.
-
-        The user is in self.request.user and the domain needs to be looked
-        up from the domain's primary key in self.kwargs["pk"]
-        """
-
-        if not self.request.user.is_authenticated:
-            return False
-
-        if self.request.user.is_restricted():
-            return False
-
-        portfolio = self.request.session.get("portfolio")
-        if not self.request.user.has_view_members_portfolio_permission(portfolio):
-            return False
-
-        return self.request.user.is_org_user(self.request)
