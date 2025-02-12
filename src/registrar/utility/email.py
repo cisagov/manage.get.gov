@@ -57,7 +57,7 @@ def send_templated_email(  # noqa
     env_name = re.sub(r"^https?://", "", env_base_url).split(".")[0]
     # To add to subject lines ie [GETGOV-RH]
     prefix = f"[{env_name.upper()}] " if not settings.IS_PRODUCTION else ""
-    # For email links
+    # For email links ie getgov-rh.app.cloud.gov
     manage_url = env_base_url if not settings.IS_PRODUCTION else "https://manage.get.gov"
 
     # Adding to context

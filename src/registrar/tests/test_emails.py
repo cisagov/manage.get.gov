@@ -151,7 +151,7 @@ class TestEmails(TestCase):
     @override_settings(IS_PRODUCTION=False, BASE_URL="https://getgov-rh.app.cloud.gov")
     def test_email_non_production_subject_and_url_check(self):
         """Test sending an email in production that:
-        1. Does prefix in the email subject ([GETGOV-RH])
+        1. Does prefix in the email subject (ie [GETGOV-RH])
         2. Uses the sandbox url in the email body (ie getgov-rh.app.cloud.gov)"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             send_templated_email(
