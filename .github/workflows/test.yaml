@@ -65,8 +65,6 @@ jobs:
           docker compose up -d 
           docker compose exec app apt-get update
           docker compose exec app apt-get install -y chromium
-          docker compose exec app which chromium
-          docker compose exec app ls -l /usr/bin/chromium*
 
       - name: run pa11y
         working-directory: ./src
