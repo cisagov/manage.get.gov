@@ -57,7 +57,7 @@
 
       <p class="margin-y-0">Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
 
-      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+      {% with group_classes="margin-top-0" add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors form.role %}
       {% endwith %}
     </fieldset>
@@ -105,12 +105,9 @@
                 Invite this member to the organization?
             </h2>
             <h3>Member access and permissions</h3>
-            <!-- Display email as a header and access level -->
-            <h4 class="margin-bottom-0">Email</h4>
-            <p class="margin-top-0" id="modalEmail"></p>
 
-            <h4 class="margin-bottom-0">Member access</h4>
-            <p class="margin-top-0" id="modalAccessLevel"></p>
+            <p class="margin-bottom-1"><strong class="text-primary-darker">Email:</strong> <span id="modalEmail"></span></p>
+            <p class="margin-top-0 margin-bottom-1"><strong class="text-primary-darker">Member access:</strong> <span id="modalAccessLevel"></span></p>
 
             <!-- Dynamic Permissions Details -->
             <div id="permission_details"></div>

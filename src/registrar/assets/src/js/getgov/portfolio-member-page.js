@@ -101,7 +101,7 @@ export function initAddNewMemberPageListeners() {
 
       permissionSections.forEach(section => {
         // Find the <h3> element text
-        const sectionTitle = section.textContent;
+        const sectionTitle = section.textContent.trim().replace(/\*$/, "") + ": ";
 
         // Find the associated radio buttons container (next fieldset)
         const fieldset = section.nextElementSibling;
@@ -128,25 +128,30 @@ export function initAddNewMemberPageListeners() {
       });
     } else {
       // for admin users, the permissions are always the same
-      appendPermissionInContainer('Domains', 'Viewer', permissionDetailsContainer);
-      appendPermissionInContainer('Domain requests', 'Creator', permissionDetailsContainer);
-      appendPermissionInContainer('Members', 'Manager', permissionDetailsContainer);
+      appendPermissionInContainer('Domains: ', 'Viewer', permissionDetailsContainer);
+      appendPermissionInContainer('Domain requests: ', 'Creator', permissionDetailsContainer);
+      appendPermissionInContainer('Members: ', 'Manager', permissionDetailsContainer);
     }
   }
 
   function appendPermissionInContainer(sectionTitle, permissionDisplay, permissionContainer) {
+    console.log(sectionTitle)
     // Create new elements for the content
-    const titleElement = document.createElement("h4");
-    titleElement.textContent = sectionTitle;
-    titleElement.classList.add("text-primary", "margin-bottom-0");
+    const elementContainer = document.createElement("p");
+    elementContainer.classList.add("margin-top-0", "margin-bottom-1");
 
-    const permissionElement = document.createElement("p");
+    const titleElement = document.createElement("strong");
+    titleElement.textContent = sectionTitle;
+    titleElement.classList.add("text-primary-darker");
+
+    const permissionElement = document.createElement("span");
     permissionElement.textContent = permissionDisplay;
-    permissionElement.classList.add("margin-top-0");
 
     // Append to the content container
-    permissionContainer.appendChild(titleElement);
-    permissionContainer.appendChild(permissionElement);
+    elementContainer.appendChild(titleElement);
+    elementContainer.appendChild(permissionElement);
+
+    permissionContainer.appendChild(elementContainer);
   }
 
   /*
