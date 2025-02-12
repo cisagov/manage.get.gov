@@ -13,6 +13,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
+from django.views.generic import DeleteView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 from registrar.decorators import (
@@ -1332,10 +1333,12 @@ class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermission
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
-class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
+class DomainDeleteUserView(DeleteView):
     """Inside of a domain's user management, a form for deleting users."""
 
-    object: UserDomainRole  # workaround for type mismatch in DeleteView
+    object: UserDomainRole
+    model = UserDomainRole
+    context_object_name = "userdomainrole"
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""

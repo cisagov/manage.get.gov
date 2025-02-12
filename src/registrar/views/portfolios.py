@@ -6,7 +6,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
-from registrar.decorators import HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM, grant_access
+from registrar.decorators import (
+    HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
+    HAS_PORTFOLIO_DOMAINS_ANY_PERM,
+    IS_PORTFOLIO_MEMBER,
+    grant_access,
+)
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.domain import Domain
@@ -26,9 +31,7 @@ from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from registrar.views.utility.mixins import PortfolioMemberPermission
 from registrar.views.utility.permission_views import (
-    PortfolioDomainsPermissionView,
     PortfolioBasePermissionView,
-    NoPortfolioDomainsPermissionView,
     PortfolioMemberDomainsPermissionView,
     PortfolioMemberDomainsEditPermissionView,
     PortfolioMemberEditPermissionView,
@@ -45,7 +48,8 @@ from registrar.views.utility.invitation_helper import get_org_membership
 logger = logging.getLogger(__name__)
 
 
-class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_DOMAINS_ANY_PERM)
+class PortfolioDomainsView(View):
 
     template_name = "portfolio_domains.html"
 
@@ -685,7 +689,8 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
 
-class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioNoDomainsView(View):
     """Some users have access to the underlying portfolio, but not any domains.
     This is a custom view which explains that to the user - and denotes who to contact.
     """
@@ -714,7 +719,8 @@ class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
         return context
 
 
-class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioNoDomainRequestsView(View):
     """Some users have access to the underlying portfolio, but not any domain requests.
     This is a custom view which explains that to the user - and denotes who to contact.
     """

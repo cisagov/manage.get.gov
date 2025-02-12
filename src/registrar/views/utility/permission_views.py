@@ -10,7 +10,6 @@ from registrar.models.user_domain_role import UserDomainRole
 from .mixins import (
     DomainPermission,
     DomainInvitationPermission,
-    PortfolioDomainsPermission,
     PortfolioMemberDomainsPermission,
     PortfolioMemberDomainsEditPermission,
     PortfolioMemberEditPermission,
@@ -72,6 +71,13 @@ class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
         ):
             return True
 
+        return False
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow access to the domain pages, they will need to override
+        this function.
+        """
         return False
 
     # Abstract property enforces NotImplementedError on an attribute.
@@ -140,23 +146,6 @@ class PortfolioBasePermissionView(PortfolioBasePermission, DetailView, abc.ABC):
     @abc.abstractmethod
     def template_name(self):
         raise NotImplementedError
-
-
-class PortfolioDomainsPermissionView(PortfolioDomainsPermission, PortfolioBasePermissionView, abc.ABC):
-    """Abstract base view for portfolio domains views that enforces permissions.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-
-class NoPortfolioDomainsPermissionView(PortfolioBasePermissionView, abc.ABC):
-    """Abstract base view for a user without access to the
-    portfolio domains views that enforces permissions.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
 
 
 class PortfolioMembersPermissionView(PortfolioMembersPermission, PortfolioBasePermissionView, abc.ABC):

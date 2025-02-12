@@ -373,23 +373,6 @@ class PortfolioBasePermission(PermissionsLoginMixin):
         return self.request.user.is_org_user(self.request)
 
 
-class PortfolioDomainsPermission(PortfolioBasePermission):
-    """Permission mixin that allows access to portfolio domain pages if user
-    has access, otherwise 403"""
-
-    def has_permission(self):
-        """Check if this user has access to domains for this portfolio.
-
-        The user is in self.request.user and the portfolio can be looked
-        up from the portfolio's primary key in self.kwargs["pk"]"""
-
-        portfolio = self.request.session.get("portfolio")
-        if not self.request.user.has_any_domains_portfolio_permission(portfolio):
-            return False
-
-        return super().has_permission()
-
-
 class PortfolioMembersPermission(PortfolioBasePermission):
     """Permission mixin that allows access to portfolio members pages if user
     has access, otherwise 403"""

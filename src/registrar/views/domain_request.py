@@ -850,7 +850,7 @@ class DomainRequestWithdrawConfirmation(DetailView):
     `creator` of the domain request may withdraw it.
     """
 
-    template_name = "domain_request_withdraw_confirmation.html"    # DetailView property for what model this is viewing
+    template_name = "domain_request_withdraw_confirmation.html"  # DetailView property for what model this is viewing
     model = DomainRequest
     pk_url_kwarg = "domain_request_pk"
     context_object_name = "DomainRequest"

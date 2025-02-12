@@ -10,8 +10,10 @@ IS_STAFF = "is_staff"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
+IS_PORTFOLIO_MEMBER = "is_portfolio_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
+HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
 HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
@@ -97,9 +99,19 @@ def _user_has_permission(user, request, rules, **kwargs):
         has_permission = _can_access_other_user_domains(request, domain_id)
         conditions_met.append(has_permission)
 
+    if not any(conditions_met) and IS_PORTFOLIO_MEMBER in rules:
+        has_permission = user.is_org_user(request)
+        conditions_met.append(has_permission)
+
     if not any(conditions_met) and HAS_PORTFOLIO_DOMAINS_VIEW_ALL in rules:
         domain_id = kwargs.get("domain_pk")
         has_permission = _can_access_domain_via_portfolio_view_all_domains(request, domain_id)
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_DOMAINS_ANY_PERM in rules:
+        has_permission = user.is_org_user(request) and user.has_any_domains_portfolio_permission(
+            request.session.get("portfolio")
+        )
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER in rules:
@@ -142,7 +154,7 @@ def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
     if domain_request_id and not _is_domain_request_creator(user, domain_request_id):
         return False
     return user.is_org_user(request) and user.has_edit_request_portfolio_permission(request.session.get("portfolio"))
-    
+
 
 def _is_domain_manager(user, domain_pk):
     """Checks to see if the user is a domain manager of the
