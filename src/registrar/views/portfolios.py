@@ -23,7 +23,7 @@ from registrar.models import (
     PortfolioInvitation,
     User,
     UserDomainRole,
-    UserPortfolioPermission
+    UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
@@ -572,6 +572,7 @@ class PortfolioInvitedMemberDomainsView(View):
                 "portfolio_invitation": portfolio_invitation,
             },
         )
+
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDomainsEditView(DetailView, View):

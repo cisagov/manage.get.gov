@@ -5,7 +5,6 @@ from registrar.models import Domain, DomainInformation, DomainInvitation, Domain
 
 # Constants for clarity
 ALL = "all"
-IS_SUPERUSER = "is_superuser"
 IS_STAFF = "is_staff"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
@@ -88,9 +87,6 @@ def _user_has_permission(user, request, rules, **kwargs):
     if IS_STAFF in rules:
         conditions_met.append(user.is_staff)
 
-    if not any(conditions_met) and IS_SUPERUSER in rules:
-        conditions_met.append(user.is_superuser)
-
     if not any(conditions_met) and IS_DOMAIN_MANAGER in rules:
         has_permission = _is_domain_manager(user, **kwargs)
         conditions_met.append(has_permission)
@@ -148,25 +144,19 @@ def _user_has_permission(user, request, rules, **kwargs):
     if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_ANY_PERM in rules:
         portfolio = request.session.get("portfolio")
         has_permission = user.is_org_user(request) and (
-            user.has_view_members_portfolio_permission(portfolio) or
-            user.has_edit_members_portfolio_permission(portfolio)
+            user.has_view_members_portfolio_permission(portfolio)
+            or user.has_edit_members_portfolio_permission(portfolio)
         )
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_EDIT in rules:
         portfolio = request.session.get("portfolio")
-        has_permission = (
-            user.is_org_user(request) and
-            user.has_edit_members_portfolio_permission(portfolio)
-        )
+        has_permission = user.is_org_user(request) and user.has_edit_members_portfolio_permission(portfolio)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_VIEW in rules:
         portfolio = request.session.get("portfolio")
-        has_permission = (
-            user.is_org_user(request) and
-            user.has_view_members_portfolio_permission(portfolio)
-        )
+        has_permission = user.is_org_user(request) and user.has_view_members_portfolio_permission(portfolio)
         conditions_met.append(has_permission)
 
     return any(conditions_met)

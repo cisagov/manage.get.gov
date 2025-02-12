@@ -1,4 +1,5 @@
 """Mixin classes."""
+
 import logging
 
 
