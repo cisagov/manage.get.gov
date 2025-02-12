@@ -51,144 +51,137 @@
     {% csrf_token %}
     {{ formset.management_form }}
 
+    <div class="display-none">
+      {% for form in formset %}
+        {% if forloop.last %}
+          <h2>Add a name server</h2>
+
+              {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                {% if forloop.counter <= 2 %}
+                  {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+                  {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+                    {% input_with_errors form.server %}
+                  {% endwith %}
+                {% else %}
+                  {% with span_for_text=True %}
+                    {% input_with_errors form.server %}
+                    {% endwith %}
+                {% endif %}
+              {% endwith %}
+
+              {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+                {% input_with_errors form.ip %}
+              {% endwith %}
+
+        {% endif %}
+      {% endfor %}
+
+      {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
+      This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
+      <div class="margin-top-2">
+        <button
+              type="submit"
+              class="usa-button"
+          >Save
+        </button>
+
+        <button
+              type="submit"
+              class="usa-button usa-button--outline"
+              name="btn-cancel-click"
+              aria-label="Reset the data in the name server form to the registry state (undo changes)"
+          >Cancel
+        </button>
+      </div>
+    </div>
 
 
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
         <tr>
-          <th scope="col" role="columnheader">Name Servers </th>
+          <th scope="col" role="columnheader">Name Servers</th>
+          <th scope="col" role="columnheader">IP address</th>
           <th scope="col" role="columnheader">Action</th>
         </tr>
       </thead>
       <tbody>
+        {% for form in formset %}
+          {% if not forloop.last %}
+            <!-- Readonly row -->
+            <tr>
+              <td>{{ form.server.value }}</td>
+              <td>{{ form.ip.value }}</td>
+              <td>
+                <div class="tablet:display-flex tablet:flex-row">
+                  <button class='usa-button usa-button--unstyled margin-right-2'>
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="/public/img/sprite.svg#edit"></use>
+                    </svg>
+                    Edit <span class="usa-sr-only">{{ form.server }}</span>
+                  </button>
 
-    {% for form in formset %}
-      {% if not forloop.last %}
-        <tr>
-          <td>Name of server</td>
-          <td>action</td>
-        </tr>
-      {% endif %}
-    {% endfor %}
-            <!-- AJAX will populate this tbody -->
-          </tbody>
-        </table>
-        <h1>hidden table:</h1>
-    {% for form in formset %}
-      {% if forloop.last %}
-        <h2> got to this row</h2>
-      {% endif %}
-    {% endfor %}
-    <!--
-    if no data in formset: 
-      build 2 blank forms
-    --> 
+                  <button 
+                    role="button" 
+                    id="button-trigger-delete-{{ form.server.value }}"
+                    class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
+                  >
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                      <use xlink:href="/public/img/sprite.svg#delete"></use>
+                    </svg>
+                    Delete
+                  </button>
 
-    <!--
-    else if data in formset: 
-      build 1 blank form using the last form in the formset
-
-      build a table of records using for form in formset-1
-
-      
-
-            <table .......>
-              <thead>....</thead>
-              <tbody>  
-                {% for form in formset %}
-                  <tr class="repeatable-form">
-                    <td>
-                      {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-                        {% if forloop.counter <= 2 %}
-                          {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-                          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
-                            {% input_with_errors form.server %}
-                          {% endwith %}
-                        {% else %}
-                          {% with span_for_text=True %}
-                            {% input_with_errors form.server %}
-                            {% endwith %}
-                        {% endif %}
-                      {% endwith %}
-                    </td>
-                    <td>
-                      {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
-                        {% input_with_errors form.ip %}
-                      {% endwith %}
-                    </td>
-                    <td>
-                      <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                          <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-                        </svg>Delete
-                        <span class="sr-only">Name server {{forloop.counter}}</span>
+                  <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                    <div class="usa-accordion__heading">
+                      <button
+                        type="button"
+                        class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                        aria-expanded="false"
+                        aria-controls="more-actions-{{ form.server.value }}"
+                        aria-label=""
+                      >
+                        <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                          <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                        </svg>
                       </button>
                     </div>
-                  </td>
-                  </tr>
-                  {% endfor %}
-                </tboby>
-              </table>        
+                    <div id="more-actions-{{ form.server.value }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                      <h2>More options</h2>
+                      <button 
+                        role="button" 
+                        id="button-trigger-delete-{{ form.server.value }}"
+                        class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
 
-    --> 
+                </div>
+              </td>
+            </tr>
+            <!-- Edit row -->
+            <tr class="display-none">
+              <td>{{ form.server }}</td>
+              <td>{{ form.ip }}</td>
+              <td>
+                  <button class="usa-button usa-button--unstyled display-block">Save</button>
+                  <button class="usa-button usa-button--unstyled display-block">Cancel</button>
+                  <button class="usa-button usa-button--unstyled text-secondary display-block">Delete</button>
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
 
-    <!-- {% for form in formset %}
-    <div class="repeatable-form">
-      <div class="grid-row grid-gap-2 flex-end">
-        <div class="tablet:grid-col-5">
-          {{ form.domain }}
-          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-            {% if forloop.counter <= 2 %}
-              {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
-                {% input_with_errors form.server %}
-              {% endwith %}
-            {% else %}
-              {% with span_for_text=True %}
-                {% input_with_errors form.server %}
-                {% endwith %}
-            {% endif %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-5">
-          {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
-            {% input_with_errors form.ip %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-2">
-          <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg>Delete
-            <span class="sr-only">Name server {{forloop.counter}}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-    {% endfor %} -->
-
-    {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
-    This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
-    <div class="margin-top-2">
-      <button
-            type="submit"
-            class="usa-button"
-        >Save
-      </button>
-
-      <button
-            type="submit"
-            class="usa-button usa-button--outline"
-            name="btn-cancel-click"
-            aria-label="Reset the data in the name server form to the registry state (undo changes)"
-        >Cancel
-      </button>
-    </div>
+    
   </form>
   {% else %}
 
-  <h1>No initial data</h1>
+  <h2>Add name servers</h2>
   <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
@@ -196,7 +189,6 @@
     <div class="repeatable-form">
       <div class="grid-row grid-gap-2 flex-end">
         <div class="tablet:grid-col-5">
-          {{ form.domain }}
           {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
             {% if forloop.counter <= 2 %}
               {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
