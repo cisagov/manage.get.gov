@@ -46,7 +46,7 @@ jobs:
           docker compose run app ./manage.py makemigrations --check
 
   pa11y-scan:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
@@ -64,7 +64,7 @@ jobs:
         run: | 
           docker compose up -d 
           docker compose exec app apt-get update
-          docker compose exec app apt-get install chromium-browser
+          docker compose exec app apt-get install chromium
 
       - name: run pa11y
         working-directory: ./src
