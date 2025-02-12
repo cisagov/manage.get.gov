@@ -32,36 +32,38 @@
   {% endif %}
   {% endblock breadcrumb %}
 
-  <h1>DNS name servers</h1>
-
+  <div>
+    <h1>Name Servers</h1>
+    
+    <button type="button" class="usa-button" id="nameserver-add-form">
+      Add name servers
+    </button>
+  </div>
   <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
 
-  <p>Add a name server record by entering the address (e.g., ns1.nameserver.com) in the name server fields below. You must add at least two name servers (13 max).</p>
-
-  <div class="usa-alert usa-alert--info">
-    <div class="usa-alert__body">
-      <p class="margin-top-0">Add an IP address only when your name server's address includes your domain name (e.g., if your domain name is “example.gov” and your name server is “ns1.example.gov,” then an IP address is required). Multiple IP addresses must be separated with commas.</p>
-      <p class="margin-bottom-0">This step is uncommon unless you self-host your DNS or use custom addresses for your nameserver.</p>
-    </div>
-  </div>
+  <p>Add a name server record by clicking "Add name servers". You must add at least two name servers (13 max).</p>
 
   {% include "includes/required_fields.html" %}
 
-  <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
+  <form class="usa-form usa-form--extra-large nameservers-form display-none" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
-    {% for form in formset %}
-    <fieldset class="usa-fieldset">
-      <label class="usa-label" for="given-name">Name server {{forloop.counter}} </label>
-      <div class="usa-hint" id="gnHint">Example: ns{{forloop.counter}}.example.com</div>
-      <input
-        class="usa-input usa-input--xl"
-        id="given-name"
-        name="first-name"
-        aria-describedby="gnHint"
-      />
-  </form>
-    {% endfor %}
+
+
+
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked display-none">
+      <caption class="sr-only">Your registered domains</caption>
+      <thead>
+        <tr>
+          <th scope="col" role="columnheader">Name Servers </th>
+          <th scope="col" role="columnheader">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- AJAX will populate this tbody -->
+      </tbody>
+    </table>
+
     <!--
     if no data in formset: 
       build 2 blank forms
@@ -73,6 +75,7 @@
 
       build a table of records using for form in formset-1
 
+      
 
             <table .......>
               <thead>....</thead>
@@ -148,12 +151,6 @@
       </div>
     </div>
     {% endfor %} -->
-
-    <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-      </svg>Add another name server
-    </button>
 
     {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
     This solution still works when we remove the 'add more' at 13 forms {% endcomment %}

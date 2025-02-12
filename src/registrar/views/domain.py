@@ -758,8 +758,10 @@ class DomainNameserversView(DomainFormBaseView):
 
         # Ensure at least 3 fields, filled or empty
         if len(initial_data) == 0:
-            while len(initial_data) < 2:
+            while len(initial_data) < 1:
                 initial_data.append({})
+        else:
+            initial_data.append({})
 
         return initial_data
 
@@ -771,6 +773,7 @@ class DomainNameserversView(DomainFormBaseView):
         """Adjust context from FormMixin for formsets."""
         context = super().get_context_data(**kwargs)
         # use "formset" instead of "form" for the key
+        print(context)
         context["formset"] = context.pop("form")
         return context
 
