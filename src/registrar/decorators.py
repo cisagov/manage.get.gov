@@ -1,7 +1,7 @@
 import functools
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
-from registrar.models import Domain, DomainInformation, DomainRequest, UserDomainRole
+from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
 
 # Constants for clarity
 ALL = "all"
@@ -18,7 +18,6 @@ HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
-# HAS_PORTFOLIO_DOMAINS_VIEW_MANAGED = "has_portfolio_domains_view_managed"
 
 
 def grant_access(*rules):
@@ -90,13 +89,11 @@ def _user_has_permission(user, request, rules, **kwargs):
         conditions_met.append(user.is_superuser)
 
     if not any(conditions_met) and IS_DOMAIN_MANAGER in rules:
-        domain_id = kwargs.get("domain_pk")
-        has_permission = _is_domain_manager(user, domain_id)
+        has_permission = _is_domain_manager(user, **kwargs)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_STAFF_MANAGING_DOMAIN in rules:
-        domain_id = kwargs.get("domain_pk")
-        has_permission = _can_access_other_user_domains(request, domain_id)
+        has_permission = _is_staff_managing_domain(request, **kwargs)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_PORTFOLIO_MEMBER in rules:
@@ -115,13 +112,11 @@ def _user_has_permission(user, request, rules, **kwargs):
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER in rules:
-        domain_id = kwargs.get("domain_pk")
-        has_permission = _is_domain_manager(user, domain_id) and _is_portfolio_member(request)
+        has_permission = _is_domain_manager(user, **kwargs) and _is_portfolio_member(request)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER in rules:
-        domain_id = kwargs.get("domain_pk")
-        has_permission = _is_domain_manager(user, domain_id) and not _is_portfolio_member(request)
+        has_permission = _is_domain_manager(user, **kwargs) and not _is_portfolio_member(request)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and IS_DOMAIN_REQUEST_CREATOR in rules:
@@ -156,10 +151,24 @@ def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
     return user.is_org_user(request) and user.has_edit_request_portfolio_permission(request.session.get("portfolio"))
 
 
-def _is_domain_manager(user, domain_pk):
-    """Checks to see if the user is a domain manager of the
-    domain with domain_pk."""
-    return UserDomainRole.objects.filter(user=user, domain_id=domain_pk).exists()
+def _is_domain_manager(user, **kwargs):
+    """
+    Determines if the given user is a domain manager for a specified domain.
+
+    - First, it checks if 'domain_pk' is present in the URL parameters.
+    - If 'domain_pk' exists, it verifies if the user has a domain role for that domain.
+    - If 'domain_pk' is absent, it checks for 'domain_invitation_pk' to determine if the user has domain permissions through an invitation.
+
+    Returns:
+        bool: True if the user is a domain manager, False otherwise.
+    """
+    domain_id = kwargs.get("domain_pk")
+    if domain_id:
+        return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
+    domain_invitation_id = kwargs.get("domain_invitation_pk")
+    if domain_invitation_id:
+        return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
+    return False
 
 
 def _is_domain_request_creator(user, domain_request_pk):
@@ -176,10 +185,35 @@ def _is_portfolio_member(request):
     return request.user.is_org_user(request)
 
 
-def _can_access_other_user_domains(request, domain_pk):
-    """Checks to see if an authorized user (staff or superuser)
-    can access a domain that they did not create or were invited to.
+def _is_staff_managing_domain(request, **kwargs):
     """
+    Determines whether a staff user (analyst or superuser) has permission to manage a domain
+    that they did not create or were not invited to.
+
+    The function enforces:
+    1. **User Authorization** - The user must have `analyst_access_permission` or `full_access_permission`.
+    2. **Valid Session Context** - The user must have explicitly selected the domain for management
+       via an 'analyst action' (e.g., by clicking 'Manage Domain' in the admin interface).
+    3. **Domain Status Check** - Only domains in specific statuses (e.g., APPROVED, IN_REVIEW, etc.)
+       can be managed, except in cases where the domain lacks a status due to errors.
+
+    Process:
+    - First, the function retrieves the `domain_pk` from the URL parameters.
+    - If `domain_pk` is not provided, it attempts to resolve the domain via `domain_invitation_pk`.
+    - It checks if the user has the required permissions.
+    - It verifies that the user has an active 'analyst action' session for the domain.
+    - Finally, it ensures that the domain is in a status that allows management.
+
+    Returns:
+        bool: True if the user is allowed to manage the domain, False otherwise.
+    """
+
+    domain_id = kwargs.get("domain_pk")
+    if not domain_id:
+        domain_invitation_id = kwargs.get("domain_invitation_pk")
+        domain_invitation = DomainInvitation.objects.filter(id=domain_invitation_id).first()
+        if domain_invitation:
+            domain_id = domain_invitation.domain_id
 
     # Check if the request user is permissioned...
     user_is_analyst_or_superuser = request.user.has_perm(
@@ -197,7 +231,7 @@ def _can_access_other_user_domains(request, domain_pk):
     can_do_action = (
         "analyst_action" in session
         and "analyst_action_location" in session
-        and session["analyst_action_location"] == domain_pk
+        and session["analyst_action_location"] == domain_id
     )
 
     if not can_do_action:
@@ -215,7 +249,7 @@ def _can_access_other_user_domains(request, domain_pk):
         None,
     ]
 
-    requested_domain = DomainInformation.objects.filter(domain_id=domain_pk).first()
+    requested_domain = DomainInformation.objects.filter(domain_id=domain_id).first()
 
     # if no domain information or domain request exist, the user
     # should be able to manage the domain; however, if domain information

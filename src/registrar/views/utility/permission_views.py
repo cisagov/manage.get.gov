@@ -2,18 +2,14 @@
 
 import abc  # abstract base class
 
-from django.views.generic import DetailView, DeleteView, UpdateView
-from registrar.models import Domain, DomainInvitation, Portfolio
+from django.views.generic import DetailView
+from registrar.models import Portfolio
 from registrar.models.user import User
-from registrar.models.user_domain_role import UserDomainRole
 
 from .mixins import (
-    DomainPermission,
-    DomainInvitationPermission,
     PortfolioMemberDomainsPermission,
     PortfolioMemberDomainsEditPermission,
     PortfolioMemberEditPermission,
-    UserDeleteDomainRolePermission,
     UserProfilePermission,
     PortfolioBasePermission,
     PortfolioMembersPermission,
@@ -22,92 +18,6 @@ from .mixins import (
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class DomainPermissionView(DomainPermission, DetailView, abc.ABC):
-    """Abstract base view for domains that enforces permissions.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = Domain
-    pk_url_kwarg = "domain_pk"
-    # variable name in template context for the model object
-    context_object_name = "domain"
-
-    # Adds context information for user permissions
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
-            "registrar.full_access_permission"
-        )
-        context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
-        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
-        context["is_editable"] = self.is_editable()
-        # Stored in a variable for the linter
-        action = "analyst_action"
-        action_location = "analyst_action_location"
-        # Flag to see if an analyst is attempting to make edits
-        if action in self.request.session:
-            context[action] = self.request.session[action]
-        if action_location in self.request.session:
-            context[action_location] = self.request.session[action_location]
-
-        return context
-
-    def is_editable(self):
-        """Returns whether domain is editable in the context of the view"""
-        domain_editable = self.object.is_editable()
-        if not domain_editable:
-            return False
-
-        # if user is domain manager or analyst or admin, return True
-        if (
-            self.can_access_other_user_domains(self.object.id)
-            or UserDomainRole.objects.filter(user=self.request.user, domain=self.object).exists()
-        ):
-            return True
-
-        return False
-
-    def can_access_domain_via_portfolio(self, pk):
-        """Most views should not allow permission to portfolio users.
-        If particular views allow access to the domain pages, they will need to override
-        this function.
-        """
-        return False
-
-    # Abstract property enforces NotImplementedError on an attribute.
-    @property
-    @abc.abstractmethod
-    def template_name(self):
-        raise NotImplementedError
-
-
-class DomainInvitationPermissionCancelView(DomainInvitationPermission, UpdateView, abc.ABC):
-    """Abstract view for cancelling a DomainInvitation."""
-
-    model = DomainInvitation
-    object: DomainInvitation
-
-
-class UserDomainRolePermissionDeleteView(UserDeleteDomainRolePermission, DeleteView, abc.ABC):
-    """Abstract base view for deleting a UserDomainRole.
-
-    This abstract view cannot be instantiated. Actual views must specify
-    `template_name`.
-    """
-
-    # DetailView property for what model this is viewing
-    model = UserDomainRole
-    # workaround for type mismatch in DeleteView
-    object: UserDomainRole
-
-    # variable name in template context for the model object
-    context_object_name = "userdomainrole"
 
 
 class UserProfilePermissionView(UserProfilePermission, DetailView, abc.ABC):

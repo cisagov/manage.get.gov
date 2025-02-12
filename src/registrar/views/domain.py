@@ -1,10 +1,3 @@
-"""Views for a single Domain.
-
-Authorization is handled by the `DomainPermissionView`. To ensure that only
-authorized users can see information on a domain, every view here should
-inherit from `DomainPermissionView` (or DomainInvitationPermissionCancelView).
-"""
-
 from datetime import date
 import logging
 import requests
@@ -13,7 +6,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
-from django.views.generic import DeleteView
+from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 from registrar.decorators import (
@@ -49,7 +42,6 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
-from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
@@ -76,18 +68,21 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
-from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 from django import forms
 
 logger = logging.getLogger(__name__)
 
 
-class DomainBaseView(DomainPermissionView):
+class DomainBaseView(DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
     in session cache on GETs. Also provides methods for getting
     and setting the domain in cache
     """
+
+    model = Domain
+    pk_url_kwarg = "domain_pk"
+    context_object_name = "domain"
 
     def get(self, request, *args, **kwargs):
         self._get_domain(request)
@@ -119,6 +114,134 @@ class DomainBaseView(DomainPermissionView):
         """
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
+            "registrar.full_access_permission"
+        )
+        context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
+        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["is_editable"] = self.is_editable()
+        # Stored in a variable for the linter
+        action = "analyst_action"
+        action_location = "analyst_action_location"
+        # Flag to see if an analyst is attempting to make edits
+        if action in self.request.session:
+            context[action] = self.request.session[action]
+        if action_location in self.request.session:
+            context[action_location] = self.request.session[action_location]
+
+        return context
+
+    def is_editable(self):
+        """Returns whether domain is editable in the context of the view"""
+        domain_editable = self.object.is_editable()
+        if not domain_editable:
+            return False
+
+        # if user is domain manager or analyst or admin, return True
+        if (
+            self.can_access_other_user_domains(self.object.id)
+            or UserDomainRole.objects.filter(user=self.request.user, domain=self.object).exists()
+        ):
+            return True
+
+        return False
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow access to the domain pages, they will need to override
+        this function.
+        """
+        return False
+
+    def has_permission(self):
+        """Check if this user has access to this domain.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["domain_pk"]
+        """
+        pk = self.kwargs["domain_pk"]
+
+        # test if domain in editable state
+        if not self.in_editable_state(pk):
+            return False
+
+        # if we need to check more about the nature of role, do it here.
+        return True
+
+    def in_editable_state(self, pk):
+        """Is the domain in an editable state"""
+
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        # if domain is editable return true
+        if requested_domain and requested_domain.is_editable():
+            return True
+        return False
+
+    def can_access_other_user_domains(self, pk):
+        """Checks to see if an authorized user (staff or superuser)
+        can access a domain that they did not create or was invited to.
+        """
+
+        # Check if the user is permissioned...
+        user_is_analyst_or_superuser = self.request.user.has_perm(
+            "registrar.analyst_access_permission"
+        ) or self.request.user.has_perm("registrar.full_access_permission")
+
+        if not user_is_analyst_or_superuser:
+            return False
+
+        # Check if the user is attempting a valid edit action.
+        # In other words, if the analyst/admin did not click
+        # the 'Manage Domain' button in /admin,
+        # then they cannot access this page.
+        session = self.request.session
+        can_do_action = (
+            "analyst_action" in session
+            and "analyst_action_location" in session
+            and session["analyst_action_location"] == pk
+        )
+
+        if not can_do_action:
+            return False
+
+        # Analysts may manage domains, when they are in these statuses:
+        valid_domain_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            # Edge case - some domains do not have
+            # a status or DomainInformation... aka a status of 'None'.
+            # It is necessary to access those to correct errors.
+            None,
+        ]
+
+        requested_domain = None
+        if DomainInformation.objects.filter(id=pk).exists():
+            requested_domain = DomainInformation.objects.get(id=pk)
+
+        # if no domain information or domain request exist, the user
+        # should be able to manage the domain; however, if domain information
+        # and domain request exist, and domain request is not in valid status,
+        # user should not be able to manage domain
+        if (
+            requested_domain
+            and requested_domain.domain_request
+            and requested_domain.domain_request.status not in valid_domain_statuses
+        ):
+            return False
+
+        # Valid session keys exist,
+        # the user is permissioned,
+        # and it is in a valid status
+        return True
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -433,7 +556,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
             return super().has_permission()
 
 
-@grant_access(IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER)
+@grant_access(IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSubOrganizationView(DomainFormBaseView):
     """Suborganization view"""
 
@@ -480,7 +603,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
         return super().form_valid(form)
 
 
-@grant_access(IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER)
+@grant_access(IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""
 
@@ -1307,8 +1430,9 @@ class DomainAddUserView(DomainFormBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
-class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
-    object: DomainInvitation
+class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
+    model = DomainInvitation
+    pk_url_kwarg = "domain_invitation_pk"
     fields = []
 
     def post(self, request, *args, **kwargs):
