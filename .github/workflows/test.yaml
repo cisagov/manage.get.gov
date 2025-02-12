@@ -50,11 +50,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Chrome dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libnss3
-
       - name: Disable Login
         working-directory: ./src
         # by adding MockUserLogin to settings.MIDDLEWARE
@@ -66,7 +61,10 @@ jobs:
       - name: Start container
         working-directory: ./src
         # leverage the docker compose setup that we already have for local development
-        run: docker compose up -d 
+        run: | 
+          docker compose up -d 
+          docker compose exec app apt-get update
+          docker compose exec app apt-get install -y libnss3
 
       - name: run pa11y
         working-directory: ./src
