@@ -47,7 +47,10 @@
 }
 
 .usa-accordion--more-actions .usa-accordion__content {
-    top: 28px;
+    top: 20px;
+    &.top-28px {
+        top: 28px;
+    }
 }
 
 // Special positioning for the kabob menu popup in the last row on a given page

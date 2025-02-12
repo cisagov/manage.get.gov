@@ -99,7 +99,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
   // Main kebab structure
   const kebab = `
     ${generateModalButton(true)} <!-- Mobile button -->
-    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+    <div class="usa-accordion usa-accordion--more-actions margin-right-2 margin-top-3px hidden-mobile-flex">
       <div class="usa-accordion__heading">
         <button
           type="button"
@@ -113,7 +113,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
           </svg>
         </button>
       </div>
-      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0" hidden>
+      <div id="more-actions-${unique_id}" class="usa-accordion__content usa-prose shadow-1 left-auto right-0${icon_class === 'usa-icon--large' ? ' top-28px' : ''}" hidden>
         <h2>More options</h2>
         ${generateModalButton()} <!-- Desktop button -->
       </div>
