@@ -135,7 +135,6 @@ export function initAddNewMemberPageListeners() {
   }
 
   function appendPermissionInContainer(sectionTitle, permissionDisplay, permissionContainer) {
-    console.log(sectionTitle)
     // Create new elements for the content
     const elementContainer = document.createElement("p");
     elementContainer.classList.add("margin-top-0", "margin-bottom-1");
