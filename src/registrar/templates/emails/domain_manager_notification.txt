@@ -15,7 +15,7 @@ The person who received the invitation will become a domain manager once they lo
 associated with the invited email address.
 
 If you need to cancel this invitation or remove the domain manager, you can do that by going to 
-this domain in the .gov registrar <{{ manage_url }}.
+this domain in the .gov registrar <{{ manage_url }}>.
 
 
 WHY DID YOU RECEIVE THIS EMAIL? 
