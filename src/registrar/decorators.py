@@ -18,6 +18,8 @@ HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
+HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
+HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 
 
 def grant_access(*rules):
@@ -140,6 +142,22 @@ def _user_has_permission(user, request, rules, **kwargs):
         domain_request_id = kwargs.get("domain_request_pk")
         has_permission = _has_portfolio_domain_requests_edit(user, request, domain_request_id)
         print(has_permission)
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_ANY_PERM in rules:
+        portfolio = request.session.get("portfolio")
+        has_permission = user.is_org_user(request) and (
+            user.has_view_members_portfolio_permission(portfolio) or
+            user.has_edit_members_portfolio_permission(portfolio)
+        )
+        conditions_met.append(has_permission)
+
+    if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_EDIT in rules:
+        portfolio = request.session.get("portfolio")
+        has_permission = (
+            user.is_org_user(request) and
+            user.has_edit_members_portfolio_permission(portfolio)
+        )
         conditions_met.append(has_permission)
 
     return any(conditions_met)
