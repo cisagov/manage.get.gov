@@ -44,7 +44,7 @@
   <p>Add a name server record by clicking "Add name servers". You must add at least two name servers (13 max).</p>
 
   {% include "includes/required_fields.html" %}
-
+  <!-- if initial_data is none -->
   <form class="usa-form usa-form--extra-large nameservers-form display-none" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
