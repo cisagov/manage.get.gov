@@ -18,7 +18,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 
 {% block content %}
 
-  <div id="content-main" class="custom-admin-template">
+  <div id="content-main" class="custom-admin-template analytics-dashboard">
 
     <div class="grid-row grid-gap-2">
       <div class="tablet:grid-col-6 margin-top-2">
@@ -136,7 +136,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 		<div class="analytics-dashboard-charts margin-top-2">
 			{% comment %} Managed/Unmanaged domains {% endcomment %}
 			<div class="chart-1 grid-col">
-				<canvas id="myChart1" width="400" height="200"
+				<canvas id="managed-domains-chart" width="400" height="200"
 				aria-label="Chart: {{ data.managed_domains.end_date_count.0 }} managed domains for {{ data.end_date }}"
 				role="img"
 				data-list-one="{{ data.managed_domains.start_date_count }}"
@@ -155,7 +155,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 				</details>
 			</div>
 			<div class="chart-2 grid-col">
-				<canvas id="myChart2" width="400" height="200"
+				<canvas id="unmanaged-domains-chart" width="400" height="200"
 				aria-label="Chart: {{ data.unmanaged_domains.end_date_count.0 }} unmanaged domains for {{ data.end_date }}"
 				role="img"
 				data-list-one="{{ data.unmanaged_domains.start_date_count }}"
@@ -176,7 +176,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 
 			{% comment %} Deleted/Ready domains {% endcomment %}
 			<div class="chart-3 grid-col">
-				<canvas id="myChart3" width="400" height="200"
+				<canvas id="deleted-domains-chart" width="400" height="200"
 				aria-label="Chart: {{ data.deleted_domains.end_date_count.0 }} deleted domains for {{ data.end_date }}"
 				role="img" 
 				data-list-one="{{ data.deleted_domains.start_date_count }}"
@@ -195,7 +195,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 				</details>
 			</div>
 			<div class="chart-4 grid-col">
-				<canvas id="myChart4" width="400" height="200"
+				<canvas id="ready-domains-chart" width="400" height="200"
 				aria-label="Chart: {{ data.ready_domains.end_date_count.0 }} ready domains for {{ data.end_date }}"
 				role="img" 
 				data-list-one="{{ data.ready_domains.start_date_count }}"
@@ -216,7 +216,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 
 			{% comment %} Requests {% endcomment %}
 			<div class="chart-5 grid-col">
-				<canvas id="myChart5" width="400" height="200"
+				<canvas id="submitted-requests-chart" width="400" height="200"
 				aria-label="Chart: {{ data.submitted_requests.end_date_count.0 }} submitted requests for {{ data.end_date }}"
 				role="img" 
 				data-list-one="{{ data.submitted_requests.start_date_count }}"
@@ -235,7 +235,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
 				</details>
 			</div>
 			<div class="chart-6 grid-col">
-				<canvas id="myChart6" width="400" height="200"
+				<canvas id="all-requests-chart" width="400" height="200"
 				aria-label="Chart: {{ data.requests.end_date_count.0 }} requests for {{ data.end_date }}"
 				role="img" 
 				data-list-one="{{ data.requests.start_date_count }}"
