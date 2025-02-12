@@ -69,4 +69,4 @@ jobs:
         run: |
           sleep 20;
           docker compose exec node npm i -g pa11y-ci
-          docker compose exec node pa11y-ci 
+          docker compose exec node npm run pa11y-ci 
