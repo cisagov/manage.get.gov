@@ -45,13 +45,15 @@
 
   {% include "includes/required_fields.html" %}
   <!-- if initial_data is none -->
-  <form class="usa-form usa-form--extra-large nameservers-form display-none" method="post" novalidate id="form-container">
+
+  {% if formset.initial and formset.forms.0.initial %}
+  <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
     {% csrf_token %}
     {{ formset.management_form }}
 
 
 
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked display-none">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
         <tr>
@@ -60,10 +62,24 @@
         </tr>
       </thead>
       <tbody>
-        <!-- AJAX will populate this tbody -->
-      </tbody>
-    </table>
 
+    {% for form in formset %}
+      {% if not forloop.last %}
+        <tr>
+          <td>Name of server</td>
+          <td>action</td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+            <!-- AJAX will populate this tbody -->
+          </tbody>
+        </table>
+        <h1>hidden table:</h1>
+    {% for form in formset %}
+      {% if forloop.last %}
+        <h2> got to this row</h2>
+      {% endif %}
+    {% endfor %}
     <!--
     if no data in formset: 
       build 2 blank forms
@@ -170,4 +186,63 @@
       </button>
     </div>
   </form>
+  {% else %}
+
+  <h1>No initial data</h1>
+  <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {% for form in formset %}
+    <div class="repeatable-form">
+      <div class="grid-row grid-gap-2 flex-end">
+        <div class="tablet:grid-col-5">
+          {{ form.domain }}
+          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+            {% if forloop.counter <= 2 %}
+              {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+                {% input_with_errors form.server %}
+              {% endwith %}
+            {% else %}
+              {% with span_for_text=True %}
+                {% input_with_errors form.server %}
+                {% endwith %}
+            {% endif %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-5">
+          {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+            {% input_with_errors form.ip %}
+          {% endwith %}
+        </div>
+        <div class="tablet:grid-col-2">
+          <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
+            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
+            </svg>Delete
+            <span class="sr-only">Name server {{forloop.counter}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
+    This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
+    <div class="margin-top-2">
+      <button
+            type="submit"
+            class="usa-button"
+        >Save
+      </button>
+
+      <button
+            type="submit"
+            class="usa-button usa-button--outline"
+            name="btn-cancel-click"
+            aria-label="Reset the data in the name server form to the registry state (undo changes)"
+        >Cancel
+      </button>
+    </div>
+  </form>
+  {% endif %}
 {% endblock %}  {# domain_content #}
