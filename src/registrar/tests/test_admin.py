@@ -526,7 +526,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -595,7 +595,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -661,7 +661,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -943,7 +943,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -1010,7 +1010,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -1076,7 +1076,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert error message
         mock_messages_error.assert_called_once_with(
-            request, "Can't send invitation email. No email is associated with your user account."
+            request, "Can’t send invitation email. No email is associated with your user account."
         )
 
         # Assert the invitations were saved
@@ -1484,7 +1484,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(
             request,
-            "Can't send invitation email. No email is associated with your user account.",
+            "Can’t send invitation email. No email is associated with your user account.",
         )
 
     @less_console_noise_decorator

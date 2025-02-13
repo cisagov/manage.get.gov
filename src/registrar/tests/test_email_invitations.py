@@ -531,7 +531,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
             send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
 
         self.assertIn(
-            "Can't send invitation email. No email is associated with your user account.", str(context.exception)
+            "Can’t send invitation email. No email is associated with your user account.", str(context.exception)
         )
 
     @less_console_noise_decorator
@@ -869,7 +869,7 @@ class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
         mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
         mock_send_removal_emails.assert_not_called()  # Should not proceed if email retrieval fails
         self.assertEqual(
-            str(context.exception), "Can't send invitation email. No email is associated with your user account."
+            str(context.exception), "Can’t send invitation email. No email is associated with your user account."
         )
 
     @less_console_noise_decorator

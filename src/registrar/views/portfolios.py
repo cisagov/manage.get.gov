@@ -935,7 +935,7 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
-                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                f"Can’t send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
                 exc_info=True,
             )
         else:
