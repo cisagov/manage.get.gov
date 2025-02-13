@@ -41,7 +41,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from .public_contact import PublicContact
 
 from .user_domain_role import UserDomainRole
-from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 

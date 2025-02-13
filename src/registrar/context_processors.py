@@ -71,14 +71,6 @@ def portfolio_permissions(request):
     }
     try:
         portfolio = request.session.get("portfolio")
-
-        # These feature flags will display and doesn't depend on portfolio
-        portfolio_context.update(
-            {
-                "has_organization_feature_flag": True,
-            }
-        )
-
         if portfolio:
             return {
                 "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
