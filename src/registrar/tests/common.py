@@ -232,7 +232,28 @@ class MockUserLogin:
 
     def __call__(self, request):
         if request.user.is_anonymous:
-            user = create_superuser()
+            user = None
+            UserModel = get_user_model()
+            create_superuser()
+            username = "Testy"
+            p = "somefakepassword"
+            args = {
+                UserModel.USERNAME_FIELD: username,
+                "email": "adminpal@example.com",
+                "first_name": "first",
+                "last_name": "last",
+                "password": p,
+                "phone": "8003111234",
+                "title": "awesomesauce"
+            }
+            user, _ = UserModel.objects.get_or_create(**args)
+            user.is_superuser = True
+            user.is_staff = True
+            # Create or retrieve the group
+            group, _ = UserGroup.objects.get_or_create(name="full_access_group")
+            # Add the user to the group
+            user.groups.set([group])
+            user.save()
             backend = settings.AUTHENTICATION_BACKENDS[-1]
             login(request, user, backend=backend)
 
