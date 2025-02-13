@@ -234,7 +234,6 @@ class MockUserLogin:
         if request.user.is_anonymous:
             user = None
             UserModel = get_user_model()
-            create_superuser()
             username = "Testy"
             p = "somefakepassword"
             args = {
