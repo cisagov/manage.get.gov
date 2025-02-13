@@ -233,11 +233,6 @@ class MockUserLogin:
     def __call__(self, request):
         if request.user.is_anonymous:
             user = create_superuser()
-            # Create or retrieve the group
-            group, _ = UserGroup.objects.get_or_create(name="full_access_group")
-            # Add the user to the group
-            user.groups.set([group])
-            user.save()
             backend = settings.AUTHENTICATION_BACKENDS[-1]
             login(request, user, backend=backend)
 
