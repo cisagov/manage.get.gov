@@ -25,9 +25,9 @@
       </li>
       <li class="usa-breadcrumb__list-item">
         {% if member %}
-          {% url 'member' pk=member.pk as back_url %}
+          {% url 'member' pk=member.id as back_url %}
         {% elif invitation %}
-          {% url 'invitedmember' pk=invitation.pk as back_url %}
+          {% url 'invitedmember' pk=invitation.id as back_url %}
         {% endif %}
         <a href="{{ back_url }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
       </li>
