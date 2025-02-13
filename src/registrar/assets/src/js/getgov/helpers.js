@@ -97,8 +97,13 @@ export function submitForm(form_id) {
     }
 }
 
+/**
+ * Helper function to strip HTML tags
+ * THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
+ */
 export function stripHtmlTags(input) {
     const tempDiv = document.createElement("div");
+    // NOTE: THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
     tempDiv.innerHTML = input;
     return tempDiv.textContent || tempDiv.innerText || "";
 }

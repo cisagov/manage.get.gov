@@ -74,19 +74,15 @@
     </section>
 
     <section id="domain-assignments-readonly-view" class="display-none">
-        <h1 class="margin-bottom-3">Review domain assignments</h1>
+        <h1 class="margin-bottom-3">Review and apply domain assignment changes</h1>
 
-        <h2 class="margin-top-0">Would you like to continue with the following domain assignment changes for 
+        <h2 class="margin-top-0 margin-bottom-4">Would you like to continue with the following domain assignment changes for 
             {% if member %}
                 {{ member.email }}
             {% else %}
                 {{ portfolio_invitation.email }}
             {% endif %}
         </h2>
-
-        <p class="margin-bottom-4">
-            When you save this form the member will get an email to notify them of any changes.
-        </p>
 
         <div id="domain-assignments-summary" class="margin-bottom-5">
              <!-- AJAX will populate this summary -->
@@ -120,7 +116,7 @@
                     type="button"
                     class="usa-button"
                 >
-                    Save
+                    Apply changes
                 </button>
             </li>
         </ul>
