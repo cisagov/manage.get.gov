@@ -1,4 +1,4 @@
-import { hideElement, showElement, getCsrfToken } from './helpers.js';
+import { hideElement, showElement, getCsrfToken, stripHtmlTags } from './helpers.js';
 import { uswdsInitializeModals, uswdsUnloadModals } from './helpers-uswds.js';
 
 import { BaseTable, addModal, generateKebabHTML } from './table-base.js';
@@ -98,9 +98,9 @@ export class DomainRequestsTable extends BaseTable {
 
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
-
+        const sanitizedDomainName = stripHtmlTags(domainName);
         // 2nd path (org model): Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
-        modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
+        modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', sanitizedDomainName);
       }
     }
 

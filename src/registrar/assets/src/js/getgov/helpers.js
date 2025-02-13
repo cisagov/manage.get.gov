@@ -96,3 +96,9 @@ export function submitForm(form_id) {
         console.error("Form '" + form_id + "' not found.");
     }
 }
+
+export function stripHtmlTags(input) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = input;
+    return tempDiv.textContent || tempDiv.innerText || "";
+}
