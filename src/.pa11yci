@@ -23,6 +23,14 @@
         "http://localhost:8080/no-organization-requests/",
         "http://localhost:8080/organization/",
         "http://localhost:8080/senior-official/",
+        "http://localhost:8080/admin/analytics/export_data_type/",
+        "http://localhost:8080/admin/analytics/export_data_domain_requests_full/",
+        "http://localhost:8080/admin/analytics/export_data_full/",
+        "http://localhost:8080/admin/analytics/export_data_federal/",
+        "http://localhost:8080/admin/analytics/export_domains_growth/",
+        "http://localhost:8080/admin/analytics/export_requests_growth/",
+        "http://localhost:8080/admin/analytics/export_managed_domains/",
+        "http://localhost:8080/admin/analytics/export_unmanaged_domains/",
         "http://localhost:8080/admin/analytics/",
         "http://localhost:8080/admin/registrar/user/1/transfer/",
         "http://localhost:8080/admin/",
@@ -220,6 +228,7 @@
         "http://localhost:8080/admin/registrar/waffleflag/1/change/",
         "http://localhost:8080/admin/registrar/waffleflag/1/",
         "http://localhost:8080/admin/registrar/",
+        "http://localhost:8080/admin/auditlog/",
         "http://localhost:8080/domain-request/1/edit/",
         "http://localhost:8080/domain-request/1/",
         "http://localhost:8080/domain-request/viewonly/1/",
@@ -262,5 +271,13 @@
         "http://localhost:8080/invitation/1/cancel/",
         "http://localhost:8080/domain-request/1/delete/",
         "http://localhost:8080/domain/1/users/1/delete/"
+    ],
+    "standard": "Section508",
+    "viewport": {
+        "width": 1920,
+        "height": 1080
+    },
+    "actions": [
+        "wait for url to be #"
     ]
 }

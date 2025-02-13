@@ -143,6 +143,14 @@ class Command(BaseCommand):
         config = {
             "defaults": {"concurrency": 1, "timeout": 30000},
             "urls": urls,
+            "standard": "Section508",
+            "viewport": {
+                "width": 1920,
+                "height": 1080
+            },
+            "actions": [
+                "wait for url to be #"
+            ],
         }
         output_file = os.path.join(os.getcwd(), ".pa11yci")
         with open(output_file, "w") as f:
