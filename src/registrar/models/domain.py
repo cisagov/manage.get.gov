@@ -9,7 +9,6 @@ from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignor
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
-from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
@@ -1045,7 +1044,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("Deleting subdomains for %s", self.name)
         # check if any subdomains are in use by another domain
-        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
+        hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
             if host.domain != self:
                 logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
@@ -1053,38 +1052,77 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.getNameserverChanges(hosts=[])
-
-        _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
-        addToDomainList, _ = self.createNewHostList(new_values)
-        deleteHostList, _ = self.createDeleteHostList(deleted_values)
-        responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
-
+        try:
+            # set hosts to empty list so nameservers are deleted
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.getNameserverChanges(hosts=[])
+            
+            # update the hosts
+            _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
+            addToDomainList, _ = self.createNewHostList(new_values)
+            deleteHostList, _ = self.createDeleteHostList(deleted_values)
+            responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
+        except RegistryError as e:
+            logger.error(f"Error trying to delete hosts from domain {self}: {e}")
+            raise e
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
+        
+        logger.info("Finished removing nameservers from domain")
 
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
+        logger.info("Finished _delete_host_if_not_used inside _delete_domain()")
 
+        # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
+        logger.info(f"retrieved contacts for domain: {contacts}")
+        
         for contact in contacts:
-            if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-                self._update_domain_with_contact(contact, rem=True)
-                request = commands.DeleteContact(contact.registry_id)
-                registry.send(request, cleaned=True)
+            try:
+                if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
+                    logger.info(f"Deleting contact: {contact}")
+                    try:
+                        self._update_domain_with_contact(contact, rem=True)
+                    except Exception as e:
+                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
+                    request = commands.DeleteContact(contact.registry_id)
+                    registry.send(request, cleaned=True)
+                    logger.info(f"sent DeleteContact for {contact}")
+            except RegistryError as e:
+                logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
+        
+        logger.info("Finished deleting contacts")
 
-        logger.info("Deleting domain %s", self.name)
-        request = commands.DeleteDomain(name=self.name)
-        registry.send(request, cleaned=True)
+        # delete ds data if it exists
+        if self.dnssecdata:
+            logger.debug("Deleting ds data for %s", self.name)
+            try:
+                # set and unset client hold to be able to change ds data
+                logger.info("removing client hold")
+                self._remove_client_hold()
+                self.dnssecdata = None
+                logger.info("placing client hold")
+                self._place_client_hold()
+            except RegistryError as e:
+                logger.error("Error deleting ds data for %s: %s", self.name, e)
+                e.note = "Error deleting ds data for %s" % self.name
+                raise e
+
+        try:
+            logger.info("Deleting domain %s", self.name)
+            request = commands.DeleteDomain(name=self.name)
+            registry.send(request, cleaned=True)
+        except RegistryError as e:
+            logger.error(f"Error deleting domain {self}: {e}")
+            raise e
 
     def __str__(self) -> str:
         return self.name
@@ -1177,10 +1215,6 @@ class Domain(TimeStampedModel, DomainHelper):
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
         return self.state.capitalize()
-
-    def active_invitations(self):
-        """Returns only the active invitations (those with status 'invited')."""
-        return self.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
 
     def map_epp_contact_to_public_contact(self, contact: eppInfo.InfoContactResultData, contact_id, contact_type):
         """Maps the Epp contact representation to a PublicContact object.

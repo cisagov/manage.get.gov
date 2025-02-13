@@ -12,12 +12,13 @@ from django.contrib import messages
 
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
 from registrar.utility.db_helpers import ignore_unique_violation
 
 logger = logging.getLogger(__name__)
 
-
+@method_decorator(staff_member_required, name="dispatch")
 class TransferUserView(View):
     """Transfer user methods that set up the transfer_user template and handle the forms on it."""
 
