@@ -177,40 +177,48 @@ class CheckPortfolioMiddleware:
 
 
 class RestrictAccessMiddleware:
-    """Middleware that blocks all views unless explicitly permitted"""
+    """
+    Middleware that blocks access to all views unless explicitly permitted.
+
+    This middleware enforces authentication by default. Views must explicitly allow access
+    using access control mechanisms such as the `@grant_access` decorator. Exceptions are made
+    for Django admin views, explicitly ignored paths, and views that opt out of login requirements.
+    """
 
     def __init__(self, get_response):
         self.get_response = get_response
+        # Compile regex patterns from settings to identify paths that bypass login requirements
         self.ignored_paths = [re.compile(pattern) for pattern in getattr(settings, "LOGIN_REQUIRED_IGNORE_PATHS", [])]
 
     def __call__(self, request):
 
-        # Allow Django Debug Toolbar requests
+        # Allow requests to Django Debug Toolbar
         if request.path.startswith("/__debug__/"):
             return self.get_response(request)
 
-        # Allow requests that match LOGIN_REQUIRED_IGNORE_PATHS
+        # Allow requests matching configured ignored paths
         if any(pattern.match(request.path) for pattern in self.ignored_paths):
             return self.get_response(request)
 
-        # Try to resolve the view function
+        # Attempt to resolve the request path to a view function
         try:
             resolver_match = resolve(request.path_info)
             view_func = resolver_match.func
-            app_name = resolver_match.app_name  # Get app name of resolved view
+            app_name = resolver_match.app_name  # Get the app name of the resolved view
         except Exception:
+            # If resolution fails, allow the request to proceed (avoid blocking non-view routes)
             return self.get_response(request)
 
-        # Auto-allow Django's built-in admin views (but NOT custom /admin/* views)
+        # Automatically allow access to Django's built-in admin views (excluding custom /admin/* views)
         if app_name == "admin":
             return self.get_response(request)
 
-        # Skip access restriction if the view explicitly allows unauthenticated access
+        # Allow access if the view explicitly opts out of login requirements
         if getattr(view_func, "login_required", True) is False:
             return self.get_response(request)
 
-        # Enforce explicit access fules for other views
+        # Restrict access to views that do not explicitly declare access rules
         if not getattr(view_func, "has_explicit_access", False):
-            raise PermissionDenied
+            raise PermissionDenied  # Deny access if the view lacks explicit permission handling
 
         return self.get_response(request)

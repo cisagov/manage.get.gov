@@ -24,37 +24,43 @@ HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 
 def grant_access(*rules):
     """
-    Allows multiple rules in a single decorator call:
-    @grant_access(IS_STAFF, IS_SUPERUSER, IS_DOMAIN_MANAGER)
-    or multiple stacked decorators:
-    @grant_access(IS_SUPERUSER)
-    @grant_access(IS_DOMAIN_MANAGER)
+    A decorator that enforces access control based on specified rules.
+
+    Usage:
+        - Multiple rules in a single decorator:
+          @grant_access(IS_STAFF, IS_SUPERUSER, IS_DOMAIN_MANAGER)
+
+        - Stacked decorators for separate rules:
+          @grant_access(IS_SUPERUSER)
+          @grant_access(IS_DOMAIN_MANAGER)
+
+    The decorator supports both function-based views (FBVs) and class-based views (CBVs).
     """
 
     def decorator(view):
-        if isinstance(view, type):  # If decorating a class-based view (CBV)
-            original_dispatch = view.dispatch  # save original dispatch method
+        if isinstance(view, type):  # Check if decorating a class-based view (CBV)
+            original_dispatch = view.dispatch  # Store the original dispatch method
 
-            @method_decorator(grant_access(*rules))  # apply the decorator to dispatch
+            @method_decorator(grant_access(*rules))  # Apply the decorator to dispatch
             def wrapped_dispatch(self, request, *args, **kwargs):
                 if not _user_has_permission(request.user, request, rules, **kwargs):
-                    raise PermissionDenied
+                    raise PermissionDenied  # Deny access if the user lacks permission
                 return original_dispatch(self, request, *args, **kwargs)
 
-            view.dispatch = wrapped_dispatch  # replace dispatch with wrapped version
+            view.dispatch = wrapped_dispatch  # Replace the dispatch method
             return view
 
         else:  # If decorating a function-based view (FBV)
-            view.has_explicit_access = True
-            existing_rules = getattr(view, "_access_rules", set())
-            existing_rules.update(rules)
-            view._access_rules = existing_rules
+            view.has_explicit_access = True  # Mark the view as having explicit access control
+            existing_rules = getattr(view, "_access_rules", set())  # Retrieve existing rules
+            existing_rules.update(rules)  # Merge with new rules
+            view._access_rules = existing_rules  # Store updated rules
 
             @functools.wraps(view)
             def wrapper(request, *args, **kwargs):
                 if not _user_has_permission(request.user, request, rules, **kwargs):
-                    raise PermissionDenied
-                return view(request, *args, **kwargs)
+                    raise PermissionDenied  # Deny access if the user lacks permission
+                return view(request, *args, **kwargs)  # Proceed with the original view
 
             return wrapper
 
@@ -63,7 +69,21 @@ def grant_access(*rules):
 
 def _user_has_permission(user, request, rules, **kwargs):
     """
-    Checks if the user meets the permission requirements.
+    Determines if the user meets the required permission rules.
+
+    This function evaluates a set of predefined permission rules to check whether a user has access
+    to a specific view. It supports various access control conditions, including staff status,
+    domain management roles, and portfolio-related permissions.
+
+    Parameters:
+        - user: The user requesting access.
+        - request: The HTTP request object.
+        - rules: A set of access control rules to evaluate.
+        - **kwargs: Additional keyword arguments used in specific permission checks.
+
+    Returns:
+        - True if the user satisfies any of the specified rules.
+        - False otherwise.
     """
 
     # Skip authentication if @login_not_required is applied
@@ -86,7 +106,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
-            lambda: _can_access_domain_via_portfolio_view_all_domains(request, kwargs.get("domain_pk")),
+            lambda: _has_portfolio_view_all_domains(request, kwargs.get("domain_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAINS_ANY_PERM,
@@ -268,11 +288,9 @@ def _is_staff_managing_domain(request, **kwargs):
     return True
 
 
-def _can_access_domain_via_portfolio_view_all_domains(request, domain_pk):
+def _has_portfolio_view_all_domains(request, domain_pk):
     """Returns whether the user in the request can access the domain
     via portfolio view all domains permission."""
-    # NOTE: determine if in practice this ever needs to be called on its own
-    # or if it can be combined with view_managed_domains
     portfolio = request.session.get("portfolio")
     if request.user.has_view_all_domains_portfolio_permission(portfolio):
         if Domain.objects.filter(id=domain_pk).exists():
