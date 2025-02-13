@@ -18,24 +18,24 @@
   {% endblock messages%}
   
   <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Domain request breadcrumb">
-    <ol class="usa-breadcrumb__list">
+  {% url 'members' as url %}
+  {% if portfolio_permission %}
+      {% url 'member' pk=portfolio_permission.id as url2 %}
+  {% else %}
+      {% url 'invitedmember' pk=invitation.id as url2 %}
+  {% endif %}
+  <nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Portfolio member breadcrumb">
+  <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'members' %}" class="usa-breadcrumb__link"><span>Members</span></a>
+      <a href="{{ url }}" class="usa-breadcrumb__link"><span>Members</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        {% if member %}
-          {% url 'member' pk=member.id as back_url %}
-        {% elif invitation %}
-          {% url 'invitedmember' pk=invitation.id as back_url %}
-        {% endif %}
-        <a href="{{ back_url }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
+          <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
       </li>
-      {% comment %} Manage members {% endcomment %}
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>Member access and permissions</span>
       </li>
-    </ol>
+  </ol>
   </nav>
 
   <!-- Page header -->
@@ -98,7 +98,7 @@
     <div class="margin-top-3">
       <a
         type="button"
-        href="{{ back_url }}"
+        href="{{ url2 }}"
         class="usa-button usa-button--outline"
         name="btn-cancel-click"
         aria-label="Cancel editing member"

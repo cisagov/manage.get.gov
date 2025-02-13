@@ -202,6 +202,7 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
             {
                 "form": form,
                 "member": user,
+                "portfolio_permission": portfolio_permission,
             },
         )
 
