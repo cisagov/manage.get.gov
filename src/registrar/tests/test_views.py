@@ -292,7 +292,9 @@ class HomeTests(TestWithUser):
         )
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         self.assertNotContains(response, "igorville.gov")
 
@@ -309,7 +311,9 @@ class HomeTests(TestWithUser):
         )
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         self.assertNotContains(response, "igorville.gov")
 
@@ -335,7 +339,8 @@ class HomeTests(TestWithUser):
 
                         # Trigger the delete logic
                         response = self.client.post(
-                            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+                            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}),
+                            follow=True,
                         )
 
                         # Check for a 403 error - the end user should not be allowed to do this

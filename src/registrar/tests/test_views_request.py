@@ -1114,7 +1114,9 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
         """On the Additional Details page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"domain_request_pk": 0}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": 0})
+        )
         additional_form = additional_details_page.forms[0]
 
         # Check the cisa representative yes/no field
@@ -1138,7 +1140,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1195,7 +1199,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1480,7 +1486,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1528,7 +1536,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1612,7 +1622,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1745,7 +1757,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1818,7 +1832,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1895,7 +1911,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1975,7 +1993,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2051,7 +2071,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2121,7 +2143,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk}))
+        so_page = self.app.get(
+            reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2190,7 +2214,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk}))
+        so_page = self.app.get(
+            reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2539,7 +2565,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         new_domain_request_id = all_domain_requests.first().id
 
         # Skip to the current sites page
-        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"domain_request_pk": new_domain_request_id}))
+        current_sites_page = self.app.get(
+            reverse("domain-request:current_sites", kwargs={"domain_request_pk": new_domain_request_id})
+        )
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
         self.assertIn("current_sites-0-website", current_sites_form.fields)
@@ -2742,7 +2770,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # This user should also be forbidden from editing existing ones
         domain_request = completed_domain_request(user=self.user)
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True)
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+        )
         self.assertEqual(edit_page.status_code, 403)
 
         # Cleanup
@@ -2767,7 +2797,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # This user should also be allowed to edit existing ones
         domain_request = completed_domain_request(user=self.user)
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})).follow()
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         self.assertEqual(edit_page.status_code, 200)
 
     def test_non_creator_access(self):
@@ -2776,14 +2808,18 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_user = User.objects.create_user(username="other_user", password=p)
         domain_request = completed_domain_request(user=other_user)
 
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True)
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+        )
         self.assertEqual(edit_page.status_code, 403)
 
     def test_creator_access(self):
         """Tests that a user can edit a domain request they created"""
         domain_request = completed_domain_request(user=self.user)
 
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})).follow()
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         self.assertEqual(edit_page.status_code, 200)
 
 
@@ -3202,7 +3238,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "usa-current", count=2)
 
             # We default to the requesting entity page
-            expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"domain_request_pk": domain_request.id})
+            expected_url = reverse(
+                "domain-request:portfolio_requesting_entity", kwargs={"domain_request_pk": domain_request.id}
+            )
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
         else:

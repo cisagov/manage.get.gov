@@ -1240,7 +1240,7 @@ class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
-    
+
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)

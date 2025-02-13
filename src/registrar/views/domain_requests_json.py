@@ -3,7 +3,6 @@ from django.core.paginator import Paginator
 from registrar.decorators import grant_access, ALL
 from registrar.models import DomainRequest
 from django.utils.dateformat import format
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 

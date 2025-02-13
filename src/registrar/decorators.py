@@ -74,91 +74,74 @@ def _user_has_permission(user, request, rules, **kwargs):
     if ALL in rules:
         return True
 
-    # Ensure user is authenticated
-    if not user.is_authenticated:
+    # Ensure user is authenticated and not restricted
+    if not user.is_authenticated or user.is_restricted():
         return False
 
-    # Ensure user is not restricted
-    if user.is_restricted():
-        return False
+    # Define permission checks
+    permission_checks = [
+        (IS_STAFF, lambda: user.is_staff),
+        (IS_DOMAIN_MANAGER, lambda: _is_domain_manager(user, **kwargs)),
+        (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
+        (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
+        (
+            HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
+            lambda: _can_access_domain_via_portfolio_view_all_domains(request, kwargs.get("domain_pk")),
+        ),
+        (
+            HAS_PORTFOLIO_DOMAINS_ANY_PERM,
+            lambda: user.is_org_user(request)
+            and user.has_any_domains_portfolio_permission(request.session.get("portfolio")),
+        ),
+        (
+            IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+            lambda: _is_domain_manager(user, **kwargs) and _is_portfolio_member(request),
+        ),
+        (
+            IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
+            lambda: _is_domain_manager(user, **kwargs) and not _is_portfolio_member(request),
+        ),
+        (
+            IS_DOMAIN_REQUEST_CREATOR,
+            lambda: _is_domain_request_creator(user, kwargs.get("domain_request_pk"))
+            and not _is_portfolio_member(request),
+        ),
+        (
+            HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
+            lambda: user.is_org_user(request)
+            and user.has_any_requests_portfolio_permission(request.session.get("portfolio")),
+        ),
+        (
+            HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
+            lambda: user.is_org_user(request)
+            and user.has_view_all_domain_requests_portfolio_permission(request.session.get("portfolio")),
+        ),
+        (
+            HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
+            lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk")),
+        ),
+        (
+            HAS_PORTFOLIO_MEMBERS_ANY_PERM,
+            lambda: user.is_org_user(request)
+            and (
+                user.has_view_members_portfolio_permission(request.session.get("portfolio"))
+                or user.has_edit_members_portfolio_permission(request.session.get("portfolio"))
+            ),
+        ),
+        (
+            HAS_PORTFOLIO_MEMBERS_EDIT,
+            lambda: user.is_org_user(request)
+            and user.has_edit_members_portfolio_permission(request.session.get("portfolio")),
+        ),
+        (
+            HAS_PORTFOLIO_MEMBERS_VIEW,
+            lambda: user.is_org_user(request)
+            and user.has_view_members_portfolio_permission(request.session.get("portfolio")),
+        ),
+    ]
 
-    conditions_met = []
-
-    if IS_STAFF in rules:
-        conditions_met.append(user.is_staff)
-
-    if not any(conditions_met) and IS_DOMAIN_MANAGER in rules:
-        has_permission = _is_domain_manager(user, **kwargs)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and IS_STAFF_MANAGING_DOMAIN in rules:
-        has_permission = _is_staff_managing_domain(request, **kwargs)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and IS_PORTFOLIO_MEMBER in rules:
-        has_permission = user.is_org_user(request)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_DOMAINS_VIEW_ALL in rules:
-        domain_id = kwargs.get("domain_pk")
-        has_permission = _can_access_domain_via_portfolio_view_all_domains(request, domain_id)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_DOMAINS_ANY_PERM in rules:
-        has_permission = user.is_org_user(request) and user.has_any_domains_portfolio_permission(
-            request.session.get("portfolio")
-        )
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER in rules:
-        has_permission = _is_domain_manager(user, **kwargs) and _is_portfolio_member(request)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER in rules:
-        has_permission = _is_domain_manager(user, **kwargs) and not _is_portfolio_member(request)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and IS_DOMAIN_REQUEST_CREATOR in rules:
-        domain_request_id = kwargs.get("domain_request_pk")
-        has_permission = _is_domain_request_creator(user, domain_request_id) and not _is_portfolio_member(request)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM in rules:
-        has_permission = user.is_org_user(request) and user.has_any_requests_portfolio_permission(
-            request.session.get("portfolio")
-        )
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL in rules:
-        has_permission = user.is_org_user(request) and user.has_view_all_domain_requests_portfolio_permission(
-            request.session.get("portfolio")
-        )
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT in rules:
-        domain_request_id = kwargs.get("domain_request_pk")
-        has_permission = _has_portfolio_domain_requests_edit(user, request, domain_request_id)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_ANY_PERM in rules:
-        portfolio = request.session.get("portfolio")
-        has_permission = user.is_org_user(request) and (
-            user.has_view_members_portfolio_permission(portfolio)
-            or user.has_edit_members_portfolio_permission(portfolio)
-        )
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_EDIT in rules:
-        portfolio = request.session.get("portfolio")
-        has_permission = user.is_org_user(request) and user.has_edit_members_portfolio_permission(portfolio)
-        conditions_met.append(has_permission)
-
-    if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_VIEW in rules:
-        portfolio = request.session.get("portfolio")
-        has_permission = user.is_org_user(request) and user.has_view_members_portfolio_permission(portfolio)
-        conditions_met.append(has_permission)
-
-    return any(conditions_met)
+    # Check conditions iteratively
+    return any(check() for rule, check in permission_checks if rule in rules)
 
 
 def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
@@ -173,7 +156,8 @@ def _is_domain_manager(user, **kwargs):
 
     - First, it checks if 'domain_pk' is present in the URL parameters.
     - If 'domain_pk' exists, it verifies if the user has a domain role for that domain.
-    - If 'domain_pk' is absent, it checks for 'domain_invitation_pk' to determine if the user has domain permissions through an invitation.
+    - If 'domain_pk' is absent, it checks for 'domain_invitation_pk' to determine if the user
+      has domain permissions through an invitation.
 
     Returns:
         bool: True if the user is a domain manager, False otherwise.

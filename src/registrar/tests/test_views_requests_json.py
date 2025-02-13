@@ -342,7 +342,8 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 # Test case where action is View
                 self.assertEqual("View", action_labels[i])
                 self.assertEqual(
-                    reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": expected_domain_request.id}), action_urls[i]
+                    reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": expected_domain_request.id}),
+                    action_urls[i],
                 )
                 self.assertEqual("visibility", svg_icons[i])
             elif status[i] in [
@@ -360,7 +361,8 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 # Test case where action is Manage
                 self.assertEqual("Manage", action_labels[i])
                 self.assertEqual(
-                    reverse("domain-request-status", kwargs={"domain_request_pk": expected_domain_request.id}), action_urls[i]
+                    reverse("domain-request-status", kwargs={"domain_request_pk": expected_domain_request.id}),
+                    action_urls[i],
                 )
                 self.assertEqual("settings", svg_icons[i])
 

@@ -3,8 +3,6 @@ from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from registrar.decorators import IS_STAFF, grant_access
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
-from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.decorators import login_required
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
 from registrar.utility.constants import BranchChoices

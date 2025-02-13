@@ -37,7 +37,6 @@ from epplibwrapper import commands, common
 
 from .common import (
     MockEppLib,
-    less_console_noise,
     completed_domain_request,
     MockSESClient,
     MockDbForIndividualTests,

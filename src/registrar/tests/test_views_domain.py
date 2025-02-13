@@ -692,7 +692,9 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
             Domain, "is_expired", self.custom_is_expired_true
         ):
-            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"domain_pk": self.domain_no_domain_manager.id}))
+            renewal_page = self.client.get(
+                reverse("domain-renewal", kwargs={"domain_pk": self.domain_no_domain_manager.id})
+            )
             self.assertEqual(renewal_page.status_code, 403)
 
     @override_flag("domain_renewal", active=True)
@@ -723,7 +725,9 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
             # Check for the updated expiration
             formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
-            redirect_response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True)
+            redirect_response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
+            )
             self.assertContains(redirect_response, formatted_new_expiration_date)
 
 
@@ -1070,7 +1074,9 @@ class TestDomainManagers(TestDomainOverview):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
-        self.client.post(reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.manager.id}))
+        self.client.post(
+            reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.manager.id})
+        )
 
         # Verify that the notification emails were sent to domain manager
         mock_send_templated_email.assert_called_once_with(
@@ -1355,7 +1361,9 @@ class TestDomainManagers(TestDomainOverview):
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        response = self.client.post(reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True)
+        response = self.client.post(
+            reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
+        )
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
@@ -2936,7 +2944,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id}))
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # add nameservers
