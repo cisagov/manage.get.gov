@@ -1,8 +1,8 @@
 # This workflow can be run from the CLI
 #     gh workflow run reset-db.yaml -f environment=ENVIRONMENT
 
-name: Reset database
-run-name: Reset database for ${{ github.event.inputs.environment }}
+name: Delete and Recreate database
+run-name: Delete and Recreate for ${{ github.event.inputs.environment }}
 
 on:
   workflow_dispatch:
