@@ -272,7 +272,7 @@
         "http://localhost:8080/domain-request/1/delete/",
         "http://localhost:8080/domain/1/users/1/delete/"
     ],
-    "standard": "Section508",
+    "standard": "WCAG21AAA",
     "viewport": {
         "width": 1920,
         "height": 1080

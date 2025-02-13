@@ -143,7 +143,7 @@ class Command(BaseCommand):
         config = {
             "defaults": {"concurrency": 1, "timeout": 30000},
             "urls": urls,
-            "standard": "Section508",
+            "standard": "WCAG21AAA",
             "viewport": {
                 "width": 1920,
                 "height": 1080

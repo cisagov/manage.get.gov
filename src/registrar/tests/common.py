@@ -232,14 +232,7 @@ class MockUserLogin:
 
     def __call__(self, request):
         if request.user.is_anonymous:
-            user = None
-            UserModel = get_user_model()
-            username = "Testy"
-            args = {
-                UserModel.USERNAME_FIELD: username,
-            }
-            user, _ = UserModel.objects.get_or_create(**args)
-            user.is_staff = True
+            user = create_superuser()
             # Create or retrieve the group
             group, _ = UserGroup.objects.get_or_create(name="full_access_group")
             # Add the user to the group
