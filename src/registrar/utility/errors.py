@@ -48,13 +48,13 @@ class MissingEmailError(InvitationError):
 
     def __init__(self, email=None, domain=None, portfolio=None):
         # Default message if no additional info is provided
-        message = "Can’t send invitation email. No email is associated with your user account."
+        message = "Can't send invitation email. No email is associated with your user account."
 
         # Customize message based on provided arguments
         if email and domain:
-            message = f"Can’t send email to '{email}' on domain '{domain}'. No email exists for the requestor."
+            message = f"Can't send email to '{email}' on domain '{domain}'. No email exists for the requestor."
         elif email and portfolio:
-            message = f"Can’t send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor."
+            message = f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor."
 
         super().__init__(message)
 
@@ -201,7 +201,7 @@ class NameserverError(Exception):
         NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address."),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
         NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can’t have more than 13 nameservers."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can't have more than 13 nameservers."),
         NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (

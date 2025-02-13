@@ -780,7 +780,7 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             return self._get_property("statuses")
         except KeyError:
-            logger.error("Can’t retrieve status from domain info")
+            logger.error("Can't retrieve status from domain info")
             return []
 
     @statuses.setter  # type: ignore
@@ -857,7 +857,7 @@ class Domain(TimeStampedModel, DomainHelper):
             if rem:
                 action = "remove"
 
-            raise Exception("Can’t %s the contact of type %s" % (action, contact.contact_type))
+            raise Exception("Can't %s the contact of type %s" % (action, contact.contact_type))
 
     @Cache
     def security_contact(self) -> PublicContact | None:
@@ -2087,7 +2087,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):
         """Tries to find a PublicContact object in our DB.
-        If it can’t, it'll create it. Returns PublicContact"""
+        If it can't, it'll create it. Returns PublicContact"""
         db_contact = PublicContact.objects.filter(
             registry_id=public_contact.registry_id,
             contact_type=public_contact.contact_type,

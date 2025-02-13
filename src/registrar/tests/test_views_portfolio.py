@@ -1696,16 +1696,12 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(response.status_code, 400)  # Bad request due to active requests
             support_url = "https://get.gov/contact/"
             expected_error_message = (
-                "This member can\u2019t be removed from the organization because they have an active domain request. "
+                "This member can't be removed from the organization because they have an active domain request. "
                 f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
                 "to remove this member."
             )
 
-            # The curly apostrophe \u2019 requires us to do a bit more work before we can assert
-            response_json = json.loads(response.content.decode("utf-8"))
-            self.assertEqual(response.status_code, 400)  # Ensure it's a bad request
-            self.assertIn("error", response_json)  # Ensure the "error" key exists
-            self.assertEqual(response_json["error"], expected_error_message)  # Compare actual vs expected message
+            self.assertContains(response, expected_error_message, status_code=400)
 
             # assert that send_portfolio_admin_removal_emails is not called
             send_removal_emails.assert_not_called()
@@ -1960,7 +1956,7 @@ class TestPortfolioMemberDeleteView(WebTest):
 
                 support_url = "https://get.gov/contact/"
                 expected_error_message = (
-                    "This member can’t be removed from the organization because they have an active domain request. "
+                    "This member can't be removed from the organization because they have an active domain request. "
                     f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> "
                     "to remove this member."
                 )
