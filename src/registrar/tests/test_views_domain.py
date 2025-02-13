@@ -675,7 +675,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             # Simulate clicking on edit button
             edit_page = renewal_page.click(href=edit_button_url, index=1)
             self.assertEqual(edit_page.status_code, 200)
-            self.assertContains(edit_page, "Domain managers can update all information related to a domain")
+            self.assertContains(edit_page, "Domain managers can update information related to this domain")
 
     @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_not_expired_or_expiring(self):
