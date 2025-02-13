@@ -843,7 +843,7 @@ class DomainRequestStatus(DetailView):
         return context
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR)
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawConfirmation(DetailView):
     """This page will ask user to confirm if they want to withdraw
 
@@ -857,7 +857,7 @@ class DomainRequestWithdrawConfirmation(DetailView):
     context_object_name = "DomainRequest"
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR)
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawn(DetailView):
     # this view renders no template
     template_name = ""

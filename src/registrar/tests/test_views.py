@@ -126,7 +126,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
                 contact_page_500 = self.client.get(
-                    reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+                    reverse("domain-dns-nameservers", kwargs={"domain_pk": fake_domain.id}),
                 )
 
                 # Check that a 500 response is returned
@@ -147,7 +147,7 @@ class TestEnvironmentVariablesEffects(TestCase):
         with patch.object(DomainNameserversView, "get_initial", side_effect=self.side_effect_raise_value_error):
             with self.assertRaises(ValueError):
                 contact_page_500 = self.client.get(
-                    reverse("domain-dns-nameservers", kwargs={"pk": fake_domain.id}),
+                    reverse("domain-dns-nameservers", kwargs={"domain_pk": fake_domain.id}),
                 )
 
                 # Check that a 500 response is returned
@@ -292,7 +292,7 @@ class HomeTests(TestWithUser):
         )
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True)
 
         self.assertNotContains(response, "igorville.gov")
 
@@ -309,7 +309,7 @@ class HomeTests(TestWithUser):
         )
 
         # Trigger the delete logic
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True)
 
         self.assertNotContains(response, "igorville.gov")
 
@@ -335,7 +335,7 @@ class HomeTests(TestWithUser):
 
                         # Trigger the delete logic
                         response = self.client.post(
-                            reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True
+                            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
                         )
 
                         # Check for a 403 error - the end user should not be allowed to do this
@@ -392,7 +392,7 @@ class HomeTests(TestWithUser):
         self.assertTrue(igorville.exists())
 
         # Trigger the delete logic
-        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}))
+        self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}))
 
         # igorville is now deleted
         igorville = DomainRequest.objects.filter(requested_domain__name="igorville.gov")
@@ -462,7 +462,7 @@ class HomeTests(TestWithUser):
         self.assertTrue(teaville.exists())
 
         # Trigger the delete logic
-        self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request_2.pk}))
+        self.client.post(reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request_2.pk}))
 
         teaville = DomainRequest.objects.filter(requested_domain__name="teaville.gov")
         self.assertFalse(teaville.exists())
@@ -935,7 +935,7 @@ class UserProfileTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_detail_contains_your_profile(self):
         """Tests that the domain detail view contains 'your profile' rather than 'your contact information'"""
-        response = self.client.get(reverse("domain", args=[self.domain.pk]))
+        response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.pk}))
         self.assertContains(response, "Your profile")
         self.assertNotContains(response, "Your contact information")
 

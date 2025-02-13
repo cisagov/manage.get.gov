@@ -120,7 +120,7 @@ def _user_has_permission(user, request, rules, **kwargs):
 
     if not any(conditions_met) and IS_DOMAIN_REQUEST_CREATOR in rules:
         domain_request_id = kwargs.get("domain_request_pk")
-        has_permission = _is_domain_request_creator(user, domain_request_id)
+        has_permission = _is_domain_request_creator(user, domain_request_id) and not _is_portfolio_member(request)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM in rules:
