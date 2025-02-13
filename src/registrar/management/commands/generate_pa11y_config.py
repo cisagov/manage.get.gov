@@ -45,14 +45,14 @@ class Command(BaseCommand):
             "/get-domain-requests-json/",
             "/get-portfolio-members-json/",
             "/get-member-domains-json/",
-            "http://localhost:8080/admin/analytics/export_data_type/",
-            "http://localhost:8080/admin/analytics/export_data_domain_requests_full/",
-            "http://localhost:8080/admin/analytics/export_data_full/",
-            "http://localhost:8080/admin/analytics/export_data_federal/",
-            "http://localhost:8080/admin/analytics/export_domains_growth/",
-            "http://localhost:8080/admin/analytics/export_requests_growth/",
-            "http://localhost:8080/admin/analytics/export_managed_domains/",
-            "http://localhost:8080/admin/analytics/export_unmanaged_domains/",
+            "/admin/analytics/export_data_type/",
+            "/admin/analytics/export_data_domain_requests_full/",
+            "/admin/analytics/export_data_full/",
+            "/admin/analytics/export_data_federal/",
+            "/admin/analytics/export_domains_growth/",
+            "/admin/analytics/export_requests_growth/",
+            "/admin/analytics/export_managed_domains/",
+            "/admin/analytics/export_unmanaged_domains/",
         }
 
         # Parse the URL and get the path
