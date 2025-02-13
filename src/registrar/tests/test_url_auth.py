@@ -85,7 +85,6 @@ def iter_sample_urls(urlconf):
         if not viewname:
             continue
         if viewname == "auth_user_password_change":
-            print(route)
             break
         named_groups = route.regex.groupindex.keys()
         kwargs = {}

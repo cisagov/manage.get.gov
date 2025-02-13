@@ -138,7 +138,6 @@ def _user_has_permission(user, request, rules, **kwargs):
     if not any(conditions_met) and HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT in rules:
         domain_request_id = kwargs.get("domain_request_pk")
         has_permission = _has_portfolio_domain_requests_edit(user, request, domain_request_id)
-        print(has_permission)
         conditions_met.append(has_permission)
 
     if not any(conditions_met) and HAS_PORTFOLIO_MEMBERS_ANY_PERM in rules:

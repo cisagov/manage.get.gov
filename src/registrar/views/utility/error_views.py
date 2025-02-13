@@ -39,7 +39,6 @@ def custom_403_error_view(request, exception=None, context=None):
 
 def custom_404_error_view(request, exception=None, context=None):
     """Used to redirect 404 errors to a custom view"""
-    print("this is called")
     if context is None:
         context = {}
     return render(request, "404.html", context=context, status=404)

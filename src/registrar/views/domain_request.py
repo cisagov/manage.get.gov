@@ -1,12 +1,13 @@
 import logging
 from collections import defaultdict
+from django.contrib import messages
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
-from django.contrib import messages
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
@@ -880,7 +881,7 @@ class DomainRequestWithdrawn(DetailView):
 
 
 @grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
-class DomainRequestDeleteView(DeleteView):
+class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
     """Delete view for home that allows the end user to delete DomainRequests"""
 
     object: DomainRequest  # workaround for type mismatch in DeleteView
@@ -894,6 +895,12 @@ class DomainRequestDeleteView(DeleteView):
         valid_statuses = [DomainRequest.DomainRequestStatus.WITHDRAWN, DomainRequest.DomainRequestStatus.STARTED]
         if status not in valid_statuses:
             return False
+
+        # Portfolio users cannot delete their requests if they aren't permissioned to do so
+        if self.request.user.is_org_user(self.request):
+            portfolio = self.request.session.get("portfolio")
+            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
+                return False
 
         return True
 
