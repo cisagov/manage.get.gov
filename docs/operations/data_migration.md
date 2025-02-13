@@ -914,7 +914,8 @@ Example (only requests): `./manage.py create_federal_portfolio --branch "executi
 | 3 | **both**                     | If True, runs parse_requests and parse_domains.                                            |
 | 4 | **parse_requests**           | If True, then the created portfolio is added to all related DomainRequests.                |
 | 5 | **parse_domains**            | If True, then the created portfolio is added to all related Domains.                       |
-| 6 | **skip_existing_portfolios** | If True, then the script will only create suborganizations, modify DomainRequest, and modify DomainInformation records only when creating a new portfolio. Use this flag when you do not want to modify existing records.       |
+| 6 | **add_managers**             | If True, then the created portfolio will add all managers of the portfolio domains as members of the portfolio, including invited managers.                                                                                      |
+| 7 | **skip_existing_portfolios** | If True, then the script will only create suborganizations, modify DomainRequest, and modify DomainInformation records only when creating a new portfolio. Use this flag when you do not want to modify existing records.       |
 
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
 - Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
