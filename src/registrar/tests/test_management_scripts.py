@@ -7,6 +7,7 @@ from registrar.models.domain_group import DomainGroup
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.constants import BranchChoices
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -1465,6 +1466,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.executive_so_2 = SeniorOfficial.objects.create(
             first_name="first", last_name="last", email="mango@igorville.gov", federal_agency=self.executive_agency_2
         )
+
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             self.domain_request = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
@@ -1474,6 +1476,7 @@ class TestCreateFederalPortfolio(TestCase):
             )
             self.domain_request.approve()
             self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
+            self.domain = Domain.objects.get(name="city.gov")
 
             self.domain_request_2 = completed_domain_request(
                 name="icecreamforigorville.gov",
@@ -1517,7 +1520,6 @@ class TestCreateFederalPortfolio(TestCase):
         FederalAgency.objects.all().delete()
         User.objects.all().delete()
 
-    @less_console_noise_decorator
     def run_create_federal_portfolio(self, **kwargs):
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
@@ -1820,12 +1822,12 @@ class TestCreateFederalPortfolio(TestCase):
 
         # We expect a error to be thrown when we dont pass parse requests or domains
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
         ):
             self.run_create_federal_portfolio(branch="executive")
 
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests or --parse_domains."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
         ):
             self.run_create_federal_portfolio(agency_name="test")
 
@@ -1865,6 +1867,142 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(existing_portfolio.creator, self.user)
 
     @less_console_noise_decorator
+    def test_add_managers_from_domains(self):
+        """Test that all domain managers are added as portfolio managers."""
+
+        # Create users and assign them as domain managers
+        manager1 = User.objects.create(username="manager1", email="manager1@example.com")
+        manager2 = User.objects.create(username="manager2", email="manager2@example.com")
+        UserDomainRole.objects.create(user=manager1, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=manager2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Run the management command
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, add_managers=True)
+
+        # Check that the portfolio was created
+        self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
+
+        # Check that the users have been added as portfolio managers
+        permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user__in=[manager1, manager2])
+
+        # Check that the users have been added as portfolio managers
+        self.assertEqual(permissions.count(), 2)
+        for perm in permissions:
+            self.assertIn(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, perm.roles)
+
+    @less_console_noise_decorator
+    def test_add_invited_managers(self):
+        """Test that invited domain managers receive portfolio invitations."""
+
+        # create a domain invitation for the manager
+        _ = DomainInvitation.objects.create(
+            domain=self.domain, email="manager1@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
+        # Run the management command
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, add_managers=True)
+
+        # Check that the portfolio was created
+        self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
+
+        # Check that a PortfolioInvitation has been created for the invited email
+        invitation = PortfolioInvitation.objects.get(email="manager1@example.com", portfolio=self.portfolio)
+
+        # Verify the status of the invitation remains INVITED
+        self.assertEqual(
+            invitation.status,
+            PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            "PortfolioInvitation status should remain INVITED for non-existent users.",
+        )
+
+        # Verify that no duplicate invitations are created
+        self.run_create_federal_portfolio(
+            agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True
+        )
+        invitations = PortfolioInvitation.objects.filter(email="manager1@example.com", portfolio=self.portfolio)
+        self.assertEqual(
+            invitations.count(),
+            1,
+            "Duplicate PortfolioInvitation should not be created for the same email and portfolio.",
+        )
+
+    @less_console_noise_decorator
+    def test_no_duplicate_managers_added(self):
+        """Test that duplicate managers are not added multiple times."""
+        # Create a manager
+        manager = User.objects.create(username="manager", email="manager@example.com")
+        UserDomainRole.objects.create(user=manager, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        # Create a pre-existing portfolio
+        self.portfolio = Portfolio.objects.create(
+            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user
+        )
+
+        # Manually add the manager to the portfolio
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio, user=manager, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        # Run the management command
+        self.run_create_federal_portfolio(
+            agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True
+        )
+
+        # Ensure that the manager is not duplicated
+        permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user=manager)
+        self.assertEqual(permissions.count(), 1)
+
+    @less_console_noise_decorator
+    def test_add_managers_skip_existing_portfolios(self):
+        """Test that managers are skipped when the portfolio already exists."""
+
+        # Create a pre-existing portfolio
+        self.portfolio = Portfolio.objects.create(
+            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user
+        )
+
+        domain_request_1 = completed_domain_request(
+            name="domain1.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.CITY,
+            federal_agency=self.federal_agency,
+            user=self.user,
+            portfolio=self.portfolio,
+        )
+        domain_request_1.approve()
+        domain1 = Domain.objects.get(name="domain1.gov")
+
+        domain_request_2 = completed_domain_request(
+            name="domain2.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            generic_org_type=DomainRequest.OrganizationChoices.CITY,
+            federal_agency=self.federal_agency,
+            user=self.user,
+            portfolio=self.portfolio,
+        )
+        domain_request_2.approve()
+        domain2 = Domain.objects.get(name="domain2.gov")
+
+        # Create users and assign them as domain managers
+        manager1 = User.objects.create(username="manager1", email="manager1@example.com")
+        manager2 = User.objects.create(username="manager2", email="manager2@example.com")
+        UserDomainRole.objects.create(user=manager1, domain=domain1, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(user=manager2, domain=domain2, role=UserDomainRole.Roles.MANAGER)
+
+        # Run the management command
+        self.run_create_federal_portfolio(
+            agency_name=self.federal_agency.agency,
+            parse_requests=True,
+            add_managers=True,
+            skip_existing_portfolios=True,
+        )
+
+        # Check that managers were added to the portfolio
+        permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user__in=[manager1, manager2])
+        self.assertEqual(permissions.count(), 2)
+        for perm in permissions:
+            self.assertIn(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, perm.roles)
+
     def test_skip_existing_portfolios(self):
         """Tests the skip_existing_portfolios to ensure that it doesn't add
         suborgs, domain requests, and domain info."""
