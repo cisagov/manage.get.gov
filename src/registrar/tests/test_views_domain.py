@@ -772,7 +772,7 @@ class TestDomainManagers(TestDomainOverview):
         # assert that the non-portfolio view contains Role column and doesn't contain Admin
         self.assertContains(response, "Role</th>")
         self.assertNotContains(response, "Admin")
-        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
+        self.assertContains(response, "This domain has one manager. Consider adding another manager")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -783,7 +783,7 @@ class TestDomainManagers(TestDomainOverview):
         # assert that the portfolio view doesn't contain Role column and does contain Admin
         self.assertNotContains(response, "Role</th>")
         self.assertContains(response, "Admin")
-        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
+        self.assertContains(response, "This domain has one manager. Consider adding another manager")
 
     @less_console_noise_decorator
     def test_domain_user_add(self):
