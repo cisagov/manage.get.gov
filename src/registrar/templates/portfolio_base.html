@@ -9,7 +9,7 @@
             {# the entire logged in page goes here #}
             
             <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-              <div class="desktop:grid-col-10 {% if not is_widescreen_centered %}tablet:grid-col-11 {% else %}tablet:padding-left-4 tablet:padding-right-4 tablet:grid-col-12 desktop:grid-offset-1{% endif %}">
+              <div class="desktop:grid-col-10{% if not is_widescreen_centered %} tablet:grid-col-11{% else %} tablet:grid-col-12 desktop:grid-offset-1{% endif %}">
             
                 {% block portfolio_content %}{% endblock %}
             

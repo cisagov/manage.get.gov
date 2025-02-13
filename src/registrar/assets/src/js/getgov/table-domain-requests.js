@@ -117,7 +117,7 @@ export class DomainRequestsTable extends BaseTable {
         ${request.status}
       </td>
       <td class="width--action-column">
-        <div class="tablet:display-flex tablet:flex-row flex-wrap">
+        <div class="tablet:display-flex tablet:flex-row">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
