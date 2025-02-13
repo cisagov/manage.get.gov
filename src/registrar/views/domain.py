@@ -366,7 +366,7 @@ class DomainRenewalView(DomainBaseView):
             return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
 
         # if not valid, render the template with error messages
-        # passing editable,å and is_editable for re-render
+        # passing editable and is_editable for re-render
         return render(
             request,
             "domain_renewal.html",
