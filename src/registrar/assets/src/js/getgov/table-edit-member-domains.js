@@ -24,6 +24,9 @@ export class EditMemberDomainsTable extends BaseTable {
     this.reviewButton = document.getElementById('review-domain-assignments');
     this.backButton = document.getElementById('back-to-edit-domain-assignments');
     this.saveButton = document.getElementById('save-domain-assignments');
+    
+    this.domainAssignmentsLoaded = false; // Flag to track if API request has completed
+    
     this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
     this.initEventListeners();
@@ -134,27 +137,37 @@ export class EditMemberDomainsTable extends BaseTable {
    * member. It populates both initialDomainAssignments and initialDomainAssignmentsOnlyMember.
    * It is called once per page load, but not called with subsequent table changes.
    */
-  initializeDomainAssignments() {
+  async initializeDomainAssignments() {
+    if (this.domainAssignmentsLoaded) return; // Prevent multiple calls
+
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
-    if (!baseUrlValue) return;
-    let searchParams = this.getDomainAssignmentSearchParams(this.portfolioValue);
-    let url = baseUrlValue + "?" + searchParams.toString();
-    fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        console.error('Error in AJAX call: ' + data.error);
+    if (!baseUrlValue) {
+        console.error("Base URL not found");
         return;
+    }
+
+    try {
+      let searchParams = this.getDomainAssignmentSearchParams(this.portfolioValue);
+      let url = baseUrlValue + "?" + searchParams.toString();
+
+      let response = await fetch(url);
+      let data = await response.json();
+
+      if (data.error) {
+          console.error("Error in AJAX call:", data.error);
+          return;
       }
 
       let dataObjects = this.getDataObjects(data);
-      // Map the id attributes of dataObjects to this.initialDomainAssignments
       this.initialDomainAssignments = dataObjects.map(obj => obj.id);
       this.initialDomainAssignmentsOnlyMember = dataObjects
-        .filter(obj => obj.member_is_only_manager)
-        .map(obj => obj.id);
-    })
-    .catch(error => console.error('Error fetching domain assignments:', error));
+          .filter(obj => obj.member_is_only_manager)
+          .map(obj => obj.id);
+    } catch (error) {
+        console.error("Error fetching domain assignments:", error);
+    }
+
+    this.domainAssignmentsLoaded = true; // Flag as complete whether data was found or not
   }
   /**
    * Initializes listeners on checkboxes in the table. Checkbox listeners are used
@@ -345,13 +358,23 @@ export class EditMemberDomainsTable extends BaseTable {
 
 export function initEditMemberDomainsTable() {
   document.addEventListener('DOMContentLoaded', function() {
-      const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
-      if (isEditMemberDomainsPage) {
-        const editMemberDomainsTable = new EditMemberDomainsTable();
-        if (editMemberDomainsTable.tableWrapper) {
-          // Initial load
-          editMemberDomainsTable.loadTable(1);
-        }
+    const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
+    if (!isEditMemberDomainsPage) return; // Exit if not on the right page
+
+    const editMemberDomainsTable = new EditMemberDomainsTable();
+
+    function attemptInitTable() {
+      if (!editMemberDomainsTable.domainAssignmentsLoaded) {
+        console.warn("initEditMemberDomainsTable called before domain assignments loaded. Retrying later...");
+        setTimeout(attemptInitTable, 50); // Retry with a slight delay
+        return;
       }
-    });
+
+      if (editMemberDomainsTable.tableWrapper) {
+        editMemberDomainsTable.loadTable(1); // Initial load
+      }
+    }
+
+    attemptInitTable(); // Call the function immediately
+  });
 }
