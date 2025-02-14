@@ -294,7 +294,7 @@ export class EditMemberDomainsTable extends BaseTable {
 
     if (!this.addedDomains.length && !this.removedDomains.length) {
       const noChangesParagraph = document.createElement('p');
-      noChangesParagraph.textContent = 'No changes were detected. Click the “Back” button to edit this members domain assignments.';
+      noChangesParagraph.textContent = "No changes were detected. Click the “Back” button to edit this member’s domain assignments.";
       domainAssignmentSummary.appendChild(noChangesParagraph);
     }
   }
