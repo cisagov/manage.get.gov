@@ -40,6 +40,20 @@ class DomainFixture(DomainRequestFixture):
 
         # Approve each user associated with `in review` status domains
         cls._approve_domain_requests(users)
+        
+        # this is a request with a hard-coded id for our pa11y tests.
+        # We also need a hard-coded domain id.
+        mythical_request = DomainRequest.objects.filter(id=9999).first()
+        if mythical_request:
+            mythical_domain_information = mythical_request.DomainRequest_info
+            if mythical_domain_information.id != 9999:
+                mythical_domain_information.id = 9999
+                mythical_domain_information.save()
+
+            mythical_domain = mythical_domain_information.domain
+            if mythical_domain.id != 9999:
+                mythical_domain.id = 9999
+                mythical_domain.save()
 
     @staticmethod
     def _generate_fake_expiration_date(days_in_future=365):
