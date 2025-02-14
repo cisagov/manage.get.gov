@@ -171,6 +171,13 @@ class UserFixture:
             "email": "gina.summers@ecstech.com",
             "title": "Scrum Master",
         },
+        {
+            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
+            "first_name": "Jaxon",
+            "last_name": "Silva",
+            "email": "jaxon.silva@cisa.dhs.gov",
+            "title": "Designer",
+        },
     ]
 
     STAFF = [
