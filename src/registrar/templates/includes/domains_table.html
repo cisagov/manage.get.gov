@@ -9,7 +9,7 @@
 <span id="get_domains_json_url" class="display-none">{{url}}</span>
 
 <!-- Org model banner (org manager can view, domain manager can edit)  -->
-{% if has_domain_renewal_flag and num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
+{% if num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
 <section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
   <div class="usa-alert">
     <div class="usa-alert__body">
@@ -75,7 +75,7 @@
   </div>
 
   <!-- Non org model banner -->
-  {% if has_domain_renewal_flag and num_expiring_domains > 0 and not portfolio %}
+  {% if num_expiring_domains > 0 and not portfolio %}
   <section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
     <div class="usa-alert">
       <div class="usa-alert__body">
@@ -173,7 +173,6 @@
               >Deleted</label
             >
           </div>
-          {% if has_domain_renewal_flag %}
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
@@ -185,7 +184,6 @@
             <label class="usa-checkbox__label" for="filter-status-expiring"
               >Expiring soon</label>
           </div>
-          {% endif %}
         </fieldset>
       </div>
     </div>
@@ -208,7 +206,7 @@
           <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
           <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
           <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
-          {% if portfolio and has_view_suborganization_portfolio_permission %}
+          {% if portfolio and has_view_portfolio_permission %}
             <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
           {% endif %}
           <th 

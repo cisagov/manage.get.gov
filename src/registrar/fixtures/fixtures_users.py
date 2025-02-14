@@ -1,6 +1,5 @@
 import logging
 from faker import Faker
-from django.db import transaction
 
 from registrar.models import (
     User,
@@ -171,6 +170,13 @@ class UserFixture:
             "last_name": "Summers",
             "email": "gina.summers@ecstech.com",
             "title": "Scrum Master",
+        },
+        {
+            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
+            "first_name": "Jaxon",
+            "last_name": "Silva",
+            "email": "jaxon.silva@cisa.dhs.gov",
+            "title": "Designer",
         },
     ]
 
@@ -455,10 +461,9 @@ class UserFixture:
 
     @classmethod
     def load(cls):
-        with transaction.atomic():
-            cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
-            cls.load_users(cls.STAFF, "cisa_analysts_group")
+        cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
+        cls.load_users(cls.STAFF, "cisa_analysts_group")
 
-            # Combine ADMINS and STAFF lists
-            all_users = cls.ADMINS + cls.STAFF
-            cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)
+        # Combine ADMINS and STAFF lists
+        all_users = cls.ADMINS + cls.STAFF
+        cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)

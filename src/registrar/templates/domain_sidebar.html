@@ -61,7 +61,7 @@
       
       {% if portfolio %}
           {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
-          {% if has_any_domains_portfolio_permission and has_view_suborganization_portfolio_permission %}
+          {% if has_any_domains_portfolio_permission and has_view_portfolio_permission %}
             {% with url_name="domain-suborganization" %}
               {% include "includes/domain_sidenav_item.html" with item_text="Suborganization" %}
             {% endwith %}
@@ -81,7 +81,7 @@
       {% endwith %}
 
   
-      {% if has_domain_renewal_flag and is_domain_manager%}
+      {% if is_domain_manager%}
        {% if domain.is_expiring or domain.is_expired %}
           {% with url_name="domain-renewal" %}
             {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
