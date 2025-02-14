@@ -3682,7 +3682,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         except Exception:
             self.message_user(
                 request,
-                f"Could not delete: An unspecified error occured.",
+                "Could not delete: An unspecified error occured",
                 messages.ERROR,
             )
         else:
