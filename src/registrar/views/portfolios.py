@@ -314,7 +314,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
         if removed_domain_ids is None:
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
 
-        if not added_domain_ids or removed_domain_ids:
+        if not (added_domain_ids or removed_domain_ids):
             messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
 
