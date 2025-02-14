@@ -338,7 +338,7 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
-            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))            
+            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
