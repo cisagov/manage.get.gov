@@ -3,6 +3,7 @@
 import boto3
 import logging
 import textwrap
+import re
 from datetime import datetime
 from django.apps import apps
 from django.conf import settings
@@ -48,6 +49,21 @@ def send_templated_email(  # noqa
         No valid recipient addresses are provided
     """
 
+    if context is None:
+        context = {}
+
+    env_base_url = settings.BASE_URL
+    # The regular expression is to get both http (localhost) and https (everything else)
+    env_name = re.sub(r"^https?://", "", env_base_url).split(".")[0]
+    # If NOT in prod, add env to the subject line
+    # IE adds [GETGOV-RH] if we are in the -RH sandbox
+    prefix = f"[{env_name.upper()}] " if not settings.IS_PRODUCTION else ""
+    # If NOT in prod, update instances of "manage.get.gov" links to point to
+    # current environment, ie "getgov-rh.app.cloud.gov"
+    manage_url = env_base_url if not settings.IS_PRODUCTION else "https://manage.get.gov"
+
+    context["manage_url"] = manage_url
+
     # by default assume we can send to all addresses (prod has no whitelist)
     sendable_cc_addresses = cc_addresses
 
@@ -70,8 +86,12 @@ def send_templated_email(  # noqa
     if email_body:
         email_body.strip().lstrip("\n")
 
+    # Update the subject to have prefix here versus every email
     subject_template = get_template(subject_template_name)
     subject = subject_template.render(context=context)
+    subject = f"{prefix}{subject}"
+
+    context["subject"] = subject
 
     try:
         ses_client = boto3.client(
