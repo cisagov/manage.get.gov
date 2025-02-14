@@ -291,6 +291,12 @@ export class EditMemberDomainsTable extends BaseTable {
       domainAssignmentSummary.appendChild(unassignedHeader);
       domainAssignmentSummary.appendChild(unassignedDomainsList);
     }
+
+    if (!this.addedDomains.length && !this.removedDomains.length) {
+      const noChangesParagraph = document.createElement('p');
+      noChangesParagraph.textContent = 'No changes were detected. Click the “Back” button to edit this members domain assignments.';
+      domainAssignmentSummary.appendChild(noChangesParagraph);
+    }
   }
 
   showReadonlyMode() {
