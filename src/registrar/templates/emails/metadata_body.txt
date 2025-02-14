@@ -1,1 +1,1 @@
-{{ prefix }}An export of all .gov metadata.
+An export of all .gov metadata.

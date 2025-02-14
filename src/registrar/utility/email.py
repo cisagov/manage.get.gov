@@ -60,13 +60,19 @@ def send_templated_email(  # noqa
     # For email links ie getgov-rh.app.cloud.gov
     manage_url = env_base_url if not settings.IS_PRODUCTION else "https://manage.get.gov"
 
+    # Update the subject to have prefix here versus every email
+    subject_template = get_template(subject_template_name)
+    subject = subject_template.render(context=context)
+    subject = f"{prefix}{subject}"
+
     # Adding to context
     context.update(
         {
-            "prefix": prefix,
+            "subject": subject,
             "manage_url": manage_url,
         }
     )
+
     # by default assume we can send to all addresses (prod has no whitelist)
     sendable_cc_addresses = cc_addresses
 
@@ -88,9 +94,6 @@ def send_templated_email(  # noqa
     # Do cleanup on the email body. For emails with custom content.
     if email_body:
         email_body.strip().lstrip("\n")
-
-    subject_template = get_template(subject_template_name)
-    subject = subject_template.render(context=context)
 
     try:
         ses_client = boto3.client(

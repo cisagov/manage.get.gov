@@ -1,1 +1,1 @@
-{{ prefix }}You've been invited to manage {% if domains|length > 1 %}.gov domains{% else %}{{ domains.0.name }}{% endif %}
+You've been invited to manage {% if domains|length > 1 %}.gov domains{% else %}{{ domains.0.name }}{% endif %}

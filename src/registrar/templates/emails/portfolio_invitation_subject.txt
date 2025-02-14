@@ -1,1 +1,1 @@
-{{ prefix }}You’ve been invited to a .gov organization
+You’ve been invited to a .gov organization

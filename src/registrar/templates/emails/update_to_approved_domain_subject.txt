@@ -1,1 +1,1 @@
-{{ prefix }}An update was made to {{domain}}
+An update was made to {{domain}}
