@@ -163,7 +163,7 @@ export function initAnalyticsDashboard() {
             ];
             charts.forEach(chart => {
                 if (chartInstances.has(chart.id)) chartInstances.get(chart.id).destroy();
-                chartInstances.set(chart.id, createComparativeColumnChart(...chart, "Start Date", "End Date"));
+                chartInstances.set(chart.id, createComparativeColumnChart(chart.id, chart.title, "Start Date", "End Date"));
             });
 
             // Add resize listener to each chart
