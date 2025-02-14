@@ -8,7 +8,6 @@ To manage domain information, visit the .gov registrar <https://manage.get.gov>.
 
 ----------------------------------------------------------------
 {% if not requested_user %}
-
 YOU NEED A LOGIN.GOV ACCOUNT
 You’ll need a Login.gov account to access the .gov registrar. That account needs to be
 associated with the following email address: {{ invitee_email_address }}
@@ -16,6 +15,7 @@ associated with the following email address: {{ invitee_email_address }}
 Login.gov provides a simple and secure process for signing in to many government
 services with one account. If you don’t already have one, follow these steps to create
 your Login.gov account <https://login.gov/help/get-started/create-your-account/>.
+
 
 {% endif %}
 
