@@ -162,12 +162,12 @@ class Domain(TimeStampedModel, DomainHelper):
             """Returns a help message for a desired state. If none is found, an empty string is returned"""
             help_texts = {
                 # For now, unknown has the same message as DNS_NEEDED
-                cls.UNKNOWN: ("Before this domain can be used, " "you'll need to add name server addresses."),
-                cls.DNS_NEEDED: ("Before this domain can be used, " "you'll need to add name server addresses."),
+                cls.UNKNOWN: ("Before this domain can be used, " "you’ll need to add name server addresses."),
+                cls.DNS_NEEDED: ("Before this domain can be used, " "you’ll need to add name server addresses."),
                 cls.READY: "This domain has name servers and is ready for use.",
                 cls.ON_HOLD: (
                     "This domain is administratively paused, "
-                    "so it can't be edited and won't resolve in DNS. "
+                    "so it can’t be edited and won’t resolve in DNS. "
                     "Contact help@get.gov for details."
                 ),
                 cls.DELETED: ("This domain has been removed and " "is no longer registered to your organization."),
