@@ -109,6 +109,82 @@ class TestEmails(TestCase):
         self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
 
     @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=True, BASE_URL="manage.get.gov")
+    def test_email_production_subject_and_url_check(self):
+        """Test sending an email in production that:
+        1. Does not have a prefix in the email subject (no [MANAGE])
+        2. Uses the production URL in the email body of manage.get.gov still"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            send_templated_email(
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                "doesnotexist@igorville.com",
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
+                bcc_address=None,
+                cc_addresses=["testy2@town.com", "mayor@igorville.gov"],
+            )
+
+        # check that an email was sent
+        self.assertTrue(self.mock_client.send_email.called)
+
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
+        # Grab email subject
+        email_subject = kwargs["Content"]["Simple"]["Subject"]["Data"]
+
+        # Check that the subject does NOT contain a prefix for production
+        self.assertNotIn("[MANAGE]", email_subject)
+        self.assertIn("An update was made to", email_subject)
+
+        # Grab email body
+        email_body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        # Check that manage_url is correctly set for production
+        self.assertIn("https://manage.get.gov", email_body)
+
+    @boto3_mocking.patching
+    @override_settings(IS_PRODUCTION=False, BASE_URL="https://getgov-rh.app.cloud.gov")
+    def test_email_non_production_subject_and_url_check(self):
+        """Test sending an email in production that:
+        1. Does prefix in the email subject (ie [GETGOV-RH])
+        2. Uses the sandbox url in the email body (ie getgov-rh.app.cloud.gov)"""
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            send_templated_email(
+                "emails/update_to_approved_domain.txt",
+                "emails/update_to_approved_domain_subject.txt",
+                "doesnotexist@igorville.com",
+                context={"domain": "test", "user": "test", "date": 1, "changes": "test"},
+                bcc_address=None,
+                cc_addresses=["testy2@town.com", "mayor@igorville.gov"],
+            )
+
+        # check that an email was sent
+        self.assertTrue(self.mock_client.send_email.called)
+
+        # check the call sequence for the email
+        args, kwargs = self.mock_client.send_email.call_args
+        self.assertIn("Destination", kwargs)
+        self.assertIn("CcAddresses", kwargs["Destination"])
+        self.assertEqual(["testy2@town.com", "mayor@igorville.gov"], kwargs["Destination"]["CcAddresses"])
+
+        # Grab email subject
+        email_subject = kwargs["Content"]["Simple"]["Subject"]["Data"]
+
+        # Check that the subject DOES contain a prefix of the current sandbox
+        self.assertIn("[GETGOV-RH]", email_subject)
+
+        # Grab email body
+        email_body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        # Check that manage_url is correctly set of the sandbox
+        self.assertIn("https://getgov-rh.app.cloud.gov", email_body)
+
+    @boto3_mocking.patching
     @less_console_noise_decorator
     def test_submission_confirmation(self):
         """Submission confirmation email works."""
