@@ -919,6 +919,7 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
                 "portfolio": permissions.portfolio,
                 "requestor_email": "requestor@example.com",
                 "permissions": permissions,
+                "date": date.today(),
             },
         )
         self.assertTrue(result)
