@@ -234,16 +234,11 @@ class MockUserLogin:
         if request.user.is_anonymous:
             user = None
             UserModel = get_user_model()
-            username = "Testy"
-            p = "somefakepassword"
+            # Corresponds to a special user in our pa11y tests at id 9999.
+            # See fixtures_users.py for more details.
+            username = "80000000-0000-0000-0000-00000000a09b"
             args = {
                 UserModel.USERNAME_FIELD: username,
-                "email": "adminpal@example.com",
-                "first_name": "first",
-                "last_name": "last",
-                "password": p,
-                "phone": "8003111234",
-                "title": "awesomesauce"
             }
             user, _ = UserModel.objects.get_or_create(**args)
             user.is_superuser = True

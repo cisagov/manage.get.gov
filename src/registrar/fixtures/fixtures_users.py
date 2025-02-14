@@ -290,6 +290,18 @@ class UserFixture:
             "last_name": "Abbitt-Analyst",
             "email": "kaitlin.abbitt@gwe.cisa.dhs.gov",
         },
+        {
+            # This is a reserved user set at a specific id.
+            # We use this user for pa11y, since it is a static file.
+            # Respect the mythical creature, *do not* change the id!
+            "id": "9999",
+            "username": "80000000-0000-0000-0000-00000000a09b",
+            "first_name": "pa11y-user",
+            "last_name": "special-user",
+            "email": "mythical.creature@igorville.gov",
+            "title": "Wizard",
+            "phone": "123-456-7890"
+        },
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.

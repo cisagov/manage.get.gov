@@ -15,6 +15,28 @@ class Command(BaseCommand):
         "with dynamic parameters substituted with dummy values and some endpoints excluded."
     )
 
+    def handle(self, *args, **options):
+        """
+        Generate and write the .pa11yci configuration file to the current working directory.
+        """
+        resolver = get_resolver()
+        urls = self.extract_urls(resolver.url_patterns)
+        config = {
+            "defaults": {"concurrency": 1, "timeout": 30000},
+            "viewport": {
+                "width": 1920,
+                "height": 1080
+            },
+            "actions": [
+                "wait for url to be #"
+            ],
+            "urls": urls,
+        }
+        output_file = os.path.join(os.getcwd(), ".pa11yci")
+        with open(output_file, "w") as f:
+            json.dump(config, f, indent=4)
+        self.stdout.write(self.style.SUCCESS(f"Generated {output_file} with {len(urls)} URLs."))
+
     def should_exclude(self, url: str) -> bool:
         """
         Checks whether a given URL should be excluded based on predefined patterns.
@@ -77,7 +99,7 @@ class Command(BaseCommand):
         Returns:
             str: The route with parameters replaced.
         """
-        return re.sub(r"<[^>]+>", "1", route)
+        return re.sub(r"<[^>]+>", "9999", route)
 
     @staticmethod
     def substitute_regex_params(route: str) -> str:
@@ -133,26 +155,3 @@ class Command(BaseCommand):
             elif isinstance(pattern, URLResolver):
                 urls.extend(self.extract_urls(pattern.url_patterns, prefix=route))
         return urls
-
-    def handle(self, *args, **options):
-        """
-        Generate and write the .pa11yci configuration file to the current working directory.
-        """
-        resolver = get_resolver()
-        urls = self.extract_urls(resolver.url_patterns)
-        config = {
-            "defaults": {"concurrency": 1, "timeout": 30000},
-            "urls": urls,
-            "standard": "WCAG21AAA",
-            "viewport": {
-                "width": 1920,
-                "height": 1080
-            },
-            "actions": [
-                "wait for url to be #"
-            ],
-        }
-        output_file = os.path.join(os.getcwd(), ".pa11yci")
-        with open(output_file, "w") as f:
-            json.dump(config, f, indent=4)
-        self.stdout.write(self.style.SUCCESS(f"Generated {output_file} with {len(urls)} URLs."))
