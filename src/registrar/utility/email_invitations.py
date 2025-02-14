@@ -255,6 +255,7 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
                 "portfolio": permissions.portfolio,
                 "requestor_email": requestor_email,
                 "permissions": permissions,
+                "date": date.today(),
             },
         )
     except EmailSendingError:
