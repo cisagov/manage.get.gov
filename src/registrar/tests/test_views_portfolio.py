@@ -1063,7 +1063,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Invited")
         self.assertContains(response, portfolio_invitation.email)
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Viewer, all")
+        self.assertContains(response, "Viewer")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
         self.assertContains(

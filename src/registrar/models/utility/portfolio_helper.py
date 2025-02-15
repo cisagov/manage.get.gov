@@ -105,7 +105,7 @@ def get_domains_display(roles, permissions):
     """
     Determines the display name for a user's domain viewing permissions.
 
-    - If the user has the VIEW_ALL_DOMAINS permission, return "Viewer, all".
+    - If the user has the VIEW_ALL_DOMAINS permission, return "Viewer".
     - Otherwise, return "Viewer, limited".
 
     Args:
@@ -118,7 +118,7 @@ def get_domains_display(roles, permissions):
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
     if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS in all_permissions:
-        return "Viewer, all"
+        return "Viewer"
     else:
         return "Viewer, limited"
 
