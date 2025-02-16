@@ -61,7 +61,7 @@
         {% else %}<a href="{{ cl.add_facet_link }}" class="viewlink">{% translate "Show counts" %}</a>{% endif %}
         </h3>{% endif %}
         {% if cl.has_active_filters %}<div class="margin-2">
-        <a href="{{ cl.clear_all_filters_qs }}">&#10006; {% translate "Clear all filters" %}</a>
+        <a href="{{ cl.clear_all_filters_qs }}" role="link">&#10006; {% translate "Clear all filters" %}</a>
         </div>{% endif %}
     </div>{% endif %}
     {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
