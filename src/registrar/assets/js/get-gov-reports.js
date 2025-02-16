@@ -1,3 +1,4 @@
+
 /** An IIFE for admin in DjangoAdmin to listen to clicks on the growth report export button,
  * attach the seleted start and end dates to a url that'll trigger the view, and finally
  * redirect to that url.
@@ -58,6 +59,51 @@
 /** An IIFE to initialize the analytics page
 */
 (function () {
+
+    /**
+     * Creates a diagonal stripe pattern for chart.js
+     * Inspired by https://stackoverflow.com/questions/28569667/fill-chart-js-bar-chart-with-diagonal-stripes-or-other-patterns
+     * and https://github.com/ashiguruma/patternomaly
+     * @param {string} backgroundColor - Background color of the pattern
+     * @param {string} [lineColor="white"] - Color of the diagonal lines
+     * @param {boolean} [rightToLeft=false] - Direction of the diagonal lines
+     * @param {number} [lineGap=1] - Gap between lines
+     * @returns {CanvasPattern} A canvas pattern object for use with backgroundColor
+     */
+    function createDiagonalPattern(backgroundColor, lineColor, rightToLeft=false, lineGap=1) {
+        // Define the canvas and the 2d context so we can draw on it
+        let shape = document.createElement("canvas");
+        shape.width = 20;
+        shape.height = 20;
+        let context = shape.getContext("2d");
+
+        // Fill with specified background color
+        context.fillStyle = backgroundColor;
+        context.fillRect(0, 0, shape.width, shape.height);
+
+        // Set stroke properties
+        context.strokeStyle = lineColor;
+        context.lineWidth = 2;
+
+        // Rotate canvas for a right-to-left pattern
+        if (rightToLeft) {
+            context.translate(shape.width, 0);
+            context.rotate(90 * Math.PI / 180);
+        };
+
+        // First diagonal line
+        let halfSize = shape.width / 2;
+        context.moveTo(halfSize - lineGap, -lineGap);
+        context.lineTo(shape.width + lineGap, halfSize + lineGap);
+
+        // Second diagonal line (x,y are swapped)
+        context.moveTo(-lineGap, halfSize - lineGap);
+        context.lineTo(halfSize + lineGap, shape.width + lineGap);
+
+        context.stroke();
+        return context.createPattern(shape, "repeat");
+    }
+
     function createComparativeColumnChart(canvasId, title, labelOne, labelTwo) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) {
@@ -74,17 +120,20 @@
             datasets: [
                 {
                     label: labelOne,
-                    backgroundColor: "rgba(255, 99, 132, 0.2)",
+                    backgroundColor: "rgba(255, 99, 132, 0.3)",
                     borderColor: "rgba(255, 99, 132, 1)",
                     borderWidth: 1,
                     data: listOne,
+                    // Set this line style to be rightToLeft for visual distinction
+                    backgroundColor: createDiagonalPattern('rgba(255, 99, 132, 0.3)', 'white', true)
                 },
                 {
                     label: labelTwo,
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    backgroundColor: "rgba(75, 192, 192, 0.3)",
                     borderColor: "rgba(75, 192, 192, 1)",
                     borderWidth: 1,
                     data: listTwo,
+                    backgroundColor: createDiagonalPattern('rgba(75, 192, 192, 0.3)', 'white')
                 },
             ],
         };
