@@ -1,8 +1,8 @@
 {% load i18n %}
 {% load static field_helpers url_helpers %}
 
-<details data-filter-title="{{ filter_title }}" open="">
-  <summary aria-label="Show/hide {{ filter_title }} filters" role="button">
+<details data-filter-title="{{ title }}" open="">
+  <summary aria-label="Show/hide {{ title }} filters" role="button">
     {% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %} 
   </summary>
   <ul class="mulitple-choice">
