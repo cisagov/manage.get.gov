@@ -251,8 +251,6 @@ def is_members_subpage(path):
     return get_url_name(path) in url_names
 
 
-
-
 @register.filter(name="display_requesting_entity")
 def display_requesting_entity(domain_request):
     """Workaround for a newline issue in .txt files (our emails) as if statements
