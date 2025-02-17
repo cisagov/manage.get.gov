@@ -1,4 +1,4 @@
-import { hideElement, showElement, addOrRemoveSessionBoolea, announceForScreenReaders } from './helpers-admin.js';
+import { hideElement, showElement, addOrRemoveSessionBoolean, announceForScreenReaders } from './helpers-admin.js';
 import { handlePortfolioSelection } from './helpers-portfolio-dynamic-fields.js';
 
 function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
