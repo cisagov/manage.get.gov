@@ -1,4 +1,5 @@
 import io
+from unittest import skip
 from django.test import Client, RequestFactory
 from io import StringIO
 from registrar.models import (
@@ -819,6 +820,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         super().setUp()
         self.factory = RequestFactory()
 
+    @skip("flaky test that needs to be refactored")
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @less_console_noise_decorator

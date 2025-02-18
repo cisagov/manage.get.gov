@@ -11,6 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
+
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
@@ -24,7 +25,7 @@ from registrar.utility.admin_helpers import (
 from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -1381,9 +1382,13 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     change_form_template = "django/admin/user_domain_role_change_form.html"
 
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/user_domain_role_delete_selected_confirmation.html"
+
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
         """Custom delete_view implementation that specifies redirect behaviour"""
+        self.delete_confirmation_template = "django/admin/user_domain_role_delete_confirmation.html"
         response = super().delete_view(request, object_id, extra_context)
 
         if isinstance(response, HttpResponseRedirect) and not request.user.has_perm("registrar.full_access_permission"):
@@ -1518,6 +1523,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     autocomplete_fields = ["domain"]
 
     change_form_template = "django/admin/domain_invitation_change_form.html"
+    # Override for the delete confirmation page on the domain table (bulk delete action)
+    delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
@@ -1527,6 +1534,37 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Override the change_view to add the invitation obj for the change_form_object_tools template"""
+
+        if extra_context is None:
+            extra_context = {}
+
+        # Get the domain invitation object
+        invitation = get_object_or_404(DomainInvitation, id=object_id)
+        extra_context["invitation"] = invitation
+
+        if request.method == "POST" and "cancel_invitation" in request.POST:
+            if invitation.status == DomainInvitation.DomainInvitationStatus.INVITED:
+                invitation.cancel_invitation()
+                invitation.save(update_fields=["status"])
+                messages.success(request, _("Invitation canceled successfully."))
+
+                # Redirect back to the change view
+                return redirect(reverse("admin:registrar_domaininvitation_change", args=[object_id]))
+
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """
+        Custom delete_view to perform additional actions or customize the template.
+        """
+        # Set the delete template to a custom one
+        self.delete_confirmation_template = "django/admin/domain_invitation_delete_confirmation.html"
+        response = super().delete_view(request, object_id, extra_context=extra_context)
+
+        return response
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method.
@@ -1535,6 +1573,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         which will be successful if a single User exists for that email; otherwise, will
         just continue to create the invitation.
         """
+
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
