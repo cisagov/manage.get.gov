@@ -22,3 +22,23 @@ export function addOrRemoveSessionBoolean(name, add){
         sessionStorage.removeItem(name); 
     }
 }
+
+/**
+ * Creates a temporary live region to announce messages for screen readers.
+ */
+export function announceForScreenReaders(message) {
+    let liveRegion = document.createElement("div");
+    liveRegion.setAttribute("aria-live", "assertive");
+    liveRegion.setAttribute("role", "alert");
+    liveRegion.style.position = "absolute";
+    liveRegion.style.left = "-9999px";
+    document.body.appendChild(liveRegion);
+
+    // Delay the update slightly to ensure it's recognized
+    setTimeout(() => {
+        liveRegion.textContent = message;
+        setTimeout(() => {
+            document.body.removeChild(liveRegion);
+        }, 1000);
+    }, 100);
+}

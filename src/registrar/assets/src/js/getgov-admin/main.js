@@ -10,7 +10,8 @@ import {
     initRejectedEmail, 
     initApprovedDomain, 
     initCopyRequestSummary,
-    initDynamicDomainRequestFields } from './domain-request-form.js';
+    initDynamicDomainRequestFields,
+    initFilterFocusListeners } from './domain-request-form.js';
 import { initDomainFormTargetBlankButtons } from './domain-form.js';
 import { initDynamicPortfolioFields } from './portfolio-form.js';
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
@@ -31,6 +32,7 @@ initRejectedEmail();
 initApprovedDomain();
 initCopyRequestSummary();
 initDynamicDomainRequestFields();
+initFilterFocusListeners();
 
 // Domain
 initDomainFormTargetBlankButtons();
