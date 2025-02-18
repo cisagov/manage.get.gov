@@ -19,11 +19,11 @@ Load our custom filters to extract info from the django generated markup.
 
 {% if results.0|contains_checkbox %}
     {# .gov - hardcode the select all checkbox #}
-    <th scope="col" class="action-checkbox-column" title="Toggle all">
+    <th scope="col" class="action-checkbox-column" title="Toggle">
         <div class="text">
             <span>
-                <input type="checkbox" id="action-toggle">
                 <label for="action-toggle" class="usa-sr-only">Toggle all</label>
+                <input type="checkbox" id="action-toggle">
             </span>
         </div>
         <div class="clear"></div>
@@ -61,10 +61,10 @@ Load our custom filters to extract info from the django generated markup.
     {% endif %}
     <tr>
         {% with result_value=result.0|extract_value %}
-            {% with result_label=result.1|extract_a_text %}
+            {% with result_label=result.1|extract_a_text checkbox_id="select-"|add:result_value %}
                 <td>
-                    <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ result_value|default:'value' }}-{{ result_label|default:'label' }}" class="action-select">
-                    <label class="usa-sr-only" for="{{ result_value|default:'value' }}-{{ result_label|default:'label' }}">{{ result_label|default:'label' }}</label>
+                    <label class="usa-sr-only" for="{{ checkbox_id }}">Select row {{ result_label|default:'label' }}</label>
+                    <input type="checkbox" name="_selected_action" value="{{ result_value|default:'value' }}" id="{{ checkbox_id }}" class="action-select">
                 </td>
                 {% endwith %}
         {% endwith %}
