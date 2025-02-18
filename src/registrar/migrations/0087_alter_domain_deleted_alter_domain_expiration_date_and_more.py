@@ -4,7 +4,6 @@ from django.conf import settings
 import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
-import django_fsm
 
 
 class Migration(migrations.Migration):
@@ -42,7 +41,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domain",
             name="state",
-            field=django_fsm.FSMField(
+            field=models.CharField(
                 choices=[
                     ("unknown", "Unknown"),
                     ("dns needed", "Dns needed"),
@@ -53,7 +52,6 @@ class Migration(migrations.Migration):
                 default="unknown",
                 help_text=" ",
                 max_length=21,
-                protected=True,
                 verbose_name="domain state",
             ),
         ),

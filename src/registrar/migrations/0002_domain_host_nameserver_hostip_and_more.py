@@ -4,7 +4,6 @@ from django.conf import settings
 import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
-import django_fsm  # type: ignore
 
 
 class Migration(migrations.Migration):
@@ -37,7 +36,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "is_active",
-                    django_fsm.FSMField(
+                    models.CharField(
                         choices=[(True, "Yes"), (False, "No")],
                         default=False,
                         help_text="Domain is live in the registry",

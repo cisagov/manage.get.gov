@@ -2,7 +2,7 @@
 
 import logging
 from django.db import models
-from django_fsm import FSMField, transition
+from viewflow.fsm import State
 from django.contrib.auth import get_user_model
 from registrar.models import DomainInvitation, UserPortfolioPermission
 from .utility.portfolio_helper import (
@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 class PortfolioInvitation(TimeStampedModel):
-    class Meta:
-        """Contains meta information about this class"""
+    # class Meta:
+    #     """Contains meta information about this class"""
 
-        indexes = [
-            models.Index(fields=["status"]),
-        ]
+    #     indexes = [
+    #         models.Index(fields=["status"]),
+    #     ]
 
     # Constants for status field
     class PortfolioInvitationStatus(models.TextChoices):
@@ -62,10 +62,9 @@ class PortfolioInvitation(TimeStampedModel):
         help_text="Select one or more additional permissions.",
     )
 
-    status = FSMField(
-        choices=PortfolioInvitationStatus.choices,
+    status = State(
+        PortfolioInvitationStatus,
         default=PortfolioInvitationStatus.INVITED,
-        protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
@@ -85,7 +84,7 @@ class PortfolioInvitation(TimeStampedModel):
         """
         return UserPortfolioPermission.get_portfolio_permissions(self.roles, self.additional_permissions)
 
-    @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
+    @status.transition(source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 

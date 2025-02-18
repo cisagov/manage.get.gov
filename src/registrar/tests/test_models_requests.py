@@ -32,7 +32,7 @@ from .common import (
     completed_domain_request,
     set_domain_request_investigators,
 )
-from django_fsm import TransitionNotAllowed
+from viewflow.fsm import TransitionNotAllowed
 
 from api.tests.common import less_console_noise_decorator
 

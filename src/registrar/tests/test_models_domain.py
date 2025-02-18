@@ -23,7 +23,7 @@ from registrar.utility.errors import ActionNotAllowed, NameserverError
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 from registrar.utility import errors
 
-from django_fsm import TransitionNotAllowed  # type: ignore
+from viewflow.fsm import TransitionNotAllowed
 from epplibwrapper import (
     commands,
     common,

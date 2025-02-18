@@ -3,7 +3,6 @@
 import django.contrib.postgres.fields
 from django.db import migrations, models
 import django.db.models.deletion
-import django_fsm
 
 
 class Migration(migrations.Migration):
@@ -62,11 +61,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "status",
-                    django_fsm.FSMField(
+                    models.CharField(
                         choices=[("invited", "Invited"), ("retrieved", "Retrieved")],
                         default="invited",
                         max_length=50,
-                        protected=True,
                     ),
                 ),
                 (

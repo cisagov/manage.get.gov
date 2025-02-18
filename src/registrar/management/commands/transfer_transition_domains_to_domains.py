@@ -2,7 +2,7 @@ import logging
 import argparse
 import sys
 
-from django_fsm import TransitionNotAllowed  # type: ignore
+from viewflow.fsm import TransitionNotAllowed
 
 from django.core.management import BaseCommand
 

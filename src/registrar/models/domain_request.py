@@ -4,7 +4,7 @@ import logging
 from django.apps import apps
 from django.conf import settings
 from django.db import models
-from django_fsm import FSMField, transition  # type: ignore
+from viewflow.fsm import State
 from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
@@ -32,7 +32,7 @@ class DomainRequest(TimeStampedModel):
         indexes = [
             models.Index(fields=["requested_domain"]),
             models.Index(fields=["approved_domain"]),
-            models.Index(fields=["status"]),
+            #models.Index(fields=["status"]),
         ]
 
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
@@ -291,10 +291,9 @@ class DomainRequest(TimeStampedModel):
             return cls(action_needed_reason).label if action_needed_reason else None
 
     # #### Internal fields about the domain request #####
-    status = FSMField(
-        choices=DomainRequestStatus.choices,  # possible states as an array of constants
+    status = State(
+        DomainRequestStatus,
         default=DomainRequestStatus.STARTED,  # sensible default
-        protected=False,  # can change state directly, particularly in Django admin
     )
 
     rejection_reason = models.TextField(
@@ -984,8 +983,7 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[
             DomainRequestStatus.STARTED,
             DomainRequestStatus.IN_REVIEW,
@@ -1033,8 +1031,7 @@ class DomainRequest(TimeStampedModel):
                 bcc_address=bcc_address,
             )
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[
             DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.ACTION_NEEDED,
@@ -1067,8 +1064,7 @@ class DomainRequest(TimeStampedModel):
         in_review = literal if literal is not None else "In Review"
         logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.APPROVED,
@@ -1104,8 +1100,7 @@ class DomainRequest(TimeStampedModel):
         action_needed = literal if literal is not None else "Action Needed"
         logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[
             DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
@@ -1182,8 +1177,7 @@ class DomainRequest(TimeStampedModel):
             self.DomainRequestStatus.ACTION_NEEDED,
         ]
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
         target=DomainRequestStatus.WITHDRAWN,
     )
@@ -1196,8 +1190,7 @@ class DomainRequest(TimeStampedModel):
             "emails/domain_request_withdrawn_subject.txt",
         )
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
         target=DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
@@ -1219,8 +1212,7 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject")
 
-    @transition(
-        field="status",
+    @status.transition(
         source=[
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,

@@ -146,8 +146,8 @@ INSTALLED_APPS = [
     "djangooidc",
     # library to simplify form templating
     "widget_tweaks",
-    # library for Finite State Machine statuses
-    "django_fsm",
+    # library for viewflow finite state machines
+    "viewflow",
     # library for phone numbers
     "phonenumber_field",
     # Our internal API application

@@ -6,7 +6,6 @@ import django.contrib.auth.validators
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
-import django_fsm  # type: ignore
 
 
 class Migration(migrations.Migration):
@@ -183,7 +182,7 @@ class Migration(migrations.Migration):
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (
                     "status",
-                    django_fsm.FSMField(
+                    models.CharField(
                         choices=[
                             ("started", "started"),
                             ("submitted", "submitted"),

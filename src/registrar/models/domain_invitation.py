@@ -5,7 +5,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from django_fsm import FSMField, transition  # type: ignore
+from viewflow.fsm import State
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class DomainInvitation(TimeStampedModel):
-    class Meta:
-        """Contains meta information about this class"""
+    # class Meta:
+    #     """Contains meta information about this class"""
 
-        indexes = [
-            models.Index(fields=["status"]),
-        ]
+    #     indexes = [
+    #         models.Index(fields=["status"]),
+    #     ]
 
     # Constants for status field
     class DomainInvitationStatus(models.TextChoices):
@@ -40,16 +40,15 @@ class DomainInvitation(TimeStampedModel):
         related_name="invitations",
     )
 
-    status = FSMField(
-        choices=DomainInvitationStatus.choices,
+    status = State(
+        states=DomainInvitationStatus,
         default=DomainInvitationStatus.INVITED,
-        protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
 
-    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
+    @status.transition(source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 
@@ -75,12 +74,12 @@ class DomainInvitation(TimeStampedModel):
             # the invitation was retrieved. Log that this occurred.
             logger.warn("Invitation %s was retrieved for a role that already exists.", self)
 
-    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
+    @status.transition(source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
         """When an invitation is canceled, change the status to canceled"""
         pass
 
-    @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
+    @status.transition(source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
     def update_cancellation_status(self):
         """When an invitation is canceled but reinvited, update the status to invited"""
         pass

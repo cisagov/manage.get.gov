@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import django_fsm  # type: ignore
 
 
 class Migration(migrations.Migration):
@@ -28,11 +27,10 @@ class Migration(migrations.Migration):
                 ("email", models.EmailField(max_length=254)),
                 (
                     "status",
-                    django_fsm.FSMField(
+                    models.CharField(
                         choices=[("sent", "sent"), ("retrieved", "retrieved")],
                         default="sent",
                         max_length=50,
-                        protected=True,
                     ),
                 ),
                 (

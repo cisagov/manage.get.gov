@@ -26,7 +26,7 @@ from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
-from django_fsm import get_available_FIELD_transitions, FSMField
+from viewflow.fsm import State, TransitionNotAllowed
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
@@ -59,7 +59,6 @@ from registrar.widgets import NoAutocompleteFilteredSelectMultiple
 from . import models
 from auditlog.models import LogEntry  # type: ignore
 from auditlog.admin import LogEntryAdmin  # type: ignore
-from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
@@ -74,6 +73,40 @@ from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
+
+class StatusFilter(admin.SimpleListFilter):
+    """Custom filter to allow filtering by state fields in Django Admin."""
+
+    title = _("Status")  # Display name in Django Admin
+    parameter_name = "status"  # URL parameter for filtering
+
+    def lookups(self, request, model_admin):
+        """Return the list of available choices for filtering."""
+        return model_admin.model.status.choices  # Get choices from State field
+
+    def queryset(self, request, queryset):
+        """Modify queryset based on selected filter value."""
+        if self.value():
+            return queryset.filter(status=self.value())  # Filter by status
+        return queryset
+
+
+class StateFilter(admin.SimpleListFilter):
+    """Custom filter to allow filtering by state fields in Django Admin."""
+
+    title = _("State")  # Display name in Django Admin
+    parameter_name = "state"  # URL parameter for filtering
+
+    def lookups(self, request, model_admin):
+        """Return the list of available choices for filtering."""
+        return model_admin.model.state.choices  # Get choices from State field
+
+    def queryset(self, request, queryset):
+        """Modify queryset based on selected filter value."""
+        if self.value():
+            return queryset.filter(state=self.value())  # Filter by state
+        return queryset
+    
 
 class FsmModelResource(resources.ModelResource):
     """ModelResource is extended to support importing of tables which
@@ -94,7 +127,7 @@ class FsmModelResource(resources.ModelResource):
         fsm_fields = {}
 
         for f in self._meta.model._meta.fields:
-            if isinstance(f, FSMField):
+            if isinstance(f, State):
                 if row and f.name in row:
                     fsm_fields[f.name] = row[f.name]
 
@@ -109,8 +142,8 @@ class FsmModelResource(resources.ModelResource):
 
         # check each field in the object
         for f in obj._meta.fields:
-            # if the field is an instance of FSMField
-            if field.attribute == f.name and isinstance(f, FSMField):
+            # if the field is an instance of State
+            if field.attribute == f.name and isinstance(f, State):
                 is_fsm = True
         if not is_fsm:
             super().import_field(field, obj, data, is_m2m, **kwargs)
@@ -300,13 +333,9 @@ class DomainRequestAdminForm(forms.ModelForm):
             available_transitions = [(current_state, domain_request.get_status_display())]
 
             if domain_request.investigator is not None:
-                transitions = get_available_FIELD_transitions(
-                    domain_request, models.DomainRequest._meta.get_field("status")
-                )
+                transitions = domain_request.status.get_transitions()
             else:
-                transitions = self.get_custom_field_transitions(
-                    domain_request, models.DomainRequest._meta.get_field("status")
-                )
+                transitions = self.get_custom_field_transitions(domain_request)
 
             for transition in transitions:
                 available_transitions.append((transition.target, transition.target.label))
@@ -317,16 +346,19 @@ class DomainRequestAdminForm(forms.ModelForm):
             if not domain_request.creator.is_restricted():
                 self.fields["status"].widget.choices = available_transitions
 
-    def get_custom_field_transitions(self, instance, field):
-        """Custom implementation of get_available_FIELD_transitions
-        in the FSM. Allows us to still display fields filtered out by a condition."""
-        curr_state = field.get_state(instance)
-        transitions = field.transitions[instance.__class__]
+    def get_custom_field_transitions(self, instance):
+        """Custom implementation of filtering field transitions.
+        Allows us to still display fields filtered out by a condition."""
+        current_state = instance.status
+        transitions = instance.status.get_transitions()
 
-        for name, transition in transitions.items():
-            meta = transition._django_fsm
-            if meta.has_transition(curr_state):
-                yield meta.get_transition(curr_state)
+        for transition in transitions:
+            try:
+                # Check if the transition is allowed
+                if transition.source == current_state:
+                    yield transition
+            except TransitionNotAllowed:
+                continue
 
     def clean(self):
         """
@@ -1510,7 +1542,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     ]
 
     # Filters
-    list_filter = ("status",)
+    list_filter = (StatusFilter,)
 
     search_help_text = "Search by email or domain."
 
@@ -1657,7 +1689,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
     ]
 
     # Filters
-    list_filter = ("status",)
+    list_filter = (StatusFilter,)
 
     search_help_text = "Search by email or portfolio."
 
@@ -3469,7 +3501,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         )
 
     # Filters
-    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
+    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, StateFilter]
 
     # ------- END FILTERS
 

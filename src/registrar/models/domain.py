@@ -5,7 +5,7 @@ import re
 from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction
-from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
+from viewflow.fsm import State, TransitionNotAllowed
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
@@ -72,7 +72,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         indexes = [
             models.Index(fields=["name"]),
-            models.Index(fields=["state"]),
+            #models.Index(fields=["state"]),
         ]
 
     def __init__(self, *args, **kwargs):
@@ -132,7 +132,7 @@ class Domain(TimeStampedModel, DomainHelper):
         PENDING_TRANSFER = "pendingTransfer"
         PENDING_UPDATE = "pendingUpdate"
 
-    class State(models.TextChoices):
+    class DomainState(models.TextChoices):
         """These capture (some of) the states a domain object can be in."""
 
         # the state is indeterminate
@@ -233,7 +233,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         # If the domain is deleted we don't want the expiration date to be set
-        if self.state == self.State.DELETED and self.expiration_date:
+        if self.state == self.DomainState.DELETED and self.expiration_date:
             self.expiration_date = None
         super().save(force_insert, force_update, using, update_fields)
 
@@ -722,9 +722,9 @@ class Domain(TimeStampedModel, DomainHelper):
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
 
         if self.state not in [
-            self.State.DNS_NEEDED,
-            self.State.READY,
-            self.State.UNKNOWN,
+            self.DomainState.DNS_NEEDED,
+            self.DomainState.READY,
+            self.DomainState.UNKNOWN,
         ]:
             raise ActionNotAllowed("Nameservers can not be " "set in the current state")
 
@@ -980,14 +980,14 @@ class Domain(TimeStampedModel, DomainHelper):
         Is the domain live on the inter webs?
         could be replaced with request to see if ok status is set
         """
-        return self.state == self.State.READY
+        return self.state == self.DomainState.READY
 
     def is_editable(self) -> bool:
         """domain is editable unless state is on hold or deleted"""
         return self.state in [
-            self.State.UNKNOWN,
-            self.State.DNS_NEEDED,
-            self.State.READY,
+            self.DomainState.UNKNOWN,
+            self.DomainState.DNS_NEEDED,
+            self.DomainState.READY,
         ]
 
     def transfer(self):
@@ -1097,16 +1097,13 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="domain",
     )
 
-    state = FSMField(
-        max_length=21,
-        choices=State.choices,
-        default=State.UNKNOWN,
-        # cannot change state directly, particularly in Django admin
-        protected=True,
+    state = State(
+        DomainState,
+        default=DomainState.UNKNOWN,
         # This must be defined for custom state help messages,
         # as otherwise the view will purge the help field as it does not exist.
-        help_text=" ",
-        verbose_name="domain state",
+        # help_text=" ",
+        # verbose_name="domain state",
     )
 
     expiration_date = DateField(
@@ -1141,7 +1138,7 @@ class Domain(TimeStampedModel, DomainHelper):
     )
 
     def isActive(self):
-        return self.state == Domain.State.CREATED
+        return self.state == Domain.DomainState.CREATED
 
     def is_expired(self):
         """
@@ -1149,7 +1146,7 @@ class Domain(TimeStampedModel, DomainHelper):
         Returns True if expired, False otherwise.
         """
         if self.expiration_date is None:
-            return self.state != self.State.DELETED
+            return self.state != self.DomainState.DELETED
         now = timezone.now().date()
         return self.expiration_date < now
 
@@ -1169,11 +1166,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
-        if self.is_expired() and (self.state != self.State.UNKNOWN):
+        if self.is_expired() and (self.state != self.DomainState.UNKNOWN):
             return "Expired"
         elif self.is_expiring():
             return "Expiring soon"
-        elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
+        elif self.state == self.DomainState.UNKNOWN or self.state == self.DomainState.DNS_NEEDED:
             return "DNS needed"
         return self.state.capitalize()
 
@@ -1423,7 +1420,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e)
                     logger.error(e.code)
                     raise e
-                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
+                if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.DomainState.UNKNOWN:
                     logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
@@ -1441,7 +1438,7 @@ class Domain(TimeStampedModel, DomainHelper):
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
 
-    @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
+    @state.transition(source=DomainState.UNKNOWN, target=DomainState.DNS_NEEDED)
     def dns_needed_from_unknown(self):
         logger.info("Changing to dns_needed")
 
@@ -1474,7 +1471,7 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
-    @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
+    @state.transition(source=[DomainState.READY, DomainState.ON_HOLD], target=DomainState.ON_HOLD)
     def place_client_hold(self, ignoreEPP=False):
         """place a clienthold on a domain (no longer should resolve)
         ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
@@ -1488,7 +1485,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if not ignoreEPP:
             self._place_client_hold()
 
-    @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
+    @state.transition(source=[DomainState.READY, DomainState.ON_HOLD], target=DomainState.READY)
     def revert_client_hold(self, ignoreEPP=False):
         """undo a clienthold placed on a domain
         ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
@@ -1499,7 +1496,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
+    @state.transition(source=[DomainState.ON_HOLD, DomainState.DNS_NEEDED], target=DomainState.DELETED)
     def deletedInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
@@ -1544,10 +1541,9 @@ class Domain(TimeStampedModel, DomainHelper):
     # def dns_not_needed(self):
     #     return not self.is_dns_needed()
 
-    @transition(
-        field="state",
-        source=[State.DNS_NEEDED, State.READY],
-        target=State.READY,
+    @state.transition(
+        source=[DomainState.DNS_NEEDED, DomainState.READY],
+        target=DomainState.READY,
         # conditions=[dns_not_needed]
     )
     def ready(self):
@@ -1563,10 +1559,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.first_ready is None:
             self.first_ready = timezone.now()
 
-    @transition(
-        field="state",
-        source=[State.READY],
-        target=State.DNS_NEEDED,
+    @state.transition(
+        source=[DomainState.READY],
+        target=DomainState.DNS_NEEDED,
         # conditions=[is_dns_needed]
     )
     def dns_needed(self):
@@ -1583,14 +1578,14 @@ class Domain(TimeStampedModel, DomainHelper):
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and self.state != self.DomainState.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
         elif self.is_expiring():
             help_text = "This domain is expiring soon. Complete the online renewal process to maintain access."
         else:
-            help_text = Domain.State.get_help_text(self.state)
+            help_text = Domain.DomainState.get_help_text(self.state)
 
         return help_text
 
@@ -1858,11 +1853,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 "%s couldn't _add_missing_contacts_if_unknown, error was %s."
                 "Domain will still be in UNKNOWN state." % (self.name, e)
             )
-        if len(self.nameservers) >= 2 and (self.state != self.State.READY):
+        if len(self.nameservers) >= 2 and (self.state != self.DomainState.READY):
             self.ready()
             self.save()
 
-    @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
+    @state.transition(source=DomainState.UNKNOWN, target=DomainState.DNS_NEEDED)
     def _add_missing_contacts_if_unknown(self, cleaned):
         """
         _add_missing_contacts_if_unknown: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
@@ -1909,7 +1904,7 @@ class Domain(TimeStampedModel, DomainHelper):
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
-            if self.state == self.State.UNKNOWN:
+            if self.state == self.DomainState.UNKNOWN:
                 self._fix_unknown_state(cleaned)
             if fetch_hosts:
                 self._update_hosts_and_ips_in_db(cleaned)
