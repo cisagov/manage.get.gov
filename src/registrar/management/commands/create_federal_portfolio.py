@@ -5,8 +5,15 @@ import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
+from registrar.models.domain import Domain
+from registrar.models.domain_invitation import DomainInvitation
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import normalize_string
 from django.db.models import F, Q
+
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +28,10 @@ class Command(BaseCommand):
         self.updated_portfolios = set()
         self.skipped_portfolios = set()
         self.failed_portfolios = set()
+        self.added_managers = set()
+        self.added_invitations = set()
+        self.skipped_invitations = set()
+        self.failed_managers = set()
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -38,6 +49,9 @@ class Command(BaseCommand):
         Optional (mutually exclusive with parse options):
             --both: Shorthand for using both --parse_requests and --parse_domains
                 Cannot be used with --parse_requests or --parse_domains
+
+        Optional:
+            --add_managers: Add all domain managers of the portfolio's domains to the organization.
         """
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
@@ -65,22 +79,30 @@ class Command(BaseCommand):
             help="Adds portfolio to both requests and domains",
         )
         parser.add_argument(
+            "--add_managers",
+            action=argparse.BooleanOptionalAction,
+            help="Add all domain managers of the portfolio's domains to the organization.",
+        )
+        parser.add_argument(
             "--skip_existing_portfolios",
             action=argparse.BooleanOptionalAction,
             help="Only add suborganizations to newly created portfolios, skip existing ones.",
         )
 
-    def handle(self, **options):
+    def handle(self, **options):  # noqa: C901
         agency_name = options.get("agency_name")
         branch = options.get("branch")
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
         both = options.get("both")
+        add_managers = options.get("add_managers")
         skip_existing_portfolios = options.get("skip_existing_portfolios")
 
         if not both:
-            if not parse_requests and not parse_domains:
-                raise CommandError("You must specify at least one of --parse_requests or --parse_domains.")
+            if not (parse_requests or parse_domains or add_managers):
+                raise CommandError(
+                    "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
+                )
         else:
             if parse_requests or parse_domains:
                 raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
@@ -96,7 +118,6 @@ class Command(BaseCommand):
                 )
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
-
         portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
@@ -107,6 +128,8 @@ class Command(BaseCommand):
                     federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios
                 )
                 portfolios.append(portfolio)
+                if add_managers:
+                    self.add_managers_to_portfolio(portfolio)
             except Exception as exec:
                 self.failed_portfolios.add(federal_agency)
                 logger.error(exec)
@@ -126,6 +149,26 @@ class Command(BaseCommand):
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
             display_as_str=True,
         )
+
+        if add_managers:
+            TerminalHelper.log_script_run_summary(
+                self.added_managers,
+                self.failed_managers,
+                [],  # can't skip managers, can only add or fail
+                log_header="----- MANAGERS ADDED -----",
+                debug=False,
+                display_as_str=True,
+            )
+
+            TerminalHelper.log_script_run_summary(
+                self.added_invitations,
+                [],
+                self.skipped_invitations,
+                log_header="----- INVITATIONS ADDED -----",
+                debug=False,
+                skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
+                display_as_str=True,
+            )
 
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
@@ -147,6 +190,73 @@ class Command(BaseCommand):
             )
             self.post_process_started_domain_requests(agencies, portfolios)
 
+    def add_managers_to_portfolio(self, portfolio: Portfolio):
+        """
+        Add all domain managers of the portfolio's domains to the organization.
+        This includes adding them to the correct group and creating portfolio invitations.
+        """
+        logger.info(f"Adding managers for portfolio {portfolio}")
+
+        # Fetch all domains associated with the portfolio
+        domains = Domain.objects.filter(domain_info__portfolio=portfolio)
+        domain_managers: set[UserDomainRole] = set()
+
+        # Fetch all users with manager roles for the domains
+        # select_related means that a db query will not be occur when you do user_domain_role.user
+        # Its similar to a set or dict in that it costs slightly more upfront in exchange for perf later
+        user_domain_roles = UserDomainRole.objects.select_related("user").filter(
+            domain__in=domains, role=UserDomainRole.Roles.MANAGER
+        )
+        domain_managers.update(user_domain_roles)
+
+        invited_managers: set[str] = set()
+
+        # Get the emails of invited managers
+        domain_invitations = DomainInvitation.objects.filter(
+            domain__in=domains, status=DomainInvitation.DomainInvitationStatus.INVITED
+        ).values_list("email", flat=True)
+        invited_managers.update(domain_invitations)
+
+        for user_domain_role in domain_managers:
+            try:
+                # manager is a user id
+                user = user_domain_role.user
+                _, created = UserPortfolioPermission.objects.get_or_create(
+                    portfolio=portfolio,
+                    user=user,
+                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+                )
+                self.added_managers.add(user)
+                if created:
+                    logger.info(f"Added manager '{user}' to portfolio '{portfolio}'")
+                else:
+                    logger.info(f"Manager '{user}' already exists in portfolio '{portfolio}'")
+            except User.DoesNotExist:
+                self.failed_managers.add(user)
+                logger.debug(f"User '{user}' does not exist")
+
+        for email in invited_managers:
+            self.create_portfolio_invitation(portfolio, email)
+
+    def create_portfolio_invitation(self, portfolio: Portfolio, email: str):
+        """
+        Create a portfolio invitation for the given email.
+        """
+        _, created = PortfolioInvitation.objects.get_or_create(
+            portfolio=portfolio,
+            email=email,
+            defaults={
+                "status": PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+                "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            },
+        )
+        if created:
+            self.added_invitations.add(email)
+            logger.info(f"Created portfolio invitation for '{email}' to portfolio '{portfolio}'")
+        else:
+            self.skipped_invitations.add(email)
+            logger.info(f"Found existing portfolio invitation for '{email}' to portfolio '{portfolio}'")
+
     def post_process_started_domain_requests(self, agencies, portfolios):
         """
         Removes duplicate organization data by clearing federal_agency when it matches the portfolio name.
@@ -160,6 +270,7 @@ class Command(BaseCommand):
         # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
         # 3. The domain request is in status "started".
         # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
+
         domain_requests_to_update = DomainRequest.objects.filter(
             federal_agency__in=agencies,
             federal_agency__agency__isnull=False,
