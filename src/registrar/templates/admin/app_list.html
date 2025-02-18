@@ -45,16 +45,17 @@
             {% endif %}
 
             {% if model.add_url %}
-              <td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>
+              {% comment %} Remove the 's' from the end of the string to avoid text like "Add domain requests" {% endcomment %}
+              <td><a href="{{ model.add_url }}" class="addlink" aria-label="Add {{ model.name|slice:":-1" }}">{% translate 'Add' %}</a></td>
             {% else %}
               <td></td>
             {% endif %}
 
             {% if model.admin_url and show_changelinks %}
               {% if model.view_only %}
-                <td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>
+                <td><a href="{{ model.admin_url }}" class="viewlink" aria-label="View {{ model.name }}">{% translate 'View' %}</a></td>
               {% else %}
-                <td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>
+                <td><a href="{{ model.admin_url }}" class="changelink" aria-label="Change {{ model.name }}">{% translate 'Change' %}</a></td>
               {% endif %}
             {% elif show_changelinks %}
               <td></td>
