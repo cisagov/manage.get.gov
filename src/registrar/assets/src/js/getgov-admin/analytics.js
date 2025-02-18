@@ -146,7 +146,7 @@ function createComparativeColumnChart(id, title, labelOne, labelTwo) {
 /** An IIFE to initialize the analytics page
 */
 export function initAnalyticsDashboard() {
-    const analyticsPageContainer = document.querySelector('.analytics-dashboard .analytics-dashboard-charts');
+    const analyticsPageContainer = document.querySelector('.analytics-dashboard-charts');
     if (analyticsPageContainer) {
         document.addEventListener("DOMContentLoaded", function () {
             initAnalyticsExportButtons();
