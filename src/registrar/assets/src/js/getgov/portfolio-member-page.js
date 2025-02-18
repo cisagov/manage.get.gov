@@ -128,7 +128,7 @@ export function initAddNewMemberPageListeners() {
       });
     } else {
       // for admin users, the permissions are always the same
-      appendPermissionInContainer('Domains', 'Viewer, all', permissionDetailsContainer);
+      appendPermissionInContainer('Domains', 'Viewer', permissionDetailsContainer);
       appendPermissionInContainer('Domain requests', 'Creator', permissionDetailsContainer);
       appendPermissionInContainer('Members', 'Manager', permissionDetailsContainer);
     }
