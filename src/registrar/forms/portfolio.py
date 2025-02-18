@@ -127,7 +127,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
     domain_permissions = forms.ChoiceField(
         choices=[
             (UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value, "Viewer, limited"),
-            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer, all"),
+            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer"),
         ],
         widget=forms.RadioSelect,
         required=False,

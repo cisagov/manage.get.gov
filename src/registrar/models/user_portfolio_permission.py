@@ -204,7 +204,7 @@ class UserPortfolioPermission(TimeStampedModel):
         Returns a string representation of the user's domain access level.
 
         Uses the `get_domains_display` function to determine whether the user has
-        "Viewer, all" access (can view all domains) or "Viewer, limited" access.
+        "Viewer" access (can view all domains) or "Viewer, limited" access.
 
         Returns:
             str: The display name of the user's domain permissions.
