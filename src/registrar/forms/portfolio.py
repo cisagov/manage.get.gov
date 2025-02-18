@@ -236,13 +236,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
         if cleaned_data.get("member_permissions") == "no_access":
             cleaned_data["member_permissions"] = None
 
-        # Handle roles
-        # Ensure roles is a list but only if role is valid
-        if role:
-            cleaned_data["roles"] = [role] if isinstance(role, str) else role
-        else:
-            cleaned_data["roles"] = []  # Handle empty form case
-
         # Handle additional_permissions
         valid_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
         additional_permissions = {cleaned_data.get(field) for field in valid_fields if cleaned_data.get(field)}
