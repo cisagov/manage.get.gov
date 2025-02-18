@@ -501,6 +501,16 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
+    feb_naming_requirements = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    feb_naming_requirements_details = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
         blank=True,
@@ -1388,6 +1398,16 @@ class DomainRequest(TimeStampedModel):
         if self.has_anything_else_text is None or self.has_cisa_representative is None:
             has_details = False
         return has_details
+    
+    def is_feb(self) -> bool:
+        """Is this domain request for a Federal Executive Branch agency?"""
+        # if not self.generic_org_type:
+        #     # generic_org_type is either blank or None, assume no
+        #     return False
+        # if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+        #     return self.federal_type == DomainRequest.FederalChoices.EXECUTIVE
+        # return False
+        return True # TODO: this is for testing, remove before merging
 
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?

@@ -25,6 +25,8 @@ nameserversFormListener();
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
 hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);
+hookupYesNoListener("feb_naming_requirements", "", "domain-naming-requirements-details-container");
+
 initializeUrbanizationToggle();
 
 userProfileListener();

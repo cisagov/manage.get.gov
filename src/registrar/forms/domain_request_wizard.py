@@ -607,6 +607,68 @@ class DotGovDomainForm(RegistrarForm):
         },
     )
 
+class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm):
+    """
+    Form for verifying if the domain request meets the Federal Executive Branch domain naming requirements.
+    If the "no" option is selected, details must be provided via the separate details form.
+    """
+
+    field_name = "feb_naming_requirements"
+
+    @property
+    def form_is_checked(self):
+        """
+        Determines the initial checked state of the form based on the domain_request's attributes.
+        """
+        return self.domain_request.feb_naming_requirements
+    
+    def clean(self):
+        # Skip validation if this form is not applicable.
+        if not (self.domain_request.is_federal() and self.domain_request.federal_type == "Executive"):
+            # If not executive, default to "yes"
+            self.cleaned_data["feb_naming_requirements"] = "yes"
+            return self.cleaned_data
+
+        # Only validate the yes/no field here; details are handled by the separate details form.
+        cleaned = super().clean()
+        return cleaned
+
+    def to_database(self, obj: DomainRequest):
+        """
+        Saves the cleaned data from this form to the DomainRequest object.
+        """
+        if not self.is_valid():
+            return
+        obj.feb_naming_requirements = (self.cleaned_data["feb_naming_requirements"] == "yes")
+        obj.save()
+
+    @classmethod
+    def from_database(cls, obj):
+        """
+        Retrieves initial data from the DomainRequest object to prepopulate the form.
+        """
+        initial = {}
+        if hasattr(obj, "feb_naming_requirements"):
+            initial["feb_naming_requirements"] = "yes" if obj.feb_naming_requirements else "no"
+        return initial
+    
+class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
+    JOIN = "feb_naming_requirements_details"
+
+    # Text area for additional details; rendered conditionally when "no" is selected.
+    feb_naming_requirements_details = forms.CharField(
+        widget=forms.Textarea(attrs={'maxlength': '2000'}),
+        max_length=2000,
+        required=True,
+        label="",
+        help_text="Maximum 2000 characters allowed.",
+    )
+
+    def to_database(self, obj: DomainRequest):
+        if not self.is_valid():
+            return
+        obj.feb_naming_requirements_details = self.cleaned_data["feb_naming_requirements_details"]
+        obj.save()
 
 class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
@@ -625,7 +687,7 @@ class PurposeForm(RegistrarForm):
         ],
         error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
     )
-
+    
 
 class OtherContactsYesNoForm(BaseYesNoForm):
     """The yes/no field for the OtherContacts form."""
