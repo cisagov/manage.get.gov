@@ -3,6 +3,8 @@
 {% if app_list %}
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
+      {# .gov override: display the app name as a h2 rather than a table header #}
+      <h2>{{ app.name }}</h2>
       <table>
 
         {# .gov override: add headers #}
@@ -13,15 +15,18 @@
         {% endif %}
         <thead>
           <tr>
-            {% if show_changelinks %}
-              <th colspan="3" class="primary-th" scope="colgroup">
-                {{ app.name }}
-              </th>
-            {% else %}
-              <th colspan="2" class="primary-th" scope="colgroup">
-                {{ app.name }}
-              </th>
-            {% endif %}
+            {# .gov override: hide headers #}
+              {% comment %} 
+              {% if show_changelinks %}
+                <th colspan="3" class="primary-th" scope="colgroup">
+                  {{ app.name }}
+                </th>
+              {% else %}
+                <th colspan="2" class="primary-th" scope="colgroup">
+                  {{ app.name }}
+                </th>
+              {% endif %} 
+            {% endcomment %}
           </tr>
           <tr>
             <th scope="col">Model</th>
