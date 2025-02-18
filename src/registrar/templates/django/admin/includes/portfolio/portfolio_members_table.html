@@ -10,7 +10,6 @@
                 <th>Title</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Roles</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -28,11 +27,6 @@
                     {% endif %}
                 </td>
                 <td>{{ member.user.phone }}</td>
-                <td>
-                    {% for role in member.user|portfolio_role_summary:original %}
-                        <span class="usa-tag bg-primary-dark text-semibold">{{ role }}</span>
-                    {% endfor %}
-                </td>
                 <td class="padding-left-1 text-size-small">
                     {% if member.user.email %}
                     <input aria-hidden="true" class="display-none" value="{{ member.user.email }}" />
