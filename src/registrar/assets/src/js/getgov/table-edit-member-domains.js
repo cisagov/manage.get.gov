@@ -23,13 +23,13 @@ export class EditMemberDomainsTable extends BaseTable {
     this.readonlyModeContainer = document.getElementById('domain-assignments-readonly-view');
     this.reviewButton = document.getElementById('review-domain-assignments');
     this.backButton = document.getElementById('back-to-edit-domain-assignments');
-    this.saveButton = document.getElementById('save-domain-assignments');
-    
-    this.domainAssignmentsLoaded = false; // Flag to track if API request has completed
-    
-    this.initializeDomainAssignments();
+    this.saveButton = document.getElementById('save-domain-assignments'); 
+  }
+  async init() {
+    await this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
     this.initEventListeners();
+    return this;
   }
   getBaseUrl() {
     return document.getElementById("get_member_domains_json_url");
@@ -138,8 +138,6 @@ export class EditMemberDomainsTable extends BaseTable {
    * It is called once per page load, but not called with subsequent table changes.
    */
   async initializeDomainAssignments() {
-    if (this.domainAssignmentsLoaded) return; // Prevent multiple calls
-
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
     if (!baseUrlValue) {
         console.error("Base URL not found");
@@ -166,8 +164,6 @@ export class EditMemberDomainsTable extends BaseTable {
     } catch (error) {
         console.error("Error fetching domain assignments:", error);
     }
-
-    this.domainAssignmentsLoaded = true; // Flag as complete whether data was found or not
   }
   /**
    * Initializes listeners on checkboxes in the table. Checkbox listeners are used
@@ -245,8 +241,6 @@ export class EditMemberDomainsTable extends BaseTable {
   }
 
   updateReadonlyDisplay() {
-    let totalAssignedDomains = this.getCheckedDomains().length;
-
     // Create unassigned domains list
     const unassignedDomainsList = document.createElement('ul');
     unassignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
@@ -363,24 +357,14 @@ export class EditMemberDomainsTable extends BaseTable {
 }
 
 export function initEditMemberDomainsTable() {
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
     const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
     if (!isEditMemberDomainsPage) return; // Exit if not on the right page
 
-    const editMemberDomainsTable = new EditMemberDomainsTable();
+    const editMemberDomainsTable = await new EditMemberDomainsTable().init();
 
-    function attemptInitTable() {
-      if (!editMemberDomainsTable.domainAssignmentsLoaded) {
-        console.warn("initEditMemberDomainsTable called before domain assignments loaded. Retrying later...");
-        setTimeout(attemptInitTable, 50); // Retry with a slight delay
-        return;
-      }
-
-      if (editMemberDomainsTable.tableWrapper) {
-        editMemberDomainsTable.loadTable(1); // Initial load
-      }
+    if (editMemberDomainsTable.tableWrapper) {
+      editMemberDomainsTable.loadTable(1); // Initial load
     }
-
-    attemptInitTable(); // Call the function immediately
   });
 }
