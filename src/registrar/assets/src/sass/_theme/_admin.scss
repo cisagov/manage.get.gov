@@ -528,15 +528,6 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     padding-right: 25px;
 }
 
-.module--custom {
-    a {
-        font-size: 13px;
-        font-weight: 600;
-        border: solid 1px var(--darkened-bg);
-        background: var(--darkened-bg);
-    }
-}
-
 .usa-modal--django-admin .usa-prose ul > li {
     list-style-type: inherit;
     // Styling based off of the <p> styling in django admin
@@ -845,6 +836,17 @@ div.dja__model-description{
 
 .module caption, .inline-group h2 {
     text-transform: capitalize;
+}
+
+.module caption {
+    // Match the old <h2> size for django admin
+    font-size: 0.8125rem;
+}
+
+// text-bold doesn't work here due to style overrides, unfortunately.
+// This is a workaround.
+caption.text-bold {
+    font-weight: font-weight('bold');
 }
 
 .wrapped-button-group {
