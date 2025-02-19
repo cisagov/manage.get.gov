@@ -2,12 +2,13 @@ import { submitForm } from './helpers.js';
 
 export function initDomainRequestForm() {
     document.addEventListener('DOMContentLoaded', function() {
-        initCurrentWebsites();
-        initReview();
+        // These are the request steps in DomainRequestWizard, such as current_websites or review
+        initRequestStepCurrentWebsites();
+        initRequestStepReview();
     });
 }
 
-function initReview() {
+function initRequestStepReview() {
     const button = document.getElementById("domain-request-form-submit-button");
     if (button) {
         button.addEventListener("click", function () {
@@ -16,9 +17,9 @@ function initReview() {
     } 
 }
 
-function initCurrentWebsites() {
+function initRequestStepCurrentWebsites() {
     //register-form-step
-    const addAnotherSiteButton = document.getElementById("add-another-site-button");
+    const addAnotherSiteButton = document.getElementById("submit-domain-request--site-button");
     if (addAnotherSiteButton) {
         // Check for focus state in sessionStorage
         const focusTarget = sessionStorage.getItem("lastFocusedElement");
