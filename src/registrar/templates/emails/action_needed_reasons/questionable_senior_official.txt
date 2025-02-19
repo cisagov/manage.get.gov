@@ -21,7 +21,7 @@ We expect a senior official to be someone in a role of significant, executive re
 ACTION NEEDED
 Reply to this email with a justification for naming {{ domain_request.senior_official.get_formatted_name }} as the senior official. If you have questions or comments, include those in your reply.
 
-Alternatively, you can log in to the registrar and enter a different senior official for this domain request. <https://manage.get.gov/> Once you submit your updated request, we’ll resume the adjudication process.
+Alternatively, you can log in to the registrar and enter a different senior official for this domain request. <{{ manage_url }}> Once you submit your updated request, we’ll resume the adjudication process.
 
 
 THANK YOU

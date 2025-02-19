@@ -127,7 +127,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
     domain_permissions = forms.ChoiceField(
         choices=[
             (UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value, "Viewer, limited"),
-            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer, all"),
+            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer"),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -337,6 +337,24 @@ class BasePortfolioMemberForm(forms.ModelForm):
             UserPortfolioRoleChoices.ORGANIZATION_ADMIN in previous_roles
             and UserPortfolioRoleChoices.ORGANIZATION_ADMIN not in new_roles
         )
+
+    def is_change(self) -> bool:
+        """
+        Determines if the form has changed by comparing the initial data
+        with the submitted cleaned data.
+
+        Returns:
+            bool: True if the form has changed, False otherwise.
+        """
+        # Compare role values
+        previous_roles = set(self.initial.get("roles", []))
+        new_roles = set(self.cleaned_data.get("roles", []))
+
+        # Compare additional permissions values
+        previous_permissions = set(self.initial.get("additional_permissions") or [])
+        new_permissions = set(self.cleaned_data.get("additional_permissions") or [])
+
+        return previous_roles != new_roles or previous_permissions != new_permissions
 
 
 class PortfolioMemberForm(BasePortfolioMemberForm):

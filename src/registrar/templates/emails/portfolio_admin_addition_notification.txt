@@ -16,7 +16,7 @@ The person who received the invitation will become an admin once they log in to 
 associated with the invited email address.
 
 If you need to cancel this invitation or remove the admin, you can do that by going to 
-the Members section for your organization <https://manage.get.gov/>.
+the Members section for your organization <{{ manage_url }}>.
 
 
 WHY DID YOU RECEIVE THIS EMAIL? 
