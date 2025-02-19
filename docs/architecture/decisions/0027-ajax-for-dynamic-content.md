@@ -47,7 +47,7 @@ Instead of a full migration, this approach involves integrating a modern JavaScr
 
 This approach would still introduce diverging implementation stacks, leading to long-term maintenance challenges.
 
-**Option 3:**Use a Lightweight JavaScript Framework (e.g., HTMX, HTMZ)
+**Option 3:** Use a Lightweight JavaScript Framework (e.g., HTMX, HTMZ)
 Instead of React or Vue, this approach involves using a minimal JavaScript framework like HTMX or HTMZ to enhance interactivity while preserving Django’s server-rendered structure.
 
 ✅ Pros:
