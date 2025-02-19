@@ -498,7 +498,7 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     font-size: 13px;
 }
 
-.object-tools li button {
+.object-tools li button, button.addlink {
     font-family: Source Sans Pro Web, Helvetica Neue, Helvetica, Roboto, Arial, sans-serif;
     text-transform: none !important;
     font-size: 14px !important;
@@ -518,6 +518,14 @@ input[type=submit].button--dja-toolbar:focus, input[type=submit].button--dja-too
     &:focus, &:hover{
         background: var(--object-tools-hover-bg) !important;
     }
+}
+
+// Mimic the style for <a>
+.object-tools > p > button.addlink {
+    background-image: url(../admin/img/tooltag-add.svg) !important;
+    background-repeat: no-repeat !important;
+    background-position: right 7px center !important;
+    padding-right: 25px;
 }
 
 .module--custom {

@@ -2290,7 +2290,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         text = obj.requested_domain
         if obj.portfolio:
             return format_html(
-                f'<img src="/public/admin/img/icon-yes.svg" aria-hidden="true"> {escape(text)}'
+                f'<img class="padding-right-05" src="/public/admin/img/icon-yes.svg" aria-hidden="true">{escape(text)}'
             )
         return text
 
