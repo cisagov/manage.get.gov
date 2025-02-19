@@ -3834,8 +3834,6 @@ class TestTransferUser(WebTest):
 
             self.assertContains(after_submit, "<h1>Change user</h1>")
 
-            print(mock_success_message.call_args_list)
-
             mock_success_message.assert_any_call(
                 ANY,
                 (
