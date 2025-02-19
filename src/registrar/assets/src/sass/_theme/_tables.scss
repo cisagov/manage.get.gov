@@ -103,14 +103,17 @@ th {
     }
   }
   @include at-media(tablet-lg) {
-    th[data-sortable] .usa-table__header__button,
-    th[data-sortable] .usa-table__header__button:not([aria-sort]) {
+    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button,
+    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button:not([aria-sort]) {
       // position next to the copy
       right: auto;
       // slide left to mock a margin between the copy and the icon
       transform: translateX(units(1));
       // fix vertical alignment
       top: units(1.5);
+    }
+    th[data-sortable].left-align-sort-button .usa-table__header__button {
+      left: 0;
     }
   }
 
