@@ -5,8 +5,8 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from django_fsm import FSMField, transition  # type: ignore
-
+#from django_fsm import FSMField, transition  # type: ignore
+from viewflow import fsm
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
 
@@ -40,16 +40,67 @@ class DomainInvitation(TimeStampedModel):
         related_name="invitations",
     )
 
-    status = FSMField(
+    status = models.CharField(
         choices=DomainInvitationStatus.choices,
         default=DomainInvitationStatus.INVITED,
-        protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
 
-    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
+    # @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
+    # def retrieve(self):
+    #     """When an invitation is retrieved, create the corresponding permission.
+
+    #     Raises:
+    #         RuntimeError if no matching user can be found.
+    #     """
+
+    #     # get a user with this email address
+    #     User = get_user_model()
+    #     try:
+    #         user = User.objects.get(email=self.email)
+    #     except User.DoesNotExist:
+    #         # should not happen because a matching user should exist before
+    #         # we retrieve this invitation
+    #         raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+
+    #     # and create a role for that user on this domain
+    #     _, created = UserDomainRole.objects.get_or_create(
+    #         user=user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+    #     )
+    #     if not created:
+    #         # something strange happened and this role already existed when
+    #         # the invitation was retrieved. Log that this occurred.
+    #         logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+
+    # @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
+    # def cancel_invitation(self):
+    #     """When an invitation is canceled, change the status to canceled"""
+    #     pass
+
+    # @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
+    # def update_cancellation_status(self):
+    #     """When an invitation is canceled but reinvited, update the status to invited"""
+    #     pass
+
+
+class DomainInvitationFlow(object):
+
+    status = fsm.State(DomainInvitation.DomainInvitationStatus, default=DomainInvitation.DomainInvitationStatus.INVITED)
+
+    def __init__(self, domain_invitation):
+        self.domain_invitation = domain_invitation
+
+    @status.setter()
+    def _set_domain_invitation_status(self, value):
+        self.domain_invitation.status = value
+
+    @status.getter()
+    def _get_domain_invitation_status(self):
+        return self.domain_invitation.status
+    
+    @status.transition(source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.RETRIEVED)
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 
@@ -60,7 +111,7 @@ class DomainInvitation(TimeStampedModel):
         # get a user with this email address
         User = get_user_model()
         try:
-            user = User.objects.get(email=self.email)
+            user = User.objects.get(email=self.domain_invitation.email)
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
@@ -68,19 +119,19 @@ class DomainInvitation(TimeStampedModel):
 
         # and create a role for that user on this domain
         _, created = UserDomainRole.objects.get_or_create(
-            user=user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+            user=user, domain=self.domain_invitation.domain, role=UserDomainRole.Roles.MANAGER
         )
         if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
-            logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+            logger.warn("Invitation %s was retrieved for a role that already exists.", self.domain_invitation)
 
-    @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
+    @status.transition(source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
         """When an invitation is canceled, change the status to canceled"""
         pass
 
-    @transition(field="status", source=DomainInvitationStatus.CANCELED, target=DomainInvitationStatus.INVITED)
+    @status.transition(source=DomainInvitation.DomainInvitationStatus.CANCELED, target=DomainInvitation.DomainInvitationStatus.INVITED)
     def update_cancellation_status(self):
         """When an invitation is canceled but reinvited, update the status to invited"""
         pass

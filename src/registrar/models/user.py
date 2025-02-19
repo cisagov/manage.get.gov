@@ -5,9 +5,10 @@ from django.db import models
 from django.db.models import Q
 
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
+from registrar.models.portfolio_invitation import PortfolioInvitationFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
-from .domain_invitation import DomainInvitation
+from .domain_invitation import DomainInvitation, DomainInvitationFlow
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
@@ -360,7 +361,8 @@ class User(AbstractUser):
             email__iexact=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
         ):
             try:
-                invitation.retrieve()
+                flow = DomainInvitationFlow(invitation)
+                flow.retrieve()
                 invitation.save()
             except RuntimeError:
                 # retrieving should not fail because of a missing user, but
@@ -398,7 +400,8 @@ class User(AbstractUser):
             )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
-                    invitation.retrieve()
+                    flow = PortfolioInvitationFlow(invitation)
+                    flow.retrieve()
                     invitation.save()
                 except RuntimeError:
                     # retrieving should not fail because of a missing user, but

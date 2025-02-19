@@ -14,8 +14,9 @@ from django.db.models import (
 
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
+from registrar.models.domain_invitation import DomainInvitationFlow
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.portfolio_invitation import PortfolioInvitation, PortfolioInvitationFlow
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -28,6 +29,7 @@ from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
+from registrar.models.domain_request import DomainRequestFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -1754,7 +1756,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        portfolio_invitation.retrieve()
+                        portfolio_flow = PortfolioInvitationFlow(portfolio_invitation)
+                        portfolio_flow.retrieve()
                         portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
 
@@ -1768,7 +1771,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     messages.warning(request, "Could not send email confirmation to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
-                    obj.retrieve()
+                    flow = DomainInvitationFlow(obj)
+                    flow.retrieve()
                 # Call the parent save method to save the object
                 super().save_model(request, obj, form, change)
                 messages.success(request, f"{requested_email} has been invited to the domain: {domain}")
@@ -1861,7 +1865,8 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        obj.retrieve()
+                        flow = PortfolioInvitationFlow(obj)
+                        flow.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
                     messages.warning(request, "User is already a member of this portfolio.")
@@ -2958,15 +2963,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     def get_status_method_mapping(self, domain_request):
         """Returns what method should be ran given an domain request object"""
         # Define a per-object mapping
+        flow = DomainRequestFlow(domain_request)
         status_method_mapping = {
             models.DomainRequest.DomainRequestStatus.STARTED: None,
-            models.DomainRequest.DomainRequestStatus.SUBMITTED: domain_request.submit,
-            models.DomainRequest.DomainRequestStatus.IN_REVIEW: domain_request.in_review,
-            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: domain_request.action_needed,
-            models.DomainRequest.DomainRequestStatus.APPROVED: domain_request.approve,
-            models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
-            models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
-            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+            models.DomainRequest.DomainRequestStatus.SUBMITTED: flow.submit,
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW: flow.in_review,
+            models.DomainRequest.DomainRequestStatus.ACTION_NEEDED: flow.action_needed,
+            models.DomainRequest.DomainRequestStatus.APPROVED: flow.approve,
+            models.DomainRequest.DomainRequestStatus.WITHDRAWN: flow.withdraw,
+            models.DomainRequest.DomainRequestStatus.REJECTED: flow.reject,
+            models.DomainRequest.DomainRequestStatus.INELIGIBLE: (flow.reject_with_prejudice),
         }
 
         # Grab the method

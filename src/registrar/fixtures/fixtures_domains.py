@@ -8,6 +8,7 @@ from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest
 from registrar.models.domain import Domain
+from registrar.models.domain_request import DomainRequestFlow
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -64,7 +65,8 @@ class DomainFixture(DomainRequestFixture):
             domain_request.investigator = random.choice(users)  # nosec
 
         # Approve the domain request
-        domain_request.approve(send_email=False)
+        flow = DomainRequestFlow(domain_request)
+        flow.approve(send_email=False)
 
         return domain_request
 
