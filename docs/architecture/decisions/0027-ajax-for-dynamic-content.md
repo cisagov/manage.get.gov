@@ -33,6 +33,8 @@ This approach involves refactoring Django into a backend-only service and adopti
 
 This approach was deemed too costly in terms of both time and resources.
 
+---
+
 **Option 2:** Adopt a Modern JS Framework for Select Parts of the Application
 Instead of a full migration, this approach involves integrating a modern JavaScript framework (e.g., React or Vue) only in areas that require high interactivity.
 
@@ -46,6 +48,8 @@ Instead of a full migration, this approach involves integrating a modern JavaScr
 - Creates long-term technical debt if legacy Django templates and new JS-driven components coexist indefinitely.
 
 This approach would still introduce diverging implementation stacks, leading to long-term maintenance challenges.
+
+---
 
 **Option 3:** Use a Lightweight JavaScript Framework (e.g., HTMX, HTMZ)
 Instead of React or Vue, this approach involves using a minimal JavaScript framework like HTMX or HTMZ to enhance interactivity while preserving Django’s server-rendered structure.
@@ -61,6 +65,8 @@ Instead of React or Vue, this approach involves using a minimal JavaScript frame
 - Unclear whether it fully meets our interactivity needs.
 
 Ultimately, we determined that the benefits did not outweigh the potential downsides.
+
+---
 
 **Option 4:** Extend Vanilla JavaScript with AJAX (Selected Option)
 This approach involves incrementally enhancing Django’s server-rendered pages with AJAX while maintaining our existing architecture.
