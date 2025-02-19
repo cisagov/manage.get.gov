@@ -13,7 +13,7 @@
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>Domain managers</span>
@@ -89,7 +89,7 @@
                 {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove yourself as a domain manager?" modal_description="You will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button_id="user-delete-button-"|add:counter_str|safe modal_button_text="Yes, remove myself" modal_button_class="usa-button--secondary" %}
               {% endwith %}
             </div>
-            <form method="POST" id="user-delete-form-{{ forloop.counter }}" action="{% url "domain-user-delete" pk=domain.id user_pk=item.permission.user.id %}" >
+            <form method="POST" id="user-delete-form-{{ forloop.counter }}" action="{% url "domain-user-delete" domain_pk=domain.id user_pk=item.permission.user.id %}" >
               {% csrf_token %}
             </form>
           {% else %}
@@ -104,7 +104,7 @@
                 {% include 'includes/modal.html' with modal_heading="Are you sure you want to remove " heading_value=email|add:"?" modal_description="<strong>"|add:email|add:"</strong> will no longer be able to manage the domain <strong>"|add:domain_name|add:"</strong>."|safe modal_button_id="user-delete-button-"|add:counter_str|safe modal_button_text="Yes, remove domain manager" modal_button_class="usa-button--secondary" %}
               {% endwith %}
             </div>
-            <form method="POST" id="user-delete-form-{{ forloop.counter }}" action="{% url "domain-user-delete" pk=domain.id user_pk=item.permission.user.id %}">
+            <form method="POST" id="user-delete-form-{{ forloop.counter }}" action="{% url "domain-user-delete" domain_pk=domain.id user_pk=item.permission.user.id %}">
               {% csrf_token %}
             </form>
           {% endif %}
@@ -119,7 +119,7 @@
       ></div>
   {% endif %}
 
-  <a class="usa-button usa-button--unstyled usa-button--with-icon" href="{% url 'domain-users-add' pk=domain.id %}">
+  <a class="usa-button usa-button--unstyled usa-button--with-icon" href="{% url 'domain-users-add' domain_pk=domain.id %}">
     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
       <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
     </svg><span class="margin-left-05">Add a domain manager</span>
@@ -150,7 +150,7 @@
           {% if not portfolio %}<td data-label="Status">{{ invitation.domain_invitation.status|title }}</td>{% endif %}
           <td>
             {% if invitation.domain_invitation.status == invitation.domain_invitation.DomainInvitationStatus.INVITED %}
-            <form method="POST" action="{% url "invitation-cancel" pk=invitation.domain_invitation.id %}">
+            <form method="POST" action="{% url "invitation-cancel" domain_invitation_pk=invitation.domain_invitation.id %}">
               {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline cursor-pointer" value="Cancel">
             </form>
             {% endif %}

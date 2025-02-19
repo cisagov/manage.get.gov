@@ -3,9 +3,13 @@ Contains middleware used in settings.py
 """
 
 import logging
+import re
 from urllib.parse import parse_qs
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.urls import resolve
 from registrar.models import User
 from waffle.decorators import flag_is_active
 
@@ -170,3 +174,51 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = request.user.get_first_portfolio()
         else:
             request.session["portfolio"] = request.user.get_first_portfolio()
+
+
+class RestrictAccessMiddleware:
+    """
+    Middleware that blocks access to all views unless explicitly permitted.
+
+    This middleware enforces authentication by default. Views must explicitly allow access
+    using access control mechanisms such as the `@grant_access` decorator. Exceptions are made
+    for Django admin views, explicitly ignored paths, and views that opt out of login requirements.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Compile regex patterns from settings to identify paths that bypass login requirements
+        self.ignored_paths = [re.compile(pattern) for pattern in getattr(settings, "LOGIN_REQUIRED_IGNORE_PATHS", [])]
+
+    def __call__(self, request):
+
+        # Allow requests to Django Debug Toolbar
+        if request.path.startswith("/__debug__/"):
+            return self.get_response(request)
+
+        # Allow requests matching configured ignored paths
+        if any(pattern.match(request.path) for pattern in self.ignored_paths):
+            return self.get_response(request)
+
+        # Attempt to resolve the request path to a view function
+        try:
+            resolver_match = resolve(request.path_info)
+            view_func = resolver_match.func
+            app_name = resolver_match.app_name  # Get the app name of the resolved view
+        except Exception:
+            # If resolution fails, allow the request to proceed (avoid blocking non-view routes)
+            return self.get_response(request)
+
+        # Automatically allow access to Django's built-in admin views (excluding custom /admin/* views)
+        if app_name == "admin":
+            return self.get_response(request)
+
+        # Allow access if the view explicitly opts out of login requirements
+        if getattr(view_func, "login_required", True) is False:
+            return self.get_response(request)
+
+        # Restrict access to views that do not explicitly declare access rules
+        if not getattr(view_func, "has_explicit_access", False):
+            raise PermissionDenied  # Deny access if the view lacks explicit permission handling
+
+        return self.get_response(request)

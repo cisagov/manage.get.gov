@@ -6,16 +6,17 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
+from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.views.utility.mixins import PortfolioMembersPermission
 from registrar.models.utility.orm_helper import ArrayRemoveNull
 from django.contrib.postgres.aggregates import StringAgg
 
 
-class PortfolioMembersJson(PortfolioMembersPermission, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMembersJson(View):
 
     def get(self, request):
         """Fetch members (permissions and invitations) for the given portfolio."""
@@ -236,7 +237,7 @@ class PortfolioMembersJson(PortfolioMembersPermission, View):
             ),
             # split domain_info array values into ids to form urls, and names
             "domain_urls": [
-                reverse("domain", kwargs={"pk": domain_info.split(":")[0]}) for domain_info in domain_info_list
+                reverse("domain", kwargs={"domain_pk": domain_info.split(":")[0]}) for domain_info in domain_info_list
             ],
             "domain_names": [domain_info.split(":")[1] for domain_info in domain_info_list],
             "is_admin": is_admin,

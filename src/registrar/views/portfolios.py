@@ -5,14 +5,26 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.views.generic import DetailView
 from django.contrib import messages
+from registrar.decorators import (
+    HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
+    HAS_PORTFOLIO_DOMAINS_ANY_PERM,
+    HAS_PORTFOLIO_MEMBERS_ANY_PERM,
+    HAS_PORTFOLIO_MEMBERS_EDIT,
+    IS_PORTFOLIO_MEMBER,
+    grant_access,
+)
 from registrar.forms import portfolio as portfolioForms
-from registrar.models import Portfolio, User
-from registrar.models.domain import Domain
-from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.user_domain_role import UserDomainRole
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models import (
+    Domain,
+    DomainInvitation,
+    Portfolio,
+    PortfolioInvitation,
+    User,
+    UserDomainRole,
+    UserPortfolioPermission,
+)
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
@@ -24,18 +36,6 @@ from registrar.utility.email_invitations import (
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
-from registrar.views.utility.mixins import PortfolioMemberPermission
-from registrar.views.utility.permission_views import (
-    PortfolioDomainRequestsPermissionView,
-    PortfolioDomainsPermissionView,
-    PortfolioBasePermissionView,
-    NoPortfolioDomainsPermissionView,
-    PortfolioMemberDomainsPermissionView,
-    PortfolioMemberDomainsEditPermissionView,
-    PortfolioMemberEditPermissionView,
-    PortfolioMemberPermissionView,
-    PortfolioMembersPermissionView,
-)
 from django.views.generic import View
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
@@ -46,7 +46,8 @@ from registrar.views.utility.invitation_helper import get_org_membership
 logger = logging.getLogger(__name__)
 
 
-class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_DOMAINS_ANY_PERM)
+class PortfolioDomainsView(View):
 
     template_name = "portfolio_domains.html"
 
@@ -59,7 +60,8 @@ class PortfolioDomainsView(PortfolioDomainsPermissionView, View):
         return render(request, "portfolio_domains.html", context)
 
 
-class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM)
+class PortfolioDomainRequestsView(View):
 
     template_name = "portfolio_requests.html"
 
@@ -67,8 +69,10 @@ class PortfolioDomainRequestsView(PortfolioDomainRequestsPermissionView, View):
         return render(request, "portfolio_requests.html")
 
 
-class PortfolioMemberView(PortfolioMemberPermissionView, View):
-
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMemberView(DetailView, View):
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member.html"
 
     def get(self, request, pk):
@@ -109,7 +113,8 @@ class PortfolioMemberView(PortfolioMemberPermissionView, View):
         )
 
 
-class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMemberDeleteView(View):
 
     def post(self, request, pk):
         """
@@ -186,8 +191,10 @@ class PortfolioMemberDeleteView(PortfolioMemberPermission, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
-
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+class PortfolioMemberEditView(DetailView, View):
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioMemberForm
 
@@ -267,7 +274,8 @@ class PortfolioMemberEditView(PortfolioMemberEditPermissionView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
 
@@ -285,8 +293,10 @@ class PortfolioMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
         )
 
 
-class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, View):
-
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+class PortfolioMemberDomainsEditView(DetailView, View):
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
 
     def get(self, request, pk):
@@ -395,8 +405,10 @@ class PortfolioMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, V
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
 
-class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
-
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioInvitedMemberView(DetailView, View):
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member.html"
     # form_class = PortfolioInvitedMemberForm
 
@@ -437,7 +449,8 @@ class PortfolioInvitedMemberView(PortfolioMemberPermissionView, View):
         )
 
 
-class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioInvitedMemberDeleteView(View):
 
     def post(self, request, pk):
         """
@@ -480,8 +493,10 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
-
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+class PortfolioInvitedMemberEditView(DetailView, View):
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioInvitedMemberForm
 
@@ -549,7 +564,8 @@ class PortfolioInvitedMemberEditView(PortfolioMemberEditPermissionView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
 
@@ -565,8 +581,11 @@ class PortfolioInvitedMemberDomainsView(PortfolioMemberDomainsPermissionView, Vi
         )
 
 
-class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermissionView, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
+    model = Portfolio
+    context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
 
     def get(self, request, pk):
@@ -691,7 +710,8 @@ class PortfolioInvitedMemberDomainsEditView(PortfolioMemberDomainsEditPermission
         ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
 
-class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioNoDomainsView(View):
     """Some users have access to the underlying portfolio, but not any domains.
     This is a custom view which explains that to the user - and denotes who to contact.
     """
@@ -720,7 +740,8 @@ class PortfolioNoDomainsView(NoPortfolioDomainsPermissionView, View):
         return context
 
 
-class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioNoDomainRequestsView(View):
     """Some users have access to the underlying portfolio, but not any domain requests.
     This is a custom view which explains that to the user - and denotes who to contact.
     """
@@ -749,7 +770,8 @@ class PortfolioNoDomainRequestsView(NoPortfolioDomainsPermissionView, View):
         return context
 
 
-class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioOrganizationView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
@@ -811,7 +833,8 @@ class PortfolioOrganizationView(PortfolioBasePermissionView, FormMixin):
         return reverse("organization")
 
 
-class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioSeniorOfficialView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's senior official details.
     For now, this view is readonly.
@@ -842,7 +865,8 @@ class PortfolioSeniorOfficialView(PortfolioBasePermissionView, FormMixin):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class PortfolioMembersView(PortfolioMembersPermissionView, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMembersView(View):
 
     template_name = "portfolio_members.html"
 
@@ -851,10 +875,13 @@ class PortfolioMembersView(PortfolioMembersPermissionView, View):
         return render(request, "portfolio_members.html")
 
 
-class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioAddMemberView(DetailView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
     form_class = portfolioForms.PortfolioNewMemberForm
+    model = Portfolio
+    context_object_name = "portfolio"
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests to display the form."""

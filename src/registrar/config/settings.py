@@ -201,6 +201,8 @@ MIDDLEWARE = [
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
+    # Restrict access using Opt-Out approach
+    "registrar.registrar_middleware.RestrictAccessMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
