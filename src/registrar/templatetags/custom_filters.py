@@ -251,15 +251,6 @@ def is_members_subpage(path):
     return get_url_name(path) in url_names
 
 
-@register.filter(name="portfolio_role_summary")
-def portfolio_role_summary(user, portfolio):
-    """Returns the value of user.portfolio_role_summary"""
-    if user and portfolio:
-        return user.portfolio_role_summary(portfolio)
-    else:
-        return []
-
-
 @register.filter(name="display_requesting_entity")
 def display_requesting_entity(domain_request):
     """Workaround for a newline issue in .txt files (our emails) as if statements

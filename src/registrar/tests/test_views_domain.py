@@ -477,7 +477,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         self.domain_with_ip.expiration_date = self.expiration_date_one_year_out()
         self.domain_with_ip.save()
 
-    @override_flag("domain_renewal", active=True)
     def test_expiring_domain_on_detail_page_as_domain_manager(self):
         """If a user is a domain manager and their domain is expiring soon,
         user should be able to see the "Renew to maintain access" link domain overview detail box."""
@@ -496,7 +495,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertNotContains(detail_page, "DNS needed")
             self.assertNotContains(detail_page, "Expired")
 
-    @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
         """In org model: If a user is NOT a domain manager and their domain is expiring soon,
@@ -534,7 +532,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             )
             self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
 
-    @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
         """Inorg model: If a user is a domain manager and their domain is expiring soon,
@@ -555,7 +552,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             )
             self.assertContains(detail_page, "Renew to maintain access")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_and_sidebar_expiring(self):
         """If a user is a domain manager and their domain is expiring soon,
         user should be able to see Renewal Form on the sidebar."""
@@ -584,7 +580,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f"Renew {self.domain_to_renew.name}")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_and_sidebar_expired(self):
         """If a user is a domain manager and their domain is expired,
         user should be able to see Renewal Form on the sidebar."""
@@ -614,7 +609,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f"Renew {self.domain_to_renew.name}")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_your_contact_info_edit(self):
         """Checking that if a user is a domain manager they can edit the
         Your Profile portion of the Renewal Form."""
@@ -634,7 +628,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(edit_page.status_code, 200)
             self.assertContains(edit_page, "Review the details below and update any required information")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_security_email_edit(self):
         """Checking that if a user is a domain manager they can edit the
         Security Email portion of the Renewal Form."""
@@ -657,7 +650,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(edit_page.status_code, 200)
             self.assertContains(edit_page, "A security contact should be capable of evaluating")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_domain_manager_edit(self):
         """Checking that if a user is a domain manager they can edit the
         Domain Manager portion of the Renewal Form."""
@@ -677,7 +669,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertEqual(edit_page.status_code, 200)
             self.assertContains(edit_page, "Domain managers can update all information related to a domain")
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_not_expired_or_expiring(self):
         """Checking that if the user's domain is not expired or expiring that user should not be able
         to access /renewal and that it should receive a 403."""
@@ -686,7 +677,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domain_not_expiring.id}))
             self.assertEqual(renewal_page.status_code, 403)
 
-    @override_flag("domain_renewal", active=True)
     def test_domain_renewal_form_does_not_appear_if_not_domain_manager(self):
         """If user is not a domain manager and tries to access /renewal, user should receive a 403."""
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
@@ -695,7 +685,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domain_no_domain_manager.id}))
             self.assertEqual(renewal_page.status_code, 403)
 
-    @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_not_checked(self):
         """If user don't check the checkbox, user should receive an error message."""
         # Grab the renewal URL
@@ -707,7 +696,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         error_message = "Check the box if you read and agree to the requirements for operating a .gov domain."
         self.assertContains(response, error_message)
 
-    @override_flag("domain_renewal", active=True)
     def test_ack_checkbox_checked(self):
         """If user check the checkbox and submits the form,
         user should be redirected Domain Over page with an updated by 1 year expiration date"""
@@ -2992,26 +2980,15 @@ class TestDomainRenewal(TestWithUser):
             pass
         super().tearDown()
 
-    # Remove test_without_domain_renewal_flag when domain renewal is released as a feature
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=False)
-    def test_without_domain_renewal_flag(self):
-        self.client.force_login(self.user)
-        domains_page = self.client.get("/")
-        self.assertNotContains(domains_page, "will expire soon")
-        self.assertNotContains(domains_page, "Expiring soon")
-
-    @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
-    def test_domain_renewal_flag_single_domain(self):
+    def test_domain_with_single_domain(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
-    def test_with_domain_renewal_flag_mulitple_domains(self):
+    def test_with_mulitple_domains(self):
         today = datetime.now()
         expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring, _ = Domain.objects.get_or_create(
@@ -3027,8 +3004,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Expiring soon")
 
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
-    def test_with_domain_renewal_flag_no_expiring_domains(self):
+    def test_with_no_expiring_domains(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
@@ -3036,18 +3012,16 @@ class TestDomainRenewal(TestWithUser):
         self.assertNotContains(domains_page, "will expire soon")
 
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
-    def test_domain_renewal_flag_single_domain_w_org_feature_flag(self):
+    def test_single_domain_w_org_feature_flag(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
-    def test_with_domain_renewal_flag_mulitple_domains_w_org_feature_flag(self):
+    def test_with_mulitple_domains_w_org_feature_flag(self):
         today = datetime.now()
         expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
@@ -3063,9 +3037,8 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Expiring soon")
 
     @less_console_noise_decorator
-    @override_flag("domain_renewal", active=True)
     @override_flag("organization_feature", active=True)
-    def test_with_domain_renewal_flag_no_expiring_domains_w_org_feature_flag(self):
+    def test_no_expiring_domains_w_org_feature_flag(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
