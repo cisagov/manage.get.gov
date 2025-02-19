@@ -3,16 +3,9 @@
 {% if app_list %}
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
-      {# .gov override: display the app name as a h2 rather than a table header #}
-      <h2>{{ app.name }}</h2>
       <table>
-
-        {# .gov override: add headers #}
-        {% if show_changelinks %}
-          <colgroup span="3"></colgroup>
-        {% else %}
-          <colgroup span="2"></colgroup>
-        {% endif %}
+        {# .gov override: display the app name as a caption rather than a table header #}
+        <caption class="text-bold">{{ app.name }}</caption>
         <thead>
           <tr>
             {# .gov override: hide headers #}
@@ -70,9 +63,20 @@
       </table>
     </div>
   {% endfor %}
-  <div class="module module--custom">
-    <h2>Analytics</h2>
-    <a class="display-block padding-y-1 padding-x-1" href="{% url 'analytics' %}">Dashboard</a>
+  <div class="module">
+    <table class="width-full">
+      <caption class="text-bold">Analytics</caption>
+      <thead>
+        <tr>
+          <th scope="col">Reports</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row"><a href="{% url 'analytics' %}">Dashboard</a></th>
+        </tr>
+      </tbody>
+    </table>
   </div>
 {% else %}
   <p>{% translate 'You don’t have permission to view or edit anything.' %}</p>
