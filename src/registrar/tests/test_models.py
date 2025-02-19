@@ -1191,67 +1191,6 @@ class TestUser(TestCase):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
-    @patch.object(User, "has_edit_portfolio_permission", return_value=True)
-    def test_portfolio_role_summary_admin(self, mock_edit_org):
-        # Test if the user is recognized as an Admin
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Admin"])
-
-    @patch.multiple(
-        User,
-        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
-        has_any_requests_portfolio_permission=lambda self, portfolio: True,
-        has_edit_request_portfolio_permission=lambda self, portfolio: True,
-    )
-    def test_portfolio_role_summary_view_only_admin_and_domain_requestor(self):
-        # Test if the user has both 'View-only admin' and 'Domain requestor' roles
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["View-only admin", "Domain requestor"])
-
-    @patch.multiple(
-        User,
-        has_view_all_domains_portfolio_permission=lambda self, portfolio: True,
-        has_any_requests_portfolio_permission=lambda self, portfolio: True,
-    )
-    def test_portfolio_role_summary_view_only_admin(self):
-        # Test if the user is recognized as a View-only admin
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["View-only admin"])
-
-    @patch.multiple(
-        User,
-        has_view_portfolio_permission=lambda self, portfolio: True,
-        has_edit_request_portfolio_permission=lambda self, portfolio: True,
-        has_any_domains_portfolio_permission=lambda self, portfolio: True,
-    )
-    def test_portfolio_role_summary_member_domain_requestor_domain_manager(self):
-        # Test if the user has 'Member', 'Domain requestor', and 'Domain manager' roles
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor", "Domain manager"])
-
-    @patch.multiple(
-        User,
-        has_view_portfolio_permission=lambda self, portfolio: True,
-        has_edit_request_portfolio_permission=lambda self, portfolio: True,
-    )
-    def test_portfolio_role_summary_member_domain_requestor(self):
-        # Test if the user has 'Member' and 'Domain requestor' roles
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain requestor"])
-
-    @patch.multiple(
-        User,
-        has_view_portfolio_permission=lambda self, portfolio: True,
-        has_any_domains_portfolio_permission=lambda self, portfolio: True,
-    )
-    def test_portfolio_role_summary_member_domain_manager(self):
-        # Test if the user has 'Member' and 'Domain manager' roles
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Domain manager"])
-
-    @patch.multiple(User, has_view_portfolio_permission=lambda self, portfolio: True)
-    def test_portfolio_role_summary_member(self):
-        # Test if the user is recognized as a Member
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), ["Member"])
-
-    def test_portfolio_role_summary_empty(self):
-        # Test if the user has no roles
-        self.assertEqual(self.user.portfolio_role_summary(self.portfolio), [])
-
     @patch("registrar.models.User._has_portfolio_permission")
     def test_has_view_portfolio_permission(self, mock_has_permission):
         mock_has_permission.return_value = True

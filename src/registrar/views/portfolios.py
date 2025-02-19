@@ -32,6 +32,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
+    send_portfolio_member_permission_update_email,
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
@@ -219,6 +220,11 @@ class PortfolioMemberEditView(DetailView, View):
         removing_admin_role_on_self = False
         if form.is_valid():
             try:
+                if form.is_change():
+                    if not send_portfolio_member_permission_update_email(
+                        requestor=request.user, permissions=form.instance
+                    ):
+                        messages.warning(self.request, f"Could not send email notification to {user.email}.")
                 if form.is_change_from_member_to_admin():
                     if not send_portfolio_admin_addition_emails(
                         email=portfolio_permission.user.email,

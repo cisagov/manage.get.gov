@@ -91,8 +91,6 @@ def send_templated_email(  # noqa
     subject = subject_template.render(context=context)
     subject = f"{prefix}{subject}"
 
-    context["subject"] = subject
-
     try:
         ses_client = boto3.client(
             "sesv2",
