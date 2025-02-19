@@ -26,6 +26,7 @@ from registrar.models import (
     UserDomainRole,
     PublicContact,
 )
+from registrar.models.portfolio_invitation import PortfolioInvitationFlow
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
@@ -1241,7 +1242,8 @@ class DomainAddUserView(DomainFormBaseView):
                 )
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
-                    portfolio_invitation.retrieve()
+                    flow = PortfolioInvitationFlow(portfolio_invitation)
+                    flow.retrieve()
                     portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
 

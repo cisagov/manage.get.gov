@@ -10,7 +10,7 @@ from registrar.forms import portfolio as portfolioForms
 from registrar.models import Portfolio, User
 from registrar.models.domain import Domain
 from registrar.models.domain_invitation import DomainInvitation
-from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.portfolio_invitation import PortfolioInvitation, PortfolioInvitationFlow
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -918,7 +918,8 @@ class PortfolioAddMemberView(PortfolioMembersPermissionView, FormMixin):
                 portfolio_invitation = form.save()
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
-                    portfolio_invitation.retrieve()
+                    flow = PortfolioInvitationFlow(portfolio_invitation)
+                    flow.retrieve()
                     portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
