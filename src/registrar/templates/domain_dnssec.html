@@ -14,10 +14,10 @@
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-dns' pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+        <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>DNSSEC</span>
@@ -69,7 +69,7 @@
           <p class="margin-y-0">It is strongly recommended that you only enable DNSSEC if you know how to set it up properly at your hosting service. If you make a mistake, it could cause your domain name to stop working.</p>
         </div>
       </div>
-      <a href="{% url 'domain-dns-dnssec-dsdata' pk=domain.id %}" class="usa-button">Enable DNSSEC</a>
+      <a href="{% url 'domain-dns-dnssec-dsdata' domain_pk=domain.id %}" class="usa-button">Enable DNSSEC</a>
     </div>
     {% endif %}
   </form>

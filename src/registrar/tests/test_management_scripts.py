@@ -38,7 +38,6 @@ from epplibwrapper import commands, common
 
 from .common import (
     MockEppLib,
-    less_console_noise,
     completed_domain_request,
     MockSESClient,
     MockDbForIndividualTests,
@@ -454,6 +453,7 @@ class TestPopulateFirstReady(TestCase):
         # Delete domains
         Domain.objects.all().delete()
 
+    @less_console_noise_decorator
     def run_populate_first_ready(self):
         """
         This method executes the populate_first_ready command.
@@ -461,103 +461,102 @@ class TestPopulateFirstReady(TestCase):
         The 'call_command' function from Django's management framework is then used to
         execute the populate_first_ready command with the specified arguments.
         """
-        with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("populate_first_ready")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("populate_first_ready")
 
+    @less_console_noise_decorator
     def test_populate_first_ready_state_ready(self):
         """
         Tests that the populate_first_ready works as expected for the state 'ready'
         """
-        with less_console_noise():
-            # Set the created at date
-            self.ready_domain.created_at = self.ready_at_date_tz_aware
-            self.ready_domain.save()
-            desired_domain = copy.deepcopy(self.ready_domain)
-            desired_domain.first_ready = self.ready_at_date
-            # Run the expiration date script
-            self.run_populate_first_ready()
-            self.assertEqual(desired_domain, self.ready_domain)
-            # Explicitly test the first_ready date
-            first_ready = Domain.objects.filter(name="fakeready.gov").get().first_ready
-            self.assertEqual(first_ready, self.ready_at_date)
+        # Set the created at date
+        self.ready_domain.created_at = self.ready_at_date_tz_aware
+        self.ready_domain.save()
+        desired_domain = copy.deepcopy(self.ready_domain)
+        desired_domain.first_ready = self.ready_at_date
+        # Run the expiration date script
+        self.run_populate_first_ready()
+        self.assertEqual(desired_domain, self.ready_domain)
+        # Explicitly test the first_ready date
+        first_ready = Domain.objects.filter(name="fakeready.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
+    @less_console_noise_decorator
     def test_populate_first_ready_state_deleted(self):
         """
         Tests that the populate_first_ready works as expected for the state 'deleted'
         """
-        with less_console_noise():
-            # Set the created at date
-            self.deleted_domain.created_at = self.ready_at_date_tz_aware
-            self.deleted_domain.save()
-            desired_domain = copy.deepcopy(self.deleted_domain)
-            desired_domain.first_ready = self.ready_at_date
-            # Run the expiration date script
-            self.run_populate_first_ready()
-            self.assertEqual(desired_domain, self.deleted_domain)
-            # Explicitly test the first_ready date
-            first_ready = Domain.objects.filter(name="fakedeleted.gov").get().first_ready
-            self.assertEqual(first_ready, self.ready_at_date)
+        # Set the created at date
+        self.deleted_domain.created_at = self.ready_at_date_tz_aware
+        self.deleted_domain.save()
+        desired_domain = copy.deepcopy(self.deleted_domain)
+        desired_domain.first_ready = self.ready_at_date
+        # Run the expiration date script
+        self.run_populate_first_ready()
+        self.assertEqual(desired_domain, self.deleted_domain)
+        # Explicitly test the first_ready date
+        first_ready = Domain.objects.filter(name="fakedeleted.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
+    @less_console_noise_decorator
     def test_populate_first_ready_state_dns_needed(self):
         """
         Tests that the populate_first_ready doesn't make changes when a domain's state  is 'dns_needed'
         """
-        with less_console_noise():
-            # Set the created at date
-            self.dns_needed_domain.created_at = self.ready_at_date_tz_aware
-            self.dns_needed_domain.save()
-            desired_domain = copy.deepcopy(self.dns_needed_domain)
-            desired_domain.first_ready = None
-            # Run the expiration date script
-            self.run_populate_first_ready()
-            current_domain = self.dns_needed_domain
-            # The object should largely be unaltered (does not test first_ready)
-            self.assertEqual(desired_domain, current_domain)
-            first_ready = Domain.objects.filter(name="fakedns.gov").get().first_ready
-            # Explicitly test the first_ready date
-            self.assertNotEqual(first_ready, self.ready_at_date)
-            self.assertEqual(first_ready, None)
+        # Set the created at date
+        self.dns_needed_domain.created_at = self.ready_at_date_tz_aware
+        self.dns_needed_domain.save()
+        desired_domain = copy.deepcopy(self.dns_needed_domain)
+        desired_domain.first_ready = None
+        # Run the expiration date script
+        self.run_populate_first_ready()
+        current_domain = self.dns_needed_domain
+        # The object should largely be unaltered (does not test first_ready)
+        self.assertEqual(desired_domain, current_domain)
+        first_ready = Domain.objects.filter(name="fakedns.gov").get().first_ready
+        # Explicitly test the first_ready date
+        self.assertNotEqual(first_ready, self.ready_at_date)
+        self.assertEqual(first_ready, None)
 
+    @less_console_noise_decorator
     def test_populate_first_ready_state_on_hold(self):
         """
         Tests that the populate_first_ready works as expected for the state 'on_hold'
         """
-        with less_console_noise():
-            self.hold_domain.created_at = self.ready_at_date_tz_aware
-            self.hold_domain.save()
-            desired_domain = copy.deepcopy(self.hold_domain)
-            desired_domain.first_ready = self.ready_at_date
-            # Run the update first ready_at script
-            self.run_populate_first_ready()
-            current_domain = self.hold_domain
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the first_ready date
-            first_ready = Domain.objects.filter(name="fakehold.gov").get().first_ready
-            self.assertEqual(first_ready, self.ready_at_date)
+        self.hold_domain.created_at = self.ready_at_date_tz_aware
+        self.hold_domain.save()
+        desired_domain = copy.deepcopy(self.hold_domain)
+        desired_domain.first_ready = self.ready_at_date
+        # Run the update first ready_at script
+        self.run_populate_first_ready()
+        current_domain = self.hold_domain
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the first_ready date
+        first_ready = Domain.objects.filter(name="fakehold.gov").get().first_ready
+        self.assertEqual(first_ready, self.ready_at_date)
 
+    @less_console_noise_decorator
     def test_populate_first_ready_state_unknown(self):
         """
         Tests that the populate_first_ready works as expected for the state 'unknown'
         """
-        with less_console_noise():
-            # Set the created at date
-            self.unknown_domain.created_at = self.ready_at_date_tz_aware
-            self.unknown_domain.save()
-            desired_domain = copy.deepcopy(self.unknown_domain)
-            desired_domain.first_ready = None
-            # Run the expiration date script
-            self.run_populate_first_ready()
-            current_domain = self.unknown_domain
-            # The object should largely be unaltered (does not test first_ready)
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the first_ready date
-            first_ready = Domain.objects.filter(name="fakeunknown.gov").get().first_ready
-            self.assertNotEqual(first_ready, self.ready_at_date)
-            self.assertEqual(first_ready, None)
+        # Set the created at date
+        self.unknown_domain.created_at = self.ready_at_date_tz_aware
+        self.unknown_domain.save()
+        desired_domain = copy.deepcopy(self.unknown_domain)
+        desired_domain.first_ready = None
+        # Run the expiration date script
+        self.run_populate_first_ready()
+        current_domain = self.unknown_domain
+        # The object should largely be unaltered (does not test first_ready)
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the first_ready date
+        first_ready = Domain.objects.filter(name="fakeunknown.gov").get().first_ready
+        self.assertNotEqual(first_ready, self.ready_at_date)
+        self.assertEqual(first_ready, None)
 
 
 class TestPatchAgencyInfo(TestCase):
@@ -578,10 +577,10 @@ class TestPatchAgencyInfo(TestCase):
         TransitionDomain.objects.all().delete()
 
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit", return_value=True)
+    @less_console_noise_decorator
     def call_patch_federal_agency_info(self, mock_prompt):
         """Calls the patch_federal_agency_info command and mimics a keypress"""
-        with less_console_noise():
-            call_command("patch_federal_agency_info", "registrar/tests/data/fake_current_full.csv", debug=True)
+        call_command("patch_federal_agency_info", "registrar/tests/data/fake_current_full.csv", debug=True)
 
 
 class TestExtendExpirationDates(MockEppLib):
@@ -637,6 +636,7 @@ class TestExtendExpirationDates(MockEppLib):
         User.objects.all().delete()
         UserDomainRole.objects.all().delete()
 
+    @less_console_noise_decorator
     def run_extend_expiration_dates(self):
         """
         This method executes the extend_expiration_dates command.
@@ -644,83 +644,83 @@ class TestExtendExpirationDates(MockEppLib):
         The 'call_command' function from Django's management framework is then used to
         execute the extend_expiration_dates command with the specified arguments.
         """
-        with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("extend_expiration_dates")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("extend_expiration_dates")
 
+    @less_console_noise_decorator
     def test_extends_expiration_date_correctly(self):
         """
         Tests that the extend_expiration_dates method extends dates as expected
         """
-        with less_console_noise():
-            desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-            desired_domain.expiration_date = date(2024, 11, 15)
-            # Run the expiration date script
-            self.run_extend_expiration_dates()
-            current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the expiration date
-            self.assertEqual(current_domain.expiration_date, date(2024, 11, 15))
+        desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        desired_domain.expiration_date = date(2024, 11, 15)
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the expiration date
+        self.assertEqual(current_domain.expiration_date, date(2024, 11, 15))
 
+    @less_console_noise_decorator
     def test_extends_expiration_date_skips_non_current(self):
         """
         Tests that the extend_expiration_dates method correctly skips domains
         with an expiration date less than a certain threshold.
         """
-        with less_console_noise():
-            desired_domain = Domain.objects.filter(name="fake.gov").get()
-            desired_domain.expiration_date = date(2022, 5, 25)
-            # Run the expiration date script
-            self.run_extend_expiration_dates()
-            current_domain = Domain.objects.filter(name="fake.gov").get()
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the expiration date. The extend_expiration_dates script
-            # will skip all dates less than date(2023, 11, 15), meaning that this domain
-            # should not be affected by the change.
-            self.assertEqual(current_domain.expiration_date, date(2022, 5, 25))
+        desired_domain = Domain.objects.filter(name="fake.gov").get()
+        desired_domain.expiration_date = date(2022, 5, 25)
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        current_domain = Domain.objects.filter(name="fake.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, date(2022, 5, 25))
 
+    @less_console_noise_decorator
     def test_extends_expiration_date_skips_maximum_date(self):
         """
         Tests that the extend_expiration_dates method correctly skips domains
         with an expiration date more than a certain threshold.
         """
-        with less_console_noise():
-            desired_domain = Domain.objects.filter(name="fakemaximum.gov").get()
-            desired_domain.expiration_date = date(2024, 12, 31)
+        desired_domain = Domain.objects.filter(name="fakemaximum.gov").get()
+        desired_domain.expiration_date = date(2024, 12, 31)
 
-            # Run the expiration date script
-            self.run_extend_expiration_dates()
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
 
-            current_domain = Domain.objects.filter(name="fakemaximum.gov").get()
-            self.assertEqual(desired_domain, current_domain)
+        current_domain = Domain.objects.filter(name="fakemaximum.gov").get()
+        self.assertEqual(desired_domain, current_domain)
 
-            # Explicitly test the expiration date. The extend_expiration_dates script
-            # will skip all dates less than date(2023, 11, 15), meaning that this domain
-            # should not be affected by the change.
-            self.assertEqual(current_domain.expiration_date, date(2024, 12, 31))
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, date(2024, 12, 31))
 
+    @less_console_noise_decorator
     def test_extends_expiration_date_skips_non_ready(self):
         """
         Tests that the extend_expiration_dates method correctly skips domains not in the state "ready"
         """
-        with less_console_noise():
-            desired_domain = Domain.objects.filter(name="fakeneeded.gov").get()
-            desired_domain.expiration_date = date(2023, 11, 15)
+        desired_domain = Domain.objects.filter(name="fakeneeded.gov").get()
+        desired_domain.expiration_date = date(2023, 11, 15)
 
-            # Run the expiration date script
-            self.run_extend_expiration_dates()
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
 
-            current_domain = Domain.objects.filter(name="fakeneeded.gov").get()
-            self.assertEqual(desired_domain, current_domain)
+        current_domain = Domain.objects.filter(name="fakeneeded.gov").get()
+        self.assertEqual(desired_domain, current_domain)
 
-            # Explicitly test the expiration date. The extend_expiration_dates script
-            # will skip all dates less than date(2023, 11, 15), meaning that this domain
-            # should not be affected by the change.
-            self.assertEqual(current_domain.expiration_date, date(2023, 11, 15))
+        # Explicitly test the expiration date. The extend_expiration_dates script
+        # will skip all dates less than date(2023, 11, 15), meaning that this domain
+        # should not be affected by the change.
+        self.assertEqual(current_domain.expiration_date, date(2023, 11, 15))
 
+    @less_console_noise_decorator
     def test_extends_expiration_date_idempotent(self):
         """
         Tests the idempotency of the extend_expiration_dates command.
@@ -728,21 +728,20 @@ class TestExtendExpirationDates(MockEppLib):
         Verifies that running the method multiple times does not change the expiration date
         of a domain beyond the initial extension.
         """
-        with less_console_noise():
-            desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-            desired_domain.expiration_date = date(2024, 11, 15)
-            # Run the expiration date script
-            self.run_extend_expiration_dates()
-            current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the expiration date
-            self.assertEqual(desired_domain.expiration_date, date(2024, 11, 15))
-            # Run the expiration date script again
-            self.run_extend_expiration_dates()
-            # The old domain shouldn't have changed
-            self.assertEqual(desired_domain, current_domain)
-            # Explicitly test the expiration date - should be the same
-            self.assertEqual(desired_domain.expiration_date, date(2024, 11, 15))
+        desired_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        desired_domain.expiration_date = date(2024, 11, 15)
+        # Run the expiration date script
+        self.run_extend_expiration_dates()
+        current_domain = Domain.objects.filter(name="waterbutpurple.gov").get()
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the expiration date
+        self.assertEqual(desired_domain.expiration_date, date(2024, 11, 15))
+        # Run the expiration date script again
+        self.run_extend_expiration_dates()
+        # The old domain shouldn't have changed
+        self.assertEqual(desired_domain, current_domain)
+        # Explicitly test the expiration date - should be the same
+        self.assertEqual(desired_domain.expiration_date, date(2024, 11, 15))
 
 
 class TestDiscloseEmails(MockEppLib):
@@ -754,6 +753,7 @@ class TestDiscloseEmails(MockEppLib):
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
 
+    @less_console_noise_decorator
     def run_disclose_security_emails(self):
         """
         This method executes the disclose_security_emails command.
@@ -761,44 +761,43 @@ class TestDiscloseEmails(MockEppLib):
         The 'call_command' function from Django's management framework is then used to
         execute the disclose_security_emails command.
         """
-        with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("disclose_security_emails")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("disclose_security_emails")
 
+    @less_console_noise_decorator
     def test_disclose_security_emails(self):
         """
         Tests that command disclose_security_emails runs successfully with
         appropriate EPP calll to UpdateContact.
         """
-        with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="testdisclose.gov", state=Domain.State.READY)
-            expectedSecContact = PublicContact.get_default_security()
-            expectedSecContact.domain = domain
-            expectedSecContact.email = "123@mail.gov"
-            # set domain security email to 123@mail.gov instead of default email
-            domain.security_contact = expectedSecContact
-            self.run_disclose_security_emails()
+        domain, _ = Domain.objects.get_or_create(name="testdisclose.gov", state=Domain.State.READY)
+        expectedSecContact = PublicContact.get_default_security()
+        expectedSecContact.domain = domain
+        expectedSecContact.email = "123@mail.gov"
+        # set domain security email to 123@mail.gov instead of default email
+        domain.security_contact = expectedSecContact
+        self.run_disclose_security_emails()
 
-            # running disclose_security_emails sends EPP call UpdateContact with disclose
-            self.mockedSendFunction.assert_has_calls(
-                [
-                    call(
-                        commands.UpdateContact(
-                            id=domain.security_contact.registry_id,
-                            postal_info=domain._make_epp_contact_postal_info(contact=domain.security_contact),
-                            email=domain.security_contact.email,
-                            voice=domain.security_contact.voice,
-                            fax=domain.security_contact.fax,
-                            auth_info=common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                            disclose=domain._disclose_fields(contact=domain.security_contact),
-                        ),
-                        cleaned=True,
-                    )
-                ]
-            )
+        # running disclose_security_emails sends EPP call UpdateContact with disclose
+        self.mockedSendFunction.assert_has_calls(
+            [
+                call(
+                    commands.UpdateContact(
+                        id=domain.security_contact.registry_id,
+                        postal_info=domain._make_epp_contact_postal_info(contact=domain.security_contact),
+                        email=domain.security_contact.email,
+                        voice=domain.security_contact.voice,
+                        fax=domain.security_contact.fax,
+                        auth_info=common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
+                        disclose=domain._disclose_fields(contact=domain.security_contact),
+                    ),
+                    cleaned=True,
+                )
+            ]
+        )
 
 
 class TestCleanTables(TestCase):
@@ -813,17 +812,18 @@ class TestCleanTables(TestCase):
         self.logger_patcher.stop()
 
     @override_settings(IS_PRODUCTION=True)
+    @less_console_noise_decorator
     def test_command_logs_error_in_production(self):
         """Test that the handle method does not process in production"""
-        with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("clean_tables")
-                self.logger_mock.error.assert_called_with("clean_tables cannot be run in production")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("clean_tables")
+            self.logger_mock.error.assert_called_with("clean_tables cannot be run in production")
 
     @override_settings(IS_PRODUCTION=False)
+    @less_console_noise_decorator
     def test_command_cleans_tables(self):
         """test that the handle method functions properly to clean tables"""
 
@@ -891,61 +891,61 @@ class TestCleanTables(TestCase):
                     raise
 
     @override_settings(IS_PRODUCTION=False)
+    @less_console_noise_decorator
     def test_command_handles_nonexistent_model(self):
         """Test that exceptions for non existent models are handled properly within the handle method"""
-        with less_console_noise():
-            with patch("django.apps.apps.get_model", side_effect=LookupError):
-                with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                    return_value=True,
-                ):
-                    call_command("clean_tables")
-                    # Assert that the error message was logged for any of the table names
-                    self.logger_mock.error.assert_any_call("Model for table DomainInformation not found.")
-                    self.logger_mock.error.assert_any_call("Model for table DomainRequest not found.")
-                    self.logger_mock.error.assert_any_call("Model for table PublicContact not found.")
-                    self.logger_mock.error.assert_any_call("Model for table Domain not found.")
-                    self.logger_mock.error.assert_any_call("Model for table User not found.")
-                    self.logger_mock.error.assert_any_call("Model for table Contact not found.")
-                    self.logger_mock.error.assert_any_call("Model for table Website not found.")
-                    self.logger_mock.error.assert_any_call("Model for table DraftDomain not found.")
-                    self.logger_mock.error.assert_any_call("Model for table HostIp not found.")
-                    self.logger_mock.error.assert_any_call("Model for table Host not found.")
+        with patch("django.apps.apps.get_model", side_effect=LookupError):
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+                return_value=True,
+            ):
+                call_command("clean_tables")
+                # Assert that the error message was logged for any of the table names
+                self.logger_mock.error.assert_any_call("Model for table DomainInformation not found.")
+                self.logger_mock.error.assert_any_call("Model for table DomainRequest not found.")
+                self.logger_mock.error.assert_any_call("Model for table PublicContact not found.")
+                self.logger_mock.error.assert_any_call("Model for table Domain not found.")
+                self.logger_mock.error.assert_any_call("Model for table User not found.")
+                self.logger_mock.error.assert_any_call("Model for table Contact not found.")
+                self.logger_mock.error.assert_any_call("Model for table Website not found.")
+                self.logger_mock.error.assert_any_call("Model for table DraftDomain not found.")
+                self.logger_mock.error.assert_any_call("Model for table HostIp not found.")
+                self.logger_mock.error.assert_any_call("Model for table Host not found.")
 
     @override_settings(IS_PRODUCTION=False)
+    @less_console_noise_decorator
     def test_command_logs_other_exceptions(self):
         """Test that generic exceptions are handled properly in the handle method"""
-        with less_console_noise():
-            with patch("django.apps.apps.get_model") as get_model_mock:
-                model_mock = MagicMock()
-                get_model_mock.return_value = model_mock
+        with patch("django.apps.apps.get_model") as get_model_mock:
+            model_mock = MagicMock()
+            get_model_mock.return_value = model_mock
 
-                # Mock the values_list so that DomainInformation attempts a delete
-                pk_batches = [[1, 2, 3, 4, 5, 6], []]
+            # Mock the values_list so that DomainInformation attempts a delete
+            pk_batches = [[1, 2, 3, 4, 5, 6], []]
 
-                def values_list_side_effect(*args, **kwargs):
-                    if args == ("pk",) and kwargs.get("flat", False):
-                        return pk_batches.pop(0)
-                    return []
+            def values_list_side_effect(*args, **kwargs):
+                if args == ("pk",) and kwargs.get("flat", False):
+                    return pk_batches.pop(0)
+                return []
 
-                model_mock.objects.values_list.side_effect = values_list_side_effect
+            model_mock.objects.values_list.side_effect = values_list_side_effect
 
-                # Mock delete to raise a generic exception
-                model_mock.objects.filter.return_value.delete.side_effect = Exception("Mocked delete exception")
+            # Mock delete to raise a generic exception
+            model_mock.objects.filter.return_value.delete.side_effect = Exception("Mocked delete exception")
 
-                with patch(
-                    "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
-                    return_value=True,
-                ):
-                    with self.assertRaises(Exception) as context:
-                        # Execute the command
-                        call_command("clean_tables")
+            with patch(
+                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",
+                return_value=True,
+            ):
+                with self.assertRaises(Exception) as context:
+                    # Execute the command
+                    call_command("clean_tables")
 
-                        # Check the exception message
-                        self.assertEqual(str(context.exception), "Custom delete error")
+                    # Check the exception message
+                    self.assertEqual(str(context.exception), "Custom delete error")
 
-                        # Assert that delete was called
-                        model_mock.objects.filter.return_value.delete.assert_called()
+                    # Assert that delete was called
+                    model_mock.objects.filter.return_value.delete.assert_called()
 
 
 class TestExportTables(MockEppLib):
@@ -1030,34 +1030,34 @@ class TestExportTables(MockEppLib):
             self.logger_mock.info.assert_any_call(f"Removed {table_name}_1.csv")
 
     @patch("registrar.management.commands.export_tables.getattr")
+    @less_console_noise_decorator
     def test_export_table_handles_missing_resource_class(self, mock_getattr):
         """Test that missing resource classes are handled properly in the handle method"""
-        with less_console_noise():
-            mock_getattr.side_effect = AttributeError
+        mock_getattr.side_effect = AttributeError
 
-            # Import the command to avoid any locale or gettext issues
-            command_class = import_string("registrar.management.commands.export_tables.Command")
-            command_instance = command_class()
-            command_instance.export_table("NonExistentTable")
+        # Import the command to avoid any locale or gettext issues
+        command_class = import_string("registrar.management.commands.export_tables.Command")
+        command_instance = command_class()
+        command_instance.export_table("NonExistentTable")
 
-            self.logger_mock.error.assert_called_with(
-                "Resource class NonExistentTableResource not found in registrar.admin"
-            )
+        self.logger_mock.error.assert_called_with(
+            "Resource class NonExistentTableResource not found in registrar.admin"
+        )
 
     @patch("registrar.management.commands.export_tables.getattr")
+    @less_console_noise_decorator
     def test_export_table_handles_generic_exception(self, mock_getattr):
         """Test that general exceptions in the handle method are handled correctly"""
-        with less_console_noise():
-            mock_resource_class = MagicMock()
-            mock_resource_class().export.side_effect = Exception("Test Exception")
-            mock_getattr.return_value = mock_resource_class
+        mock_resource_class = MagicMock()
+        mock_resource_class().export.side_effect = Exception("Test Exception")
+        mock_getattr.return_value = mock_resource_class
 
-            # Import the command to avoid any locale or gettext issues
-            command_class = import_string("registrar.management.commands.export_tables.Command")
-            command_instance = command_class()
-            command_instance.export_table("TestTable")
+        # Import the command to avoid any locale or gettext issues
+        command_class = import_string("registrar.management.commands.export_tables.Command")
+        command_instance = command_class()
+        command_instance.export_table("TestTable")
 
-            self.logger_mock.error.assert_called_with("Failed to export TestTable: Test Exception")
+        self.logger_mock.error.assert_called_with("Failed to export TestTable: Test Exception")
 
 
 class TestImportTables(TestCase):
@@ -1073,6 +1073,7 @@ class TestImportTables(TestCase):
     @patch("registrar.management.commands.import_tables.getattr")
     @patch("django.apps.apps.get_model")
     @patch("os.listdir")
+    @less_console_noise_decorator
     def test_handle(
         self,
         mock_listdir,
@@ -1087,105 +1088,104 @@ class TestImportTables(TestCase):
         mock_makedirs,
     ):
         """Test that the handle method properly imports tables"""
-        with less_console_noise():
-            # Mock os.makedirs to do nothing
-            mock_makedirs.return_value = None
+        # Mock os.makedirs to do nothing
+        mock_makedirs.return_value = None
 
-            # Mock os.path.exists to always return True
-            mock_path_exists.return_value = True
+        # Mock os.path.exists to always return True
+        mock_path_exists.return_value = True
 
-            # Mock the zipfile to have extractall return None
-            mock_zipfile_instance = mock_zipfile.return_value.__enter__.return_value
-            mock_zipfile_instance.extractall.return_value = None
+        # Mock the zipfile to have extractall return None
+        mock_zipfile_instance = mock_zipfile.return_value.__enter__.return_value
+        mock_zipfile_instance.extractall.return_value = None
 
-            # Check that the import_table function was called for each table
-            table_names = [
-                "User",
-                "Contact",
-                "Domain",
-                "DomainRequest",
-                "DomainInformation",
-                "UserDomainRole",
-                "DraftDomain",
-                "Website",
-                "HostIp",
-                "Host",
-                "PublicContact",
-            ]
+        # Check that the import_table function was called for each table
+        table_names = [
+            "User",
+            "Contact",
+            "Domain",
+            "DomainRequest",
+            "DomainInformation",
+            "UserDomainRole",
+            "DraftDomain",
+            "Website",
+            "HostIp",
+            "Host",
+            "PublicContact",
+        ]
 
-            # Mock directory listing
-            mock_listdir.side_effect = lambda path: [f"{table}_1.csv" for table in table_names]
+        # Mock directory listing
+        mock_listdir.side_effect = lambda path: [f"{table}_1.csv" for table in table_names]
 
-            # Mock the CSV file content
-            csv_content = b"mock_csv_data"
+        # Mock the CSV file content
+        csv_content = b"mock_csv_data"
 
-            # Mock the open function to return a mock file
-            mock_open.return_value.__enter__.return_value.read.return_value = csv_content
+        # Mock the open function to return a mock file
+        mock_open.return_value.__enter__.return_value.read.return_value = csv_content
 
-            # Mock the Dataset class and its load method to return a dataset
-            mock_dataset_instance = MagicMock(spec=tablib.Dataset)
-            with patch(
-                "registrar.management.commands.import_tables.tablib.Dataset.load", return_value=mock_dataset_instance
-            ):
-                # Mock the resource class and its import method
-                mock_resource_class = MagicMock()
-                mock_resource_instance = MagicMock()
-                mock_result = MagicMock()
-                mock_result.has_errors.return_value = False
-                mock_resource_instance.import_data.return_value = mock_result
-                mock_resource_class.return_value = mock_resource_instance
-                mock_getattr.return_value = mock_resource_class
+        # Mock the Dataset class and its load method to return a dataset
+        mock_dataset_instance = MagicMock(spec=tablib.Dataset)
+        with patch(
+            "registrar.management.commands.import_tables.tablib.Dataset.load", return_value=mock_dataset_instance
+        ):
+            # Mock the resource class and its import method
+            mock_resource_class = MagicMock()
+            mock_resource_instance = MagicMock()
+            mock_result = MagicMock()
+            mock_result.has_errors.return_value = False
+            mock_resource_instance.import_data.return_value = mock_result
+            mock_resource_class.return_value = mock_resource_instance
+            mock_getattr.return_value = mock_resource_class
 
-                # Call the command
-                call_command("import_tables")
+            # Call the command
+            call_command("import_tables")
 
-                # Check that os.makedirs was called once to create the tmp directory
-                mock_makedirs.assert_called_once_with("tmp", exist_ok=True)
+            # Check that os.makedirs was called once to create the tmp directory
+            mock_makedirs.assert_called_once_with("tmp", exist_ok=True)
 
-                # Check that os.path.exists was called once for the zip file
-                mock_path_exists.assert_any_call("tmp/exported_tables.zip")
+            # Check that os.path.exists was called once for the zip file
+            mock_path_exists.assert_any_call("tmp/exported_tables.zip")
 
-                # Check that pyzipper.AESZipFile was called once to open the zip file
-                mock_zipfile.assert_called_once_with("tmp/exported_tables.zip", "r")
+            # Check that pyzipper.AESZipFile was called once to open the zip file
+            mock_zipfile.assert_called_once_with("tmp/exported_tables.zip", "r")
 
-                # Check that extractall was called once to extract the zip file contents
-                mock_zipfile_instance.extractall.assert_called_once_with("tmp")
+            # Check that extractall was called once to extract the zip file contents
+            mock_zipfile_instance.extractall.assert_called_once_with("tmp")
 
-                # Check that os.path.exists was called for each table
-                for table_name in table_names:
-                    mock_path_exists.assert_any_call(f"{table_name}_1.csv")
+            # Check that os.path.exists was called for each table
+            for table_name in table_names:
+                mock_path_exists.assert_any_call(f"{table_name}_1.csv")
 
-                # Check that logger.info was called for each successful import
-                for table_name in table_names:
-                    mock_logger.info.assert_any_call(f"Successfully imported {table_name}_1.csv into {table_name}")
+            # Check that logger.info was called for each successful import
+            for table_name in table_names:
+                mock_logger.info.assert_any_call(f"Successfully imported {table_name}_1.csv into {table_name}")
 
-                # Check that logger.error was not called for resource class not found
-                mock_logger.error.assert_not_called()
+            # Check that logger.error was not called for resource class not found
+            mock_logger.error.assert_not_called()
 
-                # Check that os.remove was called for each CSV file
-                for table_name in table_names:
-                    mock_remove.assert_any_call(f"{table_name}_1.csv")
+            # Check that os.remove was called for each CSV file
+            for table_name in table_names:
+                mock_remove.assert_any_call(f"{table_name}_1.csv")
 
-                # Check that logger.info was called for each CSV file removal
-                for table_name in table_names:
-                    mock_logger.info.assert_any_call(f"Removed temporary file {table_name}_1.csv")
+            # Check that logger.info was called for each CSV file removal
+            for table_name in table_names:
+                mock_logger.info.assert_any_call(f"Removed temporary file {table_name}_1.csv")
 
     @patch("registrar.management.commands.import_tables.logger")
     @patch("registrar.management.commands.import_tables.os.makedirs")
     @patch("registrar.management.commands.import_tables.os.path.exists")
+    @less_console_noise_decorator
     def test_handle_zip_file_not_found(self, mock_path_exists, mock_makedirs, mock_logger):
         """Test the handle method when the zip file doesn't exist"""
-        with less_console_noise():
-            # Mock os.makedirs to do nothing
-            mock_makedirs.return_value = None
+        # Mock os.makedirs to do nothing
+        mock_makedirs.return_value = None
 
-            # Mock os.path.exists to return False
-            mock_path_exists.return_value = False
+        # Mock os.path.exists to return False
+        mock_path_exists.return_value = False
 
-            call_command("import_tables")
+        call_command("import_tables")
 
-            # Check that logger.error was called with the correct message
-            mock_logger.error.assert_called_once_with("Zip file tmp/exported_tables.zip does not exist.")
+        # Check that logger.error was called with the correct message
+        mock_logger.error.assert_called_once_with("Zip file tmp/exported_tables.zip does not exist.")
 
 
 class TestTransferFederalAgencyType(TestCase):
@@ -1255,6 +1255,7 @@ class TestTransferFederalAgencyType(TestCase):
             id__in=[self.amtrak.id, self.legislative_branch.id, self.library_of_congress.id, self.gov_admin.id]
         ).delete()
 
+    @less_console_noise_decorator
     def run_transfer_federal_agency_type(self):
         """
         This method executes the transfer_federal_agency_type command.
@@ -1262,12 +1263,11 @@ class TestTransferFederalAgencyType(TestCase):
         The 'call_command' function from Django's management framework is then used to
         execute the populate_first_ready command with the specified arguments.
         """
-        with less_console_noise():
-            with patch(
-                "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-                return_value=True,
-            ):
-                call_command("transfer_federal_agency_type")
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("transfer_federal_agency_type")
 
     @less_console_noise_decorator
     def test_transfer_federal_agency_type_script(self):
@@ -1630,6 +1630,7 @@ class TestCreateFederalPortfolio(TestCase):
         # Test the senior official
         self.assertEqual(portfolio.senior_official, self.senior_official)
 
+    @less_console_noise_decorator
     def test_create_multiple_portfolios_for_branch_judicial(self):
         """Tests creating all portfolios under a given branch"""
         federal_choice = DomainRequest.OrganizationChoices.FEDERAL
@@ -1657,6 +1658,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
+    @less_console_noise_decorator
     def test_create_multiple_portfolios_for_branch_legislative(self):
         """Tests creating all portfolios under a given branch"""
         federal_choice = DomainRequest.OrganizationChoices.FEDERAL
@@ -1684,6 +1686,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
+    @less_console_noise_decorator
     def test_script_adds_requested_suborganization_information(self):
         """Tests that the script adds the requested suborg fields for domain requests"""
         # Create a new domain request with some errant spacing
@@ -1712,6 +1715,7 @@ class TestCreateFederalPortfolio(TestCase):
             custom_suborg_request.suborganization_state_territory, DomainRequest.StateTerritoryChoices.TEXAS
         )
 
+    @less_console_noise_decorator
     def test_create_multiple_portfolios_for_branch_executive(self):
         """Tests creating all portfolios under a given branch"""
         federal_choice = DomainRequest.OrganizationChoices.FEDERAL
@@ -1774,6 +1778,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(expected_requests.count(), 2)
         self.assertEqual(expected_domain_infos.count(), 2)
 
+    @less_console_noise_decorator
     def test_handle_portfolio_requests(self):
         """Verify portfolio association with domain requests."""
         self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True)
@@ -1783,6 +1788,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(self.domain_request.portfolio.federal_agency, self.federal_agency)
         self.assertEqual(self.domain_request.sub_organization.name, "Testorg")
 
+    @less_console_noise_decorator
     def test_handle_portfolio_domains(self):
         """Check portfolio association with domain information."""
         self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_domains=True)
@@ -1792,6 +1798,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(self.domain_info.portfolio.federal_agency, self.federal_agency)
         self.assertEqual(self.domain_info.sub_organization.name, "Testorg")
 
+    @less_console_noise_decorator
     def test_handle_parse_both(self):
         """Ensure correct parsing of both requests and domains."""
         self.run_create_federal_portfolio(agency_name="Test Federal Agency", parse_requests=True, parse_domains=True)
@@ -1802,6 +1809,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertIsNotNone(self.domain_info.portfolio)
         self.assertEqual(self.domain_request.portfolio, self.domain_info.portfolio)
 
+    @less_console_noise_decorator
     def test_command_error_parse_options(self):
         """Verify error when bad parse options are provided."""
         # The command should enforce either --branch or --agency_name
@@ -1823,6 +1831,7 @@ class TestCreateFederalPortfolio(TestCase):
         ):
             self.run_create_federal_portfolio(agency_name="test")
 
+    @less_console_noise_decorator
     def test_command_error_agency_not_found(self):
         """Check error handling for non-existent agency."""
         expected_message = (
@@ -1832,6 +1841,7 @@ class TestCreateFederalPortfolio(TestCase):
         with self.assertRaisesRegex(CommandError, expected_message):
             self.run_create_federal_portfolio(agency_name="Non-existent Agency", parse_requests=True)
 
+    @less_console_noise_decorator
     def test_does_not_update_existing_portfolio(self):
         """Tests that an existing portfolio is not updated when"""
         # Create an existing portfolio
@@ -2433,6 +2443,7 @@ class TestRemovePortfolios(TestCase):
         Portfolio.objects.all().delete()
         User.objects.all().delete()
 
+    @less_console_noise_decorator
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
     def test_delete_unlisted_portfolios(self, mock_query_yes_no):
         """Test that portfolios not on the allowed list are deleted."""
@@ -2450,6 +2461,7 @@ class TestRemovePortfolios(TestCase):
         self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())
         self.assertTrue(Portfolio.objects.filter(organization_name="Department of Veterans Affairs").exists())
 
+    @less_console_noise_decorator
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
     def test_delete_entries_with_related_objects(self, mock_query_yes_no):
         """Test deletion with related objects being handled properly."""
@@ -2473,6 +2485,7 @@ class TestRemovePortfolios(TestCase):
         # Check that the portfolio was deleted
         self.assertFalse(Portfolio.objects.filter(organization_name="Test with orphaned objects").exists())
 
+    @less_console_noise_decorator
     @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no")
     def test_delete_entries_with_suborganizations(self, mock_query_yes_no):
         """Test that suborganizations and their related objects are deleted along with the portfolio."""
