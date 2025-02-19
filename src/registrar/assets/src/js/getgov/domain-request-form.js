@@ -3,12 +3,12 @@ import { submitForm } from './helpers.js';
 export function initDomainRequestForm() {
     document.addEventListener('DOMContentLoaded', function() {
         // These are the request steps in DomainRequestWizard, such as current_websites or review
-        initRequestStepCurrentWebsites();
-        initRequestStepReview();
+        initRequestStepCurrentWebsitesListener();
+        initRequestStepReviewListener();
     });
 }
 
-function initRequestStepReview() {
+function initRequestStepReviewListener() {
     const button = document.getElementById("domain-request-form-submit-button");
     if (button) {
         button.addEventListener("click", function () {
@@ -17,7 +17,7 @@ function initRequestStepReview() {
     } 
 }
 
-function initRequestStepCurrentWebsites() {
+function initRequestStepCurrentWebsitesListener() {
     //register-form-step
     const addAnotherSiteButton = document.getElementById("submit-domain-request--site-button");
     if (addAnotherSiteButton) {
