@@ -226,6 +226,49 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
     return all_admin_emails_sent
 
 
+def send_portfolio_member_permission_update_email(requestor, permissions: UserPortfolioPermission):
+    """
+    Sends an email notification to a portfolio member when their permissions are updated.
+
+    This function retrieves the requestor's email and sends a templated email to the affected user,
+    notifying them of changes to their portfolio permissions.
+
+    Args:
+        requestor (User): The user initiating the permission update.
+        permissions (UserPortfolioPermission): The updated permissions object containing the affected user
+                                              and the portfolio details.
+
+    Returns:
+        bool: True if the email was sent successfully, False if an EmailSendingError occurred.
+
+    Raises:
+        MissingEmailError: If the requestor has no email associated with their account.
+    """
+    requestor_email = _get_requestor_email(requestor, portfolio=permissions.portfolio)
+    try:
+        send_templated_email(
+            "emails/portfolio_update.txt",
+            "emails/portfolio_update_subject.txt",
+            to_address=permissions.user.email,
+            context={
+                "requested_user": permissions.user,
+                "portfolio": permissions.portfolio,
+                "requestor_email": requestor_email,
+                "permissions": permissions,
+                "date": date.today(),
+            },
+        )
+    except EmailSendingError:
+        logger.warning(
+            "Could not send email organization member update notification to %s " "for portfolio: %s",
+            permissions.user.email,
+            permissions.portfolio.organization_name,
+            exc_info=True,
+        )
+        return False
+    return True
+
+
 def send_portfolio_admin_addition_emails(email: str, requestor, portfolio: Portfolio):
     """
     Notifies all portfolio admins of the provided portfolio of a newly invited portfolio admin

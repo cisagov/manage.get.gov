@@ -558,13 +558,18 @@ details.dja-detail-table {
         background-color: transparent;
     }
 
+    thead tr {
+        background-color: var(--darkened-bg);
+    }
+
     td, th {
         padding-left: 12px;
-        border: none
+        border: none;
+        background-color: var(--darkened-bg);
+        color: var(--body-quiet-color);
     }
 
     thead > tr > th {
-        border-radius: 4px;
         border-top: none;
         border-bottom: none;
     }
@@ -945,4 +950,35 @@ ul.add-list-reset {
     color: inherit !important; 
     background-color: transparent !important; 
     }
+}
+
+@media (min-width: 1080px) {
+    .analytics-dashboard-charts {
+        // Desktop layout - charts in top row, details in bottom row
+        display: grid;
+        gap: 2rem;
+        // Equal columns each gets 1/2 of the space
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas:
+            "chart1 chart2"
+            "details1 details2"
+            "chart3 chart4"
+            "details3 details4"
+            "chart5 chart6"
+            "details5 details6";
+
+        .chart-1 { grid-area: chart1; }
+        .chart-2 { grid-area: chart2; }
+        .chart-3 { grid-area: chart3; }
+        .chart-4 { grid-area: chart4; }
+        .chart-5 { grid-area: chart5; }
+        .chart-6 { grid-area: chart6; }
+        .details-1 { grid-area: details1; }
+        .details-2 { grid-area: details2; }
+        .details-3 { grid-area: details3; }
+        .details-4 { grid-area: details4; }
+        .details-5 { grid-area: details5; }
+        .details-6 { grid-area: details6; }
+    }
+
 }
