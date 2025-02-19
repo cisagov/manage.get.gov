@@ -103,8 +103,7 @@ th {
     }
   }
   @include at-media(tablet-lg) {
-    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button,
-    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button:not([aria-sort]) {
+    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button {
       // position next to the copy
       right: auto;
       // slide left to mock a margin between the copy and the icon
