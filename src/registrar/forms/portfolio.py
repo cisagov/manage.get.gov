@@ -218,6 +218,9 @@ class BasePortfolioMemberForm(forms.ModelForm):
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
 
+        # handle role
+        cleaned_data["roles"] = [role] if role else []
+
         # Get required fields for the selected role. Then validate all required fields for the role.
         required_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
         for field_name in required_fields:
