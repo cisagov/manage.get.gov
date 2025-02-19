@@ -4,7 +4,7 @@ Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first
 {{ requestor_email }} has invited you to manage:
 {% for domain in domains %}{{ domain.name }}
 {% endfor %}
-To manage domain information, visit the .gov registrar <https://manage.get.gov>.
+To manage domain information, visit the .gov registrar <{{ manage_url }}>.
 
 ----------------------------------------------------------------
 {% if not requested_user %}
