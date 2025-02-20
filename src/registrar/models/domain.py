@@ -1117,7 +1117,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # check if the domain can be deleted
         if not self._domain_can_be_deleted():
-            raise RegistryError(code=ErrorCode.COMMAND_FAILED, note="Associated objects were not cleared.")
+            note = "Domain has associated objects that prevent deletion."
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED, note=note)
 
         # delete the domain
         request = commands.DeleteDomain(name=self.name)

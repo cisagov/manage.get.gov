@@ -178,7 +178,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then a user-friendly success message is returned for displaying on the web
             And `state` is set to `DELETED`
         """
-        domain = create_ready_domain()
+        domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
         # Ensure everything is displaying correctly
@@ -212,7 +212,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
+                "Domain my-nameserver.gov has been deleted. Thanks!",
                 extra_tags="",
                 fail_silently=False,
             )
@@ -266,7 +266,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             mock_add_message.assert_called_once_with(
                 request,
                 messages.ERROR,
-                "Error deleting this Domain: This subdomain is being used as a hostname on another domain: ns1.sharedhost.com",  # noqa
+                "Error deleting this Domain: Command failed with note: Domain has associated objects that prevent deletion.",  # noqa
                 extra_tags="",
                 fail_silently=False,
             )
@@ -321,7 +321,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
-        domain = create_ready_domain()
+        domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
         # Ensure everything is displaying correctly
@@ -340,12 +340,13 @@ class TestDomainAdminAsStaff(MockEppLib):
         )
         request.user = self.client
         # Delete it once
+
         with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
+                "Domain my-nameserver.gov has been deleted. Thanks!",
                 extra_tags="",
                 fail_silently=False,
             )

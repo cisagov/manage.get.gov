@@ -3816,7 +3816,7 @@ class TestTransferUser(WebTest):
         with self.assertRaises(User.DoesNotExist):
             self.user2.refresh_from_db()
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_transfer_user_throws_transfer_and_delete_success_messages(self):
         """Test that success messages for data transfer and user deletion are displayed."""
         # Ensure the setup for VerifiedByStaff
