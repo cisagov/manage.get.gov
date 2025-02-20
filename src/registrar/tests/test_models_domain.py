@@ -1249,7 +1249,7 @@ class TestRegistrantNameservers(MockEppLib):
         self.domainWithThreeNS, _ = Domain.objects.get_or_create(
             name="threenameserversDomain.gov", state=Domain.State.READY
         )
-    
+
     def tearDown(self):
         PublicContact.objects.all().delete()
         HostIP.objects.all().delete()
@@ -1819,7 +1819,7 @@ class TestRegistrantNameservers(MockEppLib):
         due to how we set up our defaults
         """
         domain, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.READY)
-        
+
         with patch.object(Host.objects, "get_or_create") as mock_host_get_or_create, patch.object(
             HostIP.objects, "get_or_create"
         ) as mock_host_ip_get_or_create:
@@ -2059,6 +2059,7 @@ class TestRegistrantDNSSEC(MockEppLib):
         5 - getter properly parses dnssecdata from InfoDomain response and sets to cache
 
         """
+
         # need to use a separate patcher and side_effect for this test, as
         # response from InfoDomain must be different for different iterations
         # of the same command
@@ -2224,11 +2225,11 @@ class TestRegistrantDNSSEC(MockEppLib):
 
         with patch("registrar.models.domain.registry.send") as mocked_send:
             mocked_send.side_effect = side_effect
-            
+
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
-            
+
             domain.dnssecdata = self.dnssecExtensionWithDsData
-            
+
             # Check dsdata_last_change is updated
             domain = Domain.objects.get(name="dnssec-dsdata.gov")
             self.assertIsNotNone(domain.dsdata_last_change)
@@ -2896,7 +2897,7 @@ class TestAnalystDelete(MockEppLib):
         self.assertEqual(domain.state, Domain.State.DELETED)
 
         # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ['fake.host.com']
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):
