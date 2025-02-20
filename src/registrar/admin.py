@@ -3738,11 +3738,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
             message2 = f"This subdomain is being used as a hostname on another domain: {err.note}"
+            message3 = f"Command failed with note: {err.note}"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
                 ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: message1,
                 ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: message2,
+                ErrorCode.COMMAND_FAILED: message3,
             }
 
             message = "Cannot connect to the registry"
