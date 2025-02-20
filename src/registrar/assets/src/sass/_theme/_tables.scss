@@ -152,3 +152,12 @@ th {
 .usa-table--full-borderless th {
   border: none !important;
 }
+
+// This is an override to overflow on certain tables (note the custom class)
+// so that a popup menu can appear and starddle the edge of the table on large
+// screen sizes. Works with styles in _accordions
+@include at-media(desktop) {
+  .usa-table-container--scrollable.usa-table-container--override-overflow {
+      overflow-y: visible;
+  }
+}
