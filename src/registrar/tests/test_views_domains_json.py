@@ -104,7 +104,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain.state_display(), state_displays[i])
             self.assertEqual(expected_domain.get_state_help_text(), get_state_help_texts[i])
 
-            self.assertEqual(reverse("domain", kwargs={"pk": expected_domain.id}), action_urls[i])
+            self.assertEqual(reverse("domain", kwargs={"domain_pk": expected_domain.id}), action_urls[i])
 
             # Check action_label
             action_label_expected = (
@@ -185,7 +185,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain.state_display(), state_displays[i])
             self.assertEqual(expected_domain.get_state_help_text(), get_state_help_texts[i])
 
-            self.assertEqual(reverse("domain", kwargs={"pk": expected_domain.id}), action_urls[i])
+            self.assertEqual(reverse("domain", kwargs={"domain_pk": expected_domain.id}), action_urls[i])
 
             # Check action_label
             user_domain_role_exists = UserDomainRole.objects.filter(
@@ -272,7 +272,7 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(expected_domain.state_display(), state_displays[i])
             self.assertEqual(expected_domain.get_state_help_text(), get_state_help_texts[i])
 
-            self.assertEqual(reverse("domain", kwargs={"pk": expected_domain.id}), action_urls[i])
+            self.assertEqual(reverse("domain", kwargs={"domain_pk": expected_domain.id}), action_urls[i])
 
             # Check action_label
             user_domain_role_exists = UserDomainRole.objects.filter(

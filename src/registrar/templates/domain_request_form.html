@@ -36,7 +36,7 @@
             </ol>
           </nav>
         {% elif steps.prev %}
-        <a href="{% namespaced_url 'domain-request' steps.prev id=domain_request_id  %}" class="breadcrumb__back">
+        <a href="{% namespaced_url 'domain-request' steps.prev domain_request_pk=domain_request_id  %}" class="breadcrumb__back">
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
           </svg><span class="margin-left-05">Previous step</span>
