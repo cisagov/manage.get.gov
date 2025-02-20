@@ -68,7 +68,7 @@ Learn more about:
 NEED ASSISTANCE?
 If you have questions about this domain request or need help choosing a new domain name, reply to this email.
 {% endif %}
-{% if reason != domain_request.RejectionReasons.REQUESTOR_NOT_ELIGIBLE %}
+{% if reason != domain_request.RejectionReasons.REQUESTOR_NOT_ELIGIBLE and reason != domain_request.RejectionReasons.ORG_NOT_ELIGIBLE %}
 
 THANK YOU
 .Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
