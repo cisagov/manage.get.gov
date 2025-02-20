@@ -5,22 +5,25 @@ import logging
 
 from django.contrib import messages
 from django.http import QueryDict
+from django.views.generic import DetailView
 from django.views.generic.edit import FormMixin
+from registrar.decorators import ALL, grant_access
 from registrar.forms.user_profile import UserProfileForm, FinishSetupProfileForm
 from django.urls import NoReverseMatch, reverse
 from registrar.models.user import User
 from registrar.models.utility.generic_helper import replace_url_queryparams
-from registrar.views.utility.permission_views import UserProfilePermissionView
 
 logger = logging.getLogger(__name__)
 
 
-class UserProfileView(UserProfilePermissionView, FormMixin):
+@grant_access(ALL)
+class UserProfileView(DetailView, FormMixin):
     """
     Base View for the User Profile. Handles getting and setting the User Profile
     """
 
     model = User
+    context_object_name = "user"
     template_name = "profile.html"
     form_class = UserProfileForm
     base_view_name = "user-profile"

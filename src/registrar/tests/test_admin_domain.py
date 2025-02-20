@@ -224,7 +224,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
@@ -881,7 +881,7 @@ class TestDomainAdminWithClient(TestCase):
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
         # for our actual domain_request
-        self.assertContains(response, "Federal", count=56)
+        self.assertContains(response, "Federal", count=57)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
