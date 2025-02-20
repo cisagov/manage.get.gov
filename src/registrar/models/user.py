@@ -269,56 +269,13 @@ class User(AbstractUser):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
     def is_portfolio_admin(self, portfolio):
-        return "Admin" in self.portfolio_role_summary(portfolio)
+        return self.has_edit_portfolio_permission(portfolio)
 
     def get_first_portfolio(self):
         permission = self.portfolio_permissions.first()
         if permission:
             return permission.portfolio
         return None
-
-    def portfolio_role_summary(self, portfolio):
-        """Returns a list of roles based on the user's permissions."""
-        roles = []
-
-        # Define the conditions and their corresponding roles
-        conditions_roles = [
-            (self.has_edit_portfolio_permission(portfolio), ["Admin"]),
-            (
-                self.has_view_all_domains_portfolio_permission(portfolio)
-                and self.has_any_requests_portfolio_permission(portfolio)
-                and self.has_edit_request_portfolio_permission(portfolio),
-                ["View-only admin", "Domain requestor"],
-            ),
-            (
-                self.has_view_all_domains_portfolio_permission(portfolio)
-                and self.has_any_requests_portfolio_permission(portfolio),
-                ["View-only admin"],
-            ),
-            (
-                self.has_view_portfolio_permission(portfolio)
-                and self.has_edit_request_portfolio_permission(portfolio)
-                and self.has_any_domains_portfolio_permission(portfolio),
-                ["Domain requestor", "Domain manager"],
-            ),
-            (
-                self.has_view_portfolio_permission(portfolio) and self.has_edit_request_portfolio_permission(portfolio),
-                ["Domain requestor"],
-            ),
-            (
-                self.has_view_portfolio_permission(portfolio) and self.has_any_domains_portfolio_permission(portfolio),
-                ["Domain manager"],
-            ),
-            (self.has_view_portfolio_permission(portfolio), ["Member"]),
-        ]
-
-        # Evaluate conditions and add roles
-        for condition, role_list in conditions_roles:
-            if condition:
-                roles.extend(role_list)
-                break
-
-        return roles
 
     def get_portfolios(self):
         return self.portfolio_permissions.all()
