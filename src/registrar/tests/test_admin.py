@@ -55,6 +55,7 @@ from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
     completed_domain_request,
+    create_test_user,
     generic_domain_object,
     less_console_noise,
     mock_user,
@@ -1135,6 +1136,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
+        self.testuser = create_test_user()
         self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
@@ -1166,6 +1168,21 @@ class TestUserPortfolioPermissionAdmin(TestCase):
             response,
             "If you add someone to a portfolio here, it will not trigger an invitation email.",
         )
+
+    @less_console_noise_decorator
+    def test_delete_confirmation_page_contains_static_message(self):
+        """Ensure the custom message appears in the delete confirmation page."""
+        self.client.force_login(self.superuser)
+        # Create a test portfolio permission
+        self.permission = UserPortfolioPermission.objects.create(
+            user=self.testuser, portfolio=self.portfolio, roles=["organization_member"]
+        )
+        delete_url = reverse("admin:registrar_userportfoliopermission_delete", args=[self.permission.pk])
+        response = self.client.get(delete_url)
+
+        # Check if the response contains the expected static message
+        expected_message = "If you remove someone from a portfolio here, it will not send any emails"
+        self.assertIn(expected_message, response.content.decode("utf-8"))
 
 
 class TestPortfolioInvitationAdmin(TestCase):
@@ -1604,6 +1621,21 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_messages_warning.assert_called_once_with(
             request, "Could not send email notification to existing organization admins."
         )
+
+    @less_console_noise_decorator
+    def test_delete_confirmation_page_contains_static_message(self):
+        """Ensure the custom message appears in the delete confirmation page."""
+        self.client.force_login(self.superuser)
+        # Create a test portfolio invitation
+        self.invitation = PortfolioInvitation.objects.create(
+            email="testuser@example.com", portfolio=self.portfolio, roles=["organization_member"]
+        )
+        delete_url = reverse("admin:registrar_portfolioinvitation_delete", args=[self.invitation.pk])
+        response = self.client.get(delete_url)
+
+        # Check if the response contains the expected static message
+        expected_message = "If you cancel the portfolio invitation here"
+        self.assertIn(expected_message, response.content.decode("utf-8"))
 
 
 class TestHostAdmin(TestCase):
