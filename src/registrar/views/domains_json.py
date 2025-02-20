@@ -1,15 +1,15 @@
 import logging
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from registrar.decorators import grant_access, ALL
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@grant_access(ALL)
 def get_domains_json(request):
     """Given the current request,
     get all domains that are associated with the UserDomainRole object"""
@@ -142,7 +142,7 @@ def serialize_domain(domain, request):
         "state": domain.state,
         "state_display": domain.state_display(request),
         "get_state_help_text": domain.get_state_help_text(),
-        "action_url": reverse("domain", kwargs={"pk": domain.id}),
+        "action_url": reverse("domain", kwargs={"domain_pk": domain.id}),
         "action_label": ("View" if view_only else "Manage"),
         "svg_icon": ("visibility" if view_only else "settings"),
         "domain_info__sub_organization": suborganization_name,

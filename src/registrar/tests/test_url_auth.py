@@ -18,6 +18,9 @@ from .common import less_console_noise
 # request on the view.
 SAMPLE_KWARGS = {
     "app_label": "registrar",
+    "domain_pk": "1",
+    "domain_request_pk": "1",
+    "domain_invitation_pk": "1",
     "pk": "1",
     "id": "1",
     "content_type_id": "2",
@@ -82,7 +85,6 @@ def iter_sample_urls(urlconf):
         if not viewname:
             continue
         if viewname == "auth_user_password_change":
-            print(route)
             break
         named_groups = route.regex.groupindex.keys()
         kwargs = {}

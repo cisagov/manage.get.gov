@@ -1320,7 +1320,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Perform delete
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check that the response is 200
         self.assertEqual(response.status_code, 200)
@@ -1354,7 +1356,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Attempt to delete
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check response is 403 Forbidden
         self.assertEqual(response.status_code, 403)
@@ -1389,7 +1393,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Perform delete as self.user
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check response is 403 Forbidden
         self.assertEqual(response.status_code, 403)
@@ -3336,7 +3342,9 @@ class TestRequestingEntity(WebTest):
     def test_requesting_entity_page_errors(self):
         """Tests that we get the expected form errors on requesting entity"""
         domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)
-        response = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        response = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         form = response.forms[0]
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -3426,7 +3434,9 @@ class TestRequestingEntity(WebTest):
 
         domain_request.submit()
 
-        response = self.app.get(reverse("domain-request-status-viewonly", kwargs={"pk": domain_request.pk}))
+        response = self.app.get(
+            reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
@@ -3451,7 +3461,7 @@ class TestRequestingEntity(WebTest):
 
         domain_request.submit()
 
-        response = self.app.get(reverse("domain-request-status", kwargs={"pk": domain_request.pk}))
+        response = self.app.get(reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.pk}))
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
