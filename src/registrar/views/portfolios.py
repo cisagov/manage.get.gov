@@ -480,9 +480,7 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
                 ):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
-                messages.warning(
-                    request, f"Could not send email notification to {portfolio_invitation.email}"
-                )
+                messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
         except Exception as e:
             self._handle_exceptions(e)
 

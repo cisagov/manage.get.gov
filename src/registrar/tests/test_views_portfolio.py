@@ -2093,7 +2093,9 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
-    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self, send_invited_member_removal, mock_send_removal_emails):
+    def test_portfolio_member_delete_view_manage_members_page_invitedmember(
+        self, send_invited_member_removal, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited member on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2156,7 +2158,10 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedadmin(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin(
+        self, send_invited_member_email, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2171,6 +2176,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = True
+        send_invited_member_email.return_value = True
 
         # Invite an admin under same portfolio
         invited_member_email = "invited_member@example.com"
@@ -2202,6 +2208,8 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails is called since invitation
             # is for an admin
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_email.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -2211,11 +2219,22 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+            # Get the arguments passed to send_portfolio_invitation_remove_email
+            _, called_kwargs = send_invited_member_email.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedadmin_email_fails(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin_email_fails(
+        self, send_invited_member_email, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2230,6 +2249,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = False
+        send_invited_member_email.return_value = False
 
         # Invite an admin under same portfolio
         invited_member_email = "invited_member@example.com"
@@ -2261,6 +2281,8 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails is called since invitation
             # is for an admin
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_email.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -2269,6 +2291,14 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["email"], invited_member_email)
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+            # Get the arguments passed to send_portfolio_invitation_remove_email
+            _, called_kwargs = send_invited_member_email.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
 
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
