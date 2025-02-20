@@ -20,6 +20,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
+    send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
 )
@@ -478,6 +479,10 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
                     email=portfolio_invitation.email, requestor=request.user, portfolio=portfolio_invitation.portfolio
                 ):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
+                if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
+                    messages.warning(
+                        request, f"Could not send email notification to {portfolio_invitation.email}"
+                    )
             except Exception as e:
                 self._handle_exceptions(e)
 

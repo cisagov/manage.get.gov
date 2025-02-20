@@ -2,6 +2,7 @@ from datetime import date
 from django.conf import settings
 from registrar.models import Domain, DomainInvitation, UserDomainRole
 from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.errors import (
@@ -304,6 +305,47 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
             "Could not send email organization member removal notification to %s " "for portfolio: %s",
             permissions.user.email,
             permissions.portfolio.organization_name,
+            exc_info=True,
+        )
+        return False
+    return True
+
+
+def send_portfolio_invitation_remove_email(requestor, invitation: PortfolioInvitation):
+    """
+    Sends an email notification to a portfolio invited member when their permissions are deleted.
+
+    This function retrieves the requestor's email and sends a templated email to the affected email,
+    notifying them of the removal of their invited portfolio permissions.
+
+    Args:
+        requestor (User): The user initiating the permission update.
+        invitation (PortfolioInvitation): The invitation object containing the affected user
+                                              and the portfolio details.
+
+    Returns:
+        bool: True if the email was sent successfully, False if an EmailSendingError occurred.
+
+    Raises:
+        MissingEmailError: If the requestor has no email associated with their account.
+    """
+    requestor_email = _get_requestor_email(requestor, portfolio=invitation.portfolio)
+    try:
+        send_templated_email(
+            "emails/portfolio_removal.txt",
+            "emails/portfolio_removal_subject.txt",
+            to_address=invitation.email,
+            context={
+                "requested_user": None,
+                "portfolio": invitation.portfolio,
+                "requestor_email": requestor_email,
+            },
+        )
+    except EmailSendingError:
+        logger.warning(
+            "Could not send email organization member removal notification to %s " "for portfolio: %s",
+            invitation.email,
+            invitation.portfolio.organization_name,
             exc_info=True,
         )
         return False
