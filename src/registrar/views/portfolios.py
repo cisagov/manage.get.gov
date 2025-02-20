@@ -471,20 +471,20 @@ class PortfolioInvitedMemberDeleteView(PortfolioMemberPermission, View):
         """
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
 
-        # if invitation being removed is an admin
-        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
-            try:
+        try:
+            # if invitation being removed is an admin
+            if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
                 # attempt to send notification emails of the removal to portfolio admins
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_invitation.email, requestor=request.user, portfolio=portfolio_invitation.portfolio
                 ):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
-                if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
-                    messages.warning(
-                        request, f"Could not send email notification to {portfolio_invitation.email}"
-                    )
-            except Exception as e:
-                self._handle_exceptions(e)
+            if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
+                messages.warning(
+                    request, f"Could not send email notification to {portfolio_invitation.email}"
+                )
+        except Exception as e:
+            self._handle_exceptions(e)
 
         portfolio_invitation.delete()
 

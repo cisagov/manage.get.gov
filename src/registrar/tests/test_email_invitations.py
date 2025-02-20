@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from datetime import date
 from registrar.models.domain import Domain
 from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -16,6 +17,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
+    send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
 )
@@ -1034,6 +1036,79 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         # Call function
         with self.assertRaises(Exception):
             send_portfolio_member_permission_remove_email(requestor, permissions)
+
+        # Assertions
+        mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
+
+
+class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
+    """Unit tests for send_portfolio_invitation_remove_email function."""
+
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    def test_send_email_success(self, mock_get_requestor_email, mock_send_email):
+        """Test that the email is sent successfully when there are no errors."""
+        # Mock data
+        requestor = MagicMock()
+        invitation = MagicMock(spec=PortfolioInvitation)
+        invitation.email = "user@example.com"
+        invitation.portfolio.organization_name = "Test Portfolio"
+
+        mock_get_requestor_email.return_value = "requestor@example.com"
+
+        # Call function
+        result = send_portfolio_invitation_remove_email(requestor, invitation)
+
+        # Assertions
+        mock_get_requestor_email.assert_called_once_with(requestor, portfolio=invitation.portfolio)
+        mock_send_email.assert_called_once_with(
+            "emails/portfolio_removal.txt",
+            "emails/portfolio_removal_subject.txt",
+            to_address="user@example.com",
+            context={
+                "requested_user": None,
+                "portfolio": invitation.portfolio,
+                "requestor_email": "requestor@example.com",
+            },
+        )
+        self.assertTrue(result)
+
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError("Email failed"))
+    @patch("registrar.utility.email_invitations._get_requestor_email")
+    @patch("registrar.utility.email_invitations.logger")
+    def test_send_email_failure(self, mock_logger, mock_get_requestor_email, mock_send_email):
+        """Test that the function returns False and logs an error when email sending fails."""
+        # Mock data
+        requestor = MagicMock()
+        invitation = MagicMock(spec=PortfolioInvitation)
+        invitation.email = "user@example.com"
+        invitation.portfolio.organization_name = "Test Portfolio"
+
+        mock_get_requestor_email.return_value = "requestor@example.com"
+
+        # Call function
+        result = send_portfolio_invitation_remove_email(requestor, invitation)
+
+        # Assertions
+        mock_logger.warning.assert_called_once_with(
+            "Could not send email organization member removal notification to %s for portfolio: %s",
+            invitation.email,
+            invitation.portfolio.organization_name,
+            exc_info=True,
+        )
+        self.assertFalse(result)
+
+    @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=Exception("Unexpected error"))
+    @patch("registrar.utility.email_invitations.logger")
+    def test_requestor_email_retrieval_failure(self, mock_logger, mock_get_requestor_email):
+        """Test that an exception in retrieving requestor email is logged."""
+        # Mock data
+        requestor = MagicMock()
+        invitation = MagicMock(spec=PortfolioInvitation)
+
+        # Call function
+        with self.assertRaises(Exception):
+            send_portfolio_invitation_remove_email(requestor, invitation)
 
         # Assertions
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure

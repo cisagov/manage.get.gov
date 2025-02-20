@@ -2092,7 +2092,8 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self, send_invited_member_removal, mock_send_removal_emails):
         """Success state w/ deleting invited member on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2113,6 +2114,10 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+
+        # Invited member removal email sent successfully
+        send_invited_member_removal.return_value = True
+
         with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
@@ -2136,6 +2141,16 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails not called since invitation
             # is for a basic member
             mock_send_removal_emails.assert_not_called()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_removal.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_invitation_removal_email
+            _, called_kwargs = send_invited_member_removal.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
