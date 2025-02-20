@@ -32,7 +32,7 @@ def extract_a_text(value):
         text_only = re.sub(text_pattern, "", content)
         # Clean up any extra whitespace
         return text_only.strip()
-    
+
     return ""
 
 

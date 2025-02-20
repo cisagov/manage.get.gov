@@ -7,7 +7,6 @@ export function initButtonLinks() {
         button.addEventListener('click', function() {
             // Equivalent to button.getAttribute("data-href")
             const href = this.dataset.href;
-            console.log(`in loop: ${href}`)
             if (href) {
                 window.location.href = href;
             }
