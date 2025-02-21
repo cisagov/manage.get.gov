@@ -236,6 +236,7 @@ class PortfolioMemberEditView(DetailView, View):
             {
                 "form": form,
                 "member": user,
+                "portfolio_permission": portfolio_permission,
             },
         )
 
@@ -355,31 +356,31 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         if removed_domain_ids is None:
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
 
-        if added_domain_ids or removed_domain_ids:
-            try:
-                self._process_added_domains(added_domain_ids, member, request.user, portfolio)
-                self._process_removed_domains(removed_domain_ids, member)
-                messages.success(request, "The domain assignment changes have been saved.")
-                return redirect(reverse("member-domains", kwargs={"pk": pk}))
-            except IntegrityError:
-                messages.error(
-                    request,
-                    "A database error occurred while saving changes. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error("A database error occurred while saving changes.", exc_info=True)
-                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
-            except Exception as e:
-                messages.error(
-                    request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
-                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
-        else:
-            messages.info(request, "No changes detected.")
+        if not (added_domain_ids or removed_domain_ids):
+            messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        try:
+            self._process_added_domains(added_domain_ids, member, request.user, portfolio)
+            self._process_removed_domains(removed_domain_ids, member)
+            messages.success(request, "The domain assignment changes have been saved.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+        except IntegrityError:
+            messages.error(
+                request,
+                "A database error occurred while saving changes. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error("A database error occurred while saving changes.", exc_info=True)
+            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+        except Exception as e:
+            messages.error(
+                request,
+                f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
+            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
@@ -644,31 +645,31 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         if removed_domain_ids is None:
             return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
 
-        if added_domain_ids or removed_domain_ids:
-            try:
-                self._process_added_domains(added_domain_ids, email, request.user, portfolio)
-                self._process_removed_domains(removed_domain_ids, email)
-                messages.success(request, "The domain assignment changes have been saved.")
-                return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
-            except IntegrityError:
-                messages.error(
-                    request,
-                    "A database error occurred while saving changes. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error("A database error occurred while saving changes.", exc_info=True)
-                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
-            except Exception as e:
-                messages.error(
-                    request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
-                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
-        else:
-            messages.info(request, "No changes detected.")
+        if not (added_domain_ids or removed_domain_ids):
+            messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        try:
+            self._process_added_domains(added_domain_ids, email, request.user, portfolio)
+            self._process_removed_domains(removed_domain_ids, email)
+            messages.success(request, "The domain assignment changes have been saved.")
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+        except IntegrityError:
+            messages.error(
+                request,
+                "A database error occurred while saving changes. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error("A database error occurred while saving changes.", exc_info=True)
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+        except Exception as e:
+            messages.error(
+                request,
+                f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """

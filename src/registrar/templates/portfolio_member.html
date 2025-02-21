@@ -31,7 +31,7 @@ Organization member
   <h1 class="margin-bottom-3">Manage member</h1>
 
   <div class="tablet:display-flex tablet:flex-justify">
-    <h2 class="margin-top-0 margin-bottom-3 break-word">
+    <h2 class="margin-top-0 margin-bottom-3 break-word flex-align-self-baseline">
       {% if member %}
         {{ member.email }}
       {% elif portfolio_invitation %}
@@ -46,6 +46,7 @@ Organization member
         data-member-id="{{ member.id }}"
         data-num-domains="{{ portfolio_permission.get_managed_domains_count }}"
         data-member-email="{{ member.email }}"
+        class="flex-align-self-baseline"
       >
         <!-- JS should inject member kebob here -->
         </div>
@@ -56,6 +57,7 @@ Organization member
         data-member-id="{{ portfolio_invitation.id }}"
         data-num-domains="{{ portfolio_invitation.get_managed_domains_count }}"
         data-member-email="{{ portfolio_invitation.email }}"
+        class="flex-align-self-baseline"
       >
         <!-- JS should inject invited kebob here -->
       </div>
@@ -65,9 +67,9 @@ Organization member
 
   <form method="post" id="member-delete-form" action="{{ request.path }}/delete"> {% csrf_token %} </form>
   <address>
-    <strong class="text-primary-dark">Last active:</strong>
+    <strong class="text-primary-darker">Last active:</strong>
     {% if member and member.last_login %}
-        {{ member.last_login }}
+        {{ member.last_login|date:"F j, Y" }}
       {% elif portfolio_invitation %}
         Invited
       {% else %}
@@ -75,7 +77,7 @@ Organization member
       {% endif %}
     <br />
 
-    <strong class="text-primary-dark">Full name:</strong>
+    <strong class="text-primary-darker">Full name:</strong>
     {% if member %}
       {% if member.first_name or member.last_name %}
         {{ member.get_formatted_name }}
@@ -87,7 +89,7 @@ Organization member
     {% endif %}
     <br />
 
-    <strong class="text-primary-dark">Title or organization role:</strong>
+    <strong class="text-primary-darker">Title or organization role:</strong>
     {% if member and member.title %}
       {{ member.title }}
     {% else %}
@@ -101,11 +103,11 @@ Organization member
     {% include "includes/summary_item.html" with title='Member access and permissions' permissions=True value=portfolio_invitation edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% endif %}
 
-  {% comment %}view_button is passed below as true in all cases. This is because manage_button logic will trump view_button logic; ie. if manage_button is true, view_button will never be looked at{% endcomment %}
+  {% comment %}view_button is passed below as true in all cases. This is because editable logic will trump view_button logic; ie. if editable is true, view_button will never be looked at{% endcomment %}
   {% if portfolio_permission %}
-    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_permission.get_managed_domains_count edit_link=domains_url editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
+    {% include "includes/summary_item.html" with title='Domain assignments' domain_mgmt=True value=portfolio_permission.get_managed_domains_count edit_link=domains_url editable=has_edit_members_portfolio_permission view_button=True %}
   {% elif portfolio_invitation %}
-    {% include "includes/summary_item.html" with title='Domain management' domain_mgmt=True value=portfolio_invitation.get_managed_domains_count edit_link=domains_url editable=True manage_button=has_edit_members_portfolio_permission view_button=True %}
+    {% include "includes/summary_item.html" with title='Domain assignments' domain_mgmt=True value=portfolio_invitation.get_managed_domains_count edit_link=domains_url editable=has_edit_members_portfolio_permission view_button=True %}
   {% endif %}
         
 </div>

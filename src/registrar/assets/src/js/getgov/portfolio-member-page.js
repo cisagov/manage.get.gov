@@ -18,7 +18,7 @@ export function initPortfolioNewMemberPageToggle() {
             const unique_id = `${member_type}-${member_id}`;
     
             let cancelInvitationButton = member_type === "invitedmember" ? "Cancel invitation" : "Remove member";
-            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `More Options for ${member_name}`);
+            wrapperDeleteAction.innerHTML = generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `More Options for ${member_name}`, "usa-icon--large");
     
             // This easter egg is only for fixtures that dont have names as we are displaying their emails
             // All prod users will have emails linked to their account
@@ -100,8 +100,8 @@ export function initAddNewMemberPageListeners() {
       const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
 
       permissionSections.forEach(section => {
-        // Find the <h3> element text
-        const sectionTitle = section.textContent;
+        // Find the <h3> element text, strip out the '*'
+        const sectionTitle = section.textContent.trim().replace(/\*$/, "") + ": ";
 
         // Find the associated radio buttons container (next fieldset)
         const fieldset = section.nextElementSibling;
@@ -128,25 +128,29 @@ export function initAddNewMemberPageListeners() {
       });
     } else {
       // for admin users, the permissions are always the same
-      appendPermissionInContainer('Domains', 'Viewer', permissionDetailsContainer);
-      appendPermissionInContainer('Domain requests', 'Creator', permissionDetailsContainer);
-      appendPermissionInContainer('Members', 'Manager', permissionDetailsContainer);
+      appendPermissionInContainer('Domains: ', 'Viewer', permissionDetailsContainer);
+      appendPermissionInContainer('Domain requests: ', 'Creator', permissionDetailsContainer);
+      appendPermissionInContainer('Members: ', 'Manager', permissionDetailsContainer);
     }
   }
 
   function appendPermissionInContainer(sectionTitle, permissionDisplay, permissionContainer) {
     // Create new elements for the content
-    const titleElement = document.createElement("h4");
-    titleElement.textContent = sectionTitle;
-    titleElement.classList.add("text-primary", "margin-bottom-0");
+    const elementContainer = document.createElement("p");
+    elementContainer.classList.add("margin-top-0", "margin-bottom-1");
 
-    const permissionElement = document.createElement("p");
+    const titleElement = document.createElement("strong");
+    titleElement.textContent = sectionTitle;
+    titleElement.classList.add("text-primary-darker");
+
+    const permissionElement = document.createElement("span");
     permissionElement.textContent = permissionDisplay;
-    permissionElement.classList.add("margin-top-0");
 
     // Append to the content container
-    permissionContainer.appendChild(titleElement);
-    permissionContainer.appendChild(permissionElement);
+    elementContainer.appendChild(titleElement);
+    elementContainer.appendChild(permissionElement);
+
+    permissionContainer.appendChild(elementContainer);
   }
 
   /*
