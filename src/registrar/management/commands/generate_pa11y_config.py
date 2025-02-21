@@ -67,7 +67,8 @@ class Command(BaseCommand):
             "import",
             "export",
             "process_import",
-            "process_export"
+            "process_export",
+            "waffleflag"
         ]
         
         # Specific endpoints to exclude
