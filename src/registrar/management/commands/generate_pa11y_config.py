@@ -61,7 +61,13 @@ class Command(BaseCommand):
             "logout",
             "login",
             "password_change",
-            "reports"
+            "reports",
+            "auditlog",
+            "password",
+            "import",
+            "export",
+            "process_import",
+            "process_export"
         ]
         
         # Specific endpoints to exclude
