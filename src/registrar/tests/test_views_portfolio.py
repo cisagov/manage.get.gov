@@ -951,14 +951,12 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Admin")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
-        self.assertContains(
-            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
-        )
+        self.assertContains(response, "This member does not manage any domains.")
 
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator
@@ -1066,13 +1064,11 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Viewer")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
-        self.assertContains(
-            response, 'This member does not manage any domains. To assign this member a domain, click "Manage"'
-        )
+        self.assertContains(response, "This member does not manage any domains.")
         # Assert buttons and links within the page are correct
         self.assertContains(response, "wrapper-delete-action")  # test that 3 dot is present
         self.assertContains(response, "sprite.svg#edit")  # test that Edit link is present
-        self.assertContains(response, "sprite.svg#settings")  # test that Manage link is present
+        self.assertContains(response, "sprite.svg#edit")  # test that Manage link is present
         self.assertNotContains(response, "sprite.svg#visibility")  # test that View link is not present
 
     @less_console_noise_decorator
@@ -2744,7 +2740,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     def test_post_with_no_changes(self):
-        """Test that no changes message is displayed when no changes are made."""
+        """Test that success message is displayed when no changes are made."""
         self.client.force_login(self.user)
 
         response = self.client.post(self.url, {})
@@ -2756,7 +2752,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "No changes detected.")
+        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -3085,7 +3081,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "No changes detected.")
+        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
