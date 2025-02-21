@@ -1,6 +1,7 @@
-import { hookupYesNoListener, hookupRadioTogglerListener } from './radios.js';
+import { hookupYesNoListener } from './radios.js';
 import { initDomainValidators } from './domain-validators.js';
-import { initFormsetsForms, triggerModalOnDsDataForm, nameserversFormListener } from './formset-forms.js';
+import { initFormsetsForms, triggerModalOnDsDataForm } from './formset-forms.js';
+import { initFormNameservers } from './form-nameservers'
 import { initializeUrbanizationToggle } from './urbanization.js';
 import { userProfileListener, finishUserSetupListener } from './user-profile.js';
 import { handleRequestingEntityFieldset } from './requesting-entity.js';
@@ -20,7 +21,7 @@ initDomainValidators();
 
 initFormsetsForms();
 triggerModalOnDsDataForm();
-//nameserversFormListener();
+initFormNameservers();
 
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
