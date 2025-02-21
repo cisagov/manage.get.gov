@@ -4,7 +4,7 @@
 {% block content %}
     {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
     {% url 'get-portfolio-json' as url %}
-    <input id="portfolio_json_url" class="display-none" value="{{url}}" />
+    <input type="hidden" id="portfolio_json_url" class="display-none" aria-hidden="true" value="{{url}}" />
     {{ block.super }}
 {% endblock content %}
 
