@@ -321,6 +321,7 @@ class DomainRequestFixture:
         if mythical_creature:
             print("trying to create a specific request?")
             random_request_type = random.choice(cls.DOMAINREQUESTS)
+            # Action needed rather than started because fixtures auto-approves started
             request_data = {
                 "status": DomainRequest.DomainRequestStatus.ACTION_NEEDED,
                 "organization_name": "Candy Forest",
