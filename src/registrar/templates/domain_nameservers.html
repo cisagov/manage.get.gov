@@ -35,6 +35,7 @@
   <div>
     <h1>Name Servers</h1>
     
+    <!-- TODO: move this to the right -->
     <button type="button" class="usa-button" id="nameserver-add-form">
       Add name servers
     </button>
@@ -114,14 +115,14 @@
                 <td>{{ form.ip.value }}</td>
                 <td>
                   <div class="tablet:display-flex tablet:flex-row">
-                    <button class='usa-button usa-button--unstyled margin-right-2'>
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2'>
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#edit"></use>
                       </svg>
                       Edit <span class="usa-sr-only">{{ form.server }}</span>
                     </button>
 
-                    <button 
+                    <a 
                       role="button" 
                       id="button-trigger-delete-{{ form.server.value }}"
                       class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
@@ -130,7 +131,7 @@
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                       </svg>
                       Delete
-                    </button>
+                    </a>
 
                     <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
                       <div class="usa-accordion__heading">
@@ -166,9 +167,24 @@
                 <td>{{ form.server }}</td>
                 <td>{{ form.ip }}</td>
                 <td>
-                    <button class="usa-button usa-button--unstyled display-block">Save</button>
-                    <button class="usa-button usa-button--unstyled display-block">Cancel</button>
-                    <button class="usa-button usa-button--unstyled text-secondary display-block">Delete</button>
+                    <button class="usa-button usa-button--unstyled display-block" type="submit">Save</button>
+                    
+                    <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
+                    <button
+                          type="submit"
+                          class="usa-button usa-button--unstyled display-block"
+                          name="btn-cancel-click"
+                          aria-label="Reset the data in the name server form to the registry state (undo changes)"
+                      >Cancel
+                    </button>
+                    <a
+                      role="button"
+                      href="#toggle-delete-nameserver" 
+                      class="usa-button usa-button--unstyled text-secondary display-block"
+                      aria-controls="toggle-delete-nameserver"
+                      data-open-modal>
+                      Delete
+                    </a>
                   </div>
                 </td>
               </tr>
@@ -232,7 +248,7 @@
               class="usa-button"
           >Save
         </button>
-
+        <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
         <button
               type="submit"
               class="usa-button usa-button--outline"

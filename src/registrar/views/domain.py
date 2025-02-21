@@ -770,7 +770,6 @@ class DomainNameserversView(DomainFormBaseView):
         """Adjust context from FormMixin for formsets."""
         context = super().get_context_data(**kwargs)
         # use "formset" instead of "form" for the key
-        print(context)
         context["formset"] = context.pop("form")
         return context
 
@@ -795,8 +794,6 @@ class DomainNameserversView(DomainFormBaseView):
         """
         self._get_domain(request)
         formset = self.get_form()
-
-        logger.debug("got formet")
 
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
