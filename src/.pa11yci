@@ -11,7 +11,7 @@
         "wait for url to be #"
     ],
     "urls": [
-        "http://localhost:8080//",
+        "http://localhost:8080/",
         "http://localhost:8080/domains/",
         "http://localhost:8080/no-organization-domains/",
         "http://localhost:8080/members/",

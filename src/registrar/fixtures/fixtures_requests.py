@@ -322,7 +322,7 @@ class DomainRequestFixture:
             print("trying to create a specific request?")
             random_request_type = random.choice(cls.DOMAINREQUESTS)
             request_data = {
-                "status": DomainRequest.DomainRequestStatus.STARTED,
+                "status": DomainRequest.DomainRequestStatus.ACTION_NEEDED,
                 "organization_name": "Candy Forest",
             }
             domain_request = DomainRequest(

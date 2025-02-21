@@ -153,9 +153,9 @@ class Command(BaseCommand):
                 if route.endswith("$"):
                     route = route[:-1]
                 route = self.substitute_regex_params(route)
-            
+
             full_route = prefix + route
-            if not full_route.endswith("/"):
+            if full_route and not full_route.endswith("/"):
                 full_route += "/"
 
             full_url = f"{BASE_URL}{full_route}"
