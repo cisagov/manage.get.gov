@@ -51,7 +51,7 @@
 // This won't work on the Members table rows because that table has show-more rows
 // Currently, that's not an issue since that Members table is not wrapped in the
 // reponsive wrapper.
-@media screen and (max-width: 1023px) {
+@include at-media-max("desktop") {
     tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
         top: auto;
         bottom: -10px;
