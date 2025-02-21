@@ -47,6 +47,8 @@
 }
 
 .usa-accordion--more-actions .usa-accordion__content {
+    // We need to match the height of the trigger button
+    // to align the 'popup' underneath
     top: 20px;
     &.top-28px {
         top: 28px;

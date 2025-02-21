@@ -100,7 +100,7 @@ export function initAddNewMemberPageListeners() {
       const permissionSections = document.querySelectorAll(`#${permission_details_div_id} > h3`);
 
       permissionSections.forEach(section => {
-        // Find the <h3> element text
+        // Find the <h3> element text, strip out the '*'
         const sectionTitle = section.textContent.trim().replace(/\*$/, "") + ": ";
 
         // Find the associated radio buttons container (next fieldset)
