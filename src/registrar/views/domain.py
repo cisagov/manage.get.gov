@@ -1,20 +1,23 @@
-"""Views for a single Domain.
-
-Authorization is handled by the `DomainPermissionView`. To ensure that only
-authorized users can see information on a domain, every view here should
-inherit from `DomainPermissionView` (or DomainInvitationPermissionCancelView).
-"""
-
 from datetime import date
 import logging
 import requests
 from django.contrib import messages
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
+from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from registrar.decorators import (
+    HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
+    IS_DOMAIN_MANAGER,
+    IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
+    IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+    IS_STAFF_MANAGING_DOMAIN,
+    grant_access,
+)
 from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
@@ -40,7 +43,6 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
 )
 from registrar.models.utility.contact_error import ContactError
-from registrar.views.utility.permission_views import UserDomainRolePermissionDeleteView
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
@@ -67,18 +69,21 @@ from epplibwrapper import (
 
 from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
-from .utility import DomainPermissionView, DomainInvitationPermissionCancelView
 from django import forms
 
 logger = logging.getLogger(__name__)
 
 
-class DomainBaseView(DomainPermissionView):
+class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
     in session cache on GETs. Also provides methods for getting
     and setting the domain in cache
     """
+
+    model = Domain
+    pk_url_kwarg = "domain_pk"
+    context_object_name = "domain"
 
     def get(self, request, *args, **kwargs):
         self._get_domain(request)
@@ -95,7 +100,7 @@ class DomainBaseView(DomainPermissionView):
         self.session = request.session
         # domain:private_key is the session key to use for
         # caching the domain in the session
-        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         cached_domain = self.session.get(domain_pk)
 
         if cached_domain:
@@ -108,8 +113,135 @@ class DomainBaseView(DomainPermissionView):
         """
         update domain in the session cache
         """
-        domain_pk = "domain:" + str(self.kwargs.get("pk"))
+        domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
+            "registrar.full_access_permission"
+        )
+        context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
+        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["is_editable"] = self.is_editable()
+        # Stored in a variable for the linter
+        action = "analyst_action"
+        action_location = "analyst_action_location"
+        # Flag to see if an analyst is attempting to make edits
+        if action in self.request.session:
+            context[action] = self.request.session[action]
+        if action_location in self.request.session:
+            context[action_location] = self.request.session[action_location]
+
+        return context
+
+    def is_editable(self):
+        """Returns whether domain is editable in the context of the view"""
+        domain_editable = self.object.is_editable()
+        if not domain_editable:
+            return False
+
+        # if user is domain manager or analyst or admin, return True
+        if (
+            self.can_access_other_user_domains(self.object.id)
+            or UserDomainRole.objects.filter(user=self.request.user, domain=self.object).exists()
+        ):
+            return True
+
+        return False
+
+    def can_access_domain_via_portfolio(self, pk):
+        """Most views should not allow permission to portfolio users.
+        If particular views allow access to the domain pages, they will need to override
+        this function.
+        """
+        return False
+
+    def has_permission(self):
+        """Check if this user has access to this domain.
+
+        The user is in self.request.user and the domain needs to be looked
+        up from the domain's primary key in self.kwargs["domain_pk"]
+        """
+        pk = self.kwargs["domain_pk"]
+
+        # test if domain in editable state
+        if not self.in_editable_state(pk):
+            return False
+
+        # if we need to check more about the nature of role, do it here.
+        return True
+
+    def in_editable_state(self, pk):
+        """Is the domain in an editable state"""
+        requested_domain = None
+        if Domain.objects.filter(id=pk).exists():
+            requested_domain = Domain.objects.get(id=pk)
+
+        # if domain is editable return true
+        if requested_domain and requested_domain.is_editable():
+            return True
+        return False
+
+    def can_access_other_user_domains(self, pk):
+        """Checks to see if an authorized user (staff or superuser)
+        can access a domain that they did not create or was invited to.
+        """
+
+        # Check if the user is permissioned...
+        user_is_analyst_or_superuser = self.request.user.has_perm(
+            "registrar.analyst_access_permission"
+        ) or self.request.user.has_perm("registrar.full_access_permission")
+
+        if not user_is_analyst_or_superuser:
+            return False
+
+        # Check if the user is attempting a valid edit action.
+        # In other words, if the analyst/admin did not click
+        # the 'Manage Domain' button in /admin,
+        # then they cannot access this page.
+        session = self.request.session
+        can_do_action = (
+            "analyst_action" in session
+            and "analyst_action_location" in session
+            and session["analyst_action_location"] == pk
+        )
+
+        if not can_do_action:
+            return False
+
+        # Analysts may manage domains, when they are in these statuses:
+        valid_domain_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            # Edge case - some domains do not have
+            # a status or DomainInformation... aka a status of 'None'.
+            # It is necessary to access those to correct errors.
+            None,
+        ]
+
+        requested_domain = None
+        if DomainInformation.objects.filter(id=pk).exists():
+            requested_domain = DomainInformation.objects.get(id=pk)
+
+        # if no domain information or domain request exist, the user
+        # should be able to manage the domain; however, if domain information
+        # and domain request exist, and domain request is not in valid status,
+        # user should not be able to manage domain
+        if (
+            requested_domain
+            and requested_domain.domain_request
+            and requested_domain.domain_request.status not in valid_domain_statuses
+        ):
+            return False
+
+        # Valid session keys exist,
+        # the user is permissioned,
+        # and it is in a valid status
+        return True
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -257,6 +389,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             )
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -311,6 +444,7 @@ class DomainView(DomainBaseView):
         self._update_session_with_domain()
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -344,9 +478,9 @@ class DomainRenewalView(DomainBaseView):
             and (requested_domain.is_expiring() or requested_domain.is_expired())
         )
 
-    def post(self, request, pk):
+    def post(self, request, domain_pk):
 
-        domain = get_object_or_404(Domain, id=pk)
+        domain = get_object_or_404(Domain, id=domain_pk)
 
         form = DomainRenewalForm(request.POST)
 
@@ -363,10 +497,10 @@ class DomainRenewalView(DomainBaseView):
                         "This domain has not been renewed for one year, "
                         "please email help@get.gov if this problem persists.",
                     )
-            return HttpResponseRedirect(reverse("domain", kwargs={"pk": pk}))
+            return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
         # if not valid, render the template with error messages
-        # passing editable, has_domain_renewal_flag, and is_editable for re-render
+        # passing editable and is_editable for re-render
         return render(
             request,
             "domain_renewal.html",
@@ -374,12 +508,12 @@ class DomainRenewalView(DomainBaseView):
                 "domain": domain,
                 "form": form,
                 "is_editable": True,
-                "has_domain_renewal_flag": True,
                 "is_domain_manager": True,
             },
         )
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainOrgNameAddressView(DomainFormBaseView):
     """Organization view"""
 
@@ -396,7 +530,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-org-name-address", kwargs={"pk": self.object.pk})
+        return reverse("domain-org-name-address", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
@@ -421,6 +555,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
             return super().has_permission()
 
 
+@grant_access(IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSubOrganizationView(DomainFormBaseView):
     """Suborganization view"""
 
@@ -455,7 +590,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-suborganization", kwargs={"pk": self.object.pk})
+        return reverse("domain-suborganization", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the organization name and mailing address."""
@@ -467,6 +602,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
         return super().form_valid(form)
 
 
+@grant_access(IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSeniorOfficialView(DomainFormBaseView):
     """Domain senior official editing view."""
 
@@ -494,7 +630,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the overview page for the domain."""
-        return reverse("domain-senior-official", kwargs={"pk": self.object.pk})
+        return reverse("domain-senior-official", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, save the senior official."""
@@ -524,6 +660,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
             return super().has_permission()
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
@@ -587,7 +724,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
-        return reverse("prototype-domain-dns", kwargs={"pk": self.object.pk})
+        return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -740,6 +877,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return super().post(request)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
 
@@ -764,7 +902,7 @@ class DomainNameserversView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the nameservers page for the domain."""
-        return reverse("domain-dns-nameservers", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-nameservers", kwargs={"domain_pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         """Adjust context from FormMixin for formsets."""
@@ -867,6 +1005,7 @@ class DomainNameserversView(DomainFormBaseView):
         return super().form_valid(formset)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSSECView(DomainFormBaseView):
     """Domain DNSSEC editing view."""
 
@@ -885,7 +1024,7 @@ class DomainDNSSECView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the DNSSEC page for the domain."""
-        return reverse("domain-dns-dnssec", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-dnssec", kwargs={"domain_pk": self.object.pk})
 
     def post(self, request, *args, **kwargs):
         """Form submission posts to this view."""
@@ -904,6 +1043,7 @@ class DomainDNSSECView(DomainFormBaseView):
         return self.form_valid(form)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDsDataView(DomainFormBaseView):
     """Domain DNSSEC ds data editing view."""
 
@@ -936,7 +1076,7 @@ class DomainDsDataView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the DS data page for the domain."""
-        return reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.object.pk})
+        return reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
         """Adjust context from FormMixin for formsets."""
@@ -1022,6 +1162,7 @@ class DomainDsDataView(DomainFormBaseView):
             return super().form_valid(formset)
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainSecurityEmailView(DomainFormBaseView):
     """Domain security email editing view."""
 
@@ -1042,7 +1183,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
 
     def get_success_url(self):
         """Redirect to the security email page for the domain."""
-        return reverse("domain-security-email", kwargs={"pk": self.object.pk})
+        return reverse("domain-security-email", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """The form is valid, call setter in model."""
@@ -1093,6 +1234,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         return redirect(self.get_success_url())
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
@@ -1188,6 +1330,7 @@ class DomainUsersView(DomainBaseView):
         return context
 
 
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainAddUserView(DomainFormBaseView):
     """Inside of a domain's user management, a form for adding users.
 
@@ -1199,7 +1342,7 @@ class DomainAddUserView(DomainFormBaseView):
     form_class = DomainAddUserForm
 
     def get_success_url(self):
-        return reverse("domain-users", kwargs={"pk": self.object.pk})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.pk})
 
     def form_valid(self, form):
         """Add the specified user to this domain."""
@@ -1285,8 +1428,10 @@ class DomainAddUserView(DomainFormBaseView):
         messages.success(self.request, f"Added user {email}.")
 
 
-class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermissionCancelView):
-    object: DomainInvitation
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
+    model = DomainInvitation
+    pk_url_kwarg = "domain_invitation_pk"
     fields = []
 
     def post(self, request, *args, **kwargs):
@@ -1304,26 +1449,29 @@ class DomainInvitationCancelView(SuccessMessageMixin, DomainInvitationPermission
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
         return f"Canceled invitation to {self.object.email}."
 
 
-class DomainDeleteUserView(UserDomainRolePermissionDeleteView):
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeleteUserView(DeleteView):
     """Inside of a domain's user management, a form for deleting users."""
 
-    object: UserDomainRole  # workaround for type mismatch in DeleteView
+    object: UserDomainRole
+    model = UserDomainRole
+    context_object_name = "userdomainrole"
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
-        domain_id = self.kwargs.get("pk")
+        domain_id = self.kwargs.get("domain_pk")
         user_id = self.kwargs.get("user_pk")
         return UserDomainRole.objects.get(domain=domain_id, user=user_id)
 
     def get_success_url(self):
         """Refreshes the page after a delete is successful"""
-        return reverse("domain-users", kwargs={"pk": self.object.domain.id})
+        return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self):
         """Returns confirmation content for the deletion event"""

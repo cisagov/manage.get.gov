@@ -5695,19 +5695,35 @@ const createHeaderButton = (header, headerName) => {
   buttonEl.setAttribute("tabindex", "0");
   buttonEl.classList.add(SORT_BUTTON_CLASS);
   // ICON_SOURCE
+  // ---- END DOTGOV EDIT
+  // Change icons on sort, use source from arro_upward and arrow_downward
+  // buttonEl.innerHTML = Sanitizer.escapeHTML`
+  // <svg class="${PREFIX}-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  //   <g class="descending" fill="transparent">
+  //     <path d="M17 17L15.59 15.59L12.9999 18.17V2H10.9999V18.17L8.41 15.58L7 17L11.9999 22L17 17Z" />
+  //   </g>
+  //   <g class="ascending" fill="transparent">
+  //     <path transform="rotate(180, 12, 12)" d="M17 17L15.59 15.59L12.9999 18.17V2H10.9999V18.17L8.41 15.58L7 17L11.9999 22L17 17Z" />
+  //   </g>
+  //   <g class="unsorted" fill="transparent">
+  //     <polygon points="15.17 15 13 17.17 13 6.83 15.17 9 16.58 7.59 12 3 7.41 7.59 8.83 9 11 6.83 11 17.17 8.83 15 7.42 16.41 12 21 16.59 16.41 15.17 15"/>
+  //   </g>
+  // </svg>
+  // `;
   buttonEl.innerHTML = Sanitizer.escapeHTML`
   <svg class="${PREFIX}-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <g class="descending" fill="transparent">
-      <path d="M17 17L15.59 15.59L12.9999 18.17V2H10.9999V18.17L8.41 15.58L7 17L11.9999 22L17 17Z" />
+      <path d="m20 12-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>
     </g>
     <g class="ascending" fill="transparent">
-      <path transform="rotate(180, 12, 12)" d="M17 17L15.59 15.59L12.9999 18.17V2H10.9999V18.17L8.41 15.58L7 17L11.9999 22L17 17Z" />
+      <path d="m4 12 1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/>
     </g>
     <g class="unsorted" fill="transparent">
       <polygon points="15.17 15 13 17.17 13 6.83 15.17 9 16.58 7.59 12 3 7.41 7.59 8.83 9 11 6.83 11 17.17 8.83 15 7.42 16.41 12 21 16.59 16.41 15.17 15"/>
     </g>
   </svg>
   `;
+  // ---- END DOTGOV EDIT
   header.appendChild(buttonEl);
   updateSortLabel(header, headerName);
 };

@@ -1063,7 +1063,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Invited")
         self.assertContains(response, portfolio_invitation.email)
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Viewer, all")
+        self.assertContains(response, "Viewer")
         self.assertContains(response, "Creator")
         self.assertContains(response, "Manager")
         self.assertContains(
@@ -1320,7 +1320,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Perform delete
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check that the response is 200
         self.assertEqual(response.status_code, 200)
@@ -1354,7 +1356,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Attempt to delete
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check response is 403 Forbidden
         self.assertEqual(response.status_code, 403)
@@ -1389,7 +1393,9 @@ class TestPortfolio(WebTest):
 
         self.client.force_login(self.user)
         # Perform delete as self.user
-        response = self.client.post(reverse("domain-request-delete", kwargs={"pk": domain_request.pk}), follow=True)
+        response = self.client.post(
+            reverse("domain-request-delete", kwargs={"domain_request_pk": domain_request.pk}), follow=True
+        )
 
         # Check response is 403 Forbidden
         self.assertEqual(response.status_code, 403)
@@ -1669,7 +1675,8 @@ class TestPortfolioMemberDeleteView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_members_table_active_requests(self, send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    def test_portfolio_member_delete_view_members_table_active_requests(self, send_member_removal, send_removal_emails):
         """Error state w/ deleting a member with active request on Members Table"""
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
@@ -1709,12 +1716,15 @@ class TestPortfolioMemberDeleteView(WebTest):
 
             # assert that send_portfolio_admin_removal_emails is not called
             send_removal_emails.assert_not_called()
+            # assert that send_portfolio_member_permission_remove_email is not called
+            send_member_removal.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_members_table_only_admin(self, send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    def test_portfolio_member_delete_view_members_table_only_admin(self, send_member_removal, send_removal_emails):
         """Error state w/ deleting a member that's the only admin on Members Table"""
 
         # I'm a user with admin permission
@@ -1744,12 +1754,15 @@ class TestPortfolioMemberDeleteView(WebTest):
 
             # assert that send_portfolio_admin_removal_emails is not called
             send_removal_emails.assert_not_called()
+            # assert that send_portfolio_member_permission_remove_email is not called
+            send_member_removal.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_table_delete_member_success(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    def test_portfolio_member_table_delete_member_success(self, send_member_removal, mock_send_removal_emails):
         """Success state with deleting on Members Table page bc no active request AND not only admin"""
 
         # I'm a user
@@ -1774,6 +1787,9 @@ class TestPortfolioMemberDeleteView(WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
 
+        # Member removal email sent successfully
+        send_member_removal.return_value = True
+
         # And set that the member has no active requests AND it's not the only admin
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
@@ -1796,12 +1812,23 @@ class TestPortfolioMemberDeleteView(WebTest):
             # assert that send_portfolio_admin_removal_emails is not called
             # because member being removed is not an admin
             mock_send_removal_emails.assert_not_called()
+            # assert that send_portfolio_member_permission_remove_email is called
+            send_member_removal.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_member_permission_remove_email
+            _, called_kwargs = send_member_removal.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["permissions"].user, upp.user)
+            self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_table_delete_admin_success(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    def test_portfolio_member_table_delete_admin_success(self, send_member_removal, mock_send_removal_emails):
         """Success state with deleting on Members Table page bc no active request AND
         not only admin. Because admin, removal emails are sent."""
 
@@ -1828,6 +1855,7 @@ class TestPortfolioMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = True
+        send_member_removal.return_value = True
 
         # And set that the member has no active requests AND it's not the only admin
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
@@ -1850,6 +1878,8 @@ class TestPortfolioMemberDeleteView(WebTest):
 
             # assert that send_portfolio_admin_removal_emails is called
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_member_permission_remove_email is called
+            send_member_removal.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -1859,13 +1889,25 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+            # Get the arguments passed to send_portfolio_member_permission_remove_email
+            _, called_kwargs = send_member_removal.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["permissions"].user, upp.user)
+            self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_table_delete_admin_success_removal_email_fail(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    def test_portfolio_member_table_delete_admin_success_removal_email_fail(
+        self, send_member_removal, mock_send_removal_emails
+    ):
         """Success state with deleting on Members Table page bc no active request AND
-        not only admin. Because admin, removal emails are sent, but fail to send."""
+        not only admin. Because admin, removal emails are sent, but fail to send.
+        Email to removed member also fails to send."""
 
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
@@ -1890,6 +1932,7 @@ class TestPortfolioMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = False
+        send_member_removal.return_value = False
 
         # And set that the member has no active requests AND it's not the only admin
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
@@ -1912,6 +1955,8 @@ class TestPortfolioMemberDeleteView(WebTest):
 
             # assert that send_portfolio_admin_removal_emails is called
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_member_permission_remove_email is called
+            send_member_removal.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -1920,6 +1965,14 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["email"], member_email)
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+            # Get the arguments passed to send_portfolio_member_permission_remove_email
+            _, called_kwargs = send_member_removal.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["permissions"].user, upp.user)
+            self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2045,7 +2098,10 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedmember(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedmember(
+        self, send_invited_member_removal, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited member on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2066,6 +2122,10 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+
+        # Invited member removal email sent successfully
+        send_invited_member_removal.return_value = True
+
         with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
@@ -2089,12 +2149,25 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails not called since invitation
             # is for a basic member
             mock_send_removal_emails.assert_not_called()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_removal.assert_called_once()
+
+            # Get the arguments passed to send_portfolio_invitation_removal_email
+            _, called_kwargs = send_invited_member_removal.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedadmin(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin(
+        self, send_invited_member_email, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2109,6 +2182,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = True
+        send_invited_member_email.return_value = True
 
         # Invite an admin under same portfolio
         invited_member_email = "invited_member@example.com"
@@ -2140,6 +2214,8 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails is called since invitation
             # is for an admin
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_email.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -2149,11 +2225,22 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+            # Get the arguments passed to send_portfolio_invitation_remove_email
+            _, called_kwargs = send_invited_member_email.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_portfolio_member_delete_view_manage_members_page_invitedadmin_email_fails(self, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_member_delete_view_manage_members_page_invitedadmin_email_fails(
+        self, send_invited_member_email, mock_send_removal_emails
+    ):
         """Success state w/ deleting invited admin on Manage Members page should redirect back to Members Table"""
 
         # I'm a user
@@ -2168,6 +2255,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         )
 
         mock_send_removal_emails.return_value = False
+        send_invited_member_email.return_value = False
 
         # Invite an admin under same portfolio
         invited_member_email = "invited_member@example.com"
@@ -2199,6 +2287,8 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # assert send_portfolio_admin_removal_emails is called since invitation
             # is for an admin
             mock_send_removal_emails.assert_called_once()
+            # assert that send_portfolio_invitation_remove_email is called
+            send_invited_member_email.assert_called_once()
 
             # Get the arguments passed to send_portfolio_admin_addition_emails
             _, called_kwargs = mock_send_removal_emails.call_args
@@ -2207,6 +2297,14 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["email"], invited_member_email)
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+
+            # Get the arguments passed to send_portfolio_invitation_remove_email
+            _, called_kwargs = send_invited_member_email.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["requestor"], self.user)
+            self.assertEqual(called_kwargs["invitation"].email, invitation.email)
+            self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
 
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
@@ -3244,7 +3342,9 @@ class TestRequestingEntity(WebTest):
     def test_requesting_entity_page_errors(self):
         """Tests that we get the expected form errors on requesting entity"""
         domain_request = completed_domain_request(user=self.user, portfolio=self.portfolio)
-        response = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        response = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         form = response.forms[0]
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -3334,7 +3434,9 @@ class TestRequestingEntity(WebTest):
 
         domain_request.submit()
 
-        response = self.app.get(reverse("domain-request-status-viewonly", kwargs={"pk": domain_request.pk}))
+        response = self.app.get(
+            reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
@@ -3359,7 +3461,7 @@ class TestRequestingEntity(WebTest):
 
         domain_request.submit()
 
-        response = self.app.get(reverse("domain-request-status", kwargs={"pk": domain_request.pk}))
+        response = self.app.get(reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.pk}))
         self.assertContains(response, "Requesting entity")
         self.assertContains(response, "moon")
         self.assertContains(response, "kepler, AL")
@@ -3970,7 +4072,10 @@ class TestPortfolioMemberEditView(WebTest):
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_member_permissions_basic_to_admin(self, mock_send_removal_emails, mock_send_addition_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
+    def test_edit_member_permissions_basic_to_admin(
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails
+    ):
         """Tests converting a basic member to admin with full permissions."""
         self.client.force_login(self.user)
 
@@ -3985,6 +4090,7 @@ class TestPortfolioMemberEditView(WebTest):
 
         # return indicator that notification emails sent successfully
         mock_send_addition_emails.return_value = True
+        mock_send_update_email.return_value = True
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": basic_permission.id}),
@@ -4004,6 +4110,8 @@ class TestPortfolioMemberEditView(WebTest):
         mock_send_addition_emails.assert_called_once()
         # assert removal emails are not sent
         mock_send_removal_emails.assert_not_called()
+        # assert update email sent
+        mock_send_update_email.assert_called_once()
 
         # Get the arguments passed to send_portfolio_admin_addition_emails
         _, called_kwargs = mock_send_addition_emails.call_args
@@ -4013,14 +4121,22 @@ class TestPortfolioMemberEditView(WebTest):
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+        # Get the arguments passed to send_portfolio_member_permission_update_email
+        _, called_kwargs = mock_send_update_email.call_args
+
+        # Assert the update notification email content
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["permissions"], basic_permission)
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("django.contrib.messages.warning")
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
     def test_edit_member_permissions_basic_to_admin_notification_fails(
-        self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
     ):
         """Tests converting a basic member to admin with full permissions.
         Handle when notification emails fail to send."""
@@ -4037,6 +4153,7 @@ class TestPortfolioMemberEditView(WebTest):
 
         # At least one notification email failed to send
         mock_send_addition_emails.return_value = False
+        mock_send_update_email.return_value = False
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": basic_permission.id}),
@@ -4056,6 +4173,8 @@ class TestPortfolioMemberEditView(WebTest):
         mock_send_addition_emails.assert_called_once()
         # assert no removal emails are sent
         mock_send_removal_emails.assert_not_called()
+        # assert update email sent
+        mock_send_update_email.assert_called_once()
 
         # Get the arguments passed to send_portfolio_admin_addition_emails
         _, called_kwargs = mock_send_addition_emails.call_args
@@ -4065,18 +4184,32 @@ class TestPortfolioMemberEditView(WebTest):
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
-        # Assert warning message is called correctly
-        mock_messages_warning.assert_called_once()
-        warning_args, _ = mock_messages_warning.call_args
-        self.assertIsInstance(warning_args[0], WSGIRequest)
-        self.assertEqual(warning_args[1], "Could not send email notification to existing organization admins.")
+        # Get the arguments passed to send_portfolio_member_permission_update_email
+        _, called_kwargs = mock_send_update_email.call_args
+
+        # Assert the update notification email content
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["permissions"], basic_permission)
+
+        # Assert that messages.warning is called twice
+        self.assertEqual(mock_messages_warning.call_count, 2)
+
+        # Extract the actual messages sent
+        warning_messages = [call_args[0][1] for call_args in mock_messages_warning.call_args_list]
+
+        # Check for the expected messages
+        self.assertIn("Could not send email notification to existing organization admins.", warning_messages)
+        self.assertIn(f"Could not send email notification to {basic_member.email}.", warning_messages)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_member_permissions_admin_to_admin(self, mock_send_removal_emails, mock_send_addition_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
+    def test_edit_member_permissions_admin_to_admin(
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails
+    ):
         """Tests updating an admin without changing permissions."""
         self.client.force_login(self.user)
 
@@ -4086,6 +4219,7 @@ class TestPortfolioMemberEditView(WebTest):
             user=admin_member,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[],
         )
 
         response = self.client.post(
@@ -4098,16 +4232,20 @@ class TestPortfolioMemberEditView(WebTest):
         # Verify redirect and success message
         self.assertEqual(response.status_code, 302)
 
-        # assert addition and removal emails are not sent to portfolio admins
+        # assert update, addition and removal emails are not sent to portfolio admins
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
+        mock_send_update_email.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_member_permissions_basic_to_basic(self, mock_send_removal_emails, mock_send_addition_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
+    def test_edit_member_permissions_basic_to_basic(
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails
+    ):
         """Tests updating an admin without changing permissions."""
         self.client.force_login(self.user)
 
@@ -4119,6 +4257,8 @@ class TestPortfolioMemberEditView(WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
+
+        mock_send_update_email.return_value = True
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": basic_permission.id}),
@@ -4136,13 +4276,25 @@ class TestPortfolioMemberEditView(WebTest):
         # assert addition and removal emails are not sent to portfolio admins
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
+        # assert update email is sent to updated member
+        mock_send_update_email.assert_called_once()
+
+        # Get the arguments passed to send_portfolio_member_permission_update_email
+        _, called_kwargs = mock_send_update_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["permissions"], basic_permission)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
-    def test_edit_member_permissions_admin_to_basic(self, mock_send_removal_emails, mock_send_addition_emails):
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
+    def test_edit_member_permissions_admin_to_basic(
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails
+    ):
         """Tests converting an admin to basic member."""
         self.client.force_login(self.user)
 
@@ -4153,8 +4305,9 @@ class TestPortfolioMemberEditView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
-
+        print(admin_permission)
         mock_send_removal_emails.return_value = True
+        mock_send_update_email.return_value = True
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": admin_permission.id}),
@@ -4173,7 +4326,8 @@ class TestPortfolioMemberEditView(WebTest):
         admin_permission.refresh_from_db()
         self.assertEqual(admin_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
 
-        # assert removal emails are sent to portfolio admins
+        # assert removal emails and update email are sent to portfolio admins
+        mock_send_update_email.assert_called_once()
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_called_once()
 
@@ -4185,14 +4339,22 @@ class TestPortfolioMemberEditView(WebTest):
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+        # Get the arguments passed to send_portfolio_member_permission_update_email
+        _, called_kwargs = mock_send_update_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["permissions"], admin_permission)
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("django.contrib.messages.warning")
     @patch("registrar.views.portfolios.send_portfolio_admin_addition_emails")
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_update_email")
     def test_edit_member_permissions_admin_to_basic_notification_fails(
-        self, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
+        self, mock_send_update_email, mock_send_removal_emails, mock_send_addition_emails, mock_messages_warning
     ):
         """Tests converting an admin to basic member."""
         self.client.force_login(self.user)
@@ -4208,6 +4370,7 @@ class TestPortfolioMemberEditView(WebTest):
 
         # False return indicates that at least one notification email failed to send
         mock_send_removal_emails.return_value = False
+        mock_send_update_email.return_value = False
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"pk": admin_permission.id}),
@@ -4226,9 +4389,10 @@ class TestPortfolioMemberEditView(WebTest):
         admin_permission.refresh_from_db()
         self.assertEqual(admin_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
 
-        # assert removal emails are sent to portfolio admins
+        # assert update email and removal emails are sent to portfolio admins
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_called_once()
+        mock_send_update_email.assert_called_once()
 
         # Get the arguments passed to send_portfolio_admin_removal_emails
         _, called_kwargs = mock_send_removal_emails.call_args
@@ -4238,11 +4402,22 @@ class TestPortfolioMemberEditView(WebTest):
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
-        # Assert warning message is called correctly
-        mock_messages_warning.assert_called_once()
-        warning_args, _ = mock_messages_warning.call_args
-        self.assertIsInstance(warning_args[0], WSGIRequest)
-        self.assertEqual(warning_args[1], "Could not send email notification to existing organization admins.")
+        # Get the arguments passed to send_portfolio_member_permission_update_email
+        _, called_kwargs = mock_send_update_email.call_args
+
+        # Assert the email content
+        self.assertEqual(called_kwargs["requestor"], self.user)
+        self.assertEqual(called_kwargs["permissions"], admin_permission)
+
+        # Assert that messages.warning is called twice
+        self.assertEqual(mock_messages_warning.call_count, 2)
+
+        # Extract the actual messages sent
+        warning_messages = [call_args[0][1] for call_args in mock_messages_warning.call_args_list]
+
+        # Check for the expected messages
+        self.assertIn("Could not send email notification to existing organization admins.", warning_messages)
+        self.assertIn(f"Could not send email notification to {admin_member.email}.", warning_messages)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
