@@ -295,11 +295,11 @@ class UserFixture:
             # We use this user for pa11y, since it is a static file.
             # Respect the mythical creature, *do not* change the id!
             "id": "9999",
-            "username": "80000000-0000-0000-0000-00000000a09b",
-            "first_name": "pa11y-user",
-            "last_name": "special-user",
+            "username": "10000000-0000-0000-0000-000000000001",
+            "first_name": "Mythical",
+            "last_name": "Creature",
             "email": "mythical.creature@igorville.gov",
-            "title": "Wizard",
+            "title": "Reserved pa11y user",
             "phone": "123-456-7890"
         },
     ]

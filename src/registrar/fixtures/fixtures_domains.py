@@ -1,4 +1,5 @@
 from datetime import timedelta
+from django.forms import model_to_dict
 from django.utils import timezone
 import logging
 import random
@@ -8,6 +9,8 @@ from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest
 from registrar.models.domain import Domain
+from registrar.models.domain_information import DomainInformation
+from registrar.models.draft_domain import DraftDomain
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -41,19 +44,17 @@ class DomainFixture(DomainRequestFixture):
         # Approve each user associated with `in review` status domains
         cls._approve_domain_requests(users)
         
-        # this is a request with a hard-coded id for our pa11y tests.
-        # We also need a hard-coded domain id.
-        mythical_request = DomainRequest.objects.filter(id=9999).first()
+        # We need a hard-coded domain for our pa11y tests
+        mythical_creature = User.objects.filter(email="mythical.creature@igorville.gov").first()
+        mythical_request = DomainRequest.objects.filter(creator=mythical_creature, status=DomainRequest.DomainRequestStatus.APPROVED).first()
+        print(f"another mythical_request: {mythical_request}")
         if mythical_request:
-            mythical_domain_information = mythical_request.DomainRequest_info
-            if mythical_domain_information.id != 9999:
-                mythical_domain_information.id = 9999
-                mythical_domain_information.save()
+            # Update the id of the domain request object
+            new_domain = mythical_request.approved_domain
+            print(f"new domain: {new_domain}")
 
-            mythical_domain = mythical_domain_information.domain
-            if mythical_domain.id != 9999:
-                mythical_domain.id = 9999
-                mythical_domain.save()
+            if new_domain:
+                Domain.objects.filter(id=new_domain.id).update(id=9999)
 
     @staticmethod
     def _generate_fake_expiration_date(days_in_future=365):

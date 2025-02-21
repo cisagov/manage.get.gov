@@ -314,6 +314,31 @@ class DomainRequestFixture:
 
         cls._create_domain_requests(users)
 
+        # this is a request with a hard-coded id for our pa11y tests.
+        # Outside of the main for loop for maintability and also due to id conflicts
+        mythical_creature = User.objects.filter(email="mythical.creature@igorville.gov").first()
+        print(f"mythical_creature: {mythical_creature}")
+        if mythical_creature:
+            print("trying to create a specific request?")
+            random_request_type = random.choice(cls.DOMAINREQUESTS)
+            request_data = {
+                "status": DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                "organization_name": "Candy Forest",
+            }
+            domain_request = DomainRequest(
+                created_at=datetime.now(),
+                id=9999,
+                creator=mythical_creature,
+                organization_name=random_request_type["organization_name"],
+            )
+            cls._set_non_foreign_key_fields(domain_request, request_data)
+            cls._set_foreign_key_fields(domain_request, request_data, mythical_creature)
+            domain_request.save()
+            cls._set_many_to_many_relations(domain_request, request_data)
+            print(f"domain_request: creator - {domain_request.creator}, name - {domain_request.requested_domain}")
+        else:
+            logger.error("Could not create hard-coded user for pa11y tests: user does not exist.")
+
     @classmethod
     def _create_domain_requests(cls, users):  # noqa: C901
         """Creates DomainRequests given a list of users."""
@@ -371,12 +396,11 @@ class DomainRequestFixture:
             except Exception as e:
                 logger.warning(e)
         
-        # this is a user with a hard-coded id for our pa11y tests.
-        # We also need a hard-coded domain request id.
-        mythical_request = DomainRequest.objects.filter(creator__email="mythical.creature@igorville.gov").first()
-        if mythical_request and mythical_request.id != 9999:
-            mythical_request.id = 9999
-            mythical_request.save()
+
+        # mythical_request = DomainRequest.objects.filter(creator__email="mythical.creature@igorville.gov").first()
+        # if mythical_request and mythical_request.id != 9999:
+        #     mythical_request.id = 9999
+        #     mythical_request.save()
 
     @classmethod
     def _bulk_create_requests(cls, domain_requests_to_create):
