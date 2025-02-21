@@ -4,24 +4,22 @@
   {% for app in app_list %}
     <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
       <table>
-
-        {# .gov override: add headers #}
-        {% if show_changelinks %}
-          <colgroup span="3"></colgroup>
-        {% else %}
-          <colgroup span="2"></colgroup>
-        {% endif %}
+        {# .gov override: display the app name as a caption rather than a table header #}
+        <caption class="text-bold">{{ app.name }}</caption>
         <thead>
           <tr>
-            {% if show_changelinks %}
-              <th colspan="3" class="primary-th" scope="colgroup">
-                {{ app.name }}
-              </th>
-            {% else %}
-              <th colspan="2" class="primary-th" scope="colgroup">
-                {{ app.name }}
-              </th>
-            {% endif %}
+            {# .gov override: hide headers #}
+              {% comment %} 
+              {% if show_changelinks %}
+                <th colspan="3" class="primary-th" scope="colgroup">
+                  {{ app.name }}
+                </th>
+              {% else %}
+                <th colspan="2" class="primary-th" scope="colgroup">
+                  {{ app.name }}
+                </th>
+              {% endif %} 
+            {% endcomment %}
           </tr>
           <tr>
             <th scope="col">Model</th>
@@ -45,16 +43,17 @@
             {% endif %}
 
             {% if model.add_url %}
-              <td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>
+              {% comment %} Remove the 's' from the end of the string to avoid text like "Add domain requests" {% endcomment %}
+              <td><a href="{{ model.add_url }}" class="addlink" aria-label="Add {{ model.name|slice:":-1" }}">{% translate 'Add' %}</a></td>
             {% else %}
               <td></td>
             {% endif %}
 
             {% if model.admin_url and show_changelinks %}
               {% if model.view_only %}
-                <td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>
+                <td><a href="{{ model.admin_url }}" class="viewlink" aria-label="View {{ model.name }}">{% translate 'View' %}</a></td>
               {% else %}
-                <td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>
+                <td><a href="{{ model.admin_url }}" class="changelink" aria-label="Change {{ model.name }}">{% translate 'Change' %}</a></td>
               {% endif %}
             {% elif show_changelinks %}
               <td></td>
@@ -64,9 +63,20 @@
       </table>
     </div>
   {% endfor %}
-  <div class="module module--custom">
-    <h2>Analytics</h2>
-    <a class="display-block padding-y-1 padding-x-1" href="{% url 'analytics' %}">Dashboard</a>
+  <div class="module">
+    <table class="width-full">
+      <caption class="text-bold">Analytics</caption>
+      <thead>
+        <tr>
+          <th scope="col">Reports</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row"><a href="{% url 'analytics' %}">Dashboard</a></th>
+        </tr>
+      </tbody>
+    </table>
   </div>
 {% else %}
   <p>{% translate 'You don’t have permission to view or edit anything.' %}</p>
