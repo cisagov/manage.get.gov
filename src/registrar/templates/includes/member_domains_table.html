@@ -20,7 +20,7 @@
 
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
 {% url 'get_member_domains_json' as url %}
-<span id="get_member_domains_json_url" class="display-none">{{url}}</span>
+<span id="get_member_domains_json_url" class="display-none" aria-hidden="true">{{url}}</span>
 <section class="section-outlined member-domains margin-top-0 padding-bottom-0 section-outlined--border-base-light" id="member-domains">
     
     <h2>
