@@ -32,60 +32,53 @@
   {% endif %}
   {% endblock breadcrumb %}
 
-  <div>
-    <h1>Name Servers</h1>
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-6">
+      <h1>Name Servers</h1>
+    </div>
     
-    <!-- TODO: move this to the right -->
-    <button type="button" class="usa-button" id="nameserver-add-form">
-      Add name servers
-    </button>
+    <div class="tablet:grid-col-6 text-right--tablet">
+      <button type="button" class="usa-button tablet:float-right" id="nameserver-add-form">
+        Add name servers
+      </button>
+    </div>
   </div>
   <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
 
   <p>Add a name server record by clicking "Add name servers". You must add at least two name servers (13 max).</p>
 
-  {% include "includes/required_fields.html" %}
-  <!-- if initial_data is none -->
-
   {% if formset.initial and formset.forms.0.initial %}
+    
+    {% include "includes/required_fields.html" %}
     <form class="usa-form usa-form--extra-large" method="post" novalidate>
       {% csrf_token %}
       {{ formset.management_form }}
 
-      <div class="display-none nameservers-form">
+      <section class="nameservers-form display-none section-outlined">
         {% for form in formset %}
           {% if forloop.last %}
             <h2>Add a name server</h2>
-
-                {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-                  {% if forloop.counter <= 2 %}
-                    {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-                    {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+            <div class="repeatable-form">
+              <div class="grid-row grid-gap-2 flex-end">
+                <div class="tablet:grid-col-6">
+                  {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                    {% with attr_required=True span_for_text=True %}
                       {% input_with_errors form.server %}
                     {% endwith %}
-                  {% else %}
-                    {% with span_for_text=True %}
-                      {% input_with_errors form.server %}
-                      {% endwith %}
-                  {% endif %}
-                {% endwith %}
-
-                {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
-                  {% input_with_errors form.ip %}
-                {% endwith %}
+                  {% endwith %}
+                </div>
+                <div class="tablet:grid-col-6">
+                  {% with attr_required=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+                    {% input_with_errors form.ip %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
 
           {% endif %}
         {% endfor %}
 
-        {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
-        This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
         <div class="margin-top-2">
-          <button
-                type="submit"
-                class="usa-button"
-            >Save
-          </button>
-
           <button
                 type="submit"
                 class="usa-button usa-button--outline"
@@ -93,8 +86,13 @@
                 aria-label="Reset the data in the name server form to the registry state (undo changes)"
             >Cancel
           </button>
+          <button
+                type="submit"
+                class="usa-button"
+            >Save
+          </button>
         </div>
-      </div>
+      </section>
 
 
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -115,7 +113,7 @@
                 <td>{{ form.ip.value }}</td>
                 <td>
                   <div class="tablet:display-flex tablet:flex-row">
-                    <button type="button" class='usa-button usa-button--unstyled margin-right-2'>
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0'>
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#edit"></use>
                       </svg>
@@ -137,7 +135,7 @@
                       <div class="usa-accordion__heading">
                         <button
                           type="button"
-                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
                           aria-expanded="false"
                           aria-controls="more-actions-{{ form.server.value }}"
                           aria-label=""
@@ -164,10 +162,20 @@
               </tr>
               <!-- Edit row -->
               <tr class="display-none">
-                <td>{{ form.server }}</td>
-                <td>{{ form.ip }}</td>
                 <td>
-                    <button class="usa-button usa-button--unstyled display-block" type="submit">Save</button>
+                  {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                    {% with attr_required=True span_for_text=True add_group_class="margin-top-0" %}
+                      {% input_with_errors form.server %}
+                    {% endwith %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% with attr_required=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="margin-top-0" %}
+                    {% input_with_errors form.ip %}
+                  {% endwith %}
+                </td>
+                <td>
+                    <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
                     <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
                     <button
@@ -201,63 +209,60 @@
     {% comment %}
     No Nameservers.
     We use the double-decker form
-    {% endcomment %}
+    {% endcomment %} 
 
-    <form class="usa-form usa-form--extra-large nameservers-form display-none" method="post" novalidate>
-      <h2>Add name servers</h2>
-      {% csrf_token %}
-      {{ formset.management_form }}
-      {% for form in formset %}
-      <div class="repeatable-form">
-        <div class="grid-row grid-gap-2 flex-end">
-          <div class="tablet:grid-col-5">
-            {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-              {% if forloop.counter <= 2 %}
-                {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-                {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
-                  {% input_with_errors form.server %}
-                {% endwith %}
-              {% else %}
-                {% with span_for_text=True %}
-                  {% input_with_errors form.server %}
+       
+    <section class="nameservers-form display-none section-outlined">
+      {% include "includes/required_fields.html" %} 
+      <form class="usa-form usa-form--extra-large" method="post" novalidate>
+        <h2>Add name servers</h2>
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for form in formset %}
+        <div class="repeatable-form">
+          <div class="grid-row grid-gap-2 flex-end">
+            <div class="tablet:grid-col-6">
+              {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                {% if forloop.counter <= 2 %}
+                  {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+                  {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+                    {% input_with_errors form.server %}
                   {% endwith %}
-              {% endif %}
-            {% endwith %}
-          </div>
-          <div class="tablet:grid-col-5">
-            {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
-              {% input_with_errors form.ip %}
-            {% endwith %}
-          </div>
-          <div class="tablet:grid-col-2">
-            <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-              </svg>Delete
-              <span class="sr-only">Name server {{forloop.counter}}</span>
-            </button>
+                {% else %}
+                  {% with span_for_text=True %}
+                    {% input_with_errors form.server %}
+                    {% endwith %}
+                {% endif %}
+              {% endwith %}
+            </div>
+            <div class="tablet:grid-col-6">
+              {% with attr_required=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+                {% input_with_errors form.ip %}
+              {% endwith %}
+            </div>
           </div>
         </div>
-      </div>
-      {% endfor %}
-      {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
-      This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
-      <div class="margin-top-2">
-        <button
-              type="submit"
-              class="usa-button"
-          >Save
-        </button>
+        {% endfor %}
+          
         <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
-        <button
-              type="submit"
-              class="usa-button usa-button--outline"
-              name="btn-cancel-click"
-              aria-label="Reset the data in the name server form to the registry state (undo changes)"
-          >Cancel
-        </button>
-      </div>
-    </form>
+        <div class="margin-top-2">
+          <button
+                type="submit"
+                class="usa-button usa-button--outline"
+                name="btn-cancel-click"
+                aria-label="Reset the data in the name server form to the registry state (undo changes)"
+            >Cancel
+          </button>
+
+          <button
+                type="submit"
+                class="usa-button"
+            >Save
+          </button>
+        </div>
+      </form>
+
+    </section>
 
   {% endif %}
 {% endblock %}  {# domain_content #}
