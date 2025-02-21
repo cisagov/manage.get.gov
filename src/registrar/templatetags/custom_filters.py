@@ -25,11 +25,15 @@ def extract_a_text(value):
     pattern = r"<a\b[^>]*>(.*?)</a>"
     match = re.search(pattern, value)
     if match:
-        extracted_text = match.group(1)
-    else:
-        extracted_text = ""
+        # Get the content and strip any nested HTML tags
+        content = match.group(1)
+        # Remove any nested HTML tags (like <img>)
+        text_pattern = r"<[^>]+>"
+        text_only = re.sub(text_pattern, "", content)
+        # Clean up any extra whitespace
+        return text_only.strip()
 
-    return extracted_text
+    return ""
 
 
 @register.filter
