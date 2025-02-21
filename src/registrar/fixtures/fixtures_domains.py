@@ -1,5 +1,5 @@
 from datetime import timedelta
-from django.forms import model_to_dict
+from django.db import transaction, connection
 from django.utils import timezone
 import logging
 import random
@@ -54,7 +54,26 @@ class DomainFixture(DomainRequestFixture):
             print(f"new domain: {new_domain}")
 
             if new_domain:
-                Domain.objects.filter(id=new_domain.id).update(id=9999)
+                cls.update_domain_primary_key(new_domain.id, 9999)
+
+    @staticmethod
+    def update_domain_primary_key(old_id, new_id):
+        domain = Domain.objects.get(id=old_id)
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET CONSTRAINTS ALL DEFERRED;")
+
+            for rel in domain._meta.related_objects:
+                if rel.one_to_many or rel.one_to_one:
+                    related_model = rel.related_model
+                    field_name = rel.field.name
+                    filter_kwargs = {field_name: old_id}
+                    update_kwargs = {field_name: new_id}
+
+                    # Update all related records to point to the new primary key
+                    related_model.objects.filter(**filter_kwargs).update(**update_kwargs)
+
+            Domain.objects.filter(id=old_id).update(id=new_id)
 
     @staticmethod
     def _generate_fake_expiration_date(days_in_future=365):
@@ -141,7 +160,7 @@ class DomainFixture(DomainRequestFixture):
         """Bulk update domain requests."""
         if domain_requests_to_update:
             try:
-                DomainRequest.objects.bulk_update(domain_requests_to_update, ["status", "investigator"])
+                DomainRequest.objects.bulk_update(domain_requests_to_update, ["status", "investigator", "approved_domain"])
                 logger.info(f"Successfully updated {len(domain_requests_to_update)} requests.")
             except Exception as e:
                 logger.error(f"Unexpected error during requests bulk update: {e}")

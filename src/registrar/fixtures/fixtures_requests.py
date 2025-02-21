@@ -322,7 +322,7 @@ class DomainRequestFixture:
             print("trying to create a specific request?")
             random_request_type = random.choice(cls.DOMAINREQUESTS)
             request_data = {
-                "status": DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+                "status": DomainRequest.DomainRequestStatus.STARTED,
                 "organization_name": "Candy Forest",
             }
             domain_request = DomainRequest(
@@ -335,7 +335,6 @@ class DomainRequestFixture:
             cls._set_foreign_key_fields(domain_request, request_data, mythical_creature)
             domain_request.save()
             cls._set_many_to_many_relations(domain_request, request_data)
-            print(f"domain_request: creator - {domain_request.creator}, name - {domain_request.requested_domain}")
         else:
             logger.error("Could not create hard-coded user for pa11y tests: user does not exist.")
 
