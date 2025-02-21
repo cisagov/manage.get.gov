@@ -674,27 +674,33 @@ class DotgovDomain(DomainRequestWizard):
           2: ExecutiveNamingRequirementsYesNoForm
           3: ExecutiveNamingRequirementsDetailsForm
         """
+        logger.debug("Validating dotgov domain form")
         # If not a federal executive branch agency, mark executive-related forms for deletion.
         if not (self.domain_request.is_feb()):
             forms_list[2].mark_form_for_deletion()
             forms_list[3].mark_form_for_deletion()
             return all(form.is_valid() for form in forms_list)
 
-        valid = True
-        yesno_form = forms_list[2]
-        details_form = forms_list[3]
+        if not forms_list[2].is_valid():
+            logger.debug("Dotgov domain form is invalid")
+            if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
+                forms_list[3].mark_form_for_deletion()
+            return False
+        
+        logger.debug(f"feb_naming_requirements: {forms_list[2].cleaned_data.get('feb_naming_requirements', None)}")
 
-        if yesno_form.cleaned_data.get("feb_naming_requirements") == "yes":
-            # If the user selects "yes", no details are needed.
-            details_form.mark_form_for_deletion()
+        if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
+            logger.debug("Marking details form for deletion")
+            # If the user selects "yes" or has made no selection, no details are needed.
+            forms_list[3].mark_form_for_deletion()
             valid = all(
                 form.is_valid() for i, form in enumerate(forms_list) if i != 3
             )
         else:
             # "No" was selected – details are required.
             valid = (
-                yesno_form.is_valid() and 
-                details_form.is_valid() and 
+                forms_list[2].is_valid() and 
+                forms_list[3].is_valid() and 
                 all(form.is_valid() for i, form in enumerate(forms_list) if i not in [2, 3])
             )
         return valid

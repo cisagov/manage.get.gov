@@ -625,8 +625,11 @@ class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm):
     def clean(self):
         # Skip validation if this form is not applicable.
         if not (self.domain_request.is_federal() and self.domain_request.federal_type == "Executive"):
-            # If not executive, default to "yes"
-            self.cleaned_data["feb_naming_requirements"] = "yes"
+            # Initialize cleaned_data if it doesn't exist
+            if not hasattr(self, 'cleaned_data'):
+                self.cleaned_data = {}
+            # If not executive, default to None
+            self.cleaned_data["feb_naming_requirements"] = None
             return self.cleaned_data
 
         # Only validate the yes/no field here; details are handled by the separate details form.
@@ -639,7 +642,7 @@ class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm):
         """
         if not self.is_valid():
             return
-        obj.feb_naming_requirements = (self.cleaned_data["feb_naming_requirements"] == "yes")
+        obj.feb_naming_requirements = (self.cleaned_data.get("feb_naming_requirements", None) == "yes")
         obj.save()
 
     @classmethod
@@ -660,6 +663,7 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(attrs={'maxlength': '2000'}),
         max_length=2000,
         required=True,
+        error_messages={"required": ("This field is required.")},
         label="",
         help_text="Maximum 2000 characters allowed.",
     )
@@ -669,6 +673,25 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
             return
         obj.feb_naming_requirements_details = self.cleaned_data["feb_naming_requirements_details"]
         obj.save()
+
+    def is_valid(self):
+        """
+        Validate that details are provided when required.
+        If the form is marked for deletion, bypass validation.
+        """
+        if self.form_data_marked_for_deletion:
+            return True
+            
+        is_valid = super().is_valid()
+        if not is_valid:
+            return False
+
+        # Check if the details field has content
+        details = self.cleaned_data.get('feb_naming_requirements_details', '').strip()
+        if not details:
+            return False
+
+        return True
 
 class PurposeForm(RegistrarForm):
     purpose = forms.CharField(
