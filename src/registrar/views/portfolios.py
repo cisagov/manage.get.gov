@@ -32,6 +32,8 @@ from registrar.utility.email_invitations import (
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
+    send_portfolio_invitation_remove_email,
+    send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
 )
 from registrar.utility.errors import MissingEmailError
@@ -123,60 +125,84 @@ class PortfolioMemberDeleteView(View):
         """
         portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
         member = portfolio_member_permission.user
+        portfolio = portfolio_member_permission.portfolio
 
+        # Validate if the member can be removed
+        error_message = self._validate_member_removal(request, member, portfolio)
+        if error_message:
+            return self._handle_error_response(request, error_message, pk)
+
+        # Attempt to send notification emails
+        self._send_removal_notifications(request, portfolio_member_permission)
+
+        # Passed all error conditions, proceed with deletion
+        portfolio_member_permission.delete()
+
+        # Return success response
+        return self._handle_success_response(request, member.email)
+
+    def _validate_member_removal(self, request, member, portfolio):
+        """
+        Check whether the member can be removed from the portfolio.
+        Returns an error message if removal is not allowed; otherwise, returns None.
+        """
         active_requests_count = member.get_active_requests_count_in_portfolio(request)
-
         support_url = "https://get.gov/contact/"
 
-        error_message = ""
-
         if active_requests_count > 0:
-            # If they have any in progress requests
-            error_message = mark_safe(  # nosec
+            return mark_safe(  # nosec
                 "This member can't be removed from the organization because they have an active domain request. "
                 f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
             )
-        elif member.is_only_admin_of_portfolio(portfolio_member_permission.portfolio):
-            # If they are the last manager of a domain
-            error_message = (
+        if member.is_only_admin_of_portfolio(portfolio):
+            return (
                 "There must be at least one admin in your organization. Give another member admin "
                 "permissions, make sure they log into the registrar, and then remove this member."
             )
+        return None
 
-        # From the Members Table page Else the Member Page
-        if error_message:
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return JsonResponse(
-                    {"error": error_message},
-                    status=400,
-                )
-            else:
-                messages.error(request, error_message)
-                return redirect(reverse("member", kwargs={"pk": pk}))
+    def _handle_error_response(self, request, error_message, pk):
+        """
+        Return an error response (JSON or redirect with messages).
+        """
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"error": error_message}, status=400)
+        messages.error(request, error_message)
+        return redirect(reverse("member", kwargs={"pk": pk}))
 
-        # if member being removed is an admin
-        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
-            try:
-                # attempt to send notification emails of the removal to other portfolio admins
+    def _send_removal_notifications(self, request, portfolio_member_permission):
+        """
+        Attempt to send notification emails about the member's removal.
+        """
+        try:
+            # Notify other portfolio admins if removing an admin
+            if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_member_permission.roles:
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_member_permission.user.email,
                     requestor=request.user,
                     portfolio=portfolio_member_permission.portfolio,
                 ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
-            except Exception as e:
-                self._handle_exceptions(e)
+                    messages.warning(request, "Could not send email notification to existing organization admins.")
 
-        # passed all error conditions
-        portfolio_member_permission.delete()
+            # Notify the member being removed
+            if not send_portfolio_member_permission_remove_email(
+                requestor=request.user, permissions=portfolio_member_permission
+            ):
+                messages.warning(
+                    request, f"Could not send email notification to {portfolio_member_permission.user.email}"
+                )
+        except Exception as e:
+            self._handle_exceptions(e)
 
-        # From the Members Table page Else the Member Page
-        success_message = f"You've removed {member.email} from the organization."
+    def _handle_success_response(self, request, member_email):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You've removed {member_email} from the organization."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
-        else:
-            messages.success(request, success_message)
-            return redirect(reverse("members"))
+        messages.success(request, success_message)
+        return redirect(reverse("members"))
 
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""
@@ -210,6 +236,7 @@ class PortfolioMemberEditView(DetailView, View):
             {
                 "form": form,
                 "member": user,
+                "portfolio_permission": portfolio_permission,
             },
         )
 
@@ -329,31 +356,31 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         if removed_domain_ids is None:
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
 
-        if added_domain_ids or removed_domain_ids:
-            try:
-                self._process_added_domains(added_domain_ids, member, request.user, portfolio)
-                self._process_removed_domains(removed_domain_ids, member)
-                messages.success(request, "The domain assignment changes have been saved.")
-                return redirect(reverse("member-domains", kwargs={"pk": pk}))
-            except IntegrityError:
-                messages.error(
-                    request,
-                    "A database error occurred while saving changes. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error("A database error occurred while saving changes.", exc_info=True)
-                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
-            except Exception as e:
-                messages.error(
-                    request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
-                return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
-        else:
-            messages.info(request, "No changes detected.")
+        if not (added_domain_ids or removed_domain_ids):
+            messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("member-domains", kwargs={"pk": pk}))
+
+        try:
+            self._process_added_domains(added_domain_ids, member, request.user, portfolio)
+            self._process_removed_domains(removed_domain_ids, member)
+            messages.success(request, "The domain assignment changes have been saved.")
+            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+        except IntegrityError:
+            messages.error(
+                request,
+                "A database error occurred while saving changes. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error("A database error occurred while saving changes.", exc_info=True)
+            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+        except Exception as e:
+            messages.error(
+                request,
+                f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
+            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
@@ -458,16 +485,18 @@ class PortfolioInvitedMemberDeleteView(View):
         """
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
 
-        # if invitation being removed is an admin
-        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
-            try:
+        try:
+            # if invitation being removed is an admin
+            if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
                 # attempt to send notification emails of the removal to portfolio admins
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_invitation.email, requestor=request.user, portfolio=portfolio_invitation.portfolio
                 ):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
-            except Exception as e:
-                self._handle_exceptions(e)
+            if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
+                messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
+        except Exception as e:
+            self._handle_exceptions(e)
 
         portfolio_invitation.delete()
 
@@ -616,31 +645,31 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         if removed_domain_ids is None:
             return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
 
-        if added_domain_ids or removed_domain_ids:
-            try:
-                self._process_added_domains(added_domain_ids, email, request.user, portfolio)
-                self._process_removed_domains(removed_domain_ids, email)
-                messages.success(request, "The domain assignment changes have been saved.")
-                return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
-            except IntegrityError:
-                messages.error(
-                    request,
-                    "A database error occurred while saving changes. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error("A database error occurred while saving changes.", exc_info=True)
-                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
-            except Exception as e:
-                messages.error(
-                    request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
-                )
-                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
-                return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
-        else:
-            messages.info(request, "No changes detected.")
+        if not (added_domain_ids or removed_domain_ids):
+            messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+
+        try:
+            self._process_added_domains(added_domain_ids, email, request.user, portfolio)
+            self._process_removed_domains(removed_domain_ids, email)
+            messages.success(request, "The domain assignment changes have been saved.")
+            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+        except IntegrityError:
+            messages.error(
+                request,
+                "A database error occurred while saving changes. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error("A database error occurred while saving changes.", exc_info=True)
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+        except Exception as e:
+            messages.error(
+                request,
+                f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+            )
+            logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """

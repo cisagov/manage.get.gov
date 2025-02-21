@@ -55,9 +55,9 @@
         <h2>What level of access would you like to grant this member?</h2>
       </legend>
 
-      <p class="margin-y-0">Select one <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+      <p class="margin-y-0">Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
 
-      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+      {% with group_classes="margin-top-0" add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors form.role %}
       {% endwith %}
     </fieldset>
@@ -67,7 +67,7 @@
     <!-- Basic access form -->
     {% include "includes/member_basic_permissions.html" %}
     
-    <h3 class="margin-bottom-1">Domain management</h3>
+    <h3 class="margin-bottom-1">Domain assignments</h3>
 
     <p class="margin-top-0">After you invite this person to your organization, you can assign domain management permissions on their member profile.</p>
 
@@ -88,7 +88,7 @@
         aria-controls="invite-member-modal"
         data-open-modal
         >Trigger invite member modal</a>
-        <button id="invite_new_member_submit" type="submit" class="usa-button">Invite Member</button>
+        <button id="invite_new_member_submit" type="submit" class="usa-button">Invite member</button>
     </div>
 
   </form>
@@ -104,13 +104,10 @@
             <h2 class="usa-modal__heading" id="invite-member-heading">
                 Invite this member to the organization?
             </h2>
-            <h3>Member information and permissions</h3>
-            <!-- Display email as a header and access level -->
-            <h4 class="margin-bottom-0">Email</h4>
-            <p class="margin-top-0" id="modalEmail"></p>
+            <h3>Member access and permissions</h3>
 
-            <h4 class="margin-bottom-0">Member Access</h4>
-            <p class="margin-top-0" id="modalAccessLevel"></p>
+            <p class="margin-bottom-1"><strong class="text-primary-darker">Email:</strong> <span id="modalEmail"></span></p>
+            <p class="margin-top-0 margin-bottom-1"><strong class="text-primary-darker">Member access:</strong> <span id="modalAccessLevel"></span></p>
 
             <!-- Dynamic Permissions Details -->
             <div id="permission_details"></div>
@@ -123,7 +120,7 @@
                     <li class="usa-button-group__item">
                         <button
                             type="button"
-                            class="usa-button usa-button--unstyled"
+                            class="usa-button usa-button--unstyled padding-105 text-center"
                             data-close-modal
                             onclick="closeModal()"
                         >

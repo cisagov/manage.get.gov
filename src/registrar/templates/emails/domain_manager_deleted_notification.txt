@@ -11,6 +11,7 @@ MANAGER REMOVED: {{ manager_removed.email }}
 
 WHY DID YOU RECEIVE THIS EMAIL? 
 You’re listed as a domain manager for {{ domain.name }}, so you’ll receive a notification whenever a domain manager is removed from that domain.
+
 If you have questions or concerns, reach out to the person who removed the domain manager or reply to this email.
 
 THANK YOU

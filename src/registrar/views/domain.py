@@ -1258,21 +1258,6 @@ class DomainUsersView(DomainBaseView):
 
         return context
 
-    def get(self, request, *args, **kwargs):
-        """Get method for DomainUsersView."""
-        # Call the parent class's `get` method to get the response and context
-        response = super().get(request, *args, **kwargs)
-
-        # Ensure context is available after the parent call
-        context = response.context_data if hasattr(response, "context_data") else {}
-
-        # Check if context contains `domain_managers_roles` and its length is 1
-        if context.get("domain_manager_roles") and len(context["domain_manager_roles"]) == 1:
-            # Add an info message
-            messages.info(request, "This domain has one manager. Adding more can prevent issues.")
-
-        return response
-
     def _add_domain_manager_roles_to_context(self, context, portfolio):
         """Add domain_manager_roles to context separately, as roles need admin indicator."""
 
