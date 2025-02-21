@@ -466,6 +466,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
             }
         context["domain_request_id"] = self.domain_request.id
+        context["is_executive"] = self.domain_request.is_federal() and self.domain_request.federal_type == "Executive"
         return context
 
     def get_step_list(self) -> list:
@@ -652,13 +653,57 @@ class CurrentSites(DomainRequestWizard):
 
 class DotgovDomain(DomainRequestWizard):
     template_name = "domain_request_dotgov_domain.html"
-    forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
+    forms = [
+        forms.DotGovDomainForm, 
+        forms.AlternativeDomainFormSet,
+        forms.ExecutiveNamingRequirementsYesNoForm,
+        forms.ExecutiveNamingRequirementsDetailsForm,
+    ]
 
     def get_context_data(self):
         context = super().get_context_data()
         context["generic_org_type"] = self.domain_request.generic_org_type
-        context["federal_type"] = self.domain_request.federal_type
+        context["is_feb"] = self.domain_request.is_feb()
         return context
+
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: DotGovDomainForm
+          1: AlternativeDomainFormSet
+          2: ExecutiveNamingRequirementsYesNoForm
+          3: ExecutiveNamingRequirementsDetailsForm
+        """
+        logger.debug("Validating dotgov domain form")
+        # If not a federal executive branch agency, mark executive-related forms for deletion.
+        if not (self.domain_request.is_feb()):
+            forms_list[2].mark_form_for_deletion()
+            forms_list[3].mark_form_for_deletion()
+            return all(form.is_valid() for form in forms_list)
+
+        if not forms_list[2].is_valid():
+            logger.debug("Dotgov domain form is invalid")
+            if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
+                forms_list[3].mark_form_for_deletion()
+            return False
+        
+        logger.debug(f"feb_naming_requirements: {forms_list[2].cleaned_data.get('feb_naming_requirements', None)}")
+
+        if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
+            logger.debug("Marking details form for deletion")
+            # If the user selects "yes" or has made no selection, no details are needed.
+            forms_list[3].mark_form_for_deletion()
+            valid = all(
+                form.is_valid() for i, form in enumerate(forms_list) if i != 3
+            )
+        else:
+            # "No" was selected – details are required.
+            valid = (
+                forms_list[2].is_valid() and 
+                forms_list[3].is_valid() and 
+                all(form.is_valid() for i, form in enumerate(forms_list) if i not in [2, 3])
+            )
+        return valid
 
 
 class Purpose(DomainRequestWizard):
@@ -711,9 +756,7 @@ class OtherContacts(DomainRequestWizard):
 
 
 class AdditionalDetails(DomainRequestWizard):
-
     template_name = "domain_request_additional_details.html"
-
     forms = [
         forms.CisaRepresentativeYesNoForm,
         forms.CisaRepresentativeForm,
