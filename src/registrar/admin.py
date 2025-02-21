@@ -628,6 +628,7 @@ class AdminSortFields:
 
 class AuditedAdmin(admin.ModelAdmin):
     """Custom admin to make auditing easier."""
+    change_form_template = "django/admin/base_change_form.html"
 
     def history_view(self, request, object_id, extra_context=None):
         """On clicking 'History', take admin to the auditlog view for an object."""
@@ -1115,7 +1116,7 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         )
     ]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/base_change_form.html"
 
     # We name the custom prop 'contact' because linter
     # is not allowing a short_description attr on it
@@ -1246,7 +1247,6 @@ class WebsiteResource(resources.ModelResource):
 
 class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom website admin class."""
-
     resource_classes = [WebsiteResource]
 
     # Search
@@ -3086,7 +3086,7 @@ class TransitionDomainAdmin(ListHeaderAdmin):
     search_fields = ["username", "domain_name"]
     search_help_text = "Search by user or domain name."
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/base_change_form.html"
 
 
 class DomainInformationInline(admin.StackedInline):
@@ -4026,7 +4026,7 @@ class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     resource_classes = [PublicContactResource]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/base_change_form.html"
     autocomplete_fields = ["domain"]
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
@@ -4052,7 +4052,7 @@ class VerifiedByStaffAdmin(ListHeaderAdmin):
         "requestor",
     ]
 
-    change_form_template = "django/admin/email_clipboard_change_form.html"
+    change_form_template = "django/admin/base_change_form.html"
 
     def truncated_notes(self, obj):
         # Truncate the 'notes' field to 50 characters

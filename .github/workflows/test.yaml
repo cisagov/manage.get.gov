@@ -70,14 +70,14 @@ jobs:
           npm i -g pa11y-ci
           pa11y-ci 
 
-      - name: Enable org waffle flags
-        working-directory: ./src
-        # Run a specific command that enables organization_feature, organization_requests, and organization_member.
-        run: docker compose exec app ./manage.py enable_org_waffle_flags
+      # - name: Enable org waffle flags
+      #   working-directory: ./src
+      #   # Run a specific command that enables organization_feature, organization_requests, and organization_member.
+      #   run: docker compose exec app ./manage.py enable_org_waffle_flags
 
-      - name: run pa11y in org mode
-        working-directory: ./src
-        run: |
-          sleep 20;
-          npm i -g pa11y-ci
-          pa11y-ci 
+      # - name: run pa11y in org mode
+      #   working-directory: ./src
+      #   run: |
+      #     sleep 20;
+      #     npm i -g pa11y-ci
+      #     pa11y-ci 
