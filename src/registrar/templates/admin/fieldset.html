@@ -19,6 +19,15 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
         {% else %}
             <h2>{{ fieldset.name }}</h2>
         {% endif %}
+    {% else %}
+        {# Add hidden legend for unnamed fieldsets #}
+        <legend class="sr-only">
+            {% if opts %}
+                Overview for {{ opts.verbose_name|capfirst }}
+            {% else %}
+                Form section
+            {% endif %}
+        </legend>
     {% endif %}
 
     {# Customize the markup for the collapse toggle: Do not show a description for the collapse fieldsets, instead we're using the description as a screen reader only legend #}
