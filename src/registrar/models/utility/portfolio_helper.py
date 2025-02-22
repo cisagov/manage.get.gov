@@ -16,7 +16,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_MEMBER = "organization_member", "Member"
+    ORGANIZATION_MEMBER = "organization_member", "Basic"
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
@@ -30,17 +30,17 @@ class UserPortfolioRoleChoices(models.TextChoices):
 class UserPortfolioPermissionChoices(models.TextChoices):
     """ """
 
-    VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
-    VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
+    VIEW_ALL_DOMAINS = "view_all_domains", "Viewer"
+    VIEW_MANAGED_DOMAINS = "view_managed_domains", "Viewer, limited (domains they manage)"
 
     VIEW_MEMBERS = "view_members", "View members"
-    EDIT_MEMBERS = "edit_members", "Create and edit members"
+    EDIT_MEMBERS = "edit_members", "Manager"
 
-    VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-    EDIT_REQUESTS = "edit_requests", "Create and edit requests"
+    VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
+    EDIT_REQUESTS = "edit_requests", "Creator"
 
-    VIEW_PORTFOLIO = "view_portfolio", "View organization"
-    EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
+    VIEW_PORTFOLIO = "view_portfolio", "Viewer"
+    EDIT_PORTFOLIO = "edit_portfolio", "Manager"
 
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):

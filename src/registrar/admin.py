@@ -193,19 +193,107 @@ class MyUserAdminForm(UserChangeForm):
 
 
 class UserPortfolioPermissionsForm(forms.ModelForm):
+    REQUEST_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+        UserPortfolioPermissionChoices.EDIT_REQUESTS,
+    ]
+    
+    DOMAIN_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+        UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+    ]
+    
+    MEMBER_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_MEMBERS,
+    ]
+
+    user = forms.ModelChoiceField(
+        queryset=models.User.objects.all(),
+        label="User"
+    )
+
+    portfolio = forms.ModelChoiceField(
+        queryset=models.Portfolio.objects.all(),
+        label="Portfolio"
+    )
+
+    role = forms.ChoiceField(
+        choices=UserPortfolioRoleChoices.choices,
+        required=True,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Member access"
+    )
+
+    request_permissions = forms.ChoiceField(
+        choices=[(perm.value, perm.label) for perm in REQUEST_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Domain requests"
+    )
+
+    domain_permissions = forms.ChoiceField(
+        choices=[(perm.value, perm.label) for perm in DOMAIN_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Domains"
+    )
+
+    member_permissions = forms.ChoiceField(
+        choices=[(perm.value, perm.label) for perm in MEMBER_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Members"
+    )
+
     class Meta:
         model = models.UserPortfolioPermission
-        fields = "__all__"
-        widgets = {
-            "roles": FilteredSelectMultipleArrayWidget(
-                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "additional_permissions": FilteredSelectMultipleArrayWidget(
-                "additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
-        }
+        fields = ["user", "portfolio", "role", "domain_permissions", "request_permissions", "member_permissions"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        logger.debug("Initializing form")
+        
+        # Populate roles
+        if self.instance and self.instance.pk:
+            if self.instance.roles:
+                logger.debug(f"Setting role: {self.instance.roles[0]}")
+                self.fields["role"].initial = self.instance.roles[0]  # Assuming single role per user
+
+            if self.instance.additional_permissions:
+                logger.debug(f"Existing permissions: {self.instance.additional_permissions}")
+                for perm in self.instance.additional_permissions:
+                    logger.debug(f"Processing permission: {perm}")
+                    if perm in self.REQUEST_PERMISSIONS:
+                        logger.debug("Assigning request permission")
+                        self.fields["request_permissions"].initial = perm
+                    elif perm in self.DOMAIN_PERMISSIONS:
+                        logger.debug("Assigning domain permission")
+                        self.fields["domain_permissions"].initial = perm
+                    elif perm in self.MEMBER_PERMISSIONS:
+                        logger.debug("Assigning member permission")
+                        self.fields["member_permissions"].initial = perm
+
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        self.instance.roles = [cleaned_data.get("role")] if cleaned_data.get("role") else []
+        logger.debug(f"Cleaned roles: {self.instance.roles}")
+
+        if self.instance.roles == [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]:
+            self.instance.additional_permissions = list(
+                filter(None, [
+                    cleaned_data.get("request_permissions"),
+                    cleaned_data.get("domain_permissions"),
+                    cleaned_data.get("member_permissions"),
+                ])
+            )
+        else:
+            self.instance.additional_permissions = []
+        
+        logger.debug(f"Final saved permissions: {self.instance.additional_permissions}")
+
+        return cleaned_data
 
 
 class PortfolioInvitationAdminForm(UserChangeForm):
