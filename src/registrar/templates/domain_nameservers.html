@@ -113,7 +113,7 @@
                 <td>{{ form.ip.value }}</td>
                 <td>
                   <div class="tablet:display-flex tablet:flex-row">
-                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0'>
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 nameserver-edit'>
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#edit"></use>
                       </svg>
@@ -161,7 +161,7 @@
                 </td>
               </tr>
               <!-- Edit row -->
-              <tr class="display-none">
+              <tr class="edit-row display-none">
                 <td>
                   {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
                     {% with attr_required=True span_for_text=True add_group_class="margin-top-0" %}
@@ -179,8 +179,8 @@
                     
                     <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
                     <button
-                          type="submit"
-                          class="usa-button usa-button--unstyled display-block"
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block nameserver-cancel"
                           name="btn-cancel-click"
                           aria-label="Reset the data in the name server form to the registry state (undo changes)"
                       >Cancel
