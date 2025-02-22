@@ -281,6 +281,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
 
         # Store the selected role as a list (assuming single role assignment)
         self.instance.roles = [cleaned_data.get("role")] if cleaned_data.get("role") else []
+        cleaned_data["roles"] = self.instance.roles
 
         # If the selected role is "organization_member," store additional permissions
         if self.instance.roles == [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]:
@@ -297,6 +298,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         else:
             # If the user is an admin, clear any additional permissions
             self.instance.additional_permissions = []
+        cleaned_data["additional_permissions"] = self.instance.additional_permissions
 
         return cleaned_data
 

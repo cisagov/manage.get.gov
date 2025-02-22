@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from registrar import models
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
@@ -19,6 +20,7 @@ from registrar.admin import (
     MyHostAdmin,
     PortfolioInvitationAdmin,
     UserDomainRoleAdmin,
+    UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
     FsmModelResource,
     WebsiteAdmin,
@@ -1636,6 +1638,143 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Check if the response contains the expected static message
         expected_message = "If you cancel the portfolio invitation here"
         self.assertIn(expected_message, response.content.decode("utf-8"))
+
+
+class PortfolioPermissionsFormTest(TestCase):
+
+    def setUp(self):
+        # Create a mock portfolio for testing
+        self.user = create_test_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.user)
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_form_valid_with_required_fields(self):
+        """Test that the form is valid when required fields are filled correctly."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": "view_all_requests",
+            "domain_permissions": "view_all_domains",
+            "member_permissions": "view_members",
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_without_role(self):
+        """Test that the form is invalid if role is missing."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": "",  # Missing role
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertFalse(form.is_valid())
+        self.assertIn("role", form.errors)
+
+    def test_member_role_preserves_permissions(self):
+        """Ensure that selecting 'organization_member' keeps the additional permissions."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            "member_permissions": UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            "portfolio": self.portfolio.id,
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+
+        # Check if form is valid
+        self.assertTrue(form.is_valid())
+
+        # Test if permissions are correctly preserved
+        cleaned_data = form.cleaned_data
+        self.assertIn(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS, cleaned_data["request_permissions"])
+        self.assertIn(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS, cleaned_data["domain_permissions"])
+
+    def test_admin_role_clears_permissions(self):
+        """Ensure that selecting 'organization_admin' clears additional permissions."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            "request_permissions": "view_all_requests",
+            "domain_permissions": "view_all_domains",
+            "member_permissions": "view_members",
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertTrue(form.is_valid())
+
+        # Simulate form save to check cleaned data behavior
+        cleaned_data = form.clean()
+        self.assertEqual(cleaned_data["role"], UserPortfolioRoleChoices.ORGANIZATION_ADMIN)
+        self.assertNotIn("request_permissions", cleaned_data["additional_permissions"])  # Permissions should be removed
+        self.assertNotIn("domain_permissions", cleaned_data["additional_permissions"])
+        self.assertNotIn("member_permissions", cleaned_data["additional_permissions"])
+
+    def test_invalid_permission_choice(self):
+        """Ensure invalid permissions are not accepted."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": "invalid_permission",  # Invalid choice
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertFalse(form.is_valid())
+        self.assertIn("request_permissions", form.errors)
 
 
 class TestHostAdmin(TestCase):
