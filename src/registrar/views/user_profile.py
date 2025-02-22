@@ -1,5 +1,4 @@
-"""Views for a User Profile.
-"""
+"""Views for a User Profile."""
 
 import logging
 
