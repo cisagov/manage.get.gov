@@ -69,6 +69,7 @@ export class MembersTable extends BaseTable {
     const kebabHTML = customTableOptions.hasAdditionalActions ? generateKebabHTML('remove-member', unique_id, cancelInvitationButton, `Expand for more options for ${member.name}`): ''; 
 
     const row = document.createElement('tr');
+    row.classList.add('hide-td-borders');
     let admin_tagHTML = ``;
     if (member.is_admin)
       admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary-dark text-semibold">Admin</span>`
@@ -96,20 +97,26 @@ export class MembersTable extends BaseTable {
         </button>
       `;
 
-      showMoreRow.innerHTML = `<td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0"><div class='grid-row'>${domainsHTML} ${permissionsHTML}</div></td>`;
-      showMoreRow.classList.add('show-more-content');
-      showMoreRow.classList.add('display-none');
+      showMoreRow.innerHTML = `
+        <td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0">
+          ${showMoreButton}
+          <div class='grid-row show-more-content display-none'>
+            ${domainsHTML}
+            ${permissionsHTML}
+          </div>
+        </td>
+      `;
       showMoreRow.id = unique_id;
     }
 
     row.innerHTML = `
-      <th role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
-        ${member.member_display} ${admin_tagHTML} ${showMoreButton}
+      <th class="padding-bottom-0" role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+        ${member.member_display} ${admin_tagHTML}
       </th>
-      <td headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+      <td class="padding-bottom-0" headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
         ${last_active.display_value}
       </td>
-      <td headers="header-action row-header-${unique_id}" class="width--action-column">
+      <td class="padding-bottom-0" headers="header-action row-header-${unique_id}" class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row flex-align-center">
           <a href="${member.action_url}">
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
@@ -146,16 +153,15 @@ export class MembersTable extends BaseTable {
      *
      * @param {HTMLElement} toggleButton - The button that toggles the content visibility.
      * @param {HTMLElement} contentDiv - The content div whose visibility is toggled.
-     * @param {HTMLElement} buttonParentRow - The parent row element containing the button.
      */
-    function toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow) {
+    function toggleShowMoreButton(toggleButton, contentDiv) {
       const spanElement = toggleButton.querySelector('span');
       const useElement = toggleButton.querySelector('use');
       if (contentDiv.classList.contains('display-none')) {
         showElement(contentDiv);
         spanElement.textContent = 'Close';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_less');
-        buttonParentRow.classList.add('hide-td-borders');
+        toggleButton.classList.add('margin-bottom-2');
 
         let ariaLabelText = "Close additional information";
         let ariaLabelPlaceholder = toggleButton.getAttribute("aria-label-placeholder");
@@ -169,7 +175,7 @@ export class MembersTable extends BaseTable {
         hideElement(contentDiv);
         spanElement.textContent = 'Expand';
         useElement.setAttribute('xlink:href', '/public/img/sprite.svg#expand_more');
-        buttonParentRow.classList.remove('hide-td-borders');
+        toggleButton.classList.remove('margin-bottom-2');
 
         let ariaLabelText = "Expand for additional information";
         let ariaLabelPlaceholder = toggleButton.getAttribute("aria-label-placeholder");
@@ -182,14 +188,11 @@ export class MembersTable extends BaseTable {
   
     let toggleButtons = document.querySelectorAll('.usa-button--show-more-button');
     toggleButtons.forEach((toggleButton) => {
-      
-      // get contentDiv for element specified in data-for attribute of toggleButton
-      let dataFor = toggleButton.dataset.for;
-      let contentDiv = document.getElementById(dataFor);
       let buttonParentRow = toggleButton.parentElement.parentElement;
-      if (contentDiv && contentDiv.tagName.toLowerCase() === 'tr' && contentDiv.classList.contains('show-more-content') && buttonParentRow && buttonParentRow.tagName.toLowerCase() === 'tr') {
+      let contentDiv = buttonParentRow.querySelector(".show-more-content");
+      if (contentDiv && buttonParentRow && buttonParentRow.tagName.toLowerCase() === 'tr') {
         toggleButton.addEventListener('click', function() {
-          toggleShowMoreButton(toggleButton, contentDiv, buttonParentRow);
+          toggleShowMoreButton(toggleButton, contentDiv);
         });
       } else {
         console.warn('Found a toggle button with no associated toggleable content or parent row');
