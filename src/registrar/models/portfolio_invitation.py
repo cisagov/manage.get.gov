@@ -9,8 +9,11 @@ from .utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
     cleanup_after_portfolio_member_deletion,
+    get_domain_requests_description_display,
     get_domain_requests_display,
+    get_domains_description_display,
     get_domains_display,
+    get_members_description_display,
     get_members_display,
     get_role_display,
     validate_portfolio_invitation,
@@ -116,6 +119,16 @@ class PortfolioInvitation(TimeStampedModel):
         return get_domains_display(self.roles, self.additional_permissions)
 
     @property
+    def domains_description_display(self):
+        """
+        Returns a string description of the user's domain access level.
+
+        Returns:
+            str: The display name of the user's domain permissions description.
+        """
+        return get_domains_description_display(self.roles, self.additional_permissions)
+
+    @property
     def domain_requests_display(self):
         """
         Returns a string representation of the user's access to domain requests.
@@ -130,6 +143,16 @@ class PortfolioInvitation(TimeStampedModel):
         return get_domain_requests_display(self.roles, self.additional_permissions)
 
     @property
+    def domain_requests_description_display(self):
+        """
+        Returns a string description of the user's access to domain requests.
+
+        Returns:
+            str: The display name of the user's domain request permissions description.
+        """
+        return get_domain_requests_description_display(self.roles, self.additional_permissions)
+
+    @property
     def members_display(self):
         """
         Returns a string representation of the user's access to managing members.
@@ -142,6 +165,16 @@ class PortfolioInvitation(TimeStampedModel):
             str: The display name of the user's member management permissions.
         """
         return get_members_display(self.roles, self.additional_permissions)
+
+    @property
+    def members_description_display(self):
+        """
+        Returns a string description of the user's access to managing members.
+
+        Returns:
+            str: The display name of the user's member management permissions description.
+        """
+        return get_members_description_display(self.roles, self.additional_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
     def retrieve(self):
