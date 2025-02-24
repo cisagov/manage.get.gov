@@ -76,7 +76,7 @@ export class MembersTable extends BaseTable {
 
     // generate html blocks for domains and permissions for the member
     let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
-    let permissionsHTML = this.generatePermissionsHTML(member.permissions, customTableOptions.UserPortfolioPermissionChoices);
+    let permissionsHTML = this.generatePermissionsHTML(member.is_admin, member.permissions, customTableOptions.UserPortfolioPermissionChoices);
 
     // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
     let showMoreButton = '';
@@ -98,9 +98,9 @@ export class MembersTable extends BaseTable {
       `;
 
       showMoreRow.innerHTML = `
-        <td colspan='3' headers="header-member row-header-${unique_id}" class="padding-top-0">
+        <td colspan='4' headers="header-member row-header-${unique_id}" class="padding-top-0">
           ${showMoreButton}
-          <div class='grid-row show-more-content display-none'>
+          <div class='grid-row grid-gap-2 show-more-content display-none'>
             ${domainsHTML}
             ${permissionsHTML}
           </div>
@@ -118,13 +118,13 @@ export class MembersTable extends BaseTable {
       </td>
       <td class="padding-bottom-0" headers="header-action row-header-${unique_id}" class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row flex-align-center">
-          <a href="${member.action_url}">
+          <a href="${member.action_url}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${member.svg_icon}"></use>
             </svg>
             ${member.action_label} <span class="usa-sr-only">${member.name}</span>
           </a>
-          <span class="padding-left-1">${customTableOptions.hasAdditionalActions ? kebabHTML : ''}</span>
+          ${customTableOptions.hasAdditionalActions ? kebabHTML : ''}
         </div>
       </td>
     `;
@@ -250,10 +250,11 @@ export class MembersTable extends BaseTable {
     let domainsHTML = '';
 
     // Only generate HTML if the member has one or more assigned domains
+    
+    domainsHTML += "<div class='desktop:grid-col-4 margin-bottom-2 desktop:margin-bottom-0'>";
+    domainsHTML += "<h4 class='font-body-xs margin-y-0'>Domains assigned</h4>";
     if (num_domains > 0) {
-      domainsHTML += "<div class='desktop:grid-col-5 margin-bottom-2 desktop:margin-bottom-0'>";
-      domainsHTML += "<h4 class='font-body-xs margin-y-0'>Domains assigned</h4>";
-      domainsHTML += `<p class='font-body-xs text-base-dark margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
+      domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
       domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
 
       // Display up to 6 domains with their URLs
@@ -262,12 +263,14 @@ export class MembersTable extends BaseTable {
       }
 
       domainsHTML += "</ul>";
-
-      // If there are more than 6 domains, display a "View assigned domains" link
-      domainsHTML += `<p class="font-body-xs"><a href="${action_url}/domains">View assigned domains</a></p>`;
-
-      domainsHTML += "</div>";
+    } else {
+      domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to 0 domains.</p>`;
     }
+
+    // If there are more than 6 domains, display a "View assigned domains" link
+    domainsHTML += `<p class="font-body-xs"><a href="${action_url}/domains">View domain assignments</a></p>`;
+
+    domainsHTML += "</div>";
 
     return domainsHTML;
   }
@@ -380,40 +383,51 @@ export class MembersTable extends BaseTable {
    * - If no relevant permissions are found, the function returns a message stating that the user has no additional permissions.
    * - The resulting HTML always includes a header "Additional permissions for this member" and appends the relevant permission descriptions.
    */
-  generatePermissionsHTML(member_permissions, UserPortfolioPermissionChoices) {
+  generatePermissionsHTML(is_admin, member_permissions, UserPortfolioPermissionChoices) {
     let permissionsHTML = '';
 
     // Define shared classes across elements for easier refactoring
-    let sharedParagraphClasses = "font-body-xs text-base-dark margin-top-1 p--blockquote";
+    let sharedParagraphClasses = "font-body-xs text-base-darker margin-top-1 p--blockquote";
+
+    // Member access
+    if (is_admin) {
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Member access: <strong>Admin</strong></p>`;
+    } else {
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Member access: <strong>Basic</strong></p>`;
+    }
 
     // Check domain-related permissions
     if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Domains:</strong> Can view all organization domains. Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domains: <strong>Viewer</strong></p>`;
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Domains:</strong> Can manage domains they are assigned to and edit information about the domain (including DNS settings).</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domains: <strong>Viewer, limited</strong></p>`;
     }
 
     // Check request-related permissions
     if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Domain requests:</strong> Can view all organization domain requests. Can create domain requests and modify their own requests.</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>Creator</strong></p>`;
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Domain requests (view-only):</strong> Can view all organization domain requests. Can't create or modify any domain requests.</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>Viewer</strong></p>`;
+    } else {
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>No access</strong></p>`;
     }
 
     // Check member-related permissions
     if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Members:</strong> Can manage members including inviting new members, removing current members, and assigning domains to members.</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>Manager</strong></p>`;
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><strong class='text-base-dark'>Members (view-only):</strong> Can view all organizational members. Can't manage any members.</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>Viewer</strong></p>`;
+    } else {
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>No access</strong></p>`;
     }
 
     // If no specific permissions are assigned, display a message indicating no additional permissions
     if (!permissionsHTML) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'><b>No additional permissions:</b> There are no additional permissions for this member.</p>`;
+      permissionsHTML += `<p class='${sharedParagraphClasses}'>No additional permissions: <strong>There are no additional permissions for this member</strong>.</p>`;
     }
 
     // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = `<div class='desktop:grid-col-7'><h4 class='font-body-xs margin-y-0'>Additional permissions for this member</h4>${permissionsHTML}</div>`;
+    permissionsHTML = `<div class='desktop:grid-col-8'><h4 class='font-body-xs margin-y-0'>Member access and permissions</h4>${permissionsHTML}</div>`;
     
     return permissionsHTML;
   }

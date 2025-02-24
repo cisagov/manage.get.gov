@@ -13,7 +13,16 @@ from registrar.models import (
     Portfolio,
     SeniorOfficial,
 )
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import (
+    UserPortfolioPermissionChoices,
+    UserPortfolioRoleChoices,
+    get_domain_requests_description_display,
+    get_domain_requests_display,
+    get_domains_description_display,
+    get_domains_display,
+    get_members_description_display,
+    get_members_display,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +135,16 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
     domain_permissions = forms.ChoiceField(
         choices=[
-            (UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value, "Viewer, limited"),
-            (UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value, "Viewer"),
+            (
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value,
+                get_domains_display(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None),
+            ),
+            (
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value,
+                get_domains_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+                ),
+            ),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -139,9 +156,19 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
     domain_request_permissions = forms.ChoiceField(
         choices=[
-            ("no_access", "No access"),
-            (UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value, "Viewer"),
-            (UserPortfolioPermissionChoices.EDIT_REQUESTS.value, "Creator"),
+            ("no_access", get_domain_requests_display(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None)),
+            (
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                get_domain_requests_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+                ),
+            ),
+            (
+                UserPortfolioPermissionChoices.EDIT_REQUESTS.value,
+                get_domain_requests_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.EDIT_REQUESTS]
+                ),
+            ),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -153,8 +180,13 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
     member_permissions = forms.ChoiceField(
         choices=[
-            ("no_access", "No access"),
-            (UserPortfolioPermissionChoices.VIEW_MEMBERS.value, "Viewer"),
+            ("no_access", get_members_display(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None)),
+            (
+                UserPortfolioPermissionChoices.VIEW_MEMBERS.value,
+                get_members_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_MEMBERS]
+                ),
+            ),
         ],
         widget=forms.RadioSelect,
         required=False,
@@ -191,19 +223,31 @@ class BasePortfolioMemberForm(forms.ModelForm):
 
         # Adds a <p> description beneath each option
         self.fields["domain_permissions"].descriptions = {
-            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: "Can view only the domains they manage",
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: "Can view all domains for the organization",
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS.value: get_domains_description_display(
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None
+            ),
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS.value: get_domains_description_display(
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
+            ),
         }
         self.fields["domain_request_permissions"].descriptions = {
             UserPortfolioPermissionChoices.EDIT_REQUESTS.value: (
-                "Can view all domain requests for the organization and create requests"
+                get_domain_requests_description_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.EDIT_REQUESTS]
+                )
             ),
-            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value: "Can view all domain requests for the organization",
-            "no_access": "Cannot view or create domain requests",
+            UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value: (
+                get_domain_requests_description_display(
+                    UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS]
+                )
+            ),
+            "no_access": get_domain_requests_description_display(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None),
         }
         self.fields["member_permissions"].descriptions = {
-            UserPortfolioPermissionChoices.VIEW_MEMBERS.value: "Can view all members permissions",
-            "no_access": "Cannot view member permissions",
+            UserPortfolioPermissionChoices.VIEW_MEMBERS.value: get_members_description_display(
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER, [UserPortfolioPermissionChoices.VIEW_MEMBERS]
+            ),
+            "no_access": get_members_description_display(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, None),
         }
 
         # Map model instance values to custom form fields
@@ -217,6 +261,9 @@ class BasePortfolioMemberForm(forms.ModelForm):
         """
         cleaned_data = super().clean()
         role = cleaned_data.get("role")
+
+        # handle role
+        cleaned_data["roles"] = [role] if role else []
 
         # Get required fields for the selected role. Then validate all required fields for the role.
         required_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
@@ -235,9 +282,6 @@ class BasePortfolioMemberForm(forms.ModelForm):
         # Edgecase: Member uses a special form value for None called "no_access".
         if cleaned_data.get("member_permissions") == "no_access":
             cleaned_data["member_permissions"] = None
-
-        # Handle roles
-        cleaned_data["roles"] = [role]
 
         # Handle additional_permissions
         valid_fields = self.ROLE_REQUIRED_FIELDS.get(role, [])
