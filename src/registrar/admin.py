@@ -208,8 +208,8 @@ class PortfolioPermissionsForm(forms.ModelForm):
     ]
 
     DOMAIN_PERMISSIONS = [
-        UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
         UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+        UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
     ]
 
     MEMBER_PERMISSIONS = [
