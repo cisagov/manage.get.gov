@@ -17,14 +17,14 @@
       {% endif %}    
 
       <li class="usa-sidenav__item">
-        {% url 'domain-dns' pk=domain.id as url %}
+        {% url 'domain-dns' domain_pk=domain.id as url %}
         <a href="{{ url }}" {% if request.path|startswith:url %}class="usa-current"{% endif %}">
           DNS
         </a>
         {% if request.path|startswith:url %}
         <ul class="usa-sidenav__sublist">
           <li class="usa-sidenav__item">
-            {% url 'domain-dns-nameservers' pk=domain.id as url %} 
+            {% url 'domain-dns-nameservers' domain_pk=domain.id as url %} 
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -33,7 +33,7 @@
           </li>
 
           <li class="usa-sidenav__item">
-            {% url 'domain-dns-dnssec' pk=domain.id as url %}
+            {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path|startswith:url %}class="usa-current"{% endif %}
             >
@@ -43,7 +43,7 @@
               {% if domain.dnssecdata is not None or request.path|startswith:url and request.path|endswith:'dsdata' %}
               <ul class="usa-sidenav__sublist">
                 <li class="usa-sidenav__item">
-                  {% url 'domain-dns-dnssec-dsdata' pk=domain.id as url %}
+                  {% url 'domain-dns-dnssec-dsdata' domain_pk=domain.id as url %}
                   <a href="{{ url }}"
                     {% if request.path == url %}class="usa-current"{% endif %}
                   >
