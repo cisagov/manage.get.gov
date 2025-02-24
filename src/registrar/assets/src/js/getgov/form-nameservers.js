@@ -49,8 +49,8 @@ export class NameserverForm {
         hideElement(this.addNameserverButton);
     }
 
-    handleEditClick(e) {
-        let editButton = e.target;
+    handleEditClick(event) {
+        let editButton = event.target;
         let readOnlyRow = editButton.closest('tr'); // Find the closest row
         let editRow = readOnlyRow.nextElementSibling; // Get the next row
 
@@ -70,8 +70,8 @@ export class NameserverForm {
         showElement(editRow);
     }
 
-    handleCancelClick(e) {
-        let cancelButton = e.target;
+    handleCancelClick(event) {
+        let cancelButton = event.target;
         let editRow = cancelButton.closest('tr'); // Find the closest row
         let readOnlyRow = editRow.previousElementSibling; // Get the next row
 
