@@ -110,10 +110,10 @@ export class MembersTable extends BaseTable {
     }
 
     row.innerHTML = `
-      <th class="padding-bottom-0" role="rowheader" headers="header-member" data-label="member email" id='row-header-${unique_id}'>
+      <th class="padding-bottom-0" role="rowheader" headers="header-member" data-label="Member" id='row-header-${unique_id}'>
         ${member.member_display} ${admin_tagHTML}
       </th>
-      <td class="padding-bottom-0" headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="last_active">
+      <td class="padding-bottom-0" headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="Last active">
         ${last_active.display_value}
       </td>
       <td class="padding-bottom-0" headers="header-action row-header-${unique_id}" class="width--action-column">
