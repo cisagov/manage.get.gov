@@ -5,9 +5,9 @@
   {% if has_add_permission %}
     <p class="margin-0 padding-0">
       {% url cl.opts|admin_urlname:'add' as add_url %}
-      <a href="{% add_preserved_filters add_url is_popup to_field %}" class="addlink">
+      <button data-href="{% add_preserved_filters add_url is_popup to_field %}" class="addlink use-button-as-link">
         {% blocktranslate with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktranslate %}
-      </a>
+      </button>
     </p>  
   {% endif %}
 {% endblock %}

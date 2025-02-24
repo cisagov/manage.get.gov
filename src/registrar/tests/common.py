@@ -234,11 +234,14 @@ class MockUserLogin:
         if request.user.is_anonymous:
             user = None
             UserModel = get_user_model()
-            username = "Testy"
+            # Corresponds to a special user in our pa11y tests at id 9999.
+            # See fixtures_users.py for more details.
+            username = "80000000-0000-0000-0000-00000000a09b"
             args = {
                 UserModel.USERNAME_FIELD: username,
             }
             user, _ = UserModel.objects.get_or_create(**args)
+            user.is_superuser = True
             user.is_staff = True
             # Create or retrieve the group
             group, _ = UserGroup.objects.get_or_create(name="full_access_group")
