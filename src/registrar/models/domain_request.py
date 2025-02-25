@@ -1405,7 +1405,7 @@ class DomainRequest(TimeStampedModel):
             # generic_org_type is either blank or None, assume no
             return False
         if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
-            return self.federal_type == DomainRequest.FederalChoices.EXECUTIVE
+            return self.federal_type == BranchChoices.EXECUTIVE
         return False
 
     def is_federal(self) -> Union[bool, None]:
