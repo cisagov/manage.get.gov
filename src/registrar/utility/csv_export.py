@@ -38,11 +38,18 @@ from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemoveNull
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
-
+from registrar.models.utility.portfolio_helper import (
+    UserPortfolioRoleChoices,
+    get_domain_requests_description_display,
+    get_domain_requests_display,
+    get_domains_description_display,
+    get_domains_display,
+    get_members_description_display,
+    get_members_display,
+)
 logger = logging.getLogger(__name__)
 
 
@@ -479,7 +486,7 @@ class MemberExport(BaseExport):
         """
         return [
             "Email",
-            "Organization admin",
+            "Access level",
             "Invited by",
             "Joined date",
             "Last active",
@@ -503,13 +510,13 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Organization admin": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
+            "Access level": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
-            "Domain requests": UserPortfolioPermission.get_domain_request_permission_display(roles, permissions),
-            "Member management": UserPortfolioPermission.get_member_permission_display(roles, permissions),
-            "Domain management": bool(length_user_managed_domains > 0),
+            "Domain requests": f'{get_domain_requests_display(roles, permissions)}: {get_domain_requests_description_display(roles, permissions)}',
+            "Member management": f'{get_members_display(roles, permissions)}: {get_members_description_display(roles, permissions)}',
+            "Domain management": f'{get_domains_display(roles, permissions)}: {get_domains_description_display(roles, permissions)}',
             "Number of domains": length_user_managed_domains,
             "Domains": ",".join(user_managed_domains),
         }
