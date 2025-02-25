@@ -137,8 +137,8 @@
   <div
     class="usa-modal"
     id="toggle-dnssec-alert"
-    aria-labelledby="Are you sure you want to continue?"
-    aria-describedby="Your DNSSEC records will be deleted from the registry."
+    title="Are you sure you want to continue?"
+    aria-label="Your DNSSEC records will be deleted from the registry."
     data-force-action
   >
       {% include 'includes/modal.html' with cancel_button_resets_ds_form=True modal_heading="Warning: You are about to remove all DS records on your domain." modal_description="To fully disable DNSSEC: In addition to removing your DS records here, you’ll need to delete the DS records at your DNS host. To avoid causing your domain to appear offline, you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button_id="disable-override-click-button" modal_button_text="Remove all DS data" modal_button_class="usa-button--secondary" %}
