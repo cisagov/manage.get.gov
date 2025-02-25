@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
+from registrar.forms.domain_request_wizard import ExecutiveNamingRequirementsDetailsForm, ExecutiveNamingRequirementsYesNoForm
+from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -2413,7 +2415,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         so_page = org_contact_result.follow()
         self.assertContains(so_page, "Domain requests from cities")
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -2496,7 +2498,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
-        print(dotgov_page)
 
         self.assertContains(dotgov_page, "medicare.gov")
 
@@ -2520,6 +2521,86 @@ class DomainRequestTests(TestWithUser, WebTest):
         dotgov_page = current_sites_result.click(str(self.TITLES["dotgov_domain"]), index=0)
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
+
+    # @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_request_dotgov_domain_FEB_naming_requirements(self):
+        """
+        Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
+        contains additional questions for OMB.
+        """
+        agency, _ = FederalAgency.objects.get_or_create(
+            agency="US Treasury Dept",
+            federal_type=BranchChoices.EXECUTIVE,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            creator=self.user,
+            organization_name="Test Portfolio", 
+            organization_type=Portfolio.OrganizationChoices.FEDERAL,
+            federal_agency=agency,
+        )
+
+        portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        intro_page = self.app.get(reverse("domain-request:start"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        portfolio_requesting_entity = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- REQUESTING ENTITY PAGE  ----
+        requesting_entity_form = portfolio_requesting_entity.forms[0]
+        requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requesting_entity_result = requesting_entity_form.submit()
+
+        # ---- CURRENT SITES PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_page = requesting_entity_result.follow()
+        current_sites_form = current_sites_page.forms[0]
+        current_sites_form["current_sites-0-website"] = "www.treasury.com"
+
+        # test saving the page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = current_sites_result.follow()
+
+        # Make sure the dynamic example content doesn't show
+        self.assertNotContains(dotgov_page, "medicare.gov")
+
+        # Make sure the link at the top directs to OPM FEB guidance
+        self.assertContains(dotgov_page, "https://get.gov/domains/executive-branch-guidance/")
+
+        # Check for header of first FEB form
+        self.assertContains(dotgov_page, "Does this submission meet each domain naming requirement?")
+
+        # Check for label of second FEB form
+        self.assertContains(dotgov_page, "Provide details below")
+
+        # Check that the yes/no form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements")
+
+        # Check that the details form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements_details")
+
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

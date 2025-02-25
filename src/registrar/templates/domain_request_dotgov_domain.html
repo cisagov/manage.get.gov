@@ -98,10 +98,11 @@
     </p>
   </fieldset>
 
-  {{ forms.2.management_form }}
-  {{ forms.3.management_form }}
-
   {% if requires_feb_questions %}
+
+    {{ forms.2.management_form }}
+    {{ forms.3.management_form }}
+
     <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
       <legend>
         <h2>Does this submission meet each domain naming requirement?</h2>
