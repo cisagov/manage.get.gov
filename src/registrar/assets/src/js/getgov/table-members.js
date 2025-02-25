@@ -257,14 +257,19 @@ export class MembersTable extends BaseTable {
     domainsHTML += `<section aria-labelledby='domains-assigned--heading-${unique_id}' tabindex='0'>`
     if (num_domains > 0) {
       domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
-      domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
+      if (num_domains > 1) {
+        domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
 
-      // Display up to 6 domains with their URLs
-      for (let i = 0; i < num_domains && i < 6; i++) {
-        domainsHTML += `<li><a class="font-body-xs" href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
+        // Display up to 6 domains with their URLs
+        for (let i = 0; i < num_domains && i < 6; i++) {
+          domainsHTML += `<li><a class="font-body-xs" href="${domain_urls[i]}">${domain_names[i]}</a></li>`;
+        }
+
+        domainsHTML += "</ul>";
+      } else {
+        // We don't display this in a list for better screenreader support, when only one item exists.
+        domainsHTML += `<a class="font-body-xs" href="${domain_urls[0]}">${domain_names[0]}</a>`;
       }
-
-      domainsHTML += "</ul>";
     } else {
       domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to 0 domains.</p>`;
     }
