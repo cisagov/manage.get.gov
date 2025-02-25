@@ -66,15 +66,16 @@
     <div
     class="usa-modal usa-modal--django-admin"
     id="toggle-extend-expiration-alert"
-    aria-label="Are you sure you want to extend the expiration date?"
-    title="This expiration date will be extended."
+    aria-labelledby="toggle-extend-expiration-alert__heading"
+    aria-describedby="toggle-extend-expiration-alert__description"
     >
         <div class="usa-modal__content">
             <div class="usa-modal__main">
-                <h2 class="usa-modal__heading">
+                <h2 class="usa-modal__heading" id="toggle-extend-expiration-alert__heading" aria-hidden="true">
                     Are you sure you want to extend the expiration date?
                 </h2>
                 <div class="usa-prose">
+                    <div class="usa-sr-only" id="toggle-extend-expiration-alert__description">This expiration date will be extended.</div>
                     <p>
                         This will extend the expiration date by one year from today.
                         {# Acts as a <br> #}
@@ -130,15 +131,16 @@
     <div
     class="usa-modal usa-modal--django-admin"
     id="toggle-place-on-hold"
-    aria-label="Are you sure you want to place this domain on hold?"
-    title="This domain will be put on hold"
+    aria-labelledby="toggle-place-on-hold__heading"
+    aria-describedby="toggle-place-on-hold__description"
     >
         <div class="usa-modal__content">
             <div class="usa-modal__main">
-                <h2 class="usa-modal__heading">
+                <h2 class="usa-modal__heading" id="toggle-place-on-hold__heading">
                     Are you sure you want to place this domain on hold?
                 </h2>
                 <div class="usa-prose">
+                    <div class="usa-sr-only" id="toggle-place-on-hold__description">This domain will be put on hold.</div>
                     <p>
                         When a domain is on hold:
                     </p>
@@ -197,15 +199,16 @@
     <div
     class="usa-modal usa-modal--django-admin"
     id="toggle-remove-from-registry"
-    aria-label="Are you sure you want to remove this domain from the registry?"
-    title="This domain will be removed."
+    aria-labelledby="toggle-remove-from-registry__heading"
+    aria-describedby="toggle-remove-from-registry__description"
     >
         <div class="usa-modal__content">
             <div class="usa-modal__main">
-                <h2 class="usa-modal__heading">
+                <h2 class="usa-modal__heading" id="toggle-remove-from-registry__heading" aria-hidden="true">
                     Are you sure you want to remove this domain from the registry?
                 </h2>
                 <div class="usa-prose">
+                    <div id="toggle-remove-from-registry__description" class="usa-sr-only">This domain will be removed.</div>
                     <p>
                         When a domain is removed from the registry:
                     </p>

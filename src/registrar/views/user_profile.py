@@ -41,7 +41,7 @@ class UserProfileView(DetailView, FormMixin):
         if (
             hasattr(self.user, "finished_setup")
             and not self.user.finished_setup
-            and self.user.verification_type != User.VerificationTypeChoices.REGULAR
+            #and self.user.verification_type != User.VerificationTypeChoices.REGULAR
         ):
             context["show_confirmation_modal"] = True
 

@@ -199,18 +199,21 @@
     </div>
 </div>
 
+{% comment %} For some reason, this modal and only this modal, wants aria-label and aria-describedby -
+but double reads this content when aria-hidden is not on the <h2>. {% endcomment %}
 <div
     class="usa-modal"
     id="transfer-and-delete"
-    aria-label="Are you sure you want to continue?"
-    title="This action will delete {{ selected_user }}"
+    aria-labelledby="transfer-and-delete-heading"
+    aria-describedby="transfer-and-delete-description"
     >
         <div class="usa-modal__content">
             <div class="usa-modal__main">
-                <h2 class="usa-modal__heading" id="transfer-and-delete-heading">
+                <h2 class="usa-modal__heading" id="transfer-and-delete-heading" aria-hidden="true">
                     Are you sure you want to transfer data and delete this user?
                 </h2>
                 <div class="usa-prose">
+                    <div class="usa-sr-only" id="transfer-and-delete-description">This action will delete {{ selected_user }}</div>
                     {% if selected_user != logged_in_user %}
                         <p>Username: <b>{{ selected_user.username }}</b><br>
                         Name: <b>{{ selected_user.first_name }} {{ selected_user.last_name }}</b><br>
