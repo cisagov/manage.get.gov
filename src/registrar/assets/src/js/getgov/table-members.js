@@ -75,8 +75,8 @@ export class MembersTable extends BaseTable {
       admin_tagHTML = `<span class="usa-tag margin-left-1 bg-primary-dark text-semibold">Admin</span>`
 
     // generate html blocks for domains and permissions for the member
-    let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url);
-    let permissionsHTML = this.generatePermissionsHTML(member.is_admin, member.permissions, customTableOptions.UserPortfolioPermissionChoices);
+    let domainsHTML = this.generateDomainsHTML(num_domains, member.domain_names, member.domain_urls, member.action_url, unique_id);
+    let permissionsHTML = this.generatePermissionsHTML(member.is_admin, member.permissions, customTableOptions.UserPortfolioPermissionChoices, unique_id);
 
     // domainsHTML block and permissionsHTML block need to be wrapped with hide/show toggle, Expand
     let showMoreButton = '';
@@ -243,16 +243,18 @@ export class MembersTable extends BaseTable {
    * @param {number} num_domains - The number of domains the member is assigned to.
    * @param {Array} domain_names - An array of domain names.
    * @param {Array} domain_urls - An array of corresponding domain URLs.
+   * @param {Array} unique_id - A unique row id.
    * @returns {string} - A string of HTML displaying the domains assigned to the member.
    */
-  generateDomainsHTML(num_domains, domain_names, domain_urls, action_url) {
+  generateDomainsHTML(num_domains, domain_names, domain_urls, action_url, unique_id) {
     // Initialize an empty string for the HTML
     let domainsHTML = '';
 
     // Only generate HTML if the member has one or more assigned domains
     
     domainsHTML += "<div class='desktop:grid-col-4 margin-bottom-2 desktop:margin-bottom-0'>";
-    domainsHTML += "<h4 class='font-body-xs margin-y-0'>Domains assigned</h4>";
+    domainsHTML += `<h4 id='domains-assigned--heading-${unique_id}' class='font-body-xs margin-y-0'>Domains assigned</h4>`;
+    domainsHTML += `<section aria-labelledby='member-access--heading-${unique_id}' tabindex='0'>`
     if (num_domains > 0) {
       domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
       domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
@@ -269,7 +271,7 @@ export class MembersTable extends BaseTable {
 
     // If there are more than 6 domains, display a "View assigned domains" link
     domainsHTML += `<p class="font-body-xs"><a href="${action_url}/domains">View domain assignments</a></p>`;
-
+    domainsHTML += "</section>"
     domainsHTML += "</div>";
 
     return domainsHTML;
@@ -368,7 +370,7 @@ export class MembersTable extends BaseTable {
    *        - VIEW_ALL_REQUESTS
    *        - EDIT_MEMBERS
    *        - VIEW_MEMBERS
-   * 
+   * @param {String} unique_id
    * @returns {string} - A string of HTML representing the user's additional permissions.
    *                     If the user has no specific permissions, it returns a default message
    *                     indicating no additional permissions.
@@ -383,51 +385,51 @@ export class MembersTable extends BaseTable {
    * - If no relevant permissions are found, the function returns a message stating that the user has no additional permissions.
    * - The resulting HTML always includes a header "Additional permissions for this member" and appends the relevant permission descriptions.
    */
-  generatePermissionsHTML(is_admin, member_permissions, UserPortfolioPermissionChoices) {
-    let permissionsHTML = '';
-
-    // Define shared classes across elements for easier refactoring
-    let sharedParagraphClasses = "font-body-xs text-base-darker margin-top-1 p--blockquote";
-
-    // Member access
-    if (is_admin) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Member access: <strong>Admin</strong></p>`;
-    } else {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Member access: <strong>Basic</strong></p>`;
-    }
-
-    // Check domain-related permissions
+  generatePermissionsHTML(is_admin, member_permissions, UserPortfolioPermissionChoices, unique_id) {
+    // 1. Role
+    const memberAccessValue = is_admin ? "Admin" : "Basic";
+    
+    // 2. Domain access
+    let domainValue = "No access";
     if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domains: <strong>Viewer</strong></p>`;
+      domainValue = "Viewer";
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domains: <strong>Viewer, limited</strong></p>`;
+      domainValue = "Viewer, limited";
     }
-
-    // Check request-related permissions
+    
+    // 3. Request access
+    let requestValue = "No access";
     if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>Creator</strong></p>`;
+      requestValue = "Creator";
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>Viewer</strong></p>`;
-    } else {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Domain requests: <strong>No access</strong></p>`;
+      requestValue = "Viewer";
     }
-
-    // Check member-related permissions
+    
+    // 4. Member access 
+    let memberValue = "No access";
     if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_MEMBERS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>Manager</strong></p>`;
+      memberValue = "Manager";
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_MEMBERS)) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>Viewer</strong></p>`;
-    } else {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>Members: <strong>No access</strong></p>`;
+      memberValue = "Viewer";
     }
-
-    // If no specific permissions are assigned, display a message indicating no additional permissions
-    if (!permissionsHTML) {
-      permissionsHTML += `<p class='${sharedParagraphClasses}'>No additional permissions: <strong>There are no additional permissions for this member</strong>.</p>`;
-    }
-
-    // Add a permissions header and wrap the entire output in a container
-    permissionsHTML = `<div class='desktop:grid-col-8'><h4 class='font-body-xs margin-y-0'>Member access and permissions</h4>${permissionsHTML}</div>`;
+    
+    // Helper function for faster element refactoring
+    const createPermissionItem = (label, value) => {
+      return `<p class="font-body-xs text-base-darker margin-top-1 p--blockquote">${label}: <strong>${value}</strong></p>`;
+    };
+    const permissionsHTML = `
+    <div class="desktop:grid-col-8">
+      <h4 id="member-access--heading-${unique_id}" class="font-body-xs margin-y-0">
+        Member access and permissions
+      </h4>
+      <section aria-labelledby="member-access--heading-${unique_id}" tabindex="0">
+        ${createPermissionItem("Member access", memberAccessValue)}
+        ${createPermissionItem("Domains", domainValue)}
+        ${createPermissionItem("Domain requests", requestValue)}
+        ${createPermissionItem("Members", memberValue)}
+      </section>
+    </div>
+    `;
     
     return permissionsHTML;
   }
