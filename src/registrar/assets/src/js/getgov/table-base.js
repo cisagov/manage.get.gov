@@ -1,11 +1,12 @@
 import { hideElement, showElement, toggleCaret, scrollToElement } from './helpers.js';
+import { announce } from './helpers.js';
 
 /**
 * Creates and adds a modal dialog to the DOM with customizable attributes and content.
 *
 * @param {string} id - A unique identifier for the modal, appended to the action for uniqueness.
-* @param {string} ariaLabelledby - The ID of the element that labels the modal, for accessibility.
-* @param {string} ariaDescribedby - The ID of the element that describes the modal, for accessibility.
+* @param {string} title - The title that labels the modal, for accessibility.
+* @param {string} ariaLabel - The label that describes the modal, for accessibility.
 * @param {string} modalHeading - The heading text displayed at the top of the modal.
 * @param {string} modalDescription - The main descriptive text displayed within the modal.
 * @param {string} modalSubmit - The HTML content for the submit button, allowing customization.
@@ -15,13 +16,13 @@ import { hideElement, showElement, toggleCaret, scrollToElement } from './helper
 * The modal includes a heading, description, submit button, and a cancel button, along with a close button.
 * The `data-close-modal` attribute is added to cancel and close buttons to enable closing functionality.
 */
-export function addModal(id, ariaLabelledby, ariaDescribedby, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
+export function addModal(id, title, ariaLabel, modalHeading, modalDescription, modalSubmit, wrapper_element, forceAction) {
 
  const modal = document.createElement('div');
  modal.setAttribute('class', 'usa-modal');
  modal.setAttribute('id', id);
- modal.setAttribute('aria-labelledby', ariaLabelledby);
- modal.setAttribute('aria-describedby', ariaDescribedby);
+ modal.setAttribute('title', title);
+ modal.setAttribute('aria-label', ariaLabel);
  if (forceAction)
    modal.setAttribute('data-force-action', ''); 
 
