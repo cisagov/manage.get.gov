@@ -1,5 +1,4 @@
 import { hideElement, showElement, toggleCaret, scrollToElement } from './helpers.js';
-import { announce } from './helpers.js';
 
 /**
 * Creates and adds a modal dialog to the DOM with customizable attributes and content.
