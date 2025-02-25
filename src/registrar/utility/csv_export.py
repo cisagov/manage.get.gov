@@ -486,7 +486,7 @@ class MemberExport(BaseExport):
         """
         return [
             "Email",
-            "Access level",
+            "Member access",
             "Invited by",
             "Joined date",
             "Last active",
@@ -510,7 +510,7 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Access level": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
+            "Member access": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),

@@ -888,7 +888,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         expected_content = (
             # Header
-            "Email,Access level,Invited by,Joined date,Last active,Domain requests,"
+            "Email,Member access,Invited by,Joined date,Last active,Domain requests,"
             "Member management,Domain management,Number of domains,Domains\n"
             # Content
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
