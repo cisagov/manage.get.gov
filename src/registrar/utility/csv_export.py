@@ -503,7 +503,7 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Organization admin": bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles),
+            "Organization admin": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
