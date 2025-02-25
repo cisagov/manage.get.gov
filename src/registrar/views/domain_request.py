@@ -12,6 +12,7 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
@@ -180,6 +181,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         """Determines which step enum we should use for the wizard"""
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
+    def requires_feb_questions(self) -> bool:
+        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+
     @property
     def prefix(self):
         """Namespace the wizard to avoid clashes in session variable names."""
@@ -227,7 +231,12 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
+            if portfolio and not self._domain_request.federal_type:
+                logger.debug(f"Setting fed type to {portfolio.federal_type}")
+                self._domain_request.federal_type = portfolio.federal_type
+                self._domain_request.save()
         else:
+            logger.debug("Did not find domain request in DomainRequestWizard, creating new one.")
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
         return self._domain_request
 
@@ -654,7 +663,7 @@ class CurrentSites(DomainRequestWizard):
 class DotgovDomain(DomainRequestWizard):
     template_name = "domain_request_dotgov_domain.html"
     forms = [
-        forms.DotGovDomainForm, 
+        forms.DotGovDomainForm,
         forms.AlternativeDomainFormSet,
         forms.ExecutiveNamingRequirementsYesNoForm,
         forms.ExecutiveNamingRequirementsDetailsForm,
@@ -662,8 +671,7 @@ class DotgovDomain(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["generic_org_type"] = self.domain_request.generic_org_type
-        context["is_feb"] = self.domain_request.is_feb()
+        context["requires_feb_questions"] = self.requires_feb_questions()
         return context
 
     def is_valid(self, forms_list: list) -> bool:
@@ -675,34 +683,26 @@ class DotgovDomain(DomainRequestWizard):
           3: ExecutiveNamingRequirementsDetailsForm
         """
         logger.debug("Validating dotgov domain form")
-        # If not a federal executive branch agency, mark executive-related forms for deletion.
-        if not (self.domain_request.is_feb()):
+        # If FEB questions aren't required, validate only non-FEB forms
+        if not self.requires_feb_questions():
             forms_list[2].mark_form_for_deletion()
             forms_list[3].mark_form_for_deletion()
-            return all(form.is_valid() for form in forms_list)
+            return forms_list[0].is_valid() and forms_list[1].is_valid()
 
         if not forms_list[2].is_valid():
             logger.debug("Dotgov domain form is invalid")
-            if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
-                forms_list[3].mark_form_for_deletion()
+            # mark details form for deletion so that its errors don't show up
+            forms_list[3].mark_form_for_deletion()
             return False
-        
-        logger.debug(f"feb_naming_requirements: {forms_list[2].cleaned_data.get('feb_naming_requirements', None)}")
 
-        if forms_list[2].cleaned_data.get("feb_naming_requirements", None) != "no":
+        if forms_list[2].cleaned_data.get("feb_naming_requirements", None):
             logger.debug("Marking details form for deletion")
             # If the user selects "yes" or has made no selection, no details are needed.
             forms_list[3].mark_form_for_deletion()
-            valid = all(
-                form.is_valid() for i, form in enumerate(forms_list) if i != 3
-            )
+            valid = all(form.is_valid() for i, form in enumerate(forms_list) if i != 3)
         else:
             # "No" was selected – details are required.
-            valid = (
-                forms_list[2].is_valid() and 
-                forms_list[3].is_valid() and 
-                all(form.is_valid() for i, form in enumerate(forms_list) if i not in [2, 3])
-            )
+            valid = all(form.is_valid() for form in forms_list)
         return valid
 
 

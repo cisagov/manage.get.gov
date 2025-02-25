@@ -1398,7 +1398,7 @@ class DomainRequest(TimeStampedModel):
         if self.has_anything_else_text is None or self.has_cisa_representative is None:
             has_details = False
         return has_details
-    
+
     def is_feb(self) -> bool:
         """Is this domain request for a Federal Executive Branch agency?"""
         if not self.generic_org_type:

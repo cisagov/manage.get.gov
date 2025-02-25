@@ -2,7 +2,7 @@
 {% load static field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% if is_feb %}https://get.gov/domains/executive-branch-guidance/{% else %}{% public_site_url 'domains/choosing' %}{% endif %}">our naming requirements</a>. Your domain name must:
+  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% if requires_feb_questions %}https://get.gov/domains/executive-branch-guidance/{% else %}{% public_site_url 'domains/choosing' %}{% endif %}">our naming requirements</a>. Your domain name must:
     <ul class="usa-list">
       <li>Be available </li>
       <li>Relate to your organization's name, location, and/or services </li>
@@ -101,7 +101,7 @@
   {{ forms.2.management_form }}
   {{ forms.3.management_form }}
 
-  {% if is_feb %}
+  {% if requires_feb_questions %}
     <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
       <legend>
         <h2>Does this submission meet each domain naming requirement?</h2>
