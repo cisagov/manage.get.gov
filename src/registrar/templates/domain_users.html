@@ -81,8 +81,8 @@
             <div
             class="usa-modal"
             id="toggle-user-alert-{{ forloop.counter }}"
-            title="Are you sure you want to continue?"
-            aria-label="You will be removed from this domain"
+            aria-label="Are you sure you want to continue?"
+            title="You will be removed from this domain"
             data-force-action
             >
               {% with domain_name=domain.name|force_escape counter_str=forloop.counter|stringformat:"s" %}
@@ -96,8 +96,8 @@
             <div
               class="usa-modal"
               id="toggle-user-alert-{{ forloop.counter }}"
-              title="Are you sure you want to continue?"
-              aria-label="{{ item.permission.user.email }} will be removed"
+              aria-label="Are you sure you want to continue?"
+              title="{{ item.permission.user.email }} will be removed"
               data-force-action
             >
               {% with email=item.permission.user.email|default:item.permission.user|force_escape domain_name=domain.name|force_escape counter_str=forloop.counter|stringformat:"s" %}
