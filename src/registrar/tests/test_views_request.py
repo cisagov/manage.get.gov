@@ -2413,7 +2413,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         so_page = org_contact_result.follow()
         self.assertContains(so_page, "Domain requests from cities")
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -2496,6 +2496,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
+        print(dotgov_page)
 
         self.assertContains(dotgov_page, "medicare.gov")
 

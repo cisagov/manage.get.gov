@@ -236,7 +236,6 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
                 self._domain_request.federal_type = portfolio.federal_type
                 self._domain_request.save()
         else:
-            logger.debug("Did not find domain request in DomainRequestWizard, creating new one.")
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
         return self._domain_request
 
@@ -671,6 +670,8 @@ class DotgovDomain(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
+        context["generic_org_type"] = self.domain_request.generic_org_type
+        context["federal_type"] = self.domain_request.federal_type
         context["requires_feb_questions"] = self.requires_feb_questions()
         return context
 

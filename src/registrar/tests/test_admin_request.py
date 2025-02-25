@@ -1981,6 +1981,8 @@ class TestDomainRequestAdmin(MockEppLib):
             "senior_official",
             "approved_domain",
             "requested_domain",
+            "feb_naming_requirements",
+            "feb_naming_requirements_details",
             "purpose",
             "no_other_contacts_rationale",
             "anything_else",
