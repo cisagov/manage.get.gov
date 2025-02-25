@@ -54,6 +54,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         DomainRequest.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
+        FederalAgency.objects.all().delete()
         User.objects.all().delete()
 
     @less_console_noise_decorator
