@@ -254,7 +254,7 @@ export class MembersTable extends BaseTable {
     
     domainsHTML += "<div class='desktop:grid-col-4 margin-bottom-2 desktop:margin-bottom-0'>";
     domainsHTML += `<h4 id='domains-assigned--heading-${unique_id}' class='font-body-xs margin-y-0'>Domains assigned</h4>`;
-    domainsHTML += `<section aria-labelledby='member-access--heading-${unique_id}' tabindex='0'>`
+    domainsHTML += `<section aria-labelledby='domains-assigned--heading-${unique_id}' tabindex='0'>`
     if (num_domains > 0) {
       domainsHTML += `<p class='font-body-xs text-base-darker margin-y-0'>This member is assigned to ${num_domains} domain${num_domains > 1 ? 's' : ''}:</p>`;
       domainsHTML += "<ul class='usa-list usa-list--unstyled margin-y-0'>";
