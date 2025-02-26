@@ -57,6 +57,7 @@
       <section class="nameservers-form display-none section-outlined">
         {% for form in formset %}
           {% if forloop.last %}
+            {{ form.domain }}
             <h2>Add a name server</h2>
             <div class="repeatable-form">
               <div class="grid-row grid-gap-2 flex-end">
@@ -107,6 +108,7 @@
         <tbody>
           {% for form in formset %}
             {% if not forloop.last %}
+              {{ form.domain }}
               <!-- Readonly row -->
               <tr>
                 <td>{{ form.server.value }}</td>
@@ -218,6 +220,7 @@
         {% csrf_token %}
         {{ formset.management_form }}
         {% for form in formset %}
+        {{ form.domain }}
         <div class="repeatable-form">
           <div class="grid-row grid-gap-2 flex-end">
             <div class="tablet:grid-col-6">
