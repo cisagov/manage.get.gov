@@ -55,7 +55,7 @@
       {{ formset.management_form }}
 
       {% for form in formset %}
-        {% if forloop.last and forloop.counter < 13 %}
+        {% if forloop.last and not form.initial %}
           <section class="add-nameservers-form display-none section-outlined">
             {{ form.domain }}
             <h2>Add a name server</h2>
@@ -105,7 +105,7 @@
         </thead>
         <tbody>
           {% for form in formset %}
-            {% if forloop.counter == 13 or not forloop.last %}
+            {% if not forloop.last or form.initial %}
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>

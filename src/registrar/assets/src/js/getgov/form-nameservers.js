@@ -1,8 +1,8 @@
-import { showElement, hideElement } from './helpers';
+import { showElement, hideElement, scrollToElement } from './helpers';
 
 export class NameserverForm {
     constructor() {
-        this.addNameserverButton = document.getElementById('nameserver-add-form');
+        this.addNameserverButton = document.getElementById('nameserver-add-button');
         this.addNameserversForm = document.querySelector('.add-nameservers-form');
         this.domain = '';
         this.formChanged = false;
@@ -169,31 +169,30 @@ export class NameserverForm {
     }
 
     handleAddFormClick(event) {
-        if (this.addNameserversForm) {
-            this.callback = () => {
-                // Check if any other edit row is currently visible and hide it
-                document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
-                    this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
-                });
+        this.callback = () => {
+            // Check if any other edit row is currently visible and hide it
+            document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
+                this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
+            });
+            if (this.addNameserversForm) {
                 // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
                 if (!this.addNameserversForm.classList.contains('display-none')) {
                     this.resetAddNameserversForm();
                 }
                 // show nameservers form
                 showElement(this.addNameserversForm);
-            };
-            if (this.formChanged) {
-                //------- Show the confirmation modal
-                let modalTrigger = document.querySelector("#unsaved_changes_trigger");
-                if (modalTrigger) {
-                    modalTrigger.click();
-                }
             } else {
-                this.executeCallback();
+                this.addAlert("error", "You’ve reached the maximum amount of name server records (13). To add another record, you’ll need to delete one of your saved records.");
+            }
+        };
+        if (this.formChanged) {
+            //------- Show the confirmation modal
+            let modalTrigger = document.querySelector("#unsaved_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
             }
         } else {
-            // this indicates there are already 13 nameservers and we need to display an error message
-            console.warn("There are 13 nameservers");
+            this.executeCallback();
         }
     }
 
@@ -241,6 +240,9 @@ export class NameserverForm {
 
     handleDeleteKebabClick(event) {
         let deleteKebabButton = event.target;
+        let accordionDiv = deleteKebabButton.closest('div'); 
+        // hide the accordion
+        accordionDiv.hidden = true;
         let readOnlyRow = deleteKebabButton.closest('tr'); // Find the closest row
         let editRow = readOnlyRow.nextElementSibling; // Get the next row
         if (!editRow) {
@@ -251,20 +253,25 @@ export class NameserverForm {
     }
 
     deleteRow(editRow) {
-        this.callback = () => {
-            hideElement(editRow);
-            let textInputs = editRow.querySelectorAll("input[type='text']");
-            textInputs.forEach(input => {
-                input.value = "";
-            });
-            document.querySelector("form").submit();
-        };
-        let modalTrigger = document.querySelector('#delete_trigger');
-        if (modalTrigger) {
-            modalTrigger.click();
+        // Check if at least two nameserver forms exist
+        const fourthNameserver = document.getElementById('id_form-3-server'); // This should exist
+        if (fourthNameserver) {
+            this.callback = () => {
+                hideElement(editRow);
+                let textInputs = editRow.querySelectorAll("input[type='text']");
+                textInputs.forEach(input => {
+                    input.value = "";
+                });
+                document.querySelector("form").submit();
+            };
+            let modalTrigger = document.querySelector('#delete_trigger');
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
+        } else {
+            this.addAlert("error", "At least two name servers are required. To proceed, add a new name server before removing this name server. If you need help, email us at help@get.gov.");
         }
     }
-
 
     handleCancelAddFormClick(event) {
         this.resetAddNameserversForm();
@@ -381,13 +388,38 @@ export class NameserverForm {
         this.formChanged = false;
     }
 
+    resetAlerts() {
+        const mainContent = document.querySelector("main#main-content");
+        if (mainContent) {
+            mainContent.querySelectorAll(".usa-alert").forEach(alert => alert.remove());
+        }
+    }
+    
+    addAlert(level, message) {
+        this.resetAlerts();
+        
+        const mainContent = document.querySelector("main#main-content");
+        if (!mainContent) return;
+        
+        const alertDiv = document.createElement("div");
+        alertDiv.className = `usa-alert usa-alert--${level} usa-alert--slim margin-bottom-2`;
+        
+        const alertBody = document.createElement("div");
+        alertBody.className = "usa-alert__body";
+        alertBody.textContent = message;
+        
+        alertDiv.appendChild(alertBody);
+        mainContent.insertBefore(alertDiv, mainContent.firstChild);
+        scrollToElement("class","usa-alert__body");
+    }
+
 }
 
 export function initFormNameservers() {
     document.addEventListener('DOMContentLoaded', () => {
 
-        // Initialize NameserverForm if nameserver-add-form button is present in DOM
-        if (document.getElementById('nameserver-add-form')) {
+        // Initialize NameserverForm if nameserver-add-button button is present in DOM
+        if (document.getElementById('nameserver-add-button')) {
             const nameserverForm = new NameserverForm();
             nameserverForm.init();
         }
