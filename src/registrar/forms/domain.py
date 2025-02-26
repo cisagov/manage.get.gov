@@ -212,7 +212,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
                 # We need to make sure not to trigger the duplicate error in case the first and second nameservers
                 # are empty. If there are enough records in the formset, that error is an unecessary blocker.
                 # If there aren't, the required error will block the submit.
-                if value in data and not (form.cleaned_data.get("server", "").strip() == "" and index == 1):
+                if value in data and not (form.cleaned_data.get("server", "").strip() == ""):
                     form.add_error(
                         "server",
                         NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),

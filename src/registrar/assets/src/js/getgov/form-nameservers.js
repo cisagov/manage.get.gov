@@ -5,10 +5,13 @@ export class NameserverForm {
         this.addNameserverButton = document.getElementById('nameserver-add-form');
         this.nameserversForm = document.querySelector('.nameservers-form');
         this.formChanged = false;
+        this.callback = null;
 
         // Bind event handlers to maintain 'this' context
         this.handleAddFormClick = this.handleAddFormClick.bind(this);
         this.handleEditClick = this.handleEditClick.bind(this);
+        this.handleDeleteClick = this.handleDeleteClick.bind(this);
+        this.handleDeleteKebabClick = this.handleDeleteKebabClick.bind(this);
         this.handleCancelClick = this.handleCancelClick.bind(this);
     }
 
@@ -38,6 +41,7 @@ export class NameserverForm {
             editRows.forEach(editRow => {
                 if (editRow.querySelector('.usa-input--error')) {
                     const readOnlyRow = editRow.previousElementSibling;
+                    this.formChanged = true;
                     showElement(editRow);
                     hideElement(readOnlyRow);
                 }
@@ -58,13 +62,52 @@ export class NameserverForm {
             cancelButton.addEventListener('click', this.handleCancelClick);
         });
 
+        const deleteButtons = document.querySelectorAll('.nameserver-delete');
+        deleteButtons.forEach(deleteButton => {
+            deleteButton.addEventListener('click', this.handleDeleteClick);
+        });
+
+        const deleteKebabButtons = document.querySelectorAll('.nameserver-delete-kebab');
+        deleteKebabButtons.forEach(deleteKebabButton => {
+            deleteKebabButton.addEventListener('click', this.handleDeleteKebabClick);
+        });
+
         const textInputs = document.querySelectorAll("input[type='text']");
         textInputs.forEach(input => {
-            input.addEventListener("input", function() {
+            input.addEventListener("input", () => {
                 this.formChanged = true;
-                console.log("Form changed");
-            })
-        })
+            });
+        });
+
+        const unsaved_changes_modal = document.getElementById('unsaved-changes-modal');
+        if (unsaved_changes_modal) {
+            const submitButton = document.getElementById('unsaved-changes-click-button');
+            const closeButton = unsaved_changes_modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+                closeButton.click();
+                this.executeCallback();
+            });
+        }
+
+        const delete_modal = document.getElementById('delete-modal');
+        if (delete_modal) {
+            const submitButton = document.getElementById('delete-click-button');
+            const closeButton = delete_modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+                closeButton.click();
+                this.executeCallback();
+            });
+        }
+
+    }
+
+    executeCallback() {
+        if (this.callback) {
+            this.callback();
+            this.callback = null;
+        } else {
+            console.warn("No callback function set.");
+        }
     }
 
     handleAddFormClick(event) {
@@ -80,16 +123,62 @@ export class NameserverForm {
             console.warn("Expected DOM element but did not find it");
             return;
         }
-        // Check if any other edit row is currently visible and hide it
-        document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
-            let correspondingReadOnlyRow = openEditRow.previousElementSibling;
-            hideElement(openEditRow);
-            showElement(correspondingReadOnlyRow);
-        });
-        // hide and show rows as appropriate
-        hideElement(readOnlyRow);
-        showElement(editRow);
+        this.callback = () => {
+            // Check if any other edit row is currently visible and hide it
+            document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
+                this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
+            });
+            // hide and show rows as appropriate
+            hideElement(readOnlyRow);
+            showElement(editRow);
+        };
+        if (this.formChanged) {
+            //------- Show the confirmation modal
+            let modalTrigger = document.querySelector("#unsaved_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
+        } else {
+            this.executeCallback();
+        }
     }
+
+    handleDeleteClick(event) {
+        let deleteButton = event.target;
+        let editRow = deleteButton.closest('tr');
+        if (!editRow) {
+            console.warn("Expected DOM element but did not find it");
+            return;
+        }
+        this.deleteRow(editRow);
+    }
+
+    handleDeleteKebabClick(event) {
+        let deleteKebabButton = event.target;
+        let readOnlyRow = deleteKebabButton.closest('tr'); // Find the closest row
+        let editRow = readOnlyRow.nextElementSibling; // Get the next row
+        if (!editRow) {
+            console.warn("Expected DOM element but did not find it");
+            return;
+        }
+        this.deleteRow(editRow);
+    }
+
+    deleteRow(editRow) {
+        this.callback = () => {
+            hideElement(editRow);
+            let textInputs = editRow.querySelectorAll("input[type='text']");
+            textInputs.forEach(input => {
+                input.value = "";
+            });
+            document.querySelector("form").submit();
+        };
+        let modalTrigger = document.querySelector('#delete_trigger');
+        if (modalTrigger) {
+            modalTrigger.click();
+        }
+    }
+
 
     /**
      * Handles the click event for the cancel button within the table form.

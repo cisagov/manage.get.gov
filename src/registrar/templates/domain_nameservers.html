@@ -148,9 +148,10 @@
                       <div id="more-actions-{{ form.server.value }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
                         <h2>More options</h2>
                         <button 
-                          role="button" 
-                          id="button-trigger-delete-{{ form.server.value }}"
-                          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+                          type="button" 
+                          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary nameserver-delete-kebab"
+                          name="btn-delete-kebab-click"
+                          aria-label="Delete the name server from the registry"
                         >
                           Delete
                         </button>
@@ -185,14 +186,13 @@
                           aria-label="Reset the data in the name server form to the registry state (undo changes)"
                       >Cancel
                     </button>
-                    <a
-                      role="button"
-                      href="#toggle-delete-nameserver" 
-                      class="usa-button usa-button--unstyled text-secondary display-block"
-                      aria-controls="toggle-delete-nameserver"
-                      data-open-modal>
-                      Delete
-                    </a>
+                    <button
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block nameserver-delete"
+                          name="btn-delete-click"
+                          aria-label="Delete the name server from the registry"
+                      >Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -265,4 +265,36 @@
     </section>
 
   {% endif %}
+
+  <a
+    id="unsaved_changes_trigger"
+    href="#unsaved-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="unsaved-changes-modal"
+    data-open-modal
+    >Trigger unsaved changes modal</a>
+  <div 
+    class="usa-modal"
+    id="unsaved-changes-modal"
+    aria-labelledby="Are you sure you want to continue?"
+    aria-describedby="You have unsaved changes that will be lost."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_id="unsaved-changes-click-button" modal_button_text="Continue without saving" cancel_button_text="Go back" %}
+  </div>
+
+  <a
+    id="delete_trigger"
+    href="#delete-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="delete-modal"
+    data-open-modal
+    >Trigger delete modal</a>
+  <div 
+    class="usa-modal"
+    id="delete-modal"
+    aria-labelledby="Are you sure you want to delete this name server?"
+    aria-describedby="This will delete the name server from your DNS records. This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this name server?" modal_description="This will delete the name server from your DNS records. This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete name server" modal_button_class="usa-button--secondary" %}
+  </div>
 {% endblock %}  {# domain_content #}
