@@ -13,6 +13,7 @@ export class NameserverForm {
         this.handleDeleteClick = this.handleDeleteClick.bind(this);
         this.handleDeleteKebabClick = this.handleDeleteKebabClick.bind(this);
         this.handleCancelClick = this.handleCancelClick.bind(this);
+        this.handleCancelAddFormClick = this.handleCancelAddFormClick.bind(this);
     }
 
     init() {
@@ -30,7 +31,12 @@ export class NameserverForm {
 
         if (secondNameserver && !thirdNameserver && errorMessages.length > 0) {
             showElement(this.nameserversForm);
-            hideElement(this.addNameserverButton);
+            this.formChanged = true;
+        }
+
+        if (this.nameserversForm.querySelector('.usa-input--error')) {
+            showElement(this.nameserversForm);
+            this.formChanged = true;
         }
 
         // handle display of table view errors
@@ -60,6 +66,11 @@ export class NameserverForm {
         const cancelButtons = document.querySelectorAll('.nameserver-cancel');
         cancelButtons.forEach(cancelButton => {
             cancelButton.addEventListener('click', this.handleCancelClick);
+        });
+
+        const cancelAddFormButtons = document.querySelectorAll('.nameserver-cancel-add-form');
+        cancelAddFormButtons.forEach(cancelAddFormButton => {
+            cancelAddFormButton.addEventListener('click', this.handleCancelAddFormClick);
         });
 
         const deleteButtons = document.querySelectorAll('.nameserver-delete');
@@ -111,8 +122,27 @@ export class NameserverForm {
     }
 
     handleAddFormClick(event) {
-        showElement(this.nameserversForm);
-        hideElement(this.addNameserverButton);
+        this.callback = () => {
+            // Check if any other edit row is currently visible and hide it
+            document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
+                this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
+            });
+            // Check if this.nameserversForm is visible (i.e., does not have 'display-none')
+            if (!this.nameserversForm.classList.contains('display-none')) {
+                this.resetNameserversForm();
+            }
+            // show nameservers form
+            showElement(this.nameserversForm);
+        };
+        if (this.formChanged) {
+            //------- Show the confirmation modal
+            let modalTrigger = document.querySelector("#unsaved_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
+        } else {
+            this.executeCallback();
+        }
     }
 
     handleEditClick(event) {
@@ -128,6 +158,10 @@ export class NameserverForm {
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
             });
+            // Check if this.nameserversForm is visible (i.e., does not have 'display-none')
+            if (!this.nameserversForm.classList.contains('display-none')) {
+                this.resetNameserversForm();
+            }
             // hide and show rows as appropriate
             hideElement(readOnlyRow);
             showElement(editRow);
@@ -180,6 +214,10 @@ export class NameserverForm {
     }
 
 
+    handleCancelAddFormClick(event) {
+        this.resetNameserversForm();
+    }
+
     /**
      * Handles the click event for the cancel button within the table form.
      * 
@@ -207,11 +245,11 @@ export class NameserverForm {
             return;
         }
         // reset the values set in editRow
-        this.resetInputValuesInRow(editRow);
+        this.resetInputValuesInElement(editRow);
         // copy values from editRow to readOnlyRow
         this.copyEditRowToReadonlyRow(editRow, readOnlyRow);
         // remove errors from the editRow
-        this.removeErrorsFromRow(editRow);
+        this.removeErrorsFromElement(editRow);
         // remove errors from the entire form
         this.removeFormErrors();
         // reset formChanged
@@ -221,8 +259,25 @@ export class NameserverForm {
         showElement(readOnlyRow);
     }
 
-    resetInputValuesInRow(editRow) {
-        let textInputs = editRow.querySelectorAll("input[type='text']");
+    resetNameserversForm() {
+        if (!this.nameserversForm) {
+            console.warn("Expected DOM element but did not find it");
+            return;
+        }
+        // reset the values set in nameserversForm
+        this.resetInputValuesInElement(this.nameserversForm);
+        // remove errors from the nameserversForm
+        this.removeErrorsFromElement(this.nameserversForm);
+        // remove errors from the entire form
+        this.removeFormErrors();
+        // reset formChanged
+        this.resetFormChanged();
+        // hide the nameserversForm
+        hideElement(this.nameserversForm);
+    }
+
+    resetInputValuesInElement(domElement) {
+        let textInputs = domElement.querySelectorAll("input[type='text']");
         textInputs.forEach(input => {
             input.value = input.dataset.initialValue;
         })
@@ -243,24 +298,24 @@ export class NameserverForm {
         }
     }
 
-    removeErrorsFromRow(editRow) {
-        // remove class 'usa-form-group--error' from divs in editRow
-        editRow.querySelectorAll("div.usa-form-group--error").forEach(div => {
+    removeErrorsFromElement(domElement) {
+        // remove class 'usa-form-group--error' from divs in domElement
+        domElement.querySelectorAll("div.usa-form-group--error").forEach(div => {
             div.classList.remove("usa-form-group--error");
         });
 
-        // remove class 'usa-label--error' from labels in editRow
-        editRow.querySelectorAll("label.usa-label--error").forEach(label => {
+        // remove class 'usa-label--error' from labels in domElement
+        domElement.querySelectorAll("label.usa-label--error").forEach(label => {
             label.classList.remove("usa-label--error");
         });
 
         // Remove divs whose id ends with '__error-message' (error message divs)
-        editRow.querySelectorAll("div[id$='__error-message']").forEach(errorDiv => {
+        domElement.querySelectorAll("div[id$='__error-message']").forEach(errorDiv => {
             errorDiv.remove();
         });
 
-        // remove class 'usa-input--error' from inputs in editRow
-        editRow.querySelectorAll("input.usa-input--error").forEach(input => {
+        // remove class 'usa-input--error' from inputs in domElement
+        domElement.querySelectorAll("input.usa-input--error").forEach(input => {
             input.classList.remove("usa-input--error");
         });
     }

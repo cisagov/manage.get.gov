@@ -80,11 +80,11 @@
 
         <div class="margin-top-2">
           <button
-                type="submit"
-                class="usa-button usa-button--outline"
-                name="btn-cancel-click"
-                aria-label="Reset the data in the name server form to the registry state (undo changes)"
-            >Cancel
+            type="button"
+            class="usa-button usa-button--outline nameserver-cancel-add-form"
+            name="btn-cancel-click"
+            aria-label="Reset the data in the name server form to the registry state (undo changes)"
+          >Cancel
           </button>
           <button
                 type="submit"
@@ -178,7 +178,6 @@
                 <td>
                     <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
-                    <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
                     <button
                           type="button"
                           class="usa-button usa-button--unstyled display-block nameserver-cancel"
@@ -244,16 +243,14 @@
         </div>
         {% endfor %}
           
-        <!-- TODO: cancel buttons should trigger JS, submit cancel buttons should be nested in modal -->
         <div class="margin-top-2">
           <button
-                type="submit"
-                class="usa-button usa-button--outline"
-                name="btn-cancel-click"
-                aria-label="Reset the data in the name server form to the registry state (undo changes)"
-            >Cancel
+            type="button"
+            class="usa-button usa-button--outline nameserver-cancel-add-form"
+            name="btn-cancel-click"
+            aria-label="Reset the data in the name server form to the registry state (undo changes)"
+          >Cancel
           </button>
-
           <button
                 type="submit"
                 class="usa-button"
