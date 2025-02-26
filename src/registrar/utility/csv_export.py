@@ -522,7 +522,7 @@ class MemberExport(BaseExport):
             "Domain management": f"{get_domains_display(roles, permissions)}: \
                 {get_domains_description_display(roles, permissions)}",
             "Number of domains": length_user_managed_domains,
-            "Domains": ",".join(user_managed_domains),
+            "Domains": ", ".join(user_managed_domains),
         }
         return [FIELDS.get(column, "") for column in columns]
 
