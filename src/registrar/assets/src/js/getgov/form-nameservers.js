@@ -114,6 +114,29 @@ export class NameserverForm {
             });
         });
 
+        // Add a specific listener for 'id_form-{number}-server' inputs to make
+        // nameserver forms 'smart'
+        let formIndex = 0;
+        while (document.getElementById(`id_form-${formIndex}-server`)) {
+            let serverInput = document.getElementById(`id_form-${formIndex}-server`);
+            let ipInput = document.getElementById(`id_form-${formIndex}-ip`);
+            if (serverInput && ipInput) {
+                let ipParent = ipInput.parentElement; // Get the parent element of ipInput
+                serverInput.addEventListener("input", () => {
+                    let serverValue = serverInput.value.trim();
+                    if (ipParent) {
+                        if (serverValue.endsWith('.' + this.domain)) {
+                            showElement(ipParent); // Show IP field if the condition matches
+                        } else {
+                            hideElement(ipParent); // Hide IP field otherwise
+                            ipInput.value = ""; // Set the IP value to blank
+                        }
+                    }
+                });
+            }
+            formIndex++; // Move to the next index
+        }
+
         const unsaved_changes_modal = document.getElementById('unsaved-changes-modal');
         if (unsaved_changes_modal) {
             const submitButton = document.getElementById('unsaved-changes-click-button');
