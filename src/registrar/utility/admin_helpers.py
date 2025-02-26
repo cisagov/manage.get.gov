@@ -105,6 +105,7 @@ class AutocompleteSelectWithPlaceholder(AutocompleteSelect):
         attrs = super().build_attrs(base_attrs, extra_attrs=extra_attrs)
         if "data-placeholder" in base_attrs:
             attrs["data-placeholder"] = base_attrs["data-placeholder"]
+        
         return attrs
 
     def __init__(self, field, admin_site, attrs=None, choices=(), using=None):

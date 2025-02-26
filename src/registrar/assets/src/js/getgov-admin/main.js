@@ -15,6 +15,7 @@ import { initDomainFormTargetBlankButtons } from './domain-form.js';
 import { initDynamicPortfolioFields } from './portfolio-form.js';
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
 import { initDynamicDomainFields } from './domain-form.js';
+import { initAriaInjections } from './andi.js'
 
 // General
 initModals();
@@ -22,6 +23,7 @@ initCopyToClipboard();
 initFilterHorizontalWidget();
 initDescriptions();
 initSubmitBar();
+initAriaInjections();
 
 // Domain request
 initIneligibleModal();

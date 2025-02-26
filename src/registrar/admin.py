@@ -283,6 +283,11 @@ class DomainRequestAdminForm(forms.ModelForm):
                 admin.site,
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
+            # 'investigator': forms.Select(
+            #     attrs={
+            #         'aria-describedby': 'id_investigator-arialabel'}),
+            # 'senior_official': forms.Select(
+            #     attrs={'aria-describedby': 'id_senior_official-arialabel'}),
         }
         labels = {
             "action_needed_reason_email": "Email",
@@ -2622,10 +2627,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
-    # Currentl, there's only one for requests on DomainInfo
+    # Currently, there's only one for requests on DomainInfo
     ordering = ["-last_submitted_date", "requested_domain__name"]
-
-    change_form_template = "django/admin/domain_request_change_form.html"
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
