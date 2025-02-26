@@ -38,7 +38,7 @@
     </div>
     
     <div class="tablet:grid-col-6 text-right--tablet">
-      <button type="button" class="usa-button tablet:float-right" id="nameserver-add-form">
+      <button type="button" class="usa-button tablet:float-right" id="nameserver-add-button">
         Add name servers
       </button>
     </div>
@@ -54,9 +54,9 @@
       {% csrf_token %}
       {{ formset.management_form }}
 
-      <section class="nameservers-form display-none section-outlined">
-        {% for form in formset %}
-          {% if forloop.last %}
+      {% for form in formset %}
+        {% if forloop.last and forloop.counter < 13 %}
+          <section class="add-nameservers-form display-none section-outlined">
             {{ form.domain }}
             <h2>Add a name server</h2>
             <div class="repeatable-form">
@@ -75,25 +75,23 @@
                 </div>
               </div>
             </div>
-
-          {% endif %}
-        {% endfor %}
-
-        <div class="margin-top-2">
-          <button
-            type="button"
-            class="usa-button usa-button--outline nameserver-cancel-add-form"
-            name="btn-cancel-click"
-            aria-label="Reset the data in the name server form to the registry state (undo changes)"
-          >Cancel
-          </button>
-          <button
-                type="submit"
-                class="usa-button"
-            >Save
-          </button>
-        </div>
-      </section>
+            <div class="margin-top-2">
+              <button
+                type="button"
+                class="usa-button usa-button--outline nameserver-cancel-add-form"
+                name="btn-cancel-click"
+                aria-label="Reset the data in the name server form to the registry state (undo changes)"
+              >Cancel
+              </button>
+              <button
+                    type="submit"
+                    class="usa-button"
+                >Save
+              </button>
+            </div>
+          </section>
+        {% endif %}
+      {% endfor %}
 
 
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
@@ -107,7 +105,7 @@
         </thead>
         <tbody>
           {% for form in formset %}
-            {% if not forloop.last %}
+            {% if forloop.counter == 13 or not forloop.last %}
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>
@@ -213,7 +211,7 @@
     {% endcomment %} 
 
        
-    <section class="nameservers-form display-none section-outlined">
+    <section class="add-nameservers-form display-none section-outlined">
       {% include "includes/required_fields.html" %} 
       <form class="usa-form usa-form--extra-large" method="post" novalidate>
         <h2>Add name servers</h2>

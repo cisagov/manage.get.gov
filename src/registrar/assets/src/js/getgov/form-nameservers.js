@@ -3,7 +3,7 @@ import { showElement, hideElement } from './helpers';
 export class NameserverForm {
     constructor() {
         this.addNameserverButton = document.getElementById('nameserver-add-form');
-        this.nameserversForm = document.querySelector('.nameservers-form');
+        this.addNameserversForm = document.querySelector('.add-nameservers-form');
         this.domain = '';
         this.formChanged = false;
         this.callback = null;
@@ -36,13 +36,13 @@ export class NameserverForm {
         // Check if there are error messages in the form (indicated by elements with class 'usa-alert--error')
         const errorMessages = document.querySelectorAll('.usa-alert--error');
 
-        if (secondNameserver && !thirdNameserver && errorMessages.length > 0) {
-            showElement(this.nameserversForm);
+        if (this.addNameserversForm && secondNameserver && !thirdNameserver && errorMessages.length > 0) {
+            showElement(this.addNameserversForm);
             this.formChanged = true;
         }
 
-        if (this.nameserversForm.querySelector('.usa-input--error')) {
-            showElement(this.nameserversForm);
+        if (this.addNameserversForm && this.addNameserversForm.querySelector('.usa-input--error')) {
+            showElement(this.addNameserversForm);
             this.formChanged = true;
         }
 
@@ -169,26 +169,31 @@ export class NameserverForm {
     }
 
     handleAddFormClick(event) {
-        this.callback = () => {
-            // Check if any other edit row is currently visible and hide it
-            document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
-                this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
-            });
-            // Check if this.nameserversForm is visible (i.e., does not have 'display-none')
-            if (!this.nameserversForm.classList.contains('display-none')) {
-                this.resetNameserversForm();
-            }
-            // show nameservers form
-            showElement(this.nameserversForm);
-        };
-        if (this.formChanged) {
-            //------- Show the confirmation modal
-            let modalTrigger = document.querySelector("#unsaved_changes_trigger");
-            if (modalTrigger) {
-                modalTrigger.click();
+        if (this.addNameserversForm) {
+            this.callback = () => {
+                // Check if any other edit row is currently visible and hide it
+                document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
+                    this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
+                });
+                // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
+                if (!this.addNameserversForm.classList.contains('display-none')) {
+                    this.resetAddNameserversForm();
+                }
+                // show nameservers form
+                showElement(this.addNameserversForm);
+            };
+            if (this.formChanged) {
+                //------- Show the confirmation modal
+                let modalTrigger = document.querySelector("#unsaved_changes_trigger");
+                if (modalTrigger) {
+                    modalTrigger.click();
+                }
+            } else {
+                this.executeCallback();
             }
         } else {
-            this.executeCallback();
+            // this indicates there are already 13 nameservers and we need to display an error message
+            console.warn("There are 13 nameservers");
         }
     }
 
@@ -205,9 +210,9 @@ export class NameserverForm {
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
             });
-            // Check if this.nameserversForm is visible (i.e., does not have 'display-none')
-            if (!this.nameserversForm.classList.contains('display-none')) {
-                this.resetNameserversForm();
+            // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
+            if (this.addNameserversForm && !this.addNameserversForm.classList.contains('display-none')) {
+                this.resetAddNameserversForm();
             }
             // hide and show rows as appropriate
             hideElement(readOnlyRow);
@@ -262,7 +267,7 @@ export class NameserverForm {
 
 
     handleCancelAddFormClick(event) {
-        this.resetNameserversForm();
+        this.resetAddNameserversForm();
     }
 
     /**
@@ -306,21 +311,19 @@ export class NameserverForm {
         showElement(readOnlyRow);
     }
 
-    resetNameserversForm() {
-        if (!this.nameserversForm) {
-            console.warn("Expected DOM element but did not find it");
-            return;
+    resetAddNameserversForm() {
+        if (this.addNameserversForm) {
+            // reset the values set in addNameserversForm
+            this.resetInputValuesInElement(this.addNameserversForm);
+            // remove errors from the addNameserversForm
+            this.removeErrorsFromElement(this.addNameserversForm);
+            // remove errors from the entire form
+            this.removeFormErrors();
+            // reset formChanged
+            this.resetFormChanged();
+            // hide the addNameserversForm
+            hideElement(this.addNameserversForm);
         }
-        // reset the values set in nameserversForm
-        this.resetInputValuesInElement(this.nameserversForm);
-        // remove errors from the nameserversForm
-        this.removeErrorsFromElement(this.nameserversForm);
-        // remove errors from the entire form
-        this.removeFormErrors();
-        // reset formChanged
-        this.resetFormChanged();
-        // hide the nameserversForm
-        hideElement(this.nameserversForm);
     }
 
     resetInputValuesInElement(domElement) {
