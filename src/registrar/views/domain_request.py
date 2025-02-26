@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django.contrib import messages
 from registrar.forms import domain_request_wizard as forms
+from registrar.forms.domainrequestwizard import purpose
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
@@ -182,7 +183,9 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        # TODO: this is for testing, revert later
+        return False
+        # return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
 
     @property
     def prefix(self):
@@ -709,7 +712,64 @@ class DotgovDomain(DomainRequestWizard):
 
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
-    forms = [forms.PurposeForm]
+
+    forms = [purpose.FEBPurposeOptionsForm,
+             purpose.PurposeDetailsForm,
+             purpose.FEBTimeFrameYesNoForm,
+             purpose.FEBTimeFrameDetailsForm,
+             purpose.FEBInteragencyInitiativeYesNoForm,
+             purpose.FEBInteragencyInitiativeDetailsForm
+            ]
+
+    def get_context_data(self):
+        context= super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+    
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: FEBPurposeOptionsForm
+          1: PurposeDetailsForm
+          2: FEBTimeFrameYesNoForm
+          3: FEBTimeFrameDetailsForm
+          4: FEBInteragencyInitiativeYesNoForm
+          5: FEBInteragencyInitiativeDetailsForm
+        """
+
+        feb_purpose_options_form = forms_list[0]
+        purpose_details_form = forms_list[1]
+        feb_timeframe_yes_no_form = forms_list[2]
+        feb_timeframe_details_form = forms_list[3]
+        feb_initiative_yes_no_form = forms_list[4]
+        feb_initiative_details_form = forms_list[5]
+
+        if not self.requires_feb_questions():
+            # if FEB questions don't apply, mark all other forms for deletion
+            feb_purpose_options_form.mark_form_for_deletion()
+            feb_timeframe_yes_no_form.mark_form_for_deletion()
+            feb_timeframe_details_form.mark_form_for_deletion()
+            feb_initiative_yes_no_form.mark_form_for_deletion()
+            feb_initiative_details_form.mark_form_for_deletion()
+            # we only care about the purpose form in this case since it's used in both instances
+            return purpose_details_form.is_valid()
+        
+        if not feb_purpose_options_form.id_valid():
+            # Ensure details form doesn't throw errors if it's not showing
+            purpose_details_form.mark_form_for_deletion()
+        
+        if not feb_initiative_yes_no_form.is_valid() or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_initiative_details_form.mark_form_for_deletion()
+
+        if not feb_timeframe_yes_no_form.is_valid() or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_timeframe_details_form.mark_form_for_delation()
+
+        valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
+
+        return valid
+
 
 
 class OtherContacts(DomainRequestWizard):

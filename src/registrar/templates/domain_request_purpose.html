@@ -3,17 +3,90 @@
 
 {% block form_instructions %}
   <p>.Gov domains are intended for public use. Domains will not be given to organizations that only want to reserve a domain name (defensive registration) or that only intend to use the domain internally (as for an intranet).</p> 
-<p>Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/requirements/' %}">activities that are prohibited on .gov domains.</a></p>
-<h2>What is the purpose of your requested domain?</h2>
-<p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
+  <p>Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/requirements/' %}">activities that are prohibited on .gov domains.</a></p>
+  <h2>What is the purpose of your requested domain?</h2>
+  <h2>{{requires_feb_questions}}</h2>
 {% endblock %}
 
-{% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
-{% endblock %}
+{% if requires_feb_questions %}
+  {% block feb_fields %}
+    <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
+      {{forms.0.management_form}}
+      {{forms.1.management_form}}
+      {{forms.2.management_form}}
+      {{forms.3.management_form}}
+      {{forms.4.management_form}}
+      {{forms.5.management_form}}
+      <p class="usa-label">
+        Select One <span class="usa-label--required">*</span>
+      </p>
+      {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+        {% input_with_errors forms.0.feb_purpose_choice %}
+      {% endwith %}
 
-{% block form_fields %}
-    {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
-      {% input_with_errors forms.0.purpose %}
-    {% endwith %}
-{% endblock %}
+      <div id="domain-purpose-details-container" class="conditional-panel" style="display: none;">
+        <p class="usa-label">
+          Provide details below <span class="usa-label--required">*</span>
+        </p>
+        {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% input_with_errors forms.1.purpose %}
+        {% endwith %}
+        <p class="usa-hint">Maximum 2000 characters allowed.</p>
+      </div>
+
+      <legend>
+        <h3>Do you have a target time frame for launching this domain?</h3>
+      </legend>
+      <p class="usa-label">
+        Select One <span class="usa-label--required">*</span>
+      </p>
+      {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+        {% input_with_errors forms.2.has_timeframe %}
+      {% endwith %}
+
+      <div id="domain-timeframe-details-container" class="conditional-panel" style="display: none;">
+        <p class="usa-label">
+          Provide details below <span class="usa-label--required">*</span>
+        </p>
+        {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% input_with_errors forms.3.time_frame_details %}
+        {% endwith %}
+        <p class="usa-hint">Maximum 2000 characters allowed.</p>
+      </div>
+
+      <legend>
+        <h3>Will the domain name be used for an interagency initiative?</h3>
+      </legend>
+      <p class="usa-label">
+        Select One <span class="usa-label--required">*</span>
+      </p>
+      {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+        {% input_with_errors forms.4.is_interagency_initiative %}
+      {% endwith %}
+
+      <div id="domain-interagency-initaitive-details-container" class="conditional-panel" style="display: none;">
+        <p class="usa-label">
+          Provide details below <span class="usa-label--required">*</span>
+        </p>
+        {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% input_with_errors forms.5.interagency_initiative_details %}
+        {% endwith %}
+        <p class="usa-hint">Maximum 2000 characters allowed.</p>
+      </div>
+    </fieldset>
+  {% endblock %}
+{% else %}
+  <p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
+
+  {% block form_required_fields_help_text %}
+  {# commented out so it does not appear on this page #}
+  {% endblock %}
+
+  {% block form_fields %}
+      {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
+        {% input_with_errors forms.1.purpose %}
+      {% endwith %}
+  {% endblock %}
+{% endif %}
+
+

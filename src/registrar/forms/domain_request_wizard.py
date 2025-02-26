@@ -642,25 +642,6 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
     )
 
 
-class PurposeForm(RegistrarForm):
-    purpose = forms.CharField(
-        label="Purpose",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else?"
-            }
-        ),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
-        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
-    )
-
-
 class OtherContactsYesNoForm(BaseYesNoForm):
     """The yes/no field for the OtherContacts form."""
 
