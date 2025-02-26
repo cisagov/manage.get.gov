@@ -4,6 +4,7 @@ export class NameserverForm {
     constructor() {
         this.addNameserverButton = document.getElementById('nameserver-add-form');
         this.nameserversForm = document.querySelector('.nameservers-form');
+        this.domain = '';
         this.formChanged = false;
         this.callback = null;
 
@@ -22,6 +23,12 @@ export class NameserverForm {
     }
 
     initializeNameserverFormDisplay() {
+
+        const domainName = document.getElementById('id_form-0-domain');
+        if (domainName) {
+            this.domain = domainName.value;
+        }
+
         // Check if exactly two nameserver forms exist: id_form-1-server is present but id_form-2-server is not
         const secondNameserver = document.getElementById('id_form-1-server');
         const thirdNameserver = document.getElementById('id_form-2-server'); // This should not exist
@@ -53,6 +60,23 @@ export class NameserverForm {
                 }
             })
         }
+
+        // hide ip in forms unless nameserver ends with domain name
+        let formIndex = 0;
+        while (document.getElementById('id_form-' + formIndex + '-domain')) {
+            let serverInput = document.getElementById('id_form-' + formIndex + '-server');
+            let ipInput = document.getElementById('id_form-' + formIndex + '-ip');
+            if (serverInput && ipInput) {
+                let serverValue = serverInput.value.trim(); // Get the value and trim spaces
+                let ipParent = ipInput.parentElement; // Get the parent element of ipInput
+        
+                if (ipParent && !serverValue.endsWith('.' + this.domain)) { 
+                    hideElement(ipParent); // Hide the parent element of ipInput
+                }
+            }
+            formIndex++;
+        }
+
     }
 
     initializeEventListeners() {
