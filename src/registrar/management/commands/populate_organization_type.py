@@ -19,6 +19,7 @@ class Command(BaseCommand):
 
     def __init__(self):
         super().__init__()
+        # Test
         # Get lists for DomainRequest
         self.request_to_update: List[DomainRequest] = []
         self.request_failed_to_update: List[DomainRequest] = []
