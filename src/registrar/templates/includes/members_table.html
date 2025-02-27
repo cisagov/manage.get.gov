@@ -9,24 +9,25 @@
   <div class="section-outlined__header margin-bottom-3 grid-row">
       <!-- ---------- SEARCH ---------- -->
       <div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-6 section-outlined__search--widescreen">
-        <section aria-label="Members search component" class="margin-top-2">
+        <section aria-label="Members search component" class="margin-top-2" id="members-search-component">
           <form class="usa-search usa-search--small" method="POST" role="search">
             {% csrf_token %}
-            <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="members__reset-search" type="button">
+            <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="members__reset-search" type="button" aria-labelledby="members-search-component">
               <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
               </svg>
               Reset
             </button>
-            <label class="usa-sr-only" for="members__search-field">Members table: Search by member name</label>
             <input
               class="usa-input"
               id="members__search-field"
               type="search"
               name="members-search"
               placeholder="Search by member name"
+              aria-labelledby="members-search-component"
             />
-            <button class="usa-button" type="submit" id="members__search-field-submit">
+            <div class="usa-sr-only" id="members-search-button__description">Click to search</div>
+            <button class="usa-button" type="submit" id="members__search-field-submit" aria-labelledby="members-search-component" aria-describedby="members-search-button__description">
               <img
                 src="{% static 'img/usa-icons-bg/search--white.svg' %}"
                 class="usa-search__submit-icon"
@@ -37,12 +38,13 @@
         </section>
       </div>
       <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-        <section aria-label="Domains report component" class="margin-top-205">
-          <a href="{% url 'export_members_portfolio' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
+        <section aria-label="Members report component" class="margin-top-205" id="members-report-component">
+          <div class="usa-sr-only" id="members-export-button__description">Click to export as csv</div>
+          <button href="{% url 'export_members_portfolio' %}" class="use-button-as-link usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" aria-labelledby="members-report-component" aria-describedby="members-export-button__description">
             <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
             </svg>Export as CSV
-          </a>
+          </button>
         </section>
       </div>
     </div>
