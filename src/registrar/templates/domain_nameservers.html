@@ -117,13 +117,13 @@
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#edit"></use>
                       </svg>
-                      Edit <span class="usa-sr-only">{{ form.server }}</span>
+                      Edit <span class="usa-sr-only">{{ form.server.value }}</span>
                     </button>
 
                     <a 
                       role="button" 
                       id="button-trigger-delete-{{ form.server.value }}"
-                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
+                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
                     >
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
