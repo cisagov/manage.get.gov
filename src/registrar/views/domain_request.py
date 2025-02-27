@@ -184,7 +184,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def requires_feb_questions(self) -> bool:
         # TODO: this is for testing, revert later
-        return False
+        return True
         # return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
 
     @property
@@ -754,7 +754,7 @@ class Purpose(DomainRequestWizard):
             # we only care about the purpose form in this case since it's used in both instances
             return purpose_details_form.is_valid()
         
-        if not feb_purpose_options_form.id_valid():
+        if not feb_purpose_options_form.is_valid():
             # Ensure details form doesn't throw errors if it's not showing
             purpose_details_form.mark_form_for_deletion()
         
@@ -764,7 +764,7 @@ class Purpose(DomainRequestWizard):
 
         if not feb_timeframe_yes_no_form.is_valid() or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
             # Ensure details form doesn't throw errors if it's not showing
-            feb_timeframe_details_form.mark_form_for_delation()
+            feb_timeframe_details_form.mark_form_for_deletion()
 
         valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
 
