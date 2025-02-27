@@ -162,6 +162,18 @@ class MyUserAdminForm(UserChangeForm):
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
+    
+    # Loads "tabtitle" for this admin page so that on render the <title>
+    # element will only have the model name instead of
+    # the default string loaded by native Django admin code.
+    # (Eg. instead of "Select contact to change", display "Contacts")
+    # see "base_site.html" for the <title> code.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = str(self.opts.verbose_name_plural).title()
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
     def __init__(self, *args, **kwargs):
         """Custom init to modify the user form"""
@@ -542,13 +554,6 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     change_form_template = "admin/change_form_no_submit.html"
     add_form_template = "admin/change_form_no_submit.html"
 
-    # Select log entry to change ->  Log entries
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Log entries"
-        return super().changelist_view(request, extra_context=extra_context)
-
     # #786: Skipping on updating audit log tab titles for now
     # def change_view(self, request, object_id, form_url="", extra_context=None):
     #     if extra_context is None:
@@ -628,6 +633,18 @@ class AdminSortFields:
 
 class AuditedAdmin(admin.ModelAdmin):
     """Custom admin to make auditing easier."""
+
+    # Loads "tabtitle" for this admin page so that on render the <title>
+    # element will only have the model name instead of
+    # the default string loaded by native Django admin code.
+    # (Eg. instead of "Select contact to change", display "Contacts")
+    # see "base_site.html" for the <title> code.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = str(self.opts.verbose_name_plural).title()
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
     def history_view(self, request, object_id, extra_context=None):
         """On clicking 'History', take admin to the auditlog view for an object."""
@@ -1026,8 +1043,24 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
 
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
-        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
+        extra_context = {
+            "domain_requests": domain_requests, 
+            "domains": domains, 
+            "portfolios": portfolios
+            }
         return super().change_view(request, object_id, form_url, extra_context)
+    
+    # Loads "tabtitle" for this admin page so that on render the <title>
+    # element will only have the model name instead of
+    # the default string loaded by native Django admin code.
+    # (Eg. instead of "Select contact to change", display "Contacts")
+    # see "base_site.html" for the <title> code.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = str(self.opts.verbose_name_plural).title()
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 class HostIPInline(admin.StackedInline):
@@ -1053,14 +1086,6 @@ class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
     search_help_text = "Search by domain or host name."
     inlines = [HostIPInline]
 
-    # Select host to change -> Host
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Host"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
 
 class HostIpResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -1075,14 +1100,6 @@ class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
 
     resource_classes = [HostIpResource]
     model = models.HostIP
-
-    # Select host ip to change -> Host ip
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Host IP"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
 
 
 class ContactResource(resources.ModelResource):
@@ -1204,14 +1221,6 @@ class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             )
 
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
-
-    # Select contact to change -> Contacts
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Contacts"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
         # Clear warning messages before saving
@@ -1527,14 +1536,6 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     # Override for the delete confirmation page on the domain table (bulk delete action)
     delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
-    # Select domain invitations to change -> Domain invitations
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Domain invitations"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Override the change_view to add the invitation obj for the change_form_object_tools template"""
 
@@ -1672,14 +1673,6 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     change_form_template = "django/admin/portfolio_invitation_change_form.html"
     delete_confirmation_template = "django/admin/portfolio_invitation_delete_confirmation.html"
-
-    # Select portfolio invitations to change -> Portfolio invitations
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Portfolio invitations"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
         """
@@ -2069,14 +2062,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields  # Read-only fields for analysts
-
-    # Select domain information to change -> Domain information
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Domain information"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Customize the behavior of formfields with foreign key relationships. This will customize
@@ -2896,11 +2881,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     # a change view for domain request
                     if next_char.isdigit():
                         should_apply_default_filter = True
-
-        # Select domain request to change -> Domain requests
-        if extra_context is None:
-            extra_context = {}
-            extra_context["tabtitle"] = "Domain requests"
 
         if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
@@ -3958,14 +3938,6 @@ class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # If no redirection is needed, return the original response
         return response
 
-    # Select draft domain to change -> Draft domains
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "Draft domains"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
 
 class PublicContactResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -4387,14 +4359,6 @@ class UserGroupAdmin(AuditedAdmin):
     def user_group(self, obj):
         return obj.name
 
-    # Select user groups to change -> User groups
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context["tabtitle"] = "User groups"
-        # Get the filtered values
-        return super().changelist_view(request, extra_context=extra_context)
-
 
 class WaffleFlagAdmin(FlagAdmin):
     """Custom admin implementation of django-waffle's Flag class"""
@@ -4411,6 +4375,13 @@ class WaffleFlagAdmin(FlagAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        
+        # Loads "tabtitle" for this admin page so that on render the <title>
+        # element will only have the model name instead of
+        # the default string loaded by native Django admin code.
+        # (Eg. instead of "Select waffle flags to change", display "Waffle Flags")
+        # see "base_site.html" for the <title> code.
+        extra_context["tabtitle"] = str(self.opts.verbose_name_plural).title()
         return super().changelist_view(request, extra_context=extra_context)
 
 
