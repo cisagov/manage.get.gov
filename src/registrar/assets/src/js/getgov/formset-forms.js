@@ -372,6 +372,11 @@ export function initFormsetsForms() {
           });
         });
       }
+
+      if (newForm) {
+        // announce("new form added")
+        newForm.focus();
+      }
   }
 }
 

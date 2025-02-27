@@ -61,7 +61,7 @@
 
   <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
-      <h2>Alternative domains (optional)</h2>
+      <h2 id="alternative-domains">Alternative domains (optional)</h2>
     </legend>
 
     <p id="alt_domain_instructions" class="margin-top-05">Are there other domains you’d like if we can’t give
@@ -79,19 +79,23 @@
         {% endfor %}
       {% endwith %}
     {% endwith %}
-
-    <button type="button" value="save" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
+    
+    <div class="usa-sr-only" id="alternative-domains__add-another-alternative">Add another alternative domain</div> 
+    <button aria-labelledby="alternative-domains" aria-describedby="alternative-domains__add-another-alternative" type="button" value="save" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
       </svg><span class="margin-left-05">Add another alternative</span>
     </button>
 
     <div class="margin-bottom-3">
+      <div class="usa-sr-only" id="alternative-domains__check-availability">Check domain availability</div> 
       <button
       id="validate-alt-domains-availability"
       type="button"
       class="usa-button usa-button--outline"
       validate-for="{{ forms.1.requested_domain.auto_id }}"
+      aria-labelledby="alternative-domains"
+      aria-describedby="alternative-domains__check-availability"
       >Check availability</button>
     </div>
     
