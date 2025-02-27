@@ -7,10 +7,10 @@
     {% if has_absolute_url %}
         <ul>
             <li>
-                <a href="{% add_preserved_filters history_url %}" class="historylink">{% translate "History" %}</a>
+                <button data-href="{% add_preserved_filters history_url %}" class="historylink use-button-as-link">{% translate "History" %}</button>
             </li>
             <li>
-                <a href="{{ absolute_url }}" class="viewsitelink">{% translate "View on site" %}</a>
+                <button data-href="{{ absolute_url }}" class="viewsitelink use-button-as-link">{% translate "View on site" %}</button>
             </li>
         </ul>
     {% else %}
@@ -30,18 +30,18 @@
             {% endif %}
 
             <li>
-                <a href="{% add_preserved_filters history_url %}">{% translate "History" %}</a>
+                <button data-href="{% add_preserved_filters history_url %}" class="historylink use-button-as-link">{% translate "History" %}</button>
             </li>
 
             {% if opts.model_name == 'domainrequest' %}
             <li>
-                <a id="id-copy-to-clipboard-summary" class="usa-button--dja" type="button" href="#">
+                <button id="id-copy-to-clipboard-summary" class="usa-button--dja">
                     <svg class="usa-icon">
                         <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                     </svg>
                     <!-- the span is targeted in JS, do not remove -->
                     <span>{% translate "Copy request summary" %}</span>
-                </a>
+                </button>
             </li>
             {% endif %}
         </ul>
