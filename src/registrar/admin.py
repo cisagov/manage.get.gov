@@ -217,7 +217,15 @@ class PortfolioPermissionsForm(forms.ModelForm):
     ]
 
     # Dropdown to select a portfolio
-    portfolio = forms.ModelChoiceField(queryset=models.Portfolio.objects.all(), label="Portfolio")
+    portfolio = forms.ModelChoiceField(
+        queryset=models.Portfolio.objects.all(),
+        label="Portfolio",
+        widget=AutocompleteSelectWithPlaceholder(
+            models.PortfolioInvitation._meta.get_field("portfolio"),
+            admin.site,
+            attrs={"data-placeholder": "---------"}  # Customize placeholder
+        ),
+    )
 
     # Dropdown for selecting the user role (e.g., Admin or Basic)
     role = forms.ChoiceField(
@@ -312,7 +320,15 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     """
 
     # Dropdown to select a user from the database
-    user = forms.ModelChoiceField(queryset=models.User.objects.all(), label="User")
+    user = forms.ModelChoiceField(
+        queryset=models.User.objects.all(),
+        label="User",
+        widget=AutocompleteSelectWithPlaceholder(
+            models.UserPortfolioPermission._meta.get_field("user"),
+            admin.site,
+            attrs={"data-placeholder": "---------"}  # Customize placeholder
+        ),
+    )
 
     class Meta:
         """
@@ -346,7 +362,6 @@ class PortfolioInvitationForm(PortfolioPermissionsForm):
             "member_permissions",
             "status",
         ]
-
 
 class DomainInformationAdminForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
