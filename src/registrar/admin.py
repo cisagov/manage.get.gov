@@ -2289,11 +2289,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
         # Example: Show different icons based on `status`
-        url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
         text = obj.requested_domain
         if obj.portfolio:
-            return format_html('<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>', url, text)
-        return format_html('<a href="{}">{}</a>', url, text)
+            return format_html(
+                f'<img class="padding-right-05" src="/public/admin/img/icon-yes.svg" aria-hidden="true">{escape(text)}'
+            )
+        return text
 
     custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
