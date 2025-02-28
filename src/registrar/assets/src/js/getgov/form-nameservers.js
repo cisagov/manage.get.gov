@@ -343,15 +343,24 @@ export class NameserverForm {
     copyEditRowToReadonlyRow(editRow, readOnlyRow) {
         let textInputs = editRow.querySelectorAll("input[type='text']");
         let tds = readOnlyRow.querySelectorAll("td");
+        let updatedText = '';
 
         // if server is defined, copy the value to the first td in readOnlyRow
-        if (textInputs[0] && tds[0]) {
-            tds[0].innerText = textInputs[0].value;
+        if (textInputs[0]) {
+            updatedText = textInputs[0].value;
+            //tds[0].innerText = textInputs[0].value;
         }
 
         // if ip is defined, copy the value to the second td in readOnlyRow
-        if (textInputs[1] && tds[1]) {
-            tds[1].innerText = textInputs[1].value;
+        if (textInputs[1]) {
+            if (textInputs[1].value) {
+                updatedText = updatedText + "(" + textInputs[1].value + ")";
+            }
+            //tds[1].innerText = textInputs[1].value;
+        }
+
+        if (tds[0]) {
+            tds[0].innerText = updatedText;
         }
     }
 
