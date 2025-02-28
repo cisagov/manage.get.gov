@@ -334,9 +334,11 @@ export class NameserverForm {
     }
 
     resetInputValuesInElement(domElement) {
+        const inputEvent = new Event('input');
         let textInputs = domElement.querySelectorAll("input[type='text']");
         textInputs.forEach(input => {
             input.value = input.dataset.initialValue;
+            input.dispatchEvent(inputEvent);
         })
     }
 
