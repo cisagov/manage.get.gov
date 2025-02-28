@@ -33,7 +33,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     VIEW_ALL_DOMAINS = "view_all_domains", "Viewer"
     VIEW_MANAGED_DOMAINS = "view_managed_domains", "Viewer, limited (domains they manage)"
 
-    VIEW_MEMBERS = "view_members", "View members"
+    VIEW_MEMBERS = "view_members", "Viewer"
     EDIT_MEMBERS = "edit_members", "Manager"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
