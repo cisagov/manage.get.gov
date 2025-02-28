@@ -1,0 +1,26 @@
+<table class="usa-table usa-table--borderless">
+    <thead>
+        <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Start date {{ data.start_date }}</th>
+            <th scope="col">End date {{ data.end_date }} </th>
+        <tr>
+    </thead>
+    <tbody>
+        {% comment %} 
+        This ugly notation is equivalent to data.property_name.start_date_count.index.
+        Or represented in the pure python way: data[property_name]["start_date_count"][index]
+        {% endcomment %}
+        {% with start_counts=data|get_item:property_name|get_item:"start_date_count" end_counts=data|get_item:property_name|get_item:"end_date_count" %}
+            {% for org_count_type in data.org_count_types %}
+                {% with index=forloop.counter %}
+                    <tr>
+                        <th class="padding-left-1" scope="row">{{ org_count_type }}</th>
+                        <td class="padding-left-1">{{ start_counts|slice:index|last }}</td>
+                        <td class="padding-left-1">{{ end_counts|slice:index|last }}</td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+        {% endwith %}
+    </tbody>
+</table>

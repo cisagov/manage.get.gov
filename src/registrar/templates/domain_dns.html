@@ -13,7 +13,7 @@
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>DNS</span>
@@ -30,14 +30,14 @@
   <p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
   
 
-  {% url 'domain-dns-nameservers' pk=domain.id as url %}
+  {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
 <ul class="usa-list">
 <li><a href="{{ url }}">Name servers</a></li>
 
-  {% url 'domain-dns-dnssec' pk=domain.id as url %}
+  {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
   {% if dns_prototype_flag and is_valid_domain %}
-    <li><a href="{% url 'prototype-domain-dns' pk=domain.id %}">Prototype DNS record creator</a></li>
+    <li><a href="{% url 'prototype-domain-dns' domain_pk=domain.id %}">Prototype DNS record creator</a></li>
   {% endif %}
 </ul>
 

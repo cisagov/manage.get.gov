@@ -16,10 +16,10 @@
           <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
         </li>
         <li class="usa-breadcrumb__list-item">
-          <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+          <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
         </li>
         <li class="usa-breadcrumb__list-item">
-          <a href="{% url 'domain-users' pk=domain.id %}" class="usa-breadcrumb__link"><span>Domain managers</span></a>
+          <a href="{% url 'domain-users' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Domain managers</span></a>
         </li>
         <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
           <span>Add a domain manager</span>
@@ -27,7 +27,7 @@
       </ol>
     </nav>
     {% else %}
-    {% url 'domain-users' pk=domain.id as url %}
+    {% url 'domain-users' domain_pk=domain.id as url %}
     <nav class="usa-breadcrumb padding-top-0" aria-label="Domain manager breadcrumb">
       <ol class="usa-breadcrumb__list">
         <li class="usa-breadcrumb__list-item">
@@ -42,17 +42,18 @@
   {% endblock breadcrumb %}
 
   <h1>Add a domain manager</h1>
-{% if has_organization_feature_flag %}
+  {% if portfolio %}
+    <p>
+      Provide an email address for the domain manager you’d like to add. 
+      They’ll need to access the registrar using a Login.gov account that’s associated with this email address. 
+      Domain managers can be a member of only one .gov organization.
+    </p>
+  {% else %}
   <p>
-    You can add another user to help manage your domain. Users can only be a member of one .gov organization, 
-    and they'll need to sign in with their Login.gov account.
+      Provide an email address for the domain manager you’d like to add. 
+      They’ll need to access the registrar using a Login.gov account that’s associated with this email address.
   </p>
-{% else %}
- <p>
-    You can add another user to help manage your domain. They will need to sign in to the .gov registrar with 
-    their Login.gov account.
- </p>
-{% endif %}
+  {% endif %}
 
   <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}

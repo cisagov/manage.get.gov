@@ -3,7 +3,7 @@ Hi.
 
 {{ requestor_email }} has invited you to {{ portfolio.organization_name }}.
 
-You can view this organization on the .gov registrar <https://manage.get.gov>.
+You can view this organization on the .gov registrar <{{ manage_url }}>.
 
 ----------------------------------------------------------------
 

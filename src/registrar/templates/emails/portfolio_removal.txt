@@ -1,0 +1,21 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }}.{% endif %}
+
+{{ requestor_email }} has removed you from {{ portfolio.organization_name }}.
+
+You can no longer view this organization or its related domains within the .gov registrar.
+
+
+SOMETHING WRONG?
+If you have questions or concerns, reach out to the person who removed you from the
+organization, or reply to this email. 
+
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}

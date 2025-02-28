@@ -23,10 +23,13 @@ export class EditMemberDomainsTable extends BaseTable {
     this.readonlyModeContainer = document.getElementById('domain-assignments-readonly-view');
     this.reviewButton = document.getElementById('review-domain-assignments');
     this.backButton = document.getElementById('back-to-edit-domain-assignments');
-    this.saveButton = document.getElementById('save-domain-assignments');
-    this.initializeDomainAssignments();
+    this.saveButton = document.getElementById('save-domain-assignments'); 
+  }
+  async init() {
+    await this.initializeDomainAssignments();
     this.initCancelEditDomainAssignmentButton();
     this.initEventListeners();
+    return this;
   }
   getBaseUrl() {
     return document.getElementById("get_member_domains_json_url");
@@ -134,27 +137,33 @@ export class EditMemberDomainsTable extends BaseTable {
    * member. It populates both initialDomainAssignments and initialDomainAssignmentsOnlyMember.
    * It is called once per page load, but not called with subsequent table changes.
    */
-  initializeDomainAssignments() {
+  async initializeDomainAssignments() {
     const baseUrlValue = this.getBaseUrl()?.innerHTML ?? null;
-    if (!baseUrlValue) return;
-    let searchParams = this.getDomainAssignmentSearchParams(this.portfolioValue);
-    let url = baseUrlValue + "?" + searchParams.toString();
-    fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        console.error('Error in AJAX call: ' + data.error);
+    if (!baseUrlValue) {
+        console.error("Base URL not found");
         return;
+    }
+
+    try {
+      let searchParams = this.getDomainAssignmentSearchParams(this.portfolioValue);
+      let url = baseUrlValue + "?" + searchParams.toString();
+
+      let response = await fetch(url);
+      let data = await response.json();
+
+      if (data.error) {
+          console.error("Error in AJAX call:", data.error);
+          return;
       }
 
       let dataObjects = this.getDataObjects(data);
-      // Map the id attributes of dataObjects to this.initialDomainAssignments
       this.initialDomainAssignments = dataObjects.map(obj => obj.id);
       this.initialDomainAssignmentsOnlyMember = dataObjects
-        .filter(obj => obj.member_is_only_manager)
-        .map(obj => obj.id);
-    })
-    .catch(error => console.error('Error fetching domain assignments:', error));
+          .filter(obj => obj.member_is_only_manager)
+          .map(obj => obj.id);
+    } catch (error) {
+        console.error("Error fetching domain assignments:", error);
+    }
   }
   /**
    * Initializes listeners on checkboxes in the table. Checkbox listeners are used
@@ -232,8 +241,6 @@ export class EditMemberDomainsTable extends BaseTable {
   }
 
   updateReadonlyDisplay() {
-    let totalAssignedDomains = this.getCheckedDomains().length;
-
     // Create unassigned domains list
     const unassignedDomainsList = document.createElement('ul');
     unassignedDomainsList.classList.add('usa-list', 'usa-list--unstyled');
@@ -260,35 +267,30 @@ export class EditMemberDomainsTable extends BaseTable {
     // Clear existing content
     domainAssignmentSummary.innerHTML = '';
 
-    // Append unassigned domains section
-    if (this.removedDomains.length) {
-      const unassignedHeader = document.createElement('h3');
-      unassignedHeader.classList.add('margin-bottom-05', 'h4');
-      unassignedHeader.textContent = 'Unassigned domains';
-      domainAssignmentSummary.appendChild(unassignedHeader);
-      domainAssignmentSummary.appendChild(unassignedDomainsList);
-    }
-
     // Append assigned domains section
     if (this.addedDomains.length) {
       const assignedHeader = document.createElement('h3');
       // Make this h3 look like a h4
       assignedHeader.classList.add('margin-bottom-05', 'h4');
-      assignedHeader.textContent = 'Assigned domains';
+      assignedHeader.textContent = `New assignments (${this.addedDomains.length})`;
       domainAssignmentSummary.appendChild(assignedHeader);
       domainAssignmentSummary.appendChild(assignedDomainsList);
     }
 
-    // Append total assigned domains section
-    const totalHeader = document.createElement('h3');
-    // Make this h3 look like a h4
-    totalHeader.classList.add('margin-bottom-05', 'h4');
-    totalHeader.textContent = 'Total assigned domains';
-    domainAssignmentSummary.appendChild(totalHeader);
-    const totalCount = document.createElement('p');
-    totalCount.classList.add('margin-y-0');
-    totalCount.textContent = totalAssignedDomains;
-    domainAssignmentSummary.appendChild(totalCount);
+    // Append unassigned domains section
+    if (this.removedDomains.length) {
+      const unassignedHeader = document.createElement('h3');
+      unassignedHeader.classList.add('margin-bottom-05', 'h4');
+      unassignedHeader.textContent =`Removed assignments (${this.removedDomains.length})`;
+      domainAssignmentSummary.appendChild(unassignedHeader);
+      domainAssignmentSummary.appendChild(unassignedDomainsList);
+    }
+
+    if (!this.addedDomains.length && !this.removedDomains.length) {
+      const noChangesParagraph = document.createElement('p');
+      noChangesParagraph.textContent = "No changes were detected. Click the “Back” button to edit this member’s domain assignments.";
+      domainAssignmentSummary.appendChild(noChangesParagraph);
+    }
   }
 
   showReadonlyMode() {
@@ -355,14 +357,14 @@ export class EditMemberDomainsTable extends BaseTable {
 }
 
 export function initEditMemberDomainsTable() {
-  document.addEventListener('DOMContentLoaded', function() {
-      const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
-      if (isEditMemberDomainsPage) {
-        const editMemberDomainsTable = new EditMemberDomainsTable();
-        if (editMemberDomainsTable.tableWrapper) {
-          // Initial load
-          editMemberDomainsTable.loadTable(1);
-        }
-      }
-    });
+  document.addEventListener('DOMContentLoaded', async function() {
+    const isEditMemberDomainsPage = document.getElementById("edit-member-domains");
+    if (!isEditMemberDomainsPage) return; // Exit if not on the right page
+
+    const editMemberDomainsTable = await new EditMemberDomainsTable().init();
+
+    if (editMemberDomainsTable.tableWrapper) {
+      editMemberDomainsTable.loadTable(1); // Initial load
+    }
+  });
 }

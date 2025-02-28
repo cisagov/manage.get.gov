@@ -16,7 +16,7 @@
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
         </li>
         <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
         </li>
         <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>Suborganization</span>

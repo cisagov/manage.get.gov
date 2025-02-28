@@ -2,6 +2,7 @@ from itertools import zip_longest
 import logging
 import ipaddress
 import re
+import time
 from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction
@@ -41,7 +42,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from .public_contact import PublicContact
 
 from .user_domain_role import UserDomainRole
-from waffle.decorators import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -751,11 +751,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         successTotalNameservers = len(oldNameservers) - deleteCount + addToDomainCount
 
-        try:
-            self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        except Exception as e:
-            # we don't need this part to succeed in order to continue.
-            logger.error("Failed to delete nameserver hosts: %s", e)
+        self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
         if successTotalNameservers < 2:
             try:
@@ -1039,13 +1035,13 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error(f"registry error removing client hold: {err}")
             raise (err)
 
-    def _delete_domain(self):
+    def _delete_domain(self):  # noqa
         """This domain should be deleted from the registry
         may raises RegistryError, should be caught or handled correctly by caller"""
 
         logger.info("Deleting subdomains for %s", self.name)
         # check if any subdomains are in use by another domain
-        hosts = Host.objects.filter(name__regex=r".+{}".format(self.name))
+        hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
             if host.domain != self:
                 logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
@@ -1053,38 +1049,119 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
+        try:
+            # set hosts to empty list so nameservers are deleted
+            (
+                deleted_values,
+                updated_values,
+                new_values,
+                oldNameservers,
+            ) = self.getNameserverChanges(hosts=[])
 
-        (
-            deleted_values,
-            updated_values,
-            new_values,
-            oldNameservers,
-        ) = self.getNameserverChanges(hosts=[])
-
-        _ = self._update_host_values(updated_values, oldNameservers)  # returns nothing, just need to be run and errors
-        addToDomainList, _ = self.createNewHostList(new_values)
-        deleteHostList, _ = self.createDeleteHostList(deleted_values)
-        responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
-
+            # update the hosts
+            _ = self._update_host_values(
+                updated_values, oldNameservers
+            )  # returns nothing, just need to be run and errors
+            addToDomainList, _ = self.createNewHostList(new_values)
+            deleteHostList, _ = self.createDeleteHostList(deleted_values)
+            responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
+        except RegistryError as e:
+            logger.error(f"Error trying to delete hosts from domain {self}: {e}")
+            raise e
         # if unable to update domain raise error and stop
         if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
             raise NameserverError(code=nsErrorCodes.BAD_DATA)
 
+        logger.info("Finished removing nameservers from domain")
+
         # addAndRemoveHostsFromDomain removes the hosts from the domain object,
         # but we still need to delete the object themselves
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
+        logger.info("Finished _delete_hosts_if_not_used inside _delete_domain()")
 
+        # delete the non-registrant contacts
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
-        for contact in contacts:
-            if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-                self._update_domain_with_contact(contact, rem=True)
-                request = commands.DeleteContact(contact.registry_id)
-                registry.send(request, cleaned=True)
+        logger.info(f"retrieved contacts for domain: {contacts}")
 
-        logger.info("Deleting domain %s", self.name)
+        for contact in contacts:
+            try:
+                if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
+                    logger.info(f"Deleting contact: {contact}")
+                    try:
+                        self._update_domain_with_contact(contact, rem=True)
+                    except Exception as e:
+                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
+                    request = commands.DeleteContact(contact.registry_id)
+                    registry.send(request, cleaned=True)
+                    logger.info(f"sent DeleteContact for {contact}")
+            except RegistryError as e:
+                logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
+
+        logger.info(f"Finished deleting contacts for {self.name}")
+
+        # delete ds data if it exists
+        if self.dnssecdata:
+            logger.debug("Deleting ds data for %s", self.name)
+            try:
+                # set and unset client hold to be able to change ds data
+                logger.info("removing client hold")
+                self._remove_client_hold()
+                self.dnssecdata = None
+                logger.info("placing client hold")
+                self._place_client_hold()
+            except RegistryError as e:
+                logger.error("Error deleting ds data for %s: %s", self.name, e)
+                e.note = "Error deleting ds data for %s" % self.name
+                raise e
+
+        # check if the domain can be deleted
+        if not self._domain_can_be_deleted():
+            note = "Domain has associated objects that prevent deletion."
+            raise RegistryError(code=ErrorCode.COMMAND_FAILED, note=note)
+
+        # delete the domain
         request = commands.DeleteDomain(name=self.name)
-        registry.send(request, cleaned=True)
+        try:
+            registry.send(request, cleaned=True)
+            logger.info("Domain %s deleted successfully.", self.name)
+        except RegistryError as e:
+            logger.error("Error deleting domain %s: %s", self.name, e)
+            raise e
+
+    def _domain_can_be_deleted(self, max_attempts=5, wait_interval=2) -> bool:
+        """
+        Polls the registry using InfoDomain calls to confirm that the domain can be deleted.
+        Returns True if the domain can be deleted, False otherwise. Includes a retry mechanism
+        using wait_interval and max_attempts, which may be necessary if subdomains and other
+        associated objects were only recently deleted as the registry may not be immediately updated.
+        """
+        logger.info("Polling registry to confirm deletion pre-conditions for %s", self.name)
+        last_info_error = None
+        for attempt in range(max_attempts):
+            try:
+                info_response = registry.send(commands.InfoDomain(name=self.name), cleaned=True)
+                domain_info = info_response.res_data[0]
+                hosts_associated = getattr(domain_info, "hosts", None)
+                if hosts_associated is None or len(hosts_associated) == 0:
+                    logger.info("InfoDomain reports no associated hosts for %s. Proceeding with deletion.", self.name)
+                    return True
+                else:
+                    logger.info("Attempt %d: Domain %s still has hosts: %s", attempt + 1, self.name, hosts_associated)
+            except RegistryError as info_e:
+                # If the domain is already gone, we can assume deletion already occurred.
+                if info_e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                    logger.info("InfoDomain check indicates domain %s no longer exists.", self.name)
+                    raise info_e
+                logger.warning("Attempt %d: Error during InfoDomain check: %s", attempt + 1, info_e)
+            time.sleep(wait_interval)
+        else:
+            logger.error(
+                "Exceeded max attempts waiting for domain %s to clear associated objects; last error: %s",
+                self.name,
+                last_info_error,
+            )
+            return False
 
     def __str__(self) -> str:
         return self.name
@@ -1172,7 +1249,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Return the display status of the domain."""
         if self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
-        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+        elif self.is_expiring():
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
@@ -1588,7 +1665,7 @@ class Domain(TimeStampedModel, DomainHelper):
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
-        elif flag_is_active(request, "domain_renewal") and self.is_expiring():
+        elif self.is_expiring():
             help_text = "This domain is expiring soon. Complete the online renewal process to maintain access."
         else:
             help_text = Domain.State.get_help_text(self.state)
@@ -1840,8 +1917,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
             else:
                 logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
-
-            raise e
 
     def _fix_unknown_state(self, cleaned):
         """

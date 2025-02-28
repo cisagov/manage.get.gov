@@ -6,19 +6,17 @@ from django.shortcuts import render
 from django.contrib import admin
 from django.db.models import Avg, F
 
-from registrar.views.utility.mixins import DomainAndRequestsReportsPermission, PortfolioReportsPermission
+from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_STAFF, grant_access
 from .. import models
 import datetime
 from django.utils import timezone
-from django.contrib.admin.views.decorators import staff_member_required
-from django.utils.decorators import method_decorator
 from registrar.utility import csv_export
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class AnalyticsView(View):
     def get(self, request):
         thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
@@ -126,33 +124,59 @@ class AnalyticsView(View):
             # include it in the larger context dictionary so it's available in the template rendering context.
             # This ensures that the admin interface styling and behavior are consistent with other admin pages.
             **admin.site.each_context(request),
-            data=dict(
-                user_count=models.User.objects.all().count(),
-                domain_count=models.Domain.objects.all().count(),
-                ready_domain_count=models.Domain.objects.filter(state=models.Domain.State.READY).count(),
-                last_30_days_applications=last_30_days_applications.count(),
-                last_30_days_approved_applications=last_30_days_approved_applications.count(),
-                average_application_approval_time_last_30_days=avg_approval_time_display,
-                managed_domains_sliced_at_start_date=managed_domains_sliced_at_start_date,
-                unmanaged_domains_sliced_at_start_date=unmanaged_domains_sliced_at_start_date,
-                managed_domains_sliced_at_end_date=managed_domains_sliced_at_end_date,
-                unmanaged_domains_sliced_at_end_date=unmanaged_domains_sliced_at_end_date,
-                ready_domains_sliced_at_start_date=ready_domains_sliced_at_start_date,
-                deleted_domains_sliced_at_start_date=deleted_domains_sliced_at_start_date,
-                ready_domains_sliced_at_end_date=ready_domains_sliced_at_end_date,
-                deleted_domains_sliced_at_end_date=deleted_domains_sliced_at_end_date,
-                requests_sliced_at_start_date=requests_sliced_at_start_date,
-                submitted_requests_sliced_at_start_date=submitted_requests_sliced_at_start_date,
-                requests_sliced_at_end_date=requests_sliced_at_end_date,
-                submitted_requests_sliced_at_end_date=submitted_requests_sliced_at_end_date,
-                start_date=start_date,
-                end_date=end_date,
-            ),
+            data={
+                # Tracks what kind of orgs we are keeping count of.
+                # Used for the details table beneath the graph.
+                "org_count_types": [
+                    "Total",
+                    "Federal",
+                    "Interstate",
+                    "State/Territory",
+                    "Tribal",
+                    "County",
+                    "City",
+                    "Special District",
+                    "School District",
+                    "Election Board",
+                ],
+                "user_count": models.User.objects.all().count(),
+                "domain_count": models.Domain.objects.all().count(),
+                "ready_domain_count": models.Domain.objects.filter(state=models.Domain.State.READY).count(),
+                "last_30_days_applications": last_30_days_applications.count(),
+                "last_30_days_approved_applications": last_30_days_approved_applications.count(),
+                "average_application_approval_time_last_30_days": avg_approval_time_display,
+                "managed_domains": {
+                    "start_date_count": managed_domains_sliced_at_start_date,
+                    "end_date_count": managed_domains_sliced_at_end_date,
+                },
+                "unmanaged_domains": {
+                    "start_date_count": unmanaged_domains_sliced_at_start_date,
+                    "end_date_count": unmanaged_domains_sliced_at_end_date,
+                },
+                "ready_domains": {
+                    "start_date_count": ready_domains_sliced_at_start_date,
+                    "end_date_count": ready_domains_sliced_at_end_date,
+                },
+                "deleted_domains": {
+                    "start_date_count": deleted_domains_sliced_at_start_date,
+                    "end_date_count": deleted_domains_sliced_at_end_date,
+                },
+                "requests": {
+                    "start_date_count": requests_sliced_at_start_date,
+                    "end_date_count": requests_sliced_at_end_date,
+                },
+                "submitted_requests": {
+                    "start_date_count": submitted_requests_sliced_at_start_date,
+                    "end_date_count": submitted_requests_sliced_at_end_date,
+                },
+                "start_date": start_date,
+                "end_date": end_date,
+            },
         )
         return render(request, "admin/analytics.html", context)
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataType(View):
     def get(self, request, *args, **kwargs):
         # match the CSV example with all the fields
@@ -162,7 +186,8 @@ class ExportDataType(View):
         return response
 
 
-class ExportDataTypeUser(DomainAndRequestsReportsPermission, View):
+@grant_access(ALL)
+class ExportDataTypeUser(View):
     """Returns a domain report for a given user on the request"""
 
     def get(self, request, *args, **kwargs):
@@ -173,7 +198,8 @@ class ExportDataTypeUser(DomainAndRequestsReportsPermission, View):
         return response
 
 
-class ExportMembersPortfolio(PortfolioReportsPermission, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+class ExportMembersPortfolio(View):
     """Returns a members report for a given portfolio"""
 
     def get(self, request, *args, **kwargs):
@@ -201,7 +227,7 @@ class ExportMembersPortfolio(PortfolioReportsPermission, View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
         # Smaller export based on 1
@@ -211,7 +237,7 @@ class ExportDataFull(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataFederal(View):
     def get(self, request, *args, **kwargs):
         # Federal only
@@ -221,7 +247,7 @@ class ExportDataFederal(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDomainRequestDataFull(View):
     """Generates a downloaded report containing all Domain Requests (except started)"""
 
@@ -233,7 +259,7 @@ class ExportDomainRequestDataFull(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataDomainsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -246,7 +272,7 @@ class ExportDataDomainsGrowth(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataRequestsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -259,7 +285,7 @@ class ExportDataRequestsGrowth(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataManagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -271,7 +297,7 @@ class ExportDataManagedDomains(View):
         return response
 
 
-@method_decorator(staff_member_required, name="dispatch")
+@grant_access(IS_STAFF)
 class ExportDataUnmanagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")

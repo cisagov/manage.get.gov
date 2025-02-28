@@ -1,8 +1,8 @@
 """Data migration:
- 1 - generates a report of data integrity across all
- transition domain related tables
- 2 - allows users to run all migration scripts for
- transition domain data
+1 - generates a report of data integrity across all
+transition domain related tables
+2 - allows users to run all migration scripts for
+transition domain data
 """
 
 import logging

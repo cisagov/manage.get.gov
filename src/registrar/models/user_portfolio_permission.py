@@ -6,6 +6,13 @@ from registrar.models.utility.portfolio_helper import (
     DomainRequestPermissionDisplay,
     MemberPermissionDisplay,
     cleanup_after_portfolio_member_deletion,
+    get_domain_requests_display,
+    get_domain_requests_description_display,
+    get_domains_display,
+    get_domains_description_display,
+    get_members_display,
+    get_members_description_display,
+    get_role_display,
     validate_user_portfolio_permission,
 )
 from .utility.time_stamped_model import TimeStampedModel
@@ -180,6 +187,90 @@ class UserPortfolioPermission(TimeStampedModel):
         # by getting the intersection between current user permissions, and forbidden ones.
         # This is the same as portfolio_permissions & common_forbidden_perms.
         return portfolio_permissions.intersection(common_forbidden_perms)
+
+    @property
+    def role_display(self):
+        """
+        Returns a human-readable display name for the user's role.
+
+        Uses the `get_role_display` function to determine if the user is an "Admin",
+        "Basic" member, or has no role assigned.
+
+        Returns:
+            str: The display name of the user's role.
+        """
+        return get_role_display(self.roles)
+
+    @property
+    def domains_display(self):
+        """
+        Returns a string representation of the user's domain access level.
+
+        Uses the `get_domains_display` function to determine whether the user has
+        "Viewer" access (can view all domains) or "Viewer, limited" access.
+
+        Returns:
+            str: The display name of the user's domain permissions.
+        """
+        return get_domains_display(self.roles, self.additional_permissions)
+
+    @property
+    def domains_description_display(self):
+        """
+        Returns a string description of the user's domain access level.
+
+        Returns:
+            str: The display name of the user's domain permissions description.
+        """
+        return get_domains_description_display(self.roles, self.additional_permissions)
+
+    @property
+    def domain_requests_display(self):
+        """
+        Returns a string representation of the user's access to domain requests.
+
+        Uses the `get_domain_requests_display` function to determine if the user
+        is a "Creator" (can create and edit requests), a "Viewer" (can only view requests),
+        or has "No access" to domain requests.
+
+        Returns:
+            str: The display name of the user's domain request permissions.
+        """
+        return get_domain_requests_display(self.roles, self.additional_permissions)
+
+    @property
+    def domain_requests_description_display(self):
+        """
+        Returns a string description of the user's access to domain requests.
+
+        Returns:
+            str: The display name of the user's domain request permissions description.
+        """
+        return get_domain_requests_description_display(self.roles, self.additional_permissions)
+
+    @property
+    def members_display(self):
+        """
+        Returns a string representation of the user's access to managing members.
+
+        Uses the `get_members_display` function to determine if the user is a
+        "Manager" (can edit members), a "Viewer" (can view members), or has "No access"
+        to member management.
+
+        Returns:
+            str: The display name of the user's member management permissions.
+        """
+        return get_members_display(self.roles, self.additional_permissions)
+
+    @property
+    def members_description_display(self):
+        """
+        Returns a string description of the user's access to managing members.
+
+        Returns:
+            str: The display name of the user's member management permissions description.
+        """
+        return get_members_description_display(self.roles, self.additional_permissions)
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""

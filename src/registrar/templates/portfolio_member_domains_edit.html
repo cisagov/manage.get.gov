@@ -41,9 +41,11 @@
     <section id="domain-assignments-edit-view">
         <h1>Edit domain assignments</h1>
 
-        <p class="margin-top-0 margin-bottom-4 maxw-none">
-            A domain manager can be assigned to any domain across the organization. Domain managers can change domain information, adjust DNS settings, and invite or assign other domain managers to their assigned domains.
-            When you save this form the member will get an email to notify them of any changes.
+        <p class="margin-top-0 maxw-none">
+            Use the checkboxes to add or remove domain assignments for this member. Then proceed to the next step to confirm and save your changes.
+        </p>
+        <p class="margin-bottom-4 maxw-none">
+            Domains must have at least one domain manager. You can't remove this member from a domain if they’re the only one assigned to it.
         </p>
 
         {% include "includes/member_domains_edit_table.html" %}
@@ -72,33 +74,19 @@
     </section>
 
     <section id="domain-assignments-readonly-view" class="display-none">
-        <h1 class="margin-bottom-3">Review domain assignments</h1>
+        <h1 class="margin-bottom-4">Review and apply domain assignment changes</h1>
 
-        <h2 class="margin-top-0">Would you like to continue with the following domain assignment changes for 
+        <h3 class="margin-bottom-05 h4">Member</h3>
+        <p class="margin-top-0">
             {% if member %}
                 {{ member.email }}
             {% else %}
                 {{ portfolio_invitation.email }}
             {% endif %}
-        </h2>
-
-        <p class="margin-bottom-4">
-            When you save this form the member will get an email to notify them of any changes.
         </p>
 
         <div id="domain-assignments-summary" class="margin-bottom-5">
              <!-- AJAX will populate this summary -->
-              <h3 class="margin-bottom-1 h4">Unassigned domains</h3>
-              <ul class="usa-list usa-list--unstyled">
-                <li>item1</li>
-                <li>item2</li>
-              </ul>
-
-              <h3 class="margin-bottom-0 h4">Assigned domains</h3>
-              <ul class="usa-list usa-list--unstyled">
-                <li>item1</li>
-                <li>item2</li>
-              </ul>
         </div>
 
         <ul class="usa-button-group">
@@ -118,7 +106,7 @@
                     type="button"
                     class="usa-button"
                 >
-                    Save
+                    Apply changes
                 </button>
             </li>
         </ul>

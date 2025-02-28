@@ -8,7 +8,7 @@ REMOVED BY: {{ requestor_email }}
 REMOVED ON: {{date}}
 ADMIN REMOVED: {{ removed_email_address }}
 
-You can view this update by going to the Members section for your .gov organization <https://manage.get.gov/>.
+You can view this update by going to the Members section for your .gov organization <{{ manage_url }}>.
 
 ----------------------------------------------------------------
 

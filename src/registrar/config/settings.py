@@ -107,6 +107,7 @@ DEBUG = env_debug
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
+BASE_URL = env_base_url
 
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
@@ -200,6 +201,8 @@ MIDDLEWARE = [
     "waffle.middleware.WaffleMiddleware",
     "registrar.registrar_middleware.CheckUserProfileMiddleware",
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
+    # Restrict access using Opt-Out approach
+    "registrar.registrar_middleware.RestrictAccessMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)

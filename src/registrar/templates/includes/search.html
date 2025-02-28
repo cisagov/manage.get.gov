@@ -1,0 +1,34 @@
+{% load static %}
+
+<div class="section-outlined__search mobile:grid-col-12 desktop:grid-col-9">
+    <section aria-label="{{aria_label_text}}">
+        <form class="usa-search usa-search--show-label" method="POST" role="search">
+            {% csrf_token %}
+            <label class="usa-label display-block margin-bottom-05 maxw-none" for="{{item_name}}__search-field">
+                {{ label_text }}
+            </label>            
+            <div class="usa-search--show-label__input-wrapper flex-align-self-end">
+                <input
+                class="usa-input minw-15"
+                id="{{item_name}}__search-field"
+                type="search"
+                name="{{item_name}}-search"
+                />
+                <button class="usa-button" type="submit" id="{{item_name}}__search-field-submit">
+                    <span class="usa-search__submit-text">Search </span>
+                    <img
+                        src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                        class="usa-search__submit-icon"
+                        alt="Search"
+                    />
+                </button>
+                <button class="usa-button usa-button--unstyled margin-left-3 display-none flex-1" id="{{item_name}}__reset-search" type="button">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                    </svg>
+                    Reset
+                </button>
+            </div>
+        </form>
+    </section>
+</div>

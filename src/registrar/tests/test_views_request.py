@@ -809,7 +809,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # type_page = home_page.click("Edit")
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        url = reverse("edit-domain-request", kwargs={"id": domain_request.pk})
+        url = reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # TODO: The following line results in a django error on middleware
@@ -1106,7 +1106,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
@@ -1114,7 +1114,9 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
         """On the Additional Details page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
-        additional_details_page = self.app.get(reverse("domain-request:additional_details", kwargs={"id": 0}))
+        additional_details_page = self.app.get(
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": 0})
+        )
         additional_form = additional_details_page.forms[0]
 
         # Check the cisa representative yes/no field
@@ -1130,7 +1132,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Domain Request has other contacts by default
         domain_request = completed_domain_request(user=self.user)
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1138,7 +1140,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1155,7 +1159,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.save()
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1164,7 +1168,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1187,7 +1191,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1195,7 +1199,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1216,7 +1222,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.save()
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1225,7 +1231,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1256,7 +1262,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.cisa_representative_email, "fake@faketown.gov")
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1265,7 +1271,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1320,7 +1326,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.has_cisa_representative, None)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1329,7 +1335,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1367,7 +1373,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1376,7 +1382,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1400,7 +1406,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1409,7 +1415,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.pk})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.pk})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1439,7 +1445,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(domain_request.has_cisa_representative, None)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1448,7 +1454,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         additional_details_page = self.app.get(
-            reverse("domain-request:additional_details", kwargs={"id": domain_request.id})
+            reverse("domain-request:additional_details", kwargs={"domain_request_pk": domain_request.id})
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -1472,7 +1478,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1480,7 +1486,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1520,7 +1528,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Domain request has other contacts by default
         domain_request = completed_domain_request(user=self.user)
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1528,7 +1536,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1604,7 +1614,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_info.other_contacts.set([other])
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1612,7 +1622,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1653,7 +1665,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_no_then_no_other_contacts_required(self):
         """Applicants with no other contacts have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
         response = other_contacts_page.forms[0].submit()
@@ -1669,7 +1681,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_yes_no_form_is_yes_then_other_contacts_required(self):
         """Applicants with other contacts do not have to give a reason."""
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": 0}))
+        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": 0}))
         other_contacts_form = other_contacts_page.forms[0]
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
         response = other_contacts_page.forms[0].submit()
@@ -1737,7 +1749,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.other_contacts.add(other2)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1745,7 +1757,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1810,7 +1824,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.other_contacts.add(other)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1818,7 +1832,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1887,7 +1903,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.other_contacts.add(other)
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1895,7 +1911,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.id}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.id})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -1967,7 +1985,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contact_pk = other.id
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -1975,7 +1993,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2043,7 +2063,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_contact_pk = so.id
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2051,7 +2071,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"id": domain_request.pk}))
+        other_contacts_page = self.app.get(
+            reverse("domain-request:other_contacts", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
@@ -2113,7 +2135,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         so_pk = so.id
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2121,7 +2143,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
+        so_page = self.app.get(
+            reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2182,7 +2206,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         so_pk = so.id
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2190,7 +2214,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        so_page = self.app.get(reverse("domain-request:senior_official", kwargs={"id": domain_request.pk}))
+        so_page = self.app.get(
+            reverse("domain-request:senior_official", kwargs={"domain_request_pk": domain_request.pk})
+        )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         so_form = so_page.forms[0]
@@ -2240,7 +2266,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         creator_pk = self.user.id
 
         # prime the form by visiting /edit
-        self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}))
+        self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
         # of a "session". We are going to do it manually, saving the session ID here
@@ -2539,7 +2565,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         new_domain_request_id = all_domain_requests.first().id
 
         # Skip to the current sites page
-        current_sites_page = self.app.get(reverse("domain-request:current_sites", kwargs={"id": new_domain_request_id}))
+        current_sites_page = self.app.get(
+            reverse("domain-request:current_sites", kwargs={"domain_request_pk": new_domain_request_id})
+        )
         # fill in the form field
         current_sites_form = current_sites_page.forms[0]
         self.assertIn("current_sites-0-website", current_sites_form.fields)
@@ -2614,7 +2642,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.alternative_domains.add(alt)
 
         # prime the form by visiting /edit
-        url = reverse("edit-domain-request", kwargs={"id": domain_request.pk})
+        url = reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         response = self.client.get(url)
 
         # TODO: this is a sketch of each page in the wizard which needs to be tested
@@ -2724,7 +2752,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         NOTE: This may be a moot point if we implement a more solid pattern in the
         future, like not a submit action at all on the review page."""
 
-        review_page = self.app.get(reverse("domain-request:review", kwargs={"id": 0}))
+        review_page = self.app.get(reverse("domain-request:review", kwargs={"domain_request_pk": 0}))
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
@@ -2742,7 +2770,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # This user should also be forbidden from editing existing ones
         domain_request = completed_domain_request(user=self.user)
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+        )
         self.assertEqual(edit_page.status_code, 403)
 
         # Cleanup
@@ -2767,7 +2797,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # This user should also be allowed to edit existing ones
         domain_request = completed_domain_request(user=self.user)
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         self.assertEqual(edit_page.status_code, 200)
 
     def test_non_creator_access(self):
@@ -2776,14 +2808,18 @@ class DomainRequestTests(TestWithUser, WebTest):
         other_user = User.objects.create_user(username="other_user", password=p)
         domain_request = completed_domain_request(user=other_user)
 
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk}), expect_errors=True)
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+        )
         self.assertEqual(edit_page.status_code, 403)
 
     def test_creator_access(self):
         """Tests that a user can edit a domain request they created"""
         domain_request = completed_domain_request(user=self.user)
 
-        edit_page = self.app.get(reverse("edit-domain-request", kwargs={"id": domain_request.pk})).follow()
+        edit_page = self.app.get(
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
+        ).follow()
         self.assertEqual(edit_page.status_code, 200)
 
 
@@ -2898,12 +2934,8 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         domain_request.save()
 
-        detail_page = self.app.get(f"/domain-request/{domain_request.id}")
-        self.assertContains(detail_page, "city.gov")
-        self.assertContains(detail_page, "city1.gov")
-        self.assertContains(detail_page, "Chief Tester")
-        self.assertContains(detail_page, "testy@town.com")
-        self.assertContains(detail_page, "Status:")
+        detail_page = self.client.get(f"/domain-request/{domain_request.id}")
+        self.assertEqual(detail_page.status_code, 403)
         # Restricted user trying to withdraw results in 403 error
         with less_console_noise():
             for url_name in [
@@ -2911,7 +2943,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
                 "domain-request-withdrawn",
             ]:
                 with self.subTest(url_name=url_name):
-                    page = self.client.get(reverse(url_name, kwargs={"pk": domain_request.pk}))
+                    page = self.client.get(reverse(url_name, kwargs={"domain_request_pk": domain_request.pk}))
                     self.assertEqual(page.status_code, 403)
 
     @less_console_noise_decorator
@@ -2931,7 +2963,7 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
                 "domain-request-withdrawn",
             ]:
                 with self.subTest(url_name=url_name):
-                    page = self.client.get(reverse(url_name, kwargs={"pk": domain_request.pk}))
+                    page = self.client.get(reverse(url_name, kwargs={"domain_request_pk": domain_request.pk}))
                     self.assertEqual(page.status_code, 403)
 
     @less_console_noise_decorator
@@ -3206,7 +3238,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "usa-current", count=2)
 
             # We default to the requesting entity page
-            expected_url = reverse("domain-request:portfolio_requesting_entity", kwargs={"id": domain_request.id})
+            expected_url = reverse(
+                "domain-request:portfolio_requesting_entity", kwargs={"domain_request_pk": domain_request.id}
+            )
             # This returns the entire url, thus "in"
             self.assertIn(expected_url, detail_page.request.url)
         else:

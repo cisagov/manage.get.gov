@@ -1,6 +1,9 @@
 from django.shortcuts import render
 
+from registrar.decorators import grant_access, ALL
 
+
+@grant_access(ALL)
 def index(request):
     """This page is available to anyone without logging in."""
     context = {}

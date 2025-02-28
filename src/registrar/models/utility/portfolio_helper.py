@@ -79,6 +79,161 @@ class MemberPermissionDisplay(StrEnum):
     NONE = "None"
 
 
+def get_role_display(roles):
+    """
+    Returns a user-friendly display name for a given list of user roles.
+
+    - If the user has the ORGANIZATION_ADMIN role, return "Admin".
+    - If the user has the ORGANIZATION_MEMBER role, return "Basic".
+    - If the user has neither role, return "-".
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+
+    Returns:
+        str: The display name for the highest applicable role.
+    """
+    if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles:
+        return "Admin"
+    elif UserPortfolioRoleChoices.ORGANIZATION_MEMBER in roles:
+        return "Basic"
+    else:
+        return "-"
+
+
+def get_domains_display(roles, permissions):
+    """
+    Determines the display name for a user's domain viewing permissions.
+
+    - If the user has the VIEW_ALL_DOMAINS permission, return "Viewer".
+    - Otherwise, return "Viewer, limited".
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's domain viewing access.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS in all_permissions:
+        return "Viewer"
+    else:
+        return "Viewer, limited"
+
+
+def get_domains_description_display(roles, permissions):
+    """
+    Determines the display description for a user's domain viewing permissions.
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's domain viewing access description.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS in all_permissions:
+        return "Can view all domains for the organization"
+    else:
+        return "Can view only the domains they manage"
+
+
+def get_domain_requests_display(roles, permissions):
+    """
+    Determines the display name for a user's domain request permissions.
+
+    - If the user has the EDIT_REQUESTS permission, return "Creator".
+    - If the user has the VIEW_ALL_REQUESTS permission, return "Viewer".
+    - Otherwise, return "No access".
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's domain request access level.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.EDIT_REQUESTS in all_permissions:
+        return "Creator"
+    elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
+        return "Viewer"
+    else:
+        return "No access"
+
+
+def get_domain_requests_description_display(roles, permissions):
+    """
+    Determines the display description for a user's domain request permissions.
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's domain request access level description.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.EDIT_REQUESTS in all_permissions:
+        return "Can view all domain requests for the organization and create requests"
+    elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
+        return "Can view all domain requests for the organization"
+    else:
+        return "Cannot view or create domain requests"
+
+
+def get_members_display(roles, permissions):
+    """
+    Determines the display name for a user's member management permissions.
+
+    - If the user has the EDIT_MEMBERS permission, return "Manager".
+    - If the user has the VIEW_MEMBERS permission, return "Viewer".
+    - Otherwise, return "No access".
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's member management access level.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.EDIT_MEMBERS in all_permissions:
+        return "Manager"
+    elif UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
+        return "Viewer"
+    else:
+        return "No access"
+
+
+def get_members_description_display(roles, permissions):
+    """
+    Determines the display description for a user's member management permissions.
+
+    Args:
+        roles (list): A list of role strings assigned to the user.
+        permissions (list): A list of additional permissions assigned to the user.
+
+    Returns:
+        str: A string representing the user's member management access level description.
+    """
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
+    if UserPortfolioPermissionChoices.EDIT_MEMBERS in all_permissions:
+        return "Can view and manage all member permissions"
+    elif UserPortfolioPermissionChoices.VIEW_MEMBERS in all_permissions:
+        return "Can view all member permissions"
+    else:
+        return "Cannot view member permissions"
+
+
 def validate_user_portfolio_permission(user_portfolio_permission):
     """
     Validates a UserPortfolioPermission instance. Located in portfolio_helper to avoid circular imports
