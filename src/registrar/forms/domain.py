@@ -189,7 +189,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
 
         if any(self.errors):  # Skip validation if individual forms already have errors
             return
-        
+
         # Check if there are at least two valid servers
         valid_forms = []  # Track forms with valid "server" values
         empty_forms = []  # Track forms where "server" is empty
@@ -198,7 +198,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
             if not form.is_valid():  # Ensure the form is valid before accessing cleaned_data
                 continue
 
-            server = form.cleaned_data.get("server","").strip()
+            server = form.cleaned_data.get("server", "").strip()
             if server:  # If server is provided, add to valid list
                 valid_forms.append(form)
             else:  # If server is missing, track the form

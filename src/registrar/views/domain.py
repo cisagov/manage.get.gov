@@ -751,7 +751,7 @@ class DomainNameserversView(DomainFormBaseView):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
         initial_data = []
-
+        print(nameservers)
         if nameservers is not None:
             # Add existing nameservers as initial data
             initial_data.extend({"server": name, "ip": ",".join(ip)} for name, ip in nameservers)
@@ -760,6 +760,7 @@ class DomainNameserversView(DomainFormBaseView):
         if len(initial_data) == 0:
             initial_data.append({})
 
+        print(initial_data)
         return initial_data
 
     def get_success_url(self):
@@ -778,6 +779,7 @@ class DomainNameserversView(DomainFormBaseView):
         formset = super().get_form(**kwargs)
 
         for i, form in enumerate(formset):
+            logger.debug(i)
             form.fields["server"].label += f" {i+1}"
             if i < 2:
                 form.fields["server"].required = True
