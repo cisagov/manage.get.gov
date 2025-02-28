@@ -175,7 +175,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
-                response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
+                response = self.client.get(reverse(view_name, kwargs={"domain_pk": self.domain.id}))
                 self.assertEqual(response.status_code, 302)
 
     @less_console_noise_decorator
@@ -194,7 +194,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-security-email",
         ]:
             with self.subTest(view_name=view_name):
-                response = self.client.get(reverse(view_name, kwargs={"pk": self.domain.id}))
+                response = self.client.get(reverse(view_name, kwargs={"domain_pk": self.domain.id}))
                 self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
@@ -218,7 +218,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 self.domain_deleted,
             ]:
                 with self.subTest(view_name=view_name, domain=domain):
-                    response = self.client.get(reverse(view_name, kwargs={"pk": domain.id}))
+                    response = self.client.get(reverse(view_name, kwargs={"domain_pk": domain.id}))
                     self.assertEqual(response.status_code, 403)
 
 
@@ -271,20 +271,20 @@ class TestDomainDetail(TestDomainOverview):
         with less_console_noise():
             self.user.status = User.RESTRICTED
             self.user.save()
-            response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}))
             self.assertEqual(response.status_code, 403)
 
     def test_domain_detail_allowed_for_on_hold(self):
         """Test that the domain overview page displays for on hold domain"""
         with less_console_noise():
             # View domain overview page
-            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_on_hold.id}))
+            detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_on_hold.id}))
             self.assertNotContains(detail_page, "Edit")
 
     def test_domain_detail_see_just_nameserver(self):
         with less_console_noise():
             # View nameserver on Domain Overview page
-            detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_just_nameserver.id}))
+            detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_just_nameserver.id}))
 
             self.assertContains(detail_page, "justnameserver.com")
             self.assertContains(detail_page, "ns1.justnameserver.com")
@@ -293,7 +293,7 @@ class TestDomainDetail(TestDomainOverview):
     def test_domain_detail_see_nameserver_and_ip(self):
         with less_console_noise():
             # View nameserver on Domain Overview page
-            detail_page = self.app.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
+            detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             self.assertContains(detail_page, "nameserverwithip.gov")
 
@@ -321,7 +321,7 @@ class TestDomainDetail(TestDomainOverview):
             session["analyst_action_location"] = self.domain_no_information.id
             session.save()
 
-            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain_no_information.id}))
+            detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_no_information.id}))
 
             self.assertContains(detail_page, "noinformation.gov")
             self.assertContains(detail_page, "Domain missing domain information")
@@ -341,7 +341,7 @@ class TestDomainDetail(TestDomainOverview):
             session["analyst_action_location"] = self.domain.id
             session.save()
 
-            detail_page = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+            detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}))
 
             self.assertNotContains(
                 detail_page, "If you need to make updates, contact one of the listed domain managers."
@@ -486,7 +486,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         ):
             self.assertEquals(self.domain_to_renew.state, Domain.State.UNKNOWN)
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": self.domain_to_renew.id}),
+                reverse("domain", kwargs={"domain_pk": self.domain_to_renew.id}),
             )
             self.assertContains(detail_page, "Expiring soon")
 
@@ -528,7 +528,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             Domain, "is_expired", self.custom_is_expired_false
         ):
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": domain_to_renew2.id}),
+                reverse("domain", kwargs={"domain_pk": domain_to_renew2.id}),
             )
             self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
 
@@ -548,7 +548,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             Domain, "is_expired", self.custom_is_expired_false
         ):
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": domain_to_renew3.id}),
+                reverse("domain", kwargs={"domain_pk": domain_to_renew3.id}),
             )
             self.assertContains(detail_page, "Renew to maintain access")
 
@@ -561,7 +561,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         ):
             # Grab the detail page
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": self.domain_to_renew.id}),
+                reverse("domain", kwargs={"domain_pk": self.domain_to_renew.id}),
             )
 
             # Make sure we see the link as a domain manager
@@ -571,7 +571,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(detail_page, "Renewal form")
 
             # Grab link to the renewal page
-            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domain_to_renew.id})
+            renewal_form_url = reverse("domain-renewal", kwargs={"domain_pk": self.domain_to_renew.id})
             self.assertContains(detail_page, f'href="{renewal_form_url}"')
 
             # Simulate clicking the link
@@ -590,7 +590,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         ):
             # Grab the detail page
             detail_page = self.client.get(
-                reverse("domain", kwargs={"pk": self.domain_to_renew.id}),
+                reverse("domain", kwargs={"domain_pk": self.domain_to_renew.id}),
             )
 
             # Make sure we see the link as a domain manager
@@ -600,7 +600,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(detail_page, "Renewal form")
 
             # Grab link to the renewal page
-            renewal_form_url = reverse("domain-renewal", kwargs={"pk": self.domain_to_renew.id})
+            renewal_form_url = reverse("domain-renewal", kwargs={"domain_pk": self.domain_to_renew.id})
             self.assertContains(detail_page, f'href="{renewal_form_url}"')
 
             # Simulate clicking the link
@@ -614,7 +614,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         Your Profile portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
-            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Verify we see "Your contact information" on the renewal form
             self.assertContains(renewal_page, "Your contact information")
@@ -633,7 +633,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         Security Email portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
-            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Verify we see "Security email" on the renewal form
             self.assertContains(renewal_page, "Security email")
@@ -642,7 +642,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertContains(renewal_page, "We strongly recommend that you provide a security email.")
 
             # Verify that the "Edit" button for Security email is there and links to correct URL
-            edit_button_url = reverse("domain-security-email", kwargs={"pk": self.domain_with_ip.id})
+            edit_button_url = reverse("domain-security-email", kwargs={"domain_pk": self.domain_with_ip.id})
             self.assertContains(renewal_page, f'href="{edit_button_url}"')
 
             # Simulate clicking on edit button
@@ -655,26 +655,26 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         Domain Manager portion of the Renewal Form."""
         with less_console_noise():
             # Start on the Renewal page for the domain
-            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id}))
+            renewal_page = self.app.get(reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Verify we see "Domain managers" on the renewal form
             self.assertContains(renewal_page, "Domain managers")
 
             # Verify that the "Edit" button for Domain managers is there and links to correct URL
-            edit_button_url = reverse("domain-users", kwargs={"pk": self.domain_with_ip.id})
+            edit_button_url = reverse("domain-users", kwargs={"domain_pk": self.domain_with_ip.id})
             self.assertContains(renewal_page, f'href="{edit_button_url}"')
 
             # Simulate clicking on edit button
             edit_page = renewal_page.click(href=edit_button_url, index=1)
             self.assertEqual(edit_page.status_code, 200)
-            self.assertContains(edit_page, "Domain managers can update all information related to a domain")
+            self.assertContains(edit_page, "Domain managers can update information related to this domain")
 
     def test_domain_renewal_form_not_expired_or_expiring(self):
         """Checking that if the user's domain is not expired or expiring that user should not be able
         to access /renewal and that it should receive a 403."""
         with less_console_noise():
             # Start on the Renewal page for the domain
-            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domain_not_expiring.id}))
+            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"domain_pk": self.domain_not_expiring.id}))
             self.assertEqual(renewal_page.status_code, 403)
 
     def test_domain_renewal_form_does_not_appear_if_not_domain_manager(self):
@@ -682,13 +682,15 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expired", self.custom_is_expired_true), patch.object(
             Domain, "is_expired", self.custom_is_expired_true
         ):
-            renewal_page = self.client.get(reverse("domain-renewal", kwargs={"pk": self.domain_no_domain_manager.id}))
+            renewal_page = self.client.get(
+                reverse("domain-renewal", kwargs={"domain_pk": self.domain_no_domain_manager.id})
+            )
             self.assertEqual(renewal_page.status_code, 403)
 
     def test_ack_checkbox_not_checked(self):
         """If user don't check the checkbox, user should receive an error message."""
         # Grab the renewal URL
-        renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+        renewal_url = reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id})
 
         # Test that the checkbox is not checked
         response = self.client.post(renewal_url, data={"submit_button": "next"})
@@ -701,17 +703,19 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         user should be redirected Domain Over page with an updated by 1 year expiration date"""
         # Grab the renewal URL
         with patch.object(Domain, "renew_domain", self.custom_renew_domain):
-            renewal_url = reverse("domain-renewal", kwargs={"pk": self.domain_with_ip.id})
+            renewal_url = reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id})
 
             # Click the check, and submit
             response = self.client.post(renewal_url, data={"is_policy_acknowledged": "on", "submit_button": "next"})
 
             # Check that it redirects after a successfully submits
-            self.assertRedirects(response, reverse("domain", kwargs={"pk": self.domain_with_ip.id}))
+            self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
             formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
-            redirect_response = self.client.get(reverse("domain", kwargs={"pk": self.domain_with_ip.id}), follow=True)
+            redirect_response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
+            )
             self.assertContains(redirect_response, formatted_new_expiration_date)
 
 
@@ -754,28 +758,28 @@ class TestDomainManagers(TestDomainOverview):
 
     @less_console_noise_decorator
     def test_domain_managers(self):
-        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
+        response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
         self.assertContains(response, "Add a domain manager")
         # assert that the non-portfolio view contains Role column and doesn't contain Admin
         self.assertContains(response, "Role</th>")
         self.assertNotContains(response, "Admin")
-        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
+        self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_domain_managers_portfolio_view(self):
-        response = self.client.get(reverse("domain-users", kwargs={"pk": self.domain.id}))
+        response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
         self.assertContains(response, "Add a domain manager")
         # assert that the portfolio view doesn't contain Role column and does contain Admin
         self.assertNotContains(response, "Role</th>")
         self.assertContains(response, "Admin")
-        self.assertContains(response, "This domain has one manager. Adding more can prevent issues.")
+        self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
     @less_console_noise_decorator
     def test_domain_user_add(self):
-        response = self.client.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        response = self.client.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Add a domain manager")
 
     @less_console_noise_decorator
@@ -784,7 +788,7 @@ class TestDomainManagers(TestDomainOverview):
         """Adding an existing user works."""
         get_user_model().objects.get_or_create(email="mayor@igorville.gov")
         user = User.objects.filter(email="mayor@igorville.gov").first()
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "mayor@igorville.gov"
@@ -804,7 +808,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -820,7 +824,7 @@ class TestDomainManagers(TestDomainOverview):
         """Adding an existing user works and sends portfolio invitation when
         user is not member of portfolio."""
         get_user_model().objects.get_or_create(email="mayor@igorville.gov")
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "mayor@igorville.gov"
@@ -832,7 +836,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         # Verify that the invitation emails were sent
@@ -877,7 +881,7 @@ class TestDomainManagers(TestDomainOverview):
         self, mock_send_domain_email, mock_send_portfolio_email
     ):
         """Adding an email not associated with a user works and sends portfolio invitation."""
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "notauser@igorville.gov"
@@ -889,7 +893,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         # Verify that the invitation emails were sent
@@ -928,7 +932,7 @@ class TestDomainManagers(TestDomainOverview):
     ):
         """Adding an email not associated with a user works and sends portfolio invitation,
         and when domain managers email(s) fail to send, assert proper warning displayed."""
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "notauser@igorville.gov"
@@ -942,7 +946,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         # Verify that the invitation emails were sent
@@ -967,7 +971,7 @@ class TestDomainManagers(TestDomainOverview):
         UserPortfolioPermission.objects.get_or_create(
             user=other_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "mayor@igorville.gov"
@@ -979,7 +983,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         # Verify that the invitation emails were sent
@@ -1015,7 +1019,7 @@ class TestDomainManagers(TestDomainOverview):
         user is not member of portfolio and send raises an error."""
         mock_send_portfolio_email.side_effect = EmailSendingError("Failed to send email.")
         get_user_model().objects.get_or_create(email="mayor@igorville.gov")
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         add_page.form["email"] = "mayor@igorville.gov"
@@ -1027,7 +1031,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertEqual(success_result.status_code, 302)
         self.assertEqual(
             success_result["Location"],
-            reverse("domain-users", kwargs={"pk": self.domain.id}),
+            reverse("domain-users", kwargs={"domain_pk": self.domain.id}),
         )
 
         # Verify that the invitation emails were sent
@@ -1058,7 +1062,9 @@ class TestDomainManagers(TestDomainOverview):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
-        self.client.post(reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.manager.id}))
+        self.client.post(
+            reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.manager.id})
+        )
 
         # Verify that the notification emails were sent to domain manager
         mock_send_templated_email.assert_called_once_with(
@@ -1082,7 +1088,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1115,7 +1121,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = caps_email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1147,7 +1153,7 @@ class TestDomainManagers(TestDomainOverview):
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1175,7 +1181,7 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1214,7 +1220,7 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1258,7 +1264,7 @@ class TestDomainManagers(TestDomainOverview):
         mock_client_instance = mock_client.return_value
 
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1289,7 +1295,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor"
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1313,7 +1319,7 @@ class TestDomainManagers(TestDomainOverview):
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         with patch("django.contrib.messages.error") as mock_error:
-            add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+            add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             add_page.form["email"] = email_address
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -1332,7 +1338,7 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view deletes an invitation."""
         email_address = "mayor@igorville.gov"
         invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
-        self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
+        self.client.post(reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}))
         invitation = DomainInvitation.objects.get(id=invitation.id)
         self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
 
@@ -1343,7 +1349,9 @@ class TestDomainManagers(TestDomainOverview):
         invitation, _ = DomainInvitation.objects.get_or_create(
             domain=self.domain, email=email_address, status=DomainInvitation.DomainInvitationStatus.RETRIEVED
         )
-        response = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}), follow=True)
+        response = self.client.post(
+            reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
+        )
         # Assert that an error message is displayed to the user
         self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
@@ -1363,7 +1371,7 @@ class TestDomainManagers(TestDomainOverview):
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-cancel", kwargs={"pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}))
 
         self.assertEqual(result.status_code, 403)
 
@@ -1380,7 +1388,7 @@ class TestDomainManagers(TestDomainOverview):
         title = "title"
         User.objects.filter(email=email_address).delete()
 
-        add_page = self.app.get(reverse("domain-users-add", kwargs={"pk": self.domain.id}))
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
@@ -1418,7 +1426,7 @@ class TestDomainManagers(TestDomainOverview):
         )
         UserDomainRole.objects.create(user=new_user_2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         response = self.client.post(
-            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": new_user.id}), follow=True
+            reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": new_user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
         self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
@@ -1432,7 +1440,7 @@ class TestDomainManagers(TestDomainOverview):
         """Posting to the delete view attempts to delete a user domain role when there is only one manager."""
         # self.user is the only domain manager, so attempt to delete it
         response = self.client.post(
-            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+            reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
         self.assertContains(response, "Domains must have at least one domain manager.")
@@ -1449,7 +1457,7 @@ class TestDomainManagers(TestDomainOverview):
         new_user = User.objects.create(email=email_address, username="mayor")
         UserDomainRole.objects.create(user=new_user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
         response = self.client.post(
-            reverse("domain-user-delete", kwargs={"pk": self.domain.id, "user_pk": self.user.id}), follow=True
+            reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
         self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
@@ -1461,7 +1469,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
     @less_console_noise_decorator
     def test_domain_nameservers(self):
         """Can load domain's nameservers page."""
-        page = self.client.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
     @less_console_noise_decorator
@@ -1471,7 +1479,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
@@ -1494,7 +1502,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1519,7 +1527,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1543,7 +1551,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with duplicate host names of fake.host.com
@@ -1571,7 +1579,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         valid_ip = "1.1. 1.1"
         valid_ip_2 = "2.2. 2.2"
         # have to throw an error in order to test that the whitespace has been stripped from ip
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without one host and an ip with whitespace
@@ -1585,7 +1593,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
@@ -1604,7 +1612,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameserver2 = "ns2.igorville.com"
         valid_ip = "127.0.0.1"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1632,7 +1640,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameserver = "ns2.igorville.gov"
         invalid_ip = "123"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1659,7 +1667,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameserver = "invalid-nameserver.gov"
         valid_ip = "123.2.45.111"
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form without two hosts, both subdomains,
@@ -1687,7 +1695,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameserver2 = "ns2.igorville.gov"
         valid_ip = "127.0.0.1"
         valid_ip_2 = "128.0.0.2"
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page.form["form-0-server"] = nameserver1
@@ -1699,7 +1707,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
@@ -1719,7 +1727,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         valid_ip = ""
         valid_ip_2 = "128.0.0.2"
         valid_ip_3 = "128.0.0.3"
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page.form["form-0-server"] = nameserver1
@@ -1734,7 +1742,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1760,7 +1768,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1785,7 +1793,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         valid_ip_3 = ""
         valid_ip_4 = ""
         nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id})
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id})
         )
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1809,7 +1817,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_four_nameservers.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1821,7 +1829,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -1843,7 +1851,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     @less_console_noise_decorator
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
-        page = self.client.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        page = self.client.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Senior official", count=4)
 
     @less_console_noise_decorator
@@ -1852,7 +1860,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.senior_official = Contact(first_name="Testy")
         self.domain_information.senior_official.save()
         self.domain_information.save()
-        page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Testy")
 
     @less_console_noise_decorator
@@ -1864,7 +1872,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         )
         self.domain_information.senior_official.save()
         self.domain_information.save()
-        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         so_form = so_page.forms[0]
@@ -1922,7 +1930,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.senior_official.save()
         self.domain_information.save()
 
-        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(so_page, "Apple Tester")
         self.assertContains(so_page, "CIO")
         self.assertContains(so_page, "nobody@igorville.gov")
@@ -1943,7 +1951,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.senior_official.save()
         self.domain_information.save()
 
-        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(so_page, "Apple Tester")
         self.assertContains(so_page, "CIO")
         self.assertContains(so_page, "nobody@igorville.gov")
@@ -1962,7 +1970,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         self.domain_information.other_contacts.add(self.domain_information.senior_official)
         self.domain_information.save()
         # load the Senior Official in the web form
-        so_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        so_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         so_form = so_page.forms[0]
@@ -1990,7 +1998,7 @@ class TestDomainOrganization(TestDomainOverview):
     @less_console_noise_decorator
     def test_domain_org_name_address(self):
         """Can load domain's org name and mailing address page."""
-        page = self.client.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        page = self.client.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         # once on the sidebar, once in the page title, once as H1
         self.assertContains(page, "/org-name-address")
         self.assertContains(page, "Organization name and mailing address")
@@ -2001,7 +2009,7 @@ class TestDomainOrganization(TestDomainOverview):
         """Org name and address information appears on the page."""
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.save()
-        page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Town of Igorville")
 
     @less_console_noise_decorator
@@ -2009,7 +2017,7 @@ class TestDomainOrganization(TestDomainOverview):
         """Submitting changes works on the org name address page."""
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.save()
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         org_name_page.form["organization_name"] = "Not igorville"
@@ -2041,7 +2049,7 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertEqual(self.domain_information.generic_org_type, tribal_org_type)
 
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
 
         form = org_name_page.forms[0]
         # Check the value of the input field
@@ -2098,7 +2106,7 @@ class TestDomainOrganization(TestDomainOverview):
 
         self.assertEqual(self.domain_information.generic_org_type, fed_org_type)
 
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
 
         form = org_name_page.forms[0]
         # Check the value of the input field
@@ -2160,7 +2168,7 @@ class TestDomainOrganization(TestDomainOverview):
 
         new_value = ("Department of State", "Department of State")
         self.client.post(
-            reverse("domain-org-name-address", kwargs={"pk": self.domain.id}),
+            reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}),
             {
                 "federal_agency": new_value,
             },
@@ -2202,7 +2210,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.assertEqual(self.domain_information.sub_organization, suborg)
 
         # Navigate to the suborganization page
-        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
@@ -2260,7 +2268,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.assertEqual(self.domain_information.sub_organization, suborg)
 
         # Navigate to the suborganization page
-        page = self.app.get(reverse("domain-suborganization", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
 
         # The page should display the readonly option
         self.assertContains(page, "Vanilla")
@@ -2299,7 +2307,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.user.refresh_from_db()
 
         # Navigate to the domain overview page
-        page = self.app.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain.id}))
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
@@ -2328,7 +2336,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
             # Add current user to this domain
             _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-            page = self.client.get(reverse("domain-security-email", kwargs={"pk": domain_contact.id}))
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain_contact.id}))
 
             # Loads correctly
             self.assertContains(page, "Security email")
@@ -2343,7 +2351,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
-            page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}))
 
             # Loads correctly
             self.assertContains(page, "Security email")
@@ -2353,7 +2361,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
     def test_domain_security_email(self):
         """Can load domain's security email page."""
         with less_console_noise():
-            page = self.client.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}))
             self.assertContains(page, "Security email")
 
     def test_domain_security_email_form(self):
@@ -2361,7 +2369,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
         Uses self.app WebTest because we need to interact with forms.
         """
         with less_console_noise():
-            security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+            security_email_page = self.app.get(reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             security_email_page.form["security_email"] = "mayor@igorville.gov"
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2372,7 +2380,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.assertEqual(result.status_code, 302)
             self.assertEqual(
                 result["Location"],
-                reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+                reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}),
             )
 
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2415,7 +2423,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
             ]
             for test_name, data, expected_message in test_cases:
                 response = self.client.post(
-                    reverse("domain-security-email", kwargs={"pk": self.domain.id}),
+                    reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}),
                     data=data,
                     follow=True,
                 )
@@ -2443,7 +2451,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
         management pages share the same permissions class"""
         self.user.status = User.RESTRICTED
         self.user.save()
-        response = self.client.get(reverse("domain", kwargs={"pk": self.domain.id}))
+        response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}))
         self.assertEqual(response.status_code, 403)
 
 
@@ -2455,7 +2463,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC overview page loads when domain has no DNSSEC data
         and shows a 'Enable DNSSEC' button."""
 
-        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}))
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Enable DNSSEC")
 
     @less_console_noise_decorator
@@ -2463,7 +2471,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC overview page loads when domain has DNSSEC data
         and the template contains a button to disable DNSSEC."""
 
-        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id}))
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"domain_pk": self.domain_multdsdata.id}))
         self.assertContains(page, "Disable DNSSEC")
 
         # Prepare the data for the POST request
@@ -2471,7 +2479,7 @@ class TestDomainDNSSEC(TestDomainOverview):
             "disable_dnssec": "Disable DNSSEC",
         }
         updated_page = self.client.post(
-            reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}),
+            reverse("domain-dns-dnssec", kwargs={"domain_pk": self.domain.id}),
             post_data,
             follow=True,
         )
@@ -2485,7 +2493,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC Add DS data page loads when there is no
         domain DNSSEC data and shows a button to Add new record"""
 
-        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dnssec_none.id}))
+        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dnssec_none.id}))
         self.assertContains(page, "You have no DS data added")
         self.assertContains(page, "Add new record")
 
@@ -2494,13 +2502,13 @@ class TestDomainDNSSEC(TestDomainOverview):
         """DNSSEC Add DS data page loads when there is
         domain DNSSEC DS data and shows the data"""
 
-        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         self.assertContains(page, "DS data record 1")
 
     @less_console_noise_decorator
     def test_ds_data_form_modal(self):
         """When user clicks on save, a modal pops up."""
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         # Assert that a hidden trigger for the modal does not exist.
         # This hidden trigger will pop on the page when certain condition are met:
         # 1) Initial form contained DS data, 2) All data is deleted and form is
@@ -2509,7 +2517,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         # Simulate a delete all data
         form_data = {}
         response = self.client.post(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}),
+            reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}),
             data=form_data,
         )
         self.assertEqual(response.status_code, 200)  # Adjust status code as needed
@@ -2522,7 +2530,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         result = add_data_page.forms[0].submit()
@@ -2530,7 +2538,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}),
+            reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = result.follow()
@@ -2542,7 +2550,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # all four form fields are required, so will test with each blank
@@ -2565,7 +2573,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -2588,7 +2596,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -2611,7 +2619,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -2634,7 +2642,7 @@ class TestDomainDNSSEC(TestDomainOverview):
 
         Uses self.app WebTest because we need to interact with forms.
         """
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain_dsdata.id}))
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # first two nameservers are required, so if we empty one out we should
@@ -2688,7 +2696,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.domain_information.zipcode = "62052"
         self.domain_information.save()
 
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         org_name_page.form["organization_name"] = "Not igorville"
@@ -2729,7 +2737,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
 
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         org_name_page.form["organization_name"] = "Not igorville"
@@ -2756,7 +2764,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
 
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"pk": self.domain.id}))
+        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         session = self.app.session
@@ -2778,7 +2786,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_notification_on_security_email_change(self):
         """Test that an email is sent when the security email is changed."""
 
-        security_email_page = self.app.get(reverse("domain-security-email", kwargs={"pk": self.domain.id}))
+        security_email_page = self.app.get(reverse("domain-security-email", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         security_email_page.form["security_email"] = "new_security@example.com"
@@ -2801,7 +2809,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_notification_on_dnssec_enable(self):
         """Test that an email is sent when DNSSEC is enabled."""
 
-        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"pk": self.domain_multdsdata.id}))
+        page = self.client.get(reverse("domain-dns-dnssec", kwargs={"domain_pk": self.domain_multdsdata.id}))
         self.assertContains(page, "Disable DNSSEC")
 
         # Prepare the data for the POST request
@@ -2811,7 +2819,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             updated_page = self.client.post(
-                reverse("domain-dns-dnssec", kwargs={"pk": self.domain.id}),
+                reverse("domain-dns-dnssec", kwargs={"domain_pk": self.domain.id}),
                 post_data,
                 follow=True,
             )
@@ -2834,7 +2842,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_notification_on_ds_data_change(self):
         """Test that an email is sent when DS data is changed."""
 
-        ds_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"pk": self.domain.id}))
+        ds_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # Add DS data
@@ -2868,7 +2876,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         )
         self.domain_information.save()
 
-        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         senior_official_page.form["first_name"] = "New"
@@ -2905,7 +2913,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
 
-        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"pk": self.domain.id}))
+        senior_official_page = self.app.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         senior_official_page.form["first_name"] = "New"
@@ -2924,7 +2932,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain_dns_needed.id}))
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # add nameservers

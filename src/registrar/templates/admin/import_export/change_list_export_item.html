@@ -1,0 +1,7 @@
+{% load i18n %}
+{% load admin_urls %}
+
+{% if has_export_permission %}
+{% comment %} Uses the initButtonLinks {% endcomment %}
+<li><button class="export_link use-button-as-link" data-href="{% url opts|admin_urlname:"export" %}">{% trans "Export" %}</button></li>
+{% endif %}

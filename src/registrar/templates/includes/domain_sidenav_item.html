@@ -1,6 +1,6 @@
 <li class="usa-sidenav__item">
     {% if url_name %}
-      {% url url_name pk=domain.id as url %}
+      {% url url_name domain_pk=domain.id as url %}
     {% endif %}
     <a href="{{ url }}"
       {% if request.path == url %}class="usa-current"{% endif %}
