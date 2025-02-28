@@ -20,13 +20,6 @@ class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
 
 class PurposeDetailsForm(BaseDeletableRegistrarForm):
 
-    labels = {
-        "new": "Explain why a new domain is required and why a subdomain of an existing domain doesn't meet your needs. \
-            Include any data that supports a clear public benefit or evident user need for this new domain.",
-        "redirect": "Explain why a redirect is necessary",
-        "other": "Describe how this domain will be used",
-    }
-
     field_name="purpose"
 
     purpose = forms.CharField(

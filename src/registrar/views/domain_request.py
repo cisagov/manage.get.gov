@@ -745,26 +745,35 @@ class Purpose(DomainRequestWizard):
         feb_initiative_details_form = forms_list[5]
 
         if not self.requires_feb_questions():
-            # if FEB questions don't apply, mark all other forms for deletion
+            # if FEB questions don't apply, mark those forms for deletion
             feb_purpose_options_form.mark_form_for_deletion()
             feb_timeframe_yes_no_form.mark_form_for_deletion()
             feb_timeframe_details_form.mark_form_for_deletion()
             feb_initiative_yes_no_form.mark_form_for_deletion()
             feb_initiative_details_form.mark_form_for_deletion()
-            # we only care about the purpose form in this case since it's used in both instances
+            # we only care about the purpose details form in this case since it's used in both instances
             return purpose_details_form.is_valid()
         
         if not feb_purpose_options_form.is_valid():
             # Ensure details form doesn't throw errors if it's not showing
             purpose_details_form.mark_form_for_deletion()
+
+        feb_timeframe_valid = feb_timeframe_yes_no_form.is_valid()
+        feb_initiative_valid = feb_initiative_yes_no_form.is_valid()
+
+        logger.debug(f"feb timeframe yesno: {feb_timeframe_yes_no_form.cleaned_data.get('has_timeframe')}")
+        logger.debug(f"FEB initiative yesno: {feb_initiative_yes_no_form.cleaned_data.get('is_interagency_initiative')}")
         
-        if not feb_initiative_yes_no_form.is_valid() or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
+        if not feb_timeframe_valid or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_timeframe_details_form.mark_form_for_deletion()
+
+        if not feb_initiative_valid or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
             # Ensure details form doesn't throw errors if it's not showing
             feb_initiative_details_form.mark_form_for_deletion()
 
-        if not feb_timeframe_yes_no_form.is_valid() or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
-            # Ensure details form doesn't throw errors if it's not showing
-            feb_timeframe_details_form.mark_form_for_deletion()
+        for i, form in enumerate(forms_list):
+            logger.debug(f"Form {i} is marked for deletion: {form.form_data_marked_for_deletion}")
 
         valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
 

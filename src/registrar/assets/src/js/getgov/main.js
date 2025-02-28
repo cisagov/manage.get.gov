@@ -1,4 +1,4 @@
-import { hookupYesNoListener, hookupRadioTogglerListener } from './radios.js';
+import { hookupYesNoListener, hookupCallbacksToRadioToggler } from './radios.js';
 import { initDomainValidators } from './domain-validators.js';
 import { initFormsetsForms, triggerModalOnDsDataForm, nameserversFormListener } from './formset-forms.js';
 import { initializeUrbanizationToggle } from './urbanization.js';
@@ -15,7 +15,7 @@ import { initDomainManagersPage } from './domain-managers.js';
 import { initDomainDSData } from './domain-dsdata.js';
 import { initDomainDNSSEC } from './domain-dnssec.js';
 import { initFormErrorHandling } from './form-errors.js';
-
+import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 initDomainValidators();
 
 initFormsetsForms();
@@ -26,6 +26,12 @@ hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-o
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
 hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);
 hookupYesNoListener("dotgov_domain-feb_naming_requirements", null, "domain-naming-requirements-details-container");
+
+hookupCallbacksToRadioToggler("purpose-feb_purpose_choice", domain_purpose_choice_callbacks);
+
+hookupYesNoListener("purpose-has_timeframe", "domain-timeframe-details-container", null);
+hookupYesNoListener("purpose-is_interagency_initiative", "domain-interagency-initaitive-details-container", null);
+
 
 initializeUrbanizationToggle();
 
