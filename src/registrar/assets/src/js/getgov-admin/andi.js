@@ -7,7 +7,6 @@ This allows us to avoid overriding aria-label, which is used by select2
 to send the current dropdown selection to ANDI
 */
 export function initAriaInjections() {
-    console.log("FIRED")
     document.addEventListener('DOMContentLoaded', function () {
         // Set timeout so this fires after select2.js finishes adding to the DOM
         setTimeout(function () {
