@@ -99,7 +99,7 @@
         <thead>
           <tr>
             <th scope="col" role="columnheader">Name Servers</th>
-            <th scope="col" role="columnheader">IP address</th>
+            <th scope="col" role="columnheader"><span class="sr-only">IP address</span></th>
             <th scope="col" role="columnheader">Action</th>
           </tr>
         </thead>
@@ -109,8 +109,7 @@
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>
-                <td>{{ form.server.value }}</td>
-                <td>{{ form.ip.value }}</td>
+                <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
                 <td>
                   <div class="tablet:display-flex tablet:flex-row">
                     <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 nameserver-edit'>
