@@ -68,7 +68,7 @@ for step, view in [
     (PortfolioDomainRequestStep.REQUESTING_ENTITY, views.RequestingEntity),
     (PortfolioDomainRequestStep.ADDITIONAL_DETAILS, views.PortfolioAdditionalDetails),
 ]:
-    domain_request_urls.append(path(f"<int:id>/{step}/", view.as_view(), name=step))
+    domain_request_urls.append(path(f"<int:domain_request_pk>/{step}/", view.as_view(), name=step))
 
 
 urlpatterns = [
@@ -260,27 +260,27 @@ urlpatterns = [
         name="export_data_type_user",
     ),
     path(
-        "domain-request/<int:id>/edit/",
+        "domain-request/<int:domain_request_pk>/edit/",
         views.DomainRequestWizard.as_view(),
         name=views.DomainRequestWizard.EDIT_URL_NAME,
     ),
     path(
-        "domain-request/<int:pk>",
+        "domain-request/<int:domain_request_pk>",
         views.DomainRequestStatus.as_view(),
         name="domain-request-status",
     ),
     path(
-        "domain-request/viewonly/<int:pk>",
+        "domain-request/viewonly/<int:domain_request_pk>",
         views.PortfolioDomainRequestStatusViewOnly.as_view(),
         name="domain-request-status-viewonly",
     ),
     path(
-        "domain-request/<int:pk>/withdraw",
+        "domain-request/<int:domain_request_pk>/withdraw",
         views.DomainRequestWithdrawConfirmation.as_view(),
         name="domain-request-withdraw-confirmation",
     ),
     path(
-        "domain-request/<int:pk>/withdrawconfirmed",
+        "domain-request/<int:domain_request_pk>/withdrawconfirmed",
         views.DomainRequestWithdrawn.as_view(),
         name="domain-request-withdrawn",
     ),
@@ -296,56 +296,60 @@ urlpatterns = [
         lambda r: always_404(r, "We forgot to include this link, sorry."),
         name="todo",
     ),
-    path("domain/<int:pk>", views.DomainView.as_view(), name="domain"),
-    path("domain/<int:pk>/prototype-dns", views.PrototypeDomainDNSRecordView.as_view(), name="prototype-domain-dns"),
-    path("domain/<int:pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
+    path("domain/<int:domain_pk>", views.DomainView.as_view(), name="domain"),
     path(
-        "domain/<int:pk>/dns",
+        "domain/<int:domain_pk>/prototype-dns",
+        views.PrototypeDomainDNSRecordView.as_view(),
+        name="prototype-domain-dns",
+    ),
+    path("domain/<int:domain_pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
+    path(
+        "domain/<int:domain_pk>/dns",
         views.DomainDNSView.as_view(),
         name="domain-dns",
     ),
     path(
-        "domain/<int:pk>/dns/nameservers",
+        "domain/<int:domain_pk>/dns/nameservers",
         views.DomainNameserversView.as_view(),
         name="domain-dns-nameservers",
     ),
     path(
-        "domain/<int:pk>/dns/dnssec",
+        "domain/<int:domain_pk>/dns/dnssec",
         views.DomainDNSSECView.as_view(),
         name="domain-dns-dnssec",
     ),
     path(
-        "domain/<int:pk>/dns/dnssec/dsdata",
+        "domain/<int:domain_pk>/dns/dnssec/dsdata",
         views.DomainDsDataView.as_view(),
         name="domain-dns-dnssec-dsdata",
     ),
     path(
-        "domain/<int:pk>/org-name-address",
+        "domain/<int:domain_pk>/org-name-address",
         views.DomainOrgNameAddressView.as_view(),
         name="domain-org-name-address",
     ),
     path(
-        "domain/<int:pk>/suborganization",
+        "domain/<int:domain_pk>/suborganization",
         views.DomainSubOrganizationView.as_view(),
         name="domain-suborganization",
     ),
     path(
-        "domain/<int:pk>/senior-official",
+        "domain/<int:domain_pk>/senior-official",
         views.DomainSeniorOfficialView.as_view(),
         name="domain-senior-official",
     ),
     path(
-        "domain/<int:pk>/security-email",
+        "domain/<int:domain_pk>/security-email",
         views.DomainSecurityEmailView.as_view(),
         name="domain-security-email",
     ),
     path(
-        "domain/<int:pk>/renewal",
+        "domain/<int:domain_pk>/renewal",
         views.DomainRenewalView.as_view(),
         name="domain-renewal",
     ),
     path(
-        "domain/<int:pk>/users/add",
+        "domain/<int:domain_pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",
     ),
@@ -360,17 +364,17 @@ urlpatterns = [
         name="user-profile",
     ),
     path(
-        "invitation/<int:pk>/cancel",
+        "invitation/<int:domain_invitation_pk>/cancel",
         views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
         name="invitation-cancel",
     ),
     path(
-        "domain-request/<int:pk>/delete",
+        "domain-request/<int:domain_request_pk>/delete",
         views.DomainRequestDeleteView.as_view(http_method_names=["post"]),
         name="domain-request-delete",
     ),
     path(
-        "domain/<int:pk>/users/<int:user_pk>/delete",
+        "domain/<int:domain_pk>/users/<int:user_pk>/delete",
         views.DomainDeleteUserView.as_view(http_method_names=["post"]),
         name="domain-user-delete",
     ),
@@ -392,6 +396,7 @@ urlpatterns = [
 # This way, we can share a view for djangooidc, and other pages as we see fit.
 handler500 = "registrar.views.utility.error_views.custom_500_error_view"
 handler403 = "registrar.views.utility.error_views.custom_403_error_view"
+handler404 = "registrar.views.utility.error_views.custom_404_error_view"
 
 # we normally would guard these with `if settings.DEBUG` but tests run with
 # DEBUG = False even when these apps have been loaded because settings.DEBUG

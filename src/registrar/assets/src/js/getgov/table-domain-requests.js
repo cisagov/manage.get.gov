@@ -1,4 +1,4 @@
-import { hideElement, showElement, getCsrfToken } from './helpers.js';
+import { hideElement, showElement, getCsrfToken, unsafeStripHtmlTags } from './helpers.js';
 import { uswdsInitializeModals, uswdsUnloadModals } from './helpers-uswds.js';
 
 import { BaseTable, addModal, generateKebabHTML } from './table-base.js';
@@ -98,9 +98,10 @@ export class DomainRequestsTable extends BaseTable {
 
       // Request is deletable, modal and modalTrigger are built. Now check if we are on the portfolio requests page (by seeing if there is a portfolio value) and enhance the modalTrigger accordingly
       if (this.portfolioValue) {
-
+        // NOTE: THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
+        const sanitizedDomainName = unsafeStripHtmlTags(domainName);
         // 2nd path (org model): Just a modal trigger on mobile for org users or kebab + accordion with nested modal trigger on desktop for org users
-        modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', domainName);
+        modalTrigger = generateKebabHTML('delete-domain', request.id, 'Delete', sanitizedDomainName);
       }
     }
 
@@ -116,10 +117,10 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td class="${ this.portfolioValue ? '' : "width-quarter"}">
+      <td class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+            <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="/public/img/sprite.svg#${request.svg_icon}"></use>
             </svg>
             ${actionLabel} <span class="usa-sr-only">${request.requested_domain ? request.requested_domain : 'New domain request'}</span>

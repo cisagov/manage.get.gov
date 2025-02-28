@@ -1,33 +1,11 @@
 <h4 class="margin-bottom-0">Member access</h4>
-{% if permissions.roles and 'organization_admin' in permissions.roles %}
-    <p class="margin-top-0">Admin</p>
-{% elif permissions.roles and 'organization_member' in permissions.roles %}
-    <p class="margin-top-0">Basic</p>
-{% else %}
-    <p class="margin-top-0">⎯</p>
-{% endif %}
+    <p class="margin-top-0">{{ permissions.role_display }}</p>
 
 <h4 class="margin-bottom-0 text-primary">Domains</h4>
-{% if member_has_view_all_domains_portfolio_permission %}
-    <p class="margin-top-0">Viewer, all</p>
-{% else %}
-    <p class="margin-top-0">Viewer, limited</p>
-{% endif %}
+    <p class="margin-top-0">{{ permissions.domains_display }}: {{ permissions.domains_description_display }}</p>
 
 <h4 class="margin-bottom-0 text-primary">Domain requests</h4>
-{% if member_has_edit_request_portfolio_permission %}
-    <p class="margin-top-0">Creator</p>
-{% elif member_has_view_all_requests_portfolio_permission %}
-    <p class="margin-top-0">Viewer</p>
-{% else %}
-    <p class="margin-top-0">No access</p>
-{% endif %}
+    <p class="margin-top-0">{{ permissions.domain_requests_display }}: {{ permissions.domain_requests_description_display }}</p>
 
 <h4 class="margin-bottom-0 text-primary">Members</h4>
-{% if member_has_edit_members_portfolio_permission %}
-    <p class="margin-top-0">Manager</p>
-{% elif member_has_view_members_portfolio_permission %}
-    <p class="margin-top-0">Viewer</p>
-{% else %}
-    <p class="margin-top-0">No access</p>
-{% endif %}
+    <p class="margin-top-0">{{ permissions.members_display }}: {{ permissions.members_description_display }}</p>

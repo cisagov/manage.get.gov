@@ -12,6 +12,7 @@ from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DomainInvitation,
     User,
     Host,
     Portfolio,
@@ -177,7 +178,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then a user-friendly success message is returned for displaying on the web
             And `state` is set to `DELETED`
         """
-        domain = create_ready_domain()
+        domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
         # Ensure everything is displaying correctly
@@ -211,7 +212,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
+                "Domain my-nameserver.gov has been deleted. Thanks!",
                 extra_tags="",
                 fail_silently=False,
             )
@@ -223,7 +224,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-    # @less_console_noise_decorator
+    @less_console_noise_decorator
     def test_deletion_is_unsuccessful(self):
         """
         Scenario: Domain deletion is unsuccessful
@@ -265,7 +266,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             mock_add_message.assert_called_once_with(
                 request,
                 messages.ERROR,
-                "Error deleting this Domain: This subdomain is being used as a hostname on another domain: ns1.sharedhost.com",  # noqa
+                "Error deleting this Domain: Command failed with note: Domain has associated objects that prevent deletion.",  # noqa
                 extra_tags="",
                 fail_silently=False,
             )
@@ -320,7 +321,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
-        domain = create_ready_domain()
+        domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
         # Ensure everything is displaying correctly
@@ -339,12 +340,13 @@ class TestDomainAdminAsStaff(MockEppLib):
         )
         request.user = self.client
         # Delete it once
+
         with patch("django.contrib.messages.add_message") as mock_add_message:
             self.admin.do_delete_domain(request, domain)
             mock_add_message.assert_called_once_with(
                 request,
                 messages.INFO,
-                "Domain city.gov has been deleted. Thanks!",
+                "Domain my-nameserver.gov has been deleted. Thanks!",
                 extra_tags="",
                 fail_silently=False,
             )
@@ -493,6 +495,107 @@ class TestDomainInformationInline(MockEppLib):
         self.assertIn(f'<a href="/admin/registrar/user/{admin_user_2.pk}/change/">testuser2</a>', domain_managers)
         self.assertIn("Arnold Poopy", domain_managers)
         self.assertIn("poopy@gov.gov", domain_managers)
+
+
+class TestDomainInvitationAdmin(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.staffuser = create_user(email="staffdomainmanager@meoward.com", is_staff=True)
+        cls.site = AdminSite()
+        cls.admin = DomainAdmin(model=Domain, admin_site=cls.site)
+        cls.factory = RequestFactory()
+
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.client.force_login(self.staffuser)
+        super().setUp()
+
+    def test_successful_cancel_invitation_flow_in_admin(self):
+        """Testing canceling a domain invitation in Django Admin."""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="cancelinvitationflowviaadmin.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain
+        invitation = DomainInvitation.objects.create(
+            email="inviteddomainmanager@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you can see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cancel invitation")
+
+        # 5. Click the cancel invitation button
+        response = self.client.post(domain_invitation_change_url, {"cancel_invitation": "true"}, follow=True)
+
+        # 6. Make sure we're redirect back to the change view page in /admin
+        self.assertRedirects(response, domain_invitation_change_url)
+
+        # 7. Confirm cancellation confirmation message appears
+        expected_message = f"Invitation for {invitation.email} on {domain.name} is canceled"
+        self.assertContains(response, expected_message)
+
+    def test_no_cancel_invitation_button_in_retrieved_state(self):
+        """Shouldn't be able to see the "Cancel invitation" button if invitation is RETRIEVED state"""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="retrieved.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain and NOT in invited state
+        invitation = DomainInvitation.objects.create(
+            email="retrievedinvitation@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you CANNOT see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cancel invitation")
+
+    def test_no_cancel_invitation_button_in_canceled_state(self):
+        """Shouldn't be able to see the "Cancel invitation" button if invitation is CANCELED state"""
+
+        # 1. Create a domain and assign staff user role + domain manager
+        domain = Domain.objects.create(name="canceled.gov")
+        UserDomainRole.objects.create(user=self.staffuser, domain=domain, role="manager")
+
+        # 2. Invite a domain manager to the above domain and NOT in invited state
+        invitation = DomainInvitation.objects.create(
+            email="canceledinvitation@meoward.com",
+            domain=domain,
+            status=DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+
+        # 3. Go to the Domain Invitations list in /admin
+        domain_invitation_list_url = reverse("admin:registrar_domaininvitation_changelist")
+        response = self.client.get(domain_invitation_list_url)
+        self.assertEqual(response.status_code, 200)
+
+        # 4. Go to the change view of that invitation and make sure you CANNOT see the button
+        domain_invitation_change_url = reverse("admin:registrar_domaininvitation_change", args=[invitation.id])
+        response = self.client.get(domain_invitation_change_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cancel invitation")
 
 
 class TestDomainAdminWithClient(TestCase):
@@ -779,7 +882,7 @@ class TestDomainAdminWithClient(TestCase):
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
         # for our actual domain_request
-        self.assertContains(response, "Federal", count=56)
+        self.assertContains(response, "Federal", count=57)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist

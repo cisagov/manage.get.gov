@@ -4,37 +4,38 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.views import View
+from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.urls import reverse
 from django.db.models import Q
 
 from registrar.models.domain_invitation import DomainInvitation
-from registrar.views.utility.mixins import PortfolioMemberDomainsPermission
 
 logger = logging.getLogger(__name__)
 
 
-class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+class PortfolioMemberDomainsJson(View):
 
     def get(self, request):
         """Given the current request,
         get all domains that are associated with the portfolio, or
         associated with the member/invited member"""
 
-        domain_ids = self.get_domain_ids_from_request(request)
+        domain_ids = self._get_domain_ids_from_request(request)
 
         objects = Domain.objects.filter(id__in=domain_ids).select_related("domain_info__sub_organization")
         unfiltered_total = objects.count()
 
-        objects = self.apply_search(objects, request)
-        objects = self.apply_sorting(objects, request)
+        objects = self._apply_search(objects, request)
+        objects = self._apply_sorting(objects, request)
 
-        paginator = Paginator(objects, self.get_page_size(request))
+        paginator = Paginator(objects, self._get_page_size(request))
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
 
         member_id = request.GET.get("member_id")
-        domains = [self.serialize_domain(domain, member_id, request.user) for domain in page_obj.object_list]
+        domains = [self._serialize_domain(domain, member_id, request.user) for domain in page_obj.object_list]
 
         return JsonResponse(
             {
@@ -48,7 +49,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             }
         )
 
-    def get_page_size(self, request):
+    def _get_page_size(self, request):
         """Gets the page size.
 
         If member_only, need to return the entire result set every time, so need
@@ -65,7 +66,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             # later
             return 1000
 
-    def get_domain_ids_from_request(self, request):
+    def _get_domain_ids_from_request(self, request):
         """Get domain ids from request.
 
         request.get.email - email address of invited member
@@ -100,13 +101,13 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
         logger.warning("Invalid search criteria, returning empty results list")
         return []
 
-    def apply_search(self, queryset, request):
+    def _apply_search(self, queryset, request):
         search_term = request.GET.get("search_term")
         if search_term:
             queryset = queryset.filter(Q(name__icontains=search_term))
         return queryset
 
-    def apply_sorting(self, queryset, request):
+    def _apply_sorting(self, queryset, request):
         # Get the sorting parameters from the request
         sort_by = request.GET.get("sort_by", "name")
         order = request.GET.get("order", "asc")
@@ -141,7 +142,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
 
         return queryset
 
-    def serialize_domain(self, domain, member_id, user):
+    def _serialize_domain(self, domain, member_id, user):
         suborganization_name = None
         try:
             domain_info = domain.domain_info
@@ -176,7 +177,7 @@ class PortfolioMemberDomainsJson(PortfolioMemberDomainsPermission, View):
             "state": domain.state,
             "state_display": domain.state_display(),
             "get_state_help_text": domain.get_state_help_text(),
-            "action_url": reverse("domain", kwargs={"pk": domain.id}),
+            "action_url": reverse("domain", kwargs={"domain_pk": domain.id}),
             "action_label": ("View" if view_only else "Manage"),
             "svg_icon": ("visibility" if view_only else "settings"),
             "domain_info__sub_organization": suborganization_name,

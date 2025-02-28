@@ -1,7 +1,7 @@
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 
-$widescreen-max-width: 1920px;
+$widescreen-max-width: 1536px;
 $widescreen-x-padding: 4.5rem;
 
 $hot-pink: #FFC3F9;
@@ -46,12 +46,11 @@ body {
   background-color: color('gray-1');
 }
 
-
 .section-outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
   border-radius: 4px;
-  padding: 0 units(4) units(3) units(2);
+  padding: 0 units(2) units(3) units(2);
   margin-top: units(3);
 
   &.margin-top-0 {
@@ -277,4 +276,21 @@ abbr[title] {
 
 .width-quarter {
   width: 25%;
+}
+
+.margin-top-3px {
+  margin-top: 3px;
+}
+
+.top-28px {
+  top: 28px;
+}
+
+/* 
+NOTE: width: 3% basically forces a fit-content effect in the table.
+Fit-content itself does not work.
+*/
+.width--action-column {
+  width: 3%;
+  padding-right: 0px !important;
 }

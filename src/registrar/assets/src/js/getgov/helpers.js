@@ -96,3 +96,14 @@ export function submitForm(form_id) {
         console.error("Form '" + form_id + "' not found.");
     }
 }
+
+/**
+ * Helper function to strip HTML tags
+ * THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
+ */
+export function unsafeStripHtmlTags(input) {
+    const tempDiv = document.createElement("div");
+    // NOTE: THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
+    tempDiv.innerHTML = input;
+    return tempDiv.textContent || tempDiv.innerText || "";
+}

@@ -11,6 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
+
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
@@ -24,7 +25,7 @@ from registrar.utility.admin_helpers import (
 from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -1326,6 +1327,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     search_help_text = "Search by first name, last name, email, or portfolio."
 
     change_form_template = "django/admin/user_portfolio_permission_change_form.html"
+    delete_confirmation_template = "django/admin/user_portfolio_permission_delete_confirmation.html"
 
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
@@ -1533,6 +1535,27 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         # Get the filtered values
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Override the change_view to add the invitation obj for the change_form_object_tools template"""
+
+        if extra_context is None:
+            extra_context = {}
+
+        # Get the domain invitation object
+        invitation = get_object_or_404(DomainInvitation, id=object_id)
+        extra_context["invitation"] = invitation
+
+        if request.method == "POST" and "cancel_invitation" in request.POST:
+            if invitation.status == DomainInvitation.DomainInvitationStatus.INVITED:
+                invitation.cancel_invitation()
+                invitation.save(update_fields=["status"])
+                messages.success(request, _("Invitation canceled successfully."))
+
+                # Redirect back to the change view
+                return redirect(reverse("admin:registrar_domaininvitation_change", args=[object_id]))
+
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def delete_view(self, request, object_id, extra_context=None):
         """
         Custom delete_view to perform additional actions or customize the template.
@@ -1551,6 +1574,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         which will be successful if a single User exists for that email; otherwise, will
         just continue to create the invitation.
         """
+
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
@@ -1647,6 +1671,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
     autocomplete_fields = ["portfolio"]
 
     change_form_template = "django/admin/portfolio_invitation_change_form.html"
+    delete_confirmation_template = "django/admin/portfolio_invitation_delete_confirmation.html"
 
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):
@@ -2264,11 +2289,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
         # Example: Show different icons based on `status`
-        url = reverse("admin:registrar_domainrequest_changelist") + f"{obj.id}"
         text = obj.requested_domain
         if obj.portfolio:
-            return format_html('<a href="{}"><img src="/public/admin/img/icon-yes.svg"> {}</a>', url, text)
-        return format_html('<a href="{}">{}</a>', url, text)
+            return format_html(
+                f'<img class="padding-right-05" src="/public/admin/img/icon-yes.svg" aria-hidden="true">{escape(text)}'
+            )
+        return text
 
     custom_requested_domain.admin_order_field = "requested_domain__name"  # type: ignore
 
@@ -3715,11 +3741,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
             message2 = f"This subdomain is being used as a hostname on another domain: {err.note}"
+            message3 = f"Command failed with note: {err.note}"
             # Human-readable mappings of ErrorCodes. Can be expanded.
             error_messages = {
                 # noqa on these items as black wants to reformat to an invalid length
                 ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION: message1,
                 ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION: message2,
+                ErrorCode.COMMAND_FAILED: message3,
             }
 
             message = "Cannot connect to the registry"
