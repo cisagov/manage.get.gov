@@ -328,9 +328,11 @@ class DomainRequestFixture:
         domain_requests_to_create = []
         if total_requests and total_requests <= total_existing_requests:
             total_domain_requests_to_make = total_requests - total_existing_requests
-            if total_domain_requests_to_make >= 0: 
+            if total_domain_requests_to_make >= 0:
                 total_domains_to_delete = total_domain_requests_to_make
-                DomainRequest.objects.filter(id__in=list(DomainRequest.objects.values_list('pk', flat=True)[:total_domains_to_delete])).delete()
+                DomainRequest.objects.filter(
+                    id__in=list(DomainRequest.objects.values_list("pk", flat=True)[:total_domains_to_delete])
+                ).delete()
             if total_domain_requests_to_make == 0:
                 return
 
@@ -348,9 +350,7 @@ class DomainRequestFixture:
                 except Exception as e:
                     logger.warning(e)
 
-            num_additional_requests_to_make = (
-                total_domain_requests_to_make - len(domain_requests_to_create)
-            )
+            num_additional_requests_to_make = total_domain_requests_to_make - len(domain_requests_to_create)
             if num_additional_requests_to_make > 0:
                 for _ in range(num_additional_requests_to_make):
                     random_user = random.choice(users)  # nosec
