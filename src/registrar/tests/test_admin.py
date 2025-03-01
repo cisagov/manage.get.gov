@@ -177,7 +177,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Test for a description snippet
         self.assertContains(
-            response, "Domain invitations contain all individuals who have been invited to manage a .gov domain."
+            response, "This table contains all individuals who have been invited to manage a .gov domain."
         )
         self.assertContains(response, "Show more")
 
@@ -201,7 +201,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a domain here, it will trigger emails to the invitee and all managers of the domain",
+            "If you invite someone to a domain here, it will trigger email notifications.",
         )
 
     @less_console_noise_decorator
@@ -217,7 +217,7 @@ class TestDomainInvitationAdmin(WebTest):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=5)
+            self.assertContains(response, "invited", count=4)
             self.assertContains(response, "Invited", count=2)
             self.assertContains(response, "retrieved", count=2)
             self.assertContains(response, "Retrieved", count=2)
@@ -1168,7 +1168,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a portfolio here, it will not trigger an invitation email.",
+            "If you add someone to a portfolio here, it won't trigger any email notifications.",
         )
 
     @less_console_noise_decorator
@@ -1183,7 +1183,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         response = self.client.get(delete_url)
 
         # Check if the response contains the expected static message
-        expected_message = "If you remove someone from a portfolio here, it will not send any emails"
+        expected_message = "If you remove someone from a portfolio here, it won't trigger any email notifications."
         self.assertIn(expected_message, response.content.decode("utf-8"))
 
 
@@ -1232,7 +1232,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "Portfolio invitations contain all individuals who have been invited to become members of an organization.",
+            "This table contains all individuals who have been invited to become members of a portfolio.",
         )
         self.assertContains(response, "Show more")
 
@@ -1256,7 +1256,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a portfolio here, it will trigger an invitation email when you click",
+            "If you invite someone to a portfolio here, it will trigger email notifications.",
         )
 
     @less_console_noise_decorator
@@ -2325,7 +2325,7 @@ class TestUserDomainRoleAdmin(WebTest):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a domain here, it will not trigger any emails.",
+            "If you add someone to a domain here, it won't trigger any email notifications.",
         )
 
     def test_domain_sortable(self):

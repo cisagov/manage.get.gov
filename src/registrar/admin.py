@@ -4385,21 +4385,21 @@ class PortfolioAdmin(ListHeaderAdmin):
         if admin_count > 0:
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
-            return format_html(f'<a href="{url}">{admin_count} administrators</a>')
-        return "No administrators found."
+            return format_html(f'<a href="{url}">{admin_count} admins</a>')
+        return "No admins found."
 
-    display_admins.short_description = "Administrators"  # type: ignore
+    display_admins.short_description = "Admins"  # type: ignore
 
     def display_members(self, obj):
-        """Returns the number of members for this portfolio"""
+        """Returns the number of basic members for this portfolio"""
         member_count = len(self.get_user_portfolio_permission_non_admins(obj))
         if member_count > 0:
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
-            return format_html(f'<a href="{url}">{member_count} members</a>')
-        return "No additional members found."
+            return format_html(f'<a href="{url}">{member_count} basic members</a>')
+        return "No basic members found."
 
-    display_members.short_description = "Members"  # type: ignore
+    display_members.short_description = "Basic members"  # type: ignore
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
