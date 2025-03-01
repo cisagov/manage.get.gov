@@ -15,26 +15,26 @@ function handlePortfolioPermissionFields(){
      * Updates the visibility of portfolio permissions fields based on the selected role.
      * 
      * This function checks the value of the role dropdown (`roleDropdown`):
-     * - If the selected role is "organization_admin":
-     *     - Hides the domain permissions field (`domainPermissionsField`).
-     *     - Hides the domain request permissions field (`domainRequestPermissionsField`).
-     *     - Hides the member permissions field (`memberPermissionsField`).
+     * - If the selected role is "organization_member":
+     *     - Shows the domain permissions field (`domainPermissionsField`).
+     *     - Shows the domain request permissions field (`domainRequestPermissionsField`).
+     *     - Shows the member permissions field (`memberPermissionsField`).
      * - Otherwise:
-     *     - Shows all the above fields.
+     *     - Hides all the above fields.
      * 
      * The function ensures that the appropriate fields are dynamically displayed
      * or hidden depending on the role selection in the form.
      */
     function updatePortfolioPermissionsFormVisibility() {
         if (roleDropdown && domainPermissionsField && domainRequestPermissionsField && memberPermissionsField) {
-            if (roleDropdown.value === "organization_admin") {
-                hideElement(domainPermissionsField);
-                hideElement(domainRequestPermissionsField);
-                hideElement(memberPermissionsField);
-            } else {
+            if (roleDropdown.value === "organization_member") {
                 showElement(domainPermissionsField);
                 showElement(domainRequestPermissionsField);
                 showElement(memberPermissionsField);
+            } else {
+                hideElement(domainPermissionsField);
+                hideElement(domainRequestPermissionsField);
+                hideElement(memberPermissionsField);
             }
         }
     }

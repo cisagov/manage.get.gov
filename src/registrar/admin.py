@@ -229,7 +229,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
 
     # Dropdown for selecting the user role (e.g., Admin or Basic)
     role = forms.ChoiceField(
-        choices=UserPortfolioRoleChoices.choices,
+        choices=[("", "---------")] + UserPortfolioRoleChoices.choices,
         required=True,
         widget=forms.Select(attrs={"class": "admin-dropdown"}),
         label="Member access",

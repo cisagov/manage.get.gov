@@ -275,7 +275,12 @@ class UserPortfolioPermission(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
-        validate_user_portfolio_permission(self)
+        # Ensure user exists before running further validation
+        # In django admin, this clean method is called before form validation checks
+        # for required fields. Since validation below requires user, skip if user does
+        # not exist
+        if self.user_id:
+            validate_user_portfolio_permission(self)
 
     def delete(self, *args, **kwargs):
 
