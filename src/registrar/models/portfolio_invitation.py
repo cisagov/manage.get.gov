@@ -15,6 +15,7 @@ from .utility.portfolio_helper import (
     get_domains_display,
     get_members_description_display,
     get_members_display,
+    get_readable_roles,
     get_role_display,
     validate_portfolio_invitation,
 )  # type: ignore
@@ -78,6 +79,10 @@ class PortfolioInvitation(TimeStampedModel):
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
 
+    def get_readable_roles(self):
+        """Returns a readable list of self.roles"""
+        return get_readable_roles(self.roles)
+    
     def get_managed_domains_count(self):
         """Return the count of domain invitations managed by the invited user for this portfolio."""
         # Filter the UserDomainRole model to get domains where the user has a manager role

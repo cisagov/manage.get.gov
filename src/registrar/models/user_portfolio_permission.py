@@ -12,6 +12,7 @@ from registrar.models.utility.portfolio_helper import (
     get_domains_description_display,
     get_members_display,
     get_members_description_display,
+    get_readable_roles,
     get_role_display,
     validate_user_portfolio_permission,
 )
@@ -94,12 +95,7 @@ class UserPortfolioPermission(TimeStampedModel):
 
     def get_readable_roles(self):
         """Returns a readable list of self.roles"""
-        readable_roles = []
-        if self.roles:
-            readable_roles = sorted(
-                [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
-            )
-        return readable_roles
+        return get_readable_roles(self.roles)
 
     def get_managed_domains_count(self):
         """Return the count of domains managed by the user for this portfolio."""

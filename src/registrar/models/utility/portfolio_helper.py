@@ -79,6 +79,14 @@ class MemberPermissionDisplay(StrEnum):
     NONE = "None"
 
 
+def get_readable_roles(roles):
+    readable_roles = []
+    if roles:
+        readable_roles = sorted(
+            [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in roles]
+        )
+    return readable_roles
+
 def get_role_display(roles):
     """
     Returns a user-friendly display name for a given list of user roles.
