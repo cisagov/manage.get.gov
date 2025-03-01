@@ -17,11 +17,19 @@ export class NameserverForm {
         this.handleCancelAddFormClick = this.handleCancelAddFormClick.bind(this);
     }
 
+    /**
+     * Initialize the NameserverForm by setting up display and event listeners.
+     */
     init() {
         this.initializeNameserverFormDisplay();
         this.initializeEventListeners();
     }
 
+
+    /**
+     * Determines the initial display state of the nameserver form,
+     * handling validation errors and setting visibility of elements accordingly.
+     */
     initializeNameserverFormDisplay() {
 
         const domainName = document.getElementById('id_form-0-domain');
@@ -76,9 +84,11 @@ export class NameserverForm {
             }
             formIndex++;
         }
-
     }
 
+    /**
+     * Attaches event listeners to relevant UI elements for interaction handling.
+     */
     initializeEventListeners() {
         this.addNameserverButton.addEventListener('click', this.handleAddFormClick);
     
@@ -115,7 +125,8 @@ export class NameserverForm {
         });
 
         // Add a specific listener for 'id_form-{number}-server' inputs to make
-        // nameserver forms 'smart'
+        // nameserver forms 'smart'. Inputs on server field will change the
+        // display value of the associated IP address field.
         let formIndex = 0;
         while (document.getElementById(`id_form-${formIndex}-server`)) {
             let serverInput = document.getElementById(`id_form-${formIndex}-server`);
@@ -137,6 +148,9 @@ export class NameserverForm {
             formIndex++; // Move to the next index
         }
 
+        // Set event listeners on the submit buttons for the modals. Event listeners
+        // should execute the callback function, which has its logic updated prior
+        // to modal display
         const unsaved_changes_modal = document.getElementById('unsaved-changes-modal');
         if (unsaved_changes_modal) {
             const submitButton = document.getElementById('unsaved-changes-click-button');
@@ -146,7 +160,6 @@ export class NameserverForm {
                 this.executeCallback();
             });
         }
-
         const delete_modal = document.getElementById('delete-modal');
         if (delete_modal) {
             const submitButton = document.getElementById('delete-click-button');
@@ -159,6 +172,9 @@ export class NameserverForm {
 
     }
 
+    /**
+     * Executes a stored callback function if defined, otherwise logs a warning.
+     */
     executeCallback() {
         if (this.callback) {
             this.callback();
@@ -168,6 +184,10 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Handles clicking the 'Add Nameserver' button, showing the form if needed.
+     * @param {Event} event - Click event
+     */
     handleAddFormClick(event) {
         this.callback = () => {
             // Check if any other edit row is currently visible and hide it
@@ -186,7 +206,7 @@ export class NameserverForm {
             }
         };
         if (this.formChanged) {
-            //------- Show the confirmation modal
+            //------- Show the unsaved changes confirmation modal
             let modalTrigger = document.querySelector("#unsaved_changes_trigger");
             if (modalTrigger) {
                 modalTrigger.click();
@@ -196,6 +216,11 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Handles clicking an 'Edit' button on a readonly row, which hides the readonly row
+     * and displays the edit row, after performing some checks and possibly displaying modal.
+     * @param {Event} event - Click event
+     */
     handleEditClick(event) {
         let editButton = event.target;
         let readOnlyRow = editButton.closest('tr'); // Find the closest row
@@ -218,7 +243,7 @@ export class NameserverForm {
             showElement(editRow);
         };
         if (this.formChanged) {
-            //------- Show the confirmation modal
+            //------- Show the unsaved changes confirmation modal
             let modalTrigger = document.querySelector("#unsaved_changes_trigger");
             if (modalTrigger) {
                 modalTrigger.click();
@@ -228,6 +253,11 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Handles clicking a 'Delete' button on an edit row, which hattempts to delete the nameserver
+     * after displaying modal and performing check for minimum number of nameservers.
+     * @param {Event} event - Click event
+     */
     handleDeleteClick(event) {
         let deleteButton = event.target;
         let editRow = deleteButton.closest('tr');
@@ -238,6 +268,11 @@ export class NameserverForm {
         this.deleteRow(editRow);
     }
 
+    /**
+     * Handles clicking a 'Delete' button on a readonly row in a kebab, which hattempts to delete the nameserver
+     * after displaying modal and performing check for minimum number of nameservers.
+     * @param {Event} event - Click event
+     */
     handleDeleteKebabClick(event) {
         let deleteKebabButton = event.target;
         let accordionDiv = deleteKebabButton.closest('div'); 
@@ -252,6 +287,12 @@ export class NameserverForm {
         this.deleteRow(editRow);
     }
 
+    /**
+     * Deletes a nameserver row after verifying the minimum required nameservers exist.
+     * If there are only two nameservers left, deletion is prevented, and an alert is shown.
+     * If deletion proceeds, the input fields are cleared, and the form is submitted.
+     * @param {HTMLElement} editRow - The row corresponding to the nameserver being deleted.
+     */
     deleteRow(editRow) {
         // Check if at least two nameserver forms exist
         const fourthNameserver = document.getElementById('id_form-3-server'); // This should exist
@@ -273,6 +314,11 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Handles the click event on the "Cancel" button in the add nameserver form.
+     * Resets the form fields and hides the add form section.
+     * @param {Event} event - Click event
+     */
     handleCancelAddFormClick(event) {
         this.resetAddNameserversForm();
     }
@@ -297,6 +343,11 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Resets the edit row, restores its original values, removes validation errors, 
+     * and collapses the edit row while making the readonly row visible again.
+     * @param {HTMLElement} editRow - The row that is being reset and collapsed.
+     */
     resetEditRowAndFormAndCollapseEditRow(editRow) {
         let readOnlyRow = editRow.previousElementSibling; // Get the next row
         if (!editRow || !readOnlyRow) {
@@ -318,6 +369,10 @@ export class NameserverForm {
         showElement(readOnlyRow);
     }
 
+    /**
+     * Resets the 'Add Nameserver' form by clearing its input fields, removing errors, 
+     * and hiding the form to return it to its initial state.
+     */
     resetAddNameserversForm() {
         if (this.addNameserversForm) {
             // reset the values set in addNameserversForm
@@ -333,107 +388,150 @@ export class NameserverForm {
         }
     }
 
+    /**
+     * Resets all text input fields within the specified DOM element to their initial values.
+     * Triggers an 'input' event to ensure any event listeners update accordingly.
+     * @param {HTMLElement} domElement - The parent element containing text input fields to be reset.
+     */
     resetInputValuesInElement(domElement) {
         const inputEvent = new Event('input');
         let textInputs = domElement.querySelectorAll("input[type='text']");
         textInputs.forEach(input => {
+            // Reset input value to its initial stored value
             input.value = input.dataset.initialValue;
+            // Dispatch input event to update any event-driven changes
             input.dispatchEvent(inputEvent);
-        })
+        });
     }
 
+    /**
+     * Copies values from the editable row's text inputs into the corresponding
+     * readonly row cells, formatting them appropriately.
+     * @param {HTMLElement} editRow - The row containing editable input fields.
+     * @param {HTMLElement} readOnlyRow - The row where values will be displayed in a non-editable format.
+     */
     copyEditRowToReadonlyRow(editRow, readOnlyRow) {
         let textInputs = editRow.querySelectorAll("input[type='text']");
         let tds = readOnlyRow.querySelectorAll("td");
         let updatedText = '';
 
-        // if server is defined, copy the value to the first td in readOnlyRow
+        // If a server name exists, store its value
         if (textInputs[0]) {
             updatedText = textInputs[0].value;
-            //tds[0].innerText = textInputs[0].value;
         }
 
-        // if ip is defined, copy the value to the second td in readOnlyRow
-        if (textInputs[1]) {
-            if (textInputs[1].value) {
-                updatedText = updatedText + "(" + textInputs[1].value + ")";
-            }
-            //tds[1].innerText = textInputs[1].value;
+        // If an IP address exists, append it in parentheses next to the server name
+        if (textInputs[1] && textInputs[1].value) {
+            updatedText = updatedText + " (" + textInputs[1].value + ")";
         }
 
+        // Assign the formatted text to the first column of the readonly row
         if (tds[0]) {
             tds[0].innerText = updatedText;
         }
     }
 
+    /**
+     * Removes all error-related classes and messages from the specified DOM element.
+     * This method cleans up validation errors by removing error highlighting from input fields, 
+     * labels, and form groups, as well as deleting error message elements.
+     * @param {HTMLElement} domElement - The parent element within which errors should be cleared.
+     */
     removeErrorsFromElement(domElement) {
-        // remove class 'usa-form-group--error' from divs in domElement
+        // Remove the 'usa-form-group--error' class from all div elements
         domElement.querySelectorAll("div.usa-form-group--error").forEach(div => {
             div.classList.remove("usa-form-group--error");
         });
 
-        // remove class 'usa-label--error' from labels in domElement
+        // Remove the 'usa-label--error' class from all label elements
         domElement.querySelectorAll("label.usa-label--error").forEach(label => {
             label.classList.remove("usa-label--error");
         });
 
-        // Remove divs whose id ends with '__error-message' (error message divs)
+        // Remove all error message divs whose ID ends with '__error-message'
         domElement.querySelectorAll("div[id$='__error-message']").forEach(errorDiv => {
             errorDiv.remove();
         });
 
-        // remove class 'usa-input--error' from inputs in domElement
+        // Remove the 'usa-input--error' class from all input elements
         domElement.querySelectorAll("input.usa-input--error").forEach(input => {
             input.classList.remove("usa-input--error");
         });
     }
 
+    /**
+     * Removes all form-level error messages displayed in the UI.
+     * The form error messages are contained within div elements with the ID 'form-errors'.
+     * Since multiple elements with the same ID may exist (even though not syntactically correct), 
+     * this function removes them iteratively.
+     */
     removeFormErrors() {
-        // form errors have div id of form-errors. there can be multiple divs
-        // with same id, which is not syntactically correct, but is the case,
-        // so need to do below recursively
         let formErrorDiv = document.getElementById("form-errors");
+
+        // Recursively remove all instances of form error divs
         while (formErrorDiv) {
             formErrorDiv.remove();
             formErrorDiv = document.getElementById("form-errors");
         }
     }
 
+
+    /**
+     * Resets the form change state.
+     * This method marks the form as unchanged by setting `formChanged` to false.
+     * It is useful for tracking whether a user has modified any form fields.
+     */
     resetFormChanged() {
         this.formChanged = false;
     }
 
+    /**
+     * Removes all existing alert messages from the main content area.
+     * This ensures that only the latest alert is displayed to the user.
+     */
     resetAlerts() {
         const mainContent = document.querySelector("main#main-content");
         if (mainContent) {
+            // Remove all alert elements within the main content area
             mainContent.querySelectorAll(".usa-alert").forEach(alert => alert.remove());
         }
     }
-    
+
+    /**
+     * Displays an alert message at the top of the main content area.
+     * It first removes any existing alerts before adding a new one to ensure only the latest alert is visible.
+     * @param {string} level - The alert level (e.g., 'error', 'success', 'warning', 'info').
+     * @param {string} message - The message to display inside the alert.
+     */
     addAlert(level, message) {
-        this.resetAlerts();
+        this.resetAlerts(); // Remove any existing alerts before adding a new one
         
         const mainContent = document.querySelector("main#main-content");
         if (!mainContent) return;
-        
+
+        // Create a new alert div with appropriate classes based on alert level
         const alertDiv = document.createElement("div");
         alertDiv.className = `usa-alert usa-alert--${level} usa-alert--slim margin-bottom-2`;
-        
+
+        // Create the alert body to hold the message text
         const alertBody = document.createElement("div");
         alertBody.className = "usa-alert__body";
         alertBody.textContent = message;
-        
+
+        // Append the alert body to the alert div and insert it at the top of the main content area
         alertDiv.appendChild(alertBody);
         mainContent.insertBefore(alertDiv, mainContent.firstChild);
-        scrollToElement("class","usa-alert__body");
-    }
 
+        // Scroll the page to make the alert visible to the user
+        scrollToElement("class", "usa-alert__body");
+    }
 }
 
+/**
+ * Initializes the NameserverForm when the DOM is fully loaded.
+ */
 export function initFormNameservers() {
     document.addEventListener('DOMContentLoaded', () => {
-
-        // Initialize NameserverForm if nameserver-add-button button is present in DOM
         if (document.getElementById('nameserver-add-button')) {
             const nameserverForm = new NameserverForm();
             nameserverForm.init();

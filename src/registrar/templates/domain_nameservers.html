@@ -47,8 +47,17 @@
 
   <p>Add a name server record by clicking "Add name servers". You must add at least two name servers (13 max).</p>
 
+  {% comment %}
+  This template supports the rendering of three different types of nameserver forms, conditionally displayed:
+  1 - Add New Namervers form (rendered when there are no existing nameservers defined for the domain)
+  2 - Nameserver table (rendered when the domain has existing nameservers, which can be viewed and edited)
+  3 - Add New Nameserver (rendered above the Nameserver table to add a single additional nameserver)
+  {% endcomment %}
+
   {% if formset.initial and formset.forms.0.initial %}
     
+    {% comment %}This section renders both the Nameserver table and the Add New Nameserver {% endcomment %}
+
     {% include "includes/required_fields.html" %}
     <form class="usa-form usa-form--extra-large" method="post" novalidate>
       {% csrf_token %}
@@ -56,6 +65,12 @@
 
       {% for form in formset %}
         {% if forloop.last and not form.initial %}
+
+          {% comment %}
+          This section renders the Add New Nameserver form.
+          This section does not render if the last form has initial data (this occurs if 13 nameservers already exist)
+          {% endcomment %}
+
           <section class="add-nameservers-form display-none section-outlined">
             {{ form.domain }}
             <h2>Add a name server</h2>
@@ -106,6 +121,12 @@
         <tbody>
           {% for form in formset %}
             {% if not forloop.last or form.initial %}
+
+              {% comment %}
+              This section renders table rows for each existing nameserver. Two rows are rendered, a readonly row
+              and an edit row. Only one of which is displayed at a time.
+              {% endcomment %}
+
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>
@@ -205,10 +226,9 @@
   {% else %}
 
     {% comment %}
-    No Nameservers.
-    We use the double-decker form
+    This section renders Add New Nameservers form which renders when there are no existing
+    nameservers defined on the domain.
     {% endcomment %} 
-
        
     <section class="add-nameservers-form display-none section-outlined">
       {% include "includes/required_fields.html" %} 
