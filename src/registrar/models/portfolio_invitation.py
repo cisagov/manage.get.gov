@@ -82,7 +82,7 @@ class PortfolioInvitation(TimeStampedModel):
     def get_readable_roles(self):
         """Returns a readable list of self.roles"""
         return get_readable_roles(self.roles)
-    
+
     def get_managed_domains_count(self):
         """Return the count of domain invitations managed by the invited user for this portfolio."""
         # Filter the UserDomainRole model to get domains where the user has a manager role

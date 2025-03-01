@@ -82,10 +82,9 @@ class MemberPermissionDisplay(StrEnum):
 def get_readable_roles(roles):
     readable_roles = []
     if roles:
-        readable_roles = sorted(
-            [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in roles]
-        )
+        readable_roles = sorted([UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in roles])
     return readable_roles
+
 
 def get_role_display(roles):
     """

@@ -1816,9 +1816,9 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
-    
+
     get_roles.short_description = "Member access"  # type: ignore
-    
+
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
