@@ -1467,6 +1467,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     change_form_template = "django/admin/user_portfolio_permission_change_form.html"
     delete_confirmation_template = "django/admin/user_portfolio_permission_delete_confirmation.html"
+    delete_selected_confirmation_template = "django/admin/user_portfolio_permission_delete_selected_confirmation.html"
 
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
@@ -1811,6 +1812,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     change_form_template = "django/admin/portfolio_invitation_change_form.html"
     delete_confirmation_template = "django/admin/portfolio_invitation_delete_confirmation.html"
+    delete_selected_confirmation_template = "django/admin/portfolio_invitation_delete_selected_confirmation.html"
 
     # Select portfolio invitations to change -> Portfolio invitations
     def changelist_view(self, request, extra_context=None):

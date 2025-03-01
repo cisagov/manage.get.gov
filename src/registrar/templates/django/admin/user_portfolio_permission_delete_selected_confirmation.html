@@ -1,0 +1,12 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+
+{% block content_subtitle %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body margin-left-1 maxw-none">
+            <p class="usa-alert__text maxw-none">
+                If you remove someone from a portfolio here, it won't trigger any email notifications.
+            </p>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}
