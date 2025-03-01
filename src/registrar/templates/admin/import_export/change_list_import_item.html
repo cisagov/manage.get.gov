@@ -3,6 +3,6 @@
 
 {% if has_import_permission %}
   {% if not IS_PRODUCTION %}
-<li><a href='{% url opts|admin_urlname:"import" %}' class="import_link">{% trans "Import" %}</a></li>
+<li><button class="import_link use-button-as-link" data-href="{% url opts|admin_urlname:"import" %}">{% trans "Import" %}</button></li>
   {% endif %}
 {% endif %}

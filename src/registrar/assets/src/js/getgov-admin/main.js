@@ -17,6 +17,7 @@ import { initDynamicPortfolioPermissionFields } from './portfolio-permissions-fo
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
 import { initDynamicDomainFields } from './domain-form.js';
 import { initAnalyticsDashboard } from './analytics.js';
+import { initButtonLinks } from './button-utils.js';
 
 // General
 initModals();
@@ -24,6 +25,7 @@ initCopyToClipboard();
 initFilterHorizontalWidget();
 initDescriptions();
 initSubmitBar();
+initButtonLinks();
 
 // Domain request
 initIneligibleModal();
