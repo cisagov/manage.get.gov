@@ -3699,10 +3699,10 @@ class TestPortfolioAdmin(TestCase):
 
         display_admins = self.admin.display_admins(self.portfolio)
         url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
-        self.assertIn(f'<a href="{url}">2 administrators</a>', display_admins)
+        self.assertIn(f'<a href="{url}">2 admins</a>', display_admins)
 
         display_members = self.admin.display_members(self.portfolio)
-        self.assertIn(f'<a href="{url}">2 members</a>', display_members)
+        self.assertIn(f'<a href="{url}">2 basic members</a>', display_members)
 
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
