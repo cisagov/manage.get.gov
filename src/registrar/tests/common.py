@@ -1449,7 +1449,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainThreeHosts = fakedEppObject(
-        "my-nameserver.gov",
+        "threenameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
@@ -1460,7 +1460,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainFourHosts = fakedEppObject(
-        "fournameserversDomain.gov",
+        "fournameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[

@@ -389,9 +389,13 @@ export class NameserverForm {
     }
 
     removeFormErrors() {
+        // form errors have div id of form-errors. there can be multiple divs
+        // with same id, which is not syntactically correct, but is the case,
+        // so need to do below recursively
         let formErrorDiv = document.getElementById("form-errors");
-        if (formErrorDiv) {
+        while (formErrorDiv) {
             formErrorDiv.remove();
+            formErrorDiv = document.getElementById("form-errors");
         }
     }
 

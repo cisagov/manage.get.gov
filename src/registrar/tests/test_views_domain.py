@@ -86,7 +86,7 @@ class TestWithDomainPermissions(TestWithUser):
         # that inherit this setUp
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
         self.domain_with_three_nameservers, _ = Domain.objects.get_or_create(name="threenameserversdomain.gov")
-        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov")
+        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversdomain.gov")
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
@@ -1492,7 +1492,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"pk": self.domain_no_nameserver.id}))
+        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_no_nameserver.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
@@ -1739,72 +1739,88 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         """
 
         nameserver1 = ""
-        nameserver2 = "ns2.my-nameserver.gov"
-        nameserver3 = "ns3.my-nameserver.gov"
+        nameserver2 = "ns2.threenameserversdomain.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = ""
-        valid_ip_2 = "128.0.0.2"
-        valid_ip_3 = "128.0.0.3"
+        valid_ip_2 = "128.8.8.1"
+        valid_ip_3 = "128.8.8.2"
         nameservers_page = self.app.get(
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_three_nameservers.id})
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id})
         )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        print(nameservers_page.text)
-        print("TOTAL_FORMS:", nameservers_page.form["form-TOTAL_FORMS"].value)
-        print("INITIAL_FORMS:", nameservers_page.form["form-INITIAL_FORMS"].value)
-        print("MIN_NUM_FORMS:", nameservers_page.form["form-MIN_NUM_FORMS"].value)
-        print("MAX_NUM_FORMS:", nameservers_page.form["form-MAX_NUM_FORMS"].value)
-        print("Form fields:", nameservers_page.form.fields.keys())
-        print("Deleted forms:", [key for key in nameservers_page.form.fields.keys() if "-DELETE" in key])
+ 
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
 
-        nameservers_page.form["form-TOTAL_FORMS"] = "4"
-        nameservers_page.form["form-INITIAL_FORMS"] = "3"
-        nameservers_page.form["form-0-server"] = nameserver1
-        # formset[0]['form-0-server'] = nameserver1
-        # formset[0]['form-0-ip'] = valid_ip
-        # formset[1]['form-1-server'] = nameserver2
-        # formset[1]['form-1-ip'] = valid_ip_2
-        # formset[2]['form-2-server'] = nameserver3
-        # formset[2]['form-2-ip'] = valid_ip_3
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form.set("server", nameserver2, 1)
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
-        # result = formset.submit()
+        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data)
 
         # form submission was a successful post, response should be a 302
+
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_three_nameservers.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
+
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
-        nameserver1 = "ns1.my-nameserver.gov"
+        nameserver1 = "ns1.threenameserversdomain.gov"
         nameserver2 = ""
-        nameserver3 = "ns3.my-nameserver.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = "128.0.0.1"
         valid_ip_2 = ""
         valid_ip_3 = "128.0.0.3"
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
+
+        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data)
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"pk": self.domain_with_three_nameservers.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1834,20 +1850,28 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+ 
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "4",
+            "form-0-domain": "fournameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "fournameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "fournameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "fournameserversdomain.gov",
+            "form-3-server": nameserver4,
+            "form-3-ip": valid_ip_4,
+        }
 
-        # Minimal check to ensure the form is loaded correctly
-        self.assertEqual(nameservers_page.form["form-0-server"].value, "ns1.my-nameserver-1.com")
-        self.assertEqual(nameservers_page.form["form-3-server"].value, "ns1.explosive-chicken-nuggets.com")
-
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        nameservers_page.form["form-3-server"] = nameserver4
-        nameservers_page.form["form-3-ip"] = valid_ip_4
-        result = nameservers_page.form.submit()
+        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}), form_data)
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
