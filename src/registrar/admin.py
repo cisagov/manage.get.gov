@@ -223,7 +223,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         widget=AutocompleteSelectWithPlaceholder(
             models.PortfolioInvitation._meta.get_field("portfolio"),
             admin.site,
-            attrs={"data-placeholder": "---------"}  # Customize placeholder
+            attrs={"data-placeholder": "---------"},  # Customize placeholder
         ),
     )
 
@@ -233,6 +233,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         required=True,
         widget=forms.Select(attrs={"class": "admin-dropdown"}),
         label="Member access",
+        help_text="Only admins can manage member permissions and organization metadata.",
     )
 
     # Dropdown for selecting request permissions, with a default "No access" option
@@ -326,7 +327,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
         widget=AutocompleteSelectWithPlaceholder(
             models.UserPortfolioPermission._meta.get_field("user"),
             admin.site,
-            attrs={"data-placeholder": "---------"}  # Customize placeholder
+            attrs={"data-placeholder": "---------"},  # Customize placeholder
         ),
     )
 
@@ -362,6 +363,7 @@ class PortfolioInvitationForm(PortfolioPermissionsForm):
             "member_permissions",
             "status",
         ]
+
 
 class DomainInformationAdminForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
