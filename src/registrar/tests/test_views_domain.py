@@ -1492,7 +1492,9 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_no_nameserver.id}))
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_no_nameserver.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
@@ -1749,7 +1751,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
- 
+
         # webtest is not able to properly parse the form from nameservers_page, so manually
         # inputting form data
         form_data = {
@@ -1770,7 +1772,9 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             "form-3-ip": "",
         }
 
-        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data)
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
 
@@ -1779,7 +1783,6 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             result["Location"],
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
-
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1814,7 +1817,9 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             "form-3-ip": "",
         }
 
-        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data)
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -1850,7 +1855,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
- 
+
         # webtest is not able to properly parse the form from nameservers_page, so manually
         # inputting form data
         form_data = {
@@ -1871,7 +1876,9 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             "form-3-ip": valid_ip_4,
         }
 
-        result = self.app.post(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}), form_data)
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
