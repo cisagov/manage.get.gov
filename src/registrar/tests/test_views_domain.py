@@ -702,7 +702,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         """If user check the checkbox and submits the form,
         user should be redirected Domain Over page with an updated by 1 year expiration date"""
         # Grab the renewal URL
-        with patch.object(Domain, "renew_domain", self.custom_renew_domain) as mock_renewal:
+        with patch.object(Domain, "renew_domain", self.custom_renew_domain):
             renewal_url = reverse("domain-renewal", kwargs={"domain_pk": self.domain_with_ip.id})
 
             # Click the check, and submit
