@@ -25,7 +25,6 @@
         // Note, width is determined by a custom width class on one of the children
         position: absolute;
         z-index: 1;
-        left: 0;
         border-radius: 4px;
         border: solid 1px color('base-lighter');
         padding: units(2) units(2) units(3) units(2);
@@ -39,6 +38,14 @@
     }
     .margin-top-0 {
         margin-top: 0 !important;
+    }
+}
+
+// This will work in responsive tables if we overwrite the overflow value on the table container
+// Works with styles in _tables
+@include at-media(desktop) {
+    .usa-accordion--more-actions .usa-accordion__content {
+        left: 0;
     }
 }
 
@@ -59,10 +66,12 @@
 // This won't work on the Members table rows because that table has show-more rows
 // Currently, that's not an issue since that Members table is not wrapped in the
 // reponsive wrapper.
-tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
-    top: auto;
-    bottom: -10px;
-    right: 30px;
+@include at-media-max("desktop") {
+    tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
+        top: auto;
+        bottom: -10px;
+        right: 30px;
+    }
 }
 
 // A CSS only show-more/show-less based on usa-accordion
