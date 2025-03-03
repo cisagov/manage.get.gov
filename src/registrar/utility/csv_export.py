@@ -43,6 +43,7 @@ from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioRoleChoices,
+    get_role_display,
     get_domain_requests_description_display,
     get_domain_requests_display,
     get_domains_description_display,
@@ -511,7 +512,7 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Member access": "Admin" if bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles) else "Member",
+            "Member access": get_role_display(roles),
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
