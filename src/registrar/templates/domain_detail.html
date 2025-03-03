@@ -35,7 +35,7 @@
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
             {% if domain.is_expired and domain.state != domain.State.UNKNOWN %}
               Expired
-            {% elif has_domain_renewal_flag and domain.is_expiring %}
+            {% elif domain.is_expiring %}
               Expiring soon
             {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
               DNS needed
@@ -46,17 +46,17 @@
 
           {% if domain.get_state_help_text %}
             <p class="margin-y-0 text-primary-darker">
-              {% if has_domain_renewal_flag and domain.is_expired and is_domain_manager %}
+              {% if domain.is_expired and is_domain_manager %}
                 This domain has expired, but it is still online. 
-                {% url 'domain-renewal' pk=domain.id as url %}
+                {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
-              {% elif has_domain_renewal_flag and domain.is_expiring and is_domain_manager %}
+              {% elif domain.is_expiring and is_domain_manager %}
                 This domain will expire soon. 
-                {% url 'domain-renewal' pk=domain.id as url %}
+                {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
-              {% elif has_domain_renewal_flag and domain.is_expiring and is_portfolio_user %}
+              {% elif domain.is_expiring and is_portfolio_user %}
                 This domain will expire soon. Contact one of the listed domain managers to renew the domain.
-              {% elif has_domain_renewal_flag and domain.is_expired and is_portfolio_user %}
+              {% elif domain.is_expired and is_portfolio_user %}
                 This domain has expired, but it is still online. Contact one of the listed domain managers to renew the domain.
               {% else %}
                 {{ domain.get_state_help_text }}
@@ -82,7 +82,7 @@
     {% endif %}
 
 
-    {% url 'domain-dns-nameservers' pk=domain.id as url %}
+    {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
     {% else %}
@@ -95,7 +95,7 @@
       {% endif %}
     {% endif %}
     
-    {% url 'domain-dns-dnssec' pk=domain.id as url %}
+    {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
     {% else %}
@@ -104,26 +104,26 @@
 
     {% if portfolio %}
       {% if has_any_domains_portfolio_permission and has_edit_portfolio_permission %}
-        {% url 'domain-suborganization' pk=domain.id as url %}
+        {% url 'domain-suborganization' domain_pk=domain.id as url %}
         {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_edit_portfolio_permission %}
     {% elif has_any_domains_portfolio_permission and has_view_portfolio_permission %}
-        {% url 'domain-suborganization' pk=domain.id as url %}
+        {% url 'domain-suborganization' domain_pk=domain.id as url %}
         {% include "includes/summary_item.html" with title='Suborganization' value=domain.domain_info.sub_organization edit_link=url editable=is_editable|and:has_view_portfolio_permission view_button=True %}
         {% endif %}
     {% else %}
-      {% url 'domain-org-name-address' pk=domain.id as url %}
+      {% url 'domain-org-name-address' domain_pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Organization' value=domain.domain_info address='true' edit_link=url editable=is_editable %}
-      {% url 'domain-senior-official' pk=domain.id as url %}
+      {% url 'domain-senior-official' domain_pk=domain.id as url %}
       {% include "includes/summary_item.html" with title='Senior official' value=domain.domain_info.senior_official contact='true' edit_link=url editable=is_editable %}
     {% endif %}
 
-    {% url 'domain-security-email' pk=domain.id as url %}
+    {% url 'domain-security-email' domain_pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
       {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
     {% endif %}
-    {% url 'domain-users' pk=domain.id as url %}
+    {% url 'domain-users' domain_pk=domain.id as url %}
     {% if portfolio %}
       {% include "includes/summary_item.html" with title='Domain managers' domain_permissions=True value=domain edit_link=url editable=is_editable %}
     {% else %}

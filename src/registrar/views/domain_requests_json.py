@@ -1,33 +1,33 @@
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from registrar.decorators import grant_access, ALL
 from registrar.models import DomainRequest
 from django.utils.dateformat import format
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q
 
 
-@login_required
+@grant_access(ALL)
 def get_domain_requests_json(request):
     """Given the current request,
     get all domain requests that are associated with the request user and exclude the APPROVED ones.
     If we are on the portfolio requests page, limit the response to only those requests associated with
     the given portfolio."""
 
-    domain_request_ids = get_domain_request_ids_from_request(request)
+    domain_request_ids = _get_domain_request_ids_from_request(request)
 
     objects = DomainRequest.objects.filter(id__in=domain_request_ids)
     unfiltered_total = objects.count()
 
-    objects = apply_search(objects, request)
-    objects = apply_status_filter(objects, request)
-    objects = apply_sorting(objects, request)
+    objects = _apply_search(objects, request)
+    objects = _apply_status_filter(objects, request)
+    objects = _apply_sorting(objects, request)
 
     paginator = Paginator(objects, 10)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
     domain_requests = [
-        serialize_domain_request(request, domain_request, request.user) for domain_request in page_obj.object_list
+        _serialize_domain_request(request, domain_request, request.user) for domain_request in page_obj.object_list
     ]
 
     return JsonResponse(
@@ -43,7 +43,7 @@ def get_domain_requests_json(request):
     )
 
 
-def get_domain_request_ids_from_request(request):
+def _get_domain_request_ids_from_request(request):
     """Get domain request ids from request.
 
     If portfolio specified, return domain request ids associated with portfolio.
@@ -62,7 +62,7 @@ def get_domain_request_ids_from_request(request):
     return domain_requests.values_list("id", flat=True)
 
 
-def apply_search(queryset, request):
+def _apply_search(queryset, request):
     search_term = request.GET.get("search_term")
     is_portfolio = request.GET.get("portfolio")
 
@@ -90,7 +90,7 @@ def apply_search(queryset, request):
     return queryset
 
 
-def apply_status_filter(queryset, request):
+def _apply_status_filter(queryset, request):
     status_param = request.GET.get("status")
     if status_param:
         status_list = status_param.split(",")
@@ -105,7 +105,7 @@ def apply_status_filter(queryset, request):
     return queryset
 
 
-def apply_sorting(queryset, request):
+def _apply_sorting(queryset, request):
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
 
@@ -118,7 +118,7 @@ def apply_sorting(queryset, request):
     return queryset.order_by(sort_by)
 
 
-def serialize_domain_request(request, domain_request, user):
+def _serialize_domain_request(request, domain_request, user):
 
     deletable_statuses = [
         DomainRequest.DomainRequestStatus.STARTED,
@@ -154,9 +154,9 @@ def serialize_domain_request(request, domain_request, user):
 
     # Map the action label to corresponding URLs and icons
     action_url_map = {
-        "Edit": reverse("edit-domain-request", kwargs={"id": domain_request.id}),
-        "Manage": reverse("domain-request-status", kwargs={"pk": domain_request.id}),
-        "View": reverse("domain-request-status-viewonly", kwargs={"pk": domain_request.id}),
+        "Edit": reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.id}),
+        "Manage": reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.id}),
+        "View": reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.id}),
     }
 
     svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}

@@ -41,13 +41,8 @@ th {
   }
 }
 
-// The member table has an extra "expand" row, which looks like a single row.
-// But the DOM disagrees - so we basically need to hide the border on both rows.
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
-  border-bottom: none;
-}
-
+// .dotgov-table allows us to customize .usa-table on the user-facing pages,
+// while leaving the default styles for use on the admin pages
 .dotgov-table {
   width: 100%;
 
@@ -68,7 +63,8 @@ th {
       border-bottom: 1px solid color('base-lighter');
     }
 
-    thead th {
+    thead th,
+    thead th[aria-sort] {
       color: color('primary-darker');
       border-bottom: 2px solid color('base-light');
     }
@@ -93,17 +89,46 @@ th {
     }
   }
 
-  @include at-media(tablet-lg) {
-    th[data-sortable] .usa-table__header__button {
-      right: auto;
-  
-      &[aria-sort=ascending],
-      &[aria-sort=descending],
-      &:not([aria-sort]) {
-        right: auto;
+  // Sortable headers
+  th[data-sortable][aria-sort=ascending],
+  th[data-sortable][aria-sort=descending] {
+    background-color: transparent;
+    .usa-table__header__button {
+      background-color: color('accent-cool-lightest');
+      border-radius: units(.5);
+      color: color('primary-darker');
+      &:hover {
+        background-color: color('accent-cool-lightest');
       }
     }
   }
+  @include at-media(tablet-lg) {
+    th[data-sortable]:not(.left-align-sort-button) .usa-table__header__button {
+      // position next to the copy
+      right: auto;
+      // slide left to mock a margin between the copy and the icon
+      transform: translateX(units(1));
+      // fix vertical alignment
+      top: units(1.5);
+    }
+    th[data-sortable].left-align-sort-button .usa-table__header__button {
+      left: 0;
+    }
+  }
+
+  // Currently the 'flash' when sort is clicked,
+  // this will become persistent if the double-sort bug is fixed
+  td[data-sort-active],
+  th[data-sort-active] {
+    background-color: color('primary-lightest');
+  }
+}
+
+// The member table has an extra "expand" row, which looks like a single row.
+// But the DOM disagrees - so we basically need to hide the border on both rows.
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+  border-bottom: none;
 }
 
 .dotgov-table--cell-padding-2 {
@@ -118,7 +143,7 @@ th {
 }
 
 .usa-table--bg-transparent {
-  td, thead th {
+  td, th, thead th {
     background-color: transparent;
   }
 }
@@ -126,4 +151,13 @@ th {
 .usa-table--full-borderless td, 
 .usa-table--full-borderless th {
   border: none !important;
+}
+
+// This is an override to overflow on certain tables (note the custom class)
+// so that a popup menu can appear and starddle the edge of the table on large
+// screen sizes. Works with styles in _accordions
+@include at-media(desktop) {
+  .usa-table-container--scrollable.usa-table-container--override-overflow {
+      overflow-y: visible;
+  }
 }

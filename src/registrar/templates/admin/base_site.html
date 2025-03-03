@@ -22,7 +22,6 @@
   <script src="{% static 'js/uswds.min.js' %}" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="application/javascript" src="{% static 'js/getgov-admin.min.js' %}" defer></script>
-  <script type="application/javascript" src="{% static 'js/get-gov-reports.js' %}" defer></script>
   <script type="application/javascript" src="{% static 'js/dja-collapse.js' %}" defer></script>
 {% endblock %}
 
@@ -34,8 +33,8 @@
         {{ tabtitle }} |
     {% else %}
         {{ title }} |
-    {% endif %}
-    {{ site_title|default:_('Django site admin') }}
+    {% endif %} 
+    Django admin
 {% endblock %}
 
 {% block extrastyle %}{{ block.super }}
@@ -47,6 +46,10 @@
     {% with add_body_class="margin-left-1" %}
       {% include "includes/banner-non-production-alert.html" %}
     {% endwith %}
+  {% endif %}
+
+  {% if opts.model_name %}
+    <a class="usa-skipnav" href="#changelist-filter" aria-label="Skip to the filters section">Skip to filters</a>
   {% endif %}
 
   {# Djando update: this div will change to header #}

@@ -1,12 +1,19 @@
 import logging
 from collections import defaultdict
+from django.contrib import messages
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import TemplateView
-from django.contrib import messages
+from django.views.generic import DeleteView, DetailView, TemplateView
+from registrar.decorators import (
+    HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
+    HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
+    IS_DOMAIN_REQUEST_CREATOR,
+    grant_access,
+)
 from registrar.forms import domain_request_wizard as forms
 from registrar.forms.domainrequestwizard import purpose
 from registrar.forms.utility.wizard_form_helper import request_step_list
@@ -15,20 +22,13 @@ from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
-from registrar.views.utility.permission_views import DomainRequestPermissionDeleteView
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
-
-from .utility import (
-    DomainRequestPermissionView,
-    DomainRequestPermissionWithdrawView,
-    DomainRequestWizardPermissionView,
-    DomainRequestPortfolioViewonlyView,
-)
 
 logger = logging.getLogger(__name__)
 
 
-class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+class DomainRequestWizard(TemplateView):
     """
     A common set of methods and configuration.
 
@@ -53,7 +53,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
     # NB: this is included here for reference. Do not change it without
     # also changing the many places it is hardcoded in the HTML templates
     URL_NAMESPACE = "domain-request"
-    # name for accessing /domain-request/<id>/edit
+    # name for accessing /domain-request/<domain_request_pk>/edit
     EDIT_URL_NAME = "edit-domain-request"
     NEW_URL_NAME = "start"
     FINISHED_URL_NAME = "finished"
@@ -176,7 +176,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def has_pk(self):
         """Does this wizard know about a DomainRequest database record?"""
-        return bool(self.kwargs.get("id") is not None)
+        return bool(self.kwargs.get("domain_request_pk") is not None)
 
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""
@@ -214,11 +214,11 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
             try:
                 self._domain_request = DomainRequest.objects.get(
                     creator=creator,
-                    pk=self.kwargs.get("id"),
+                    pk=self.kwargs.get("domain_request_pk"),
                 )
                 return self._domain_request
             except DomainRequest.DoesNotExist:
-                logger.debug("DomainRequest id %s did not have a DomainRequest" % id)
+                logger.debug("DomainRequest id %s did not have a DomainRequest" % self.kwargs.get("domain_request_pk"))
 
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
@@ -301,10 +301,10 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
         current_url = resolve(request.path_info).url_name
 
-        # if user visited via an "edit" url, associate the id of the
+        # if user visited via an "edit" url, associate the pk of the
         # domain request they are trying to edit to this wizard instance
         # and remove any prior wizard data from their session
-        if current_url == self.EDIT_URL_NAME and "id" in kwargs:
+        if current_url == self.EDIT_URL_NAME and "domain_request_pk" in kwargs:
             del self.storage
 
         # if accessing this class directly, redirect to either to an acknowledgement
@@ -484,7 +484,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
 
     def goto(self, step):
         self.steps.current = step
-        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"id": self.domain_request.id}))
+        return redirect(reverse(f"{self.URL_NAMESPACE}:{step}", kwargs={"domain_request_pk": self.domain_request.id}))
 
     def goto_next_step(self):
         """Redirects to the next step."""
@@ -943,23 +943,12 @@ class Finished(DomainRequestWizard):
         return render(self.request, self.template_name, context)
 
 
-class DomainRequestStatus(DomainRequestPermissionView):
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+class DomainRequestStatus(DetailView):
     template_name = "domain_request_status.html"
-
-    def has_permission(self):
-        """
-        Override of the base has_permission class to account for portfolio permissions
-        """
-        has_base_perms = super().has_permission()
-        if not has_base_perms:
-            return False
-
-        if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
-            if not self.request.user.has_edit_request_portfolio_permission(portfolio):
-                return False
-
-        return True
+    model = DomainRequest
+    pk_url_kwarg = "domain_request_pk"
+    context_object_name = "DomainRequest"
 
     def get_context_data(self, **kwargs):
         """Context override to add a step list to the context"""
@@ -974,19 +963,27 @@ class DomainRequestStatus(DomainRequestPermissionView):
         return context
 
 
-class DomainRequestWithdrawConfirmation(DomainRequestPermissionWithdrawView):
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+class DomainRequestWithdrawConfirmation(DetailView):
     """This page will ask user to confirm if they want to withdraw
 
-    The DomainRequestPermissionView restricts access so that only the
+    Access is restricted so that only the
     `creator` of the domain request may withdraw it.
     """
 
-    template_name = "domain_request_withdraw_confirmation.html"
+    template_name = "domain_request_withdraw_confirmation.html"  # DetailView property for what model this is viewing
+    model = DomainRequest
+    pk_url_kwarg = "domain_request_pk"
+    context_object_name = "DomainRequest"
 
 
-class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+class DomainRequestWithdrawn(DetailView):
     # this view renders no template
     template_name = ""
+    model = DomainRequest
+    pk_url_kwarg = "domain_request_pk"
+    context_object_name = "DomainRequest"
 
     def get(self, *args, **kwargs):
         """View class that does the actual withdrawing.
@@ -994,7 +991,7 @@ class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
         If user click on withdraw confirm button, this view updates the status
         to withdraw and send back to homepage.
         """
-        domain_request = DomainRequest.objects.get(id=self.kwargs["pk"])
+        domain_request = DomainRequest.objects.get(id=self.kwargs["domain_request_pk"])
         domain_request.withdraw()
         domain_request.save()
         if self.request.user.is_org_user(self.request):
@@ -1003,16 +1000,16 @@ class DomainRequestWithdrawn(DomainRequestPermissionWithdrawView):
             return HttpResponseRedirect(reverse("home"))
 
 
-class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
+@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
     """Delete view for home that allows the end user to delete DomainRequests"""
 
     object: DomainRequest  # workaround for type mismatch in DeleteView
+    model = DomainRequest
+    pk_url_kwarg = "domain_request_pk"
 
     def has_permission(self):
         """Custom override for has_permission to exclude all statuses, except WITHDRAWN and STARTED"""
-        has_perm = super().has_permission()
-        if not has_perm:
-            return False
 
         status = self.get_object().status
         valid_statuses = [DomainRequest.DomainRequestStatus.WITHDRAWN, DomainRequest.DomainRequestStatus.STARTED]
@@ -1109,8 +1106,12 @@ class DomainRequestDeleteView(DomainRequestPermissionDeleteView):
 
 
 # region Portfolio views
-class PortfolioDomainRequestStatusViewOnly(DomainRequestPortfolioViewonlyView):
+@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL)
+class PortfolioDomainRequestStatusViewOnly(DetailView):
     template_name = "portfolio_domain_request_status_viewonly.html"
+    model = DomainRequest
+    pk_url_kwarg = "domain_request_pk"
+    context_object_name = "DomainRequest"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

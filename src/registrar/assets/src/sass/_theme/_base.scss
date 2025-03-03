@@ -46,7 +46,6 @@ body {
   background-color: color('gray-1');
 }
 
-
 .section-outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
@@ -227,11 +226,6 @@ abbr[title] {
   }
 }
 
-// Boost this USWDS utility class for the accordions in the portfolio requests table
-.left-auto {
-  left: auto!important;
-}
-
 .usa-banner__inner--widescreen  {
   max-width: $widescreen-max-width;
 }
@@ -274,6 +268,14 @@ abbr[title] {
 
 .width-quarter {
   width: 25%;
+}
+
+.margin-top-3px {
+  margin-top: 3px;
+}
+
+.top-28px {
+  top: 28px;
 }
 
 /* 

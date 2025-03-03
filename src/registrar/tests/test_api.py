@@ -62,7 +62,7 @@ class GetSeniorOfficialJsonTest(TestCase):
         p = "password"
         self.client.login(username="testuser", password=p)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency"})
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_get_senior_official_json_not_found(self):
@@ -138,7 +138,7 @@ class GetPortfolioJsonTest(TestCase):
         """Test that an unauthenticated user receives a 403 with an error message."""
         self.client.force_login(self.user)
         response = self.client.get(self.api_url, {"id": self.portfolio.id})
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_get_portfolio_json_not_found(self):
@@ -181,7 +181,7 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
         p = "password"
         self.client.login(username="testuser", password=p)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency", "organization_type": "federal"})
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
 
 class GetActionNeededEmailForUserJsonTest(TestCase):
