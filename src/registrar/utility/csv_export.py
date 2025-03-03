@@ -520,12 +520,10 @@ class MemberExport(BaseExport):
                 f"{get_domain_requests_description_display(roles, permissions)}"
             ),
             "Member management": (
-                f"{get_members_display(roles, permissions)}: "
-                f"{get_members_description_display(roles, permissions)}"
+                f"{get_members_display(roles, permissions)}: {get_members_description_display(roles, permissions)}"
             ),
             "Domain management": (
-                f"{get_domains_display(roles, permissions)}: "
-                f"{get_domains_description_display(roles, permissions)}"
+                f"{get_domains_display(roles, permissions)}: {get_domains_description_display(roles, permissions)}"
             ),
             "Number of domains": length_user_managed_domains,
             "Domains": ", ".join(user_managed_domains),
