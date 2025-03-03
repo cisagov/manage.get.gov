@@ -7,6 +7,10 @@
   <h2>What is the purpose of your requested domain?</h2>
 {% endblock %}
 
+{% block form_required_fields_help_text %}
+{# empty this block so it doesn't show on this page #}
+{% endblock %}
+
 {% block form_fields %}
   {% if requires_feb_questions %}
       <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
@@ -16,54 +20,54 @@
         {{forms.3.management_form}}
         {{forms.4.management_form}}
         {{forms.5.management_form}}
-        <p class="usa-label">
-          <em>Select One <span class="usa-label--required">*</span></em>
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
           {% input_with_errors forms.0.feb_purpose_choice %}
         {% endwith %}
 
-        <div id="domain-purpose-details-container" class="conditional-panel display-none">
+        <div id="purpose-details-container" class="conditional-panel display-none">
           <p class="usa-label">
             <em>Provide details below <span class="usa-label--required">*</span></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
             {% input_with_errors forms.1.purpose %}
           {% endwith %}
           <p class="usa-hint margin-top-0">Maximum 2000 characters allowed.</p>
         </div>
 
-        <h2 class="margin-top-5">Do you have a target time frame for launching this domain?</h2>
-        <p class="usa-label">
-          <em>Select One <span class="usa-label--required">*</span></em>
+        <h2>Do you have a target time frame for launching this domain?</h2>
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
           {% input_with_errors forms.2.has_timeframe %}
         {% endwith %}
 
-        <div id="domain-timeframe-details-container" class="conditional-panel">
-          <p>
-            <em>Provide details below <span class="usa-label--required">*</span></em>
+        <div id="purpose-timeframe-details-container" class="conditional-panel">
+          <p class="margin-bottom-0 margin-top-1">
+            <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
             {% input_with_errors forms.3.time_frame_details %}
           {% endwith %}
           <p class="usa-hint margin-top-0">Maximum 2000 characters allowed.</p>
         </div>
 
         <h2>Will the domain name be used for an interagency initiative?</h2>
-        <p>
-          <em>Select One <span class="usa-label--required">*</span></em>
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
         {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
           {% input_with_errors forms.4.is_interagency_initiative %}
         {% endwith %}
 
-        <div id="domain-interagency-initaitive-details-container" class="conditional-panel">
-          <p class="usa-label">
-            <em>Provide details below <span class="usa-label--required">*</span></em>
+        <div id="purpose-interagency-initaitive-details-container" class="conditional-panel">
+          <p class="margin-bottom-0 margin-top-1">
+            <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
             {% input_with_errors forms.5.interagency_initiative_details %}
           {% endwith %}
           <p class="usa-hint margin-top-0">Maximum 2000 characters allowed.</p>

@@ -1,12 +1,17 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
-from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm, RegistrarForm
+from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm
+
 
 class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
 
     field_name = "feb_purpose_choice"
 
-    form_choices = (("new", "Used for a new website"), ("redirect", "Used as a redirect for an existing website"), ("other", "Not for a website"))
+    form_choices = (
+        ("new", "Used for a new website"),
+        ("redirect", "Used as a redirect for an existing website"),
+        ("other", "Not for a website"),
+    )
 
     feb_purpose_choice = forms.ChoiceField(
         required=True,
@@ -15,12 +20,13 @@ class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
         error_messages={
             "required": "This question is required.",
         },
-        label = "Select one"
+        label="Select one",
     )
+
 
 class PurposeDetailsForm(BaseDeletableRegistrarForm):
 
-    field_name="purpose"
+    field_name = "purpose"
 
     purpose = forms.CharField(
         label="Purpose",
@@ -38,6 +44,7 @@ class PurposeDetailsForm(BaseDeletableRegistrarForm):
         ],
         error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
     )
+
 
 class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
     """
@@ -73,6 +80,7 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
         error_messages={"required": "Provide details on your target timeframe."},
     )
 
+
 class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
     """
     Form for determining whether the domain request is part of an interagency initative.
@@ -92,11 +100,7 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
 class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
     interagency_initiative_details = forms.CharField(
         label="interagency_initiative_details",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "Name the agencies that will be involved in this initiative."
-            }
-        ),
+        widget=forms.Textarea(attrs={"aria-label": "Name the agencies that will be involved in this initiative."}),
         validators=[
             MaxLengthValidator(
                 2000,

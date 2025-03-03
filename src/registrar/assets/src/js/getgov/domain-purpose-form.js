@@ -3,7 +3,6 @@ import { showElement } from './helpers.js';
 export const domain_purpose_choice_callbacks = {
     'new': {
         callback: function(value, element) {
-            console.log("Callback for new")
             //show the purpose details container
             showElement(element);
             // change just the text inside the em tag
@@ -15,11 +14,10 @@ export const domain_purpose_choice_callbacks = {
                 'evidence user need for this new domain. ' +
                 '<span class="usa-label--required">*</span>';
         },
-        element: document.getElementById('domain-purpose-details-container')
+        element: document.getElementById('purpose-details-container')
     },
     'redirect': {
         callback: function(value, element) {
-            console.log("Callback for redirect")
             // show the purpose details container
             showElement(element);
             // change just the text inside the em tag
@@ -27,11 +25,10 @@ export const domain_purpose_choice_callbacks = {
             labelElement.innerHTML = 'Explain why a redirect is necessary. ' +
                 '<span class="usa-label--required">*</span>';
         },
-        element: document.getElementById('domain-purpose-details-container')
+        element: document.getElementById('purpose-details-container')
     },
     'other': {
         callback: function(value, element) {
-            console.log("Callback for other")
             // Show the purpose details container
             showElement(element);
             // change just the text inside the em tag
@@ -39,6 +36,6 @@ export const domain_purpose_choice_callbacks = {
             labelElement.innerHTML = 'Describe how this domain will be used. ' +
                 '<span class="usa-label--required">*</span>';
         },
-        element: document.getElementById('domain-purpose-details-container')
+        element: document.getElementById('purpose-details-container')
     }
 }

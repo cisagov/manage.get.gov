@@ -183,9 +183,7 @@ class DomainRequestWizard(DomainRequestWizardPermissionView, TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        # TODO: this is for testing, revert later
-        return True
-        # return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
 
     @property
     def prefix(self):
@@ -713,19 +711,20 @@ class DotgovDomain(DomainRequestWizard):
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
 
-    forms = [purpose.FEBPurposeOptionsForm,
-             purpose.PurposeDetailsForm,
-             purpose.FEBTimeFrameYesNoForm,
-             purpose.FEBTimeFrameDetailsForm,
-             purpose.FEBInteragencyInitiativeYesNoForm,
-             purpose.FEBInteragencyInitiativeDetailsForm
-            ]
+    forms = [
+        purpose.FEBPurposeOptionsForm,
+        purpose.PurposeDetailsForm,
+        purpose.FEBTimeFrameYesNoForm,
+        purpose.FEBTimeFrameDetailsForm,
+        purpose.FEBInteragencyInitiativeYesNoForm,
+        purpose.FEBInteragencyInitiativeDetailsForm,
+    ]
 
     def get_context_data(self):
-        context= super().get_context_data()
+        context = super().get_context_data()
         context["requires_feb_questions"] = self.requires_feb_questions()
         return context
-    
+
     def is_valid(self, forms_list: list) -> bool:
         """
         Expected order of forms_list:
@@ -753,17 +752,29 @@ class Purpose(DomainRequestWizard):
             feb_initiative_details_form.mark_form_for_deletion()
             # we only care about the purpose details form in this case since it's used in both instances
             return purpose_details_form.is_valid()
-        
-        if not feb_purpose_options_form.is_valid():
+
+        if feb_purpose_options_form.is_valid():
+            option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
+            if option == "new":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Explain why a new domain is required."
+                }
+            elif option == "redirect":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Explain why a redirect is needed."
+                }
+            elif option == "other":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Provide details on how this domain will be used."
+                }
+            # If somehow none of these are true use the default error message
+        else:
             # Ensure details form doesn't throw errors if it's not showing
             purpose_details_form.mark_form_for_deletion()
 
         feb_timeframe_valid = feb_timeframe_yes_no_form.is_valid()
         feb_initiative_valid = feb_initiative_yes_no_form.is_valid()
 
-        logger.debug(f"feb timeframe yesno: {feb_timeframe_yes_no_form.cleaned_data.get('has_timeframe')}")
-        logger.debug(f"FEB initiative yesno: {feb_initiative_yes_no_form.cleaned_data.get('is_interagency_initiative')}")
-        
         if not feb_timeframe_valid or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
             # Ensure details form doesn't throw errors if it's not showing
             feb_timeframe_details_form.mark_form_for_deletion()
@@ -772,13 +783,9 @@ class Purpose(DomainRequestWizard):
             # Ensure details form doesn't throw errors if it's not showing
             feb_initiative_details_form.mark_form_for_deletion()
 
-        for i, form in enumerate(forms_list):
-            logger.debug(f"Form {i} is marked for deletion: {form.form_data_marked_for_deletion}")
-
         valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
 
         return valid
-
 
 
 class OtherContacts(DomainRequestWizard):

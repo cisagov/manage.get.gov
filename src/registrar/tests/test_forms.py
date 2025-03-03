@@ -14,10 +14,11 @@ from registrar.forms.domain_request_wizard import (
     OtherContactsForm,
     RequirementsForm,
     TribalGovernmentForm,
-    PurposeDetailsForm,
     AnythingElseForm,
     AboutYourOrganizationForm,
 )
+from registrar.forms.domainrequestwizard.purpose import PurposeDetailsForm
+
 from registrar.forms.domain import ContactForm
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,

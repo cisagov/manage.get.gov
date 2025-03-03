@@ -53,7 +53,7 @@ class DomainRequest(TimeStampedModel):
         def get_status_label(cls, status_name: str):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
-        
+
     class FEBPurposeChoices(models.TextChoices):
         WEBSITE = "website"
         REDIRECT = "redirect"
@@ -557,8 +557,6 @@ class DomainRequest(TimeStampedModel):
         related_name="alternatives+",
         help_text="Other domain names the creator provided for consideration",
     )
-
-
 
     other_contacts = models.ManyToManyField(
         "registrar.Contact",

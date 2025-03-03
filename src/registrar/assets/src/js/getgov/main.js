@@ -29,8 +29,8 @@ hookupYesNoListener("dotgov_domain-feb_naming_requirements", null, "domain-namin
 
 hookupCallbacksToRadioToggler("purpose-feb_purpose_choice", domain_purpose_choice_callbacks);
 
-hookupYesNoListener("purpose-has_timeframe", "domain-timeframe-details-container", null);
-hookupYesNoListener("purpose-is_interagency_initiative", "domain-interagency-initaitive-details-container", null);
+hookupYesNoListener("purpose-has_timeframe", "purpose-timeframe-details-container", null);
+hookupYesNoListener("purpose-is_interagency_initiative", "purpose-interagency-initaitive-details-container", null);
 
 
 initializeUrbanizationToggle();
