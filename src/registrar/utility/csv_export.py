@@ -44,9 +44,7 @@ from registrar.utility.enums import DefaultEmail, DefaultUserValues
 from registrar.models.utility.portfolio_helper import (
     get_role_display,
     get_domain_requests_display,
-    get_domains_description_display,
     get_domains_display,
-    get_members_description_display,
     get_members_display,
 )
 
@@ -515,7 +513,7 @@ class MemberExport(BaseExport):
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
             "Domain requests": f"{get_domain_requests_display(roles, permissions)}",
-            "Member": f"{get_members_display(roles, permissions)}",
+            "Members": f"{get_members_display(roles, permissions)}",
             "Domains": f"{get_domains_display(roles, permissions)}",
             "Number domains assigned": length_user_managed_domains,
             "Domain assignments": ", ".join(user_managed_domains),
