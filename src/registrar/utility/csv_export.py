@@ -515,7 +515,7 @@ class MemberExport(BaseExport):
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
-            "Domain requests": f"{get_domain_requests_display(roles, permissions)}: ",
+            "Domain requests": f"{get_domain_requests_display(roles, permissions)}",
             "Member management": (
                 f"{get_members_display(roles, permissions)}: {get_members_description_display(roles, permissions)}"
             ),
