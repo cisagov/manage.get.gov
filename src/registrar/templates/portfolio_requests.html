@@ -26,9 +26,10 @@
             <div class="mobile:grid-col-12 tablet:grid-col-6">
  
                 <p class="float-right-tablet tablet:margin-y-0">
-                    <button data-href="{% url 'domain-request:start' %}" class="usa-button use-button-as-link">
+                    <a href="{% url 'domain-request:start' %}" class="usa-button"
+                    >
                         Start a new domain request
-                    </button>
+                    </a>
                 </p>
             </div>
         {% else %}
