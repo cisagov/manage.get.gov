@@ -889,7 +889,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             # Header
             "Email,Member access,Invited by,Joined date,Last active,Domain requests,"
-            "Member management,Domains,Number domains assigned,Domain assignments\n"
+            "Members,Domains,Number domains assigned,Domain assignments\n"
             # Content
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
             "Viewer,True,1,cdomain1.gov\n"
