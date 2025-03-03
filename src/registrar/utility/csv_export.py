@@ -489,7 +489,7 @@ class MemberExport(BaseExport):
             "Joined date",
             "Last active",
             "Domain requests",
-            "Member",
+            "Members",
             "Domains",
             "Number domains assigned",
             "Domain assignments",
