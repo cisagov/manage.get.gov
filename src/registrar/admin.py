@@ -75,6 +75,15 @@ from django.utils.translation import gettext_lazy as _
 logger = logging.getLogger(__name__)
 
 
+class ImportExportRegistrarModelAdmin(ImportExportModelAdmin):
+
+    def has_import_permission(self, request):
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm("registrar.full_access_permission")
+
+    def has_export_permission(self, request):
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm("registrar.full_access_permission")
+
+
 class FsmModelResource(resources.ModelResource):
     """ModelResource is extended to support importing of tables which
     have FSMFields.  ModelResource is extended with the following changes
@@ -751,7 +760,7 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
-class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
+class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
     """Custom user admin class to use our inlines."""
 
     resource_classes = [UserResource]
@@ -1044,7 +1053,7 @@ class HostResource(resources.ModelResource):
         model = models.Host
 
 
-class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
+class MyHostAdmin(AuditedAdmin, ImportExportRegistrarModelAdmin):
     """Custom host admin class to use our inlines."""
 
     resource_classes = [HostResource]
@@ -1070,7 +1079,7 @@ class HostIpResource(resources.ModelResource):
         model = models.HostIP
 
 
-class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
+class HostIpAdmin(AuditedAdmin, ImportExportRegistrarModelAdmin):
     """Custom host ip admin class"""
 
     resource_classes = [HostIpResource]
@@ -1093,7 +1102,7 @@ class ContactResource(resources.ModelResource):
         model = models.Contact
 
 
-class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class ContactAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom contact admin class to add search."""
 
     resource_classes = [ContactResource]
@@ -1244,7 +1253,7 @@ class WebsiteResource(resources.ModelResource):
         model = models.Website
 
 
-class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class WebsiteAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom website admin class."""
 
     resource_classes = [WebsiteResource]
@@ -1344,7 +1353,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
             obj.delete()  # Calls the overridden delete method on each instance
 
 
-class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom user domain role admin class."""
 
     resource_classes = [UserDomainRoleResource]
@@ -1760,7 +1769,7 @@ class DomainInformationResource(resources.ModelResource):
         model = models.DomainInformation
 
 
-class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Customize domain information admin class."""
 
     class GenericOrgFilter(admin.SimpleListFilter):
@@ -2098,7 +2107,7 @@ class DomainRequestResource(FsmModelResource):
         model = models.DomainRequest
 
 
-class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain requests admin class."""
 
     resource_classes = [DomainRequestResource]
@@ -3309,7 +3318,7 @@ class DomainResource(FsmModelResource):
         model = models.Domain
 
 
-class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
@@ -3902,7 +3911,7 @@ class DraftDomainResource(resources.ModelResource):
         model = models.DraftDomain
 
 
-class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DraftDomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom draft domain admin class."""
 
     resource_classes = [DraftDomainResource]
@@ -4022,7 +4031,7 @@ class PublicContactResource(resources.ModelResource):
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
-class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class PublicContactAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom PublicContact admin class."""
 
     resource_classes = [PublicContactResource]
@@ -4358,7 +4367,7 @@ class FederalAgencyResource(resources.ModelResource):
         model = models.FederalAgency
 
 
-class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by federal agency."
@@ -4415,11 +4424,11 @@ class WaffleFlagAdmin(FlagAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainGroupAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_display = ["name", "portfolio"]
 
 
-class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     list_display = ["name", "portfolio"]
     autocomplete_fields = [
