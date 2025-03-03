@@ -44,7 +44,6 @@ from registrar.utility.enums import DefaultEmail, DefaultUserValues
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioRoleChoices,
     get_role_display,
-    get_domain_requests_description_display,
     get_domain_requests_display,
     get_domains_description_display,
     get_domains_display,
@@ -494,9 +493,9 @@ class MemberExport(BaseExport):
             "Last active",
             "Domain requests",
             "Member management",
-            "Domain management",
-            "Number of domains",
             "Domains",
+            "Number domains assigned",
+            "Domain assignments",
         ]
 
     @classmethod
