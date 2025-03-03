@@ -6,6 +6,9 @@ from registrar.models import Domain, DomainInformation, DomainInvitation, Domain
 # Constants for clarity
 ALL = "all"
 IS_STAFF = "is_staff"
+IS_CISA_ANALYST = "is_cisa_analyst"
+IS_OMB_ANALYST = "is_omb_analyst"
+IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
@@ -101,6 +104,9 @@ def _user_has_permission(user, request, rules, **kwargs):
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
+        (IS_CISA_ANALYST, lambda: user.has_perm("registrar.analyst_access_permission")),
+        (IS_OMB_ANALYST, lambda: user.has_perm("registrar.omb_analyst_access_permission")),
+        (IS_FULL_ACCESS, lambda: user.has_perm("registrar.full_access_permission")),
         (IS_DOMAIN_MANAGER, lambda: _is_domain_manager(user, **kwargs)),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
