@@ -162,7 +162,7 @@ class MyUserAdminForm(UserChangeForm):
             "groups": NoAutocompleteFilteredSelectMultiple("groups", False),
             "user_permissions": NoAutocompleteFilteredSelectMultiple("user_permissions", False),
         }
-    
+
     # Loads "tabtitle" for this admin page so that on render the <title>
     # element will only have the model name instead of
     # the default string loaded by native Django admin code.
@@ -534,6 +534,18 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         "msg_short",
         "user_url",
     ]
+
+    # Loads "tabtitle" for this admin page so that on render the <title>
+    # element will only have the model name instead of
+    # the default string loaded by native Django admin code.
+    # (Eg. instead of "Select contact to change", display "Contacts")
+    # see "base_site.html" for the <title> code.
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = str(self.opts.verbose_name_plural).title()
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
 
     # We name the custom prop 'resource' because linter
     # is not allowing a short_description attr on it
@@ -1043,13 +1055,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
 
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
-        extra_context = {
-            "domain_requests": domain_requests, 
-            "domains": domains, 
-            "portfolios": portfolios
-            }
+        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
         return super().change_view(request, object_id, form_url, extra_context)
-    
+
     # Loads "tabtitle" for this admin page so that on render the <title>
     # element will only have the model name instead of
     # the default string loaded by native Django admin code.
@@ -4376,7 +4384,7 @@ class WaffleFlagAdmin(FlagAdmin):
         if extra_context is None:
             extra_context = {}
         extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
-        
+
         # Loads "tabtitle" for this admin page so that on render the <title>
         # element will only have the model name instead of
         # the default string loaded by native Django admin code.
