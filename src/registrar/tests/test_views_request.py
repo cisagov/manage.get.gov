@@ -54,6 +54,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
@@ -2547,7 +2548,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
-    @less_console_noise_decorator
+    # @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_domain_request_dotgov_domain_FEB_questions(self):
         """
@@ -2613,8 +2614,10 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Now proceed with the actual test
         domain_form = dotgov_page.forms[0]
-        domain_form["dotgov_domain-requested_domain"] = "test.gov"
+        domain_form["dotgov_domain-requested_domain"] = "asdffhgjkl.gov"
         domain_form["dotgov_domain-feb_naming_requirements"] = "True"
+        domain_form["dotgov_domain-feb_naming_requirements_details"] = "test"
+        print(domain_form.fields)
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         domain_result = domain_form.submit()
@@ -2622,8 +2625,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         # ---- PURPOSE PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_page = domain_result.follow()
+        print(purpose_page.forms[0].fields)
 
         self.feb_purpose_page_tests(purpose_page)
+
 
     def feb_purpose_page_tests(self, purpose_page):
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")

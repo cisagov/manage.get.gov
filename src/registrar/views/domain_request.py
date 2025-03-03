@@ -233,7 +233,6 @@ class DomainRequestWizard(TemplateView):
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
             if portfolio and not self._domain_request.federal_type:
-                logger.debug(f"Setting fed type to {portfolio.federal_type}")
                 self._domain_request.federal_type = portfolio.federal_type
                 self._domain_request.save()
         else:
