@@ -701,6 +701,7 @@ export function initFilterFocusListeners() {
 
                 // Announce focus change for screen readers
                 announceForScreenReaders("Filter refocused on " + focusedElement.textContent);
+                localStorage.removeItem("admin_filter_focus_id");
             }
         }
 
@@ -710,15 +711,6 @@ export function initFilterFocusListeners() {
                 localStorage.setItem("admin_filter_focus_id", this.id);
                 clickedFilter = true; // Mark that a filter was clicked
             });
-        });
-
-        // Clear focus selection in local storage if user is truly leaving the page
-        window.addEventListener("beforeunload", function(event) {
-            if (!clickedFilter) {
-                // If the user did not click a filter and the page is refreshing,
-                // clear the filter focus id from local storage
-                localStorage.removeItem("admin_filter_focus_id");
-            }
         });
     });
 }
