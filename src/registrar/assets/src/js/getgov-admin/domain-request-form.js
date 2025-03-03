@@ -696,7 +696,7 @@ export function initFilterFocusListeners() {
             let focusedElement = document.getElementById(lastClickedFilterId);
             if (focusedElement) {
                 //Focus the element
-                focusedElement.setAttribute("tabindex", "-1"); 
+                focusedElement.setAttribute("tabindex", "0"); 
                 focusedElement.focus({ preventScroll: true });
 
                 // Announce focus change for screen readers
