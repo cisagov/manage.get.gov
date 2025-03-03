@@ -42,7 +42,6 @@ from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
 from registrar.models.utility.portfolio_helper import (
-    UserPortfolioRoleChoices,
     get_role_display,
     get_domain_requests_display,
     get_domains_description_display,
