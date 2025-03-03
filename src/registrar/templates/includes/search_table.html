@@ -1,0 +1,50 @@
+{% load static %}
+<div class="grid-col-12">
+    <label class="usa-label display-block maxw-none" for="{{item_id_prefix}}__search-field">
+        {{ label_text }}
+    </label> 
+</div>
+<div class="section-outlined__search section-outlined__search--widescreen {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %}">
+    <section aria-label="{{aria_label_text}}" class="margin-top-2">
+    <!-- ---------- SEARCH ---------- -->
+        <form class="usa-search usa-search--small usa-search--show-label" method="POST" role="search">
+        {% csrf_token %} 
+        <div class="usa-search--show-label__input-wrapper flex-align-self-end">
+            <input
+            class="usa-input"
+            id="{{item_id_prefix}}__search-field"
+            type="search"
+            name="{{item_id_prefix}}-search"
+            placeholder="{{label_text}}"
+            />
+            <button class="usa-button" type="submit" id="{{item_id_prefix}}__search-field-submit" aria-labelledby="{{item_id_prefix}}__search-label">
+            <img
+                src="{% static 'img/usa-icons-bg/search--white.svg' %}"
+                class="usa-search__submit-icon"
+                alt="Search"
+            />
+            </button>
+            <button class="usa-button usa-button--unstyled margin-left-1 display-none" id="{{item_id_prefix}}__reset-search" type="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+                </svg>
+                Reset
+            </button>
+        </div>
+        </form>
+    </section>
+</div>
+<!-- ---------- EXPORT ---------- -->
+{% if with_export|lower == "true" %}
+<div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
+    <section aria-label="{{export_aria}}" class="margin-top-205">
+        <a href="{% url export_url %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
+        <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
+        </svg>Export as CSV
+        </a>
+    </section>
+</div>
+{% endif %}
+
+    
