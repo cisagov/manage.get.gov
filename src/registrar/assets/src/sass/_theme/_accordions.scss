@@ -41,7 +41,7 @@
     }
 }
 
-// This will work in responsive tables IF we overwrite the overflow value on the table container
+// This will work in responsive tables if we overwrite the overflow value on the table container
 // Works with styles in _tables
 @include at-media(desktop) {
     .usa-accordion--more-actions .usa-accordion__content {
