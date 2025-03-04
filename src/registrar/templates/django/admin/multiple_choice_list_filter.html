@@ -16,7 +16,7 @@
 
     {% for choice in choices %}
         {% if not choice.reset %}
-            <li{% if choice.selected %} class="selected"{% endif %}">
+            <li{% if choice.selected %} class="selected"{% endif %}>
               {% if choice.selected and choice.exclude_query_string %}
                 <a id="{{ title|lower|cut:' ' }}-filter-{{ choice.display|slugify }}" role="menuitemcheckbox" class="choice-filter choice-filter--checked" href="{{ choice.exclude_query_string|iriencode }}">{{ choice.display }}
                   <svg class="usa-icon position-absolute z-0 left-0" aria-hidden="true" focusable="false" role="img" width="24" height="24">
