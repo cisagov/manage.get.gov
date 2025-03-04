@@ -16,6 +16,7 @@ import { initDomainManagersPage } from './domain-managers.js';
 import { initDomainDSData } from './domain-dsdata.js';
 import { initDomainDNSSEC } from './domain-dnssec.js';
 import { initFormErrorHandling } from './form-errors.js';
+import { initButtonLinks } from '../getgov-admin/button-utils.js';
 
 initDomainValidators();
 
@@ -50,3 +51,5 @@ initFormErrorHandling();
 initPortfolioMemberPageRadio();
 initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
+
+initButtonLinks();
