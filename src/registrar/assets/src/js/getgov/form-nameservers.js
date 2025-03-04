@@ -1,4 +1,5 @@
 import { showElement, hideElement, scrollToElement } from './helpers';
+import { removeErrorsFromElement, removeFormErrors } from './form-helpers';
 
 export class NameserverForm {
     constructor() {
@@ -46,11 +47,17 @@ export class NameserverForm {
         // Check if there are error messages in the form (indicated by elements with class 'usa-alert--error')
         const errorMessages = document.querySelectorAll('.usa-alert--error');
 
+        // This check indicates that there are exactly two forms (which is the case for the Add New Nameservers form)
+        // and there is at least one error in the form. In this case, show the Add New Nameservers form, and 
+        // indicate that the form has changed
         if (this.addNameserversForm && secondNameserver && !thirdNameserver && errorMessages.length > 0) {
             showElement(this.addNameserversForm);
             this.formChanged = true;
         }
 
+        // This check indicates that there is either an Add New Nameservers form or an Add New Nameserver form
+        // and that form has errors in it. In this case, show the form, and indicate that the form has
+        // changed.
         if (this.addNameserversForm && this.addNameserversForm.querySelector('.usa-input--error')) {
             showElement(this.addNameserversForm);
             this.formChanged = true;
@@ -135,6 +142,8 @@ export class NameserverForm {
             let ipInput = document.getElementById(`id_form-${formIndex}-ip`);
             if (serverInput && ipInput) {
                 let ipParent = ipInput.parentElement; // Get the parent element of ipInput
+                // add an event listener on the server input that adjusts visibility
+                // and value of the ip input (and its parent) 
                 serverInput.addEventListener("input", () => {
                     let serverValue = serverInput.value.trim();
                     if (ipParent) {
@@ -363,9 +372,9 @@ export class NameserverForm {
         // copy values from editRow to readOnlyRow
         this.copyEditRowToReadonlyRow(editRow, readOnlyRow);
         // remove errors from the editRow
-        this.removeErrorsFromElement(editRow);
+        removeErrorsFromElement(editRow);
         // remove errors from the entire form
-        this.removeFormErrors();
+        removeFormErrors();
         // reset formChanged
         this.resetFormChanged();
         // hide and show rows as appropriate
@@ -382,9 +391,9 @@ export class NameserverForm {
             // reset the values set in addNameserversForm
             this.resetInputValuesInElement(this.addNameserversForm);
             // remove errors from the addNameserversForm
-            this.removeErrorsFromElement(this.addNameserversForm);
+            removeErrorsFromElement(this.addNameserversForm);
             // remove errors from the entire form
-            this.removeFormErrors();
+            removeFormErrors();
             // reset formChanged
             this.resetFormChanged();
             // hide the addNameserversForm
@@ -434,51 +443,6 @@ export class NameserverForm {
             tds[0].innerText = updatedText;
         }
     }
-
-    /**
-     * Removes all error-related classes and messages from the specified DOM element.
-     * This method cleans up validation errors by removing error highlighting from input fields, 
-     * labels, and form groups, as well as deleting error message elements.
-     * @param {HTMLElement} domElement - The parent element within which errors should be cleared.
-     */
-    removeErrorsFromElement(domElement) {
-        // Remove the 'usa-form-group--error' class from all div elements
-        domElement.querySelectorAll("div.usa-form-group--error").forEach(div => {
-            div.classList.remove("usa-form-group--error");
-        });
-
-        // Remove the 'usa-label--error' class from all label elements
-        domElement.querySelectorAll("label.usa-label--error").forEach(label => {
-            label.classList.remove("usa-label--error");
-        });
-
-        // Remove all error message divs whose ID ends with '__error-message'
-        domElement.querySelectorAll("div[id$='__error-message']").forEach(errorDiv => {
-            errorDiv.remove();
-        });
-
-        // Remove the 'usa-input--error' class from all input elements
-        domElement.querySelectorAll("input.usa-input--error").forEach(input => {
-            input.classList.remove("usa-input--error");
-        });
-    }
-
-    /**
-     * Removes all form-level error messages displayed in the UI.
-     * The form error messages are contained within div elements with the ID 'form-errors'.
-     * Since multiple elements with the same ID may exist (even though not syntactically correct), 
-     * this function removes them iteratively.
-     */
-    removeFormErrors() {
-        let formErrorDiv = document.getElementById("form-errors");
-
-        // Recursively remove all instances of form error divs
-        while (formErrorDiv) {
-            formErrorDiv.remove();
-            formErrorDiv = document.getElementById("form-errors");
-        }
-    }
-
 
     /**
      * Resets the form change state.
