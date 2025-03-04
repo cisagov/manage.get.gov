@@ -32,3 +32,22 @@ export function getParameterByName(name, url) {
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
+
+/**
+ * Creates a temporary live region to announce messages for screen readers.
+ */
+export function announceForScreenReaders(message) {
+    let liveRegion = document.createElement("div");
+    liveRegion.setAttribute("aria-live", "assertive");
+    liveRegion.setAttribute("role", "alert");
+    liveRegion.setAttribute("class", "usa-sr-only");
+    document.body.appendChild(liveRegion);
+
+    // Delay the update slightly to ensure it's recognized
+    setTimeout(() => {
+        liveRegion.textContent = message;
+        setTimeout(() => {
+            document.body.removeChild(liveRegion);
+        }, 1000);
+    }, 100);
+}
