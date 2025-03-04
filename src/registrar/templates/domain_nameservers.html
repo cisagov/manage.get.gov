@@ -244,7 +244,7 @@
               {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
                 {% if forloop.counter <= 2 %}
                   {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
+                  {% with attr_required=True add_initial_value_attr=True span_for_text=True %}
                     {% input_with_errors form.server %}
                   {% endwith %}
                 {% else %}
