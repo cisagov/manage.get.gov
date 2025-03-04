@@ -5284,7 +5284,10 @@ const setUpModal = baseComponent => {
   overlayDiv.classList.add(OVERLAY_CLASSNAME);
 
   // Set attributes
-  modalWrapper.setAttribute("role", "dialog");
+  // DOTGOV
+  // Removes the dialog role as this causes a double readout bug with screenreaders
+  // modalWrapper.setAttribute("role", "dialog");
+  // END DOTGOV
   modalWrapper.setAttribute("id", modalID);
   if (ariaLabelledBy) {
     modalWrapper.setAttribute("aria-labelledby", ariaLabelledBy);
