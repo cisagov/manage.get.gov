@@ -2614,18 +2614,17 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Now proceed with the actual test
         domain_form = dotgov_page.forms[0]
-        domain_form["dotgov_domain-requested_domain"] = "asdffhgjkl.gov"
+        domain = "test.gov"
+        domain_form["dotgov_domain-requested_domain"] = domain
         domain_form["dotgov_domain-feb_naming_requirements"] = "True"
         domain_form["dotgov_domain-feb_naming_requirements_details"] = "test"
-        print(domain_form.fields)
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        domain_result = domain_form.submit()
+        with patch('registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain', return_value=domain):  # noqa
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            domain_result = domain_form.submit()
 
         # ---- PURPOSE PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         purpose_page = domain_result.follow()
-        print(purpose_page.forms[0].fields)
 
         self.feb_purpose_page_tests(purpose_page)
 
