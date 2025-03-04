@@ -608,22 +608,37 @@ class DotGovDomainForm(RegistrarForm):
     )
 
 
-class PurposeForm(RegistrarForm):
-    purpose = forms.CharField(
-        label="Purpose",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else?"
-            }
-        ),
+class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
+    """
+    Form for verifying if the domain request meets the Federal Executive Branch domain naming requirements.
+    If the "no" option is selected, details must be provided via the separate details form.
+    """
+
+    field_name = "feb_naming_requirements"
+
+    @property
+    def form_is_checked(self):
+        """
+        Determines the initial checked state of the form based on the domain_request's attributes.
+        """
+        return self.domain_request.feb_naming_requirements
+
+
+class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
+    # Text area for additional details; rendered conditionally when "no" is selected.
+    feb_naming_requirements_details = forms.CharField(
+        widget=forms.Textarea(attrs={"maxlength": "2000"}),
+        max_length=2000,
+        required=True,
+        error_messages={"required": ("This field is required.")},
         validators=[
             MaxLengthValidator(
                 2000,
                 message="Response must be less than 2000 characters.",
             )
         ],
-        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
+        label="",
+        help_text="Maximum 2000 characters allowed.",
     )
 
 
