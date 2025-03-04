@@ -237,7 +237,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
     def _remove_required_error_from_forms(self, error_message):
         """Remove the 'At least two name servers' error from all forms if sufficient nameservers exist."""
         for form in self.forms:
-            if form.errors.get("server") == [error_message]:
+            if error_message in form.errors.get("server"):
                 form.errors.pop("server")
 
     def _check_for_duplicates(self):
