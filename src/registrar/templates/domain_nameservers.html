@@ -84,7 +84,7 @@
                   {% endwith %}
                 </div>
                 <div class="tablet:grid-col-6">
-                  {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
+                  {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
                     {% input_with_errors form.ip %}
                   {% endwith %}
                 </div>
@@ -115,7 +115,7 @@
           <tr>
             <th scope="col" role="columnheader">Name Servers</th>
             <th scope="col" role="columnheader"><span class="sr-only">IP address</span></th>
-            <th scope="col" role="columnheader">Action</th>
+            <th scope="col" role="columnheader" class="width-0">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -207,7 +207,7 @@
                     </button>
                     <button
                           type="button"
-                          class="usa-button usa-button--unstyled display-block nameserver-delete"
+                          class="usa-button usa-button--unstyled display-block text-secondary nameserver-delete"
                           name="btn-delete-click"
                           aria-label="Delete the name server from the registry"
                       >Delete
