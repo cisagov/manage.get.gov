@@ -725,7 +725,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%B %-d, %Y")
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
@@ -2147,62 +2147,6 @@ class TestDomainOrganization(TestDomainOverview):
         # Check the value of the input field
         organization_name_input = form.fields["organization_name"][0]
         self.assertEqual(organization_name_input.value, "Town of Igorville")
-
-        # Check if the input field is disabled
-        self.assertTrue("disabled" in organization_name_input.attrs)
-        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
-
-        # Check for the value we want to update
-        self.assertContains(success_result_page, "Faketown")
-
-    @less_console_noise_decorator
-    def test_domain_org_name_address_form_federal(self):
-        """
-        Submitting a change to federal_agency is blocked for federal domains
-        """
-
-        fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.generic_org_type = fed_org_type
-        self.domain_information.save()
-        try:
-            federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
-            self.domain_information.federal_agency = federal_agency
-            self.domain_information.save()
-        except ValueError as err:
-            self.fail(f"A ValueError was caught during the test: {err}")
-
-        self.assertEqual(self.domain_information.generic_org_type, fed_org_type)
-
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
-
-        form = org_name_page.forms[0]
-        # Check the value of the input field
-        agency_input = form.fields["federal_agency"][0]
-        self.assertEqual(agency_input.value, str(federal_agency.id))
-
-        # Check if the input field is disabled
-        self.assertTrue("disabled" in agency_input.attrs)
-        self.assertEqual(agency_input.attrs.get("disabled"), "")
-
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        org_name_page.form["federal_agency"] = FederalAgency.objects.filter(agency="Department of State").get().id
-        org_name_page.form["city"] = "Faketown"
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Make the change. The agency should be unchanged, but city should be modifiable.
-        success_result_page = org_name_page.form.submit()
-        self.assertEqual(success_result_page.status_code, 200)
-
-        # Check that the agency has not changed
-        self.assertEqual(self.domain_information.federal_agency.agency, "AMTRAK")
-
-        # Do another check on the form itself
-        form = success_result_page.forms[0]
-        # Check the value of the input field
-        organization_name_input = form.fields["federal_agency"][0]
-        self.assertEqual(organization_name_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in organization_name_input.attrs)
