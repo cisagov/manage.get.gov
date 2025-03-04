@@ -215,7 +215,18 @@ export function initFormsetsForms() {
         // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
         // since the form on the backend employs Django's DELETE widget.
         let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
-        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${totalShownForms + 1}`);
+        let newFormCount = totalShownForms + 1;
+        // update the header
+        let header = newForm.querySelector('legend h3');
+        header.textContent = `${formLabel} ${newFormCount}`;
+        header.id = `org-contact-${newFormCount}`;
+        // update accessibility elements on the delete buttons
+        let deleteDescription = newForm.querySelector('.delete-button-description');
+        deleteDescription.textContent = 'Delete new contact';
+        deleteDescription.id = `org-contact-${newFormCount}__name`;
+        let deleteButton = newForm.querySelector('button');
+        deleteButton.setAttribute("aria-labelledby", header.id);
+        deleteButton.setAttribute("aria-describedby", deleteDescription.id);
       } else {
         newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
       }
