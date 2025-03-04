@@ -1244,6 +1244,32 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
     # in autocomplete_fields for Senior Official
     ordering = ["first_name", "last_name"]
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(federal_agency__isnull=False),
+                    then=F("federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=Value(""),
+            ),
+        )
+    
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+    
 
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -1536,6 +1562,39 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     # Override for the delete confirmation page on the domain table (bulk delete action)
     delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(domain__domain_info__portfolio__isnull=False, then=F("domain__domain_info__portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("domain__domain_info__generic_org_type"),
+            ),
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(domain__domain_info__portfolio__isnull=False) & Q(domain__domain_info__portfolio__federal_agency__isnull=False),
+                    then=F("domain__domain_info__portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("domain__domain_info__federal_agency__federal_type"),
+            ),
+        )
+    
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+    
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
@@ -2097,6 +2156,38 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         # objects rather than Contact objects.
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
+
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            conv_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("generic_org_type"),
+            ),
+            conv_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_agency__federal_type"),
+            ),
+        )
+
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_federal_type=BranchChoices.EXECUTIVE,
+            )
+        return qs
 
 
 class DomainRequestResource(FsmModelResource):
@@ -3050,6 +3141,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            conv_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("generic_org_type"),
+            ),
+            conv_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("federal_agency__federal_type"),
+            ),
+        )
+
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
@@ -3059,6 +3169,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_federal_type=BranchChoices.EXECUTIVE,
+            )
         return qs
 
     def get_search_results(self, request, queryset, search_term):
@@ -3900,6 +4017,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(domain_info__portfolio=portfolio_id)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(
+                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
         return qs
 
 
@@ -4314,6 +4437,34 @@ class PortfolioAdmin(ListHeaderAdmin):
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(federal_agency__isnull=False),
+                    then=F("federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=Value(""),
+            ),
+        )
+    
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+    
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""
@@ -4374,6 +4525,17 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     ordering = ["agency"]
     resource_classes = [FederalAgencyResource]
 
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(
+                federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
 
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
@@ -4455,6 +4617,37 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         extra_context = {"domain_requests": domain_requests, "domains": domains}
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=Value(""),
+            ),
+        )
+
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if a 'portfolio' parameter is passed in the request
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            # Further filter the queryset by the portfolio
+            qs = qs.filter(portfolio=portfolio_id)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                portfolio__organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
+        return qs
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):
