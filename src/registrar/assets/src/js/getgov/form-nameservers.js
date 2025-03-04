@@ -269,7 +269,7 @@ export class NameserverForm {
     }
 
     /**
-     * Handles clicking a 'Delete' button on a readonly row in a kebab, which hattempts to delete the nameserver
+     * Handles clicking a 'Delete' button on a readonly row in a kebab, which attempts to delete the nameserver
      * after displaying modal and performing check for minimum number of nameservers.
      * @param {Event} event - Click event
      */
@@ -296,6 +296,8 @@ export class NameserverForm {
     deleteRow(editRow) {
         // Check if at least two nameserver forms exist
         const fourthNameserver = document.getElementById('id_form-3-server'); // This should exist
+        // This checks that at least 3 nameservers exist prior to the delete of a row, and if not
+        // display an error alert
         if (fourthNameserver) {
             this.callback = () => {
                 hideElement(editRow);
