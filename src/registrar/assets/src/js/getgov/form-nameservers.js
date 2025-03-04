@@ -458,10 +458,12 @@ export class NameserverForm {
      * This ensures that only the latest alert is displayed to the user.
      */
     resetAlerts() {
-        const mainContent = document.querySelector("main#main-content");
+        const mainContent = document.getElementById("main-content");
         if (mainContent) {
             // Remove all alert elements within the main content area
             mainContent.querySelectorAll(".usa-alert").forEach(alert => alert.remove());
+        } else {
+            console.warn("Expecting main-content DOM element");
         }
     }
 
@@ -474,7 +476,7 @@ export class NameserverForm {
     addAlert(level, message) {
         this.resetAlerts(); // Remove any existing alerts before adding a new one
         
-        const mainContent = document.querySelector("main#main-content");
+        const mainContent = document.getElementById("main-content");
         if (!mainContent) return;
 
         // Create a new alert div with appropriate classes based on alert level
