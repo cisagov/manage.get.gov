@@ -111,11 +111,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         <div class="readonly">
             {% with total_websites=field.contents|split:", " %}
                 {% if total_websites|length == 1 %}
-                    <p class="margin-y-0 padding-y-0">
-                        <a href="{{ total_websites.0 }}" target="_blank">
-                            {{ total_websites.0 }}
-                        </a>
-                    </p>
+                    {% comment %} Don't include websites that are just " " {% endcomment %}
+                    {% with website=total_websites.0 %}
+                        {% if website%}
+                            <p class="margin-y-0 padding-y-0">
+                                <a href="{{ website }}" target="_blank">
+                                    {{ website }}
+                                </a>
+                            </p>
+                        {% endif %}
+                    {% endwith %}
                 {% elif total_websites|length > 1 %}
                     <ul class="margin-top-0 margin-left-0 padding-left-0{% if total_websites|length > 5 %} admin-list-inline{% endif %}">
                         {% for website in total_websites %}
