@@ -329,9 +329,8 @@ class DomainRequestFixture:
         if total_requests and total_requests <= total_existing_requests:
             total_domain_requests_to_make = total_requests - total_existing_requests
             if total_domain_requests_to_make >= 0:
-                total_domains_to_delete = total_domain_requests_to_make
                 DomainRequest.objects.filter(
-                    id__in=list(DomainRequest.objects.values_list("pk", flat=True)[:total_domains_to_delete])
+                    id__in=list(DomainRequest.objects.values_list("pk", flat=True)[:total_domain_requests_to_make])
                 ).delete()
             if total_domain_requests_to_make == 0:
                 return
