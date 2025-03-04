@@ -184,8 +184,8 @@ class BaseNameserverFormset(forms.BaseFormSet):
         """Check for duplicate entries in the formset and ensure at least two valid nameservers."""
         error_message = "At least two name servers are required."
 
-        valid_forms, empty_forms = self._categorize_forms(error_message)
-        self._enforce_minimum_nameservers(valid_forms, empty_forms, error_message)
+        valid_forms, invalid_forms, empty_forms = self._categorize_forms(error_message)
+        self._enforce_minimum_nameservers(valid_forms, invalid_forms, empty_forms, error_message)
 
         if any(self.errors):  # Skip further validation if individual forms already have errors
             return
@@ -193,31 +193,30 @@ class BaseNameserverFormset(forms.BaseFormSet):
         self._check_for_duplicates()
 
     def _categorize_forms(self, error_message):
-        """Sort forms into valid or empty based on the 'server' field."""
+        """Sort forms into valid, invalid or empty based on the 'server' field."""
         valid_forms = []
+        invalid_forms = []
         empty_forms = []
 
         for form in self.forms:
             if not self._is_server_validation_needed(form, error_message):
+                invalid_forms.append(form)
                 continue
-
             server = form.cleaned_data.get("server", "").strip()
             if server:
                 valid_forms.append(form)
             else:
                 empty_forms.append(form)
 
-        return valid_forms, empty_forms
+        return valid_forms, invalid_forms, empty_forms
 
     def _is_server_validation_needed(self, form, error_message):
         """Determine if server validation should be performed on a given form."""
         return form.is_valid() or list(form.errors.get("server", [])) == [error_message]
 
-    def _enforce_minimum_nameservers(self, valid_forms, empty_forms, error_message):
-        """Ensure at least two nameservers are provided, adjusting error messages as needed. This accounts
-        for three forms, where the last form is empty and one of the first two forms has an error. In that case
-        will want to remove the 'at least two valid servers' error."""
-        if len(valid_forms) < 2 and len(self.forms) < 3:
+    def _enforce_minimum_nameservers(self, valid_forms, invalid_forms, empty_forms, error_message):
+        """Ensure at least two nameservers are provided, adjusting error messages as needed."""
+        if len(valid_forms) + len(invalid_forms) < 2:
             self._add_required_error(empty_forms, error_message)
         else:
             self._remove_required_error_from_forms(error_message)

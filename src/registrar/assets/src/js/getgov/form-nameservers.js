@@ -35,6 +35,8 @@ export class NameserverForm {
         const domainName = document.getElementById('id_form-0-domain');
         if (domainName) {
             this.domain = domainName.value;
+        } else {
+            console.warn("Form expects a dom element, id_form-0-domain");
         }
 
         // Check if exactly two nameserver forms exist: id_form-1-server is present but id_form-2-server is not
@@ -56,7 +58,7 @@ export class NameserverForm {
 
         // handle display of table view errors
         // if error exists in an edit-row, make that row show, and readonly row hide
-        const formTable = document.querySelector('.usa-table')
+        const formTable = document.getElementById('nameserver-table')
         if (formTable) {
             const editRows = formTable.querySelectorAll('.edit-row');
             editRows.forEach(editRow => {
