@@ -323,8 +323,6 @@ class DomainRequestFixture:
         # number of entries.
         # (Prevents re-adding more entries to an already populated database,
         # which happens when restarting Docker src)
-        total_existing_requests = DomainRequest.objects.count()
-
         domain_requests_to_create = []
 
         for user in users:
