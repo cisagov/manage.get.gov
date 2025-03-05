@@ -74,7 +74,6 @@ class PortfolioFixture:
         if not portfolio.federal_agency:
             if portfolio_dict.get("federal_agency") is not None:
                 portfolio.federal_agency, _ = FederalAgency.objects.get_or_create(name=portfolio_dict["federal_agency"])
-                portfolio.federal_agency.federal_type, _ = Federal_type.objects.get_or_create(name=portfolio_dict["federal_agency"])
             else:
                 federal_agencies = FederalAgency.objects.all()
                 # Random choice of agency for selects, used as placeholders for testing.
