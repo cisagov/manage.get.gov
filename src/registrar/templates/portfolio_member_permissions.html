@@ -20,9 +20,9 @@
   <!-- Navigation breadcrumbs -->
   {% url 'members' as url %}
   {% if portfolio_permission %}
-      {% url 'member' pk=portfolio_permission.id as url2 %}
+      {% url 'member' member_pk=portfolio_permission.id as url2 %}
   {% else %}
-      {% url 'invitedmember' pk=invitation.id as url2 %}
+      {% url 'invitedmember' invitedmember_pk=invitation.id as url2 %}
   {% endif %}
   <nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Portfolio member breadcrumb">
   <ol class="usa-breadcrumb__list">

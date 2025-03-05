@@ -167,7 +167,7 @@ def _user_has_permission(user, request, rules, **kwargs):
             # TODO -- fix this on all related URLS :(
             and (
                 _member_exists_under_portfolio(portfolio, kwargs.get("member_pk")) 
-                or _member_invitation_exists_under_portfolio(portfolio, kwargs.get("memberinvitation_pk"))
+                or _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
             ),
         ),
     ]
@@ -213,8 +213,8 @@ def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
 def _member_exists_under_portfolio(portfolio, member_pk):
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
 
-def _member_invitation_exists_under_portfolio(portfolio, memberinvitation_pk):
-    return PortfolioInvitation.objects.filter(portfolio=portfolio, id=memberinvitation_pk).exists()
+def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
+    return PortfolioInvitation.objects.filter(portfolio=portfolio, id=invitedmember_pk).exists()
 
 def _is_domain_request_creator(user, domain_request_pk):
     """Checks to see if the user is the creator of a domain request

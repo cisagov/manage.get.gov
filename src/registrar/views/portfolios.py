@@ -77,6 +77,7 @@ class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member.html"
+    pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
@@ -118,6 +119,7 @@ class PortfolioMemberView(DetailView, View):
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDeleteView(View):
+    pk_url_kwarg = "member_pk"
 
     def post(self, request, member_pk):
         """
@@ -224,6 +226,7 @@ class PortfolioMemberEditView(DetailView, View):
     context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioMemberForm
+    pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
@@ -277,7 +280,7 @@ class PortfolioMemberEditView(DetailView, View):
                 self._handle_exceptions(e)
             form.save()
             messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("member", pk=member_pk) if not removing_admin_role_on_self else redirect("home")
+            return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
 
         return render(
             request,
@@ -305,6 +308,7 @@ class PortfolioMemberEditView(DetailView, View):
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
+    pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
@@ -325,6 +329,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
+    pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
@@ -438,6 +443,7 @@ class PortfolioInvitedMemberView(DetailView, View):
     context_object_name = "portfolio"
     template_name = "portfolio_member.html"
     # form_class = PortfolioInvitedMemberForm
+    pk_url_kwarg = "invitedmember_pk"
 
     def get(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
@@ -478,7 +484,7 @@ class PortfolioInvitedMemberView(DetailView, View):
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDeleteView(View):
-
+    pk_url_kwarg = "invitedmember_pk"
     def post(self, request, invitedmember_pk):
         """
         Find and delete the portfolio invited member using the provided primary key (pk).
@@ -528,6 +534,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
     context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioInvitedMemberForm
+    pk_url_kwarg = "invitedmember_pk"
 
     def get(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
@@ -569,7 +576,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
                 self._handle_exceptions(e)
             form.save()
             messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("invitedmember", pk=invitedmember_pk)
+            return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
             request,
@@ -597,6 +604,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
 class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
+    pk_url_kwarg = "invitedmember_pk"
 
     def get(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
@@ -616,6 +624,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
+    pk_url_kwarg = "invitedmember_pk"
 
     def get(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
