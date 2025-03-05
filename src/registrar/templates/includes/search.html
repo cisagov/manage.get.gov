@@ -4,7 +4,7 @@
     <section aria-label="{{aria_label_text}}">
         <form class="usa-search usa-search--small usa-search--show-label" method="POST" role="search">
             {% csrf_token %}
-            <label class="usa-label display-block maxw-none margin-top-2 margin-bottom-1" for="{{item_id_prefix}}__search-field">
+            <label id="{{item_name}}__search-label" class="usa-label display-block maxw-none margin-top-2 margin-bottom-1" for="{{item_id_prefix}}__search-field">
                 {{ label_text }}
             </label> 
             <div class="usa-search--show-label__input-wrapper">
