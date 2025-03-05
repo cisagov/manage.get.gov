@@ -445,7 +445,7 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
     class Meta:
         model = PortfolioInvitation
         fields = ["portfolio", "email", "roles", "additional_permissions"]
-    
+
     def _post_clean(self):
         """
         Override _post_clean to customize model validation errors.

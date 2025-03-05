@@ -286,7 +286,7 @@ def validate_user_portfolio_permission(user_portfolio_permission):
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
-                code="has_existing_permissions"
+                code="has_existing_permissions",
             )
 
         existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email).exclude(
@@ -297,7 +297,7 @@ def validate_user_portfolio_permission(user_portfolio_permission):
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
-                code="has_existing_invitations"
+                code="has_existing_invitations",
             )
 
 
@@ -359,14 +359,14 @@ def validate_portfolio_invitation(portfolio_invitation):
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
-                code="has_existing_permissions"
+                code="has_existing_permissions",
             )
 
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
                 "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
-                code="has_existing_invitations"
+                code="has_existing_invitations",
             )
 
 
