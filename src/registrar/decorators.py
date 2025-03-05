@@ -2,6 +2,8 @@ import functools
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
 # Constants for clarity
 ALL = "all"
@@ -116,7 +118,9 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (
             IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
-            lambda: _is_domain_manager(user, **kwargs) and _is_portfolio_member(request),
+            lambda: _is_domain_manager(user, **kwargs) 
+            and _is_portfolio_member(request) 
+            and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
             IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
@@ -141,6 +145,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
             lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk"))
+            and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_ANY_PERM,
@@ -153,12 +158,17 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             HAS_PORTFOLIO_MEMBERS_EDIT,
             lambda: user.is_org_user(request)
-            and user.has_edit_members_portfolio_permission(portfolio),
+            and user.has_edit_members_portfolio_permission(portfolio)
         ),
         (
             HAS_PORTFOLIO_MEMBERS_VIEW,
             lambda: user.is_org_user(request)
-            and user.has_view_members_portfolio_permission(portfolio),
+            and user.has_view_members_portfolio_permission(portfolio)
+            # TODO -- fix this on all related URLS :(
+            and (
+                _member_exists_under_portfolio(portfolio, kwargs.get("member_pk")) 
+                or _member_invitation_exists_under_portfolio(portfolio, kwargs.get("memberinvitation_pk"))
+            ),
         ),
     ]
 
@@ -192,6 +202,19 @@ def _is_domain_manager(user, **kwargs):
         return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
     return False
 
+def _domain_exists_under_portfolio(portfolio, domain_pk):
+    """Checks to see if the given domain exists under the provided portfolio"""
+    return Domain.objects.filter(domain_info__portfolio=portfolio, id=domain_pk).exists()
+
+def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
+    """Checks to see if the given domain request exists under the provided portfolio"""
+    return DomainRequest.objects.filter(portfolio=portfolio, id=domain_request_pk).exists()
+
+def _member_exists_under_portfolio(portfolio, member_pk):
+    return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
+
+def _member_invitation_exists_under_portfolio(portfolio, memberinvitation_pk):
+    return PortfolioInvitation.objects.filter(portfolio=portfolio, id=memberinvitation_pk).exists()
 
 def _is_domain_request_creator(user, domain_request_pk):
     """Checks to see if the user is the creator of a domain request
@@ -199,10 +222,6 @@ def _is_domain_request_creator(user, domain_request_pk):
     if domain_request_pk:
         return DomainRequest.objects.filter(creator=user, id=domain_request_pk).exists()
     return True
-
-def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
-    """Checks to see if the given domain request exists under the provided portfolio"""
-    return DomainRequest.objects.filter(portfolio=portfolio, id=domain_request_pk).exists()
 
 
 def _is_portfolio_member(request):

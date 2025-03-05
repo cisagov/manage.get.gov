@@ -12,6 +12,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
+    HAS_PORTFOLIO_MEMBERS_VIEW,
     IS_PORTFOLIO_MEMBER,
     grant_access,
 )
@@ -71,7 +72,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -115,7 +116,7 @@ class PortfolioMemberView(DetailView, View):
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDeleteView(View):
 
     def post(self, request, pk):
@@ -217,7 +218,7 @@ class PortfolioMemberDeleteView(View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -300,7 +301,7 @@ class PortfolioMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -319,7 +320,7 @@ class PortfolioMemberDomainsView(View):
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -431,7 +432,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioInvitedMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -475,7 +476,7 @@ class PortfolioInvitedMemberView(DetailView, View):
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDeleteView(View):
 
     def post(self, request, pk):
@@ -521,7 +522,7 @@ class PortfolioInvitedMemberDeleteView(View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -592,7 +593,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -609,7 +610,7 @@ class PortfolioInvitedMemberDomainsView(View):
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
     model = Portfolio
@@ -903,7 +904,7 @@ class PortfolioMembersView(View):
         return render(request, "portfolio_members.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioAddMemberView(DetailView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
