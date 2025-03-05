@@ -312,7 +312,7 @@ class DomainRequestFixture:
             logger.warning(e)
             return
 
-        cls._create_domain_requests(users, 900)
+        cls._create_domain_requests(users)
 
     @classmethod
     def _create_domain_requests(cls, users):  # noqa: C901
