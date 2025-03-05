@@ -482,6 +482,7 @@ export class NameserverForm {
         // Create a new alert div with appropriate classes based on alert level
         const alertDiv = document.createElement("div");
         alertDiv.className = `usa-alert usa-alert--${level} usa-alert--slim margin-bottom-2`;
+        alertDiv.setAttribute("role", "alert"); // Add the role attribute
 
         // Create the alert body to hold the message text
         const alertBody = document.createElement("div");
