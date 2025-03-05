@@ -315,7 +315,7 @@ class DomainRequestFixture:
         cls._create_domain_requests(users)
 
     @classmethod
-    def _create_domain_requests(cls, users):  # noqa: C901
+    def _create_domain_requests(cls, users, total_requests=None):  # noqa: C901
         """Creates DomainRequests given a list of users."""
         total_domain_requests_to_make = len(users)  # 100000
 
@@ -323,27 +323,33 @@ class DomainRequestFixture:
         # number of entries.
         # (Prevents re-adding more entries to an already populated database,
         # which happens when restarting Docker src)
-        domain_requests_already_made = DomainRequest.objects.count()
+        total_existing_requests = DomainRequest.objects.count()
 
         domain_requests_to_create = []
-        if domain_requests_already_made < total_domain_requests_to_make:
-            for user in users:
-                for request_data in cls.DOMAINREQUESTS:
-                    # Prepare DomainRequest objects
-                    try:
-                        domain_request = DomainRequest(
-                            creator=user,
-                            organization_name=request_data["organization_name"],
-                        )
-                        cls._set_non_foreign_key_fields(domain_request, request_data)
-                        cls._set_foreign_key_fields(domain_request, request_data, user)
-                        domain_requests_to_create.append(domain_request)
-                    except Exception as e:
-                        logger.warning(e)
+        if total_requests and total_requests <= total_existing_requests:
+            total_domain_requests_to_make = total_requests - total_existing_requests
+            if total_domain_requests_to_make >= 0:
+                DomainRequest.objects.filter(
+                    id__in=list(DomainRequest.objects.values_list("pk", flat=True)[:total_domain_requests_to_make])
+                ).delete()
+            if total_domain_requests_to_make == 0:
+                return
 
-            num_additional_requests_to_make = (
-                total_domain_requests_to_make - domain_requests_already_made - len(domain_requests_to_create)
-            )
+        for user in users:
+            for request_data in cls.DOMAINREQUESTS:
+                # Prepare DomainRequest objects
+                try:
+                    domain_request = DomainRequest(
+                        creator=user,
+                        organization_name=request_data["organization_name"],
+                    )
+                    cls._set_non_foreign_key_fields(domain_request, request_data)
+                    cls._set_foreign_key_fields(domain_request, request_data, user)
+                    domain_requests_to_create.append(domain_request)
+                except Exception as e:
+                    logger.warning(e)
+
+            num_additional_requests_to_make = total_domain_requests_to_make - len(domain_requests_to_create)
             if num_additional_requests_to_make > 0:
                 for _ in range(num_additional_requests_to_make):
                     random_user = random.choice(users)  # nosec

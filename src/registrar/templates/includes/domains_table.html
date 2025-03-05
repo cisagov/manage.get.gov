@@ -34,24 +34,25 @@
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
     {% endif %}
     <div class="section-outlined__search section-outlined__search--widescreen {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %}">
-      <section aria-label="Domains search component" class="margin-top-2">
+      <section aria-label="Domains search component" class="margin-top-2" id="domains-search-component">
         <form class="usa-search usa-search--small" method="POST" role="search">
           {% csrf_token %}
-          <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="domains__reset-search" type="button">
+          <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="domains__reset-search" type="button" aria-labelledby="domains-search-component">
             <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
             </svg>
             Reset
           </button>
-          <label id="domains__search-label" class="usa-sr-only" for="domains__search-field">Search by domain name</label>
           <input
             class="usa-input"
             id="domains__search-field"
             type="search"
             name="domains-search"
             placeholder="Search by domain name"
+            aria-labelledby="domains-search-component"
           />
-          <button class="usa-button" type="submit" id="domains__search-field-submit" aria-labelledby="domains__search-label">
+          <div class="usa-sr-only" id="domains-search-button__description">Click to search</div>
+          <button class="usa-button" type="submit" id="domains__search-field-submit" aria-labelledby="domains-search-component" aria-describedby="domains-search-button__description">
             <img
               src="{% static 'img/usa-icons-bg/search--white.svg' %}"
               class="usa-search__submit-icon"
@@ -63,12 +64,13 @@
     </div>
     {% if user_domain_count and user_domain_count > 0 %}
     <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-      <section aria-label="Domains report component" class="margin-top-205">
-        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
+      <section aria-label="Domains report component" class="margin-top-205" id="domains-report-component">
+        <div class="usa-sr-only" id="domains-export-button__description">Click to export as csv</div>
+        <button data-href="{% url 'export_data_type_user' %}" class="use-button-as-link usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" aria-labelledby="domains-report-component" aria-describedby="domains-export-button__description">
           <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
           </svg>Export as CSV
-        </a>
+        </button>
       </section>
     </div>
     {% endif %}
@@ -198,7 +200,7 @@
       </svg>
     </button>
   </div>
-  <div class="display-none usa-table-container--scrollable margin-top-0" tabindex="0" id="domains__table-wrapper">
+  <div class="display-none usa-table-container--scrollable usa-table-container--override-overflow margin-top-0" tabindex="0" id="domains__table-wrapper">
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
