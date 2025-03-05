@@ -7,9 +7,12 @@
 <span id="get_members_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined members margin-top-0 section-outlined--border-base-light" id="members">
   <div class="section-outlined__header margin-bottom-3 grid-row">
-    <!-- ---------- SEARCH & EXPORT ---------- -->
-    {% with label_text="Search by member name" item_id_prefix="members" aria_label_text="Members search component" with_export="true" export_aria="Members report component" export_url='export_members_portfolio'%}
-        {% include "includes/search_table.html" %}
+    <!-- ---------- SEARCH ---------- -->
+    {% with label_text="Search by member name" item_name="members" aria_label_text="Members search component" use_search_icon="true" %}
+        {% include "includes/search.html" %}
+    {% endwith %}
+    {% with export_aria="Members report component" export_url='export_members_portfolio' %}
+        {% include "includes/export.html" %}
     {% endwith %}
   </div>
 

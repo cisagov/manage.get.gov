@@ -28,19 +28,33 @@
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
   <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio flex-wrap{% else %} grid-row{% endif %}">
     {% if not portfolio %}
-      <h2 id="domains-header" class="display-inline-block">Domains</h2>
+      <div class="grid-row grid-col-12">
+        <h2 id="domains-header" class="display-inline-block flex-fill">Domains</h2>
+        <!-- ---------- EXPORT (non-org placement) ---------- -->
+        {% if user_domain_count and user_domain_count > 0 %}
+          {% with export_aria="Domains report component" export_url='export_data_type_user' %}
+              {% include "includes/export.html" %}
+          {% endwith %}
+        {% endif %}
+      </div>
     {% else %}
       <!-- Embedding the portfolio value in a data attribute -->
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
     {% endif %}
-    <!-- ---------- SEARCH & EXPORT ---------- -->
-    {% if user_domain_count and user_domain_count > 0 %}
-      {% with label_text="Search by domain name" item_id_prefix="domains" aria_label_text="Domains search component" with_export="true" export_aria="Domains report component" export_url='export_data_type_user' %}
-          {% include "includes/search_table.html" %}
-      {% endwith %}
-    {% else %}
-      {% with label_text="Search by domain name" item_id_prefix="domains" aria_label_text="Domains search component"%}
-          {% include "includes/search_table.html" %}
+    <!-- ---------- SEARCH ---------- -->
+    {% with label_text="Search by domain name" item_name="domains" aria_label_text="Domains search component"%}
+      {% if portfolio %}
+        {% with use_search_icon="true" %}
+            {% include "includes/search.html" %}
+        {% endwith %}
+      {% else %}
+        {% include "includes/search.html" %}
+      {% endif %}
+    {% endwith %}
+    <!-- ---------- EXPORT (org placement) ---------- -->
+    {% if user_domain_count and user_domain_count > 0 and portfolio%}
+      {% with export_aria="Domains report component" export_url='export_data_type_user' %}
+          {% include "includes/export.html" %}
       {% endwith %}
     {% endif %}
   </div>

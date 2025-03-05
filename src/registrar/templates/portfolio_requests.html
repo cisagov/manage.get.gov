@@ -16,15 +16,18 @@
 {% endblock messages%}
 
 <div id="main-content">
-    <h1 id="domain-requests-header" class="margin-bottom-1">Domain requests</h1>
-    <div class="grid-row grid-gap">
-
+    <div class="grid-row grid-gap margin-bottom-3">
+        <div class="mobile:grid-col-12 tablet:grid-col-6"> 
+            <h1 id="domain-requests-header" class="margin-bottom-1">Domain requests</h1>
+            {% if has_edit_request_portfolio_permission %}
+                <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
+            {% else %}
+                <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
+            {% endif %}
+        </div>
+       
         {% if has_edit_request_portfolio_permission %}
             <div class="mobile:grid-col-12 tablet:grid-col-6">
-                <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
-            </div>
-            <div class="mobile:grid-col-12 tablet:grid-col-6">
- 
                 <p class="float-right-tablet tablet:margin-y-0">
                     <button data-href="{% url 'domain-request:start' %}" class="usa-button use-button-as-link"
                     >
@@ -32,10 +35,9 @@
                     </button>
                 </p>
             </div>
-        {% else %}
-            <p class="margin-y-0">Domain requests can only be modified by the person who created the request.</p>
         {% endif %}
     </div>
+
     
     
     {% include "includes/domain_requests_table.html" with portfolio=portfolio %}
