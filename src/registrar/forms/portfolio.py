@@ -459,12 +459,13 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             if hasattr(e, "code"):
                 field = "email" if "email" in self.fields else None
                 if e.code == "has_existing_permissions":
-                    self.add_error(field, "This user is already a member of another .gov organization.")
+                    self.add_error(field, f"{self.instance.email} is already a member of another .gov organization.")
                     override_error = True
                 elif e.code == "has_existing_invitations":
-                    self.add_error(field, "This user has already been invited to another .gov organization.")
+                    self.add_error(
+                        field, f"{self.instance.email} has already been invited to another .gov organization."
+                    )
                     override_error = True
 
-            if override_error:
-                if "__all__" in self._errors:
-                    del self._errors["__all__"]
+            if override_error and "__all__" in self._errors:
+                del self._errors["__all__"]
