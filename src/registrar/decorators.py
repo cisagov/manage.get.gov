@@ -98,6 +98,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     if not user.is_authenticated or user.is_restricted():
         return False
 
+    portfolio = request.session.get("portfolio")
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
@@ -111,7 +112,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             HAS_PORTFOLIO_DOMAINS_ANY_PERM,
             lambda: user.is_org_user(request)
-            and user.has_any_domains_portfolio_permission(request.session.get("portfolio")),
+            and user.has_any_domains_portfolio_permission(portfolio),
         ),
         (
             IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
@@ -129,34 +130,35 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
             lambda: user.is_org_user(request)
-            and user.has_any_requests_portfolio_permission(request.session.get("portfolio")),
+            and user.has_any_requests_portfolio_permission(portfolio)
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
             lambda: user.is_org_user(request)
-            and user.has_view_all_domain_requests_portfolio_permission(request.session.get("portfolio")),
+            and user.has_view_all_domain_requests_portfolio_permission(portfolio)
+            and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-            lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk")),
+            lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk"))
         ),
         (
             HAS_PORTFOLIO_MEMBERS_ANY_PERM,
             lambda: user.is_org_user(request)
             and (
-                user.has_view_members_portfolio_permission(request.session.get("portfolio"))
-                or user.has_edit_members_portfolio_permission(request.session.get("portfolio"))
+                user.has_view_members_portfolio_permission(portfolio)
+                or user.has_edit_members_portfolio_permission(portfolio)
             ),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_EDIT,
             lambda: user.is_org_user(request)
-            and user.has_edit_members_portfolio_permission(request.session.get("portfolio")),
+            and user.has_edit_members_portfolio_permission(portfolio),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_VIEW,
             lambda: user.is_org_user(request)
-            and user.has_view_members_portfolio_permission(request.session.get("portfolio")),
+            and user.has_view_members_portfolio_permission(portfolio),
         ),
     ]
 
@@ -197,6 +199,10 @@ def _is_domain_request_creator(user, domain_request_pk):
     if domain_request_pk:
         return DomainRequest.objects.filter(creator=user, id=domain_request_pk).exists()
     return True
+
+def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
+    """Checks to see if the given domain request exists under the provided portfolio"""
+    return DomainRequest.objects.filter(portfolio=portfolio, id=domain_request_pk).exists()
 
 
 def _is_portfolio_member(request):
