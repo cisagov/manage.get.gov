@@ -3873,7 +3873,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # verify messages
         self.assertContains(
             response,
-            ("This user has already been invited to another .gov organization."),
+            f"{self.invited_member_email} has already been invited to another .gov organization.",
         )
 
         # Validate Database has not changed
@@ -3911,7 +3911,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            ("This user is already a member of another .gov organization."),
+            f"{self.user.email} is already a member of another .gov organization.",
         )
 
         # Validate Database has not changed
