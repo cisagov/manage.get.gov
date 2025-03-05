@@ -164,7 +164,6 @@ def _user_has_permission(user, request, rules, **kwargs):
             HAS_PORTFOLIO_MEMBERS_VIEW,
             lambda: user.is_org_user(request)
             and user.has_view_members_portfolio_permission(portfolio)
-            # TODO -- fix this on all related URLS :(
             and (
                 _member_exists_under_portfolio(portfolio, kwargs.get("member_pk")) 
                 or _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
@@ -173,7 +172,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     ]
 
     # Check conditions iteratively
-    return any(check() for rule, check in permission_checks if rule in rules)
+    return all(check() for rule, check in permission_checks if rule in rules)
 
 
 def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
