@@ -323,8 +323,9 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not domain_request.creator.is_restricted():
+            if not domain_request.creator.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
+
 
     def get_custom_field_transitions(self, instance, field):
         """Custom implementation of get_available_FIELD_transitions
@@ -1295,7 +1296,7 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permisssion(request, obj)
+        return super().has_delete_permission(request, obj)
 
 
 class WebsiteResource(resources.ModelResource):
@@ -2749,6 +2750,53 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "cisa_representative_email",
     ]
 
+    # Read only that we'll leverage for OMB Analysts
+    omb_analyst_readonly_fields = [
+        "federal_agency",
+        "creator",
+        "about_your_organization",
+        "requested_domain",
+        "approved_domain",
+        "alternative_domains",
+        "purpose",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+        "status",
+        "investigator",
+        "notes",
+        "senior_official",
+        "organization_type",
+        "organization_name",
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
+        "is_election_board",
+        "organization_type",
+        "federal_type",
+        "federal_agency",
+        "tribe_name",
+        "federally_recognized_tribe",
+        "state_recognized_tribe",
+        "about_your_organization",
+    ]
+
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
@@ -2989,6 +3037,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             readonly_fields.extend(["alternative_domains"])
 
         if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
             return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
@@ -3254,6 +3306,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         return combined_queryset, use_distinct
 
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass the 'is_omb_analyst' attribute to the form."""
+        form = super().get_form(request, obj, **kwargs)
+
+        # Store attribute in the form for template access
+        form.show_contact_as_plain_text = request.user.groups.filter(name="omb_analysts_group").exists()
+
+        return form
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
@@ -4556,7 +4616,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permisssion(request, obj)
+        return super().has_delete_permission(request, obj)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
@@ -4657,7 +4717,7 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permisssion(request, obj)
+        return super().has_delete_permission(request, obj)
     
 
 class UserGroupAdmin(AuditedAdmin):
@@ -4797,7 +4857,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permisssion(request, obj)
+        return super().has_delete_permission(request, obj)
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):
