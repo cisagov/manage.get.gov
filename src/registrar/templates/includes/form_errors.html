@@ -1,7 +1,7 @@
 {% if form.errors %}
   <div id="form-errors">
   {% for error in form.non_field_errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert" tabindex="0">
+    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
     <div class="usa-alert__body">
       <span class="usa-sr-only">Error:</span>
       {{ error|escape }}
@@ -10,7 +10,7 @@
   {% endfor %}
   {% for field in form %}
   {% for error in field.errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" tabindex="0">
+    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
       <div class="usa-alert__body">
         <span class="usa-sr-only">Error:</span>
         {{ error|escape }}
