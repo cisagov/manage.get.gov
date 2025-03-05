@@ -312,10 +312,10 @@ class DomainRequestFixture:
             logger.warning(e)
             return
 
-        cls._create_domain_requests(users)
+        cls._create_domain_requests(users, 900)
 
     @classmethod
-    def _create_domain_requests(cls, users, total_requests=None):  # noqa: C901
+    def _create_domain_requests(cls, users):  # noqa: C901
         """Creates DomainRequests given a list of users."""
         total_domain_requests_to_make = len(users)  # 100000
 
@@ -326,14 +326,6 @@ class DomainRequestFixture:
         total_existing_requests = DomainRequest.objects.count()
 
         domain_requests_to_create = []
-        if total_requests and total_requests <= total_existing_requests:
-            total_domain_requests_to_make = total_requests - total_existing_requests
-            if total_domain_requests_to_make >= 0:
-                DomainRequest.objects.filter(
-                    id__in=list(DomainRequest.objects.values_list("pk", flat=True)[:total_domain_requests_to_make])
-                ).delete()
-            if total_domain_requests_to_make == 0:
-                return
 
         for user in users:
             for request_data in cls.DOMAINREQUESTS:
