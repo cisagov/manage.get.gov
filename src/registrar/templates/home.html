@@ -15,14 +15,14 @@
       {% include "includes/form_messages.html" %}
     {% endblock %}
   
-    <h1>Manage your domains</h1>
-
-    <p class="margin-top-4">
-      <button data-href="{% url 'domain-request:start' %}" class="usa-button use-button-as-link"
-      >
-        Start a new domain request
-      </button>
-    </p>
+    <div class="grid-row margin-bottom-3">
+      <h1 class="flex-fill">Manage your domains</h1>
+      <div>
+        <button data-href="{% url 'domain-request:start' %}" class="usa-button use-button-as-link">
+          Start a new domain request
+        </button>
+      </div>
+    </div>
 
     {% include "includes/domains_table.html" with user_domain_count=user_domain_count %}
     {% include "includes/domain_requests_table.html" %}
