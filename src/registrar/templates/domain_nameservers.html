@@ -5,8 +5,8 @@
 
 {% block domain_content %}
 
-  {# this is right after the messages block in the parent template. We use > not >= to account for the blank form. #}
-  {% if formset.total_form_count > formset.max_num %}
+  {# this is right after the messages block in the parent template. #}
+  {% if formset.initial|length >= formset.max_num %}
     <div class="usa-alert usa-alert--info usa-alert--slim" role="alert">
       <div class="usa-alert__body">
         <p class="usa-alert__text">

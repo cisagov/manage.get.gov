@@ -1471,6 +1471,47 @@ class MockEppLib(TestCase):
         ],
     )
 
+    infoDomainTwelveHosts = fakedEppObject(
+        "twelvenameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+        ],
+    )
+
+    infoDomainThirteenHosts = fakedEppObject(
+        "thirteennameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+            "ns13.example.com",
+        ],
+    )
+
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
@@ -1821,6 +1862,8 @@ class MockEppLib(TestCase):
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
             "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
+            "twelvenameserversdomain.gov": (self.infoDomainTwelveHosts, None),
+            "thirteennameserversdomain.gov": (self.infoDomainThirteenHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),

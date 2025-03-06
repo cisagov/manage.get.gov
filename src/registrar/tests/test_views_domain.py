@@ -87,12 +87,16 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
         self.domain_with_three_nameservers, _ = Domain.objects.get_or_create(name="threenameserversdomain.gov")
         self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversdomain.gov")
+        self.domain_with_twelve_nameservers, _ = Domain.objects.get_or_create(name="twelvenameserversdomain.gov")
+        self.domain_with_thirteen_nameservers, _ = Domain.objects.get_or_create(name="thirteennameserversdomain.gov")
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_thirteen_nameservers)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_twelve_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_three_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
@@ -130,6 +134,16 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_with_four_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_twelve_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_thirteen_nameservers,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -1889,6 +1903,34 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_12_entries(self):
+        """Nameserver form does not present info alert when 12 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_twelve_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertNotContains(
+            nameservers_page, "You’ve reached the maximum amount of allowed name server records (13)."
+        )
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_13_entries(self):
+        """Nameserver form present3 info alert when 13 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_thirteen_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertContains(nameservers_page, "You’ve reached the maximum amount of allowed name server records (13).")
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_invalid(self):
