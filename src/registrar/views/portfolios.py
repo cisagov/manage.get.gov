@@ -304,7 +304,7 @@ class PortfolioMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -437,7 +437,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioInvitedMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -601,7 +601,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
