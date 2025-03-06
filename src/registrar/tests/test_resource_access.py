@@ -321,3 +321,64 @@ class TestPortfolioDomainViewAccess(MockDbForIndividualTests):
         self.assertEqual(response.status_code, 403)
 
 
+class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
+    """Tests for member views to ensure users can only access members in their portfolio."""
+    
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.client.force_login(self.user)
+        
+        # Create portfolios
+        self.portfolio = Portfolio.objects.create(
+            creator=self.user, organization_name="Test Portfolio"
+        )
+        self.other_portfolio = Portfolio.objects.create(
+            creator=self.tired_user, organization_name="Other Portfolio"
+        )
+
+        
+        # Create portfolio permissions
+        self.member_permission = UserPortfolioPermission.objects.create(
+            user=self.meoward_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        
+        self.other_member_permission = UserPortfolioPermission.objects.create(
+            user=self.lebowski_user,
+            portfolio=self.other_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+
+        # Give user permission to view/edit members
+        self.user_permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        
+        # Setup session for portfolio views
+        session = self.client.session
+        session["portfolio"] = self.portfolio
+        session.save()
+
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @less_console_noise_decorator
+    def test_member_view_same_portfolio(self):
+        """Test that user can access member in their portfolio."""
+        response = self.client.get(reverse("member", kwargs={
+            "member_pk": self.member_permission.pk
+        }))
+        self.assertEqual(response.status_code, 200)
+    
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @less_console_noise_decorator
+    def test_member_view_different_portfolio(self):
+        """Test that user cannot access member not in their portfolio."""
+        response = self.client.get(reverse("member", kwargs={
+            "member_pk": self.other_member_permission.pk
+        }))
+        self.assertEqual(response.status_code, 403)
