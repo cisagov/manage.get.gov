@@ -7,7 +7,7 @@
 
   {# this is right after the messages block in the parent template #}
   {% if formset.total_form_count >= formset.max_num %}
-    <div class="usa-alert usa-alert--info usa-alert--slim">
+    <div class="usa-alert usa-alert--info usa-alert--slim" role="alert">
       <div class="usa-alert__body">
         <p class="usa-alert__text">
           You’ve reached the maximum amount of allowed name server records (13).
@@ -193,19 +193,19 @@
               </tr>
               <!-- Edit row -->
               <tr class="edit-row display-none">
-                <td>
+                <td class="text-bottom">
                   {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
                     {% with attr_required=True add_initial_value_attr=True span_for_text=True add_group_class="margin-top-0" %}
                       {% input_with_errors form.server %}
                     {% endwith %}
                   {% endwith %}
                 </td>
-                <td>
+                <td class="text-bottom width-40p">
                   {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="margin-top-0" %}
                     {% input_with_errors form.ip %}
                   {% endwith %}
                 </td>
-                <td class="padding-right-0">
+                <td class="padding-right-0 text-bottom">
                     <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
                     <button
