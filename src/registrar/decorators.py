@@ -108,7 +108,18 @@ def _user_has_permission(user, request, rules, **kwargs):
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
-        (IS_DOMAIN_MANAGER, lambda: _is_domain_manager(user, **kwargs)),
+        (
+            IS_DOMAIN_MANAGER, 
+            lambda: (
+                not user.is_org_user(request)
+                and _is_domain_manager(user, **kwargs)
+            )
+            or (
+                user.is_org_user(request)
+                and _is_domain_manager(user, **kwargs)
+                and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk"))
+            )
+        ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
         (
