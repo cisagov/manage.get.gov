@@ -1257,6 +1257,40 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
             ),
         )
     
+    readonly_fields = []
+
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
+
+    omb_analyst_readonly_fields = [
+        "first_name",
+        "last_name",
+        "title",
+        "phone",
+        "email",
+        "federal_agency",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have conditions that determine which fields are read-only:
+        admin user permissions and analyst (cisa or omb) status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+    
     def get_queryset(self, request):
         """Restrict queryset based on user permissions."""
         qs = super().get_queryset(request)
@@ -1287,15 +1321,6 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
         return super().has_change_permission(request, obj)
-
-    def has_delete_permission(self, request, obj=None):
-        """Restrict delete permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permission(request, obj)
 
 
 class WebsiteResource(resources.ModelResource):
@@ -4876,6 +4901,38 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     change_form_template = "django/admin/suborg_change_form.html"
 
+    readonly_fields = []
+
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
+
+    omb_analyst_readonly_fields = [
+        "name",
+        "portfolio",
+        "city",
+        "state_territory",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have conditions that determine which fields are read-only:
+        admin user permissions and analyst (cisa or omb) status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add suborg's related domains and requests to context"""
         obj = self.get_object(request, object_id)
@@ -4941,15 +4998,6 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE     
         return super().has_change_permission(request, obj)
-
-    def has_delete_permission(self, request, obj=None):
-        """Restrict delete permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permission(request, obj)
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):

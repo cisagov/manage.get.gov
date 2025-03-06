@@ -181,12 +181,12 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "suborganization",
-                "permissions": ["change_suborganization", "delete_suborganization"],
+                "permissions": ["change_suborganization"],
             },
             {
                 "app_label": "registrar",
                 "model": "seniorofficial",
-                "permissions": ["change_seniorofficial", "delete_seniorofficial"],
+                "permissions": ["change_seniorofficial"],
             },
         ]
 
