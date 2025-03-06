@@ -1984,6 +1984,8 @@ class TestDomainRequestAdmin(MockEppLib):
             "feb_naming_requirements",
             "feb_naming_requirements_details",
             "feb_purpose_choice",
+            "working_with_eop",
+            "eop_contact",
             "purpose",
             "has_timeframe",
             "time_frame_details",

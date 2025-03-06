@@ -15,7 +15,7 @@ from registrar.decorators import (
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
-from registrar.forms.domainrequestwizard import purpose
+from registrar.forms.domainrequestwizard import (purpose, additional_details)
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
@@ -609,7 +609,45 @@ class RequestingEntity(DomainRequestWizard):
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
-    forms = [forms.PortfolioAnythingElseForm]
+    forms = [
+        additional_details.WorkingWithEOPYesNoForm,
+        additional_details.EOPContactForm,
+        additional_details.FEBAnythingElseYesNoForm,
+        forms.PortfolioAnythingElseForm,
+    ]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    def is_valid(self, forms: list) -> bool:
+        """
+        Validates the forms for portfolio additional details.
+
+        Expected order of forms_list:
+            0: WorkingWithEOPYesNoForm
+            1: EOPContactForm
+            2: FEBAnythingElseYesNoForm
+            3: PortfolioAnythingElseForm
+        """
+        eop_forms_valid = True
+        if not forms[0].is_valid():
+            # If the user isn't working with EOP, don't validate the EOP contact form
+            forms[1].mark_form_for_deletion()
+            eop_forms_valid = False        
+        if forms[0].cleaned_data.get("working_with_eop"):
+            eop_forms_valid = forms[1].is_valid()
+        else:
+            forms[1].mark_form_for_deletion()        
+        anything_else_forms_valid = True
+        if not forms[2].is_valid():
+            forms[3].mark_form_for_deletion()
+            anything_else_forms_valid = False        
+        if forms[2].cleaned_data.get("has_anything_else_text"):
+            forms[3].fields["anything_else"].required = True
+            anything_else_forms_valid = forms[3].is_valid()        
+        return (eop_forms_valid and anything_else_forms_valid)
 
 
 # Non-portfolio pages
