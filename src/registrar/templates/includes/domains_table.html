@@ -43,13 +43,7 @@
     {% endif %}
     <!-- ---------- SEARCH ---------- -->
     {% with label_text="Search by domain name" item_name="domains" aria_label_text="Domains search component"%}
-      {% if portfolio %}
-        {% with use_search_icon="true" %}
-            {% include "includes/search.html" %}
-        {% endwith %}
-      {% else %}
-        {% include "includes/search.html" %}
-      {% endif %}
+      {% include "includes/search.html" %}
     {% endwith %}
     <!-- ---------- EXPORT (org placement) ---------- -->
     {% if user_domain_count and user_domain_count > 0 and portfolio%}

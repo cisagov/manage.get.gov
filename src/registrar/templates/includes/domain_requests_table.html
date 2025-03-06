@@ -16,13 +16,7 @@
         {% endif %}
         <!-- ---------- SEARCH ---------- -->
         {% with label_text=portfolio|yesno:"Search by domain name or creator,Search by domain name"  item_name="domain-requests" aria_label_text="Domain requests search component"%}
-            {% if portfolio %}
-                {% with use_search_icon="true" %}
-                    {% include "includes/search.html" %}
-                {% endwith %}
-            {% else %}
-                {% include "includes/search.html" %}
-            {% endif %}
+            {% include "includes/search.html" %}
         {% endwith %}
     </div>
 
