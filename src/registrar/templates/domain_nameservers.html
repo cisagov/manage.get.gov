@@ -6,6 +6,16 @@
 {% block domain_content %}
 
   {# this is right after the messages block in the parent template #}
+  {% if formset.total_form_count >= formset.max_num %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text">
+          You’ve reached the maximum amount of allowed name server records (13).
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
   {% for form in formset %}
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
