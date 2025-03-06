@@ -188,7 +188,6 @@ export class NameserverForm {
      */
     executeCallback() {
         if (this.callback) {
-            console.log("callback")
             this.callback();
             this.callback = null;
         } else {
@@ -206,7 +205,6 @@ export class NameserverForm {
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
             });
-            console.log("this.addNameserversForm " + this.addNameserversForm);
             if (this.addNameserversForm) {
                 // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
                 if (!this.addNameserversForm.classList.contains('display-none')) {
@@ -219,7 +217,6 @@ export class NameserverForm {
             }
         };
         if (this.formChanged) {
-            console.log("this.formChanged")
             //------- Show the unsaved changes confirmation modal
             let modalTrigger = document.querySelector("#unsaved_changes_trigger");
             if (modalTrigger) {
