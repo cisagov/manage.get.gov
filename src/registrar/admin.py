@@ -78,10 +78,14 @@ logger = logging.getLogger(__name__)
 class ImportExportRegistrarModelAdmin(ImportExportModelAdmin):
 
     def has_import_permission(self, request):
-        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm("registrar.full_access_permission")
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm(
+            "registrar.full_access_permission"
+        )
 
     def has_export_permission(self, request):
-        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm("registrar.full_access_permission")
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm(
+            "registrar.full_access_permission"
+        )
 
 
 class FsmModelResource(resources.ModelResource):
@@ -1256,7 +1260,7 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
                 default=Value(""),
             ),
         )
-    
+
     readonly_fields = []
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
@@ -1290,7 +1294,7 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields
-    
+
     def get_queryset(self, request):
         """Restrict queryset based on user permissions."""
         qs = super().get_queryset(request)
@@ -1303,7 +1307,7 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
             )
 
         return qs  # Return full queryset if the user doesn't have the restriction
-    
+
     def has_view_permission(self, request, obj=None):
         """Restrict view permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
@@ -1312,7 +1316,7 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-    
+
     def has_change_permission(self, request, obj=None):
         """Restrict update permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
@@ -1618,21 +1622,25 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         return queryset.annotate(
             converted_generic_org_type=Case(
                 # When portfolio is present, use its value instead
-                When(domain__domain_info__portfolio__isnull=False, then=F("domain__domain_info__portfolio__organization_type")),
+                When(
+                    domain__domain_info__portfolio__isnull=False,
+                    then=F("domain__domain_info__portfolio__organization_type"),
+                ),
                 # Otherwise, return the natively assigned value
                 default=F("domain__domain_info__generic_org_type"),
             ),
             converted_federal_type=Case(
                 # When portfolio is present, use its value instead
                 When(
-                    Q(domain__domain_info__portfolio__isnull=False) & Q(domain__domain_info__portfolio__federal_agency__isnull=False),
+                    Q(domain__domain_info__portfolio__isnull=False)
+                    & Q(domain__domain_info__portfolio__federal_agency__isnull=False),
                     then=F("domain__domain_info__portfolio__federal_agency__federal_type"),
                 ),
                 # Otherwise, return the natively assigned value
                 default=F("domain__domain_info__federal_agency__federal_type"),
             ),
         )
-    
+
     def get_queryset(self, request):
         """Restrict queryset based on user permissions."""
         qs = super().get_queryset(request)
@@ -1646,17 +1654,19 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
             )
 
         return qs  # Return full queryset if the user doesn't have the restriction
-    
+
     def has_view_permission(self, request, obj=None):
         """Restrict view permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.domain.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL and \
-                    obj.domain.domain_info.federal_type == BranchChoices.EXECUTIVE
+                return (
+                    obj.domain.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.domain.domain_info.federal_type == BranchChoices.EXECUTIVE
+                )
         return super().has_view_permission(request, obj)
-    
+
     # Select domain invitations to change -> Domain invitations
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
@@ -3290,27 +3300,31 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 conv_federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
-    
+
     def has_view_permission(self, request, obj=None):
         """Restrict view permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL and \
-                    obj.converted_federal_type == BranchChoices.EXECUTIVE        
+                return (
+                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.converted_federal_type == BranchChoices.EXECUTIVE
+                )
         return super().has_view_permission(request, obj)
-    
+
     def has_change_permission(self, request, obj=None):
         """Restrict update permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL and \
-                    obj.converted_federal_type == BranchChoices.EXECUTIVE        
+                return (
+                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.converted_federal_type == BranchChoices.EXECUTIVE
+                )
         return super().has_change_permission(request, obj)
-    
+
     def get_search_results(self, request, queryset, search_term):
         # Call the parent's method to apply default search logic
         base_queryset, use_distinct = super().get_search_results(request, queryset, search_term)
@@ -3338,6 +3352,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         form.show_contact_as_plain_text = request.user.groups.filter(name="omb_analysts_group").exists()
 
         return form
+
 
 class TransitionDomainAdmin(ListHeaderAdmin):
     """Custom transition domain admin class."""
@@ -3378,7 +3393,7 @@ class DomainInformationInline(admin.StackedInline):
         """Ensure self.is_omb_analyst is set early."""
         self.is_omb_analyst = request.user.groups.filter(name="omb_analysts_group").exists()
         return super().get_queryset(request)
-    
+
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
         return obj.portfolio.senior_official if obj.portfolio and obj.portfolio.senior_official else None
@@ -3581,7 +3596,7 @@ class DomainInformationInline(admin.StackedInline):
                 modified_fieldsets.append(fieldsets_to_move)
 
         return modified_fieldsets
-    
+
     def get_form(self, request, obj=None, **kwargs):
         """Pass the 'is_omb_analyst' attribute to the form."""
         form = super().get_form(request, obj, **kwargs)
@@ -4198,10 +4213,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL and \
-                    obj.domain_info.converted_federal_type == BranchChoices.EXECUTIVE        
+                return (
+                    obj.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
+                )
         return super().has_view_permission(request, obj)
-    
+
     def get_form(self, request, obj=None, **kwargs):
         """Pass the 'is_omb_analyst' attribute to the form."""
         form = super().get_form(request, obj, **kwargs)
@@ -4212,7 +4229,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         form.is_omb_analyst = is_omb_analyst
 
         return form
-    
+
+
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
@@ -4661,7 +4679,7 @@ class PortfolioAdmin(ListHeaderAdmin):
                 default=Value(""),
             ),
         )
-    
+
     def get_queryset(self, request):
         """Restrict queryset based on user permissions."""
         qs = super().get_queryset(request)
@@ -4676,7 +4694,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             )
 
         return qs  # Return full queryset if the user doesn't have the restriction
-    
+
     def has_view_permission(self, request, obj=None):
         """Restrict view permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
@@ -4685,14 +4703,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-    
+
     def has_change_permission(self, request, obj=None):
         """Restrict update permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_type == BranchChoices.EXECUTIVE        
+                return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_change_permission(request, obj)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
@@ -4770,7 +4788,7 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     readonly_fields = []
 
     # Read only that we'll leverage for CISA Analysts
-    analyst_readonly_fields = []
+    analyst_readonly_fields = []  # type: ignore
 
     # Read only that we'll leverage for OMB Analysts
     omb_analyst_readonly_fields = [
@@ -4800,14 +4818,14 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-    
+
     def has_change_permission(self, request, obj=None):
         """Restrict update permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_type == BranchChoices.EXECUTIVE        
+                return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
@@ -4835,7 +4853,8 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
-        return readonly_fields  
+        return readonly_fields
+
 
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
@@ -4980,7 +4999,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 converted_federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
-    
+
     def has_view_permission(self, request, obj=None):
         """Restrict view permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
@@ -4989,14 +5008,14 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-    
+
     def has_change_permission(self, request, obj=None):
         """Restrict update permissions based on group membership and model attributes."""
         if request.user.has_perm("registrar.full_access_permission"):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE     
+                return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
         return super().has_change_permission(request, obj)
 
 
