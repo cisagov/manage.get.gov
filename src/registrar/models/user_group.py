@@ -176,7 +176,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "portfolio",
-                "permissions": ["change_portfolio", "delete_portfolio"],
+                "permissions": ["change_portfolio"],
             },
             {
                 "app_label": "registrar",
