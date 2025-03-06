@@ -319,10 +319,6 @@ class DomainRequestFixture:
         """Creates DomainRequests given a list of users."""
         total_domain_requests_to_make = len(users)  # 100000
 
-        # Check if the database is already populated with the desired
-        # number of entries.
-        # (Prevents re-adding more entries to an already populated database,
-        # which happens when restarting Docker src)
         domain_requests_to_create = []
 
         for user in users:
