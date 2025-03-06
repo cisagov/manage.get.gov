@@ -204,38 +204,177 @@ class MyUserAdminForm(UserChangeForm):
             )
 
 
-class UserPortfolioPermissionsForm(forms.ModelForm):
+class PortfolioPermissionsForm(forms.ModelForm):
+    """
+    Form for managing portfolio permissions in Django admin. This form class is used
+    for both UserPortfolioPermission and PortfolioInvitation models.
+
+    Allows selecting a portfolio, assigning a role, and managing specific permissions
+    related to requests, domains, and members.
+    """
+
+    # Define available permissions for requests, domains, and members
+    REQUEST_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+        UserPortfolioPermissionChoices.EDIT_REQUESTS,
+    ]
+
+    DOMAIN_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+        UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+    ]
+
+    MEMBER_PERMISSIONS = [
+        UserPortfolioPermissionChoices.VIEW_MEMBERS,
+    ]
+
+    # Dropdown to select a portfolio
+    portfolio = forms.ModelChoiceField(
+        queryset=models.Portfolio.objects.all(),
+        label="Portfolio",
+        widget=AutocompleteSelectWithPlaceholder(
+            models.PortfolioInvitation._meta.get_field("portfolio"),
+            admin.site,
+            attrs={"data-placeholder": "---------"},  # Customize placeholder
+        ),
+    )
+
+    # Dropdown for selecting the user role (e.g., Admin or Basic)
+    role = forms.ChoiceField(
+        choices=[("", "---------")] + UserPortfolioRoleChoices.choices,
+        required=True,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Member access",
+        help_text="Only admins can manage member permissions and organization metadata.",
+    )
+
+    # Dropdown for selecting request permissions, with a default "No access" option
+    request_permissions = forms.ChoiceField(
+        choices=[(None, "No access")] + [(perm.value, perm.label) for perm in REQUEST_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Domain requests",
+    )
+
+    # Dropdown for selecting domain permissions
+    domain_permissions = forms.ChoiceField(
+        choices=[(perm.value, perm.label) for perm in DOMAIN_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Domains",
+    )
+
+    # Dropdown for selecting member permissions, with a default "No access" option
+    member_permissions = forms.ChoiceField(
+        choices=[(None, "No access")] + [(perm.value, perm.label) for perm in MEMBER_PERMISSIONS],
+        required=False,
+        widget=forms.Select(attrs={"class": "admin-dropdown"}),
+        label="Members",
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the form and set default values based on the existing instance.
+        """
+        super().__init__(*args, **kwargs)
+
+        # If an instance exists, populate the form fields with existing data
+        if self.instance and self.instance.pk:
+            # Set the initial value for the role field
+            if self.instance.roles:
+                self.fields["role"].initial = self.instance.roles[0]  # Assuming a single role per user
+
+            # Set the initial values for permissions based on the instance data
+            if self.instance.additional_permissions:
+                for perm in self.instance.additional_permissions:
+                    if perm in self.REQUEST_PERMISSIONS:
+                        self.fields["request_permissions"].initial = perm
+                    elif perm in self.DOMAIN_PERMISSIONS:
+                        self.fields["domain_permissions"].initial = perm
+                    elif perm in self.MEMBER_PERMISSIONS:
+                        self.fields["member_permissions"].initial = perm
+
+    def clean(self):
+        """
+        Custom validation and processing of form data before saving.
+        """
+        cleaned_data = super().clean()
+
+        # Store the selected role as a list (assuming single role assignment)
+        self.instance.roles = [cleaned_data.get("role")] if cleaned_data.get("role") else []
+        cleaned_data["roles"] = self.instance.roles
+
+        # If the selected role is "organization_member," store additional permissions
+        if self.instance.roles == [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]:
+            self.instance.additional_permissions = list(
+                filter(
+                    None,
+                    [
+                        cleaned_data.get("request_permissions"),
+                        cleaned_data.get("domain_permissions"),
+                        cleaned_data.get("member_permissions"),
+                    ],
+                )
+            )
+        else:
+            # If the user is an admin, clear any additional permissions
+            self.instance.additional_permissions = []
+        cleaned_data["additional_permissions"] = self.instance.additional_permissions
+
+        return cleaned_data
+
+
+class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
+    """
+    Form for managing user portfolio permissions in Django admin.
+
+    Extends PortfolioPermissionsForm to include a user field, allowing administrators
+    to assign roles and permissions to specific users within a portfolio.
+    """
+
+    # Dropdown to select a user from the database
+    user = forms.ModelChoiceField(
+        queryset=models.User.objects.all(),
+        label="User",
+        widget=AutocompleteSelectWithPlaceholder(
+            models.UserPortfolioPermission._meta.get_field("user"),
+            admin.site,
+            attrs={"data-placeholder": "---------"},  # Customize placeholder
+        ),
+    )
+
     class Meta:
-        model = models.UserPortfolioPermission
-        fields = "__all__"
-        widgets = {
-            "roles": FilteredSelectMultipleArrayWidget(
-                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "additional_permissions": FilteredSelectMultipleArrayWidget(
-                "additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
-        }
+        """
+        Meta class defining the model and fields to be used in the form.
+        """
+
+        model = models.UserPortfolioPermission  # Uses the UserPortfolioPermission model
+        fields = ["user", "portfolio", "role", "domain_permissions", "request_permissions", "member_permissions"]
 
 
-class PortfolioInvitationAdminForm(UserChangeForm):
-    """This form utilizes the custom widget for its class's ManyToMany UIs."""
+class PortfolioInvitationForm(PortfolioPermissionsForm):
+    """
+    Form for sending portfolio invitations in Django admin.
+
+    Extends PortfolioPermissionsForm to include an email field for inviting users,
+    allowing them to be assigned a role and permissions within a portfolio before they join.
+    """
 
     class Meta:
-        model = models.PortfolioInvitation
-        fields = "__all__"
-        widgets = {
-            "roles": FilteredSelectMultipleArrayWidget(
-                "roles", is_stacked=False, choices=UserPortfolioRoleChoices.choices
-            ),
-            "additional_permissions": FilteredSelectMultipleArrayWidget(
-                "additional_permissions",
-                is_stacked=False,
-                choices=UserPortfolioPermissionChoices.choices,
-            ),
-        }
+        """
+        Meta class defining the model and fields to be used in the form.
+        """
+
+        model = models.PortfolioInvitation  # Uses the PortfolioInvitation model
+        fields = [
+            "email",
+            "portfolio",
+            "role",
+            "domain_permissions",
+            "request_permissions",
+            "member_permissions",
+            "status",
+        ]
 
 
 class DomainInformationAdminForm(forms.ModelForm):
@@ -1345,12 +1484,13 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     change_form_template = "django/admin/user_portfolio_permission_change_form.html"
     delete_confirmation_template = "django/admin/user_portfolio_permission_delete_confirmation.html"
+    delete_selected_confirmation_template = "django/admin/user_portfolio_permission_delete_selected_confirmation.html"
 
     def get_roles(self, obj):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Roles"  # type: ignore
+    get_roles.short_description = "Member access"  # type: ignore
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
@@ -1643,7 +1783,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 class PortfolioInvitationAdmin(BaseInvitationAdmin):
     """Custom portfolio invitation admin class."""
 
-    form = PortfolioInvitationAdminForm
+    form = PortfolioInvitationForm
 
     class Meta:
         model = models.PortfolioInvitation
@@ -1655,8 +1795,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
     list_display = [
         "email",
         "portfolio",
-        "roles",
-        "additional_permissions",
+        "get_roles",
         "status",
     ]
 
@@ -1681,6 +1820,13 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     change_form_template = "django/admin/portfolio_invitation_change_form.html"
     delete_confirmation_template = "django/admin/portfolio_invitation_delete_confirmation.html"
+    delete_selected_confirmation_template = "django/admin/portfolio_invitation_delete_selected_confirmation.html"
+
+    def get_roles(self, obj):
+        readable_roles = obj.get_readable_roles()
+        return ", ".join(readable_roles)
+
+    get_roles.short_description = "Member access"  # type: ignore
 
     def save_model(self, request, obj, form, change):
         """
@@ -4225,21 +4371,21 @@ class PortfolioAdmin(ListHeaderAdmin):
         if admin_count > 0:
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
-            return format_html(f'<a href="{url}">{admin_count} administrators</a>')
-        return "No administrators found."
+            return format_html(f'<a href="{url}">{admin_count} admins</a>')
+        return "No admins found."
 
-    display_admins.short_description = "Administrators"  # type: ignore
+    display_admins.short_description = "Admins"  # type: ignore
 
     def display_members(self, obj):
-        """Returns the number of members for this portfolio"""
+        """Returns the number of basic members for this portfolio"""
         member_count = len(self.get_user_portfolio_permission_non_admins(obj))
         if member_count > 0:
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
-            return format_html(f'<a href="{url}">{member_count} members</a>')
-        return "No additional members found."
+            return format_html(f'<a href="{url}">{member_count} basic members</a>')
+        return "No basic members found."
 
-    display_members.short_description = "Members"  # type: ignore
+    display_members.short_description = "Basic members"  # type: ignore
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
