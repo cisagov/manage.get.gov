@@ -5,8 +5,8 @@
 
 {% block domain_content %}
 
-  {# this is right after the messages block in the parent template #}
-  {% if formset.total_form_count >= formset.max_num %}
+  {# this is right after the messages block in the parent template. We use > not >= to account for the blank form. #}
+  {% if formset.total_form_count > formset.max_num %}
     <div class="usa-alert usa-alert--info usa-alert--slim" role="alert">
       <div class="usa-alert__body">
         <p class="usa-alert__text">
@@ -200,7 +200,7 @@
                     {% endwith %}
                   {% endwith %}
                 </td>
-                <td class="text-bottom width-40p">
+                <td class="text-bottom">
                   {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="margin-top-0" %}
                     {% input_with_errors form.ip %}
                   {% endwith %}

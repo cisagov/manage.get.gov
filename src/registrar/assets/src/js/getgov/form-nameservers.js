@@ -142,17 +142,22 @@ export class NameserverForm {
             let ipInput = document.getElementById(`id_form-${formIndex}-ip`);
             if (serverInput && ipInput) {
                 let ipParent = ipInput.parentElement; // Get the parent element of ipInput
+                let ipTd = ipParent.parentElement;
                 // add an event listener on the server input that adjusts visibility
                 // and value of the ip input (and its parent) 
                 serverInput.addEventListener("input", () => {
                     let serverValue = serverInput.value.trim();
-                    if (ipParent) {
+                    if (ipParent && ipTd) {
                         if (serverValue.endsWith('.' + this.domain)) {
                             showElement(ipParent); // Show IP field if the condition matches
+                            ipTd.classList.add('width-40p');
                         } else {
                             hideElement(ipParent); // Hide IP field otherwise
+                            ipTd.classList.remove('width-40p');
                             ipInput.value = ""; // Set the IP value to blank
                         }
+                    } else {
+                        console.warn("Expected DOM element but did not find it");
                     }
                 });
             }
