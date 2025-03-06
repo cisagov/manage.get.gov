@@ -1,4 +1,4 @@
-""" "
+"""
 Converts all ready and DNS needed domains with a non-default public contact
 to disclose their public contact. Created for Issue#1535 to resolve
  disclose issue of domains with missing security emails.
