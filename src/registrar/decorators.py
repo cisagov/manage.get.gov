@@ -172,7 +172,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     ]
 
     # Check conditions iteratively
-    return all(check() for rule, check in permission_checks if rule in rules)
+    return any(check() for rule, check in permission_checks if rule in rules)
 
 
 def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
