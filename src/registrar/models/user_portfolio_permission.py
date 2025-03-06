@@ -12,6 +12,7 @@ from registrar.models.utility.portfolio_helper import (
     get_domains_description_display,
     get_members_display,
     get_members_description_display,
+    get_readable_roles,
     get_role_display,
     validate_user_portfolio_permission,
 )
@@ -94,12 +95,7 @@ class UserPortfolioPermission(TimeStampedModel):
 
     def get_readable_roles(self):
         """Returns a readable list of self.roles"""
-        readable_roles = []
-        if self.roles:
-            readable_roles = sorted(
-                [UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in self.roles]
-            )
-        return readable_roles
+        return get_readable_roles(self.roles)
 
     def get_managed_domains_count(self):
         """Return the count of domains managed by the user for this portfolio."""
@@ -275,7 +271,12 @@ class UserPortfolioPermission(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
-        validate_user_portfolio_permission(self)
+        # Ensure user exists before running further validation
+        # In django admin, this clean method is called before form validation checks
+        # for required fields. Since validation below requires user, skip if user does
+        # not exist
+        if self.user_id:
+            validate_user_portfolio_permission(self)
 
     def delete(self, *args, **kwargs):
 

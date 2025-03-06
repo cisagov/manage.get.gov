@@ -5,10 +5,12 @@
     <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-2" role="alert">
         <div class="usa-alert__body margin-left-1 maxw-none">
             <p class="usa-alert__text maxw-none">
-                If you cancel the domain invitation here, it won't trigger any emails. It also won't remove 
-                their domain management privileges if they already have that role assigned. Go to the 
-                <a class="usa-link" href="{% url 'admin:registrar_userdomainrole_changelist' %}">User Domain Roles table</a> 
-                if you want to remove the user from a domain.
+                If you cancel the domain invitation here, it won't trigger any email notifications. 
+                It also won't remove the user's domain management privileges if they already logged in. Go to the
+                <a class="usa-link" href="{% url 'admin:registrar_userdomainrole_changelist' %}">
+                    User Domain Roles
+                </a>
+                table if you want to remove their domain management privileges.
             </p>
         </div>
     </div>
