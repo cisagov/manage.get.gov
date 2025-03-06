@@ -467,5 +467,6 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
                     )
                     override_error = True
 
+            # Errors denoted as "__all__" are special error types reserved for the model level clean function
             if override_error and "__all__" in self._errors:
                 del self._errors["__all__"]
