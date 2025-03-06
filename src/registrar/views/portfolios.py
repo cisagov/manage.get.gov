@@ -171,7 +171,7 @@ class PortfolioMemberDeleteView(View):
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"error": error_message}, status=400)
         messages.error(request, error_message)
-        return redirect(reverse("member", kwargs={"pk": member_pk}))
+        return redirect(reverse("member", kwargs={"member_pk": member_pk}))
 
     def _send_removal_notifications(self, request, portfolio_member_permission):
         """
@@ -356,21 +356,21 @@ class PortfolioMemberDomainsEditView(DetailView, View):
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
-            return redirect(reverse("member-domains", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
         if removed_domain_ids is None:
-            return redirect(reverse("member-domains", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("member-domains", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, member, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, member)
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("member-domains", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
         except IntegrityError:
             messages.error(
                 request,
@@ -378,7 +378,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
-            return redirect(reverse("member-domains-edit", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
             messages.error(
                 request,
@@ -386,7 +386,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
-            return redirect(reverse("member-domains-edit", kwargs={"pk": member_pk}))
+            return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
@@ -650,21 +650,21 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
         if removed_domain_ids is None:
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, email, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, email)
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
         except IntegrityError:
             messages.error(
                 request,
@@ -672,7 +672,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
-            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
         except Exception as e:
             messages.error(
                 request,
@@ -680,7 +680,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
-            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": invitedmember_pk}))
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
