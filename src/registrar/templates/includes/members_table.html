@@ -40,7 +40,7 @@
       <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
         <section aria-label="Members report component" class="margin-top-205" id="members-report-component">
           <div class="usa-sr-only" id="members-export-button__description">Click to export as csv</div>
-          <button href="{% url 'export_members_portfolio' %}" class="use-button-as-link usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" aria-labelledby="members-report-component" aria-describedby="members-export-button__description">
+          <button data-href="{% url 'export_members_portfolio' %}" class="use-button-as-link usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right" aria-labelledby="members-report-component" aria-describedby="members-export-button__description">
             <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
               <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
             </svg>Export as CSV
