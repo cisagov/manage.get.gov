@@ -24,7 +24,6 @@ HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm
 HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
 HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
-HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT = "has_portfolio_members_view_and_edit"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 
@@ -120,7 +119,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (
             HAS_PORTFOLIO_DOMAINS_ANY_PERM,
-            lambda: user.is_org_user(request) and user.has_any_domains_portfolio_permission(portfolio),
+            lambda: user.is_org_user(request) and user.has_any_domains_portfolio_permission(portfolio)
+            and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
             IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
@@ -139,7 +139,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
-            lambda: user.is_org_user(request) and user.has_any_requests_portfolio_permission(portfolio),
+            lambda: user.is_org_user(request) and user.has_any_requests_portfolio_permission(portfolio)
+            and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
@@ -158,17 +159,6 @@ def _user_has_permission(user, request, rules, **kwargs):
             and (
                 user.has_view_members_portfolio_permission(portfolio)
                 or user.has_edit_members_portfolio_permission(portfolio)
-            ),
-        ),
-        (
-            # More restrictive check as compared to HAS_PORTFOLIO_MEMBERS_ANY_PERM.
-            # This is needed because grant_access does not apply perms in a layered fashion
-            # and grants access when any valid perm is found - so chaining view and edit works differently.
-            HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT,
-            lambda: user.is_org_user(request)
-            and (
-                user.has_view_members_portfolio_permission(portfolio)
-                and user.has_edit_members_portfolio_permission(portfolio)
             )
             and (
                 # AND rather than OR because these functions return true if the PK is not found.

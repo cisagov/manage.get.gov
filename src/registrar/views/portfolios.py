@@ -13,7 +13,6 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     HAS_PORTFOLIO_MEMBERS_VIEW,
-    HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT,
     IS_PORTFOLIO_MEMBER,
     grant_access,
 )
@@ -73,7 +72,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -118,9 +117,7 @@ class PortfolioMemberView(DetailView, View):
         )
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDeleteView(View):
     pk_url_kwarg = "member_pk"
 
@@ -223,9 +220,7 @@ class PortfolioMemberDeleteView(View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -329,9 +324,7 @@ class PortfolioMemberDomainsView(View):
         )
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -489,11 +482,10 @@ class PortfolioInvitedMemberView(DetailView, View):
         )
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDeleteView(View):
     pk_url_kwarg = "invitedmember_pk"
+
     def post(self, request, invitedmember_pk):
         """
         Find and delete the portfolio invited member using the provided primary key (pk).
@@ -537,9 +529,7 @@ class PortfolioInvitedMemberDeleteView(View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -629,9 +619,7 @@ class PortfolioInvitedMemberDomainsView(View):
         )
 
 
-# The parent page requires VIEW access, the child requires EDIT.
-# This prevents url skimming without having to inherit the base class.
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW_AND_EDIT)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
     model = Portfolio
