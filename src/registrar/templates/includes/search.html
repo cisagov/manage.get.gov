@@ -2,9 +2,9 @@
 
 <div class="section-outlined__search tablet:grid-col">
     <section aria-label="{{aria_label_text}}">
-        <form class="usa-search usa-search--small usa-search--show-label" method="POST" role="search">
+        <form class="usa-search {% if use_search_icon %} usa-search--small {% else %} usa-search--default {% endif %}usa-search--show-label" method="POST" role="search">
             {% csrf_token %}
-            <label id="{{item_name}}__search-label" class="usa-label display-block maxw-none margin-top-2 margin-bottom-1" for="{{item_id_prefix}}__search-field">
+            <label id="{{item_name}}__search-label" class="usa-label display-block maxw-none margin-top-2 margin-bottom-1" for="{{item_name}}__search-field">
                 {{ label_text }}
             </label> 
             <div class="usa-search--show-label__input-wrapper">
@@ -14,14 +14,13 @@
                 type="search"
                 name="{{item_name}}-search"
                 />
-                <button class="usa-button" type="submit" id="{{item_name}}__search-field-submit" aria-labelledby="{{item_id_prefix}}__search-label">
-                    {% if use_search_icon %} 
+                <button class="usa-button" type="submit" id="{{item_name}}__search-field-submit" aria-labelledby="{{item_name}}__search-label">
                     <img
                         src="{% static 'img/usa-icons-bg/search--white.svg' %}"
                         class="usa-search__submit-icon"
                         alt="Search"
                     />
-                    {% else %}
+                    {% if not use_search_icon %} 
                     <span class="usa-search__submit-text">Search </span>
                     {% endif %}
                 </button>
