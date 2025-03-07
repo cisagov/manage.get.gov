@@ -8,12 +8,10 @@ from registrar.tests.common import (
     completed_domain_request,
 )
 from registrar.models import (
-    Domain,
     DomainRequest,
     Portfolio,
     UserPortfolioPermission,
     PortfolioInvitation,
-    User,
 )
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioRoleChoices,

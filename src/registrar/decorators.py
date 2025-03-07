@@ -233,50 +233,57 @@ def _is_domain_manager(user, **kwargs):
 
 
 def _domain_exists_under_portfolio(portfolio, domain_pk):
-    """Checks to see if the given domain exists under the provided portfolio. Returns True if the pk is None.
+    """Checks to see if the given domain exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
     if not domain_pk:
         logger.info(
-            "_domain_exists_under_portfolio => Could not find domain_pk. This is a non-issue if called from the right context."
+            "_domain_exists_under_portfolio => Could not find domain_pk. "
+            "This is a non-issue if called from the right context."
         )
         return True
     return Domain.objects.filter(domain_info__portfolio=portfolio, id=domain_pk).exists()
 
 
 def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
-    """Checks to see if the given domain request exists under the provided portfolio. Returns True if the pk is None.
+    """Checks to see if the given domain request exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
     if not domain_request_pk:
         logger.info(
-            "_domain_request_exists_under_portfolio => Could not find domain_request_pk. This is a non-issue if called from the right context."
+            "_domain_request_exists_under_portfolio => Could not find domain_request_pk. "
+            "This is a non-issue if called from the right context."
         )
         return True
     return DomainRequest.objects.filter(portfolio=portfolio, id=domain_request_pk).exists()
 
 
 def _member_exists_under_portfolio(portfolio, member_pk):
-    """Checks to see if the given UserPortfolioPermission exists under the provided portfolio. Returns True if the pk is None.
+    """Checks to see if the given UserPortfolioPermission exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
     if not member_pk:
         logger.info(
-            "_member_exists_under_portfolio => Could not find member_pk. This is a non-issue if called from the right context."
+            "_member_exists_under_portfolio => Could not find member_pk. "
+            "This is a non-issue if called from the right context."
         )
         return True
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
 
 
 def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
-    """Checks to see if the given PortfolioInvitation exists under the provided portfolio. Returns True if the pk is None.
+    """Checks to see if the given PortfolioInvitation exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
