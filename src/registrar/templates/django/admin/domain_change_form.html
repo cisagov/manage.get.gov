@@ -33,7 +33,9 @@
             <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
             {% endif %}
             {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
+            {% if not adminform.form.is_omb_analyst %}
             <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+            {% endif %}
             {% endif %}
             {% if original.state != original.State.DELETED and not adminform.form.is_omb_analyst %}
             <a class="text-middle" href="#toggle-remove-from-registry" aria-controls="toggle-remove-from-registry" data-open-modal>
