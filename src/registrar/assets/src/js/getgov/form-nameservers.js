@@ -466,7 +466,7 @@ export class NameserverForm {
         const mainContent = document.getElementById("main-content");
         if (mainContent) {
             // Remove all alert elements within the main content area
-            mainContent.querySelectorAll(".usa-alert").forEach(alert => alert.remove());
+            mainContent.querySelectorAll(".usa-alert:not(.usa-alert--do-not-reset)").forEach(alert => alert.remove());
         } else {
             console.warn("Expecting main-content DOM element");
         }
