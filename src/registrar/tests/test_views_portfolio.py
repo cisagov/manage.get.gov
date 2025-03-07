@@ -2125,7 +2125,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
-                reverse("invitedmember-delete", kwargs={"member_pk": invitation.pk}),
+                reverse("invitedmember-delete", kwargs={"invitedmember_pk": invitation.pk}),
             )
 
             self.assertEqual(response.status_code, 302)
@@ -2190,7 +2190,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
-                reverse("invitedmember-delete", kwargs={"member_pk": invitation.pk}),
+                reverse("invitedmember-delete", kwargs={"invitedmember_pk": invitation.pk}),
             )
 
             self.assertEqual(response.status_code, 302)
@@ -2263,7 +2263,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         with patch("django.contrib.messages.success") as mock_success:
             self.client.force_login(self.user)
             response = self.client.post(
-                reverse("invitedmember-delete", kwargs={"member_pk": invitation.pk}),
+                reverse("invitedmember-delete", kwargs={"invitedmember_pk": invitation.pk}),
             )
 
             self.assertEqual(response.status_code, 302)
@@ -2463,7 +2463,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains view is accessible."""
         self.client.force_login(self.user)
 
-        response = self.client.get(reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
@@ -2476,7 +2476,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains view is not accessible to user with no perms."""
         self.client.force_login(self.user_no_perms)
 
-        response = self.client.get(reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the request returns forbidden
         self.assertEqual(response.status_code, 403)
@@ -2488,7 +2488,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains view is not accessible when no authenticated user."""
         self.client.logout()
 
-        response = self.client.get(reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the request returns redirect to openid login
         self.assertEqual(response.status_code, 302)  # Redirect to openid login
@@ -2501,7 +2501,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains view returns not found if user is not a member."""
         self.client.force_login(self.user)
 
-        response = self.client.get(reverse("invitedmember-domains", kwargs={"member_pk": "0"}))
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": "0"}))
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
@@ -2831,7 +2831,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
-        self.url = reverse("invitedmember-domains-edit", kwargs={"member_pk": self.invitation.pk})
+        self.url = reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.pk})
 
     def tearDown(self):
         super().tearDown()
@@ -2849,7 +2849,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains edit view is accessible."""
         self.client.force_login(self.user)
 
-        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
@@ -2862,7 +2862,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains edit view is not accessible to user with no perms."""
         self.client.force_login(self.user_no_perms)
 
-        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the request returns forbidden
         self.assertEqual(response.status_code, 403)
@@ -2874,7 +2874,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains edit view is not accessible when no authenticated user."""
         self.client.logout()
 
-        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"member_pk": self.invitation.id}))
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.id}))
 
         # Make sure the request returns redirect to openid login
         self.assertEqual(response.status_code, 302)  # Redirect to openid login
@@ -2887,7 +2887,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         """Tests that the portfolio invited member domains edit view returns not found if user is not a member."""
         self.client.force_login(self.user)
 
-        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"member_pk": "0"}))
+        response = self.client.get(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": "0"}))
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
@@ -2914,7 +2914,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
         # Check for a success message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
@@ -2971,7 +2971,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
         # Check for a success message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -3015,7 +3015,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
         # Check for a success message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
         # assert that send_domain_invitation_email is not called
         mock_send_domain_email.assert_not_called()
 
@@ -3035,7 +3035,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
 
         # Check for an error message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(
@@ -3058,7 +3058,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
 
         # Check for an error message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(
@@ -3078,7 +3078,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
 
         # Check for an info message and a redirect
-        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
@@ -3106,7 +3106,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
         # Check for an error message and a redirect to edit form
-        self.assertRedirects(response, reverse("invitedmember-domains-edit", kwargs={"member_pk": self.invitation.pk}))
+        self.assertRedirects(response, reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(
