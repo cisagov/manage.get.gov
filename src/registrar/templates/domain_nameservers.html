@@ -5,10 +5,21 @@
 
 {% block domain_content %}
 
-  {# this is right after the messages block in the parent template #}
+  {# this is right after the messages block in the parent template. #}
+
   {% for form in formset %}
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
+
+  {% if formset.initial|length >= formset.max_num %}
+    <div class="usa-alert usa-alert--do-not-reset usa-alert--info usa-alert--slim margin-bottom-2" role="alert">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text">
+          You’ve reached the maximum amount of allowed name server records (13).
+        </p>
+      </div>
+    </div>
+  {% endif %}
   
   {% block breadcrumb %}
   {% if portfolio %}
@@ -32,82 +43,286 @@
   {% endif %}
   {% endblock breadcrumb %}
 
-  <h1>DNS name servers</h1>
-
-  <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
-
-  <p>Add a name server record by entering the address (e.g., ns1.nameserver.com) in the name server fields below. You must add at least two name servers (13 max).</p>
-
-  <div class="usa-alert usa-alert--info">
-    <div class="usa-alert__body">
-      <p class="margin-top-0">Add an IP address only when your name server's address includes your domain name (e.g., if your domain name is “example.gov” and your name server is “ns1.example.gov,” then an IP address is required). Multiple IP addresses must be separated with commas.</p>
-      <p class="margin-bottom-0">This step is uncommon unless you self-host your DNS or use custom addresses for your nameserver.</p>
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-6">
+      <h1 class="tablet:margin-bottom-1">Name servers</h1>
+    </div>
+    
+    <div class="tablet:grid-col-6 text-right--tablet">
+      <button type="button" class="usa-button margin-bottom-1 tablet:float-right" id="nameserver-add-button">
+        Add name servers
+      </button>
     </div>
   </div>
+  <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
 
-  {% include "includes/required_fields.html" %}
+  <p>Add a name server record by clicking “Add name servers.” You must add at least two name servers (13 max).</p>
 
-  <form class="usa-form usa-form--extra-large nameservers-form" method="post" novalidate id="form-container">
-    {% csrf_token %}
-    {{ formset.management_form }}
+  {% comment %}
+  This template supports the rendering of three different types of nameserver forms, conditionally displayed:
+  1 - Add New Namervers form (rendered when there are no existing nameservers defined for the domain)
+  2 - Nameserver table (rendered when the domain has existing nameservers, which can be viewed and edited)
+  3 - Add New Nameserver (rendered above the Nameserver table to add a single additional nameserver)
+  {% endcomment %}
 
-    {% for form in formset %}
-    <div class="repeatable-form">
-      <div class="grid-row grid-gap-2 flex-end">
-        <div class="tablet:grid-col-5">
-          {{ form.domain }}
-          {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
-            {% if forloop.counter <= 2 %}
-              {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-              {% with attr_required=True add_group_class="usa-form-group--unstyled-error" span_for_text=True %}
-                {% input_with_errors form.server %}
-              {% endwith %}
-            {% else %}
-              {% with span_for_text=True %}
-                {% input_with_errors form.server %}
-                {% endwith %}
+  {% if formset.initial and formset.forms.0.initial %}
+    
+    {% comment %}This section renders both the Nameserver table and the Add New Nameserver {% endcomment %}
+
+    {% include "includes/required_fields.html" %}
+    <form class="usa-form usa-form--extra-large" method="post" novalidate>
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      {% for form in formset %}
+        {% if forloop.last and not form.initial %}
+
+          {% comment %}
+          This section renders the Add New Nameserver form.
+          This section does not render if the last form has initial data (this occurs if 13 nameservers already exist)
+          {% endcomment %}
+
+          <section class="add-nameservers-form display-none section-outlined">
+            {{ form.domain }}
+            <h2>Add a name server</h2>
+            <div class="repeatable-form">
+              <div class="grid-row grid-gap-2 flex-end minh-143px">
+                <div class="tablet:grid-col-6">
+                  {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                    {% with attr_required=True span_for_text=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                      {% input_with_errors form.server %}
+                    {% endwith %}
+                  {% endwith %}
+                </div>
+                <div class="tablet:grid-col-6">
+                  {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                    {% input_with_errors form.ip %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+            <div class="margin-top-2">
+              <button
+                type="button"
+                class="usa-button usa-button--outline nameserver-cancel-add-form"
+                name="btn-cancel-click"
+                aria-label="Reset the data in the name server form to the registry state (undo changes)"
+              >Cancel
+              </button>
+              <button
+                    type="submit"
+                    class="usa-button"
+                >Save
+              </button>
+            </div>
+          </section>
+        {% endif %}
+      {% endfor %}
+
+
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="nameserver-table">
+        <caption class="sr-only">Your registered domains</caption>
+        <thead>
+          <tr>
+            <th scope="col" role="columnheader">Name servers</th>
+            <th scope="col" role="columnheader"><span class="sr-only">IP address</span></th>
+            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+            {% if not forloop.last or form.initial %}
+
+              {% comment %}
+              This section renders table rows for each existing nameserver. Two rows are rendered, a readonly row
+              and an edit row. Only one of which is displayed at a time.
+              {% endcomment %}
+
+              {{ form.domain }}
+              <!-- Readonly row -->
+              <tr>
+                <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
+                <td class="padding-right-0">
+                  <div class="tablet:display-flex tablet:flex-row">
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 nameserver-edit'>
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#edit"></use>
+                      </svg>
+                      Edit <span class="usa-sr-only">{{ form.server.value }}</span>
+                    </button>
+
+                    <a 
+                      role="button" 
+                      id="button-trigger-delete-{{ form.server.value }}"
+                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
+                    >
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#delete"></use>
+                      </svg>
+                      Delete
+                    </a>
+
+                    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                      <div class="usa-accordion__heading">
+                        <button
+                          type="button"
+                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
+                          aria-expanded="false"
+                          aria-controls="more-actions-{{ form.server.value }}"
+                          aria-label="More Actions for ({{ form.server.value }})"
+                        >
+                          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                            <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                          </svg>
+                        </button>
+                      </div>
+                      <div id="more-actions-{{ form.server.value }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                        <h2>More options</h2>
+                        <button 
+                          type="button" 
+                          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary nameserver-delete-kebab"
+                          name="btn-delete-kebab-click"
+                          aria-label="Delete the name server from the registry"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </td>
+              </tr>
+              <!-- Edit row -->
+              <tr class="edit-row display-none">
+                <td class="text-bottom">
+                  {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" %}
+                    {% with attr_required=True add_initial_value_attr=True span_for_text=True add_group_class="usa-form-group--unstyled-error margin-top-0" %}
+                      {% input_with_errors form.server %}
+                    {% endwith %}
+                  {% endwith %}
+                </td>
+                <td class="text-bottom">
+                  {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="usa-form-group--unstyled-error margin-top-0" %}
+                    {% input_with_errors form.ip %}
+                  {% endwith %}
+                </td>
+                <td class="padding-right-0 text-bottom">
+                    <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
+                    
+                    <button
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block nameserver-cancel"
+                          name="btn-cancel-click"
+                          aria-label="Reset the data in the name server form to the registry state (undo changes)"
+                      >Cancel
+                    </button>
+                    <button
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block text-secondary nameserver-delete"
+                          name="btn-delete-click"
+                          aria-label="Delete the name server from the registry"
+                      >Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
             {% endif %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-5">
-          {% with label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_group_class="usa-form-group--unstyled-error" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label %}
-            {% input_with_errors form.ip %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-2">
-          <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon delete-record margin-bottom-075 text-secondary line-height-sans-5">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-            </svg>Delete
-            <span class="sr-only">Name server {{forloop.counter}}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
 
-    <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-      </svg>Add another name server
-    </button>
+      
+    </form>
+  
+  {% else %}
 
-    {% comment %} Work around USWDS' button margins to add some spacing between the submit and the 'add more'
-    This solution still works when we remove the 'add more' at 13 forms {% endcomment %}
-    <div class="margin-top-2">
-      <button
-            type="submit"
-            class="usa-button"
-        >Save
-      </button>
-
-      <button
-            type="submit"
-            class="usa-button usa-button--outline"
+    {% comment %}
+    This section renders Add New Nameservers form which renders when there are no existing
+    nameservers defined on the domain.
+    {% endcomment %} 
+       
+    <section class="add-nameservers-form display-none section-outlined">
+      {% include "includes/required_fields.html" %} 
+      <form class="usa-form usa-form--extra-large" method="post" novalidate>
+        <h2>Add name servers</h2>
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for form in formset %}
+        {{ form.domain }}
+        <div class="repeatable-form">
+          <div class="grid-row grid-gap-2 flex-end minh-143px">
+            <div class="tablet:grid-col-6">
+              {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                {% if forloop.counter <= 2 %}
+                  {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+                  {% with attr_required=True add_initial_value_attr=True span_for_text=True %}
+                    {% input_with_errors form.server %}
+                  {% endwith %}
+                {% else %}
+                  {% with span_for_text=True add_initial_value_attr=True %}
+                    {% input_with_errors form.server %}
+                    {% endwith %}
+                {% endif %}
+              {% endwith %}
+            </div>
+            <div class="tablet:grid-col-6">
+              {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                {% input_with_errors form.ip %}
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+          
+        <div class="margin-top-2">
+          <button
+            type="button"
+            class="usa-button usa-button--outline nameserver-cancel-add-form"
             name="btn-cancel-click"
             aria-label="Reset the data in the name server form to the registry state (undo changes)"
-        >Cancel
-      </button>
-    </div>
-  </form>
+          >Cancel
+          </button>
+          <button
+                type="submit"
+                class="usa-button"
+            >Save
+          </button>
+        </div>
+      </form>
+
+    </section>
+
+  {% endif %}
+
+  <a
+    id="unsaved_changes_trigger"
+    href="#unsaved-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="unsaved-changes-modal"
+    data-open-modal
+    >Trigger unsaved changes modal</a>
+  <div 
+    class="usa-modal"
+    id="unsaved-changes-modal"
+    aria-labelledby="Are you sure you want to continue?"
+    aria-describedby="You have unsaved changes that will be lost."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_id="unsaved-changes-click-button" modal_button_text="Continue without saving" cancel_button_text="Go back" %}
+  </div>
+
+  <a
+    id="delete_trigger"
+    href="#delete-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="delete-modal"
+    data-open-modal
+    >Trigger delete modal</a>
+  <div 
+    class="usa-modal"
+    id="delete-modal"
+    aria-labelledby="Are you sure you want to delete this name server?"
+    aria-describedby="This will delete the name server from your DNS records. This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this name server?" modal_description="This will delete the name server from your DNS records. This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete name server" modal_button_class="usa-button--secondary" %}
+  </div>
 {% endblock %}  {# domain_content #}
