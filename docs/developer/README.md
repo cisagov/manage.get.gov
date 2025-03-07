@@ -313,7 +313,7 @@ We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming
 5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
 6. Put back the dotgov changes you made note of into uswds-edited.js.
 7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
-8. read the [release notes](https://github.com/uswds/uswds/releases) for the new versions installed, note 'Breaking' and 'Markup change' and make adjustments to the code base as needed.
+8. Read the [release notes](https://github.com/uswds/uswds/releases) for the new versions installed, note 'Breaking' and 'Markup change' and make adjustments to the code base as needed.
 
 ## Finite State Machines
 
