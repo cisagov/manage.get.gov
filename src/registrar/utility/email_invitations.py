@@ -226,6 +226,52 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         )
     return all_admin_emails_sent
 
+def send_portfolio_organization_update_email(editor, portfolio-portfolio):
+    """
+    Sends an email notification to all portfolio admin when portfolio organization is updated.
+
+    Raises exceptions for validation or email-sending issues.
+
+    Args:
+        editor (User): The user editing the portfolio organization.
+        portfolio (Portfolio): The portfolio object whose organization information is changed.
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+
+    Raises:
+        MissingEmailError: If the requestor has no email associated with their account.
+        EmailSendingError: If there is an error while sending the email.
+    """
+    editor_email = _get_requestor_email(editor, portfolio=portfolio)
+    # Get each portfolio admin from list
+    user_portfolio_permissions = UserPortfolioPermission.objects.filter(
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+    ).exclude(user__email=editor_email)
+    for user_portfolio_permission in user_portfolio_permissions:
+        # Send email to each portfolio_admin
+        user = user_portfolio_permission.user
+        try:
+            send_templated_email(
+                "emails/portfolio_org_update_notification.txt",
+                "emails/portfolio_org_update_notification_subject.txt",
+                to_address=user.email,
+                context={
+                    "portfolio": portfolio,
+                    "editor_email": editor_email,
+                    "portfolio_admin": user,
+                    "date": date.today(),
+                },
+            )
+        except EmailSendingError:
+            logger.warning(
+                "Could not send email organization admin notification to %s " "for portfolio: %s",
+                user.email,
+                portfolio.organization_name,
+                exc_info=True,
+            )
+            all_emails_sent = False
+    return all_emails_sent
 
 def send_portfolio_member_permission_update_email(requestor, permissions: UserPortfolioPermission):
     """
