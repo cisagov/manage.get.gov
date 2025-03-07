@@ -2758,6 +2758,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "investigator",
         "portfolio",
         "sub_organization",
+        "senior_official",
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
