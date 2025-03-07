@@ -289,7 +289,8 @@ def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
     if not invitedmember_pk:
         logger.info(
-            "_member_invitation_exists_under_portfolio => Could not find invitedmember_pk. This is a non-issue if called from the right context."
+            "_member_invitation_exists_under_portfolio => Could not find invitedmember_pk. "
+            "This is a non-issue if called from the right context."
         )
         return True
     return PortfolioInvitation.objects.filter(portfolio=portfolio, id=invitedmember_pk).exists()
