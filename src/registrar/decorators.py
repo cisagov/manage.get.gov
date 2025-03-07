@@ -109,16 +109,13 @@ def _user_has_permission(user, request, rules, **kwargs):
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
         (
-            IS_DOMAIN_MANAGER, 
-            lambda: (
-                not user.is_org_user(request)
-                and _is_domain_manager(user, **kwargs)
-            )
+            IS_DOMAIN_MANAGER,
+            lambda: (not user.is_org_user(request) and _is_domain_manager(user, **kwargs))
             or (
                 user.is_org_user(request)
                 and _is_domain_manager(user, **kwargs)
                 and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk"))
-            )
+            ),
         ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
@@ -130,7 +127,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (
             HAS_PORTFOLIO_DOMAINS_ANY_PERM,
-            lambda: user.is_org_user(request) and user.has_any_domains_portfolio_permission(portfolio)
+            lambda: user.is_org_user(request)
+            and user.has_any_domains_portfolio_permission(portfolio)
             and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
@@ -150,7 +148,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
-            lambda: user.is_org_user(request) and user.has_any_requests_portfolio_permission(portfolio)
+            lambda: user.is_org_user(request)
+            and user.has_any_requests_portfolio_permission(portfolio)
             and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
