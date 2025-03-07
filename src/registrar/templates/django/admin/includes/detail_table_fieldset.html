@@ -166,7 +166,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% endcomment %}
     {% if "related_widget_wrapper" in field.field.field.widget.template_name %}
         <span id="{{ field.field.id_for_label }}--aria-description" class="visually-hidden admin-select--aria-description">
-            {{ field.field.label }}, combo-box, collapsed, edit, has autocomplete. To set the value, use the arrow keys or type the text.
+            {{ field.field.label }}, edit, has autocomplete. To set the value, use the arrow keys or type the text.
         </span>
     {% endif %}
 
