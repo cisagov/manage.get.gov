@@ -188,6 +188,9 @@ abbr[title] {
   .visible-mobile-flex {
     display: none!important;
   }
+  .text-right--tablet {
+    text-align: right;
+  }
 }
 
 
@@ -283,4 +286,12 @@ Fit-content itself does not work.
 .width--action-column {
   width: 3%;
   padding-right: 0px !important;
+}
+
+.width-40p {
+  width: 40%;
+}
+
+.minh-143px {
+  min-height: 143px;
 }
