@@ -75,7 +75,7 @@
                             class="usa-button usa-button--unstyled padding-105 text-center"
                             data-close-modal
                         >
-                            Cancel
+                            {% if cancel_button_text %}{{ cancel_button_text }}{% else %}Cancel{% endif %}
                         </button>
                     {% endif %}
                 </li>
