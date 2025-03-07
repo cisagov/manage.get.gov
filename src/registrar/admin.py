@@ -434,11 +434,6 @@ class DomainRequestAdminForm(forms.ModelForm):
                 admin.site,
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
-            # 'investigator': forms.Select(
-            #     attrs={
-            #         'aria-describedby': 'id_investigator-arialabel'}),
-            # 'senior_official': forms.Select(
-            #     attrs={'aria-describedby': 'id_senior_official-arialabel'}),
         }
         labels = {
             "action_needed_reason_email": "Email",
