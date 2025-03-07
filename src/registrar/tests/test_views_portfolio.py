@@ -3873,11 +3873,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # verify messages
         self.assertContains(
             response,
-            (
-                "This user is already assigned to a portfolio invitation. "
-                "Based on current waffle flag settings, users cannot be assigned "
-                "to multiple portfolios."
-            ),
+            f"{self.invited_member_email} has already been invited to another .gov organization.",
         )
 
         # Validate Database has not changed
@@ -3915,11 +3911,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            (
-                "This user is already assigned to a portfolio. "
-                "Based on current waffle flag settings, users cannot be "
-                "assigned to multiple portfolios."
-            ),
+            f"{self.user.email} is already a member of another .gov organization.",
         )
 
         # Validate Database has not changed
