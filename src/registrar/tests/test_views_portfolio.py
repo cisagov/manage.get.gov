@@ -4534,7 +4534,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
         # Test updating invitation permissions
         response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"member_pk": self.invitation.id}),
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
             },
@@ -4623,7 +4623,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
         # Test updating invitation permissions
         response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"member_pk": self.admin_invitation.id}),
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.admin_invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
                 "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
@@ -4669,7 +4669,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
         # Test updating invitation permissions
         response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"member_pk": self.admin_invitation.id}),
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.admin_invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
                 "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
@@ -4715,7 +4715,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
         # Test updating invitation permissions
         response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"member_pk": self.invitation.id}),
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
                 "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
@@ -4742,7 +4742,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
         # Test updating invitation permissions
         response = self.client.post(
-            reverse("invitedmember-permissions", kwargs={"member_pk": self.admin_invitation.id}),
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.admin_invitation.id}),
             {
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
             },
