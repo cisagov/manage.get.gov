@@ -2976,6 +2976,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "federally_recognized_tribe",
         "state_recognized_tribe",
         "about_your_organization",
+        "rejection_reason",
+        "rejection_reason_email",
+        "action_needed_reason",
+        "action_needed_reason_email",
     ]
 
     autocomplete_fields = [
