@@ -1956,6 +1956,7 @@ class TestHostAdmin(TestCase):
         cls.factory = RequestFactory()
         cls.admin = MyHostAdmin(model=Host, admin_site=cls.site)
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
 
     def setUp(self):
         """Setup environment for a mock admin user"""
@@ -1970,6 +1971,13 @@ class TestHostAdmin(TestCase):
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view hosts list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_host_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -2035,6 +2043,7 @@ class TestDomainInformationAdmin(TestCase):
         cls.admin = DomainInformationAdmin(model=DomainInformation, admin_site=cls.site)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.mock_data_generator = AuditedAdminMockData()
         cls.test_helper = GenericTestHelper(
             factory=cls.factory,
@@ -2046,18 +2055,80 @@ class TestDomainInformationAdmin(TestCase):
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.nonfeddomain = Domain.objects.create(name="nonfeddomain.com")
+        self.feddomain = Domain.objects.create(name="feddomain.com")
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.feddomain, portfolio=self.portfolio, creator=self.superuser
+        )
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         Contact.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts cannot view domain information list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view domain information list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view domain information list."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feddomain.name)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts cannot view/edit domain information directly."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot view/edit domain information directly."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can view/change domain information directly."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feddomain.name)
 
     @less_console_noise_decorator
     def test_domain_information_senior_official_is_alphabetically_sorted(self):
