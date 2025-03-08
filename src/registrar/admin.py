@@ -1820,7 +1820,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return (
                     obj.domain.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
-                    and obj.domain.domain_info.federal_type == BranchChoices.EXECUTIVE
+                    and obj.domain.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_view_permission(request, obj)
 

@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from registrar import models
+from registrar.utility.constants import BranchChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
@@ -57,6 +58,7 @@ from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
     completed_domain_request,
+    create_omb_analyst_user,
     create_test_user,
     generic_domain_object,
     less_console_noise,
@@ -136,18 +138,21 @@ class TestDomainInvitationAdmin(WebTest):
     csrf_checks = False
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         super().setUpClass()
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.superuser = create_superuser()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
 
     def setUp(self):
         super().setUp()
+        self.superuser = create_superuser()
+        self.cisa_analyst = create_user()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.domain = Domain.objects.create(name="example.com")
+        self.fed_agency = FederalAgency.objects.create(agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
         self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
-        DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
+        self.domain_info = DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.superuser)
@@ -159,9 +164,119 @@ class TestDomainInvitationAdmin(WebTest):
         DomainInvitation.objects.all().delete()
         DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.cisa_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view_non_feb_domain(self):
+        """Ensure OMB analysts cannot view non-federal domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertNotContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view_feb_domain(self):
+        """Ensure OMB analysts can view federal executive branch domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator      
+    def test_superuser_view(self):
+        """Ensure superusers can view domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view domain invitations but not update."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.cisa_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_domain")
+        self.assertNotContains(response, "id_email")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change_non_feb_domain(self):
+        """Ensure OMB analysts cannot change non-federal domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 302)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change_feb_domain(self):
+        """Ensure OMB analysts can view federal executive branch domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        # update domain 
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_domain")
+        self.assertNotContains(response, "id_email")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_domain")
+        self.assertContains(response, "id_email")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_domain(self):
+        """Ensure OMB analysts can apply filters and only federal executive branch domains show."""
+        # create invitation on domain that is not FEB
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"), {"status": DomainInvitation.DomainInvitationStatus.INVITED})
+        self.assertNotContains(response, invitation.email)
+        # update domain 
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"), {"status": DomainInvitation.DomainInvitationStatus.INVITED})
+        self.assertContains(response, invitation.email)
+
+    # test_analyst_view
+    # test_omb_analyst_view_non_feb_domain
+    # test_omb_analyst_view_feb_domain
+    # test_superuser_view
+    # test_analyst_change
+    # test_omb_analyst_change_non_feb_domain
+    # test_omb_analyst_change_feb_domain
+    # test_superuser
+    # test_filter_feb
+
 
     @less_console_noise_decorator
     def test_has_model_description(self):
