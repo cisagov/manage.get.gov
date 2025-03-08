@@ -3987,12 +3987,23 @@ class TestPortfolioAdmin(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
         cls.factory = RequestFactory()
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+        self.feb_agency = FederalAgency.objects.create(
+            agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.feb_portfolio = Portfolio.objects.create(
+            organization_name="Test FEB portfolio",
+            creator=self.superuser,
+            federal_agency=self.feb_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
 
     def tearDown(self):
         Suborganization.objects.all().delete()
@@ -4000,7 +4011,117 @@ class TestPortfolioAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.feb_agency.delete()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view portfolios."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view FEB portfolios but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view portfolios."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view/edit portfolios."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_organization_name")
+        self.assertContains(response, "id_notes")
+        self.assertContains(response, "id_organization_type")
+        self.assertContains(response, "id_state_territory")
+        self.assertContains(response, "id_address_line1")
+        self.assertContains(response, "id_address_line2")
+        self.assertContains(response, "id_city")
+        self.assertContains(response, "id_zipcode")
+        self.assertContains(response, "id_urbanization")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can change FEB portfolios but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_organization_name")
+        self.assertNotContains(response, "id_notes")
+        self.assertNotContains(response, "id_organization_type")
+        self.assertNotContains(response, "id_state_territory")
+        self.assertNotContains(response, "id_address_line1")
+        self.assertNotContains(response, "id_address_line2")
+        self.assertNotContains(response, "id_city")
+        self.assertNotContains(response, "id_zipcode")
+        self.assertNotContains(response, "id_urbanization")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertNotContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change all portfolios."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_organization_name")
+        self.assertContains(response, "id_notes")
+        self.assertContains(response, "id_organization_type")
+        self.assertContains(response, "id_state_territory")
+        self.assertContains(response, "id_address_line1")
+        self.assertContains(response, "id_address_line2")
+        self.assertContains(response, "id_city")
+        self.assertContains(response, "id_zipcode")
+        self.assertContains(response, "id_urbanization")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_portfolios(self):
+        """Ensure OMB analysts can apply filters and only feb portfolios show."""
+        self.client.force_login(self.omb_analyst)
+        # in setup, created two portfolios: Test portfolio and Test FEB portfolio
+        # only executive portfolio should show up with the search for 'portfolio'
+        response = self.client.get(
+            reverse("admin:registrar_portfolio_changelist"),
+            data={"q": "test"},
+        )
+        self.assertNotContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_created_on_display(self):
