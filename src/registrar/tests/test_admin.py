@@ -4310,6 +4310,7 @@ class TestTransferUser(WebTest):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
         cls.factory = RequestFactory()
 
@@ -4329,6 +4330,13 @@ class TestTransferUser(WebTest):
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
         UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst(self):
+        """Ensure OMB analysts cannot view transfer_user."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("transfer_user", args=[self.user1.pk]))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_transfer_user_shows_current_and_selected_user_information(self):
