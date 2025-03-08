@@ -1,10 +1,10 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, {% if portfolio_admin and portfolio_admin.first_name %}
+Hi, {% if portfolio_admin and portfolio_admin.first_name %}{% endif %}
 
 An update was made to your .gov organization
 
-ORGANIZATION: {{ portfolio.organization_name }}
-UPDATED BY: {{ editor_email }}
+ORGANIZATION: {{ portfolio }}
+UPDATED BY: {{ editor.email }}
 UPDATED ON: {{ date }}
 INFORMATION UPDATED: put page where info was edited here
 
@@ -13,7 +13,7 @@ You can view this update in the .gov registrar <https://manage.get.gov>.
 ----------------------------------------------------------------
 
 WHY DID YOU RECEIVE THIS EMAIL?
-You're listed as an admin for {{ $portfolio.organization_name }}, so you'll receive a
+You're listed as an admin for {{ portfolio }}, so you'll receive a
 notification whenever changes are made to that .gov organization.
 
 If you have questions or concerns, reach out to the person who made the change or reply

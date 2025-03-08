@@ -226,7 +226,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         )
     return all_admin_emails_sent
 
-def send_portfolio_organization_update_email(editor, portfolio-portfolio):
+def send_portfolio_organization_update_email(editor, portfolio):
     """
     Sends an email notification to all portfolio admin when portfolio organization is updated.
 
@@ -243,7 +243,7 @@ def send_portfolio_organization_update_email(editor, portfolio-portfolio):
         MissingEmailError: If the requestor has no email associated with their account.
         EmailSendingError: If there is an error while sending the email.
     """
-    editor_email = _get_requestor_email(editor, portfolio=portfolio)
+    editor_email = editor.email
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
         portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -258,7 +258,7 @@ def send_portfolio_organization_update_email(editor, portfolio-portfolio):
                 to_address=user.email,
                 context={
                     "portfolio": portfolio,
-                    "editor_email": editor_email,
+                    "editor": editor,
                     "portfolio_admin": user,
                     "date": date.today(),
                 },
@@ -267,7 +267,7 @@ def send_portfolio_organization_update_email(editor, portfolio-portfolio):
             logger.warning(
                 "Could not send email organization admin notification to %s " "for portfolio: %s",
                 user.email,
-                portfolio.organization_name,
+                portfolio,
                 exc_info=True,
             )
             all_emails_sent = False
@@ -444,7 +444,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
             logger.warning(
                 "Could not send email organization admin notification to %s " "for portfolio: %s",
                 user.email,
-                portfolio.organization_name,
+                portfolio,
                 exc_info=True,
             )
             all_emails_sent = False
