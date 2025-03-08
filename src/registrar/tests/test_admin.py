@@ -3733,13 +3733,21 @@ class TestDraftDomainAdmin(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestFederalAgency(TestCase):
+class TestFederalAgencyAdmin(TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
+        cls.non_feb_agency = FederalAgency.objects.create(
+            agency="Fake judicial agency", federal_type=BranchChoices.JUDICIAL
+        )
+        cls.feb_agency = FederalAgency.objects.create(
+            agency="Fake executive agency", federal_type=BranchChoices.EXECUTIVE
+        )
         cls.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3751,6 +3759,100 @@ class TestFederalAgency(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view federal agencies."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view FEB agencies but not other branches."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view domain invitations."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view/edit federal agencies list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_agency")
+        self.assertContains(response, "id_federal_type")
+        self.assertContains(response, "id_acronym")
+        self.assertContains(response, "id_is_fceb")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can change FEB agencies but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_agency")
+        self.assertNotContains(response, "id_federal_type")
+        self.assertNotContains(response, "id_acronym")
+        self.assertNotContains(response, "id_is_fceb")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change all federal agencies."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_agency")
+        self.assertContains(response, "id_federal_type")
+        self.assertContains(response, "id_acronym")
+        self.assertContains(response, "id_is_fceb")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_agencies(self):
+        """Ensure OMB analysts can apply filters and only federal agencies show."""
+        self.client.force_login(self.omb_analyst)
+        # in setup, created two agencies: Fake judicial agency and Fake executive agency
+        # only executive agency should show up with the search for 'fake'
+        response = self.client.get(
+            reverse("admin:registrar_federalagency_changelist"),
+            data = {"q": "fake"},
+        )
+        self.assertNotContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
