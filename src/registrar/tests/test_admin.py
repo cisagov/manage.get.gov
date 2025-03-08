@@ -286,16 +286,6 @@ class TestDomainInvitationAdmin(WebTest):
         )
         self.assertContains(response, invitation.email)
 
-    # test_analyst_view
-    # test_omb_analyst_view_non_feb_domain
-    # test_omb_analyst_view_feb_domain
-    # test_superuser_view
-    # test_analyst_change
-    # test_omb_analyst_change_non_feb_domain
-    # test_omb_analyst_change_feb_domain
-    # test_superuser
-    # test_filter_feb
-
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
@@ -1272,6 +1262,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.testuser = create_test_user()
+        self.omb_analyst = create_omb_analyst_user()
         self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
@@ -1280,6 +1271,26 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user portfolio permissions list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot change user portfolio permission."""
+        self.client.force_login(self.omb_analyst)
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.client.get(
+            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_change_form_description(self):
