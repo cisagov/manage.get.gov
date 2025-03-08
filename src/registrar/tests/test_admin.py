@@ -3569,6 +3569,7 @@ class TestVerifiedByStaffAdmin(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3587,17 +3588,19 @@ class TestVerifiedByStaffAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view verified by staff list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_verifiedbystaff_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/verifiedbystaff/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_verifiedbystaff_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
-
         # Test for a description snippet
         self.assertContains(
             response, "This table contains users who have been allowed to bypass " "identity proofing through Login.gov"
@@ -3652,6 +3655,7 @@ class TestWebsiteAdmin(TestCase):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = WebsiteAdmin(model=Website, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3663,14 +3667,17 @@ class TestWebsiteAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view website list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_website_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/website/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_website_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3679,13 +3686,14 @@ class TestWebsiteAdmin(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestDraftDomain(TestCase):
+class TestDraftDomainAdmin(TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = DraftDomainAdmin(model=DraftDomain, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3704,14 +3712,17 @@ class TestDraftDomain(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view draft domain list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_draftdomain_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/draftdomain/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_draftdomain_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
