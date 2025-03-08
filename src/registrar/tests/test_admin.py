@@ -2851,6 +2851,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         cls.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
 
     def setUp(self):
@@ -2866,6 +2867,13 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view users list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_user_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -3492,6 +3500,7 @@ class TestContactAdmin(TestCase):
         cls.admin = ContactAdmin(model=Contact, admin_site=None)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
 
     def setUp(self):
         super().setUp()
@@ -3506,6 +3515,13 @@ class TestContactAdmin(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view contact list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_contact_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
