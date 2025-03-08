@@ -1956,6 +1956,7 @@ class TestHostAdmin(TestCase):
         cls.factory = RequestFactory()
         cls.admin = MyHostAdmin(model=Host, admin_site=cls.site)
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
         cls.omb_analyst = create_omb_analyst_user()
 
     def setUp(self):
@@ -1971,6 +1972,13 @@ class TestHostAdmin(TestCase):
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure analysts cannot view hosts list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_host_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_omb_analyst_view(self):
@@ -2494,6 +2502,8 @@ class TestUserDomainRoleAdmin(WebTest):
         cls.factory = RequestFactory()
         cls.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=cls.site)
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.test_helper = GenericTestHelper(
             factory=cls.factory,
             user=cls.superuser,
@@ -2520,6 +2530,31 @@ class TestUserDomainRoleAdmin(WebTest):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure analysts cannot view user domain roles list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_changelist"))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user domain roles list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot view/edit user domain roles list."""
+        domain, _ = Domain.objects.get_or_create(name="anyrandomdomain.com")
+        user_domain_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.superuser, domain=domain, role=[UserDomainRole.Roles.MANAGER]
+        )
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_change", args=[user_domain_role.id]))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
