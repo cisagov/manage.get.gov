@@ -150,9 +150,13 @@ class TestDomainInvitationAdmin(WebTest):
         self.omb_analyst = create_omb_analyst_user()
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.domain = Domain.objects.create(name="example.com")
-        self.fed_agency = FederalAgency.objects.create(agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
         self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
-        self.domain_info = DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.domain, portfolio=self.portfolio, creator=self.superuser
+        )
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.superuser)
@@ -197,7 +201,7 @@ class TestDomainInvitationAdmin(WebTest):
         response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
         self.assertContains(response, invitation.email)
 
-    @less_console_noise_decorator      
+    @less_console_noise_decorator
     def test_superuser_view(self):
         """Ensure superusers can view domain invitations."""
         invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
@@ -216,6 +220,9 @@ class TestDomainInvitationAdmin(WebTest):
         # test whether fields are readonly or editable
         self.assertNotContains(response, "id_domain")
         self.assertNotContains(response, "id_email")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
 
     @less_console_noise_decorator
     def test_omb_analyst_change_non_feb_domain(self):
@@ -229,7 +236,7 @@ class TestDomainInvitationAdmin(WebTest):
     def test_omb_analyst_change_feb_domain(self):
         """Ensure OMB analysts can view federal executive branch domains."""
         invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
-        # update domain 
+        # update domain
         self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
         self.portfolio.federal_agency = self.fed_agency
         self.portfolio.save()
@@ -240,6 +247,9 @@ class TestDomainInvitationAdmin(WebTest):
         # test whether fields are readonly or editable
         self.assertNotContains(response, "id_domain")
         self.assertNotContains(response, "id_email")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
 
     @less_console_noise_decorator
     def test_superuser_change(self):
@@ -251,6 +261,9 @@ class TestDomainInvitationAdmin(WebTest):
         # test whether fields are readonly or editable
         self.assertContains(response, "id_domain")
         self.assertContains(response, "id_email")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
 
     @less_console_noise_decorator
     def test_omb_analyst_filter_feb_domain(self):
@@ -258,13 +271,19 @@ class TestDomainInvitationAdmin(WebTest):
         # create invitation on domain that is not FEB
         invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
         self.client.force_login(self.omb_analyst)
-        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"), {"status": DomainInvitation.DomainInvitationStatus.INVITED})
+        response = self.client.get(
+            reverse("admin:registrar_domaininvitation_changelist"),
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
+        )
         self.assertNotContains(response, invitation.email)
-        # update domain 
+        # update domain
         self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
         self.portfolio.federal_agency = self.fed_agency
         self.portfolio.save()
-        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"), {"status": DomainInvitation.DomainInvitationStatus.INVITED})
+        response = self.client.get(
+            reverse("admin:registrar_domaininvitation_changelist"),
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
+        )
         self.assertContains(response, invitation.email)
 
     # test_analyst_view
@@ -276,7 +295,6 @@ class TestDomainInvitationAdmin(WebTest):
     # test_omb_analyst_change_feb_domain
     # test_superuser
     # test_filter_feb
-
 
     @less_console_noise_decorator
     def test_has_model_description(self):

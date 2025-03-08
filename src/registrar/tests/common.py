@@ -1009,6 +1009,7 @@ def create_user(**kwargs):
     user.groups.set([group])
     return user
 
+
 def create_omb_analyst_user(**kwargs):
     """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
     User = get_user_model()
@@ -1028,6 +1029,7 @@ def create_omb_analyst_user(**kwargs):
     # Add the user to the group
     user.groups.set([group])
     return user
+
 
 def create_test_user():
     username = "test_user"
