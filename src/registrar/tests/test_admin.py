@@ -3849,7 +3849,7 @@ class TestFederalAgencyAdmin(TestCase):
         # only executive agency should show up with the search for 'fake'
         response = self.client.get(
             reverse("admin:registrar_federalagency_changelist"),
-            data = {"q": "fake"},
+            data={"q": "fake"},
         )
         self.assertNotContains(response, self.non_feb_agency.agency)
         self.assertContains(response, self.feb_agency.agency)
@@ -3871,11 +3871,12 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestPublicContact(TestCase):
+class TestPublicContactAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = PublicContactAdmin(model=PublicContact, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3887,15 +3888,18 @@ class TestPublicContact(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view public contact list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
-        response = self.client.get(
-            "/admin/registrar/publiccontact/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3904,11 +3908,12 @@ class TestPublicContact(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestTransitionDomain(TestCase):
+class TestTransitionDomainAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = TransitionDomainAdmin(model=TransitionDomain, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3920,14 +3925,17 @@ class TestTransitionDomain(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view transition domain list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_transitiondomain_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/transitiondomain/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_transitiondomain_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3936,11 +3944,12 @@ class TestTransitionDomain(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestUserGroup(TestCase):
+class TestUserGroupAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = UserGroupAdmin(model=UserGroup, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3951,14 +3960,17 @@ class TestUserGroup(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user group list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_usergroup_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/usergroup/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_usergroup_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
