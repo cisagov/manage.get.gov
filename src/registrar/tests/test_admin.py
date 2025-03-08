@@ -1348,6 +1348,7 @@ class TestPortfolioInvitationAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.omb_analyst = create_omb_analyst_user()
         self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
@@ -1360,6 +1361,26 @@ class TestPortfolioInvitationAdmin(TestCase):
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view portfolio invitations list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolioinvitation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot change portfolio invitation."""
+        self.client.force_login(self.omb_analyst)
+        invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email=self.superuser.email, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.client.get(
+            "/admin/registrar/portfolioinvitation/{}/change/".format(invitation.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
