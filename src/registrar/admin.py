@@ -411,17 +411,6 @@ class DomainInformationAdminForm(forms.ModelForm):
 
 class DomainInformationInlineForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # for OMB analysts, limit portfolio dropdown to FEB portfolios
-        user = self.request.user if hasattr(self, 'request') else None
-        if user and user.groups.filter(name="omb_analysts_group").exists():
-            self.fields["portfolio"].queryset = models.Portfolio.objects.filter(
-                Q(organization_type=DomainRequest.OrganizationChoices.FEDERAL) &
-                Q(federal_agency__federal_type=BranchChoices.EXECUTIVE)
-            )
     
     class Meta:
         model = models.DomainInformation
@@ -2343,6 +2332,47 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "is_policy_acknowledged",
     ]
 
+    # Read only that we'll leverage for OMB Analysts
+    omb_analyst_readonly_fields = [
+        "federal_agency",
+        "creator",
+        "about_your_organization",
+        "anything_else",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+        "domain_request",
+        "notes",
+        "senior_official",
+        "organization_type",
+        "organization_name",
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
+        "organization_type",
+        "federal_type",
+        "federal_agency",
+        "tribe_name",
+        "federally_recognized_tribe",
+        "state_recognized_tribe",
+        "about_your_organization",
+        "portfolio",
+        "sub_organization",
+    ]
+
     # For each filter_horizontal, init in admin js initFilterHorizontalWidget
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
@@ -2370,6 +2400,10 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         readonly_fields = list(self.readonly_fields)
 
         if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
             return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
@@ -2992,6 +3026,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "action_needed_reason",
         "action_needed_reason_email",
         "portfolio",
+        "sub_organization",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
     ]
 
     autocomplete_fields = [
@@ -3619,6 +3657,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = copy.deepcopy(list(DomainInformationAdmin.fieldsets))
     readonly_fields = copy.deepcopy(DomainInformationAdmin.readonly_fields)
     analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
+    omb_analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.omb_analyst_readonly_fields)
     autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
 
     def get_domain_managers(self, obj):
