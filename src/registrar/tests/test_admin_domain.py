@@ -142,9 +142,9 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertNotContains(response, "id_domain_info-0-senior_official")
         self.assertNotContains(response, "id_domain_info-0-organization_type")
         self.assertNotContains(response, "id_domain_info-0-state_territory")
-        self.assertNotContains(response, "id_domain_info-0-address_line1")        
+        self.assertNotContains(response, "id_domain_info-0-address_line1")
         self.assertNotContains(response, "id_domain_info-0-address_line2")
-        self.assertNotContains(response, "id_domain_info-0-city")        
+        self.assertNotContains(response, "id_domain_info-0-city")
         self.assertNotContains(response, "id_domain_info-0-zipcode")
         self.assertNotContains(response, "id_domain_info-0-urbanization")
         self.assertNotContains(response, "id_domain_info-0-portfolio_organization_type")
@@ -166,7 +166,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertNotContains(response, "id_domain_info-0-about_your_organization")
         self.assertNotContains(response, "id_domain_info-0-portfolio")
         self.assertNotContains(response, "id_domain_info-0-sub_organization")
-    
+
     @less_console_noise_decorator
     def test_superuser_change(self):
         """Ensure super user can view/edit all domains."""
@@ -201,9 +201,9 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertContains(response, "id_domain_info-0-senior_official")
         self.assertContains(response, "id_domain_info-0-organization_type")
         self.assertContains(response, "id_domain_info-0-state_territory")
-        self.assertContains(response, "id_domain_info-0-address_line1")        
+        self.assertContains(response, "id_domain_info-0-address_line1")
         self.assertContains(response, "id_domain_info-0-address_line2")
-        self.assertContains(response, "id_domain_info-0-city")        
+        self.assertContains(response, "id_domain_info-0-city")
         self.assertContains(response, "id_domain_info-0-zipcode")
         self.assertContains(response, "id_domain_info-0-urbanization")
         self.assertContains(response, "id_domain_info-0-organization_type")
@@ -215,7 +215,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertContains(response, "id_domain_info-0-about_your_organization")
         self.assertContains(response, "id_domain_info-0-portfolio")
         self.assertContains(response, "id_domain_info-0-sub_organization")
-    
+
     @less_console_noise_decorator
     def test_staff_can_see_cisa_region_federal(self):
         """Tests if staff can see CISA Region: N/A"""

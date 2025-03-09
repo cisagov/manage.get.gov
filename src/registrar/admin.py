@@ -411,7 +411,7 @@ class DomainInformationAdminForm(forms.ModelForm):
 
 class DomainInformationInlineForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
-    
+
     class Meta:
         model = models.DomainInformation
         fields = "__all__"
@@ -3804,7 +3804,7 @@ class DomainInformationInline(admin.StackedInline):
         form.is_omb_analyst = self.is_omb_analyst
 
         return form
-    
+
     def get_formset(self, request, obj=None, **kwargs):
         """Attach request to the formset so that it can be available in the form"""
         formset = super().get_formset(request, obj, **kwargs)
