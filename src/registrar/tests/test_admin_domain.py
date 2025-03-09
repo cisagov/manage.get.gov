@@ -17,14 +17,17 @@ from registrar.models import (
     Host,
     Portfolio,
 )
+from registrar.models.federal_agency import FederalAgency
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.utility.constants import BranchChoices
 from .common import (
     MockSESClient,
     completed_domain_request,
     less_console_noise,
     create_superuser,
     create_user,
+    create_omb_analyst_user,
     create_ready_domain,
     MockEppLib,
     GenericTestHelper,
@@ -49,6 +52,7 @@ class TestDomainAdminAsStaff(MockEppLib):
     def setUpClass(self):
         super().setUpClass()
         self.staffuser = create_user()
+        self.omb_analyst = create_omb_analyst_user()
         self.site = AdminSite()
         self.admin = DomainAdmin(model=Domain, admin_site=self.site)
         self.factory = RequestFactory()
@@ -56,6 +60,24 @@ class TestDomainAdminAsStaff(MockEppLib):
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.staffuser)
+        self.nonfebdomain = Domain.objects.create(name="nonfebexample.com")
+        self.febdomain = Domain.objects.create(name="febexample.com", state=Domain.State.READY)
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.portfolio = Portfolio.objects.create(
+            organization_name="new portfolio",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.fed_agency,
+            creator=self.staffuser,
+        )
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.febdomain, portfolio=self.portfolio, creator=self.staffuser
+        )
+        self.nonfebportfolio = Portfolio.objects.create(
+            organization_name="non feb portfolio",
+            creator=self.staffuser,
+        )
         super().setUp()
 
     def tearDown(self):
@@ -65,12 +87,54 @@ class TestDomainAdminAsStaff(MockEppLib):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+        Portfolio.objects.all().delete()
+        self.fed_agency.delete()
 
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
         super().tearDownClass()
 
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view domain list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domain_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.febdomain.name)
+        self.assertNotContains(response, self.nonfebdomain.name)
+        self.assertNotContains(response, "Import")
+        self.assertNotContains(response, "Export")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can view/edit federal executive branch domains."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domain_change", args=[self.nonfebdomain.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_domain_change", args=[self.febdomain.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.febdomain.name)
+        # test portfolio dropdown
+        self.assertContains(response, self.portfolio.organization_name)
+        self.assertNotContains(response, self.nonfebportfolio.organization_name)
+        # test buttons
+        self.assertNotContains(response, "Manage domain")
+        self.assertNotContains(response, "Get registry status")
+        self.assertNotContains(response, "Extend expiration date")
+        self.assertNotContains(response, "Remove from registry")
+        self.assertContains(response, "Place hold")
+        self.assertContains(response, "Save")
+        self.assertNotContains(response, ">Delete<")
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_domain_info-0-portfolio")
+        self.assertContains(response, "id_domain_info-0-sub_organization")
+        self.assertNotContains(response, "id_domain_info-0-creator")
+        # self.assertNotContains(response, "id_email")
+        # self.assertContains(response, "closelink")
+        # self.assertNotContains(response, "Save")
+        # self.assertNotContains(response, "Delete")
+    
     @less_console_noise_decorator
     def test_staff_can_see_cisa_region_federal(self):
         """Tests if staff can see CISA Region: N/A"""

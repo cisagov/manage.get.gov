@@ -412,6 +412,17 @@ class DomainInformationAdminForm(forms.ModelForm):
 class DomainInformationInlineForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # for OMB analysts, limit portfolio dropdown to FEB portfolios
+        user = self.request.user if hasattr(self, 'request') else None
+        if user and user.groups.filter(name="omb_analysts_group").exists():
+            self.fields["portfolio"].queryset = models.Portfolio.objects.filter(
+                Q(organization_type=DomainRequest.OrganizationChoices.FEDERAL) &
+                Q(federal_agency__federal_type=BranchChoices.EXECUTIVE)
+            )
+    
     class Meta:
         model = models.DomainInformation
         fields = "__all__"
@@ -2980,6 +2991,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "rejection_reason_email",
         "action_needed_reason",
         "action_needed_reason_email",
+        "portfolio",
     ]
 
     autocomplete_fields = [
@@ -3753,6 +3765,12 @@ class DomainInformationInline(admin.StackedInline):
         form.is_omb_analyst = self.is_omb_analyst
 
         return form
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        """Attach request to the formset so that it can be available in the form"""
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.request = request  # Attach request to form
+        return formset
 
 
 class DomainResource(FsmModelResource):
