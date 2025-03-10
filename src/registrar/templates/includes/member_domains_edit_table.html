@@ -91,9 +91,9 @@
   aria-describedby="You have unsaved changes that will be lost."
 >
 {% if portfolio_permission %}
-    {% url 'member-domains' pk=portfolio_permission.id as url %}
+    {% url 'member-domains' member_pk=portfolio_permission.id as url %}
 {% else %}
-    {% url 'invitedmember-domains' pk=portfolio_invitation.id as url %}
+    {% url 'invitedmember-domains' invitedmember_pk=portfolio_invitation.id as url %}
 {% endif %}
 
 {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_url=url modal_button_text="Continue without saving" %}
