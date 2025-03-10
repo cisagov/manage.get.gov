@@ -4,7 +4,7 @@ from django.db.models import ForeignKey, OneToOneField, ManyToManyField, ManyToO
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
-from registrar.decorators import IS_STAFF, grant_access
+from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
 from registrar.models.domain import Domain
 from registrar.models.domain_request import DomainRequest
 from registrar.models.user import User
@@ -19,7 +19,7 @@ from registrar.utility.db_helpers import ignore_unique_violation
 logger = logging.getLogger(__name__)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class TransferUserView(View):
     """Transfer user methods that set up the transfer_user template and handle the forms on it."""
 

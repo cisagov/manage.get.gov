@@ -106,7 +106,9 @@ export function initApprovedDomain() {
         }
 
         const statusToCheck = "approved";
+        const readonlyStatusToCheck = "Approved";
         const statusSelect = document.getElementById("id_status");
+        const statusField = document.querySelector("field-status");
         const sessionVariableName = "showApprovedDomain";
         let approvedDomainFormGroup = document.querySelector(".field-approved_domain");
 
@@ -120,18 +122,30 @@ export function initApprovedDomain() {
 
         // Handle showing/hiding the related fields on page load.
         function initializeFormGroups() {
-            let isStatus = statusSelect.value == statusToCheck;
+            let isStatus = false;
+            if (statusSelect) {
+                isStatus = statusSelect.value == statusToCheck;
+            } else {
+                // statusSelect does not exist, indicating readonly
+                if (statusField) {
+                    let readonlyDiv = statusField.querySelector("div.readonly");
+                    let readonlyStatusText = readonlyDiv.textContent.trim();
+                    isStatus = readonlyStatusText == readonlyStatusToCheck;
+                }
+            }
 
             // Initial handling of these groups.
             updateFormGroupVisibility(isStatus);
 
-            // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
-            statusSelect.addEventListener('change', () => {
-                // Show the approved if the status is what we expect.
-                isStatus = statusSelect.value == statusToCheck;
-                updateFormGroupVisibility(isStatus);
-                addOrRemoveSessionBoolean(sessionVariableName, isStatus);
-            });
+            if (statusSelect) {
+                // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+                statusSelect.addEventListener('change', () => {
+                    // Show the approved if the status is what we expect.
+                    isStatus = statusSelect.value == statusToCheck;
+                    updateFormGroupVisibility(isStatus);
+                    addOrRemoveSessionBoolean(sessionVariableName, isStatus);
+                });
+            }
             
             // Listen to Back/Forward button navigation and handle approvedDomainFormGroup display based on session storage
             // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
@@ -322,6 +336,7 @@ class CustomizableEmailBase {
      * @property {HTMLElement} modalConfirm - The confirm button in the modal.
      * @property {string} apiUrl - The API URL for fetching email content.
      * @property {string} statusToCheck - The status to check against. Used for show/hide on textAreaFormGroup/dropdownFormGroup.
+     * @property {string} readonlyStatusToCheck - The status to check against when readonly. Used for show/hide on textAreaFormGroup/dropdownFormGroup.
      * @property {string} sessionVariableName - The session variable name. Used for show/hide on textAreaFormGroup/dropdownFormGroup.
      * @property {string} apiErrorMessage - The error message that the ajax call returns.
      */
@@ -338,6 +353,7 @@ class CustomizableEmailBase {
         this.textAreaFormGroup = config.textAreaFormGroup;
         this.dropdownFormGroup = config.dropdownFormGroup;
         this.statusToCheck = config.statusToCheck;
+        this.readonlyStatusToCheck = config.readonlyStatusToCheck;
         this.sessionVariableName = config.sessionVariableName;
 
         // Non-configurable variables
@@ -363,19 +379,31 @@ class CustomizableEmailBase {
 
     // Handle showing/hiding the related fields on page load.
     initializeFormGroups() {
-        let isStatus = this.statusSelect.value == this.statusToCheck;
+        let isStatus = false;
+        if (this.statusSelect) {
+            this.statusSelect.value == this.statusToCheck;
+        } else {
+            // statusSelect does not exist, indicating readonly
+            if (this.dropdownFormGroup) {
+                let readonlyDiv = this.dropdownFormGroup.querySelector("div.readonly");
+                let readonlyStatusText = readonlyDiv.textContent.trim();
+                isStatus = readonlyStatusText == this.readonlyStatusToCheck;
+            }
+        }
 
         // Initial handling of these groups.
         this.updateFormGroupVisibility(isStatus);
 
-        // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
-        this.statusSelect.addEventListener('change', () => {
-            // Show the action needed field if the status is what we expect.
-            // Then track if its shown or hidden in our session cache.
-            isStatus = this.statusSelect.value == this.statusToCheck;
-            this.updateFormGroupVisibility(isStatus);
-            addOrRemoveSessionBoolean(this.sessionVariableName, isStatus);
-        });
+        if (this.statusSelect) {
+            // Listen to change events and handle rejectionReasonFormGroup display, then save status to session storage
+            this.statusSelect.addEventListener('change', () => {
+                // Show the action needed field if the status is what we expect.
+                // Then track if its shown or hidden in our session cache.
+                isStatus = this.statusSelect.value == this.statusToCheck;
+                this.updateFormGroupVisibility(isStatus);
+                addOrRemoveSessionBoolean(this.sessionVariableName, isStatus);
+            });
+        }
         
         // Listen to Back/Forward button navigation and handle rejectionReasonFormGroup display based on session storage
         // When you navigate using forward/back after changing status but not saving, when you land back on the DA page the
@@ -403,58 +431,64 @@ class CustomizableEmailBase {
     }
 
     initializeDropdown() {
-        this.dropdown.addEventListener("change", () => {
-            let reason = this.dropdown.value;
-            if (this.initialDropdownValue !== this.dropdown.value || this.initialEmailValue !== this.textarea.value) {
-                let searchParams = new URLSearchParams(
-                    {
-                        "reason": reason,
-                        "domain_request_id": this.domainRequestId,
-                    }
-                );
-                // Replace the email content
-                fetch(`${this.apiUrl}?${searchParams.toString()}`)
-                .then(response => {
-                    return response.json().then(data => data);
-                })
-                .then(data => {
-                    if (data.error) {
-                        console.error("Error in AJAX call: " + data.error);
-                    }else {
-                        this.textarea.value = data.email;
-                    }
-                    this.updateUserInterface(reason);
-                })
-                .catch(error => {
-                    console.error(this.apiErrorMessage, error)
-                });
-            }
-        });
+        if (this.dropdown) {
+            this.dropdown.addEventListener("change", () => {
+                let reason = this.dropdown.value;
+                if (this.initialDropdownValue !== this.dropdown.value || this.initialEmailValue !== this.textarea.value) {
+                    let searchParams = new URLSearchParams(
+                        {
+                            "reason": reason,
+                            "domain_request_id": this.domainRequestId,
+                        }
+                    );
+                    // Replace the email content
+                    fetch(`${this.apiUrl}?${searchParams.toString()}`)
+                    .then(response => {
+                        return response.json().then(data => data);
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            console.error("Error in AJAX call: " + data.error);
+                        }else {
+                            this.textarea.value = data.email;
+                        }
+                        this.updateUserInterface(reason);
+                    })
+                    .catch(error => {
+                        console.error(this.apiErrorMessage, error)
+                    });
+                }
+            });
+        }
     }
 
     initializeModalConfirm() {
-        this.modalConfirm.addEventListener("click", () => {
-            this.textarea.removeAttribute('readonly');
-            this.textarea.focus();
-                hideElement(this.directEditButton);
-                hideElement(this.modalTrigger);  
-        });
+        if (this.modalConfirm) {
+            this.modalConfirm.addEventListener("click", () => {
+                this.textarea.removeAttribute('readonly');
+                this.textarea.focus();
+                    hideElement(this.directEditButton);
+                    hideElement(this.modalTrigger);  
+            });
+        }
     }
 
     initializeDirectEditButton() {
-        this.directEditButton.addEventListener("click", () => {
-            this.textarea.removeAttribute('readonly');
-            this.textarea.focus();
-                hideElement(this.directEditButton);
-                hideElement(this.modalTrigger);  
-        });
+        if (this.directEditButton) {
+            this.directEditButton.addEventListener("click", () => {
+                this.textarea.removeAttribute('readonly');
+                this.textarea.focus();
+                    hideElement(this.directEditButton);
+                    hideElement(this.modalTrigger);  
+            });
+        }
     }
 
     isEmailAlreadySent() {
         return this.lastSentEmailContent.value.replace(/\s+/g, '') === this.textarea.value.replace(/\s+/g, '');
     }
 
-    updateUserInterface(reason=this.dropdown.value, excluded_reasons=["other"]) {
+    updateUserInterface(reason, excluded_reasons=["other"]) {
         if (!reason) {
             // No reason selected, we will set the label to "Email", show the "Make a selection" placeholder, hide the trigger, textarea, hide the help text
             this.showPlaceholderNoReason();
@@ -468,23 +502,25 @@ class CustomizableEmailBase {
 
     // Helper function that makes overriding the readonly textarea easy
     showReadonlyTextarea() {
-        // A triggering selection is selected, all hands on board:
-        this.textarea.setAttribute('readonly', true);
-        showElement(this.textarea);
-        hideElement(this.textareaPlaceholder);
+        if (this.textarea && this.textareaPlaceholder) {
+            // A triggering selection is selected, all hands on board:
+            this.textarea.setAttribute('readonly', true);
+            showElement(this.textarea);
+            hideElement(this.textareaPlaceholder);
 
-            if (this.isEmailAlreadySentConst) {
-                hideElement(this.directEditButton);
-                showElement(this.modalTrigger);
+                if (this.isEmailAlreadySentConst) {
+                    hideElement(this.directEditButton);
+                    showElement(this.modalTrigger);
+                } else {
+                    showElement(this.directEditButton);
+                    hideElement(this.modalTrigger);
+            }
+
+            if (this.isEmailAlreadySent()) {
+                this.formLabel.innerHTML = "Email sent to creator:";
             } else {
-                showElement(this.directEditButton);
-                hideElement(this.modalTrigger);
-        }
-
-        if (this.isEmailAlreadySent()) {
-            this.formLabel.innerHTML = "Email sent to creator:";
-        } else {
-            this.formLabel.innerHTML = "Email:";
+                this.formLabel.innerHTML = "Email:";
+            }
         }
     }
 
@@ -516,9 +552,10 @@ class customActionNeededEmail extends CustomizableEmailBase {
             lastSentEmailContent: document.getElementById("last-sent-action-needed-email-content"),
             modalConfirm: document.getElementById("action-needed-reason__confirm-edit-email"),
             apiUrl: document.getElementById("get-action-needed-email-for-user-json")?.value || null,
-            textAreaFormGroup: document.querySelector('.field-action_needed_reason'),
-            dropdownFormGroup: document.querySelector('.field-action_needed_reason_email'),
+            textAreaFormGroup: document.querySelector('.field-action_needed_reason_email'),
+            dropdownFormGroup: document.querySelector('.field-action_needed_reason'),
             statusToCheck: "action needed",
+            readonlyStatusToCheck: "Action needed",
             sessionVariableName: "showActionNeededReason",
             apiErrorMessage: "Error when attempting to grab action needed email: "
         }
@@ -529,7 +566,15 @@ class customActionNeededEmail extends CustomizableEmailBase {
         // Hide/show the email fields depending on the current status
         this.initializeFormGroups();
         // Setup the textarea, edit button, helper text
-        this.updateUserInterface();
+        let reason = null;
+        if (this.dropdown) {
+            reason = this.dropdown.value;
+        } else if (this.dropdownFormGroup && this.dropdownFormGroup.querySelector("div.readonly")) {
+            if (this.dropdownFormGroup.querySelector("div.readonly").textContent) {
+                reason = this.dropdownFormGroup.querySelector("div.readonly").textContent.trim()
+            }
+        }
+        this.updateUserInterface(reason);
         this.initializeDropdown();
         this.initializeModalConfirm();
         this.initializeDirectEditButton();
@@ -560,12 +605,12 @@ export function initActionNeededEmail() {
         // Initialize UI
         const customEmail = new customActionNeededEmail();
 
-        // Check that every variable was setup correctly
-        const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
-        if (nullItems.length > 0) {
-            console.error(`Failed to load customActionNeededEmail(). Some variables were null: ${nullItems.join(", ")}`)
-            return;
-        }
+        // // Check that every variable was setup correctly
+        // const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
+        // if (nullItems.length > 0) {
+        //     console.error(`Failed to load customActionNeededEmail(). Some variables were null: ${nullItems.join(", ")}`)
+        //     return;
+        // }
         customEmail.loadActionNeededEmail()
     });
 }
@@ -581,6 +626,7 @@ class customRejectedEmail extends CustomizableEmailBase {
             textAreaFormGroup: document.querySelector('.field-rejection_reason'),
             dropdownFormGroup: document.querySelector('.field-rejection_reason_email'),
             statusToCheck: "rejected",
+            readonlyStatusToCheck: "Rejected",
             sessionVariableName: "showRejectionReason",
             errorMessage: "Error when attempting to grab rejected email: "
         };
@@ -589,7 +635,15 @@ class customRejectedEmail extends CustomizableEmailBase {
 
     loadRejectedEmail() {
         this.initializeFormGroups();
-        this.updateUserInterface();
+        let reason = null;
+        if (this.dropdown) {
+            reason = this.dropdown.value;
+        } else if (this.dropdownFormGroup && this.dropdownFormGroup.querySelector("div.readonly")) {
+            if (this.dropdownFormGroup.querySelector("div.readonly").textContent) {
+                reason = this.dropdownFormGroup.querySelector("div.readonly").textContent.trim()
+            }
+        }
+        this.updateUserInterface(reason);
         this.initializeDropdown();
         this.initializeModalConfirm();
         this.initializeDirectEditButton();
@@ -600,7 +654,7 @@ class customRejectedEmail extends CustomizableEmailBase {
         this.showPlaceholder("Email:", "Select a rejection reason to see email");
     }
 
-    updateUserInterface(reason=this.dropdown.value, excluded_reasons=[]) {
+    updateUserInterface(reason, excluded_reasons=[]) {
         super.updateUserInterface(reason, excluded_reasons);
     }
 }
@@ -619,12 +673,12 @@ export function initRejectedEmail() {
 
         // Initialize UI
         const customEmail = new customRejectedEmail();
-        // Check that every variable was setup correctly
-        const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
-        if (nullItems.length > 0) {
-            console.error(`Failed to load customRejectedEmail(). Some variables were null: ${nullItems.join(", ")}`)
-            return;
-        }
+        // // Check that every variable was setup correctly
+        // const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
+        // if (nullItems.length > 0) {
+        //     console.error(`Failed to load customRejectedEmail(). Some variables were null: ${nullItems.join(", ")}`)
+        //     return;
+        // }
         customEmail.loadRejectedEmail()
     });
 }
@@ -648,7 +702,6 @@ function handleSuborgFieldsAndButtons() {
 
     // Ensure that every variable is present before proceeding
     if (!requestedSuborganizationField || !suborganizationCity || !suborganizationStateTerritory || !rejectButton) {
-        console.warn("handleSuborganizationSelection() => Could not find required fields.")
         return;
     }
 
