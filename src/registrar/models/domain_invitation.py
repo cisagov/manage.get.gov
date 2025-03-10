@@ -59,9 +59,8 @@ class DomainInvitation(TimeStampedModel):
     def __setattr__(self, name, value):
         """ Overrides the setter ('=' operator) with custom logic """
 
-        if name == "status" and not self._is_being_created() :
-            if not getattr(self, "_status_bypass", False):
-                raise ValidationError("Direct changes to 'status' are not allowed.")
+        if name == "status" and not self._is_being_created() :       
+            raise ValidationError("Direct changes to 'status' are not allowed.")
         super().__setattr__(name, value)
     # @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
     # def retrieve(self):
@@ -109,10 +108,8 @@ class DomainInvitationFlow(object):
 
     @status.setter()
     def _set_domain_invitation_status(self, value):
-        self.domain_invitation._status_bypass= True
-        self.domain_invitation.status = value
-        self.domain_invitation.save()
-        self.domain_invitation._status_bypass= False
+        self.domain_invitation.__dict__["status"]=value
+
 
     @status.getter()
     def _get_domain_invitation_status(self):
