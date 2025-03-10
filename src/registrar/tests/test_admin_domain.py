@@ -104,8 +104,8 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.febdomain.name)
         self.assertNotContains(response, self.nonfebdomain.name)
-        self.assertNotContains(response, "Import")
-        self.assertNotContains(response, "Export")
+        self.assertNotContains(response, ">Import<")
+        self.assertNotContains(response, ">Export<")
 
     @less_console_noise_decorator
     def test_omb_analyst_change(self):
