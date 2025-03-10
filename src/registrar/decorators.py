@@ -240,7 +240,7 @@ def _domain_exists_under_portfolio(portfolio, domain_pk):
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
     if not domain_pk:
-        logger.info(
+        logger.warning(
             "_domain_exists_under_portfolio => Could not find domain_pk. "
             "This is a non-issue if called from the right context."
         )
