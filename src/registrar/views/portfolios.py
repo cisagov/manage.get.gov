@@ -35,6 +35,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
+    send_portfolio_organization_update_email
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
@@ -840,7 +841,23 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
-            return self.form_valid(form)
+            user=request.user
+            try:
+                if not send_portfolio_organization_update_email(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
+                ):
+                    messages.warning(self.request, f"Could not send email notification to {user.email}.")
+                    return redirect(reverse("organization"))
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
+            messages.success(self.request, "The portfolio organization information has been updated.")
+            return redirect(reverse("organization"))
         else:
             return self.form_invalid(form)
 
@@ -891,6 +908,31 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
+
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests to process form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            user=request.user
+            try:
+                if not send_portfolio_organization_update_email(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
+                ):
+                    messages.warning(self.request, f"Could not send email notification to {user.email}.")
+                    return redirect(reverse("senior-official"))
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
+            messages.success(self.request, "The portfolio organization information has been updated.")
+            return redirect(reverse("senior-official"))
+        else:
+            return self.form_invalid(form)
 
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
