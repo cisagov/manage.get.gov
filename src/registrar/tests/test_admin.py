@@ -3821,7 +3821,7 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertNotContains(response, "id_is_fceb")
         self.assertNotContains(response, "closelink")
         self.assertContains(response, "Save")
-        self.assertContains(response, "Delete")
+        self.assertNotContains(response, "Delete")
 
     @less_console_noise_decorator
     def test_superuser_change(self):

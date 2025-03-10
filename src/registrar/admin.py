@@ -5025,15 +5025,6 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_change_permission(request, obj)
 
-    def has_delete_permission(self, request, obj=None):
-        """Restrict delete permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_type == BranchChoices.EXECUTIVE
-        return super().has_delete_permission(request, obj)
-
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
