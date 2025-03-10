@@ -1470,7 +1470,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainThreeHosts = fakedEppObject(
-        "my-nameserver.gov",
+        "threenameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
@@ -1481,7 +1481,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainFourHosts = fakedEppObject(
-        "fournameserversDomain.gov",
+        "fournameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
@@ -1489,6 +1489,47 @@ class MockEppLib(TestCase):
             "ns1.my-nameserver-2.com",
             "ns1.cats-are-superior3.com",
             "ns1.explosive-chicken-nuggets.com",
+        ],
+    )
+
+    infoDomainTwelveHosts = fakedEppObject(
+        "twelvenameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+        ],
+    )
+
+    infoDomainThirteenHosts = fakedEppObject(
+        "thirteennameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+            "ns13.example.com",
         ],
     )
 
@@ -1606,6 +1647,26 @@ class MockEppLib(TestCase):
             "ns1.justnameserver.com",
             "ns2.justnameserver.com",
         ],
+    )
+
+    noNameserver = fakedEppObject(
+        "nonameserver.com",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
+        hosts=[],
     )
 
     infoDomainCheckHostIPCombo = fakedEppObject(
@@ -1822,10 +1883,13 @@ class MockEppLib(TestCase):
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
             "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
+            "twelvenameserversdomain.gov": (self.infoDomainTwelveHosts, None),
+            "thirteennameserversdomain.gov": (self.infoDomainThirteenHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
+            "nonameserver.com": (self.noNameserver, None),
             "meoward.gov": (self.mockDataInfoDomainSubdomain, None),
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),

@@ -11,6 +11,11 @@ th {
     border: none;
   }
 
+  td.padding-right-0,
+  th.padding-right-0 {
+    padding-right: 0;
+  }
+
   tr:first-child th:first-child {
     border-top: none;
   }

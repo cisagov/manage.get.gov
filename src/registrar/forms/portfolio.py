@@ -445,3 +445,28 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
     class Meta:
         model = PortfolioInvitation
         fields = ["portfolio", "email", "roles", "additional_permissions"]
+
+    def _post_clean(self):
+        """
+        Override _post_clean to customize model validation errors.
+        This runs after form clean is complete, but before the errors are displayed.
+        """
+        try:
+            super()._post_clean()
+            self.instance.clean()
+        except forms.ValidationError as e:
+            override_error = False
+            if hasattr(e, "code"):
+                field = "email" if "email" in self.fields else None
+                if e.code == "has_existing_permissions":
+                    self.add_error(field, f"{self.instance.email} is already a member of another .gov organization.")
+                    override_error = True
+                elif e.code == "has_existing_invitations":
+                    self.add_error(
+                        field, f"{self.instance.email} has already been invited to another .gov organization."
+                    )
+                    override_error = True
+
+            # Errors denoted as "__all__" are special error types reserved for the model level clean function
+            if override_error and "__all__" in self._errors:
+                del self._errors["__all__"]
