@@ -107,6 +107,15 @@ export class DSDataForm {
                 this.executeCallback();
             });
         }
+        const cancel_changes_modal = document.getElementById('cancel-changes-modal');
+        if (cancel_changes_modal) {
+            const submitButton = document.getElementById('cancel-changes-click-button');
+            const closeButton = cancel_changes_modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+                closeButton.click();
+                this.executeCallback();
+            });
+        }
         const delete_modal = document.getElementById('delete-modal');
         if (delete_modal) {
             const submitButton = document.getElementById('delete-click-button');
@@ -146,7 +155,6 @@ export class DSDataForm {
      */
     handleAddFormClick(event) {
         this.callback = () => {
-            console.log("handleAddFormClick callback");
             // Check if any other edit row is currently visible and hide it
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
@@ -279,7 +287,18 @@ export class DSDataForm {
      * @param {Event} event - Click event
      */
     handleCancelAddFormClick(event) {
-        this.resetAddDSDataForm();
+        this.callback = () => {
+            this.resetAddDSDataForm();
+        }
+        if (this.formChanged) {
+            // Show the cancel changes confirmation modal
+            let modalTrigger = document.querySelector("#cancel_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
+        } else {
+            this.executeCallback();
+        }
     }
 
     /**
@@ -295,10 +314,21 @@ export class DSDataForm {
         let cancelButton = event.target;
         // find the closest table row that contains the cancel button
         let editRow = cancelButton.closest('tr');
-        if (editRow) {
-            this.resetEditRowAndFormAndCollapseEditRow(editRow);
+        this.callback = () => {
+            if (editRow) {
+                this.resetEditRowAndFormAndCollapseEditRow(editRow);
+            } else {
+                console.warn("Expected DOM element but did not find it");
+            }
+        }
+        if (this.formChanged) {
+            // Show the cancel changes confirmation modal
+            let modalTrigger = document.querySelector("#cancel_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
         } else {
-            console.warn("Expected DOM element but did not find it");
+            this.executeCallback();
         }
     }
 

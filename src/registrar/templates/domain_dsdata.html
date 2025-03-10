@@ -332,6 +332,22 @@
   </div>
 
   <a
+    id="cancel_changes_trigger"
+    href="#cancel-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="cancel-changes-modal"
+    data-open-modal
+    >Trigger cancel changes modal</a>
+  <div 
+    class="usa-modal"
+    id="cancel-changes-modal"
+    aria-labelledby="Are you sure you want to cancel your changes?"
+    aria-describedby="This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="This action cannot be undone." modal_button_id="cancel-changes-click-button" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+  </div>
+
+  <a
     id="delete_trigger"
     href="#delete-modal"
     class="usa-button usa-button--outline margin-top-1 display-none"
