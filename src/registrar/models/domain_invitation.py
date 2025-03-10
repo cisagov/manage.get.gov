@@ -45,9 +45,21 @@ class DomainInvitation(TimeStampedModel):
         default=DomainInvitationStatus.INVITED,
     )
 
+    _bypass_protection = False
+
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
+    
+    def save(self, *args, **kwargs):
+        if self.pk:  # check if object already exists
+            orig = DomainInvitation.objects.get(pk=self.pk)
+            print(self.status)
+            print(orig.status)
+            print(self._bypass_protection)
+            if self.status != orig.status and not self._bypass_protection:
 
+                raise Exception("State cannot be changed manually")
+        super().save(*args, **kwargs)
     # @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
     # def retrieve(self):
     #     """When an invitation is retrieved, create the corresponding permission.
@@ -94,7 +106,13 @@ class DomainInvitationFlow(object):
 
     @status.setter()
     def _set_domain_invitation_status(self, value):
+        print("setting")
+        self.domain_invitation._bypass_protection= True
         self.domain_invitation.status = value
+        print("saving")
+        self.domain_invitation.save() 
+        print("setting false")
+        self.domain_invitation._bypass_protection= False
 
     @status.getter()
     def _get_domain_invitation_status(self):
