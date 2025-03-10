@@ -38,6 +38,11 @@ export function removeErrorsFromElement(domElement) {
     domElement.querySelectorAll("input.usa-input--error").forEach(input => {
         input.classList.remove("usa-input--error");
     });
+
+    // Remove the 'usa-input--error' class from all select elements
+    domElement.querySelectorAll("select.usa-input--error").forEach(select => {
+        select.classList.remove("usa-input--error");
+    });
 }
 
 /**

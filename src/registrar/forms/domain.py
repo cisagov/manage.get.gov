@@ -688,7 +688,7 @@ class DomainDsdataForm(forms.Form):
 
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
-    extra=0,
+    extra=1,
     can_delete=True,
 )
 
