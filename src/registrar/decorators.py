@@ -239,7 +239,7 @@ def _domain_exists_under_portfolio(portfolio, domain_pk):
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if domain_pk is not None:
+    if domain_pk is None:
         logger.warning(
             "_domain_exists_under_portfolio => Could not find domain_pk. "
             "This is a non-issue if called from the right context."
@@ -255,7 +255,7 @@ def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if domain_request_pk is not None:
+    if domain_request_pk is None:
         logger.warning(
             "_domain_request_exists_under_portfolio => Could not find domain_request_pk. "
             "This is a non-issue if called from the right context."
@@ -271,7 +271,7 @@ def _member_exists_under_portfolio(portfolio, member_pk):
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if member_pk is not None:
+    if member_pk is None:
         logger.warning(
             "_member_exists_under_portfolio => Could not find member_pk. "
             "This is a non-issue if called from the right context."
@@ -287,7 +287,7 @@ def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if invitedmember_pk is not None:
+    if invitedmember_pk is None:
         logger.warning(
             "_member_invitation_exists_under_portfolio => Could not find invitedmember_pk. "
             "This is a non-issue if called from the right context."
