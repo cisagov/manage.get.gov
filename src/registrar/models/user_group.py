@@ -171,7 +171,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "federalagency",
-                "permissions": ["change_federalagency", "delete_federalagency"],
+                "permissions": ["change_federalagency"],
             },
             {
                 "app_label": "registrar",
