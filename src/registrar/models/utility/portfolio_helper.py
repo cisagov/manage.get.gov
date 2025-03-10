@@ -16,7 +16,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_MEMBER = "organization_member", "Member"
+    ORGANIZATION_MEMBER = "organization_member", "Basic"
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
@@ -30,17 +30,17 @@ class UserPortfolioRoleChoices(models.TextChoices):
 class UserPortfolioPermissionChoices(models.TextChoices):
     """ """
 
-    VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
-    VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
+    VIEW_ALL_DOMAINS = "view_all_domains", "Viewer"
+    VIEW_MANAGED_DOMAINS = "view_managed_domains", "Viewer, limited (domains they manage)"
 
-    VIEW_MEMBERS = "view_members", "View members"
-    EDIT_MEMBERS = "edit_members", "Create and edit members"
+    VIEW_MEMBERS = "view_members", "Viewer"
+    EDIT_MEMBERS = "edit_members", "Manager"
 
-    VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-    EDIT_REQUESTS = "edit_requests", "Create and edit requests"
+    VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
+    EDIT_REQUESTS = "edit_requests", "Creator"
 
-    VIEW_PORTFOLIO = "view_portfolio", "View organization"
-    EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
+    VIEW_PORTFOLIO = "view_portfolio", "Viewer"
+    EDIT_PORTFOLIO = "edit_portfolio", "Manager"
 
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
@@ -77,6 +77,13 @@ class MemberPermissionDisplay(StrEnum):
     MANAGER = "Manager"
     VIEWER = "Viewer"
     NONE = "None"
+
+
+def get_readable_roles(roles):
+    readable_roles = []
+    if roles:
+        readable_roles = sorted([UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in roles])
+    return readable_roles
 
 
 def get_role_display(roles):
@@ -285,7 +292,8 @@ def validate_user_portfolio_permission(user_portfolio_permission):
         if existing_permissions.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_permissions",
             )
 
         existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email).exclude(
@@ -295,7 +303,8 @@ def validate_user_portfolio_permission(user_portfolio_permission):
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_invitations",
             )
 
 
@@ -343,6 +352,7 @@ def validate_portfolio_invitation(portfolio_invitation):
 
     # == Validate the multiple_porfolios flag. == #
     user = User.objects.filter(email=portfolio_invitation.email).first()
+
     # If user returns None, then we check for global assignment of multiple_portfolios.
     # Otherwise we just check on the user.
     if not flag_is_active_for_user(user, "multiple_portfolios"):
@@ -355,13 +365,15 @@ def validate_portfolio_invitation(portfolio_invitation):
         if existing_permissions.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_permissions",
             )
 
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_invitations",
             )
 
 

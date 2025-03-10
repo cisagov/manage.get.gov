@@ -173,6 +173,10 @@ def input_with_errors(context, field=None):  # noqa: C901
     if aria_labels:
         context["aria_label"] = " ".join(aria_labels)
 
+    # Conditionally add the data-initial-value attribute
+    if context.get("add_initial_value_attr", False):
+        attrs["data-initial-value"] = field.initial or ""
+
     # ask Django to give us the widget dict
     # see Widget.get_context() on
     # https://docs.djangoproject.com/en/4.1/ref/forms/widgets
