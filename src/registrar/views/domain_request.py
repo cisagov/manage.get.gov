@@ -21,6 +21,7 @@ from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
+from registrar.models.utility.generic_helper import get_url_name
 
 logger = logging.getLogger(__name__)
 
@@ -205,30 +206,39 @@ class DomainRequestWizard(TemplateView):
         else:
             raise ValueError("Invalid value for User")
 
+        print("****** LINE ABOVE ******")
         if self.has_pk():
             try:
                 self._domain_request = DomainRequest.objects.get(
                     creator=creator,
                     pk=self.kwargs.get("domain_request_pk"),
                 )
+                print(f"@@@@ Retrieved existing DomainRequest: {self._domain_request}")
                 return self._domain_request
             except DomainRequest.DoesNotExist:
                 logger.debug("DomainRequest id %s did not have a DomainRequest" % self.kwargs.get("domain_request_pk"))
 
+        print("****** LINE BELOW ******")
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
             portfolio = self.request.session.get("portfolio")
+            print(f"@@@@ User is an org user. Portfolio retrieved: {portfolio}")
             self._domain_request = DomainRequest.objects.create(
                 creator=self.request.user,
                 portfolio=portfolio,
             )
-
+            print(f"@@@@ New DomainRequest created: {self._domain_request}")
             # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
+                print(f"@@@@ Set generic_org_type to {portfolio.organization_type}")
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
+                print(f"@@@@ Updated DomainRequest: {self._domain_request}")
         else:
+            # Should not see this statement wanyway bc we are creating w portfolio
+            print("XXXX User is not an org user - create domain request w/o portfolio")
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+            print(f"XXXX New DomainRequest created for non-org user: {self._domain_request}")
         return self._domain_request
 
     @property
@@ -255,8 +265,11 @@ class DomainRequestWizard(TemplateView):
 
     def done(self):
         """Called when the user clicks the submit button, if all forms are valid."""
+        print("***** DONE: Submitting")
         self.domain_request.submit()  # change the status to submitted
+        print("***** DONE: Saving")
         self.domain_request.save()
+        print(f"***** DONE Finished saving, domain request is {self.domain_request}")
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
@@ -439,6 +452,14 @@ class DomainRequestWizard(TemplateView):
 
     def get_context_data(self):
         """Define context for access on all wizard pages."""
+        print("in get_context_data")
+        # current_url = self.request.get_full_path()
+        # print("current_url is", current_url)
+        # print("reverse", reverse(f"{self.URL_NAMESPACE}:finished"))
+        # if current_url == reverse(f"{self.URL_NAMESPACE}:finished"):
+        #     return None
+
+        # print("past the check")
         requested_domain_name = None
         if self.domain_request.requested_domain is not None:
             requested_domain_name = self.domain_request.requested_domain.name
@@ -511,9 +532,11 @@ class DomainRequestWizard(TemplateView):
 
         forms = self.get_forms(use_post=True)
         if self.is_valid(forms):
+            print("YYYYY should come into here bc it's valid")
             # always save progress
             self.save(forms)
         else:
+            print("XXXXXX should not come into here to call get context data again bc it's valid")
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
@@ -593,8 +616,18 @@ class RequestingEntity(DomainRequestWizard):
                     "suborganization_state_territory": None,
                 }
             )
-
+        print("!!!!! DomainRequest Instance:", self.domain_request)
+        print("!!!!! Cleaned Data for RequestingEntityForm:", requesting_entity_form.cleaned_data)
+        print("!!!!! Suborganization Data Before Submit: Requested:", cleaned_data.get("requested_suborganization"))
+        print("!!!!! City:", cleaned_data.get("suborganization_city"))
+        print("!!!!! State/Territory:", cleaned_data.get("suborganization_state_territory"))
+        print("$$$$$ DomainRequest before form save:", self.domain_request)
+        print("$$$$$ forms is", forms)
+        # So maybe bc it's saving 2 forms, one actually gets saved and the other becomes a draft?
+        # super().save(forms[0])
         super().save(forms)
+        print("$$$$$ After super().save() called, domain request instance:", self.domain_request)
+        # super().save(forms)
 
 
 class PortfolioAdditionalDetails(DomainRequestWizard):
