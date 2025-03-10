@@ -1,12 +1,12 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, {% if portfolio_admin and portfolio_admin.first_name %}{% endif %}
+Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }}.{% endif %}
 
-An update was made to your .gov organization
+An update was made to your .gov organization.
 
 ORGANIZATION: {{ portfolio }}
 UPDATED BY: {{ editor.email }}
 UPDATED ON: {{ date }}
-INFORMATION UPDATED: put page where info was edited here
+INFORMATION UPDATED: {{ updated_info }}
 
 You can view this update in the .gov registrar <https://manage.get.gov>.
 

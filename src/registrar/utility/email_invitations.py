@@ -226,7 +226,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         )
     return all_admin_emails_sent
 
-def send_portfolio_organization_update_email(editor, portfolio):
+def send_portfolio_organization_update_email(editor, portfolio, updated_page):
     """
     Sends an email notification to all portfolio admin when portfolio organization is updated.
 
@@ -257,10 +257,12 @@ def send_portfolio_organization_update_email(editor, portfolio):
                 "emails/portfolio_org_update_notification_subject.txt",
                 to_address=user.email,
                 context={
+                    "requested_user": user,
                     "portfolio": portfolio,
                     "editor": editor,
                     "portfolio_admin": user,
                     "date": date.today(),
+                    "updated_info": "Organization"
                 },
             )
         except EmailSendingError:
