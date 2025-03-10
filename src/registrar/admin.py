@@ -2758,16 +2758,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "investigator",
         "portfolio",
         "sub_organization",
+        "senior_official",
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
-    # Currentl, there's only one for requests on DomainInfo
+    # Currently, there's only one for requests on DomainInfo
     ordering = ["-last_submitted_date", "requested_domain__name"]
-
-    change_form_template = "django/admin/domain_request_change_form.html"
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
