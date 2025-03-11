@@ -83,16 +83,13 @@ class RequestingEntityForm(RegistrarForm):
         Overrides RegistrarForm method in order to set sub_organization to 'other'
         on GETs of the RequestingEntityForm."""
         if obj is None:
-            print("!!!! FROM_DATABASE receive a NONE object")
             return {}
         # get the domain request as a dict, per usual method
         domain_request_dict = {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
-        print(f"**** FROM_DATABASE BEFORE modification: {domain_request_dict}")
         # set sub_organization to 'other' if is_requesting_new_suborganization is True
         if isinstance(obj, DomainRequest) and obj.is_requesting_new_suborganization():
             domain_request_dict["sub_organization"] = "other"
 
-        print(f"***** FROM_DATABASE: AFTER modification: {domain_request_dict}")
         return domain_request_dict
 
     def clean_sub_organization(self):
@@ -165,7 +162,6 @@ class RequestingEntityForm(RegistrarForm):
     def clean(self):
         """Custom clean implementation to handle our desired logic flow for suborganization."""
         cleaned_data = super().clean()
-        print(f"**** CLEAN: data before: {cleaned_data}")
 
         # Get the cleaned data
         suborganization = cleaned_data.get("sub_organization")
@@ -193,7 +189,6 @@ class RequestingEntityForm(RegistrarForm):
         elif not self.data and getattr(self, "_original_suborganization", None) == "other":
             self.cleaned_data["sub_organization"] = self._original_suborganization
 
-        print(f"**** CLEAN: clean data after: {cleaned_data}")
         return cleaned_data
 
 
