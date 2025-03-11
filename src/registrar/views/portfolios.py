@@ -865,7 +865,6 @@ class PortfolioOrganizationView(DetailView, FormMixin):
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
-            messages.success(self.request, "The portfolio organization information has been updated.")
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
@@ -937,10 +936,26 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
-            messages.success(self.request, "The portfolio organization information has been updated.")
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Handle the case when the form is valid."""
+        self.object = form.save(commit=False)
+        self.object.creator = self.request.user
+        self.object.save()
+        messages.success(self.request, "The senior official information for this portfolio has been updated.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle the case when the form is invalid."""
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        """Redirect to the overview page for the portfolio."""
+        return reverse("senior-official")
+
 
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
