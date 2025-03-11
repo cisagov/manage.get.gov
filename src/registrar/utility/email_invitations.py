@@ -446,7 +446,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
             logger.warning(
                 "Could not send email organization admin notification to %s " "for portfolio: %s",
                 user.email,
-                portfolio,
+                portfolio.organization_name,
                 exc_info=True,
             )
             all_emails_sent = False
