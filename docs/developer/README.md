@@ -218,7 +218,6 @@ def available(cls, domain: str) -> bool:
   return True 
 ```
 
-
 ### Testing behind logged in pages
 
 To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Zap`, add

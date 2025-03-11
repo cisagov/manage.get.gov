@@ -21,7 +21,6 @@ from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
-from registrar.models.utility.generic_helper import get_url_name
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +227,6 @@ class DomainRequestWizard(TemplateView):
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
-            # Should not see this statement wanyway bc we are creating w portfolio
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
         return self._domain_request
 
