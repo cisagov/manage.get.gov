@@ -1677,20 +1677,31 @@ class Domain(TimeStampedModel, DomainHelper):
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
         DF = epp.DiscloseField
-        fields = {}
-        disclose = False
-        match contact.contact_type:
-            case contact.ContactTypeChoices.SECURITY:
-                fields = {DF.EMAIL}
-                disclose = True
-            case contact.ContactTypeChoices.ADMINISTRATIVE:
-                fields = {DF.EMAIL, DF.VOICE, DF.ADDR}
-                disclose = True
-        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
-        return epp.Disclose(
-            flag=disclose,
-            fields=fields,
-        )
+        contact_disclose_map = {
+            contact.ContactTypeChoices.SECURITY: {
+                "fields": [DF.EMAIL],
+                "disclose": True
+            },
+            contact.ContactTypeChoices.ADMINISTRATIVE: {
+                "fields": [DF.EMAIL, DF.VOICE, DF.ADDR],
+                "types": {DF.ADDR: "loc"},
+                "disclose": True
+            },
+            contact.ContactTypeChoices.REGISTRANT: {
+                "fields": [],
+                "disclose": False,
+            },
+            contact.ContactTypeChoices.TECHNICAL: {
+                "fields": [],
+                "disclose": False,
+            }
+        }
+        if contact.contact_type not in contact_disclose_map:
+            raise ValueError(f"_disclose_fields => Invalid or misconfigured contact type '{contact.contact_type}'")
+
+        disclose_config = contact_disclose_map.get(contact.contact_type, {"fields": [], "disclose": False})
+        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_config.get("disclose"))
+        return epp.Disclose(**disclose_config)
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore
