@@ -846,7 +846,7 @@ class PortfolioOrganizationView(DetailView, FormMixin):
                 if not send_portfolio_organization_update_email(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
                 ):
-                    messages.warning(self.request, f"Could not send email notification to {user.email}.")
+                    messages.warning(self.request, f"Could not send email notification to all organization admins.")
                     return redirect(reverse("organization"))
             except Exception as e:
                 messages.error(
@@ -919,7 +919,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                 if not send_portfolio_organization_update_email(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
                 ):
-                    messages.warning(self.request, f"Could not send email notification to {user.email}.")
+                    messages.warning(self.request, f"Could not send email notification to all organization admins.")
                     return redirect(reverse("senior-official"))
             except Exception as e:
                 messages.error(
