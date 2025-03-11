@@ -599,9 +599,6 @@ class DotGovDomainForm(RegistrarForm):
             return_type=ValidationReturnType.FORM_VALIDATION_ERROR,
         )
         return validated
-    
-    def is_valid(self):
-        return super().is_valid()
 
     requested_domain = forms.CharField(
         label="What .gov domain do you want?",
