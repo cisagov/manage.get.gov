@@ -1688,18 +1688,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 "types": {DF.ADDR: "loc"},
                 "flag": True
             },
-            contact.ContactTypeChoices.REGISTRANT: {
-                "fields": [],
-                "flag": False,
-            },
-            contact.ContactTypeChoices.TECHNICAL: {
-                "fields": [],
-                "flag": False,
-            }
         }
-        if contact.contact_type not in contact_disclose_map:
-            raise ValueError(f"_disclose_fields => Invalid or misconfigured contact type '{contact.contact_type}'")
-
         disclose_config = contact_disclose_map.get(contact.contact_type, {"fields": [], "flag": False})
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_config.get("flag"))
         return epp.Disclose(**disclose_config)
