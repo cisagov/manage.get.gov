@@ -76,8 +76,10 @@
             <div class="repeatable-form">
               <div class="grid-row grid-gap-2 flex-end">
                 <div class="tablet:grid-col-4">
-                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                    {% input_with_errors form.key_tag %}
+                  {% with sublabel_text="Numbers (0-9) only." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.key_tag %}
+                    {% endwith %}
                   {% endwith %}
                 </div>
                 <div class="tablet:grid-col-4">
@@ -94,8 +96,10 @@
         
               <div class="grid-row">
                 <div class="grid-col">
-                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                    {% input_with_errors form.digest %}
+                  {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.digest %}
+                    {% endwith %}
                   {% endwith %}
                 </div>
               </div>
@@ -197,7 +201,7 @@
                           type="button" 
                           class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary dsdata-delete-kebab"
                           name="btn-delete-kebab-click"
-                          aria-label="Delete the DS record from the registry"
+                          aria-label="Delete DS record {{ forloop.counter }} from the registry"
                         >
                           Delete
                         </button>
@@ -209,9 +213,11 @@
               <!-- Edit row -->
               <tr class="edit-row display-none">
                 <td class="text-bottom">
-                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% with sublabel_text="Numbers (0-9) only." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
                       {% input_with_errors form.key_tag %}
                     {% endwith %}
+                  {% endwith %}
                 </td>
                 <td class="text-bottom">
                   {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
@@ -224,9 +230,11 @@
                     {% endwith %}
                 </td>
                 <td class="text-bottom">
-                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
                       {% input_with_errors form.digest %}
                     {% endwith %}
+                  {% endwith %}
                 </td>
                 <td class="padding-right-0 text-bottom">
                   <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
@@ -271,8 +279,10 @@
         <div class="repeatable-form">
           <div class="grid-row grid-gap-2 flex-end">
             <div class="tablet:grid-col-4">
-              {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.key_tag %}
+              {% with sublabel_text="Numbers (0-9) only." %}
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.key_tag %}
+                {% endwith %}
               {% endwith %}
             </div>
             <div class="tablet:grid-col-4">
@@ -289,8 +299,10 @@
     
           <div class="grid-row">
             <div class="grid-col">
-              {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.digest %}
+              {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.digest %}
+                {% endwith %}
               {% endwith %}
             </div>
           </div>

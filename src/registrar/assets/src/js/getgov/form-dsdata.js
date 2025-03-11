@@ -166,6 +166,11 @@ export class DSDataForm {
                 }
                 // show add ds data form
                 showElement(this.addDSDataForm);
+                // focus on key tag in the form
+                let keyTagInput = this.addDSDataForm.querySelector('input[name$="-key_tag"]');
+                if (keyTagInput) {
+                    keyTagInput.focus();
+                }
             }
         };
         if (this.formChanged) {
