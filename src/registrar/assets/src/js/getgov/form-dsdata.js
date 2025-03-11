@@ -390,8 +390,8 @@ export class DSDataForm {
     resetInputValuesInElement(domElement) {
         const inputEvent = new Event('input');
         const changeEvent = new Event('change');
-        // Reset text and number inputs
-        let inputs = domElement.querySelectorAll("input[type='text'], input[type='number']");
+        // Reset text inputs
+        let inputs = domElement.querySelectorAll("input[type='text']");
         inputs.forEach(input => {
             // Reset input value to its initial stored value
             input.value = input.dataset.initialValue;
@@ -415,15 +415,15 @@ export class DSDataForm {
      * @param {HTMLElement} readOnlyRow - The row where values will be displayed in a non-editable format.
      */
     copyEditRowToReadonlyRow(editRow, readOnlyRow) {
-        let numberInput = editRow.querySelector("input[type='number']");
+        let inputs = editRow.querySelectorAll("input[type='text']");
+        let keyTagInput = inputs[0];
         let selects = editRow.querySelectorAll("select");
-        let textInput = editRow.querySelector("input[type='text']");
+        let digestInput = inputs[1];
         let tds = readOnlyRow.querySelectorAll("td");
-        let updatedText = '';
 
-        // Copy the number input value
-        if (numberInput) {
-            tds[0].innerText = numberInput.value || "";
+        // Copy the key tag input value
+        if (keyTagInput) {
+            tds[0].innerText = keyTagInput.value || "";
         }
 
         // Copy select values (showing the selected label instead of value)
@@ -434,9 +434,9 @@ export class DSDataForm {
             }
         });
 
-        // Copy the text input value
-        if (textInput) {
-            tds[3].innerText = textInput.value || "";
+        // Copy the digest input value
+        if (digestInput) {
+            tds[3].innerText = digestInput.value || "";
         }
     }
 
