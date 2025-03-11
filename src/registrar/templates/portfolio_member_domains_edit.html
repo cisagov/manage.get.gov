@@ -15,11 +15,11 @@
 
     {% url 'members' as url %}
     {% if portfolio_permission %}
-        {% url 'member' pk=portfolio_permission.id as url2 %}
-        {% url 'member-domains' pk=portfolio_permission.id as url3 %}
+        {% url 'member' member_pk=portfolio_permission.id as url2 %}
+        {% url 'member-domains' member_pk=portfolio_permission.id as url3 %}
     {% else %}
-        {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
-        {% url 'invitedmember-domains' pk=portfolio_invitation.id as url3 %}
+        {% url 'invitedmember' invitedmember_pk=portfolio_invitation.id as url2 %}
+        {% url 'invitedmember-domains' invitedmember_pk=portfolio_invitation.id as url3 %}
     {% endif %}
     <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
         <ol class="usa-breadcrumb__list">
