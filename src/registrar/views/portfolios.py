@@ -35,7 +35,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
-    send_portfolio_organization_update_email
+    send_portfolio_organization_update_email,
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
@@ -841,7 +841,7 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
-            user=request.user
+            user = request.user
             try:
                 if not send_portfolio_organization_update_email(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
@@ -914,7 +914,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
-            user=request.user
+            user = request.user
             try:
                 if not send_portfolio_organization_update_email(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
