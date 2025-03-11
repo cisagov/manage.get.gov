@@ -702,8 +702,8 @@ class DotgovDomain(DomainRequestWizard):
     forms = [
         forms.DotGovDomainForm,
         forms.AlternativeDomainFormSet,
-        forms.ExecutiveNamingRequirementsYesNoForm,
-        forms.ExecutiveNamingRequirementsDetailsForm,
+        feb.ExecutiveNamingRequirementsYesNoForm,
+        feb.ExecutiveNamingRequirementsDetailsForm,
     ]
 
     def get_context_data(self):

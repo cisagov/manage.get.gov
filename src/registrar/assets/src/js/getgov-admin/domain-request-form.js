@@ -1,4 +1,4 @@
-import { hideElement, showElement, addOrRemoveSessionBoolean } from './helpers-admin.js';
+import { hideElement, showElement, addOrRemoveSessionBoolean, announceForScreenReaders } from './helpers-admin.js';
 import { handlePortfolioSelection } from './helpers-portfolio-dynamic-fields.js';
 
 function displayModalOnDropdownClick(linkClickedDisplaysModal, statusDropdown, actionButton, valueToCheck){
@@ -683,4 +683,34 @@ export function initDynamicDomainRequestFields(){
         handlePortfolioSelection();
         handleSuborgFieldsAndButtons();
     }
+}
+
+export function initFilterFocusListeners() {
+    document.addEventListener("DOMContentLoaded", function() {
+        let filters = document.querySelectorAll("#changelist-filter li a"); // Get list of all filter links
+        let clickedFilter = false;  // Used to determine if we are truly navigating away or not
+    
+        // Restore focus from localStorage
+        let lastClickedFilterId = localStorage.getItem("admin_filter_focus_id");
+        if (lastClickedFilterId) {
+            let focusedElement = document.getElementById(lastClickedFilterId);
+            if (focusedElement) {
+                //Focus the element
+                focusedElement.setAttribute("tabindex", "0"); 
+                focusedElement.focus({ preventScroll: true });
+
+                // Announce focus change for screen readers
+                announceForScreenReaders("Filter refocused on " + focusedElement.textContent);
+                localStorage.removeItem("admin_filter_focus_id");
+            }
+        }
+
+        // Capture clicked filter and store its ID
+        filters.forEach(filter => {
+            filter.addEventListener("click", function() {
+                localStorage.setItem("admin_filter_focus_id", this.id);
+                clickedFilter = true; // Mark that a filter was clicked
+            });
+        });
+    });
 }

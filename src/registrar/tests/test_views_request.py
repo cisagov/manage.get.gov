@@ -2975,7 +2975,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(intro_page.status_code, 200)
 
         # This user should also be allowed to edit existing ones
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, portfolio=portfolio)
         edit_page = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
@@ -3083,7 +3083,9 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user, portfolio=portfolio
+        )
         domain_request.save()
 
         detail_page = self.app.get(f"/domain-request/{domain_request.id}")
@@ -3223,13 +3225,17 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
                 additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
             )
+            domain_request.portfolio = portfolio
+            domain_request.save()
+            domain_request.refresh_from_db()
 
             # Check portfolio-specific breadcrumb
             portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
             self.assertContains(portfolio_page, "Domain requests")
-
+            domain_request.portfolio = None
+            domain_request.save()
             # Clean up portfolio
             permission.delete()
             portfolio.delete()
@@ -3356,15 +3362,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         - The user does not see the Domain and Domain requests buttons
         """
 
-        # This should unlock 4 steps by default.
-        # Purpose, .gov domain, current websites, and requirements for operating
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            user=self.user,
-        )
-        domain_request.anything_else = None
-        domain_request.save()
-
         federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
         # Add a portfolio
         portfolio = Portfolio.objects.create(
@@ -3381,6 +3378,14 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
             ],
         )
+
+        # This should unlock 4 steps by default.
+        # Purpose, .gov domain, current websites, and requirements for operating
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, portfolio=portfolio
+        )
+        domain_request.anything_else = None
+        domain_request.save()
 
         response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -3426,6 +3431,8 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
         # Data cleanup
+        domain_request.portfolio = None
+        domain_request.save()
         user_portfolio_permission.delete()
         portfolio.delete()
         federal_agency.delete()
@@ -3490,7 +3497,9 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         dummy_user, _ = User.objects.get_or_create(username="testusername123456")
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user, portfolio=portfolio
+        )
         domain_request.save()
 
         detail_page = self.app.get(f"/domain-request/viewonly/{domain_request.id}")

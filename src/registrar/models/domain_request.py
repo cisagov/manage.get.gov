@@ -1452,6 +1452,7 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.federal_type == BranchChoices.EXECUTIVE
         return False
+
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 

@@ -3,7 +3,7 @@
  * We will call this on the forms init, and also every time we add a form
  * 
  */
-function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
+function removeForm(e, formLabel, addButton, formIdentifier){
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
   let formToRemove = e.target.closest(".repeatable-form");
   formToRemove.remove();
@@ -38,48 +38,7 @@ function removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier){
         node.textContent = node.textContent.replace(formLabelRegex, `${formLabel} ${index + 1}`);
         node.textContent = node.textContent.replace(formExampleRegex, `ns${index + 1}`);
       }
-      
-      // If the node is a nameserver label, one of the first 2 which was previously 3 and up (not required)
-      // inject the USWDS required markup and make sure the INPUT is required
-      if (isNameserversForm && index <= 1 && node.innerHTML.includes('server') && !node.innerHTML.includes('*')) {
-
-        // Remove the word optional
-        innerSpan.textContent = innerSpan.textContent.replace(/\s*\(\s*optional\s*\)\s*/, '');
-
-        // Create a new element
-        const newElement = document.createElement('abbr');
-        newElement.textContent = '*';
-        newElement.setAttribute("title", "required");
-        newElement.classList.add("usa-hint", "usa-hint--required");
-
-        // Append the new element to the label
-        node.appendChild(newElement);
-        // Find the next sibling that is an input element
-        let nextInputElement = node.nextElementSibling;
-
-        while (nextInputElement) {
-          if (nextInputElement.tagName === 'INPUT') {
-            // Found the next input element
-            nextInputElement.setAttribute("required", "")
-            break;
-          }
-          nextInputElement = nextInputElement.nextElementSibling;
-        }
-        nextInputElement.required = true;
-      }
     });
-
-    // Display the add more button if we have less than 13 forms
-    if (isNameserversForm && forms.length <= 13) {
-      addButton.removeAttribute("disabled");
-    }
-
-    if (isNameserversForm && forms.length < 3) {
-      // Hide the delete buttons on the remaining nameservers
-      Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-        deleteButton.setAttribute("disabled", "true");
-      });
-    }
   });
 }
   
@@ -131,7 +90,6 @@ function markForm(e, formLabel){
  */
 function prepareNewDeleteButton(btn, formLabel) {
   let formIdentifier = "form"
-  let isNameserversForm = document.querySelector(".nameservers-form");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let addButton = document.querySelector("#add-form");
 
@@ -144,7 +102,7 @@ function prepareNewDeleteButton(btn, formLabel) {
   } else {
     // We will remove the forms and re-order the formset
     btn.addEventListener('click', function(e) {
-      removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier);
+      removeForm(e, formLabel, addButton, formIdentifier);
     });
   }
 }
@@ -157,7 +115,6 @@ function prepareNewDeleteButton(btn, formLabel) {
 function prepareDeleteButtons(formLabel) {
   let formIdentifier = "form"
   let deleteButtons = document.querySelectorAll(".delete-record");
-  let isNameserversForm = document.querySelector(".nameservers-form");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let addButton = document.querySelector("#add-form");
   if (isOtherContactsForm) {
@@ -174,7 +131,7 @@ function prepareDeleteButtons(formLabel) {
     } else {
       // We will remove the forms and re-order the formset
       deleteButton.addEventListener('click', function(e) {
-        removeForm(e, formLabel, isNameserversForm, addButton, formIdentifier);
+        removeForm(e, formLabel, addButton, formIdentifier);
       });
     }
   });
@@ -214,16 +171,14 @@ export function initFormsetsForms() {
   let addButton = document.querySelector("#add-form");
   let cloneIndex = 0;
   let formLabel = '';
-  let isNameserversForm = document.querySelector(".nameservers-form");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
   let isDsDataForm = document.querySelector(".ds-data-form");
   let isDotgovDomain = document.querySelector(".dotgov-domain-form");
-  // The Nameservers formset features 2 required and 11 optionals
-  if (isNameserversForm) {
-    // cloneIndex = 2;
-    formLabel = "Name server";
+  if( !(isOtherContactsForm || isDotgovDomain || isDsDataForm) ){
+    return
+  }
   // DNSSEC: DS Data
-  } else if (isDsDataForm) {
+  if (isDsDataForm) {
     formLabel = "DS data record";
   // The Other Contacts form
   } else if (isOtherContactsForm) {
@@ -234,11 +189,6 @@ export function initFormsetsForms() {
     formIdentifier = "dotgov_domain"
   }
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
-
-  // On load: Disable the add more button if we have 13 forms
-  if (isNameserversForm && document.querySelectorAll(".repeatable-form").length == 13) {
-    addButton.setAttribute("disabled", "true");
-  }
 
   // Hide forms which have previously been deleted
   hideDeletedForms()
@@ -258,33 +208,6 @@ export function initFormsetsForms() {
       // For the eample on Nameservers
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
-      // Some Nameserver form checks since the delete can mess up the source object we're copying
-      // in regards to required fields and hidden delete buttons
-      if (isNameserversForm) {
-
-        // If the source element we're copying has required on an input,
-        // reset that input
-        let formRequiredNeedsCleanUp = newForm.innerHTML.includes('*');
-        if (formRequiredNeedsCleanUp) {
-          newForm.querySelector('label abbr').remove();
-          // Get all input elements within the container
-          const inputElements = newForm.querySelectorAll("input");
-          // Loop through each input element and remove the 'required' attribute
-          inputElements.forEach((input) => {
-            if (input.hasAttribute("required")) {
-              input.removeAttribute("required");
-            }
-          });
-        }
-
-        // If the source element we're copying has an disabled delete button,
-        // enable that button
-        let deleteButton= newForm.querySelector('.delete-record');
-        if (deleteButton.hasAttribute("disabled")) {
-          deleteButton.removeAttribute("disabled");
-        }
-      }
-
       formNum++;
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
@@ -292,16 +215,20 @@ export function initFormsetsForms() {
         // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
         // since the form on the backend employs Django's DELETE widget.
         let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
-        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${totalShownForms + 1}`);
+        let newFormCount = totalShownForms + 1;
+        // update the header
+        let header = newForm.querySelector('legend h3');
+        header.textContent = `${formLabel} ${newFormCount}`;
+        header.id = `org-contact-${newFormCount}`;
+        // update accessibility elements on the delete buttons
+        let deleteDescription = newForm.querySelector('.delete-button-description');
+        deleteDescription.textContent = 'Delete new contact';
+        deleteDescription.id = `org-contact-${newFormCount}__name`;
+        let deleteButton = newForm.querySelector('button');
+        deleteButton.setAttribute("aria-labelledby", header.id);
+        deleteButton.setAttribute("aria-describedby", deleteDescription.id);
       } else {
-        // Nameservers form is cloned from index 2 which has the word optional on init, does not have the word optional
-        // if indices 0 or 1 have been deleted
-        let containsOptional = newForm.innerHTML.includes('(optional)');
-        if (isNameserversForm && !containsOptional) {
-          newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum} (optional)`);
-        } else {
-          newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
-        }
+        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
       }
       newForm.innerHTML = newForm.innerHTML.replace(formExampleRegex, `ns${formNum}`);
       newForm.innerHTML = newForm.innerHTML.replace(/\n/g, '');  // Remove newline characters
@@ -358,20 +285,6 @@ export function initFormsetsForms() {
       let newDeleteButton = newForm.querySelector(".delete-record");
       if (newDeleteButton)
         prepareNewDeleteButton(newDeleteButton, formLabel);
-
-      // Disable the add more button if we have 13 forms
-      if (isNameserversForm && formNum == 13) {
-        addButton.setAttribute("disabled", "true");
-      }
-
-      if (isNameserversForm && forms.length >= 2) {
-        // Enable the delete buttons on the nameservers
-        forms.forEach((form, index) => {
-          Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-            deleteButton.removeAttribute("disabled");
-          });
-        });
-      }
   }
 }
 
@@ -395,24 +308,5 @@ export function triggerModalOnDsDataForm() {
           clearInterval(tryToTriggerModal);
         }
     }, 50);
-  }
-}
-
-/**
- * Disable the delete buttons on nameserver forms on page load if < 3 forms
- *
- */
-export function nameserversFormListener() {
-  let isNameserversForm = document.querySelector(".nameservers-form");
-  if (isNameserversForm) {
-    let forms = document.querySelectorAll(".repeatable-form");
-    if (forms.length < 3) {
-      // Hide the delete buttons on the 2 nameservers
-      forms.forEach((form) => {
-        Array.from(form.querySelectorAll('.delete-record')).forEach((deleteButton) => {
-          deleteButton.setAttribute("disabled", "true");
-        });
-      });
-    }
   }
 }
