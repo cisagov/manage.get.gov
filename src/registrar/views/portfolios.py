@@ -957,7 +957,6 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         return reverse("senior-official")
 
 
-
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioMembersView(View):
 
