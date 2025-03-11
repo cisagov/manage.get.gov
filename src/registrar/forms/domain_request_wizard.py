@@ -607,6 +607,7 @@ class DotGovDomainForm(RegistrarForm):
         },
     )
 
+
 class PurposeDetailsForm(BaseDeletableRegistrarForm):
 
     field_name = "purpose"

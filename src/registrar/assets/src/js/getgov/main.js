@@ -1,5 +1,4 @@
 import { hookupYesNoListener, hookupCallbacksToRadioToggler } from './radios.js';
-import { hookupYesNoListener } from './radios.js';
 import { initDomainValidators } from './domain-validators.js';
 import { initFormsetsForms, triggerModalOnDsDataForm } from './formset-forms.js';
 import { initFormNameservers } from './form-nameservers'

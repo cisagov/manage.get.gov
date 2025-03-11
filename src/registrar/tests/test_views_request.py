@@ -2618,7 +2618,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_form["dotgov_domain-requested_domain"] = domain
         domain_form["dotgov_domain-feb_naming_requirements"] = "True"
         domain_form["dotgov_domain-feb_naming_requirements_details"] = "test"
-        with patch('registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain', return_value=domain):  # noqa
+        with patch(
+            "registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain", return_value=domain
+        ):  # noqa
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             domain_result = domain_form.submit()
 
@@ -2627,7 +2629,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         purpose_page = domain_result.follow()
 
         self.feb_purpose_page_tests(purpose_page)
-
 
     def feb_purpose_page_tests(self, purpose_page):
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")
