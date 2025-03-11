@@ -235,11 +235,11 @@ def _is_domain_manager(user, **kwargs):
 def _domain_exists_under_portfolio(portfolio, domain_pk):
     """Checks to see if the given domain exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
-    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if domain_pk is None:
+    if not domain_pk:
         logger.warning(
             "_domain_exists_under_portfolio => Could not find domain_pk. "
             "This is a non-issue if called from the right context."
@@ -251,11 +251,11 @@ def _domain_exists_under_portfolio(portfolio, domain_pk):
 def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
     """Checks to see if the given domain request exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
-    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if domain_request_pk is None:
+    if not domain_request_pk:
         logger.warning(
             "_domain_request_exists_under_portfolio => Could not find domain_request_pk. "
             "This is a non-issue if called from the right context."
@@ -267,11 +267,11 @@ def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
 def _member_exists_under_portfolio(portfolio, member_pk):
     """Checks to see if the given UserPortfolioPermission exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
-    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if member_pk is None:
+    if not member_pk:
         logger.warning(
             "_member_exists_under_portfolio => Could not find member_pk. "
             "This is a non-issue if called from the right context."
@@ -283,11 +283,11 @@ def _member_exists_under_portfolio(portfolio, member_pk):
 def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     """Checks to see if the given PortfolioInvitation exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
-    Returns True if the pk is None. Otherwise, returns a bool if said object exists.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
     """
     # The view expects this, and the page will throw an error without this if it needs it.
     # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
-    if invitedmember_pk is None:
+    if not invitedmember_pk:
         logger.warning(
             "_member_invitation_exists_under_portfolio => Could not find invitedmember_pk. "
             "This is a non-issue if called from the right context."
