@@ -659,6 +659,7 @@ class DomainDsdataForm(forms.Form):
         error_messages={
             "required": "Digest is required.",
         },
+        widget=forms.TextInput(attrs={"class": "text-wrap"}),
     )
 
     def clean(self):

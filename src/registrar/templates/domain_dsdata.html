@@ -146,7 +146,7 @@
                 <!-- Readonly row -->
                 <tr>
                   <td>{{ form.key_tag.value }}</td>
-                  <td>
+                  <td class="ellipsis ellipsis--15">
                     {% for value, label in form.algorithm.field.choices %}
                       {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
                         {{ label }}
