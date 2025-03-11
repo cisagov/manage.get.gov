@@ -1010,6 +1010,27 @@ def create_user(**kwargs):
     return user
 
 
+def create_omb_analyst_user(**kwargs):
+    """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
+    User = get_user_model()
+    p = "userpass"
+    user = User.objects.create_user(
+        username=kwargs.get("username", "ombanalystuser"),
+        email=kwargs.get("email", "ombanalyst@example.com"),
+        first_name=kwargs.get("first_name", "first"),
+        last_name=kwargs.get("last_name", "last"),
+        is_staff=kwargs.get("is_staff", True),
+        title=kwargs.get("title", "title"),
+        password=kwargs.get("password", p),
+        phone=kwargs.get("phone", "8003111234"),
+    )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="omb_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
+
+
 def create_test_user():
     username = "test_user"
     first_name = "First"

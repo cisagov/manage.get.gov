@@ -40,6 +40,7 @@ class User(AbstractUser):
 
         permissions = [
             ("analyst_access_permission", "Analyst Access Permission"),
+            ("omb_analyst_access_permission", "OMB Analyst Access Permission"),
             ("full_access_permission", "Full Access Permission"),
         ]
 

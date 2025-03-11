@@ -285,9 +285,11 @@ function handlePortfolioFields(){
                 handleStateTerritoryChange();
             });
         }
-        organizationTypeDropdown.addEventListener("change", function() {
-            handleOrganizationTypeChange();
-        });
+        if (organizationTypeDropdown) {
+            organizationTypeDropdown.addEventListener("change", function() {
+                handleOrganizationTypeChange();
+            });
+        }
     }
 
     // Run initial setup functions

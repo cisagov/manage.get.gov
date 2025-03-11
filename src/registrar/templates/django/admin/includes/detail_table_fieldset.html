@@ -69,7 +69,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "portfolio_senior_official" %}
         <div class="readonly">
             {% if original_object.portfolio.senior_official %}
-                <a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a>
+                {% if adminform.form.show_contact_as_plain_text %}
+                    {{ field.contents|striptags }}
+                {% else %}
+                    <a href="{% url 'admin:registrar_seniorofficial_change' original_object.portfolio.senior_official.id %}">{{ field.contents }}</a>
+                {% endif %}
             {% else %}
                 No senior official found.<br>
             {% endif %}
@@ -78,7 +82,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
         {% if all_contacts.count > 2 %}
             <div class="readonly">
                 {% for contact in all_contacts %}
-                    <a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a>{% if not forloop.last %}, {% endif %}
+                    {% if adminform.form.show_contact_as_plain_text %}
+                        {{ contact.get_formatted_name }}{% if not forloop.last %}, {% endif %}
+                    {% else %}
+                        <a href="{% url 'admin:registrar_contact_change' contact.id %}">{{ contact.get_formatted_name }}</a>{% if not forloop.last %}, {% endif %}
+                    {% endif %}
                 {% endfor %}
             </div>
         {% else %}
@@ -153,6 +161,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 <p>No additional members found.</p>
             {% endif %}
         </div>
+    {% elif field.field.name == "creator" and adminform.form.show_contact_as_plain_text %}
+        <div class="readonly">{{ field.contents|striptags }}</div>
+    {% elif field.field.name == "senior_official" and adminform.form.show_contact_as_plain_text %}
+        <div class="readonly">{{ field.contents|striptags }}</div>
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}

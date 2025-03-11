@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.contrib import admin
 from django.db.models import Avg, F
 
-from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_STAFF, grant_access
+from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
 from .. import models
 import datetime
 from django.utils import timezone
@@ -16,7 +16,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class AnalyticsView(View):
     def get(self, request):
         thirty_days_ago = datetime.datetime.today() - datetime.timedelta(days=30)
@@ -176,7 +176,7 @@ class AnalyticsView(View):
         return render(request, "admin/analytics.html", context)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataType(View):
     def get(self, request, *args, **kwargs):
         # match the CSV example with all the fields
@@ -227,7 +227,7 @@ class ExportMembersPortfolio(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataFull(View):
     def get(self, request, *args, **kwargs):
         # Smaller export based on 1
@@ -237,7 +237,7 @@ class ExportDataFull(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataFederal(View):
     def get(self, request, *args, **kwargs):
         # Federal only
@@ -247,7 +247,7 @@ class ExportDataFederal(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDomainRequestDataFull(View):
     """Generates a downloaded report containing all Domain Requests (except started)"""
 
@@ -259,7 +259,7 @@ class ExportDomainRequestDataFull(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataDomainsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -272,7 +272,7 @@ class ExportDataDomainsGrowth(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataRequestsGrowth(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -285,7 +285,7 @@ class ExportDataRequestsGrowth(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataManagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")
@@ -297,7 +297,7 @@ class ExportDataManagedDomains(View):
         return response
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_FULL_ACCESS)
 class ExportDataUnmanagedDomains(View):
     def get(self, request, *args, **kwargs):
         start_date = request.GET.get("start_date", "")

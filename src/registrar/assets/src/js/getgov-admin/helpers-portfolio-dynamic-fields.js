@@ -404,7 +404,7 @@ export function handlePortfolioSelection(
             updateSubOrganizationDropdown(portfolio_id);
 
             // Show fields relevant to a selected portfolio
-            showElement(suborganizationField);
+            if (suborganizationField) showElement(suborganizationField);
             hideElement(seniorOfficialField);
             showElement(portfolioSeniorOfficialField);
 
@@ -427,7 +427,7 @@ export function handlePortfolioSelection(
             // No portfolio is selected - reverse visibility of fields
 
             // Hide suborganization field as no portfolio is selected
-            hideElement(suborganizationField);
+            if (suborganizationField) hideElement(suborganizationField);
 
             // Show fields that are relevant when no portfolio is selected
             showElement(seniorOfficialField);
