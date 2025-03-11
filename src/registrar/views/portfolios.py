@@ -857,7 +857,7 @@ class PortfolioOrganizationView(DetailView, FormMixin):
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
-                    return redirect(reverse("organization"))
+                    return self.form_valid(form)
             except Exception as e:
                 messages.error(
                     request,
@@ -867,7 +867,7 @@ class PortfolioOrganizationView(DetailView, FormMixin):
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
             messages.success(self.request, "The portfolio organization information has been updated.")
-            return redirect(reverse("organization"))
+            return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
@@ -930,7 +930,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
-                    return redirect(reverse("senior-official"))
+                    return self.form_valid(form)
             except Exception as e:
                 messages.error(
                     request,
@@ -940,7 +940,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
             messages.success(self.request, "The portfolio organization information has been updated.")
-            return redirect(reverse("senior-official"))
+            return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
