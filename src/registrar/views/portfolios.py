@@ -857,7 +857,6 @@ class PortfolioOrganizationView(DetailView, FormMixin):
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
-                    return self.form_valid(form)
             except Exception as e:
                 messages.error(
                     request,
@@ -930,7 +929,6 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
-                    return self.form_valid(form)
             except Exception as e:
                 messages.error(
                     request,
