@@ -59,6 +59,7 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
+        self.domain_no_nameserver, _ = Domain.objects.get_or_create(name="nonameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
         self.domain_on_hold, _ = Domain.objects.get_or_create(
             name="on-hold.gov",
@@ -84,17 +85,23 @@ class TestWithDomainPermissions(TestWithUser):
         # We could simply use domain (igorville) but this will be more readable in tests
         # that inherit this setUp
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
-
-        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov")
+        self.domain_with_three_nameservers, _ = Domain.objects.get_or_create(name="threenameserversdomain.gov")
+        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversdomain.gov")
+        self.domain_with_twelve_nameservers, _ = Domain.objects.get_or_create(name="twelvenameserversdomain.gov")
+        self.domain_with_thirteen_nameservers, _ = Domain.objects.get_or_create(name="thirteennameserversdomain.gov")
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_thirteen_nameservers)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_twelve_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_three_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_no_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
@@ -121,7 +128,22 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
+            domain=self.domain_with_three_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
             domain=self.domain_with_four_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_twelve_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_thirteen_nameservers,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -132,6 +154,11 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_just_nameserver,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_no_nameserver,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -1479,11 +1506,17 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_no_nameserver.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
         # regarding required fields
+        nameservers_page.form["form-0-server"] = "ns1.nonameserver.com"
+        nameservers_page.form["form-0-ip"] = "127.0.0.1"
+        nameservers_page.form["form-1-server"] = ""
+        nameservers_page.form["form-1-ip"] = ""
         result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
@@ -1722,53 +1755,91 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         """
 
         nameserver1 = ""
-        nameserver2 = "ns2.igorville.gov"
-        nameserver3 = "ns3.igorville.gov"
+        nameserver2 = "ns2.threenameserversdomain.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = ""
-        valid_ip_2 = "128.0.0.2"
-        valid_ip_3 = "128.0.0.3"
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
+        valid_ip_2 = "128.8.8.1"
+        valid_ip_3 = "128.8.8.2"
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
+
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
+
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
-        nameserver1 = "ns1.igorville.gov"
+        nameserver1 = "ns1.threenameserversdomain.gov"
         nameserver2 = ""
-        nameserver3 = "ns3.igorville.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = "128.0.0.1"
         valid_ip_2 = ""
         valid_ip_3 = "128.0.0.3"
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
+
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1799,19 +1870,29 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Minimal check to ensure the form is loaded correctly
-        self.assertEqual(nameservers_page.form["form-0-server"].value, "ns1.my-nameserver-1.com")
-        self.assertEqual(nameservers_page.form["form-3-server"].value, "ns1.explosive-chicken-nuggets.com")
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "4",
+            "form-0-domain": "fournameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "fournameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "fournameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "fournameserversdomain.gov",
+            "form-3-server": nameserver4,
+            "form-3-ip": valid_ip_4,
+        }
 
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        nameservers_page.form["form-3-server"] = nameserver4
-        nameservers_page.form["form-3-ip"] = valid_ip_4
-        result = nameservers_page.form.submit()
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -1822,6 +1903,34 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_12_entries(self):
+        """Nameserver form does not present info alert when 12 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_twelve_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertNotContains(
+            nameservers_page, "You’ve reached the maximum amount of allowed name server records (13)."
+        )
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_13_entries(self):
+        """Nameserver form present3 info alert when 13 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_thirteen_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertContains(nameservers_page, "You’ve reached the maximum amount of allowed name server records (13).")
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_invalid(self):
@@ -1837,12 +1946,12 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-server"] = ""
         result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
-        # error text appears four times, twice at the top of the page,
-        # once around each required field.
+        # error text appears twice, once at the top of the page,
+        # once around the required field.
         self.assertContains(
             result,
             "At least two name servers are required.",
-            count=4,
+            count=2,
             status_code=200,
         )
 

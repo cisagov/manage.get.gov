@@ -30,6 +30,8 @@
         {% include "django/admin/includes/descriptions/verified_by_staff_description.html" %}
     {% elif opts.model_name == 'website' %}
         {% include "django/admin/includes/descriptions/website_description.html" %}
+    {% elif opts.model_name == 'userportfoliopermission' %}
+        {% include "django/admin/includes/descriptions/user_portfolio_permission_description.html" %}
     {% elif opts.model_name == 'portfolioinvitation' %}
         {% include "django/admin/includes/descriptions/portfolio_invitation_description.html" %}
     {% elif opts.model_name == 'allowedemail' %}

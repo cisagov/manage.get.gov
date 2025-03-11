@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
+from registrar import models
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
@@ -19,6 +20,7 @@ from registrar.admin import (
     MyHostAdmin,
     PortfolioInvitationAdmin,
     UserDomainRoleAdmin,
+    UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
     FsmModelResource,
     WebsiteAdmin,
@@ -175,7 +177,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Test for a description snippet
         self.assertContains(
-            response, "Domain invitations contain all individuals who have been invited to manage a .gov domain."
+            response, "This table contains all individuals who have been invited to manage a .gov domain."
         )
         self.assertContains(response, "Show more")
 
@@ -199,7 +201,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a domain here, it will trigger emails to the invitee and all managers of the domain",
+            "If you invite someone to a domain here, it will trigger email notifications.",
         )
 
     @less_console_noise_decorator
@@ -217,12 +219,12 @@ class TestDomainInvitationAdmin(WebTest):
             # Assert that the filters are added
             self.assertContains(response, "invited", count=5)
             self.assertContains(response, "Invited", count=2)
-            self.assertContains(response, "retrieved", count=2)
+            self.assertContains(response, "retrieved", count=3)
             self.assertContains(response, "Retrieved", count=2)
 
             # Check for the HTML context specificially
-            invited_html = '<a href="?status__exact=invited">Invited</a>'
-            retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
+            invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
+            retrieved_html = '<a id="status-filter-retrieved" href="?status__exact=retrieved">Retrieved</a>'
 
             self.assertContains(response, invited_html, count=1)
             self.assertContains(response, retrieved_html, count=1)
@@ -1166,7 +1168,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a portfolio here, it will not trigger an invitation email.",
+            "If you add someone to a portfolio here, it won't trigger any email notifications.",
         )
 
     @less_console_noise_decorator
@@ -1181,7 +1183,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         response = self.client.get(delete_url)
 
         # Check if the response contains the expected static message
-        expected_message = "If you remove someone from a portfolio here, it will not send any emails"
+        expected_message = "If you remove someone from a portfolio here, it won't trigger any email notifications."
         self.assertIn(expected_message, response.content.decode("utf-8"))
 
 
@@ -1230,7 +1232,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "Portfolio invitations contain all individuals who have been invited to become members of an organization.",
+            "This table contains all individuals who have been invited to become members of a portfolio.",
         )
         self.assertContains(response, "Show more")
 
@@ -1254,7 +1256,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a portfolio here, it will trigger an invitation email when you click",
+            "If you invite someone to a portfolio here, it will trigger email notifications.",
         )
 
     @less_console_noise_decorator
@@ -1269,14 +1271,14 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Assert that the filters are added
-        self.assertContains(response, "invited", count=4)
+        self.assertContains(response, "invited", count=5)
         self.assertContains(response, "Invited", count=2)
-        self.assertContains(response, "retrieved", count=2)
+        self.assertContains(response, "retrieved", count=3)
         self.assertContains(response, "Retrieved", count=2)
 
         # Check for the HTML context specificially
-        invited_html = '<a href="?status__exact=invited">Invited</a>'
-        retrieved_html = '<a href="?status__exact=retrieved">Retrieved</a>'
+        invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
+        retrieved_html = '<a id="status-filter-retrieved" href="?status__exact=retrieved">Retrieved</a>'
 
         self.assertContains(response, invited_html, count=1)
         self.assertContains(response, retrieved_html, count=1)
@@ -1636,6 +1638,143 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Check if the response contains the expected static message
         expected_message = "If you cancel the portfolio invitation here"
         self.assertIn(expected_message, response.content.decode("utf-8"))
+
+
+class PortfolioPermissionsFormTest(TestCase):
+
+    def setUp(self):
+        # Create a mock portfolio for testing
+        self.user = create_test_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.user)
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    def test_form_valid_with_required_fields(self):
+        """Test that the form is valid when required fields are filled correctly."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": "view_all_requests",
+            "domain_permissions": "view_all_domains",
+            "member_permissions": "view_members",
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_without_role(self):
+        """Test that the form is invalid if role is missing."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": "",  # Missing role
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertFalse(form.is_valid())
+        self.assertIn("role", form.errors)
+
+    def test_member_role_preserves_permissions(self):
+        """Ensure that selecting 'organization_member' keeps the additional permissions."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+            "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            "member_permissions": UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            "portfolio": self.portfolio.id,
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+
+        # Check if form is valid
+        self.assertTrue(form.is_valid())
+
+        # Test if permissions are correctly preserved
+        cleaned_data = form.cleaned_data
+        self.assertIn(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS, cleaned_data["request_permissions"])
+        self.assertIn(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS, cleaned_data["domain_permissions"])
+
+    def test_admin_role_clears_permissions(self):
+        """Ensure that selecting 'organization_admin' clears additional permissions."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+            "request_permissions": "view_all_requests",
+            "domain_permissions": "view_all_domains",
+            "member_permissions": "view_members",
+            "user": self.user.id,
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertTrue(form.is_valid())
+
+        # Simulate form save to check cleaned data behavior
+        cleaned_data = form.clean()
+        self.assertEqual(cleaned_data["role"], UserPortfolioRoleChoices.ORGANIZATION_ADMIN)
+        self.assertNotIn("request_permissions", cleaned_data["additional_permissions"])  # Permissions should be removed
+        self.assertNotIn("domain_permissions", cleaned_data["additional_permissions"])
+        self.assertNotIn("member_permissions", cleaned_data["additional_permissions"])
+
+    def test_invalid_permission_choice(self):
+        """Ensure invalid permissions are not accepted."""
+        # Mock the instance or use a test instance
+        test_instance = models.UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            ],
+        )
+        form_data = {
+            "portfolio": self.portfolio.id,
+            "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+            "request_permissions": "invalid_permission",  # Invalid choice
+        }
+        form = UserPortfolioPermissionsForm(data=form_data, instance=test_instance)
+        self.assertFalse(form.is_valid())
+        self.assertIn("request_permissions", form.errors)
 
 
 class TestHostAdmin(TestCase):
@@ -2186,7 +2325,7 @@ class TestUserDomainRoleAdmin(WebTest):
         # Test for a description snippet
         self.assertContains(
             response,
-            "If you add someone to a domain here, it will not trigger any emails.",
+            "If you add someone to a domain here, it won't trigger any email notifications.",
         )
 
     def test_domain_sortable(self):
@@ -3560,10 +3699,10 @@ class TestPortfolioAdmin(TestCase):
 
         display_admins = self.admin.display_admins(self.portfolio)
         url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
-        self.assertIn(f'<a href="{url}">2 administrators</a>', display_admins)
+        self.assertIn(f'<a href="{url}">2 admins</a>', display_admins)
 
         display_members = self.admin.display_members(self.portfolio)
-        self.assertIn(f'<a href="{url}">2 members</a>', display_members)
+        self.assertIn(f'<a href="{url}">2 basic members</a>', display_members)
 
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
