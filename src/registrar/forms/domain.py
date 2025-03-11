@@ -630,14 +630,10 @@ class DomainDsdataForm(forms.Form):
         if not re.match(r"^[0-9a-fA-F]+$", value):
             raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
 
-    key_tag = forms.IntegerField(
+    key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        validators=[
-            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-        ],
-        error_messages={"required": ("Key tag is required.")},
+        error_messages={"required": "Key tag is required."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -672,6 +668,22 @@ class DomainDsdataForm(forms.Form):
         cleaned_data = super().clean()
         digest_type = cleaned_data.get("digest_type", 0)
         digest = cleaned_data.get("digest", "")
+
+        # Convert key_tag to an integer safely
+        key_tag = cleaned_data.get("key_tag", 0)
+        try:
+            key_tag = int(key_tag)
+            if key_tag < 0 or key_tag > 65535:
+                self.add_error(
+                    "key_tag",
+                    DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE),
+                )
+        except ValueError:
+            self.add_error(
+                "key_tag",
+                DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS),
+            )
+
         # validate length of digest depending on digest_type
         if digest_type == 1 and len(digest) != 40:
             self.add_error(
