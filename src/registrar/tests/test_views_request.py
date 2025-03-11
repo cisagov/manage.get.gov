@@ -2644,6 +2644,21 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_page = purpose_result.follow()
         self.feb_additional_details_page_tests(additional_details_page)
 
+        additional_details_form = additional_details_page.forms[0]
+        additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
+        additional_details_form["portfolio_additional_details-first_name"] = "Testy"
+        additional_details_form["portfolio_additional_details-last_name"] = "Tester"
+        additional_details_form["portfolio_additional_details-email"] = "testy@town.com"
+        additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
+        additional_details_form["portfolio_additional_details-anything_else"] = "test"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_result = additional_details_form.submit()
+
+        # ---- REQUIREMENTS PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = additional_details_result.follow()
+        self.feb_requirements_page_tests(requirements_page)
+
     def feb_purpose_page_tests(self, purpose_page):
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")
 
@@ -2700,6 +2715,15 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Make sure the additional details form is present
         self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
         self.assertContains(additional_details_page, "additional_details-anything_else")
+
+    def feb_requirements_page_tests(self, requirements_page):
+        # Check for the 21st Century IDEA Act links
+        self.assertContains(requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/")
+        self.assertContains(requirements_page, "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf")
+        
+        # Check for the policy acknowledgement form
+        self.assertContains(requirements_page, "is_policy_acknowledged")
+        self.assertContains(requirements_page, "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

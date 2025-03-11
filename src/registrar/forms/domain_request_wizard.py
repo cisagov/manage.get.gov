@@ -885,6 +885,28 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     field_name = "has_cisa_representative"
 
 
+class PurposeDetailsForm(BaseDeletableRegistrarForm):
+
+    field_name = "purpose"
+
+    purpose = forms.CharField(
+        label="Purpose",
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                Will it be used for a website, email, or something else?"
+            }
+        ),
+        validators=[
+            MaxLengthValidator(
+                2000,
+                message="Response must be less than 2000 characters.",
+            )
+        ],
+        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
+    )
+
+
 class AnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=True,
@@ -934,6 +956,7 @@ class AnythingElseYesNoForm(BaseYesNoForm):
 
 
 class RequirementsForm(RegistrarForm):
+
     is_policy_acknowledged = forms.BooleanField(
         label="I read and agree to the requirements for operating a .gov domain.",
         error_messages={

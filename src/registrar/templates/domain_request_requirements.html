@@ -2,6 +2,10 @@
 {% load field_helpers %}
 {% load url_helpers %}
 
+{% block form_required_fields_help_text %}
+{# commented out so it does not appear on this page #}
+{% endblock %}
+
 {% block form_instructions %}
   <p>Please read this page. Check the box at the bottom to show that you agree to the requirements for operating a .gov domain.</p>
 <p>The .gov domain space exists to support a broad diversity of government missions. Generally, we don’t review or audit how government organizations use their registered domains. However, misuse of a .gov domain can reflect upon the integrity of the entire .gov space. There are categories of misuse that are statutorily prohibited or abusive in nature.</p>
@@ -53,19 +57,34 @@
   
   <p>Though a domain may expire, it will not automatically be put on hold or deleted. We’ll make extensive efforts to contact your organization before holding or deleting a domain.</p>
 
-{% endblock %}
+  {% if requires_feb_questions %}
+    <h2>Required and prohibited activities</h2>
+    <h3>Prohibitions on non-governmental use</h3>
 
-{% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
-{% endblock %}
+    <p>Agencies may not use a .gov domain name:
+      <ul class="usa-list"> 
+        <li>On behalf of a non-federal executive branch entity</li>
+        <li>For a non-governmental purpose</li>
+      </ul>
+    </p>
 
-{% block form_fields %}
+    <h3>Compliance with the 21st Century IDEA Act is required</h3>
+    <p>As required by the DOTGOV Act, agencies must ensure 
+      that any website or digital service that uses a .gov 
+      domain name is in compliance with the 
+      <a href="https://digital.gov/resources/delivering-digital-first-public-experience-act/" target="_blank" rel="noopener noreferrer">21st Century Integrated Digital Experience Act</a>.
+      and 
+      <a href="https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf" target="_blank" rel="noopener noreferrer">Guidance for Agencies</a>.
+    </p>
+    <h2>Acknowledgement of .gov domain requirements</h2>
+    {% input_with_errors forms.0.is_policy_acknowledged %}
+  {% else %}
     <fieldset class="usa-fieldset">
       <legend>
         <h2>Acknowledgement of .gov domain requirements</h2>
       </legend>
 
       {% input_with_errors forms.0.is_policy_acknowledged %}
-
     </fieldset>
+  {% endif %}
 {% endblock %}

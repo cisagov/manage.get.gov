@@ -15,7 +15,7 @@ from registrar.decorators import (
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
-from registrar.forms.domainrequestwizard import (purpose, additional_details)
+from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
@@ -183,7 +183,9 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        # TODO: remove this
+        return True
+        # return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
 
     @property
     def prefix(self):
@@ -606,9 +608,9 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
     forms = [
-        additional_details.WorkingWithEOPYesNoForm,
-        additional_details.EOPContactForm,
-        additional_details.FEBAnythingElseYesNoForm,
+        feb.WorkingWithEOPYesNoForm,
+        feb.EOPContactForm,
+        feb.FEBAnythingElseYesNoForm,
         forms.PortfolioAnythingElseForm,
     ]
 
@@ -642,6 +644,8 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             anything_else_forms_valid = False        
         if forms[2].cleaned_data.get("has_anything_else_text"):
             forms[3].fields["anything_else"].required = True
+            forms[3].fields["anything_else"].error_messages["required"] = "Please provide additional details you'd like us to know. \
+                If you have nothing to add, select 'No'."
             anything_else_forms_valid = forms[3].is_valid()        
         return (eop_forms_valid and anything_else_forms_valid)
 
@@ -745,12 +749,12 @@ class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
 
     forms = [
-        purpose.FEBPurposeOptionsForm,
-        purpose.PurposeDetailsForm,
-        purpose.FEBTimeFrameYesNoForm,
-        purpose.FEBTimeFrameDetailsForm,
-        purpose.FEBInteragencyInitiativeYesNoForm,
-        purpose.FEBInteragencyInitiativeDetailsForm,
+        feb.FEBPurposeOptionsForm,
+        forms.PurposeDetailsForm,
+        feb.FEBTimeFrameYesNoForm,
+        feb.FEBTimeFrameDetailsForm,
+        feb.FEBInteragencyInitiativeYesNoForm,
+        feb.FEBInteragencyInitiativeDetailsForm,
     ]
 
     def get_context_data(self):
@@ -927,6 +931,25 @@ class Requirements(DomainRequestWizard):
     template_name = "domain_request_requirements.html"
     forms = [forms.RequirementsForm]
 
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    # Override the get_forms method to set the policy acknowledgement label conditionally based on feb status
+    def get_forms(self, step=None, use_post=False, use_db=False, files=None):
+        forms_list = super().get_forms(step, use_post, use_db, files)
+        
+        # Pass the is_federal context to the form
+        for form in forms_list:
+            if isinstance(form, forms.RequirementsForm):
+                if self.requires_feb_questions():
+                    form.fields['is_policy_acknowledged'].label = "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain." # noqa: E501
+                else:
+                    form.fields['is_policy_acknowledged'].label = "I read and agree to the requirements for operating a .gov domain." # noqa: E501
+                
+        return forms_list
+
 
 class Review(DomainRequestWizard):
     template_name = "domain_request_review.html"
@@ -939,6 +962,7 @@ class Review(DomainRequestWizard):
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
+        context["requires_feb_questions"] = self.requires_feb_questions()
         return context
 
     def goto_next_step(self):
