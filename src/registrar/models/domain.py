@@ -1676,15 +1676,17 @@ class Domain(TimeStampedModel, DomainHelper):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
-        is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
-        fields = {DF.EMAIL}
-
-        hidden_security_emails = [email for email in DefaultEmail]
-        disclose = is_security and contact.email not in hidden_security_emails
-        # Delete after testing on other devices
+        fields = {}
+        disclose = False
+        match contact.contact_type:
+            case contact.ContactTypeChoices.SECURITY:
+                fields = {DF.EMAIL}
+                disclose = True
+            case contact.ContactTypeChoices.ADMINISTRATIVE:
+                fields = {DF.EMAIL, DF.VOICE, DF.ADDR}
+                disclose = True
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
-        # Will only disclose DF.EMAIL if its not the default
         return epp.Disclose(
             flag=disclose,
             fields=fields,
