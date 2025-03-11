@@ -15,7 +15,7 @@ from registrar.decorators import (
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
-from registrar.forms.domainrequestwizard import purpose
+from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
@@ -707,12 +707,12 @@ class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
 
     forms = [
-        purpose.FEBPurposeOptionsForm,
-        purpose.PurposeDetailsForm,
-        purpose.FEBTimeFrameYesNoForm,
-        purpose.FEBTimeFrameDetailsForm,
-        purpose.FEBInteragencyInitiativeYesNoForm,
-        purpose.FEBInteragencyInitiativeDetailsForm,
+        feb.FEBPurposeOptionsForm,
+        forms.PurposeDetailsForm,
+        feb.FEBTimeFrameYesNoForm,
+        feb.FEBTimeFrameDetailsForm,
+        feb.FEBInteragencyInitiativeYesNoForm,
+        feb.FEBInteragencyInitiativeDetailsForm,
     ]
 
     def get_context_data(self):
