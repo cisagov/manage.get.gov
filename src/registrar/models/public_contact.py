@@ -99,7 +99,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -116,7 +116,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -133,7 +133,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -150,7 +150,7 @@ class PublicContact(TimeStampedModel):
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
