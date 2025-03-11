@@ -1436,13 +1436,9 @@ class DomainRequest(TimeStampedModel):
 
     def is_feb(self) -> bool:
         """Is this domain request for a Federal Executive Branch agency?"""
-        if not self.generic_org_type:
-            # generic_org_type is either blank or None, assume no
-            return False
-        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
-            return self.federal_type == BranchChoices.EXECUTIVE
+        if self.portfolio:
+            return self.portfolio.federal_type == BranchChoices.EXECUTIVE
         return False
-
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
