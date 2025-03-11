@@ -232,9 +232,6 @@ class DomainRequestWizard(TemplateView):
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
-            if portfolio and not self._domain_request.federal_type:
-                self._domain_request.federal_type = portfolio.federal_type
-                self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(creator=self.request.user)
         return self._domain_request
@@ -474,7 +471,6 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
             }
         context["domain_request_id"] = self.domain_request.id
-        context["is_executive"] = self.domain_request.is_federal() and self.domain_request.federal_type == "Executive"
         return context
 
     def get_step_list(self) -> list:

@@ -600,9 +600,6 @@ class DotGovDomainForm(RegistrarForm):
         )
         return validated
 
-    def is_valid(self):
-        return super().is_valid()
-
     requested_domain = forms.CharField(
         label="What .gov domain do you want?",
         error_messages={
