@@ -177,16 +177,21 @@ class EOPContactForm(BaseDeletableRegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        # if not obj.eop_contact:
-        #     return {}
-        # return {
-        #     "first_name": obj.feb_eop_contact.first_name,
-        #     "last_name": obj.feb_eop_contact.last_name,
-        #     "email": obj.feb_eop_contact.email,
-        # }
-        return {}
+        if not obj.eop_contact:
+            return {}
+        return {
+            "first_name": obj.feb_eop_contact.first_name,
+            "last_name": obj.feb_eop_contact.last_name,
+            "email": obj.feb_eop_contact.email,
+        }
 
     def to_database(self, obj):
+        # This function overrides the behavior of the BaseDeletableRegistrarForm.
+        # in order to preserve deletable functionality, we need to call the
+        # superclass's to_database method if the form is marked for deletion.
+        if self.form_data_marked_for_deletion:
+            super().to_database(obj)
+            return
         if not self.is_valid():
             return
         obj.eop_contact = Contact.objects.create(
