@@ -1424,9 +1424,9 @@ class MockEppLib(TestCase):
     )
 
     mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
+        "defaultTech", "help@get.gov"
     )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")

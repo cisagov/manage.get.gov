@@ -1014,20 +1014,21 @@ class TestRegistrantContacts(MockEppLib):
             test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
             test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=False).__dict__
             # Separated for linter
-            disclose_email_field = {common.DiscloseField.EMAIL}
+            disclose_email_field = [common.DiscloseField.EMAIL]
+            self.maxDiff = None
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(flag=True, fields=disclose_email_field, types=None),
-                "email": "dotgov@cisa.dhs.gov",
+                "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
                 "id": "ThIq2NcRIDN7PauO",
                 "ident": None,
                 "notify_email": None,
                 "postal_info": common.PostalInfo(
-                    name="Registry Customer Service",
+                    name="CSD/CB – Attn: .gov TLD",
                     addr=common.ContactAddr(
-                        street=["4200 Wilson Blvd.", None, None],
+                        street=["1110 N. Glebe Rd", None, None],
                         city="Arlington",
                         pc="22201",
                         cc="US",
@@ -1043,16 +1044,16 @@ class TestRegistrantContacts(MockEppLib):
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(flag=False, fields=disclose_email_field, types=None),
-                "email": "dotgov@cisa.dhs.gov",
+                "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
                 "id": "ThrECENCHI76PGLh",
                 "ident": None,
                 "notify_email": None,
                 "postal_info": common.PostalInfo(
-                    name="Registry Customer Service",
+                    name="CSD/CB – Attn: .gov TLD",
                     addr=common.ContactAddr(
-                        street=["4200 Wilson Blvd.", None, None],
+                        street=["1110 N. Glebe Rd", None, None],
                         city="Arlington",
                         pc="22201",
                         cc="US",
@@ -1069,6 +1070,45 @@ class TestRegistrantContacts(MockEppLib):
             test_not_disclose["id"] = expected_not_disclose["id"]
             self.assertEqual(test_disclose, expected_disclose)
             self.assertEqual(test_not_disclose, expected_not_disclose)
+
+    @less_console_noise_decorator
+    def test_convert_public_contact_with_custom_fields(self):
+        """Test converting a contact with custom disclosure fields."""
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_administrative_contact()
+        DF = common.DiscloseField
+        
+        # Create contact with multiple disclosure fields
+        result = self._convertPublicContactToEpp(
+            dummy_contact, 
+            disclose_email=True, 
+            disclose_fields=[DF.EMAIL, DF.VOICE, DF.ADDR],
+            disclose_types={DF.ADDR: "loc"},
+        )
+        self.assertEqual(result.disclose.flag, True)
+        self.assertEqual(result.disclose.fields, [DF.EMAIL, DF.VOICE, DF.ADDR])
+        self.assertIn(DF.EMAIL, result.disclose.fields)
+        self.assertIn(DF.VOICE, result.disclose.fields)
+        self.assertIn(DF.ADDR, result.disclose.fields)
+        self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
+
+    @less_console_noise
+    def test_convert_public_contact_with_empty_fields(self):
+        """Test converting a contact with empty disclosure fields."""
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_security_contact()
+        
+        # Create contact with empty fields list
+        result = self._convertPublicContactToEpp(
+            dummy_contact, 
+            disclose_email=True, 
+            disclose_fields=[]
+        )
+        
+        # Verify disclosure settings
+        self.assertEqual(result.disclose.flag, True)
+        self.assertEqual(result.disclose.fields, [])
+        self.assertIsNone(result.disclose.types)
 
     def test_not_disclosed_on_default_security_contact(self):
         """
@@ -1101,7 +1141,9 @@ class TestRegistrantContacts(MockEppLib):
             expectedTechContact.domain = domain
             expectedTechContact.registry_id = "defaultTech"
             domain.technical_contact = expectedTechContact
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedTechContact, disclose_email=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                expectedTechContact, disclose_email=False, disclose_fields=[]
+            )
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
             self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
