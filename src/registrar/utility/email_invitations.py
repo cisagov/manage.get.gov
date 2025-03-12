@@ -245,6 +245,7 @@ def send_portfolio_organization_update_email(editor, portfolio, updated_page):
         EmailSendingError: If there is an error while sending the email.
     """
     editor_email = editor.email
+    all_emails_sent = True
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
         portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
