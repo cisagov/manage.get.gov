@@ -22,6 +22,7 @@ from registrar.models.utility.portfolio_helper import (
     get_domains_display,
     get_members_description_display,
     get_members_display,
+    get_portfolio_invitation_associations,
 )
 
 logger = logging.getLogger(__name__)
@@ -459,7 +460,14 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             if hasattr(e, "code"):
                 field = "email" if "email" in self.fields else None
                 if e.code == "has_existing_permissions":
-                    self.add_error(field, f"{self.instance.email} is already a member of another .gov organization.")
+                    existing_permissions, existing_invitations = (
+                        get_portfolio_invitation_associations(self.instance)
+                    )
+
+                    same_portfolio_for_permissions = existing_permissions.exclude(portfolio=self.instance.portfolio)
+                    same_portfolio_for_invitations = existing_invitations.exclude(portfolio=self.instance.portfolio)
+                    if same_portfolio_for_permissions.exists() or same_portfolio_for_invitations.exists():
+                        self.add_error(field, f"{self.instance.email} is already a member of another .gov organization.")
                     override_error = True
                 elif e.code == "has_existing_invitations":
                     self.add_error(
