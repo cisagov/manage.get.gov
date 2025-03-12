@@ -17,6 +17,7 @@ body:
       required: true
   - type: markdown
     id: acceptance-criteria-design
+    title: Acceptance criteria for design updates
     attributes:
       value: |
         > - [ ] Criteria 1 for design updates
