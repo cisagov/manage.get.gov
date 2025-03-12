@@ -659,7 +659,13 @@ class DomainDsdataForm(forms.Form):
         error_messages={
             "required": "Digest is required.",
         },
-        widget=forms.TextArea(attrs={"class": "text-wrap word-break", "rows": "2"}),
+        widget=forms.Textarea(
+            attrs={
+                "class": "text-wrap",
+                "aria-label": "Is there anything else you’d like us to know about your domain request? \
+                    Provide details below. You can enter up to 2000 characters"
+            }
+        ),
     )
 
     def clean(self):
