@@ -14,10 +14,11 @@ from registrar.forms.domain_request_wizard import (
     OtherContactsForm,
     RequirementsForm,
     TribalGovernmentForm,
-    PurposeForm,
     AnythingElseForm,
     AboutYourOrganizationForm,
 )
+from registrar.forms import PurposeDetailsForm
+
 from registrar.forms.domain import ContactForm
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,
@@ -257,7 +258,7 @@ class TestFormValidation(MockEppLib):
     @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
         """Response must be less than 2000 characters."""
-        form = PurposeForm(
+        form = PurposeDetailsForm(
             data={
                 "purpose": "Bacon ipsum dolor amet fatback strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
