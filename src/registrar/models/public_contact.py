@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from random import choices
 from string import ascii_uppercase, ascii_lowercase, digits
@@ -7,7 +8,13 @@ from django.db import models
 from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+    RegistryError,
+)
 
+logger = logging.getLogger(__name__)
 
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
@@ -86,6 +93,37 @@ class PublicContact(TimeStampedModel):
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
+
+    def get_contact_info_from_epp(self):
+        """Grabs the resultant contact information in epp for this public contact
+        by using the InfoContact command.
+        Returns `registry.send(req, cleaned=True).res_data[0]`."""
+        try:
+            req = commands.InfoContact(id=self.registry_id)
+            return registry.send(req, cleaned=True).res_data[0]
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
+                self.registry_id,
+                self.contact_type,
+                error.code,
+                error,
+            )
+            raise error
+    
+    # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
+    def debug_contact_info_epp(self):
+        results = self.get_contact_info_from_epp()
+        logger.info("Contact Info from EPP:")
+        logger.info("=====================")
+        for key, value in results.items():
+            logger.info(f"{key}: {value}")
+        
+        logger.info("Contact Info on PublicContact model (compare against EPP):")
+        logger.info("=====================")
+        for key in results.keys():
+            if value_on_model := getattr(self, key) is not None:
+                logger.info(f"{key}: {value_on_model}")
 
     @classmethod
     def get_default_registrant(cls):
