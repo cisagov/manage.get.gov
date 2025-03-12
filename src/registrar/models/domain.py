@@ -1350,20 +1350,6 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         return street_dict
 
-    def _request_contact_info(self, contact: PublicContact):
-        try:
-            req = commands.InfoContact(id=contact.registry_id)
-            return registry.send(req, cleaned=True).res_data[0]
-        except RegistryError as error:
-            logger.error(
-                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
-                contact.registry_id,
-                contact.contact_type,
-                error.code,
-                error,
-            )
-            raise error
-
     def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact | None:
         """Retrieves the desired PublicContact from the registry.
         This abstracts the caching and EPP retrieval for
@@ -1676,19 +1662,23 @@ class Domain(TimeStampedModel, DomainHelper):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
-        is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
         DF = epp.DiscloseField
-        fields = {DF.EMAIL}
-
-        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        disclose = is_security and contact.email not in hidden_security_emails
-        # Delete after testing on other devices
-        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
-        # Will only disclose DF.EMAIL if its not the default
-        return epp.Disclose(
-            flag=disclose,
-            fields=fields,
-        )
+        disclose_fields = {"fields": [], "flag": False}
+        match contact.contact_type:
+            case contact.ContactTypeChoices.SECURITY:
+                hidden_security_emails = [email for email in DefaultEmail]
+                disclose_fields = {
+                    "fields": {DF.EMAIL},
+                    "flag": contact.email not in hidden_security_emails,
+                }
+            case contact.ContactTypeChoices.ADMINISTRATIVE:
+                disclose_fields = {
+                    "fields": {DF.EMAIL, DF.VOICE, DF.ADDR},
+                    "types": {DF.ADDR: "loc"},
+                    "flag": True,
+                }
+        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
+        return epp.Disclose(**disclose_fields)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore
@@ -1773,13 +1763,13 @@ class Domain(TimeStampedModel, DomainHelper):
         """Try to fetch info about a contact. Create it if it does not exist."""
         logger.info("_get_or_create_contact() -> Fetching contact info")
         try:
-            return self._request_contact_info(contact)
+            return contact.get_contact_info_from_epp()
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                 logger.info("_get_or_create_contact()-> contact doesn't exist so making it")
                 contact.domain = self
                 contact.save()  # this will call the function based on type of contact
-                return self._request_contact_info(contact=contact)
+                return contact.get_contact_info_from_epp()
             else:
                 logger.error(
                     "Registry threw error for contact id %s"
@@ -2230,7 +2220,7 @@ class Domain(TimeStampedModel, DomainHelper):
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
         )
         # Grabs the expanded contact
-        full_object = self._request_contact_info(contact)
+        full_object = contact.get_contact_info_from_epp()
         # Maps it to type PublicContact
         mapped_object = self.map_epp_contact_to_public_contact(full_object, contact.registry_id, contact.contact_type)
         return self._get_or_create_public_contact(mapped_object)

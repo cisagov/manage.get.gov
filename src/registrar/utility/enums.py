@@ -29,16 +29,17 @@ class LogCode(Enum):
     DEFAULT = 5
 
 
-class DefaultEmail(Enum):
+class DefaultEmail(StrEnum):
     """Stores the string values of default emails
 
     Overview of emails:
-    - PUBLIC_CONTACT_DEFAULT: "dotgov@cisa.dhs.gov"
+    - PUBLIC_CONTACT_DEFAULT: "help@get.gov"
+    - OLD_PUBLIC_CONTACT_DEFAULT: "dotgov@cisa.dhs.gov"
     - LEGACY_DEFAULT: "registrar@dotgov.gov"
-    - HELP_EMAIL: "help@get.gov"
     """
 
-    PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
+    PUBLIC_CONTACT_DEFAULT = "help@get.gov"
+    OLD_PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
 
 

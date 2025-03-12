@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from random import choices
 from string import ascii_uppercase, ascii_lowercase, digits
@@ -7,6 +8,13 @@ from django.db import models
 from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+    RegistryError,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def get_id():
@@ -87,20 +95,45 @@ class PublicContact(TimeStampedModel):
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
+    def get_contact_info_from_epp(self, get_result_as_dict=False):
+        """Grabs the resultant contact information in epp for this public contact
+        by using the InfoContact command.
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
+        try:
+            req = commands.InfoContact(id=self.registry_id)
+            result = registry.send(req, cleaned=True).res_data[0]
+            return result if not get_result_as_dict else vars(result)
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
+                self.registry_id,
+                self.contact_type,
+                error.code,
+                error,
+            )
+            raise error
+
+    # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
+    def debug_contact_info_epp(self):
+        results = self.get_contact_info_from_epp(get_result_as_dict=True)
+        logger.info("Contact Info from EPP:")
+        logger.info("=====================")
+        for key, value in results.items():
+            logger.info(f"{key}: {value}")
+
     @classmethod
     def get_default_registrant(cls):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             registry_id=get_id(),
-            name="CSD/CB – Attn: Cameron Dixon",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="CISA – NGR STOP 0645",
-            street2="1110 N. Glebe Rd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
-            pc="20598-0645",
+            pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -110,14 +143,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
             registry_id=get_id(),
-            name="Program Manager",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -127,14 +160,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
             registry_id=get_id(),
-            name="Registry Customer Service",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -144,14 +177,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.SECURITY,
             registry_id=get_id(),
-            name="Registry Customer Service",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
