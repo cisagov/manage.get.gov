@@ -661,11 +661,10 @@ class DomainDsdataForm(forms.Form):
         },
         widget=forms.Textarea(
             attrs={
-                "class": "text-wrap",
-                "aria-label": "Is there anything else you’d like us to know about your domain request? \
-                    Provide details below. You can enter up to 2000 characters"
+                "class": "text-wrap resize-none",
+                "rows": "2"
             }
-        ),
+        )
     )
 
     def clean(self):
