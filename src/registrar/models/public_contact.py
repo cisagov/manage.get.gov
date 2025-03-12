@@ -113,9 +113,8 @@ class PublicContact(TimeStampedModel):
             raise error
     
     # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
-    @classmethod
-    def debug_contact_info_epp(cls):
-        results = cls.get_contact_info_from_epp(get_result_as_dict=True)
+    def debug_contact_info_epp(self):
+        results = self.get_contact_info_from_epp(get_result_as_dict=True)
         logger.info("Contact Info from EPP:")
         logger.info("=====================")
         for key, value in results.items():
@@ -124,7 +123,7 @@ class PublicContact(TimeStampedModel):
         logger.info("Contact Info on PublicContact model (compare against EPP):")
         logger.info("=====================")
         for key in results.keys():
-            if value_on_model := getattr(cls, key) is not None:
+            if value_on_model := getattr(self, key) is not None:
                 logger.info(f"{key}: {value_on_model}")
 
     @classmethod
