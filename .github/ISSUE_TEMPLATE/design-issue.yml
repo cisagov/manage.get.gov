@@ -15,16 +15,16 @@ body:
         Describe the issue so that someone who wasn't present for its discovery can understand why it matters. For stories, use the user story format (e.g., As a user, I want, so that). Use full sentences, plain language, and [good formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
     validations:
       required: true
-  - title: Acceptance criteria for design updates
   - type: markdown
     id: acceptance-criteria-design
     attributes:
-      value: |
-        > - [ ] Criteria 1 for design updates
+      item: |
+        ## Acceptance criteria for design
+        - [ ] Criteria 1 for design updates
   - type: markdown
     id: acceptance-criteria-content
     attributes:
-      value: |
+      item: |
         > - [ ] Criteria 1 for content
   - type: textarea
     id: additional-context
