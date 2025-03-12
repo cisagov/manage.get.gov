@@ -19,13 +19,14 @@ body:
     id: acceptance-criteria-design
     attributes:
       value: |
-        ### Acceptance criteria for design updates
+        #### Acceptance criteria for design updates
         - [ ] Criteria 1 for design updates
+        
   - type: markdown
     id: acceptance-criteria-content
     attributes:
       value: |
-        ### Acceptance criteria for content updates
+        #### Acceptance criteria for content updates
         - [ ] Criteria 1 for content
   - type: textarea
     id: additional-context
