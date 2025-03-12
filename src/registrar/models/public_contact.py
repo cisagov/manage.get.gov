@@ -16,6 +16,7 @@ from epplibwrapper import (
 
 logger = logging.getLogger(__name__)
 
+
 def get_id():
     """Generate a 16 character registry ID with a low probability of collision."""
     day = datetime.today().strftime("%A")[:2]
@@ -111,7 +112,7 @@ class PublicContact(TimeStampedModel):
                 error,
             )
             raise error
-    
+
     # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
     def debug_contact_info_epp(self):
         results = self.get_contact_info_from_epp(get_result_as_dict=True)
@@ -119,12 +120,6 @@ class PublicContact(TimeStampedModel):
         logger.info("=====================")
         for key, value in results.items():
             logger.info(f"{key}: {value}")
-        
-        logger.info("Contact Info on PublicContact model (compare against EPP):")
-        logger.info("=====================")
-        for key in results.keys():
-            if value_on_model := getattr(self, key) is not None:
-                logger.info(f"{key}: {value_on_model}")
 
     @classmethod
     def get_default_registrant(cls):
