@@ -1682,13 +1682,13 @@ class Domain(TimeStampedModel, DomainHelper):
             case contact.ContactTypeChoices.SECURITY:
                 hidden_security_emails = [email for email in DefaultEmail]
                 disclose_fields = {
-                    "fields": [DF.EMAIL],
+                    "fields": {DF.EMAIL},
                     "flag": contact.email not in hidden_security_emails,
                 }
             case contact.ContactTypeChoices.ADMINISTRATIVE:
-                disclose_fields = {"fields": [DF.EMAIL, DF.VOICE, DF.ADDR], "types": {DF.ADDR: "loc"}, "flag": True}
+                disclose_fields = {"fields": {DF.EMAIL, DF.VOICE, DF.ADDR}, "types": {DF.ADDR: "loc"}, "flag": True}
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
-        return epp.Disclose(**disclose_fields)
+        return epp.Disclose(**disclose_fields)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore

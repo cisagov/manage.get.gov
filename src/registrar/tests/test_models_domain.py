@@ -1014,7 +1014,7 @@ class TestRegistrantContacts(MockEppLib):
             test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
             test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=False).__dict__
             # Separated for linter
-            disclose_email_field = [common.DiscloseField.EMAIL]
+            disclose_email_field = {common.DiscloseField.EMAIL}
             self.maxDiff = None
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
@@ -1082,11 +1082,11 @@ class TestRegistrantContacts(MockEppLib):
         result = self._convertPublicContactToEpp(
             dummy_contact,
             disclose_email=True,
-            disclose_fields=[DF.EMAIL, DF.VOICE, DF.ADDR],
+            disclose_fields={DF.EMAIL, DF.VOICE, DF.ADDR},
             disclose_types={DF.ADDR: "loc"},
         )
         self.assertEqual(result.disclose.flag, True)
-        self.assertEqual(result.disclose.fields, [DF.EMAIL, DF.VOICE, DF.ADDR])
+        self.assertEqual(result.disclose.fields, {DF.EMAIL, DF.VOICE, DF.ADDR})
         self.assertIn(DF.EMAIL, result.disclose.fields)
         self.assertIn(DF.VOICE, result.disclose.fields)
         self.assertIn(DF.ADDR, result.disclose.fields)
@@ -1099,7 +1099,7 @@ class TestRegistrantContacts(MockEppLib):
         dummy_contact = domain.get_default_security_contact()
 
         # Create contact with empty fields list
-        result = self._convertPublicContactToEpp(dummy_contact, disclose_email=True, disclose_fields=[])
+        result = self._convertPublicContactToEpp(dummy_contact, disclose_email=True, disclose_fields={})
 
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
