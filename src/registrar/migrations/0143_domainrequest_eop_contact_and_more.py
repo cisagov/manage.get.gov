@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0141_domainrequest_feb_naming_requirements_and_more"),
+        ("registrar", "0142_domainrequest_feb_naming_requirements_and_more"),
     ]
 
     operations = [

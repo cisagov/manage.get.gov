@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0142_alter_portfolioinvitation_additional_permissions_and_more"),
+        ("registrar", "0141_alter_portfolioinvitation_additional_permissions_and_more"),
     ]
 
     operations = [
