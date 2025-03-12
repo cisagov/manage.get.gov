@@ -119,10 +119,11 @@ class PopulateScriptTemplate(ABC):
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
-        proposed_changes = f"""==Proposed Changes==
-            Number of {readable_class_name} objects to change: {len(records)}
-            These fields will be updated on each record: {fields_to_update}
-            """
+        proposed_changes = (
+            "==Proposed Changes==\n"
+            f"Number of {readable_class_name} objects to change: {len(records)}\n"
+            f"These fields will be updated on each record: {fields_to_update}"
+        )
 
         if verbose:
             proposed_changes = f"""{proposed_changes}

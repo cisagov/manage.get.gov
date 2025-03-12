@@ -870,7 +870,8 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error changing to new registrant error code is %s, error is %s" % (e.code, e))
             # TODO-error handling better here?
 
-    def _set_singleton_contact(self, contact: PublicContact, expectedType: str):  # noqa
+    @classmethod
+    def _set_singleton_contact(cls, contact: PublicContact, expectedType: str):  # noqa
         """Sets the contacts by adding them to the registry as new contacts,
         updates the contact if it is already in epp,
         deletes any additional contacts of the matching type for this domain
@@ -889,12 +890,12 @@ class Domain(TimeStampedModel, DomainHelper):
         # domain and type but a different id
         # like in highlander where there can only be one
         duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
-            domain=self, contact_type=contact.contact_type
+            domain=cls, contact_type=contact.contact_type
         )
 
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
-        errorCode = self._make_contact_in_registry(contact)
+        errorCode = cls._make_contact_in_registry(contact)
 
         # contact is already added to the domain, but something may have changed on it
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
@@ -915,11 +916,11 @@ class Domain(TimeStampedModel, DomainHelper):
             if isRegistrant:
                 # send update domain only for registant contacts
                 existing_contact.delete()
-                self._add_registrant_to_existing_domain(contact)
+                cls._add_registrant_to_existing_domain(contact)
             else:
                 # remove the old contact and add a new one
                 try:
-                    self._update_domain_with_contact(contact=existing_contact, rem=True)
+                    cls._update_domain_with_contact(contact=existing_contact, rem=True)
                     existing_contact.delete()
                 except Exception as err:
                     logger.error("Raising error after removing and adding a new contact")
@@ -928,13 +929,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # update domain with contact or update the contact itself
         if not isEmptySecurity:
             if not alreadyExistsInRegistry and not isRegistrant:
-                self._update_domain_with_contact(contact=contact, rem=False)
+                cls._update_domain_with_contact(contact=contact, rem=False)
             # if already exists just update
             elif alreadyExistsInRegistry:
                 current_contact = PublicContact.objects.filter(registry_id=contact.registry_id).get()
 
                 if current_contact.email != contact.email:
-                    self._update_epp_contact(contact=contact)
+                    cls._update_epp_contact(contact=contact)
         else:
             logger.info("removing security contact and setting default again")
 
@@ -944,10 +945,10 @@ class Domain(TimeStampedModel, DomainHelper):
             # don't let user delete the default without adding a new email
             if current_contact.email != PublicContact.get_default_security().email:
                 # remove the contact
-                self._update_domain_with_contact(contact=current_contact, rem=True)
+                cls._update_domain_with_contact(contact=current_contact, rem=True)
                 current_contact.delete()
                 # add new contact
-                security_contact = self.get_default_security_contact()
+                security_contact = cls.get_default_security_contact()
                 security_contact.save()
 
     @security_contact.setter  # type: ignore
