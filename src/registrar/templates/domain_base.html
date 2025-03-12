@@ -46,7 +46,7 @@
         {# messages block is under the back breadcrumb link #}
         {% if messages %}
         {% for message in messages %}
-        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2">
+        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2" role="alert">
             <div class="usa-alert__body">
             {{ message }}
             </div>
