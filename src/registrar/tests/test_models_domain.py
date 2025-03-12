@@ -988,9 +988,21 @@ class TestRegistrantContacts(MockEppLib):
             for contact in contacts:
                 expected_contact = contact[0]
                 actual_contact = contact[1]
-                is_security = expected_contact.contact_type == "security"
-                expectedCreateCommand = self._convertPublicContactToEpp(expected_contact, disclose_email=is_security)
-                # Should only be disclosed if the type is security, as the email is valid
+                if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact, disclose_email=True, disclose_fields=["email"]
+                    )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
+                        disclose_email=True,
+                        disclose_fields=["email", "voice", "addr"],
+                        disclose_types={"addr": "loc"},
+                    )
+                else:
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact, disclose_email=False, disclose_fields=[]
+                    )
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
                 # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)

@@ -1941,14 +1941,19 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose_email=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            disclose_fields = [DF.EMAIL]
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        di = common.Disclose(flag=disclose_email, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
