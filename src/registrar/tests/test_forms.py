@@ -17,7 +17,7 @@ from registrar.forms.domain_request_wizard import (
     AnythingElseForm,
     AboutYourOrganizationForm,
 )
-from registrar.forms.domainrequestwizard.purpose import PurposeDetailsForm
+from registrar.forms import PurposeDetailsForm
 
 from registrar.forms.domain import ContactForm
 from registrar.forms.portfolio import (
