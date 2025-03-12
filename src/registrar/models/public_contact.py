@@ -94,13 +94,14 @@ class PublicContact(TimeStampedModel):
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
-    def get_contact_info_from_epp(self):
+    def get_contact_info_from_epp(self, get_result_as_dict=False):
         """Grabs the resultant contact information in epp for this public contact
         by using the InfoContact command.
         Returns `registry.send(req, cleaned=True).res_data[0]`."""
         try:
             req = commands.InfoContact(id=self.registry_id)
-            return registry.send(req, cleaned=True).res_data[0]
+            result = registry.send(req, cleaned=True).res_data[0]
+            return result if not get_result_as_dict else vars(result)
         except RegistryError as error:
             logger.error(
                 "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
@@ -112,8 +113,9 @@ class PublicContact(TimeStampedModel):
             raise error
     
     # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
-    def debug_contact_info_epp(self):
-        results = self.get_contact_info_from_epp()
+    @classmethod
+    def debug_contact_info_epp(cls):
+        results = cls.get_contact_info_from_epp(get_result_as_dict=True)
         logger.info("Contact Info from EPP:")
         logger.info("=====================")
         for key, value in results.items():
