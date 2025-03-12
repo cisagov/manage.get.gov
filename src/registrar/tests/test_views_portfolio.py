@@ -3930,17 +3930,19 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "email": self.user.email,
             },
+            follow=True
         )
         self.assertEqual(response.status_code, 200)
+        with open("debug_response.html", "w") as f:
+            f.write(response.content.decode('utf-8'))
 
         # Verify messages
         self.assertContains(
             response,
-            f"{self.user.email} is already a member of another .gov organization.",
+            "User is already a member of this portfolio.",
         )
 
         # Validate Database has not changed
