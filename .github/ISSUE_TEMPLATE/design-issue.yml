@@ -17,16 +17,15 @@ body:
       required: true
   - type: markdown
     id: acceptance-criteria-design
-    label: Acceptance criteria for design updates
     attributes:
       value: |
-        > - [ ] Criteria 1
+        > - [ ] Criteria 1 for design updates
   - type: markdown
     id: acceptance-criteria-content
     label: Acceptance criteria for content updates
     attributes:
       value: |
-        > - [ ] Criteria 1
+        > - [ ] Criteria 1 for content
   - type: textarea
     id: additional-context
     attributes:
