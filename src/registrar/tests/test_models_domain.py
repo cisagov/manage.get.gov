@@ -1077,11 +1077,11 @@ class TestRegistrantContacts(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
         dummy_contact = domain.get_default_administrative_contact()
         DF = common.DiscloseField
-        
+
         # Create contact with multiple disclosure fields
         result = self._convertPublicContactToEpp(
-            dummy_contact, 
-            disclose_email=True, 
+            dummy_contact,
+            disclose_email=True,
             disclose_fields=[DF.EMAIL, DF.VOICE, DF.ADDR],
             disclose_types={DF.ADDR: "loc"},
         )
@@ -1092,19 +1092,15 @@ class TestRegistrantContacts(MockEppLib):
         self.assertIn(DF.ADDR, result.disclose.fields)
         self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
 
-    @less_console_noise
+    @less_console_noise_decorator
     def test_convert_public_contact_with_empty_fields(self):
         """Test converting a contact with empty disclosure fields."""
         domain, _ = Domain.objects.get_or_create(name="freeman.gov")
         dummy_contact = domain.get_default_security_contact()
-        
+
         # Create contact with empty fields list
-        result = self._convertPublicContactToEpp(
-            dummy_contact, 
-            disclose_email=True, 
-            disclose_fields=[]
-        )
-        
+        result = self._convertPublicContactToEpp(dummy_contact, disclose_email=True, disclose_fields=[])
+
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, [])
