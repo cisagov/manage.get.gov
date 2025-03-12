@@ -18,13 +18,13 @@ body:
   - type: markdown
     id: acceptance-criteria-design
     attributes:
-      item: |
+      value: |
         ## Acceptance criteria for design
         - [ ] Criteria 1 for design updates
   - type: markdown
     id: acceptance-criteria-content
     attributes:
-      item: |
+      value: |
         > - [ ] Criteria 1 for content
   - type: textarea
     id: additional-context
