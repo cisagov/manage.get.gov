@@ -180,9 +180,9 @@ class EOPContactForm(BaseDeletableRegistrarForm):
         if not obj.eop_contact:
             return {}
         return {
-            "first_name": obj.feb_eop_contact.first_name,
-            "last_name": obj.feb_eop_contact.last_name,
-            "email": obj.feb_eop_contact.email,
+            "first_name": obj.eop_contact.first_name,
+            "last_name": obj.eop_contact.last_name,
+            "email": obj.eop_contact.email,
         }
 
     def to_database(self, obj):
