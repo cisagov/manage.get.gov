@@ -97,7 +97,7 @@ class PublicContact(TimeStampedModel):
     def get_contact_info_from_epp(self, get_result_as_dict=False):
         """Grabs the resultant contact information in epp for this public contact
         by using the InfoContact command.
-        Returns `registry.send(req, cleaned=True).res_data[0]`."""
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
         try:
             req = commands.InfoContact(id=self.registry_id)
             result = registry.send(req, cleaned=True).res_data[0]
@@ -124,7 +124,7 @@ class PublicContact(TimeStampedModel):
         logger.info("Contact Info on PublicContact model (compare against EPP):")
         logger.info("=====================")
         for key in results.keys():
-            if value_on_model := getattr(self, key) is not None:
+            if value_on_model := getattr(cls, key) is not None:
                 logger.info(f"{key}: {value_on_model}")
 
     @classmethod
