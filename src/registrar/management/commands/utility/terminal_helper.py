@@ -204,8 +204,34 @@ class TerminalHelper:
         failed_header=None,
         display_as_str=False,
     ):
-        """Prints success, failed, and skipped counts, as well as
-        all affected objects."""
+        """Generates a formatted summary of script execution results with colored output.
+        
+        Displays counts and details of successful, failed, and skipped operations.
+        In debug mode or when prompted, shows full record details.
+        Uses color coding: green for success, yellow for skipped, red for failures.
+
+        Args:
+            to_update: Records that were successfully updated
+            failed_to_update: Records that failed to update
+            skipped: Records that were intentionally skipped
+            to_add: Records that were newly added
+            debug: If True, shows detailed record information
+            log_header: Custom header for the summary (default: "FINISHED")
+            skipped_header: Custom header for skipped records section
+            failed_header: Custom header for failed records section
+            display_as_str: If True, converts records to strings for display
+
+        Output Format:
+            [Header]
+            Added: X entries
+            Updated: Y entries 
+            Skipped: Z entries
+            Failed: W entries
+
+            Debug output (if enabled):
+            - Full record details for each category
+            - Color coded by operation type
+        """
         add_count = len(to_add)
         update_count = len(to_update)
         skipped_count = len(skipped)
