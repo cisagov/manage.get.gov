@@ -616,7 +616,8 @@ class PurposeDetailsForm(BaseDeletableRegistrarForm):
         label="Purpose",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                "aria-label": "What is the purpose of your requested domain? \
+                Describe how you’ll use your .gov domain. \
                 Will it be used for a website, email, or something else?"
             }
         ),
@@ -871,28 +872,6 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
 
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
-
-
-class PurposeDetailsForm(BaseDeletableRegistrarForm):
-
-    field_name = "purpose"
-
-    purpose = forms.CharField(
-        label="Purpose",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else?"
-            }
-        ),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
-        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
-    )
 
 
 class AnythingElseForm(BaseDeletableRegistrarForm):

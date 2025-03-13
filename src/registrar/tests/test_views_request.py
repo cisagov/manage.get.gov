@@ -2733,7 +2733,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
         self.assertContains(
             requirements_page,
-            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",
+            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
         )
 
         # Check for the policy acknowledgement form
