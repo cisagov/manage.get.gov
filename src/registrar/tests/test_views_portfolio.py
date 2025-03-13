@@ -2,7 +2,7 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, ANY
 from django_webtest import WebTest  # type: ignore
 from django.core.handlers.wsgi import WSGIRequest
 from registrar.models import (
@@ -398,10 +398,51 @@ class TestPortfolio(WebTest):
 
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             success_result_page = portfolio_org_name_page.form.submit()
-            self.assertEqual(success_result_page.status_code, 200)
+            self.assertEqual(success_result_page.status_code, 302)
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_org_update_sends_admin_email(self, mock_send_templated_email):
+        """Updating organization information emails organization admin."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            self.admin, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
+            
+            portfolio_additional_permissions = [
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
+            portfolio_permission_admin, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.admin, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            )
+
+            self.portfolio.address_line1 = "1600 Penn Ave"
+            self.portfolio.save()
+            portfolio_org_name_page = self.app.get(reverse("organization"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+            portfolio_org_name_page.form["city"] = "London"
+            portfolio_org_name_page.form["zipcode"] = "11111"
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            success_result_page = portfolio_org_name_page.form.submit()
+            self.assertEqual(success_result_page.status_code, 302)
+            
+            # Verify that the notification emails were sent to domain manager
+            mock_send_templated_email.assert_called_once_with(
+                "emails/portfolio_org_update_notification.txt",
+                "emails/portfolio_org_update_notification_subject.txt",
+                to_address=self.admin.email,
+                context=ANY,
+            )
 
     @less_console_noise_decorator
     def test_portfolio_in_session_when_organization_feature_active(self):

@@ -48,7 +48,6 @@ def send_templated_email(  # noqa
         SES client could not be accessed
         No valid recipient addresses are provided
     """
-
     if context is None:
         context = {}
 
