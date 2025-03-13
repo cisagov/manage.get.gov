@@ -607,7 +607,10 @@ class DotGovDomainForm(RegistrarForm):
     )
 
 
-class PurposeForm(RegistrarForm):
+class PurposeDetailsForm(BaseDeletableRegistrarForm):
+
+    field_name = "purpose"
+
     purpose = forms.CharField(
         label="Purpose",
         widget=forms.Textarea(

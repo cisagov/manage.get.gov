@@ -99,7 +99,7 @@
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
     {% endif %}
 
     {% if portfolio %}
