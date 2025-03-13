@@ -3,7 +3,7 @@
 import argparse
 import logging
 from django.core.management import BaseCommand, CommandError
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper, ScriptChangeTracker
 from registrar.models import DomainInformation, DomainRequest, FederalAgency, Suborganization, Portfolio, User
 from registrar.models.domain import Domain
 from registrar.models.domain_invitation import DomainInvitation
@@ -22,6 +22,13 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Creates a federal portfolio given a FederalAgency name"
 
+    class ChangeTracker:
+        def __init__(self):
+            self.add = []
+            self.update = []
+            self.skip = []
+            self.fail = []
+
     def __init__(self, *args, **kwargs):
         """Defines fields to track what portfolios were updated, skipped, or just outright failed."""
         super().__init__(*args, **kwargs)
@@ -32,14 +39,12 @@ class Command(BaseCommand):
         self.added_invitations = set()
         self.skipped_invitations = set()
         self.failed_managers = set()
-        self.portfolio_changes = {"add": [], "update": [], "skip": [], "fail": []}
-        self.suborganization_changes = {"add": [], "update": [], "skip": [], "fail": []}
-        self.domain_info_changes = {"add": [], "update": [], "skip": [], "fail": []}
-        self.domain_request_changes = {"add": [], "update": [], "skip": [], "fail": []}
-
-        self.user_domain_role_changes = {"add": [], "update": [], "skip": [], "fail": []}
-
-        self.portfolio_invitation_changes = {"add": [], "update": [], "skip": [], "fail": []}
+        self.portfolio_changes = self.ChangeTracker()
+        self.suborganization_changes = self.ChangeTracker()
+        self.domain_info_changes = self.ChangeTracker()
+        self.domain_request_changes = self.ChangeTracker()
+        self.user_domain_role_changes = self.ChangeTracker()
+        self.portfolio_invitation_changes = self.ChangeTracker()
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -102,7 +107,7 @@ class Command(BaseCommand):
         # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
         agencies = FederalAgency.objects.filter(**federal_agency_filter)
-        if not agencies or agencies.count() < 1:
+        if not agencies.exists():
             if agency_name:
                 raise CommandError(
                     f"Cannot find the federal agency '{agency_name}' in our database. "
@@ -117,29 +122,32 @@ class Command(BaseCommand):
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
             TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-            try:
-                # C901 'Command.handle' is too complex (12)
-                portfolio = self.handle_populate_portfolio(
-                    federal_agency, parse_domains, parse_requests, skip_existing_portfolios
+            portfolio, created = self.get_or_create_portfolio(federal_agency)
+            if skip_existing_portfolios and not created:
+                TerminalHelper.colorful_logger(
+                    logger.warning,
+                    TerminalColors.YELLOW,
+                    "Skipping modifications to suborgs, domain requests, and "
+                    "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
                 )
+            else:
+                self.create_suborganizations(portfolio, federal_agency)
+                if parse_domains:
+                    self.handle_portfolio_domains(portfolio, federal_agency)
+
+                if parse_requests:
+                    self.handle_portfolio_requests(portfolio, federal_agency)
+
                 portfolios.append(portfolio)
                 if add_managers:
                     self.add_managers_to_portfolio(portfolio)
-            except Exception as exec:
-                self.failed_portfolios.add(federal_agency)
-                logger.error(exec)
-                message = f"Failed to create portfolio '{federal_agency.agency}'"
-                TerminalHelper.colorful_logger(logger.info, TerminalColors.FAIL, message)
 
         # POST PROCESS STEP: Add additional suborg info where applicable.
         updated_suborg_count = self.post_process_all_suborganization_fields(agencies)
         message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
         TerminalHelper.log_script_run_summary(
-            self.portfolio_changes.get("add"),
-            self.portfolio_changes.get("fail"),
-            self.portfolio_changes.get("skip"),
-            [],
+            **vars(self.portfolio_changes),
             debug=False,
             log_header="============= FINISHED HANDLE PORTFOLIO STEP ===============",
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
@@ -148,20 +156,14 @@ class Command(BaseCommand):
 
         if add_managers:
             TerminalHelper.log_script_run_summary(
-                self.user_domain_role_changes.get("add"),
-                self.user_domain_role_changes.get("fail"),
-                self.user_domain_role_changes.get("skip"),
-                [],
+                **vars(self.user_domain_role_changes),
                 log_header="----- MANAGERS ADDED -----",
                 debug=False,
                 display_as_str=True,
             )
 
             TerminalHelper.log_script_run_summary(
-                self.added_invitations,
-                [],
-                self.skipped_invitations,
-                [],
+                **vars(self.portfolio_invitation_changes),
                 log_header="----- INVITATIONS ADDED -----",
                 debug=False,
                 skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
@@ -187,6 +189,29 @@ class Command(BaseCommand):
                 verify_message="*** THIS STEP IS OPTIONAL ***",
             )
             self.post_process_started_domain_requests(agencies, portfolios)
+
+    def get_or_create_portfolio(self, federal_agency):
+        portfolio, created = Portfolio.objects.get_or_create(
+            organization_name=federal_agency.agency,
+            federal_agency=federal_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            creator=User.get_default_user(),
+            notes="Auto-generated record",
+            senior_official=federal_agency.so_federal_agency.first(),
+        )
+
+        if created:
+            self.portfolio_changes.add.append(portfolio)
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Created portfolio '{portfolio}'")
+        else:
+            self.skipped_portfolios.add(portfolio)
+            TerminalHelper.colorful_logger(
+                logger.info,
+                TerminalColors.YELLOW,
+                f"Portfolio with organization name '{portfolio}' already exists. Skipping create.",
+            )
+        
+        return portfolio, created
 
     def add_managers_to_portfolio(self, portfolio: Portfolio):
         """
@@ -302,114 +327,39 @@ class Command(BaseCommand):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, skip_existing_portfolios):
-        """Attempts to create a portfolio. If successful, this function will
-        also create new suborganizations"""
-        portfolio, created = self.create_portfolio(federal_agency)
-        if skip_existing_portfolios and not created:
-            TerminalHelper.colorful_logger(
-                logger.warning,
-                TerminalColors.YELLOW,
-                "Skipping modifications to suborgs, domain requests, and "
-                "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
-            )
-            return portfolio
-
-        self.create_suborganizations(portfolio, federal_agency)
-        if parse_domains:
-            self.handle_portfolio_domains(portfolio, federal_agency)
-
-        if parse_requests:
-            self.handle_portfolio_requests(portfolio, federal_agency)
-
-        return portfolio
-
-    def create_portfolio(self, federal_agency):
-        """Creates a portfolio if it doesn't presently exist.
-        Returns portfolio, created."""
-        # Get the org name / senior official
-        org_name = federal_agency.agency
-        so = federal_agency.so_federal_agency.first() if federal_agency.so_federal_agency.exists() else None
-
-        # First just try to get an existing portfolio
-        portfolio = Portfolio.objects.filter(organization_name=org_name).first()
-        if portfolio:
-            self.skipped_portfolios.add(portfolio)
-            TerminalHelper.colorful_logger(
-                logger.info,
-                TerminalColors.YELLOW,
-                f"Portfolio with organization name '{org_name}' already exists. Skipping create.",
-            )
-            return portfolio, False
-
-        # Create new portfolio if it doesn't exist
-        portfolio = Portfolio.objects.create(
-            organization_name=org_name,
-            federal_agency=federal_agency,
-            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=User.get_default_user(),
-            notes="Auto-generated record",
-            senior_official=so,
-        )
-
-        self.updated_portfolios.add(portfolio)
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Created portfolio '{portfolio}'")
-
-        # Log if the senior official was added or not.
-        if portfolio.senior_official:
-            message = f"Added senior official '{portfolio.senior_official}'"
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-        else:
-            message = (
-                f"No senior official added to portfolio '{org_name}'. "
-                "None was returned for the reverse relation `FederalAgency.so_federal_agency.first()`"
-            )
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-
-        return portfolio, True
-
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
-        valid_agencies = DomainInformation.objects.filter(
-            federal_agency=federal_agency, organization_name__isnull=False
-        )
+        valid_agencies = federal_agency.domaininformation_set.filter(organization_name__isnull=False)
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
-        if not org_names:
-            message = (
-                "Could not add any suborganizations."
-                f"\nNo suborganizations were found for '{federal_agency}' when filtering on this name, "
-                "and excluding null organization_name records."
-            )
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.FAIL, message)
-            return
-
-        # Check for existing suborgs on the current portfolio
-        existing_suborgs = Suborganization.objects.filter(name__in=org_names, name__isnull=False)
-        if existing_suborgs.exists():
-            message = f"Some suborganizations already exist for portfolio '{portfolio}'."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, message)
-
-        # Create new suborgs, as long as they don't exist in the db already
-        new_suborgs = []
-        for name in org_names - set(existing_suborgs.values_list("name", flat=True)):
+        existing_org_names = set(
+            Suborganization.objects
+            .filter(name__in=org_names)
+            .values_list("name", flat=True)
+        )
+        for name in org_names - existing_org_names:
             if normalize_string(name) == normalize_string(portfolio.organization_name):
-                # You can use this to populate location information, when this occurs.
-                # However, this isn't needed for now so we can skip it.
+                self.suborganization_changes.skip.append(suborg)
                 message = (
                     f"Skipping suborganization create on record '{name}'. "
                     "The federal agency name is the same as the portfolio name."
                 )
                 TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
             else:
-                new_suborgs.append(Suborganization(name=name, portfolio=portfolio))  # type: ignore
+                suborg = Suborganization(name=name, portfolio=portfolio)
+                self.suborganization_changes.add.append(suborg)
 
-        if new_suborgs:
-            Suborganization.objects.bulk_create(new_suborgs)
+        suborg_add_count = len(self.suborganization_changes.add)
+        if suborg_add_count > 0:
+            Suborganization.objects.bulk_create(self.suborganization_changes.add)
             TerminalHelper.colorful_logger(
-                logger.info, TerminalColors.OKGREEN, f"Added {len(new_suborgs)} suborganizations"
+                logger.info, TerminalColors.OKGREEN, f"Added {len(suborg_add_count)} suborganizations to '{federal_agency}'."
             )
         else:
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, "No suborganizations added")
+            TerminalHelper.colorful_logger(
+                logger.warning, 
+                TerminalColors.YELLOW, 
+                f"No suborganizations added for '{federal_agency}'."
+            )
 
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """

@@ -192,12 +192,13 @@ class PopulateScriptTemplate(ABC):
 
 class TerminalHelper:
 
+
     @staticmethod
     def log_script_run_summary(
-        to_update,
-        failed_to_update,
-        skipped,
-        to_add,
+        add,
+        update,
+        skip,
+        fail,
         debug: bool,
         log_header=None,
         skipped_header=None,
@@ -221,27 +222,29 @@ class TerminalHelper:
             failed_header: Custom header for failed records section
             display_as_str: If True, converts records to strings for display
 
-        Output Format:
-            [Header]
-            Added: X entries
-            Updated: Y entries 
-            Skipped: Z entries
-            Failed: W entries
+        Output Format (if count > 0 for each category):
+            [log_header]
+            Added W entries
+            Updated X entries
+            [skipped_header]
+            Skipped updating Y entries
+            [failed_header]
+            Failed to update Z entries
 
-            Debug output (if enabled):
-            - Full record details for each category
-            - Color coded by operation type
+        Debug output (if enabled):
+        - Directly prints each list for each category (add, update, etc)
+        - Converts each item to string if display_as_str is True
         """
-        add_count = len(to_add)
-        update_count = len(to_update)
-        skipped_count = len(skipped)
-        failed_count = len(failed_to_update)
+        add_count = len(add)
+        update_count = len(update)
+        skipped_count = len(skip)
+        failed_count = len(fail)
         # Label, count, values, and debug-specific log color
         count_msgs = {
-            "added": ("Added", add_count, to_add, TerminalColors.OKBLUE),
-            "updated": ("Updated", update_count, to_update, TerminalColors.OKCYAN),
-            "skipped": ("Skipped updating", skipped_count, skipped, TerminalColors.YELLOW),
-            "failed": ("Failed to update", failed_count, failed_to_update, TerminalColors.FAIL),
+            "added": ("Added", add_count, add, TerminalColors.OKBLUE),
+            "updated": ("Updated", update_count, update, TerminalColors.OKCYAN),
+            "skipped": ("Skipped updating", skipped_count, skip, TerminalColors.YELLOW),
+            "failed": ("Failed to update", failed_count, fail, TerminalColors.FAIL),
         }
 
         if log_header is None:
