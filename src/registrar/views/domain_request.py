@@ -15,10 +15,12 @@ from registrar.decorators import (
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
+from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 
@@ -179,6 +181,9 @@ class DomainRequestWizard(TemplateView):
     def get_step_enum(self):
         """Determines which step enum we should use for the wizard"""
         return PortfolioDomainRequestStep if self.is_portfolio else Step
+
+    def requires_feb_questions(self) -> bool:
+        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
 
     @property
     def prefix(self):
@@ -652,18 +657,130 @@ class CurrentSites(DomainRequestWizard):
 
 class DotgovDomain(DomainRequestWizard):
     template_name = "domain_request_dotgov_domain.html"
-    forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
+    forms = [
+        forms.DotGovDomainForm,
+        forms.AlternativeDomainFormSet,
+        feb.ExecutiveNamingRequirementsYesNoForm,
+        feb.ExecutiveNamingRequirementsDetailsForm,
+    ]
 
     def get_context_data(self):
         context = super().get_context_data()
         context["generic_org_type"] = self.domain_request.generic_org_type
         context["federal_type"] = self.domain_request.federal_type
+        context["requires_feb_questions"] = self.requires_feb_questions()
         return context
+
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: DotGovDomainForm
+          1: AlternativeDomainFormSet
+          2: ExecutiveNamingRequirementsYesNoForm
+          3: ExecutiveNamingRequirementsDetailsForm
+        """
+        logger.debug("Validating dotgov domain form")
+        # If FEB questions aren't required, validate only non-FEB forms
+        if not self.requires_feb_questions():
+            forms_list[2].mark_form_for_deletion()
+            forms_list[3].mark_form_for_deletion()
+            return forms_list[0].is_valid() and forms_list[1].is_valid()
+
+        if not forms_list[2].is_valid():
+            logger.debug("Dotgov domain form is invalid")
+            # mark details form for deletion so that its errors don't show up
+            forms_list[3].mark_form_for_deletion()
+            return False
+
+        if forms_list[2].cleaned_data.get("feb_naming_requirements", None):
+            logger.debug("Marking details form for deletion")
+            # If the user selects "yes" or has made no selection, no details are needed.
+            forms_list[3].mark_form_for_deletion()
+            valid = all(form.is_valid() for i, form in enumerate(forms_list) if i != 3)
+        else:
+            # "No" was selected – details are required.
+            valid = all(form.is_valid() for form in forms_list)
+        return valid
 
 
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
-    forms = [forms.PurposeForm]
+
+    forms = [
+        feb.FEBPurposeOptionsForm,
+        forms.PurposeDetailsForm,
+        feb.FEBTimeFrameYesNoForm,
+        feb.FEBTimeFrameDetailsForm,
+        feb.FEBInteragencyInitiativeYesNoForm,
+        feb.FEBInteragencyInitiativeDetailsForm,
+    ]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: FEBPurposeOptionsForm
+          1: PurposeDetailsForm
+          2: FEBTimeFrameYesNoForm
+          3: FEBTimeFrameDetailsForm
+          4: FEBInteragencyInitiativeYesNoForm
+          5: FEBInteragencyInitiativeDetailsForm
+        """
+
+        feb_purpose_options_form = forms_list[0]
+        purpose_details_form = forms_list[1]
+        feb_timeframe_yes_no_form = forms_list[2]
+        feb_timeframe_details_form = forms_list[3]
+        feb_initiative_yes_no_form = forms_list[4]
+        feb_initiative_details_form = forms_list[5]
+
+        if not self.requires_feb_questions():
+            # if FEB questions don't apply, mark those forms for deletion
+            feb_purpose_options_form.mark_form_for_deletion()
+            feb_timeframe_yes_no_form.mark_form_for_deletion()
+            feb_timeframe_details_form.mark_form_for_deletion()
+            feb_initiative_yes_no_form.mark_form_for_deletion()
+            feb_initiative_details_form.mark_form_for_deletion()
+            # we only care about the purpose details form in this case since it's used in both instances
+            return purpose_details_form.is_valid()
+
+        if feb_purpose_options_form.is_valid():
+            option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
+            if option == "new":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Explain why a new domain is required."
+                }
+            elif option == "redirect":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Explain why a redirect is needed."
+                }
+            elif option == "other":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Provide details on how this domain will be used."
+                }
+            # If somehow none of these are true use the default error message
+        else:
+            # Ensure details form doesn't throw errors if it's not showing
+            purpose_details_form.mark_form_for_deletion()
+
+        feb_timeframe_valid = feb_timeframe_yes_no_form.is_valid()
+        feb_initiative_valid = feb_initiative_yes_no_form.is_valid()
+
+        if not feb_timeframe_valid or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_timeframe_details_form.mark_form_for_deletion()
+
+        if not feb_initiative_valid or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_initiative_details_form.mark_form_for_deletion()
+
+        valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
+
+        return valid
 
 
 class OtherContacts(DomainRequestWizard):
@@ -711,9 +828,7 @@ class OtherContacts(DomainRequestWizard):
 
 
 class AdditionalDetails(DomainRequestWizard):
-
     template_name = "domain_request_additional_details.html"
-
     forms = [
         forms.CisaRepresentativeYesNoForm,
         forms.CisaRepresentativeForm,
