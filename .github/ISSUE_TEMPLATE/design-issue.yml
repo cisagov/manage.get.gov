@@ -20,7 +20,8 @@ body:
     attributes:
       value: |
         #### Acceptance criteria for design updates
-        - [ ] Criteria 1 for design updates\
+        - [ ] Criteria 1 for design updates
+        \
   - type: markdown
     id: acceptance-criteria-content
     attributes:
