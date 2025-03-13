@@ -54,7 +54,7 @@
             </ul>
         {% endif %}
         {% if requires_feb_questions %}
-            <h4>Meets Naming Requirements</h4>
+            <h4 class="margin-bottom-0">Meets Naming Requirements</h4>
             <p class="margin-y-0">{{domain_request.feb_naming_requirements|yesno:"Yes,No"}}</p>
             {% if not domain_request.feb_naming_requirements %}
                 <p class="margin-y-0">{{domain_request.feb_naming_requirements_details}}</p>
@@ -67,7 +67,7 @@
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
         {% if requires_feb_questions %}
-            <h4>Purpose</h4>
+            <h4 class="margin-bottom-0">Purpose</h4>
             {% if domain_request.feb_purpose_choice == "website" %}
             <p class="margin-y-0">Used for a new website</p>
             {% elif domain_request.feb_purpose_choice == "redirect" %}
@@ -76,13 +76,13 @@
                 <p class="margin-y-0">Not for a website</p>
             {% endif %}
             <p class="margin-y-0">{{domain_request.purpose}}</p>
-            <h4>Target Time Frame</h4>
+            <h4 class="margin-bottom-0">Target Time Frame</h4>
             {% if domain_request.has_timeframe %}
                 <p class="margin-y-0">{{domain_request.time_frame_details}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
-            <h4>Interagency Initiative</h4>
+            <h4 class="margin-bottom-0">Interagency Initiative</h4>
             {% if domain_request.is_interagency_initiative %}
                 <p class="margin-y-0">{{domain_request.interagency_initiative_details}}</p>
             {% else %}
@@ -96,7 +96,7 @@
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
         {% if requires_feb_questions %}
-            <h4>EOP Stakeholder</h4>
+            <h4 class="margin-bottom-0">EOP Stakeholder</h4>
             {% if domain_request.working_with_eop %}
                 <p class="margin-y-0">{{domain_request.eop_contact.first_name}} {{domain_request.eop_contact.last_name}}</p>
                 <p class="margin-y-0">{{domain_request.eop_contact.email}}</p>
