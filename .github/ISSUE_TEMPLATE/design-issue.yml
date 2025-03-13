@@ -19,7 +19,7 @@ body:
     id: acceptance-criteria-design
     attributes:
       value: |
-        #### Acceptance criteria for design updates
+        ### Acceptance criteria for design updates
         - [ ] Used components from the Figma design system wherein possible
         - [ ] Merged draft design(s) into the official registrar or get.gov Figma pages
         - [ ] (If applicable) Updated components from the Figma design system if there's any inconsistencies with production
@@ -27,7 +27,6 @@ body:
     id: acceptance-criteria-content
     attributes:
       value: |
-        ####   
         #### Acceptance criteria for content updates
         - [ ] Criteria 1 for content
   - type: textarea
