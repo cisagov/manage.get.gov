@@ -32,6 +32,14 @@ class Command(BaseCommand):
         self.added_invitations = set()
         self.skipped_invitations = set()
         self.failed_managers = set()
+        self.portfolio_changes = {"add": [], "update": [], "skip": [], "fail": []}
+        self.suborganization_changes = {"add": [], "update": [], "skip": [], "fail": []}
+        self.domain_info_changes = {"add": [], "update": [], "skip": [], "fail": []}
+        self.domain_request_changes = {"add": [], "update": [], "skip": [], "fail": []}
+
+        self.user_domain_role_changes = {"add": [], "update": [], "skip": [], "fail": []}
+
+        self.portfolio_invitation_changes = {"add": [], "update": [], "skip": [], "fail": []}
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -44,11 +52,6 @@ class Command(BaseCommand):
         Required (at least one):
             --parse_requests: Add the created portfolio(s) to related DomainRequest records
             --parse_domains: Add the created portfolio(s) to related DomainInformation records
-            Note: You can use both --parse_requests and --parse_domains together
-
-        Optional (mutually exclusive with parse options):
-            --both: Shorthand for using both --parse_requests and --parse_domains
-                Cannot be used with --parse_requests or --parse_domains
 
         Optional:
             --add_managers: Add all domain managers of the portfolio's domains to the organization.
@@ -74,11 +77,6 @@ class Command(BaseCommand):
             help="Adds portfolio to DomainInformation",
         )
         parser.add_argument(
-            "--both",
-            action=argparse.BooleanOptionalAction,
-            help="Adds portfolio to both requests and domains",
-        )
-        parser.add_argument(
             "--add_managers",
             action=argparse.BooleanOptionalAction,
             help="Add all domain managers of the portfolio's domains to the organization.",
@@ -94,19 +92,14 @@ class Command(BaseCommand):
         branch = options.get("branch")
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
-        both = options.get("both")
         add_managers = options.get("add_managers")
         skip_existing_portfolios = options.get("skip_existing_portfolios")
 
-        if not both:
-            if not (parse_requests or parse_domains or add_managers):
-                raise CommandError(
-                    "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
-                )
-        else:
-            if parse_requests or parse_domains:
-                raise CommandError("You cannot pass --parse_requests or --parse_domains when passing --both.")
+        # Parse script params
+        if not (parse_requests or parse_domains or add_managers):
+            raise CommandError("You must specify at least one of --parse_requests, --parse_domains, or --add_managers.")
 
+        # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
         agencies = FederalAgency.objects.filter(**federal_agency_filter)
         if not agencies or agencies.count() < 1:
@@ -118,6 +111,8 @@ class Command(BaseCommand):
                 )
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
+
+        # Parse portfolios
         portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
@@ -125,7 +120,7 @@ class Command(BaseCommand):
             try:
                 # C901 'Command.handle' is too complex (12)
                 portfolio = self.handle_populate_portfolio(
-                    federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios
+                    federal_agency, parse_domains, parse_requests, skip_existing_portfolios
                 )
                 portfolios.append(portfolio)
                 if add_managers:
@@ -141,9 +136,10 @@ class Command(BaseCommand):
         message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
         TerminalHelper.log_script_run_summary(
-            self.updated_portfolios,
-            self.failed_portfolios,
-            self.skipped_portfolios,
+            self.portfolio_changes.get("add"),
+            self.portfolio_changes.get("fail"),
+            self.portfolio_changes.get("skip"),
+            [],
             debug=False,
             log_header="============= FINISHED HANDLE PORTFOLIO STEP ===============",
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
@@ -152,9 +148,10 @@ class Command(BaseCommand):
 
         if add_managers:
             TerminalHelper.log_script_run_summary(
-                self.added_managers,
-                self.failed_managers,
-                [],  # can't skip managers, can only add or fail
+                self.user_domain_role_changes.get("add"),
+                self.user_domain_role_changes.get("fail"),
+                self.user_domain_role_changes.get("skip"),
+                [],
                 log_header="----- MANAGERS ADDED -----",
                 debug=False,
                 display_as_str=True,
@@ -164,6 +161,7 @@ class Command(BaseCommand):
                 self.added_invitations,
                 [],
                 self.skipped_invitations,
+                [],
                 log_header="----- INVITATIONS ADDED -----",
                 debug=False,
                 skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
@@ -172,7 +170,7 @@ class Command(BaseCommand):
 
         # POST PROCESSING STEP: Remove the federal agency if it matches the portfolio name.
         # We only do this for started domain requests.
-        if parse_requests or both:
+        if parse_requests:
             prompt_message = (
                 "This action will update domain requests even if they aren't on a portfolio."
                 "\nNOTE: This will modify domain requests, even if no portfolios were created."
@@ -304,7 +302,7 @@ class Command(BaseCommand):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
-    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, both, skip_existing_portfolios):
+    def handle_populate_portfolio(self, federal_agency, parse_domains, parse_requests, skip_existing_portfolios):
         """Attempts to create a portfolio. If successful, this function will
         also create new suborganizations"""
         portfolio, created = self.create_portfolio(federal_agency)
@@ -318,10 +316,10 @@ class Command(BaseCommand):
             return portfolio
 
         self.create_suborganizations(portfolio, federal_agency)
-        if parse_domains or both:
+        if parse_domains:
             self.handle_portfolio_domains(portfolio, federal_agency)
 
-        if parse_requests or both:
+        if parse_requests:
             self.handle_portfolio_requests(portfolio, federal_agency)
 
         return portfolio
