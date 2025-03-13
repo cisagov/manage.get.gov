@@ -2,7 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
@@ -665,7 +665,7 @@ class DomainDsdataForm(forms.Form):
                 "class": "text-wrap usa-textarea--digest",
                 "hide_character_count": "True",
             }
-        )
+        ),
     )
 
     def clean(self):

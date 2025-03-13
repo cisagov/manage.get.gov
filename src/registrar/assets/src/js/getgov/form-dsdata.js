@@ -436,7 +436,7 @@ export class DSDataForm {
         if (selects[0]) {
             let selectedOption = selects[0].options[selects[0].selectedIndex];
             if (tds[1]) {
-                tds[1].innerHTML = `<span class="ellipsis sllipsis--15">${selectedOption ? selectedOption.text : ""}</span>`;
+                tds[1].innerHTML = `<span class="ellipsis ellipsis--15">${selectedOption ? selectedOption.text : ""}</span>`;
             }
         }
         if (selects[1]) {
