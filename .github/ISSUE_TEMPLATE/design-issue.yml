@@ -1,5 +1,6 @@
 name: Design Issue / story
 description: Specifically for design and content tickets
+labels: design, content
 
 body:
   - type: markdown
