@@ -23,7 +23,7 @@ from registrar.models import (
     PortfolioInvitation,
     User,
     UserDomainRole,
-    UserPortfolioPermission
+    UserPortfolioPermission,
 )
 from registrar.flows import PortfolioInvitationFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices

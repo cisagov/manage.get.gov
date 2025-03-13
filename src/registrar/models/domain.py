@@ -1513,12 +1513,11 @@ class Domain(StateControlledModel, DomainHelper):
                     logger.error(e.code)
                     raise e
 
-
     def _create_domain_in_registry(self, registrantID):
         """
         Creates the domain in the registry.
         This should only be called from withinside a transition function
-        
+
         Args:
             registrantID (str) - Public Contact id
         Returns:
@@ -1527,10 +1526,10 @@ class Domain(StateControlledModel, DomainHelper):
             RegistryError
         """
         req = commands.CreateDomain(
-                name=self.domain.name,
-                registrant=registrantID,
-                auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
-            )
+            name=self.domain.name,
+            registrant=registrantID,
+            auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
+        )
 
         try:
             registry.send(req, cleaned=True)
@@ -1538,14 +1537,13 @@ class Domain(StateControlledModel, DomainHelper):
         except RegistryError as err:
             if err.code != ErrorCode.OBJECT_EXISTS:
                 raise err
-            
+
     def addRegistrant(self):
         """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
-
 
     def addAllDefaults(self):
         """Adds default security, technical, and administrative contacts"""
@@ -1841,7 +1839,6 @@ class Domain(StateControlledModel, DomainHelper):
             flow.ready()
             self.save()
 
-
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
@@ -2116,4 +2113,3 @@ class Domain(StateControlledModel, DomainHelper):
             return self._cache[property]
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
-

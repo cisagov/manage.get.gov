@@ -10,11 +10,13 @@ from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 
 logger = logging.getLogger(__name__)
 
+
 class DomainRequestFlow(object):
     """
     Controls the "flow" between states of the Domain Request object
     Only pass DomainRequest to this class
     """
+
     status = fsm.State(DomainRequest.DomainRequestStatus, default=DomainRequest.DomainRequestStatus.STARTED)
 
     def __init__(self, domain_request):
@@ -22,7 +24,7 @@ class DomainRequestFlow(object):
 
     @status.setter()
     def _set_domain_request_status(self, value):
-        self.domain_request.__dict__["status"]=value
+        self.domain_request.__dict__["status"] = value
 
     @status.getter()
     def _get_domain_request_status(self):
@@ -78,10 +80,10 @@ class DomainRequestFlow(object):
 
     def domain_is_not_active(self):
         return self.domain_request.domain_is_not_active()
-    
+
     def investigator_exists_and_is_staff(self):
         return self.domain_request.investigator_exists_and_is_staff()
-    
+
     @status.transition(
         source=[
             DomainRequest.DomainRequestStatus.SUBMITTED,
@@ -217,9 +219,12 @@ class DomainRequestFlow(object):
             send_email=send_email,
         )
 
-
     @status.transition(
-        source=[DomainRequest.DomainRequestStatus.SUBMITTED, DomainRequest.DomainRequestStatus.IN_REVIEW, DomainRequest.DomainRequestStatus.ACTION_NEEDED],
+        source=[
+            DomainRequest.DomainRequestStatus.SUBMITTED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+        ],
         target=DomainRequest.DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
@@ -232,7 +237,11 @@ class DomainRequestFlow(object):
         )
 
     @status.transition(
-        source=[DomainRequest.DomainRequestStatus.IN_REVIEW, DomainRequest.DomainRequestStatus.ACTION_NEEDED, DomainRequest.DomainRequestStatus.APPROVED],
+        source=[
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.APPROVED,
+        ],
         target=DomainRequest.DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )

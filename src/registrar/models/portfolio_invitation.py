@@ -179,7 +179,6 @@ class PortfolioInvitation(StateControlledModel):
         """
         return get_members_description_display(self.roles, self.additional_permissions)
 
-
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
@@ -208,4 +207,3 @@ class PortfolioInvitation(StateControlledModel):
             user = users.first()
 
             cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
-

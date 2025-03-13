@@ -6,11 +6,13 @@ from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 
+
 class DomainInvitationFlow(object):
     """
     Controls the "flow" between states of the Domain Invitation object
     Only pass DomainInvitation to this class
     """
+
     status = fsm.State(DomainInvitation.DomainInvitationStatus, default=DomainInvitation.DomainInvitationStatus.INVITED)
 
     def __init__(self, domain_invitation):
@@ -18,14 +20,15 @@ class DomainInvitationFlow(object):
 
     @status.setter()
     def _set_domain_invitation_status(self, value):
-        self.domain_invitation.__dict__["status"]=value
-
+        self.domain_invitation.__dict__["status"] = value
 
     @status.getter()
     def _get_domain_invitation_status(self):
         return self.domain_invitation.status
-    
-    @status.transition(source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.RETRIEVED)
+
+    @status.transition(
+        source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.RETRIEVED
+    )
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 
@@ -51,12 +54,16 @@ class DomainInvitationFlow(object):
             # the invitation was retrieved. Log that this occurred.
             logger.warning("Invitation %s was retrieved for a role that already exists.", self.domain_invitation)
 
-    @status.transition(source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.CANCELED)
+    @status.transition(
+        source=DomainInvitation.DomainInvitationStatus.INVITED, target=DomainInvitation.DomainInvitationStatus.CANCELED
+    )
     def cancel_invitation(self):
         """When an invitation is canceled, change the status to canceled"""
         pass
 
-    @status.transition(source=DomainInvitation.DomainInvitationStatus.CANCELED, target=DomainInvitation.DomainInvitationStatus.INVITED)
+    @status.transition(
+        source=DomainInvitation.DomainInvitationStatus.CANCELED, target=DomainInvitation.DomainInvitationStatus.INVITED
+    )
     def update_cancellation_status(self):
         """When an invitation is canceled but reinvited, update the status to invited"""
         pass

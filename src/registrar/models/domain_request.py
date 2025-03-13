@@ -657,7 +657,7 @@ class DomainRequest(StateControlledModel):
     # def __setattr__(self, name, value):
     #     """ Overrides the setter ('=' operator) with custom logic """
 
-    #     if name == "status" and not object_is_being_created(self) :       
+    #     if name == "status" and not object_is_being_created(self) :
     #         raise ValidationError("Direct changes to 'status' are not allowed.")
     #     super().__setattr__(name, value)
 
@@ -1319,4 +1319,3 @@ class DomainRequest(StateControlledModel):
         if self.portfolio:
             return self.portfolio.federal_agency.get_federal_type_display()
         return self.get_federal_type_display()
-

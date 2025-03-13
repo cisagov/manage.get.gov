@@ -6,6 +6,7 @@ from .utility.state_controlled_model import StateControlledModel
 
 logger = logging.getLogger(__name__)
 
+
 class DomainInvitation(StateControlledModel):
     class Meta:
         """Contains meta information about this class"""
@@ -39,6 +40,3 @@ class DomainInvitation(StateControlledModel):
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
-    
-
-

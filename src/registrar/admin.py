@@ -11,11 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
-from registrar.flows import (
-    PortfolioInvitationFlow,
-    DomainInvitationFlow,
-    DomainRequestFlow
-)
+from registrar.flows import PortfolioInvitationFlow, DomainInvitationFlow, DomainRequestFlow
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.domain_invitation import DomainInvitationFlow

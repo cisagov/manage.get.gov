@@ -9,6 +9,7 @@ from epplibwrapper import RegistryError
 
 logger = logging.getLogger(__name__)
 
+
 class DomainFlow(object):
     """
     Controls the "flow" between states of the Domain object
@@ -22,12 +23,11 @@ class DomainFlow(object):
 
     @state.setter()
     def _set_domain_state(self, value):
-        self.domain.__dict__["state"]=value
+        self.domain.__dict__["state"] = value
 
     @state.getter()
     def _get_domain_state(self):
         return self.domain.state
-
 
     @state.transition(source=Domain.State.UNKNOWN, target=Domain.State.DNS_NEEDED)
     def dns_needed_from_unknown(self):
@@ -35,7 +35,7 @@ class DomainFlow(object):
 
         # Registrant must be created before the domain
         registrantID = self.domain.addRegistrant()
-        
+
         # create the domain in the registry and add Public contacts
         self.domain._create_domain_in_registry(registrantID)
         self.domain.addAllDefaults()
@@ -63,7 +63,6 @@ class DomainFlow(object):
         logger.info("clientHold()-> inside clientHold")
         if not ignoreEPP:
             self.domain._remove_client_hold()
-      
 
     @state.transition(source=[Domain.State.ON_HOLD, Domain.State.DNS_NEEDED], target=Domain.State.DELETED)
     def deletedInEpp(self):
@@ -113,7 +112,6 @@ class DomainFlow(object):
     @state.transition(
         source=[Domain.State.READY],
         target=Domain.State.DNS_NEEDED,
-       
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state

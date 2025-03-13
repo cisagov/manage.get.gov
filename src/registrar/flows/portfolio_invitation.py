@@ -7,26 +7,31 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 
 
-
 class PortfolioInvitationFlow(object):
     """
     Controls the "flow" between states of the Portfolio Invitation object
     Only pass PortfolioInvitation to this class
     """
-    status = fsm.State(PortfolioInvitation.PortfolioInvitationStatus, default=PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+
+    status = fsm.State(
+        PortfolioInvitation.PortfolioInvitationStatus, default=PortfolioInvitation.PortfolioInvitationStatus.INVITED
+    )
 
     def __init__(self, portfolio_invitation):
         self.portfolio_invitation = portfolio_invitation
 
     @status.setter()
     def _set_portfolio_invitation_status(self, value):
-        self.portfolio_invitation.__dict__["status"]=value
+        self.portfolio_invitation.__dict__["status"] = value
 
     @status.getter()
     def _get_portfolio_invitation_status(self):
         return self.portfolio_invitation.status
 
-    @status.transition(source=PortfolioInvitation.PortfolioInvitationStatus.INVITED, target=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+    @status.transition(
+        source=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        target=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED,
+    )
     def retrieve(self):
         """When an invitation is retrieved, create the corresponding permission.
 
@@ -50,8 +55,11 @@ class PortfolioInvitationFlow(object):
 
         if self.portfolio_invitation.roles and len(self.portfolio_invitation.roles) > 0:
             user_portfolio_permission.roles = self.portfolio_invitation.roles
-        
-        if self.portfolio_invitation.additional_permissions and len(self.portfolio_invitation.additional_permissions) > 0:
+
+        if (
+            self.portfolio_invitation.additional_permissions
+            and len(self.portfolio_invitation.additional_permissions) > 0
+        ):
             user_portfolio_permission.additional_permissions = self.portfolio_invitation.additional_permissions
-        
+
         user_portfolio_permission.save()
