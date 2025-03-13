@@ -31,13 +31,13 @@ body:
       value: |
         ### Acceptance criteria for content updates
         - [ ] Followed the [content guide](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?usp=sharing) instructions, including:
-          - [ ] Use official terms in the [word list](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.2et92p0) wherein possible, and avoiding synonyms or alternative terms
-          - [ ] Use [content blocks](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.23ckvvd) whenever possible (consider creating new content blocks for new content that will be referenced heavily)
-          - [ ] Check for readibility using the [Hemingway Editor](https://hemingwayapp.com/)
-          - [ ] Any external links have an [external link icon](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.4i7ojhp) and open in a new tab
+           - [ ] Use official terms in the [word list](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.2et92p0) wherein possible, and avoiding synonyms or alternative terms
+           - [ ] Use [content blocks](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.23ckvvd) whenever possible (consider creating new content blocks for new content that will be referenced heavily)
+           - [ ] Check for readibility using the [Hemingway Editor](https://hemingwayapp.com/)
+           - [ ] Any external links have an [external link icon](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.4i7ojhp) and open in a new tab
         - [ ] Instructions specific to get.gov ([instructions for how to update the public site](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.1pxezwc))
-          - [ ] Update content in the get.gov design file in Figma
-          - [ ] 
+           - [ ] Update content in the get.gov design file in Figma
+           - [ ] 
           
           
         <br>
