@@ -55,8 +55,12 @@
         {% endif %}
         {% if requires_feb_questions %}
             <h4 class="margin-bottom-0">Meets Naming Requirements</h4>
-            <p class="margin-y-0">{{domain_request.feb_naming_requirements|yesno:"Yes,No"}}</p>
-            {% if not domain_request.feb_naming_requirements %}
+            {% if domain_request.feb_naming_requirements is None %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+            {% elif domain_request.feb_naming_requirements %}
+                <p class="margin-y-0">Yes</p>
+            {% else %}
+                <p class="margin-y-0">No</p>
                 <p class="margin-y-0">{{domain_request.feb_naming_requirements_details}}</p>
             {% endif %}
         {% endif %}
@@ -72,18 +76,24 @@
             <p class="margin-y-0">Used for a new website</p>
             {% elif domain_request.feb_purpose_choice == "redirect" %}
                 <p class="margin-y-0">Used as a redirect for an existing website</p>
-            {% else %}
+            {% elif domain_request.feb_purpose_choice == "other" %}
                 <p class="margin-y-0">Not for a website</p>
+            {% else %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% endif %}
             <p class="margin-y-0">{{domain_request.purpose}}</p>
             <h4 class="margin-bottom-0">Target Time Frame</h4>
-            {% if domain_request.has_timeframe %}
+            {% if domain_request.has_timeframe is None %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+            {% elif domain_request.has_timeframe %}
                 <p class="margin-y-0">{{domain_request.time_frame_details}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
-            <h4 class="margin-bottom-0">Interagency Initiative</h4>
-            {% if domain_request.is_interagency_initiative %}
+            <h4 class="margin-bottom-0">EOP Stakeholder</h4>
+            {% if domain_request.is_interagency_initiative is None %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+            {% elif domain_request.is_interagency_initiative %}
                 <p class="margin-y-0">{{domain_request.interagency_initiative_details}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
@@ -97,7 +107,9 @@
         {% endwith %}
         {% if requires_feb_questions %}
             <h4 class="margin-bottom-0">EOP Stakeholder</h4>
-            {% if domain_request.working_with_eop %}
+            {% if domain_request.working_with_eop is None %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+            {% elif domain_request.working_with_eop %}
                 <p class="margin-y-0">{{domain_request.eop_contact.first_name}} {{domain_request.eop_contact.last_name}}</p>
                 <p class="margin-y-0">{{domain_request.eop_contact.email}}</p>
             {% else %}
