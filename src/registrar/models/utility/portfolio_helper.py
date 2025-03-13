@@ -257,9 +257,6 @@ def validate_user_portfolio_permission(user_portfolio_permission):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
-    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
-    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
-
     has_portfolio = bool(user_portfolio_permission.portfolio_id)
     portfolio_permissions = set(user_portfolio_permission._get_portfolio_permissions())
 
@@ -346,7 +343,6 @@ def validate_portfolio_invitation(portfolio_invitation):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
-    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     User = get_user_model()
 

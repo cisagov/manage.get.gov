@@ -3933,11 +3933,11 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "email": self.user.email,
             },
-            follow=True
+            follow=True,
         )
         self.assertEqual(response.status_code, 200)
         with open("debug_response.html", "w") as f:
-            f.write(response.content.decode('utf-8'))
+            f.write(response.content.decode("utf-8"))
 
         # Verify messages
         self.assertContains(
