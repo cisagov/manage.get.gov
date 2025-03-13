@@ -631,21 +631,23 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
         if not forms[0].is_valid():
             # If the user isn't working with EOP, don't validate the EOP contact form
             forms[1].mark_form_for_deletion()
-            eop_forms_valid = False        
+            eop_forms_valid = False
         if forms[0].cleaned_data.get("working_with_eop"):
             eop_forms_valid = forms[1].is_valid()
         else:
-            forms[1].mark_form_for_deletion()        
+            forms[1].mark_form_for_deletion()
         anything_else_forms_valid = True
         if not forms[2].is_valid():
             forms[3].mark_form_for_deletion()
-            anything_else_forms_valid = False        
+            anything_else_forms_valid = False
         if forms[2].cleaned_data.get("has_anything_else_text"):
             forms[3].fields["anything_else"].required = True
-            forms[3].fields["anything_else"].error_messages["required"] = "Please provide additional details you'd like us to know. \
+            forms[3].fields["anything_else"].error_messages[
+                "required"
+            ] = "Please provide additional details you'd like us to know. \
                 If you have nothing to add, select 'No'."
-            anything_else_forms_valid = forms[3].is_valid()        
-        return (eop_forms_valid and anything_else_forms_valid)
+            anything_else_forms_valid = forms[3].is_valid()
+        return eop_forms_valid and anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -937,15 +939,19 @@ class Requirements(DomainRequestWizard):
     # Override the get_forms method to set the policy acknowledgement label conditionally based on feb status
     def get_forms(self, step=None, use_post=False, use_db=False, files=None):
         forms_list = super().get_forms(step, use_post, use_db, files)
-        
+
         # Pass the is_federal context to the form
         for form in forms_list:
             if isinstance(form, forms.RequirementsForm):
                 if self.requires_feb_questions():
-                    form.fields['is_policy_acknowledged'].label = "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain." # noqa: E501
+                    form.fields["is_policy_acknowledged"].label = (
+                        "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain."  # noqa: E501
+                    )
                 else:
-                    form.fields['is_policy_acknowledged'].label = "I read and agree to the requirements for operating a .gov domain." # noqa: E501
-                
+                    form.fields["is_policy_acknowledged"].label = (
+                        "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
+                    )
+
         return forms_list
 
 

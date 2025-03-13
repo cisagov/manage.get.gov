@@ -2718,12 +2718,20 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def feb_requirements_page_tests(self, requirements_page):
         # Check for the 21st Century IDEA Act links
-        self.assertContains(requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/")
-        self.assertContains(requirements_page, "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf")
-        
+        self.assertContains(
+            requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/"
+        )
+        self.assertContains(
+            requirements_page,
+            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
+        )
+
         # Check for the policy acknowledgement form
         self.assertContains(requirements_page, "is_policy_acknowledged")
-        self.assertContains(requirements_page, "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.")
+        self.assertContains(
+            requirements_page,
+            "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.",
+        )
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
