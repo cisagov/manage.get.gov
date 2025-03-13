@@ -433,16 +433,22 @@ export class DSDataForm {
         }
 
         // Copy select values (showing the selected label instead of value)
-        selects.forEach((select, index) => {
-            let selectedOption = select.options[select.selectedIndex];
-            if (tds[index + 1]) {
-                tds[index + 1].innerText = selectedOption ? selectedOption.text : "";
+        if (selects[0]) {
+            let selectedOption = selects[0].options[selects[0].selectedIndex];
+            if (tds[1]) {
+                tds[1].innerHTML = `<span class="ellipsis sllipsis--15">${selectedOption ? selectedOption.text : ""}</span>`;
             }
-        });
+        }
+        if (selects[1]) {
+            let selectedOption = selects[1].options[selects[1].selectedIndex];
+            if (tds[2]) {
+                tds[2].innerText = selectedOption ? selectedOption.text : "";
+            }
+        }
 
         // Copy the digest input value
         if (digestInput) {
-            tds[3].innerText = digestInput.value || "";
+            tds[3].innerHTML = `<span class="ellipsis ellipsis--23">${digestInput.value || ""}</span>`;
         }
     }
 
