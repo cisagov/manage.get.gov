@@ -30,7 +30,9 @@ body:
     attributes:
       value: |
         ### Acceptance criteria for content updates
-        - [ ] Criteria 1 for content
+        - [ ] Followed the content guide instructions, including:
+          - [ ] Use official terms in the [word list](https://docs.google.com/document/d/1U-TRx3ecCFZ-qtrCk7EYmF_nmfKh6kd7FV95Pa4iWeM/edit?tab=t.0#heading=h.2et92p0), and avoiding synonyms or alternative terms
+        <br>
   - type: textarea
     id: additional-acceptance-criteria
     attributes:
