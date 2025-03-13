@@ -22,12 +22,13 @@ body:
         ### Acceptance criteria for design updates
         - [ ] Used components from the Figma design system wherein possible
         - [ ] Merged draft design(s) into the official registrar or get.gov Figma pages
-        - [ ] (If applicable) Updated components from the Figma design system if there's any inconsistencies with production
+        - [ ] (If applicable) Updated components from the Figma design system if there's any inconsistencies with production  
+        
   - type: markdown
     id: acceptance-criteria-content
     attributes:
       value: |
-        #### Acceptance criteria for content updates
+        ### Acceptance criteria for content updates
         - [ ] Criteria 1 for content
   - type: textarea
     id: additional-acceptance-criteria
