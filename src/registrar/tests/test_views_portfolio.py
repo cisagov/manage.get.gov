@@ -376,8 +376,8 @@ class TestPortfolio(WebTest):
             self.assertContains(page, "Non-Federal Agency")
 
     @less_console_noise_decorator
-    def test_domain_org_name_address_form(self):
-        """Submitting changes works on the org name address page."""
+    def test_org_form_invalid_update(self):
+        """Organization form will not redirect on invalid formsets."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
@@ -404,10 +404,33 @@ class TestPortfolio(WebTest):
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
 
+    @less_console_noise_decorator
+    def test_org_form_invalid_update(self):
+         """Organization form will  redirect on invalid formsets."""
+         with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            portfolio_additional_permissions = [
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
+
+            self.portfolio.address_line1 = "1600 Penn Ave"
+            self.portfolio.save()
+            portfolio_org_name_page = self.app.get(reverse("organization"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
             # Form validates and redirects with all required fields
+            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+            portfolio_org_name_page.form["city"] = "London"
             portfolio_org_name_page.form["zipcode"] = "11111"
+
             success_result_page = portfolio_org_name_page.form.submit()
             self.assertEqual(success_result_page.status_code, 302)
+            self.assertContains(success_result_page, "6 Downing st")
+            self.assertContains(success_result_page, "London")
             self.assertContains(success_result_page, "11111")
 
     @boto3_mocking.patching
