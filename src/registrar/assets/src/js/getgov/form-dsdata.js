@@ -88,9 +88,16 @@ export class DSDataForm {
             deleteKebabButton.addEventListener('click', this.handleDeleteKebabClick);
         });
 
-        const textInputs = document.querySelectorAll("input[type='text']");
-        textInputs.forEach(input => {
+        const inputs = document.querySelectorAll("input[type='text'], textarea");
+        inputs.forEach(input => {
             input.addEventListener("input", () => {
+                this.formChanged = true;
+            });
+        });
+
+        const selects = document.querySelectorAll("select");
+        selects.forEach(select => {
+            select.addEventListener("change", () => {
                 this.formChanged = true;
             });
         });
@@ -391,7 +398,7 @@ export class DSDataForm {
         const inputEvent = new Event('input');
         const changeEvent = new Event('change');
         // Reset text inputs
-        let inputs = domElement.querySelectorAll("input[type='text']");
+        const inputs = document.querySelectorAll("input[type='text'], textarea");
         inputs.forEach(input => {
             // Reset input value to its initial stored value
             input.value = input.dataset.initialValue;
@@ -415,10 +422,9 @@ export class DSDataForm {
      * @param {HTMLElement} readOnlyRow - The row where values will be displayed in a non-editable format.
      */
     copyEditRowToReadonlyRow(editRow, readOnlyRow) {
-        let inputs = editRow.querySelectorAll("input[type='text']");
-        let keyTagInput = inputs[0];
+        let keyTagInput = editRow.querySelector("input[type='text']");
         let selects = editRow.querySelectorAll("select");
-        let digestInput = inputs[1];
+        let digestInput = editRow.querySelector("textarea");
         let tds = readOnlyRow.querySelectorAll("td");
 
         // Copy the key tag input value

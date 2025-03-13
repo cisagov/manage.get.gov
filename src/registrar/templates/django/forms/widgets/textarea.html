@@ -1,5 +1,5 @@
 <textarea
     name="{{ widget.name }}"
-    class="usa-textarea {% if not widget.attrs.hide_character_count %}usa-character-count__field{% endif %}{{ widget.attrs.class }}"
+    class="usa-textarea{% if classes %} {{ classes }}{% endif %}{% if not widget.attrs.hide_character_count %} usa-character-count__field{% endif %} {{ widget.attrs.class }}"
     {% include "django/forms/widgets/attrs.html" %}
 >{% if widget.value %}{{ widget.value }}{% endif %}</textarea>
