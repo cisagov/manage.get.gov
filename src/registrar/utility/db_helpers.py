@@ -18,3 +18,16 @@ def ignore_unique_violation():
                 pass
             else:
                 raise e
+
+def object_is_being_created(object):
+    """ returns true if the object is new and hasn't been saved in the db
+        To use this inside a class just pass 'self' as the parameter
+    """
+    # _state and _state.adding are django specifc more information at:
+    # https://docs.djangoproject.com/en/4.2/ref/models/instances/#django.db.models.Model.from_db
+    #  _state exists on object after initialization
+    # `adding` is set to True by django
+    # only when the object hasn't been saved to the db
+    # django automagically changes this to false after db-save
+    return getattr(object, "_state", None) and object._state.adding
+    

@@ -23,9 +23,9 @@ from registrar.models import (
     PortfolioInvitation,
     User,
     UserDomainRole,
-    UserPortfolioPermission,
-    PortfolioInvitationFlow
+    UserPortfolioPermission
 )
+from registrar.flows import PortfolioInvitationFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (

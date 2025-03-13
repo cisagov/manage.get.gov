@@ -9,7 +9,7 @@ from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest
 from registrar.models.domain import Domain
 from registrar.models.domain_request import DomainRequestFlow
-
+from registrar.flows import DomainRequestFlow
 fake = Faker()
 logger = logging.getLogger(__name__)
 

@@ -9,11 +9,11 @@ from django.db import transaction
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
-from viewflow import fsm
-from viewflow.fsm import TransitionNotAllowed
+from registrar.flows import DomainFlow
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
+from registrar.models.utility.state_controlled_model import StateControlledModel
 from registrar.utility.enums import DefaultEmail
 from registrar.utility import errors
 from registrar.utility.errors import (
@@ -37,7 +37,6 @@ from registrar.models.utility.contact_error import ContactError, ContactErrorCod
 from django.db.models import DateField, TextField
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
-from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
 
@@ -46,7 +45,7 @@ from .user_domain_role import UserDomainRole
 logger = logging.getLogger(__name__)
 
 
-class Domain(TimeStampedModel, DomainHelper):
+class Domain(StateControlledModel, DomainHelper):
     """
     Manage the lifecycle of domain names.
 
@@ -1514,6 +1513,32 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
 
+
+    def _create_domain_in_registry(self, registrantID):
+        """
+        Creates the domain in the registry.
+        This should only be called from withinside a transition function
+        
+        Args:
+            registrantID (str) - Public Contact id
+        Returns:
+            None
+        Raises:
+            RegistryError
+        """
+        req = commands.CreateDomain(
+                name=self.domain.name,
+                registrant=registrantID,
+                auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
+            )
+
+        try:
+            registry.send(req, cleaned=True)
+
+        except RegistryError as err:
+            if err.code != ErrorCode.OBJECT_EXISTS:
+                raise err
+            
     def addRegistrant(self):
         """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
@@ -1521,26 +1546,6 @@ class Domain(TimeStampedModel, DomainHelper):
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
 
-    # @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
-    # def dns_needed_from_unknown(self):
-    #     logger.info("Changing to dns_needed")
-
-    #     registrantID = self.addRegistrant()
-
-    #     req = commands.CreateDomain(
-    #         name=self.name,
-    #         registrant=registrantID,
-    #         auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
-    #     )
-
-    #     try:
-    #         registry.send(req, cleaned=True)
-
-    #     except RegistryError as err:
-    #         if err.code != ErrorCode.OBJECT_EXISTS:
-    #             raise err
-
-    #     self.addAllDefaults()
 
     def addAllDefaults(self):
         """Adds default security, technical, and administrative contacts"""
@@ -1553,111 +1558,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
-
-    # @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
-    # def place_client_hold(self, ignoreEPP=False):
-    #     """place a clienthold on a domain (no longer should resolve)
-    #     ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
-    #     """
-
-    #     # (check prohibited statuses)
-    #     logger.info("clientHold()-> inside clientHold")
-
-    #     # In order to allow transition domains to by-pass EPP calls,
-    #     # include this ignoreEPP flag
-    #     if not ignoreEPP:
-    #         self._place_client_hold()
-
-    # @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
-    # def revert_client_hold(self, ignoreEPP=False):
-    #     """undo a clienthold placed on a domain
-    #     ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
-    #     """
-
-    #     logger.info("clientHold()-> inside clientHold")
-    #     if not ignoreEPP:
-    #         self._remove_client_hold()
-    #     # TODO -on the client hold ticket any additional error handling here
-
-    # @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
-    # def deletedInEpp(self):
-    #     """Domain is deleted in epp but is saved in our database.
-    #     Subdomains will be deleted first if not in use by another domain.
-    #     Contacts for this domain will also be deleted.
-    #     Error handling should be provided by the caller."""
-    #     # While we want to log errors, we want to preserve
-    #     # that information when this function is called.
-    #     # Human-readable errors are introduced at the admin.py level,
-    #     # as doing everything here would reduce reliablity.
-    #     try:
-    #         logger.info("deletedInEpp()-> inside _delete_domain")
-    #         self._delete_domain()
-    #         self.deleted = timezone.now()
-    #         self.expiration_date = None
-    #     except RegistryError as err:
-    #         logger.error(f"Could not delete domain. Registry returned error: {err}. {err.note}")
-    #         raise err
-    #     except TransitionNotAllowed as err:
-    #         logger.error("Could not delete domain. FSM failure: {err}")
-    #         raise err
-    #     except Exception as err:
-    #         logger.error(f"Could not delete domain. An unspecified error occured: {err}")
-    #         raise err
-    #     else:
-    #         self._invalidate_cache()
-
-    # def is_dns_needed(self):
-    #     """Commented out and kept in the codebase
-    #     as this call should be made, but adds
-    #     a lot of processing time
-    #     when EPP calling is made more efficient
-    #     this should be added back in
-
-    #     The goal is to double check that
-    #     the nameservers we set are in fact
-    #     on the registry
-    #     """
-    #     self._invalidate_cache()
-    #     nameserverList = self.nameservers
-    #     return len(nameserverList) < 2
-
-    # def dns_not_needed(self):
-    #     return not self.is_dns_needed()
-
-    # @transition(
-    #     field="state",
-    #     source=[State.DNS_NEEDED, State.READY],
-    #     target=State.READY,
-    #     # conditions=[dns_not_needed]
-    # )
-    # def ready(self):
-    #     """Transition to the ready state
-    #     domain should have nameservers and all contacts
-    #     and now should be considered live on a domain
-    #     """
-    #     logger.info("Changing to ready state")
-    #     logger.info("able to transition to ready state")
-    #     # if self.first_ready is not None, this means that this
-    #     # domain was READY, then not READY, then is READY again.
-    #     # We do not want to overwrite first_ready.
-    #     if self.first_ready is None:
-    #         self.first_ready = timezone.now()
-
-    # @transition(
-    #     field="state",
-    #     source=[State.READY],
-    #     target=State.DNS_NEEDED,
-    #     # conditions=[is_dns_needed]
-    # )
-    # def dns_needed(self):
-    #     """Transition to the DNS_NEEDED state
-    #     domain should NOT have nameservers but
-    #     SHOULD have all contacts
-    #     Going to check nameservers and will
-    #     result in an EPP call
-    #     """
-    #     logger.info("Changing to DNS_NEEDED state")
-    #     logger.info("able to transition to DNS_NEEDED state")
 
     def get_state_help_text(self, request=None) -> str:
         """Returns a str containing additional information about a given state.
@@ -1941,44 +1841,6 @@ class Domain(TimeStampedModel, DomainHelper):
             flow.ready()
             self.save()
 
-    # @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
-    # def _add_missing_contacts_if_unknown(self, cleaned):
-    #     """
-    #     _add_missing_contacts_if_unknown: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
-    #     if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
-    #     is in an UNKNOWN state, that is an error state)
-    #     Note: The transition state change happens at the end of the function
-    #     """
-
-    #     missingAdmin = True
-    #     missingSecurity = True
-    #     missingTech = True
-
-    #     contacts = cleaned.get("_contacts", [])
-    #     if len(contacts) < 3:
-    #         for contact in contacts:
-    #             if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-    #                 missingAdmin = False
-    #             if contact.type == PublicContact.ContactTypeChoices.SECURITY:
-    #                 missingSecurity = False
-    #             if contact.type == PublicContact.ContactTypeChoices.TECHNICAL:
-    #                 missingTech = False
-
-    #         # We are only creating if it doesn't exist so we don't overwrite
-    #         if missingAdmin:
-    #             administrative_contact = self.get_default_administrative_contact()
-    #             administrative_contact.save()
-    #         if missingSecurity:
-    #             security_contact = self.get_default_security_contact()
-    #             security_contact.save()
-    #         if missingTech:
-    #             technical_contact = self.get_default_technical_contact()
-    #             technical_contact.save()
-
-    #         logger.info(
-    #             "_add_missing_contacts_if_unknown => Adding contacts. Values are "
-    #             f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
-    #         )
 
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
@@ -2255,164 +2117,3 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
 
-
-class DomainFlow(object):
-
-    state = fsm.State(Domain.State, default=Domain.State.UNKNOWN)
-
-    def __init__(self, domain):
-        self.domain = domain
-
-    @state.setter()
-    def _set_domain_state(self, value):
-        self.domain.state = value
-
-    @state.getter()
-    def _get_domain_state(self):
-        return self.domain.state
-
-
-    @state.transition(source=Domain.State.UNKNOWN, target=Domain.State.DNS_NEEDED)
-    def dns_needed_from_unknown(self):
-        logger.info("Changing to dns_needed")
-
-        registrantID = self.domain.addRegistrant()
-
-        req = commands.CreateDomain(
-            name=self.domain.name,
-            registrant=registrantID,
-            auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
-        )
-
-        try:
-            registry.send(req, cleaned=True)
-
-        except RegistryError as err:
-            if err.code != ErrorCode.OBJECT_EXISTS:
-                raise err
-
-        self.domain.addAllDefaults()
-
-    @state.transition(source=[Domain.State.READY, Domain.State.ON_HOLD], target=Domain.State.ON_HOLD)
-    def place_client_hold(self, ignoreEPP=False):
-        """place a clienthold on a domain (no longer should resolve)
-        ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
-        """
-
-        # (check prohibited statuses)
-        logger.info("clientHold()-> inside clientHold")
-
-        # In order to allow transition domains to by-pass EPP calls,
-        # include this ignoreEPP flag
-        if not ignoreEPP:
-            self.domain._place_client_hold()
-
-    @state.transition(source=[Domain.State.READY, Domain.State.ON_HOLD], target=Domain.State.READY)
-    def revert_client_hold(self, ignoreEPP=False):
-        """undo a clienthold placed on a domain
-        ignoreEPP (boolean) - set to true to by-pass EPP (used for transition domains)
-        """
-
-        logger.info("clientHold()-> inside clientHold")
-        if not ignoreEPP:
-            self.domain._remove_client_hold()
-        # TODO -on the client hold ticket any additional error handling here
-
-    @state.transition(source=[Domain.State.ON_HOLD, Domain.State.DNS_NEEDED], target=Domain.State.DELETED)
-    def deletedInEpp(self):
-        """Domain is deleted in epp but is saved in our database.
-        Subdomains will be deleted first if not in use by another domain.
-        Contacts for this domain will also be deleted.
-        Error handling should be provided by the caller."""
-        # While we want to log errors, we want to preserve
-        # that information when this function is called.
-        # Human-readable errors are introduced at the admin.py level,
-        # as doing everything here would reduce reliablity.
-        try:
-            logger.info("deletedInEpp()-> inside _delete_domain")
-            self.domain._delete_domain()
-            self.domain.deleted = timezone.now()
-            self.domain.expiration_date = None
-        except RegistryError as err:
-            logger.error(f"Could not delete domain. Registry returned error: {err}. {err.note}")
-            raise err
-        except TransitionNotAllowed as err:
-            logger.error("Could not delete domain. FSM failure: {err}")
-            raise err
-        except Exception as err:
-            logger.error(f"Could not delete domain. An unspecified error occured: {err}")
-            raise err
-        else:
-            self.domain._invalidate_cache()
-
-    @state.transition(
-        source=[Domain.State.DNS_NEEDED, Domain.State.READY],
-        target=Domain.State.READY,
-        # conditions=[dns_not_needed]
-    )
-    def ready(self):
-        """Transition to the ready state
-        domain should have nameservers and all contacts
-        and now should be considered live on a domain
-        """
-        logger.info("Changing to ready state")
-        logger.info("able to transition to ready state")
-        # if self.first_ready is not None, this means that this
-        # domain was READY, then not READY, then is READY again.
-        # We do not want to overwrite first_ready.
-        if self.domain.first_ready is None:
-            self.domain.first_ready = timezone.now()
-
-    @state.transition(
-        source=[Domain.State.READY],
-        target=Domain.State.DNS_NEEDED,
-        # conditions=[is_dns_needed]
-    )
-    def dns_needed(self):
-        """Transition to the DNS_NEEDED state
-        domain should NOT have nameservers but
-        SHOULD have all contacts
-        Going to check nameservers and will
-        result in an EPP call
-        """
-        logger.info("Changing to DNS_NEEDED state")
-        logger.info("able to transition to DNS_NEEDED state")
-
-    @state.transition(source=Domain.State.UNKNOWN, target=Domain.State.DNS_NEEDED)
-    def _add_missing_contacts_if_unknown(self, cleaned):
-        """
-        _add_missing_contacts_if_unknown: Add contacts (SECURITY, TECHNICAL, and/or ADMINISTRATIVE)
-        if they are missing, AND switch the state to DNS_NEEDED from UNKNOWN (if it
-        is in an UNKNOWN state, that is an error state)
-        Note: The transition state change happens at the end of the function
-        """
-
-        missingAdmin = True
-        missingSecurity = True
-        missingTech = True
-
-        contacts = cleaned.get("_contacts", [])
-        if len(contacts) < 3:
-            for contact in contacts:
-                if contact.type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    missingAdmin = False
-                if contact.type == PublicContact.ContactTypeChoices.SECURITY:
-                    missingSecurity = False
-                if contact.type == PublicContact.ContactTypeChoices.TECHNICAL:
-                    missingTech = False
-
-            # We are only creating if it doesn't exist so we don't overwrite
-            if missingAdmin:
-                administrative_contact = self.domain.get_default_administrative_contact()
-                administrative_contact.save()
-            if missingSecurity:
-                security_contact = self.domain.get_default_security_contact()
-                security_contact.save()
-            if missingTech:
-                technical_contact = self.domain.get_default_technical_contact()
-                technical_contact.save()
-
-            logger.info(
-                "_add_missing_contacts_if_unknown => Adding contacts. Values are "
-                f"missingAdmin: {missingAdmin}, missingSecurity: {missingSecurity}, missingTech: {missingTech}"
-            )

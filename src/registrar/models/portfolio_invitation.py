@@ -3,7 +3,6 @@
 import logging
 from django.db import models
 from django.contrib.auth import get_user_model
-from viewflow import fsm
 from registrar.models import DomainInvitation, UserPortfolioPermission
 from .utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
@@ -19,13 +18,13 @@ from .utility.portfolio_helper import (
     get_role_display,
     validate_portfolio_invitation,
 )  # type: ignore
-from .utility.time_stamped_model import TimeStampedModel
+from .utility.state_controlled_model import StateControlledModel
 from django.contrib.postgres.fields import ArrayField
 
 logger = logging.getLogger(__name__)
 
 
-class PortfolioInvitation(TimeStampedModel):
+class PortfolioInvitation(StateControlledModel):
     class Meta:
         """Contains meta information about this class"""
 
@@ -180,35 +179,6 @@ class PortfolioInvitation(TimeStampedModel):
         """
         return get_members_description_display(self.roles, self.additional_permissions)
 
-    # @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
-    # def retrieve(self):
-    #     """When an invitation is retrieved, create the corresponding permission.
-    # # @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
-    # # def retrieve(self):
-    # #     """When an invitation is retrieved, create the corresponding permission.
-
-    #     Raises:
-    #         RuntimeError if no matching user can be found.
-    #     """
-
-    #     # get a user with this email address
-    #     User = get_user_model()
-    #     try:
-    #         user = User.objects.get(email=self.email)
-    #     except User.DoesNotExist:
-    #         # should not happen because a matching user should exist before
-    #         # we retrieve this invitation
-    #         raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
-
-    #     # and create a role for that user on this portfolio
-    #     user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-    #         portfolio=self.portfolio, user=user
-    #     )
-    #     if self.roles and len(self.roles) > 0:
-    #         user_portfolio_permission.roles = self.roles
-    #     if self.additional_permissions and len(self.additional_permissions) > 0:
-    #         user_portfolio_permission.additional_permissions = self.additional_permissions
-    #     user_portfolio_permission.save()
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
@@ -239,45 +209,3 @@ class PortfolioInvitation(TimeStampedModel):
 
             cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
 
-
-class PortfolioInvitationFlow(object):
-
-    status = fsm.State(PortfolioInvitation.PortfolioInvitationStatus, default=PortfolioInvitation.PortfolioInvitationStatus.INVITED)
-
-    def __init__(self, portfolio_invitation):
-        self.portfolio_invitation = portfolio_invitation
-
-    @status.setter()
-    def _set_portfolio_invitation_status(self, value):
-        self.portfolio_invitation.status = value
-
-    @status.getter()
-    def _get_portfolio_invitation_status(self):
-        return self.portfolio_invitation.status
-
-    @status.transition(source=PortfolioInvitation.PortfolioInvitationStatus.INVITED, target=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
-    def retrieve(self):
-        """When an invitation is retrieved, create the corresponding permission.
-
-        Raises:
-            RuntimeError if no matching user can be found.
-        """
-
-        # get a user with this email address
-        User = get_user_model()
-        try:
-            user = User.objects.get(email=self.portfolio_invitation.email)
-        except User.DoesNotExist:
-            # should not happen because a matching user should exist before
-            # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
-
-        # and create a role for that user on this portfolio
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            portfolio=self.portfolio_invitation.portfolio, user=user
-        )
-        if self.portfolio_invitation.roles and len(self.portfolio_invitation.roles) > 0:
-            user_portfolio_permission.roles = self.portfolio_invitation.roles
-        if self.portfolio_invitation.additional_permissions and len(self.portfolio_invitation.additional_permissions) > 0:
-            user_portfolio_permission.additional_permissions = self.portfolio_invitation.additional_permissions
-        user_portfolio_permission.save()

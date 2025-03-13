@@ -5,10 +5,9 @@ from django.db import models
 from django.db.models import Q
 
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
-from registrar.models.portfolio_invitation import PortfolioInvitationFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
-from .domain_invitation import DomainInvitation, DomainInvitationFlow
+from .domain_invitation import DomainInvitation
 from .transition_domain import TransitionDomain
 from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
@@ -17,6 +16,7 @@ from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
 from django.utils import timezone
 from datetime import timedelta
+from registrar.flows import DomainInvitationFlow, PortfolioInvitationFlow
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 

@@ -18,8 +18,8 @@ from registrar.forms import domain_request_wizard as forms
 from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
+from registrar.flows import DomainRequestFlow
 from registrar.models.contact import Contact
-from registrar.models.domain_request import DomainRequestFlow
 from registrar.models.user import User
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
@@ -988,14 +988,9 @@ class DomainRequestWithdrawn(DetailView):
         If user click on withdraw confirm button, this view updates the status
         to withdraw and send back to homepage.
         """
-<<<<<<< HEAD
         domain_request = DomainRequest.objects.get(id=self.kwargs["domain_request_pk"])
-        domain_request.withdraw()
-=======
-        domain_request = DomainRequest.objects.get(id=self.kwargs["pk"])
         flow = DomainRequestFlow(domain_request)
         flow.withdraw()
->>>>>>> f6fa7f287 (wip)
         domain_request.save()
         if self.request.user.is_org_user(self.request):
             return HttpResponseRedirect(reverse("domain-requests"))
