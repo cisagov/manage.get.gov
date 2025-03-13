@@ -210,6 +210,13 @@ class TerminalHelper:
         update_count = len(to_update)
         skipped_count = len(skipped)
         failed_count = len(failed_to_update)
+        # Label, count, values, and debug-specific log color
+        count_msgs = {
+            "added": ("Added", add_count, to_add, TerminalColors.OKBLUE),
+            "updated": ("Updated", update_count, to_update, TerminalColors.OKCYAN),
+            "skipped": ("Skipped updating", skipped_count, skipped, TerminalColors.YELLOW),
+            "failed": ("Failed to update", failed_count, failed_to_update, TerminalColors.FAIL),
+        }
 
         if log_header is None:
             log_header = "============= FINISHED ==============="
@@ -230,43 +237,36 @@ class TerminalHelper:
                 prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
             )
 
-        # Construct the header, log color, and level
-        color = TerminalColors.OKGREEN
-        log_level = logger.info
-        messages = [f"\n{log_header}"]
-        if failed_count > 0:
-            color = TerminalColors.FAIL
-            log_level = logger.error
-            messages.append(failed_header)
-        elif skipped_count > 0:
-            color = TerminalColors.YELLOW
-            log_level = logger.warning
-            messages.append(skipped_header)
-
-        # Label, count, values, and debug log color
-        count_msgs = {
-            "added": ("Added", add_count, to_add, TerminalColors.OKBLUE),
-            "updated": ("Updated", update_count, to_update, TerminalColors.OKCYAN),
-            "skipped": ("Skipped updating", skipped_count, skipped, TerminalColors.YELLOW),
-            "failed": ("Failed to update", failed_count, failed_to_update, TerminalColors.FAIL),
-        }
         change_occurred = False
-        for label, count, values, debug_log_color in count_msgs.values():
-            # Print debug messages (prints the internal add, update, skip, fail lists)
-            if debug or display_detailed_logs:
-                display_values = [str(v) for v in values] if display_as_str else values
-                if count > 0:
+        messages = [f"\n{log_header}"]
+        for change_type, dict_tuple in count_msgs.items():
+            label, count, values, debug_log_color = dict_tuple
+            if count > 0:
+                # Print debug messages (prints the internal add, update, skip, fail lists)
+                if debug or display_detailed_logs:
+                    display_values = [str(v) for v in values] if display_as_str else values
                     message = f"{label}: {display_values}"
                     TerminalHelper.colorful_logger(logger.info, debug_log_color, message)
 
-            # Assemble the final summary message (headers + only the counts that are > 0)
-            if count > 0:
+                # Get the sub-header for fail conditions
+                if change_type == "failed":
+                    messages.append(failed_header)
+                if change_type == "skipped":
+                    messages.append(skipped_header)
+
+                # Print the change count
                 messages.append(f"{label} {count} entries")
                 change_occurred = True
 
         if not change_occurred:
             messages.append("No changes occurred.")
-        TerminalHelper.colorful_logger(log_level, color, "\n".join(messages))
+
+        if failed_count > 0:
+            TerminalHelper.colorful_logger("ERROR", "FAIL", "\n".join(messages))
+        elif skipped_count > 0:
+            TerminalHelper.colorful_logger("WARNING", "YELLOW", "\n".join(messages))
+        else:
+            TerminalHelper.colorful_logger("INFO", "OKGREEN", "\n".join(messages))
 
     @staticmethod
     def query_yes_no(question: str, default="yes"):
@@ -404,11 +404,11 @@ class TerminalHelper:
         # and ask if they wish to proceed
         proceed_execution = TerminalHelper.query_yes_no_exit(
             f"\n{TerminalColors.OKCYAN}"
-            "====================================================="
-            f"\n{prompt_title}\n"
-            "====================================================="
-            f"\n{verify_message}\n"
-            f"\n{prompt_message}\n"
+            "=====================================================\n"
+            f"{prompt_title}\n"
+            "=====================================================\n"
+            f"{verify_message}\n"
+            f"{prompt_message}\n"
             f"{TerminalColors.FAIL}"
             f"Proceed? (Y = proceed, N = {action_description_for_selecting_no})"
             f"{TerminalColors.ENDC}"
