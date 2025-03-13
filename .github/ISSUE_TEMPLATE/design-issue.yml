@@ -27,6 +27,7 @@ body:
     id: acceptance-criteria-content
     attributes:
       value: |
+        ####   
         #### Acceptance criteria for content updates
         - [ ] Criteria 1 for content
   - type: textarea
