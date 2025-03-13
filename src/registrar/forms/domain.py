@@ -661,9 +661,8 @@ class DomainDsdataForm(forms.Form):
         },
         widget=forms.Textarea(
             attrs={
-                "class": "text-wrap",
-                "rows": "2",
-                "style": "height: fit-content; resize: none; overflow:hidden;"
+                "maxlength": "40",
+                "class": "text-wrap usa-textarea--digest",
             }
         )
     )

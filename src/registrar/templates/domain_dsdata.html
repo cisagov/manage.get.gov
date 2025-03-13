@@ -123,7 +123,7 @@
         {% endif %}
       {% endfor %}
 
-      <div tabindex="0" id="domains__table-wrapper">
+      <div class="margin-top-4" tabindex="0" id="domains__table-wrapper">
         <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dsdata-table">
           <thead>
             <tr>
@@ -214,24 +214,24 @@
                 <tr class="edit-row display-none">
                   <td class="text-bottom">
                     {% with sublabel_text="Numbers (0-9) only." %}
-                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" use_small_sublabel_text=True %}
                         {% input_with_errors form.key_tag %}
                       {% endwith %}
                     {% endwith %}
                   </td>
                   <td class="text-bottom">
-                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" use_small_sublabel_text=True %}
                         {% input_with_errors form.algorithm %}
                       {% endwith %}
                   </td>
                   <td class="text-bottom">
-                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" use_small_sublabel_text=True %}
                         {% input_with_errors form.digest_type %}
                       {% endwith %}
                   </td>
                   <td class="text-bottom">
                     {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
-                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" use_small_sublabel_text=True %}
                         {% input_with_errors form.digest %}
                       {% endwith %}
                     {% endwith %}
