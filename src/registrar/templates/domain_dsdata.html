@@ -146,12 +146,14 @@
                 <!-- Readonly row -->
                 <tr>
                   <td>{{ form.key_tag.value }}</td>
-                  <td class="ellipsis ellipsis--15">
-                    {% for value, label in form.algorithm.field.choices %}
-                      {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
-                        {{ label }}
-                      {% endif %}
-                    {% endfor %}
+                  <td>
+                    <span class="ellipsis ellipsis--15">
+                      {% for value, label in form.algorithm.field.choices %}
+                        {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
+                          {{ label }}
+                        {% endif %}
+                      {% endfor %}
+                    </span>
                   </td>
                   <td>
                     {% for value, label in form.digest_type.field.choices %}
@@ -160,7 +162,9 @@
                       {% endif %}
                     {% endfor %}
                   </td>
-                  <td class="ellipsis ellipsis--23">{{ form.digest.value }}</td>
+                  <td>
+                    <span class="ellipsis ellipsis--23">{{ form.digest.value }}</span>
+                  </td>
                   <td class="padding-right-0">
                     <div class="tablet:display-flex tablet:flex-row">
                       <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 dsdata-edit'>
