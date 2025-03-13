@@ -301,8 +301,10 @@
           <div class="grid-row">
             <div class="grid-col">
               {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
-                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                  {% input_with_errors form.digest %}
+                {% with hide_character_count=True %}
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.digest %}
+                  {% endwith %}
                 {% endwith %}
               {% endwith %}
             </div>

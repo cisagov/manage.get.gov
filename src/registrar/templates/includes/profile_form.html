@@ -36,7 +36,7 @@
       {% with sublabel_text="We recommend using a Login.gov account that's only connected to your work email address. If you need to change your email, you'll need to make a change to your Login.gov account. Get help with updating your email address." %}
         {% with link_text="Get help with updating your email address" %}
           {% with target_blank=True %}
-            {% with do_not_show_max_chars=True %}
+            {% with hide_character_count=True %}
               {% input_with_errors form.email %}
             {% endwith %}
           {% endwith %}

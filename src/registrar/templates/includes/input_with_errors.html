@@ -8,7 +8,9 @@ error messages, if necessary.
 {% load widget_tweaks %}
 
 {% if widget.attrs.maxlength or field.widget_type == 'textarea' %}
-  <div class="usa-character-count">
+  {% if not widget.attrs.hide_character_count %}
+    <div class="usa-character-count">
+  {% endif %}
 {% endif %}
 
 {% if field.use_fieldset %}
@@ -93,7 +95,7 @@ error messages, if necessary.
 {% endif %}
 
 {% if field.widget_type == 'textarea' or widget.attrs.maxlength %}
-    {% if not do_not_show_max_chars %}
+    {% if not widget.attrs.hide_character_count %}
         <span
           id="{{ widget.attrs.id }}__message"
           class="usa-character-count__message"
@@ -101,6 +103,6 @@ error messages, if necessary.
         >
           You can enter up to {{ widget.attrs.maxlength }} characters
         </span>
+      </div>
     {% endif %}
-  </div>
 {% endif %}

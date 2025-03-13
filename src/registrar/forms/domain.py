@@ -663,6 +663,7 @@ class DomainDsdataForm(forms.Form):
             attrs={
                 "maxlength": "40",
                 "class": "text-wrap usa-textarea--digest",
+                "hide_character_count": "True",
             }
         )
     )
