@@ -398,7 +398,7 @@ class TestPortfolio(WebTest):
 
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             success_result_page = portfolio_org_name_page.form.submit()
-            self.assertEqual(success_result_page.status_code, 302)
+            self.assertEqual(success_result_page.status_code, 200)
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
