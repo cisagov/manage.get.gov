@@ -406,8 +406,8 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
-         """Organization form will  redirect on invalid formsets."""
-         with override_flag("organization_feature", active=True):
+        """Organization form will  redirect on invalid formsets."""
+        with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
