@@ -404,7 +404,7 @@ class TestPortfolio(WebTest):
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
 
-            #Form validates and redirects with all required fields
+            # Form validates and redirects with all required fields
             portfolio_org_name_page.form["zipcode"] = "11111"
             success_result_page = portfolio_org_name_page.form.submit()
             self.assertEqual(success_result_page.status_code, 302)
@@ -417,8 +417,10 @@ class TestPortfolio(WebTest):
         """Updating organization information emails organization admin."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
-            self.admin, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
-            
+            self.admin, _ = User.objects.get_or_create(
+                email="mayor@igorville.com", first_name="Hello", last_name="World"
+            )
+
             portfolio_additional_permissions = [
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
@@ -427,8 +429,10 @@ class TestPortfolio(WebTest):
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
             portfolio_permission_admin, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.admin, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+                user=self.admin,
+                portfolio=self.portfolio,
+                additional_permissions=portfolio_additional_permissions,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             )
 
             self.portfolio.address_line1 = "1600 Penn Ave"
@@ -442,7 +446,7 @@ class TestPortfolio(WebTest):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             success_result_page = portfolio_org_name_page.form.submit()
             self.assertEqual(success_result_page.status_code, 302)
-            
+
             # Verify that the notification emails were sent to domain manager
             mock_send_templated_email.assert_called_once_with(
                 "emails/portfolio_org_update_notification.txt",
