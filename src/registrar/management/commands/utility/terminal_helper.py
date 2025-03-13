@@ -210,12 +210,6 @@ class TerminalHelper:
         update_count = len(to_update)
         skipped_count = len(skipped)
         failed_count = len(failed_to_update)
-        count_msgs = {
-            "added": ("Added", add_count, to_add),
-            "updated": ("Updated", update_count, to_update),
-            "skipped": ("Skipped updating", skipped_count, skipped),
-            "failed": ("Failed to update", failed_count, failed_to_update),
-        }
 
         if log_header is None:
             log_header = "============= FINISHED ==============="
@@ -236,25 +230,6 @@ class TerminalHelper:
                 prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
             )
 
-        # Prepare debug messages (prints the internal add, update, skip, fail lists)
-        if debug or display_detailed_logs:
-            debug_colors = [
-                ("added", TerminalColors.OKBLUE),
-                ("updated", TerminalColors.OKCYAN),
-                ("skipped", TerminalColors.YELLOW),
-                ("failed", TerminalColors.FAIL),
-            ]
-            debug_messages = []
-            for change_type, debug_log_color in debug_colors:
-                label, count, values = count_msgs.get(change_type)
-                display_values = [str(v) for v in values] if display_as_str else values
-                if count > 0:
-                    debug_messages.append(f"{debug_log_color}{label}: {display_values}{TerminalColors.ENDC}")
-            if len(debug_messages) > 0:
-                logger.info("\n".join(debug_messages))
-            else:
-                logger.info("Nothing to show: no changes occured.")
-
         # Construct the header, log color, and level
         color = TerminalColors.OKGREEN
         log_level = logger.info
@@ -268,14 +243,29 @@ class TerminalHelper:
             log_level = logger.warning
             messages.append(skipped_header)
 
-        # Construct message (headers + only the counts that are > 0)
-        change_occured = False
-        for label, count, _ in count_msgs.values():
+        # Label, count, values, and debug log color
+        count_msgs = {
+            "added": ("Added", add_count, to_add, TerminalColors.OKBLUE),
+            "updated": ("Updated", update_count, to_update, TerminalColors.OKCYAN),
+            "skipped": ("Skipped updating", skipped_count, skipped, TerminalColors.YELLOW),
+            "failed": ("Failed to update", failed_count, failed_to_update, TerminalColors.FAIL),
+        }
+        change_occurred = False
+        for label, count, values, debug_log_color in count_msgs.values():
+            # Print debug messages (prints the internal add, update, skip, fail lists)
+            if debug or display_detailed_logs:
+                display_values = [str(v) for v in values] if display_as_str else values
+                if count > 0:
+                    message = f"{label}: {display_values}"
+                    TerminalHelper.colorful_logger(logger.info, debug_log_color, message)
+
+            # Assemble the final summary message (headers + only the counts that are > 0)
             if count > 0:
                 messages.append(f"{label} {count} entries")
-                change_occured = True
-        if not change_occured:
-            messages.append("No changes occured.")
+                change_occurred = True
+
+        if not change_occurred:
+            messages.append("No changes occurred.")
         TerminalHelper.colorful_logger(log_level, color, "\n".join(messages))
 
     @staticmethod
