@@ -405,8 +405,8 @@ class TestPortfolio(WebTest):
             self.assertContains(success_result_page, "London")
 
     @less_console_noise_decorator
-    def test_org_form_invalid_update(self):
-        """Organization form will  redirect on invalid formsets."""
+    def test_org_form_valid_update(self):
+        """Organization form will redirect on valid formsets."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
