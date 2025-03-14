@@ -1663,7 +1663,7 @@ class Domain(TimeStampedModel, DomainHelper):
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
         DF = epp.DiscloseField
-        disclose_fields = {"fields": [], "flag": False}
+        disclose_fields = {"fields": {}, "flag": False}
         match contact.contact_type:
             case contact.ContactTypeChoices.SECURITY:
                 hidden_security_emails = [email for email in DefaultEmail]
