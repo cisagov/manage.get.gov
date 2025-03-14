@@ -86,7 +86,7 @@ class PopulateScriptTemplate(ABC):
         """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False):
+    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False, skip_bulk_update=False):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
@@ -105,6 +105,10 @@ class PopulateScriptTemplate(ABC):
 
             verbose: Whether to print a detailed run summary *before* run confirmation.
                 Default: False.
+            
+            skip_bulk_update: Whether to avoid doing a bulk update or not. 
+            This setting assumes that you are doing a save in the update_record class. 
+            IMPORANT: this setting invalidates 'fields_to_update'.
 
         Raises:
             NotImplementedError: If you do not define update_record before using this function.
@@ -155,7 +159,8 @@ class PopulateScriptTemplate(ABC):
                 logger.error(fail_message)
 
         # Do a bulk update on the desired field
-        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
+        if not skip_bulk_update:
+            ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(

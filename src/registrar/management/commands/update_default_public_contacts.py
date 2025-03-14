@@ -32,8 +32,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         }
         old_emails = [email for email in DefaultEmail if email != DefaultEmail.PUBLIC_CONTACT_DEFAULT]
         filter_condition = {"email__in": old_emails}
-        fields_to_update = ["name", "street1", "pc", "email"]
-        self.mass_update_records(PublicContact, filter_condition, fields_to_update)
+        self.mass_update_records(PublicContact, filter_condition, [], skip_bulk_update=True)
 
     def update_record(self, record: PublicContact):
         """Defines how we update the verification_type field"""
@@ -42,9 +41,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         record.pc = "22201"
         record.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updating default values for '{record}'.")
-        TerminalHelper.colorful_logger("INFO", "MAGENTA", f"Attempting to update record in EPP...")
-        # Since this function raises an error, this update will revert on both the model and here
-        Domain._set_singleton_contact(record, expectedType=record.contact_type)
+        record.save()
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updated record in EPP.")
 
     def should_skip_record(self, record) -> bool:  # noqa
