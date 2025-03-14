@@ -30,7 +30,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         record.street1 = "1110 N. Glebe Rd"
         record.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updating default values for '{record}'.")
-        TerminalHelper.colorful_logger("INFO", "MAGENTA", f"Attempting EPP update.")
+        TerminalHelper.colorful_logger("INFO", "MAGENTA", f"Attempting to update record in EPP...")
         # Since this function raises an error, this update will revert on both the model and here
         Domain._set_singleton_contact(record, expectedType=record.contact_type)
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updated record in EPP.")
