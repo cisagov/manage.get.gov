@@ -1,4 +1,5 @@
 from registrar.models.domain_request import DomainRequest
+from django.conf import settings
 from django.template.loader import get_template
 from django.utils.html import format_html
 from django.urls import reverse
@@ -35,8 +36,13 @@ def _get_default_email(domain_request, file_path, reason, excluded_reasons=None)
         return None
 
     recipient = domain_request.creator
+    env_base_url = settings.BASE_URL
+    # If NOT in prod, update instances of "manage.get.gov" links to point to
+    # current environment, ie "getgov-rh.app.cloud.gov"
+    manage_url = env_base_url if not settings.IS_PRODUCTION else "https://manage.get.gov"
+
     # Return the context of the rendered views
-    context = {"domain_request": domain_request, "recipient": recipient, "reason": reason}
+    context = {"domain_request": domain_request, "recipient": recipient, "reason": reason, "manage_url": manage_url}
 
     email_body_text = get_template(file_path).render(context=context)
     email_body_text_cleaned = email_body_text.strip().lstrip("\n") if email_body_text else None
