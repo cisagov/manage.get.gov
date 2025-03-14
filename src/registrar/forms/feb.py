@@ -147,8 +147,6 @@ class EOPContactForm(BaseDeletableRegistrarForm):
     Executive Branch (FEB) agency is working with.
     """
 
-    field_name = "eop_contact"
-
     first_name = forms.CharField(
         label="First name / given name",
         error_messages={"required": "Enter the first name / given name of this contact."},
@@ -178,12 +176,10 @@ class EOPContactForm(BaseDeletableRegistrarForm):
 
     @classmethod
     def from_database(cls, obj):
-        if not obj.eop_contact:
-            return {}
         return {
-            "first_name": obj.eop_contact.first_name,
-            "last_name": obj.eop_contact.last_name,
-            "email": obj.eop_contact.email,
+            "first_name": obj.eop_stakeholder_first_name,
+            "last_name": obj.eop_stakeholder_last_name,
+            "email": obj.eop_stakeholder_email,
         }
 
     def to_database(self, obj):
@@ -195,11 +191,9 @@ class EOPContactForm(BaseDeletableRegistrarForm):
             return
         if not self.is_valid():
             return
-        obj.eop_contact = Contact.objects.create(
-            first_name=self.cleaned_data["first_name"],
-            last_name=self.cleaned_data["last_name"],
-            email=self.cleaned_data["email"],
-        )
+        obj.eop_stakeholder_first_name = self.cleaned_data["first_name"]
+        obj.eop_stakeholder_last_name = self.cleaned_data["last_name"]
+        obj.eop_stakeholder_email = self.cleaned_data["email"]
         obj.save()
 
 
