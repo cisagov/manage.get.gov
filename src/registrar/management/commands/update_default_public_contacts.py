@@ -1,4 +1,5 @@
 import logging
+import argparse
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalHelper
 from registrar.models import PublicContact, Domain
@@ -13,8 +14,25 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand, PopulateScriptTemplate):
     help = "Loops through each default PublicContact and updates some values on each"
 
+    def add_arguments(self, parser):
+        """Adds command line arguments"""
+        parser.add_argument(
+            "--overwrite_updated_contacts",
+            action=argparse.BooleanOptionalAction,
+            help=(
+                "Loops over PublicContacts with the email 'help@get.gov' when enabled."
+                "Use this setting if the record was updated in the DB but not correctly in EPP."
+            ),
+        )
+
     def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
+        overwrite_updated_contacts = kwargs.get("overwrite_updated_contacts")
+        default_emails = {email for email in DefaultEmail}
+
+        # Don't update records we've already updated
+        if not overwrite_updated_contacts:
+            default_emails.remove(DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
         # We should only update DEFAULT records. This means that if all values are not default,
         # we should skip as this could lead to data corruption.
@@ -28,10 +46,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
             },
             "street1": {"1110 n. glebe rd", "cisa – ngr stop 0645", "4200 wilson blvd."},
             "pc": {"22201", "20598-0645"},
-            "email": {email for email in DefaultEmail},
+            "email": default_emails,
         }
-        old_emails = [email for email in DefaultEmail if email != DefaultEmail.PUBLIC_CONTACT_DEFAULT]
-        filter_condition = {"email__in": old_emails}
+
+        filter_condition = {"email__in": default_emails}
         self.mass_update_records(PublicContact, filter_condition, [], skip_bulk_update=True)
 
     def update_record(self, record: PublicContact):
