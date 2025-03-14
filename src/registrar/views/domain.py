@@ -1078,6 +1078,7 @@ class DomainDsDataView(DomainFormBaseView):
         """Formset submission posts to this view."""
         self._get_domain(request)
         formset = self.get_form()
+        print(formset)
 
         if formset.is_valid():
             return self.form_valid(formset)
@@ -1091,8 +1092,9 @@ class DomainDsDataView(DomainFormBaseView):
         dnssecdata = extensions.DNSSECExtension()
 
         for form in formset:
+            print("processing form")
+            print(form)
             if form.cleaned_data.get("DELETE"):  # Check if form is marked for deletion
-                print("form marked for deletion")
                 continue  # Skip processing this form
 
             try:
@@ -1111,6 +1113,7 @@ class DomainDsDataView(DomainFormBaseView):
                 # not been interacted with; in that case, want to ignore
                 pass
         try:
+            print(dnssecdata)
             self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             if err.is_connection_error():
