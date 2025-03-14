@@ -73,5 +73,5 @@ class Command(BaseCommand, PopulateScriptTemplate):
                     f"Details: DB value - {record_field}, expected value(s) - {expected_values}"
                 )
                 TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
-                return False
-        return True
+                return True
+        return False
