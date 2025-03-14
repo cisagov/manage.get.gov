@@ -18,7 +18,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.flows import PortfolioInvitationFlow
+from registrar.models.flows import PortfolioInvitationFlow
 from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,

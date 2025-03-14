@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
-from registrar.flows import DomainFlow
+from registrar.models.flows.domain_flow import DomainFlow
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP

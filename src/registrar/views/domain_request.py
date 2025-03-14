@@ -18,7 +18,7 @@ from registrar.forms import domain_request_wizard as forms
 from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
-from registrar.flows import DomainRequestFlow
+from registrar.models.flows import DomainRequestFlow
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.utility.waffle import flag_is_active_for_user

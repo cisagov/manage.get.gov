@@ -11,7 +11,7 @@ from django.db.models import (
     Value,
     When,
 )
-from registrar.flows import PortfolioInvitationFlow, DomainInvitationFlow, DomainRequestFlow
+from registrar.models.flows import PortfolioInvitationFlow, DomainInvitationFlow, DomainRequestFlow
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
 from registrar.models.domain_invitation import DomainInvitationFlow
@@ -29,7 +29,7 @@ from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
 from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
-from registrar.models.domain_request import DomainRequestFlow
+
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,

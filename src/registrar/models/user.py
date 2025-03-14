@@ -16,7 +16,7 @@ from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
 from django.utils import timezone
 from datetime import timedelta
-from registrar.flows import DomainInvitationFlow, PortfolioInvitationFlow
+from registrar.models.flows import DomainInvitationFlow, PortfolioInvitationFlow
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
