@@ -669,12 +669,6 @@ export function initRejectedEmail() {
 
         // Initialize UI
         const customEmail = new customRejectedEmail();
-        // // Check that every variable was setup correctly
-        // const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
-        // if (nullItems.length > 0) {
-        //     console.error(`Failed to load customRejectedEmail(). Some variables were null: ${nullItems.join(", ")}`)
-        //     return;
-        // }
         customEmail.loadRejectedEmail()
     });
 }
