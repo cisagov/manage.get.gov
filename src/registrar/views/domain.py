@@ -1092,6 +1092,7 @@ class DomainDsDataView(DomainFormBaseView):
 
         for form in formset:
             if form.cleaned_data.get("DELETE"):  # Check if form is marked for deletion
+                print("form marked for deletion")
                 continue  # Skip processing this form
 
             try:
