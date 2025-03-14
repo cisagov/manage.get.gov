@@ -1846,7 +1846,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 requested_user = get_requested_user(requested_email)
 
                 permission_exists = UserPortfolioPermission.objects.filter(
-                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                    user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
@@ -1857,7 +1857,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         is_admin_invitation=is_admin_invitation,
                     ):
                         messages.warning(
-                            self.request, "Could not send email notification to existing organization admins."
+                            request, "Could not send email notification to existing organization admins."
                         )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
