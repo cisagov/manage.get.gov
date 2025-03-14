@@ -131,6 +131,7 @@ class Command(BaseCommand):
                     "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
                 )
             else:
+                # if parse_suborganizations
                 self.create_suborganizations(portfolio, federal_agency)
                 if parse_domains:
                     self.handle_portfolio_domains(portfolio, federal_agency)
@@ -212,6 +213,41 @@ class Command(BaseCommand):
             )
         
         return portfolio, created
+
+    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
+        valid_agencies = federal_agency.domaininformation_set.filter(organization_name__isnull=False)
+        org_names = set(valid_agencies.values_list("organization_name", flat=True))
+        # TODO - this needs to do a iexact / normalize step
+        existing_org_names = set(
+            Suborganization.objects
+            .filter(name__in=org_names)
+            .values_list("name", flat=True)
+        )
+        for name in org_names - existing_org_names:
+            if normalize_string(name) == normalize_string(portfolio.organization_name):
+                self.suborganization_changes.skip.append(suborg)
+                message = (
+                    f"Skipping suborganization create on record '{name}'. "
+                    "The federal agency name is the same as the portfolio name."
+                )
+                TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+            else:
+                suborg = Suborganization(name=name, portfolio=portfolio)
+                self.suborganization_changes.add.append(suborg)
+
+        suborg_add_count = len(self.suborganization_changes.add)
+        if suborg_add_count > 0:
+            Suborganization.objects.bulk_create(self.suborganization_changes.add)
+            TerminalHelper.colorful_logger(
+                logger.info, TerminalColors.OKGREEN, f"Added {len(suborg_add_count)} suborganizations to '{federal_agency}'."
+            )
+        else:
+            TerminalHelper.colorful_logger(
+                logger.warning, 
+                TerminalColors.YELLOW, 
+                f"No suborganizations added for '{federal_agency}'."
+            )
 
     def add_managers_to_portfolio(self, portfolio: Portfolio):
         """
@@ -327,40 +363,6 @@ class Command(BaseCommand):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
 
-    def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
-        """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
-        valid_agencies = federal_agency.domaininformation_set.filter(organization_name__isnull=False)
-        org_names = set(valid_agencies.values_list("organization_name", flat=True))
-        existing_org_names = set(
-            Suborganization.objects
-            .filter(name__in=org_names)
-            .values_list("name", flat=True)
-        )
-        for name in org_names - existing_org_names:
-            if normalize_string(name) == normalize_string(portfolio.organization_name):
-                self.suborganization_changes.skip.append(suborg)
-                message = (
-                    f"Skipping suborganization create on record '{name}'. "
-                    "The federal agency name is the same as the portfolio name."
-                )
-                TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
-            else:
-                suborg = Suborganization(name=name, portfolio=portfolio)
-                self.suborganization_changes.add.append(suborg)
-
-        suborg_add_count = len(self.suborganization_changes.add)
-        if suborg_add_count > 0:
-            Suborganization.objects.bulk_create(self.suborganization_changes.add)
-            TerminalHelper.colorful_logger(
-                logger.info, TerminalColors.OKGREEN, f"Added {len(suborg_add_count)} suborganizations to '{federal_agency}'."
-            )
-        else:
-            TerminalHelper.colorful_logger(
-                logger.warning, 
-                TerminalColors.YELLOW, 
-                f"No suborganizations added for '{federal_agency}'."
-            )
-
     def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """
         Associate portfolio with domain requests for a federal agency.
@@ -421,7 +423,7 @@ class Command(BaseCommand):
 
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
-        domain_infos = DomainInformation.objects.filter(federal_agency=federal_agency)
+        domain_infos = federal_agency.domaininformation_set.all()
         if not domain_infos.exists():
             message = f"""
             Portfolio '{portfolio}' not added to domains: no valid records found.
@@ -434,8 +436,14 @@ class Command(BaseCommand):
         # Get all suborg information and store it in a dict to avoid doing a db call
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_info in domain_infos:
-            domain_info.portfolio = portfolio
-            domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
+            # Does this need a log?
+            suborg = suborgs.get(domain_info.organization_name, None)
+            if suborg:
+                domain_info.portfolio = portfolio
+                domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
+                self.domain_info_changes.update.append(domain_info)
+            else:
+                self.domain_info_changes.skip.append(domain_info)
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
         message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
