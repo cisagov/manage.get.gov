@@ -207,6 +207,17 @@ Linters:
 docker-compose exec app ./manage.py lint
 ```
 
+### Get availability for domain requests to work locally
+
+If you're on local (localhost:8080) and want to submit a domain request, and keep getting the "We’re experiencing a system error. Please wait a few minutes and try again. If you continue to get this error, contact help@get.gov." error, you can get past the availability check by updating the available() function in registrar/models/domain.py to return True and comment everything else out - see below for reference!
+
+```
+@classmethod
+def available(cls, domain: str) -> bool:
+  # Comment everything else out in the function
+  return True 
+```
+
 ### Testing behind logged in pages
 
 To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Zap`, add
