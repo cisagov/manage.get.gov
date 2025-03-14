@@ -1176,7 +1176,6 @@ class DomainSecurityEmailView(DomainFormBaseView):
     def get_context_data(self, **kwargs):
         """Adds the default emails list to the context"""
         context = super().get_context_data(**kwargs)
-        # use "formset" instead of "form" for the key
         context["default_emails"] = [email for email in DefaultEmail]
         return context
 
