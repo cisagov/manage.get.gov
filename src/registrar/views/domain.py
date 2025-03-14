@@ -1172,12 +1172,6 @@ class DomainSecurityEmailView(DomainFormBaseView):
             return initial
         initial["security_email"] = security_contact.email
         return initial
-    
-    def get_context_data(self, **kwargs):
-        """Adds the default emails list to the context"""
-        context = super().get_context_data(**kwargs)
-        context["default_emails"] = [email for email in DefaultEmail]
-        return context
 
     def get_success_url(self):
         """Redirect to the security email page for the domain."""
