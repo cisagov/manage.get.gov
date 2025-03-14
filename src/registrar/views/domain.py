@@ -1115,6 +1115,8 @@ class DomainDsDataView(DomainFormBaseView):
         try:
             print(dnssecdata)
             self.object.dnssecdata = dnssecdata
+            print("dns data successfully updated")
+            print(self.object.dnssecdata)
         except RegistryError as err:
             if err.is_connection_error():
                 messages.error(
