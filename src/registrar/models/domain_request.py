@@ -523,6 +523,19 @@ class DomainRequest(TimeStampedModel):
         choices=FEBPurposeChoices.choices,
     )
 
+    working_with_eop = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    eop_contact = models.ForeignKey(
+        "registrar.Contact",
+        null=True,
+        blank=True,
+        related_name="eop_contact",
+        on_delete=models.PROTECT,
+    )
+
     # This field is alternately used for generic domain purpose explanations
     # and for explanations of the specific purpose chosen with feb_purpose_choice
     # by a Federal Executive Branch agency.
