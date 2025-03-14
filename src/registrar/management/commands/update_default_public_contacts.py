@@ -28,6 +28,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Defines how we update the verification_type field"""
         record.name = "CSD/CB – Attn: .gov TLD"
         record.street1 = "1110 N. Glebe Rd"
+        record.pc = "22201"
         record.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updating default values for '{record}'.")
         TerminalHelper.colorful_logger("INFO", "MAGENTA", f"Attempting to update record in EPP...")
