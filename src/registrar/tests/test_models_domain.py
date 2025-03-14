@@ -1087,9 +1087,6 @@ class TestRegistrantContacts(MockEppLib):
         )
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL, DF.VOICE, DF.ADDR})
-        self.assertIn(DF.EMAIL, result.disclose.fields)
-        self.assertIn(DF.VOICE, result.disclose.fields)
-        self.assertIn(DF.ADDR, result.disclose.fields)
         self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
 
     @less_console_noise_decorator
