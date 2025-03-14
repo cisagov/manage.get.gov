@@ -1367,7 +1367,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 error,
             )
             raise error
-    
+
     def generic_contact_getter(self, contact_type_choice: PublicContact.ContactTypeChoices) -> PublicContact | None:
         """Retrieves the desired PublicContact from the registry.
         This abstracts the caching and EPP retrieval for
@@ -1781,7 +1781,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Try to fetch info about a contact. Create it if it does not exist."""
         logger.info("_get_or_create_contact() -> Fetching contact info")
         try:
-            return self._request_contact_info(contact)
+            return self._request_contact_info(contact=contact)
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
                 logger.info("_get_or_create_contact()-> contact doesn't exist so making it")

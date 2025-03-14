@@ -8,11 +8,7 @@ from django.db import models
 from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
-from epplibwrapper import (
-    CLIENT as registry,
-    commands,
-    RegistryError,
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +91,6 @@ class PublicContact(TimeStampedModel):
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
-    # NOTE: REMOVE THIS BEFORE MERGING, USED FOR PR REVIEW ONLY
     def debug_contact_info_epp(self):
         results = self.domain._request_contact_info(self, get_result_as_dict=True)
         logger.info("Contact Info from EPP:")
