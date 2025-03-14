@@ -1856,9 +1856,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         portfolio=portfolio,
                         is_admin_invitation=is_admin_invitation,
                     ):
-                        messages.warning(
-                            request, "Could not send email notification to existing organization admins."
-                        )
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
