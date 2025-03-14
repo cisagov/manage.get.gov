@@ -91,7 +91,8 @@ class PublicContact(TimeStampedModel):
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
-    def debug_contact_info_epp(self):
+    def print_contact_info_epp(self):
+        """Prints registry data for this PublicContact for easier debugging"""
         results = self.domain._request_contact_info(self, get_result_as_dict=True)
         logger.info("Contact Info from EPP:")
         logger.info("=====================")
