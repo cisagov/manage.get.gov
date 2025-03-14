@@ -1423,10 +1423,8 @@ class MockEppLib(TestCase):
         ],
     )
 
-    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
-    )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultTech", "help@get.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
@@ -1912,7 +1910,8 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail" and self.mockedSendFunction.call_count == 3:
+        ids_to_throw_already_exists = ["failAdmin", "failTech", "failSec", "failReg", "fail"]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
@@ -1927,7 +1926,8 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockDeleteContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail":
+        ids_to_throw_already_exists = ["failAdmin", "failTech", "failSec", "failReg", "fail"]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists:
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:
             return MagicMock(
@@ -1941,14 +1941,19 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose_email=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            disclose_fields = {DF.EMAIL}
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        di = common.Disclose(flag=disclose_email, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
