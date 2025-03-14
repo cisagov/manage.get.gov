@@ -2550,7 +2550,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     # @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
-    def test_domain_request_dotgov_domain_FEB_questions(self):
+    def test_domain_request_FEB_questions(self):
         """
         Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
         contains additional questions for OMB.
@@ -2612,12 +2612,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         # separate out these tests for readability
         self.feb_dotgov_domain_tests(dotgov_page)
 
-        # Now proceed with the actual test
         domain_form = dotgov_page.forms[0]
         domain = "test.gov"
         domain_form["dotgov_domain-requested_domain"] = domain
-        domain_form["dotgov_domain-feb_naming_requirements"] = "True"
-        domain_form["dotgov_domain-feb_naming_requirements_details"] = "test"
+        domain_form["dotgov_domain-feb_naming_requirements"] = "False"
+        domain_form["dotgov_domain-feb_naming_requirements_details"] = "Because this is a test"
         with patch(
             "registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain", return_value=domain
         ):  # noqa
@@ -2629,6 +2628,46 @@ class DomainRequestTests(TestWithUser, WebTest):
         purpose_page = domain_result.follow()
 
         self.feb_purpose_page_tests(purpose_page)
+
+        purpose_form = purpose_page.forms[0]
+        purpose_form["purpose-feb_purpose_choice"] = "redirect"
+        purpose_form["purpose-purpose"] = "testPurpose123"
+        purpose_form["purpose-has_timeframe"] = "True"
+        purpose_form["purpose-time_frame_details"] = "1/2/2025 - 1/2/2026"
+        purpose_form["purpose-is_interagency_initiative"] = "True"
+        purpose_form["purpose-interagency_initiative_details"] = "FakeInteragencyInitiative"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_result = purpose_form.submit()
+
+        # ---- ADDITIONAL DETAILS PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_page = purpose_result.follow()
+        self.feb_additional_details_page_tests(additional_details_page)
+
+        additional_details_form = additional_details_page.forms[0]
+        additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
+        additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
+        additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
+        additional_details_form["portfolio_additional_details-email"] = "testy@town.com"
+        additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
+        additional_details_form["portfolio_additional_details-anything_else"] = "test"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_result = additional_details_form.submit()
+
+        # ---- REQUIREMENTS PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = additional_details_result.follow()
+        self.feb_requirements_page_tests(requirements_page)
+
+        requirements_form = requirements_page.forms[0]
+        requirements_form["requirements-is_policy_acknowledged"] = "True"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_result = requirements_form.submit()
+
+        # ---- REVIEW PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        review_page = requirements_result.follow()
+        self.feb_review_page_tests(review_page)
 
     def feb_purpose_page_tests(self, purpose_page):
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")
@@ -2669,6 +2708,60 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check that the details form was included
         self.assertContains(dotgov_page, "feb_naming_requirements_details")
+
+    def feb_additional_details_page_tests(self, additional_details_page):
+        test_text = "Are you working with someone in the Executive Office of the President (EOP) on this request?"
+        self.assertContains(additional_details_page, test_text)
+
+        # Make sure the EOP form is present
+        self.assertContains(additional_details_page, "working_with_eop")
+
+        # Make sure the EOP contact form is present
+        self.assertContains(additional_details_page, "eop-contact-container")
+        self.assertContains(additional_details_page, "additional_details-first_name")
+        self.assertContains(additional_details_page, "additional_details-last_name")
+        self.assertContains(additional_details_page, "additional_details-email")
+
+        # Make sure the additional details form is present
+        self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
+        self.assertContains(additional_details_page, "additional_details-anything_else")
+
+    def feb_requirements_page_tests(self, requirements_page):
+        # Check for the 21st Century IDEA Act links
+        self.assertContains(
+            requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/"
+        )
+        self.assertContains(
+            requirements_page,
+            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
+        )
+
+        # Check for the policy acknowledgement form
+        self.assertContains(requirements_page, "is_policy_acknowledged")
+        self.assertContains(
+            requirements_page,
+            "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.",
+        )
+
+    def feb_review_page_tests(self, review_page):
+        # Meets Naming Requirements
+        self.assertContains(review_page, "<h4>Meets Naming Requirements</h4>")
+        self.assertContains(review_page, "No")
+        self.assertContains(review_page, "Because this is a test")
+        # Purpose
+        self.assertContains(review_page, "<h4>Purpose</h4>")
+        self.assertContains(review_page, "Used as a redirect for an existing website")
+        self.assertContains(review_page, "testPurpose123")
+        # Target Time Frame
+        self.assertContains(review_page, "<h4>Target Time Frame</h4>")
+        self.assertContains(review_page, "1/2/2025 - 1/2/2026")
+        # Interagency Initiative
+        self.assertContains(review_page, "<h4>Interagency Initiative</h4>")
+        self.assertContains(review_page, "FakeInteragencyInitiative")
+        # EOP Stakeholder
+        self.assertContains(review_page, "<h4>EOP Stakeholder</h4>")
+        self.assertContains(review_page, "TesterFirstName TesterLastName")
+        self.assertContains(review_page, "testy@town.com")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
