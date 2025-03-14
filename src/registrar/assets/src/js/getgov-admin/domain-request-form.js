@@ -105,8 +105,8 @@ export function initApprovedDomain() {
             return;
         }
 
-        const statusToCheck = "approved";
-        const readonlyStatusToCheck = "Approved";
+        const statusToCheck = "approved";  // when checking against a select
+        const readonlyStatusToCheck = "Approved";  // when checking against a readonly div display value
         const statusSelect = document.getElementById("id_status");
         const statusField = document.querySelector("field-status");
         const sessionVariableName = "showApprovedDomain";
@@ -122,6 +122,8 @@ export function initApprovedDomain() {
 
         // Handle showing/hiding the related fields on page load.
         function initializeFormGroups() {
+            // Status is either in a select or in a readonly div. Both
+            // cases are handled below.
             let isStatus = false;
             if (statusSelect) {
                 isStatus = statusSelect.value == statusToCheck;
@@ -605,12 +607,6 @@ export function initActionNeededEmail() {
         // Initialize UI
         const customEmail = new customActionNeededEmail();
 
-        // // Check that every variable was setup correctly
-        // const nullItems = Object.entries(customEmail.config).filter(([key, value]) => value === null).map(([key]) => key);
-        // if (nullItems.length > 0) {
-        //     console.error(`Failed to load customActionNeededEmail(). Some variables were null: ${nullItems.join(", ")}`)
-        //     return;
-        // }
         customEmail.loadActionNeededEmail()
     });
 }
