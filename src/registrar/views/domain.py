@@ -1099,7 +1099,7 @@ class DomainDsDataView(DomainFormBaseView):
 
             try:
                 dsrecord = {
-                    "keyTag": form.cleaned_data["key_tag"],
+                    "keyTag": int(form.cleaned_data["key_tag"]),
                     "alg": int(form.cleaned_data["algorithm"]),
                     "digestType": int(form.cleaned_data["digest_type"]),
                     "digest": form.cleaned_data["digest"],
