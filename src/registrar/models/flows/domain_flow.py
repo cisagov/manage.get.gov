@@ -1,11 +1,12 @@
 import logging
 
 from django_fsm import TransitionNotAllowed
-from registrar.models.domain import Domain
+
 from registrar.models.public_contact import PublicContact
 from viewflow import fsm
 from django.utils import timezone
 from epplibwrapper import RegistryError
+from registrar.models.domain import Domain
 
 logger = logging.getLogger(__name__)
 

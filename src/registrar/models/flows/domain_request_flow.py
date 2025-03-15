@@ -1,10 +1,9 @@
 import logging
-from django import apps
 from django.conf import settings
-from registrar.models.domain_request import DomainRequest
+from django.apps import apps
 from viewflow import fsm
 from django.utils import timezone
-
+from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 

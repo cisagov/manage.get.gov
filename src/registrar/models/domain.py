@@ -9,7 +9,6 @@ from django.db import transaction
 from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
-from registrar.models.flows.domain_flow import DomainFlow
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
@@ -312,6 +311,14 @@ class Domain(StateControlledModel, DomainHelper):
 
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
+
+    def get_flow(self):
+        """returns the DomainFlow object"""
+        # this is a Lazy import to avoid a circular import error
+        # the only other solution is adding the Flow definition to this already massive file
+        from registrar.models.flows import DomainFlow
+        
+        return DomainFlow(self)
 
     def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
         """
@@ -754,15 +761,13 @@ class Domain(StateControlledModel, DomainHelper):
 
         if successTotalNameservers < 2:
             try:
-                flow = DomainFlow(self)
-                flow.dns_needed()
+                self.get_flow().dns_needed()
                 self.save()
             except Exception as err:
                 logger.info("nameserver setter checked for dns_needed state and it did not succeed. Warning: %s" % err)
         elif successTotalNameservers >= 2 and successTotalNameservers <= 13:
             try:
-                flow = DomainFlow(self)
-                flow.ready()
+                self.get_flow().ready()
                 self.save()
             except Exception as err:
                 logger.info("nameserver setter checked for create state and it did not succeed. Warning: %s" % err)
@@ -1504,8 +1509,7 @@ class Domain(StateControlledModel, DomainHelper):
                     logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
-                    flow = DomainFlow(self)
-                    flow.dns_needed_from_unknown()
+                    self.get_flow().dns_needed_from_unknown()
                     # self.dns_needed_from_unknown()
                     self.save()
                 else:
@@ -1826,7 +1830,7 @@ class Domain(StateControlledModel, DomainHelper):
         and (and should be into DNS_NEEDED), we double check the
         current state and # of nameservers and update the state from there
         """
-        flow = DomainFlow(self)
+        flow =  self.get_flow()
         try:
             flow._add_missing_contacts_if_unknown(cleaned)
 

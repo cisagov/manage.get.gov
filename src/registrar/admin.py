@@ -14,9 +14,8 @@ from django.db.models import (
 from registrar.models.flows import PortfolioInvitationFlow, DomainInvitationFlow, DomainRequestFlow
 from django.db.models.functions import Concat, Coalesce
 from django.http import HttpResponseRedirect
-from registrar.models.domain_invitation import DomainInvitationFlow
+
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.portfolio_invitation import PortfolioInvitation, PortfolioInvitationFlow
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,

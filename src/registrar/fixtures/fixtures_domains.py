@@ -8,7 +8,7 @@ from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest
 from registrar.models.domain import Domain
-from registrar.models.flows.domain_flow import DomainRequestFlow
+from registrar.models.flows import DomainRequestFlow
 
 fake = Faker()
 logger = logging.getLogger(__name__)

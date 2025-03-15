@@ -1138,7 +1138,7 @@ class DomainRequest(StateControlledModel):
     # ## Form policies ## #
     #
     # These methods control what questions need to be answered by applicants
-    # during the domain request flow. They are policies about the domain request so
+    # during the domain request dom. They are policies about the domain request so
     # they appear here.
 
     def show_organization_federal(self) -> bool:

@@ -30,7 +30,6 @@ from registrar.models import (
     UserDomainRole,
     PublicContact,
 )
-from registrar.models.portfolio_invitation import PortfolioInvitationFlow
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
