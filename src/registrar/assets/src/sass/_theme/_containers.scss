@@ -22,5 +22,9 @@
 // regular grid-container within a widescreen (see instances
 // where is_widescreen_centered is used in the html).
 .max-width--grid-container {
-  max-width: 960px;
+  max-width: 1024px;
+}
+
+.grid-col--sidenav {
+  max-width: 230px;
 }

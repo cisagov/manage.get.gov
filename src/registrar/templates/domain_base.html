@@ -9,7 +9,7 @@
 <div class="grid-container grid-container--widescreen">
 
   <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-    <div class="tablet:grid-col-3 ">
+    <div class="tablet:grid-col-3 grid-col--sidenav">
       <p class="font-body-md margin-top-0 margin-bottom-2
                 text-primary-darker text-semibold string-wrap"
       >
@@ -21,7 +21,7 @@
       {% endif %}
     </div>
 
-    <div class="tablet:grid-col-9">
+    <div class="tablet:grid-col">
       <main id="main-content" class="grid-container">
       {% if not domain.domain_info %}
         <div class="usa-alert usa-alert--error margin-bottom-2">

@@ -58,18 +58,7 @@
                     {% endif %}
                 </li>
                 <li class="usa-button-group__item">
-                    {% comment %} The cancel button the DS form actually triggers a context change in the view,
-                    in addition to being a close modal hook {% endcomment %}
-                    {% if cancel_button_resets_ds_form %}
-                        <button
-                            type="submit"
-                            class="usa-button usa-button--unstyled padding-105 text-center"
-                            id="btn-cancel-click-button"
-                            data-close-modal
-                        >
-                            Cancel
-                        </button>
-                    {% elif not cancel_button_only %}
+                    {% if not cancel_button_only %}
                         <button
                             type="button"
                             class="usa-button usa-button--unstyled padding-105 text-center"
@@ -82,30 +71,14 @@
             </ul>
         </div>
     </div>
-    {% comment %} The cancel button the DS form actually triggers a context change in the view,
-    in addition to being a close modal hook {% endcomment %}
-    {% if cancel_button_resets_ds_form %}
-        <button
-            type="submit"
-            class="usa-button usa-modal__close"
-            aria-label="Close this window"
-            id="btn-cancel-click-close-button"
-            data-close-modal
-        >
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-            </svg>
-        </button>
-    {% else %}
-        <button
-            type="button"
-            class="usa-button usa-modal__close"
-            aria-label="Close this window"
-            data-close-modal
-        >
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
-                <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-            </svg>
-        </button>
-    {% endif %}
+    <button
+        type="button"
+        class="usa-button usa-modal__close"
+        aria-label="Close this window"
+        data-close-modal
+    >
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
+        </svg>
+    </button>
 </div>

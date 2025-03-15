@@ -166,3 +166,10 @@ th {
       overflow-y: visible;
   }
 }
+
+.usa-textarea--digest {
+  max-height: 4rem;
+  min-width: 13rem;
+  resize: none;
+  overflow: hidden;
+}
