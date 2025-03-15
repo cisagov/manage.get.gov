@@ -317,7 +317,7 @@ class Domain(StateControlledModel, DomainHelper):
         # this is a Lazy import to avoid a circular import error
         # the only other solution is adding the Flow definition to this already massive file
         from registrar.models.flows import DomainFlow
-        
+
         return DomainFlow(self)
 
     def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
@@ -1830,7 +1830,7 @@ class Domain(StateControlledModel, DomainHelper):
         and (and should be into DNS_NEEDED), we double check the
         current state and # of nameservers and update the state from there
         """
-        flow =  self.get_flow()
+        flow = self.get_flow()
         try:
             flow._add_missing_contacts_if_unknown(cleaned)
 

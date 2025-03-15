@@ -4,17 +4,19 @@ import argparse
 import logging
 from django.core.management import BaseCommand, CommandError
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from registrar.models import ( Domain,
-                        DomainInformation, 
-                        DomainInvitation,
-                        DomainRequest, 
-                        FederalAgency, 
-                        Suborganization, 
-                        Portfolio, 
-                        PortfolioInvitation,
-                        User,
-                        UserDomainRole,
-                        UserPortfolioPermission)
+from registrar.models import (
+    Domain,
+    DomainInformation,
+    DomainInvitation,
+    DomainRequest,
+    FederalAgency,
+    Suborganization,
+    Portfolio,
+    PortfolioInvitation,
+    User,
+    UserDomainRole,
+    UserPortfolioPermission,
+)
 from registrar.models.utility.generic_helper import normalize_string
 from django.db.models import F, Q
 
