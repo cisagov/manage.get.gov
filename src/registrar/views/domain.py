@@ -1478,7 +1478,12 @@ class DomainDeleteUserView(DeleteView):
         super().form_valid(form)
 
         # Email all domain managers that domain manager has been removed
-        send_domain_manager_removal_emails_to_domain_managers(self.request.user, self.object.user, self.object.domain)
+        send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.request.user,
+            manager_removed=self.object.user,
+            manager_removed_email=self.object.user.email,
+            domain=self.object.domain,
+        )
 
         # Add a success message
         messages.success(self.request, self.get_success_message())

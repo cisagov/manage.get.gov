@@ -204,7 +204,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     if manager_removed:
-        user_domain_roles.exclude(user=manager_removed)
+        user_domain_roles = user_domain_roles.exclude(user=manager_removed)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user

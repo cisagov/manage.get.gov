@@ -1143,11 +1143,14 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     def test_send_email_success(self, mock_filter, mock_send_templated_email):
         """Test successful sending of domain manager removal emails."""
-        mock_filter.return_value = [self.domain_manager1, self.domain_manager2]
+        mock_filter.return_value.exclude.return_value = [self.domain_manager1]
         mock_send_templated_email.return_value = None  # No exception means success
 
         result = send_domain_manager_removal_emails_to_domain_managers(
-            self.manager_user1, self.manager_user2, self.domain
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
         )
 
         mock_filter.assert_called_once_with(domain=self.domain)
@@ -1158,7 +1161,36 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
             context={
                 "domain": self.domain,
                 "removed_by": self.manager_user1,
-                "manager_removed": self.manager_user2,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_success_when_no_user(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of domain manager removal emails."""
+        mock_filter.return_value = [self.domain_manager1, self.domain_manager2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.manager_user1,
+            manager_removed=None,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
+        )
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_address=self.manager_user1.email,
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
             },
         )
@@ -1169,7 +1201,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
             context={
                 "domain": self.domain,
                 "removed_by": self.manager_user1,
-                "manager_removed": self.manager_user2,
+                "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
             },
         )
@@ -1180,10 +1212,13 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     def test_send_email_failure(self, mock_filter, mock_send_templated_email):
         """Test handling of failure in sending admin removal emails."""
-        mock_filter.return_value = [self.domain_manager1, self.domain_manager2]
+        mock_filter.return_value.exclude.return_value = [self.domain_manager1, self.domain_manager2]
 
         result = send_domain_manager_removal_emails_to_domain_managers(
-            self.manager_user1, self.manager_user2, self.domain
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
         )
 
         self.assertFalse(result)
@@ -1195,7 +1230,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
             context={
                 "domain": self.domain,
                 "removed_by": self.manager_user1,
-                "manager_removed": self.manager_user2,
+                "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
             },
         )
@@ -1206,7 +1241,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
             context={
                 "domain": self.domain,
                 "removed_by": self.manager_user1,
-                "manager_removed": self.manager_user2,
+                "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
             },
         )
@@ -1215,10 +1250,13 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     def test_no_managers_to_notify(self, mock_filter):
         """Test case where there are no domain managers to notify."""
-        mock_filter.return_value = []  # No managers
+        mock_filter.return_value.exclude.return_value = []  # No managers
 
         result = send_domain_manager_removal_emails_to_domain_managers(
-            self.manager_user1, self.manager_user2, self.domain
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
         )
 
         self.assertTrue(result)  # No emails sent, but also no failures

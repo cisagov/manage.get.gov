@@ -1094,7 +1094,12 @@ class TestDomainManagers(TestDomainOverview):
         )
 
         # Verify that the notification emails were sent to domain manager
-        mock_send_email.assert_called_once_with(self.user, self.manager, self.domain)
+        mock_send_email.assert_called_once_with(
+            removed_by_user=self.user,
+            manager_removed=self.manager,
+            manager_removed_email=self.manager.email,
+            domain=self.domain,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_domain_invitation_email")
