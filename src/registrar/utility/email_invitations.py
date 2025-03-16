@@ -182,7 +182,10 @@ def _send_domain_invitation_update_emails_to_domain_managers(
 
 
 def send_domain_manager_removal_emails_to_domain_managers(
-    removed_by_user: User, manager_removed: User, domain: Domain,
+    removed_by_user: User,
+    manager_removed: User,
+    manager_removed_email: str,
+    domain: Domain,
 ):
     """
     Notifies all domain managers that a domain manager has been removed.
@@ -190,15 +193,18 @@ def send_domain_manager_removal_emails_to_domain_managers(
     Args:
         removed_by_user(User): The user who initiated the removal.
         manager_removed(User): The user being removed.
+        manager_removed_email(str): The email of the user being removed (in case no User).
         domain(Domain): The domain the user is being removed from.
 
     Returns:
         Boolean indicating if all messages were sent successfully.
-    
+
     """
     all_emails_sent = True
     # Get each domain manager from list
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
+    if manager_removed:
+        user_domain_roles.exclude(user=manager_removed)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
@@ -210,17 +216,17 @@ def send_domain_manager_removal_emails_to_domain_managers(
                 context={
                     "domain": domain,
                     "removed_by": removed_by_user,
-                    "manager_removed": manager_removed,
+                    "manager_removed_email": manager_removed_email,
                     "date": date.today(),
                 },
             )
         except EmailSendingError:
             logger.warning(
-                    "Could not send notification email to %s for domain %s",
-                    user.email,
-                    domain.name,
-                    exc_info=True,
-                )
+                "Could not send notification email to %s for domain %s",
+                user.email,
+                domain.name,
+                exc_info=True,
+            )
             all_emails_sent = False
     return all_emails_sent
 

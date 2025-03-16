@@ -68,7 +68,11 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from ..utility.email_invitations import send_domain_invitation_email, send_domain_manager_removal_emails_to_domain_managers, send_portfolio_invitation_email
+from ..utility.email_invitations import (
+    send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
+    send_portfolio_invitation_email,
+)
 from django import forms
 
 logger = logging.getLogger(__name__)
@@ -1474,9 +1478,7 @@ class DomainDeleteUserView(DeleteView):
         super().form_valid(form)
 
         # Email all domain managers that domain manager has been removed
-        send_domain_manager_removal_emails_to_domain_managers(
-            self.request.user, self.object.user, self.object.domain
-        )
+        send_domain_manager_removal_emails_to_domain_managers(self.request.user, self.object.user, self.object.domain)
 
         # Add a success message
         messages.success(self.request, self.get_success_message())

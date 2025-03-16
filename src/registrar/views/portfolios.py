@@ -29,6 +29,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
@@ -193,6 +194,31 @@ class PortfolioMemberDeleteView(View):
                 messages.warning(
                     request, f"Could not send email notification to {portfolio_member_permission.user.email}"
                 )
+
+            # Notify domain managers for domains which the member is being removed from
+            # Get list of portfolio domains that the member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_member_permission.user.email,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user=portfolio_member_permission.user,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=portfolio_member_permission.user,
+                    manager_removed_email=portfolio_member_permission.user.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -502,6 +528,31 @@ class PortfolioInvitedMemberDeleteView(View):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
+
+            # Notify domain managers for domains which the invited member is being removed from
+            # Get list of portfolio domains that the invited member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=None,
+                    manager_removed_email=portfolio_invitation.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 

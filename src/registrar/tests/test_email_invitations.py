@@ -1150,9 +1150,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
             self.manager_user1, self.manager_user2, self.domain
         )
 
-        mock_filter.assert_called_once_with(
-            domain=self.domain
-        )
+        mock_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_deleted_notification.txt",
             "emails/domain_manager_deleted_notification_subject.txt",
@@ -1189,9 +1187,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         )
 
         self.assertFalse(result)
-        mock_filter.assert_called_once_with(
-            domain=self.domain
-        )
+        mock_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_deleted_notification.txt",
             "emails/domain_manager_deleted_notification_subject.txt",
@@ -1226,6 +1222,4 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         )
 
         self.assertTrue(result)  # No emails sent, but also no failures
-        mock_filter.assert_called_once_with(
-            domain=self.domain
-        )
+        mock_filter.assert_called_once_with(domain=self.domain)
