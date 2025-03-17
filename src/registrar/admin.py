@@ -1250,8 +1250,10 @@ class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
 
     search_fields = ["host__name", "address"]
     search_help_text = "Search by host name or address."
-    list_display = ("host", "address",)
-
+    list_display = (
+        "host",
+        "address",
+    )
 
 
 class ContactResource(resources.ModelResource):

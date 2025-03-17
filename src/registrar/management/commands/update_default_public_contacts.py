@@ -1,9 +1,8 @@
 import logging
 import argparse
 from django.core.management import BaseCommand
-from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors, TerminalHelper
+from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
 from registrar.models import PublicContact
-from django.db import transaction
 from registrar.models.utility.generic_helper import normalize_string
 from registrar.utility.enums import DefaultEmail
 
@@ -56,12 +55,11 @@ class Command(BaseCommand, PopulateScriptTemplate):
             "pc": {"22201", "20598-0645"},
             "email": default_emails,
         }
-        # 16
         if not target_domain:
             filter_condition = {"email__in": default_emails}
         else:
-            filter_condition = {"email__in": default_emails, "domain__name": target_domain}
-        # This is decorative since we are skipping bulk update
+            filter_condition = {"email__in": default_emails, "domain__name__iexact": target_domain}
+        # This variable is decorative since we are skipping bulk update
         fields_to_update = ["name", "street1", "pc", "email"]
         self.mass_update_records(PublicContact, filter_condition, fields_to_update, show_record_count=True)
 
