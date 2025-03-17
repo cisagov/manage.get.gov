@@ -1160,6 +1160,12 @@ class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_org_update_notification.txt",
             "emails/portfolio_org_update_notification_subject.txt",
+            to_address=self.admin_user1.email,
+            context=ANY,
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_org_update_notification.txt",
+            "emails/portfolio_org_update_notification_subject.txt",
             to_address=self.admin_user2.email,
             context=ANY,
         )
