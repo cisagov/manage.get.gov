@@ -1846,7 +1846,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 requested_user = get_requested_user(requested_email)
 
                 permission_exists = UserPortfolioPermission.objects.filter(
-                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                    user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
@@ -1856,9 +1856,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         portfolio=portfolio,
                         is_admin_invitation=is_admin_invitation,
                     ):
-                        messages.warning(
-                            self.request, "Could not send email notification to existing organization admins."
-                        )
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
@@ -2758,16 +2756,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "investigator",
         "portfolio",
         "sub_organization",
+        "senior_official",
     ]
 
     filter_horizontal = ("current_websites", "alternative_domains", "other_contacts")
 
     # Table ordering
     # NOTE: This impacts the select2 dropdowns (combobox)
-    # Currentl, there's only one for requests on DomainInfo
+    # Currently, there's only one for requests on DomainInfo
     ordering = ["-last_submitted_date", "requested_domain__name"]
-
-    change_form_template = "django/admin/domain_request_change_form.html"
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
