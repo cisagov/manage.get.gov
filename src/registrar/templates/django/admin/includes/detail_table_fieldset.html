@@ -172,6 +172,16 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endblock field_readonly %}
 
 {% block field_other %}
+    {% comment %}
+    .gov override - add Aria messages for select2 dropdowns.  These messages are hooked-up to their respective DOM
+    elements via javascript (see andi.js)
+    {% endcomment %}
+    {% if "related_widget_wrapper" in field.field.field.widget.template_name %}
+        <span id="{{ field.field.id_for_label }}--aria-description" class="visually-hidden admin-select--aria-description">
+            {{ field.field.label }}, edit, has autocomplete. To set the value, use the arrow keys or type the text.
+        </span>
+    {% endif %}
+
     {% if field.field.name == "action_needed_reason_email" %}
         {{ field.field }}
 
@@ -263,7 +273,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 
     {% elif field.field.name == "rejection_reason_email" %}
         {{ field.field }}
-
         <div class="margin-top-05 text-faded custom-email-placeholder">
             &ndash;
         </div>
@@ -343,7 +352,6 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </button>
             </div>
         </div>
-        
         {% if original_object.rejection_reason_email %}
             <input id="last-sent-rejection-email-content" class="display-none" value="{{original_object.rejection_reason_email}}">
         {% else %}
