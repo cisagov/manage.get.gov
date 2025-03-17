@@ -107,7 +107,7 @@ class PopulateScriptTemplate(ABC):
 
             verbose: Whether to print a detailed run summary *before* run confirmation.
                 Default: False.
-            
+
             show_record_count: Whether to show a 'Record 1/10' dialog when running update.
                 Default: False.
 

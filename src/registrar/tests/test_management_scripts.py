@@ -2525,7 +2525,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # 1. PublicContact with all old default values
         self.old_default_contact = self.domain.get_default_administrative_contact()
-        self.old_default_contact.registry_id = "failAdmin"
+        self.old_default_contact.registry_id = "failAdmin1234567"
         self.old_default_contact.name = "CSD/CB – ATTN: Cameron Dixon"
         self.old_default_contact.street1 = "CISA – NGR STOP 0645"
         self.old_default_contact.pc = "20598-0645"
@@ -2534,7 +2534,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # 2. PublicContact with current default email but old values for other fields
         self.mixed_default_contact = self.domain.get_default_technical_contact()
-        self.mixed_default_contact.registry_id = "failTech"
+        self.mixed_default_contact.registry_id = "failTech12345678"
         self.mixed_default_contact.save(skip_epp_save=True)
         self.mixed_default_contact.name = "registry customer service"
         self.mixed_default_contact.street1 = "4200 Wilson Blvd."
@@ -2544,7 +2544,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # 3. PublicContact with non-default values
         self.non_default_contact = self.domain.get_default_security_contact()
-        self.non_default_contact.registry_id = "failSec"
+        self.non_default_contact.registry_id = "failSec123456789"
         self.non_default_contact.domain = self.domain
         self.non_default_contact.save(skip_epp_save=True)
         self.non_default_contact.name = "Hotdogs"
@@ -2555,7 +2555,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # 4. Create a default contact but with an old email
         self.default_registrant_old_email = self.domain.get_default_registrant_contact()
-        self.default_registrant_old_email.registry_id = "failReg"
+        self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
         self.default_registrant_old_email.save()
 

@@ -1910,7 +1910,13 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        ids_to_throw_already_exists = ["failAdmin", "failTech", "failSec", "failReg", "fail"]
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
         if getattr(_request, "id", None) in ids_to_throw_already_exists and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
@@ -1926,7 +1932,13 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockDeleteContactCommands(self, _request, cleaned):
-        ids_to_throw_already_exists = ["failAdmin", "failTech", "failSec", "failReg", "fail"]
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
         if getattr(_request, "id", None) in ids_to_throw_already_exists:
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:

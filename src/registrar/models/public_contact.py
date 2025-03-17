@@ -82,7 +82,7 @@ class PublicContact(TimeStampedModel):
         if hasattr(self, "domain") and not skip_epp_save:
             self.add_to_domain_in_epp()
         super().save(*args, **kwargs)
-    
+
     def add_to_domain_in_epp(self):
         """Adds the current contact to the underlying domain in EPP."""
         match self.contact_type:
