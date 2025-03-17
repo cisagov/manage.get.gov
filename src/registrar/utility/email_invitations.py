@@ -244,7 +244,6 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
         MissingEmailError: If the requestor has no email associated with their account.
         EmailSendingError: If there is an error while sending the email.
     """
-    editor_email = editor.email
     all_emails_sent = True
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
