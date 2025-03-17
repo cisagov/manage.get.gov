@@ -2,9 +2,8 @@ import logging
 import argparse
 from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalHelper
-from registrar.models import PublicContact, Domain
-from django.db.models import Q
-
+from registrar.models import PublicContact
+from django.db import transaction
 from registrar.models.utility.generic_helper import normalize_string
 from registrar.utility.enums import DefaultEmail
 
@@ -33,6 +32,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
             ),
         )
 
+        # print to file setting! 
+
     def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
         overwrite_updated_contacts = kwargs.get("overwrite_updated_contacts")
@@ -57,12 +58,21 @@ class Command(BaseCommand, PopulateScriptTemplate):
             "pc": {"22201", "20598-0645"},
             "email": default_emails,
         }
-
+        # 16
         if not target_domain:
             filter_condition = {"email__in": default_emails}
         else:
             filter_condition = {"email__in": default_emails, "domain__name": target_domain}
-        self.mass_update_records(PublicContact, filter_condition, [], skip_bulk_update=True)
+        fields_to_update = ["name", "street1", "pc", "email"]
+        self.mass_update_records(PublicContact, filter_condition, fields_to_update)
+
+    def bulk_update_fields(self, object_class, to_update, fields_to_update):
+        with transaction.atomic():
+            super().bulk_update_fields(object_class, to_update, fields_to_update)
+            TerminalHelper.colorful_logger("INFO", "MAGENTA", f"Updating records in EPP...")
+            for record in to_update:
+                record.add_to_domain_in_epp()
+                TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updated '{record}' in EPP.")
 
     def update_record(self, record: PublicContact):
         """Defines how we update the verification_type field"""
@@ -71,16 +81,22 @@ class Command(BaseCommand, PopulateScriptTemplate):
         record.pc = "22201"
         record.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
         TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updating default values for '{record}'.")
-        record.save()
-        TerminalHelper.colorful_logger("INFO", "OKCYAN", f"Updated record in EPP.")
 
     def should_skip_record(self, record) -> bool:  # noqa
         """Skips updating a public contact if it contains different default info."""
+        if record.registry_id and len(record.registry_id) < 16:
+            message = (
+                f"Skipping legacy verisign contact '{record}'. "
+                f"The registry_id field has a length less than 16 characters."
+            )
+            TerminalHelper.colorful_logger("WARNING", "YELLOW", message)
+            return True
+
         for key, expected_values in self.old_and_new_default_contact_values.items():
             record_field = normalize_string(getattr(record, key))
             if record_field not in expected_values:
                 message = (
-                    f"Skipping '{record}' to avoid data corruption. "
+                    f"Skipping '{record}' to avoid potential data corruption. "
                     f"The field '{key}' does not match the default.\n"
                     f"Details: DB value - {record_field}, expected value(s) - {expected_values}"
                 )

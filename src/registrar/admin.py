@@ -4147,11 +4147,13 @@ class PublicContactResource(resources.ModelResource):
 
 class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom PublicContact admin class."""
-
     resource_classes = [PublicContactResource]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
     autocomplete_fields = ["domain"]
+    list_display = ("registry_id", "contact_type", "domain", "name")
+    search_fields = ["registry_id", "domain", "name"]
+    search_help_text = "Search by registry id, domain, or name."
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if extra_context is None:

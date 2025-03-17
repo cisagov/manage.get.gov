@@ -41,21 +41,6 @@ class PublicContact(TimeStampedModel):
         TECHNICAL = "tech", "Technical"
         SECURITY = "security", "Security"
 
-    def save(self, *args, **kwargs):
-        """Save to the registry and also locally in the registrar database."""
-        skip_epp_save = kwargs.pop("skip_epp_save", False)
-        if hasattr(self, "domain") and not skip_epp_save:
-            match self.contact_type:
-                case PublicContact.ContactTypeChoices.REGISTRANT:
-                    self.domain.registrant_contact = self
-                case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    self.domain.administrative_contact = self
-                case PublicContact.ContactTypeChoices.TECHNICAL:
-                    self.domain.technical_contact = self
-                case PublicContact.ContactTypeChoices.SECURITY:
-                    self.domain.security_contact = self
-        super().save(*args, **kwargs)
-
     contact_type = models.CharField(
         max_length=14,
         choices=ContactTypeChoices.choices,
@@ -90,6 +75,25 @@ class PublicContact(TimeStampedModel):
         help_text="Contact's fax number (null ok). Must be in ITU.E164.2005 format.",
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
+
+    def save(self, *args, **kwargs):
+        """Save to the registry and also locally in the registrar database."""
+        skip_epp_save = kwargs.pop("skip_epp_save", False)
+        if hasattr(self, "domain") and not skip_epp_save:
+            self.add_to_domain_in_epp()
+        super().save(*args, **kwargs)
+    
+    def add_to_domain_in_epp(self):
+        """Adds the current contact to the underlying domain in EPP."""
+        match self.contact_type:
+            case PublicContact.ContactTypeChoices.REGISTRANT:
+                self.domain.registrant_contact = self
+            case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                self.domain.administrative_contact = self
+            case PublicContact.ContactTypeChoices.TECHNICAL:
+                self.domain.technical_contact = self
+            case PublicContact.ContactTypeChoices.SECURITY:
+                self.domain.security_contact = self
 
     def print_contact_info_epp(self):
         """Prints registry data for this PublicContact for easier debugging"""
@@ -172,4 +176,4 @@ class PublicContact(TimeStampedModel):
         return cls._meta.get_field("registry_id").max_length
 
     def __str__(self):
-        return f"{self.name} <{self.email}>" f"id: {self.registry_id} " f"type: {self.contact_type}"
+        return self.registry_id
