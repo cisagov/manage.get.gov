@@ -227,7 +227,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
     return all_admin_emails_sent
 
 
-def send_portfolio_organization_update_email(editor, portfolio, updated_page):
+def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_page):
     """
     Sends an email notification to all portfolio admin when portfolio organization is updated.
 

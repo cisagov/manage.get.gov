@@ -20,7 +20,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
-    send_portfolio_organization_update_email,
+    send_portfolio_update_emails_to_portfolio_admins,
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -1116,7 +1116,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
 
 
 class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
-    """Unit tests for send_portfolio_organization_update_email function."""
+    """Unit tests for send_portfolio_update_emails_to_portfolio_admins function."""
     def setUp(self):
         """Set up test data."""
         self.email = "removed.admin@example.com"
@@ -1141,8 +1141,8 @@ class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
 
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
-    def test_send_portfolio_organization_update_email(self, mock_filter, mock_send_templated_email):
-        """Test send_portfolio_organization_update_email sends templated email."""
+    def test_send_portfolio_update_emails_to_portfolio_admins(self, mock_filter, mock_send_templated_email):
+        """Test send_portfolio_update_emails_to_portfolio_admins sends templated email."""
         # Mock data
         editor = self.admin_user1
         updated_page = "Organization"
@@ -1151,7 +1151,7 @@ class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
         mock_send_templated_email.return_value = None  # No exception means success
 
         # Call function
-        result = send_portfolio_organization_update_email(editor, self.portfolio, updated_page)
+        result = send_portfolio_update_emails_to_portfolio_admins(editor, self.portfolio, updated_page)
 
         mock_filter.assert_called_once_with(
             portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]

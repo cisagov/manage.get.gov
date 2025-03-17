@@ -433,7 +433,7 @@ class TestPortfolio(WebTest):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_organization_update_email")
+    @patch("registrar.views.portfolios.send_portfolio_update_emails_to_portfolio_admins")
     def test_org_update_sends_admin_email(self, mock_send_organization_update_email):
         """Updating organization information emails organization admin."""
         with override_flag("organization_feature", active=True):

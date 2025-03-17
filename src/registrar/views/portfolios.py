@@ -35,7 +35,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
-    send_portfolio_organization_update_email,
+    send_portfolio_update_emails_to_portfolio_admins,
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
@@ -853,7 +853,7 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         if form.is_valid():
             user = request.user
             try:
-                if not send_portfolio_organization_update_email(
+                if not send_portfolio_update_emails_to_portfolio_admins(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
@@ -924,7 +924,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         if form.is_valid():
             user = request.user
             try:
-                if not send_portfolio_organization_update_email(
+                if not send_portfolio_update_emails_to_portfolio_admins(
                     editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
