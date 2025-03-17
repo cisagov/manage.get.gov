@@ -200,9 +200,9 @@ class TerminalHelper:
         skip,
         fail,
         debug: bool,
-        log_header=None,
-        skipped_header=None,
-        failed_header=None,
+        log_header="============= FINISHED ===============",
+        skipped_header="----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----",
+        failed_header="----- UPDATE FAILED -----",
         display_as_str=False,
     ):
         """Generates a formatted summary of script execution results with colored output.
@@ -235,67 +235,51 @@ class TerminalHelper:
         - Directly prints each list for each category (add, update, etc)
         - Converts each item to string if display_as_str is True
         """
-        add_count = len(add)
-        update_count = len(update)
-        skipped_count = len(skip)
-        failed_count = len(fail)
-        # Label, count, values, and debug-specific log color
-        count_msgs = {
-            "added": ("Added", add_count, add, TerminalColors.OKBLUE),
-            "updated": ("Updated", update_count, update, TerminalColors.OKCYAN),
-            "skipped": ("Skipped updating", skipped_count, skip, TerminalColors.YELLOW),
-            "failed": ("Failed to update", failed_count, fail, TerminalColors.FAIL),
+        counts = {
+            "added": len(add),
+            "updated": len(update),
+            "skipped": len(skip),
+            "failed": len(fail),
         }
-
-        if log_header is None:
-            log_header = "============= FINISHED ==============="
-
-        if skipped_header is None:
-            skipped_header = "----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----"
-
-        if failed_header is None:
-            failed_header = "----- UPDATE FAILED -----"
 
         # Give the user the option to see failed / skipped records if any exist.
         display_detailed_logs = False
-        if not debug and failed_count > 0 or skipped_count > 0:
+        if not debug and counts["failed"] > 0 or counts["skipped"] > 0:
             display_detailed_logs = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                prompt_message=f"You will see {failed_count} failed and {skipped_count} skipped records.",
+                prompt_message=f'You will see {counts["failed"]} failed and {counts["updated"]} skipped records.',
                 verify_message="** Some records were skipped, or some failed to update. **",
                 prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
             )
-
-        change_occurred = False
-        messages = [f"\n{log_header}"]
-        for change_type, dict_tuple in count_msgs.items():
-            label, count, values, debug_log_color = dict_tuple
-            if count > 0:
-                # Print debug messages (prints the internal add, update, skip, fail lists)
-                if debug or display_detailed_logs:
-                    display_values = [str(v) for v in values] if display_as_str else values
-                    message = f"{label}: {display_values}"
-                    TerminalHelper.colorful_logger(logger.info, debug_log_color, message)
-
-                # Get the sub-header for fail conditions
-                if change_type == "failed":
-                    messages.append(failed_header)
-                if change_type == "skipped":
+        
+        messages = []
+        for category, count in counts.items():
+            match category:
+                case "added":
+                    label, values, debug_color = "Added", add, TerminalColors.OKBLUE
+                case "updated":
+                    label, values, debug_color = "Updated", update, TerminalColors.OKCYAN
+                case "skipped":
+                    label, values, debug_color = "Skipped updating", skip, TerminalColors.YELLOW
                     messages.append(skipped_header)
+                case "failed":
+                    label, values, debug_color = "Failed to update", fail, TerminalColors.FAIL
+                    messages.append(failed_header)
+            messages.append(f"{label} {count} entries")
 
-                # Print the change count
-                messages.append(f"{label} {count} entries")
-                change_occurred = True
+            # Print debug messages (prints the internal add, update, skip, fail lists)
+            if debug or display_detailed_logs:
+                display_values = [str(v) for v in values] if display_as_str else values
+                debug_message = f"{label}: {display_values}"
+                TerminalHelper.colorful_logger(logger.info, debug_color, debug_message)
 
-        if not change_occurred:
-            messages.append("No changes occurred.")
-
-        if failed_count > 0:
-            TerminalHelper.colorful_logger("ERROR", "FAIL", "\n".join(messages))
-        elif skipped_count > 0:
-            TerminalHelper.colorful_logger("WARNING", "YELLOW", "\n".join(messages))
+        final_message = f"\n{log_header}" + "\n".join(messages)
+        if counts["failed"] > 0:
+            TerminalHelper.colorful_logger("ERROR", "FAIL", final_message)
+        elif counts["skipped"] > 0:
+            TerminalHelper.colorful_logger("WARNING", "YELLOW", final_message)
         else:
-            TerminalHelper.colorful_logger("INFO", "OKGREEN", "\n".join(messages))
+            TerminalHelper.colorful_logger("INFO", "OKGREEN", final_message)
 
     @staticmethod
     def query_yes_no(question: str, default="yes"):
