@@ -124,7 +124,7 @@ class PopulateScriptTemplate(ABC):
         # for use in the execution prompt.
         proposed_changes = (
             "==Proposed Changes==\n"
-            f"Number of {readable_class_name} objects to change: {len(records_length)}\n"
+            f"Number of {readable_class_name} objects to change: {records_length}\n"
             f"These fields will be updated on each record: {fields_to_update}"
         )
 
