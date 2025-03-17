@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from datetime import date
 from registrar.models.domain import Domain
 from registrar.models.portfolio import Portfolio
@@ -20,6 +20,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
+    send_portfolio_organization_update_email,
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -1112,3 +1113,53 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
 
         # Assertions
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
+
+
+class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
+    """Unit tests for send_portfolio_organization_update_email function."""
+    def setUp(self):
+        """Set up test data."""
+        self.email = "removed.admin@example.com"
+        self.requestor_email = "requestor@example.com"
+        self.portfolio = MagicMock(spec=Portfolio, name="Portfolio")
+        self.portfolio.organization_name = "Test Organization"
+
+        # Mock portfolio admin users
+        self.admin_user1 = MagicMock(spec=User)
+        self.admin_user1.email = "admin1@example.com"
+
+        self.admin_user2 = MagicMock(spec=User)
+        self.admin_user2.email = "admin2@example.com"
+
+        self.portfolio_admin1 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin1.user = self.admin_user1
+        self.portfolio_admin1.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        self.portfolio_admin2 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin2.user = self.admin_user2
+        self.portfolio_admin2.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_portfolio_organization_update_email(self, mock_filter, mock_send_templated_email):
+        """Test send_portfolio_organization_update_email sends templated email."""
+        # Mock data
+        editor = self.admin_user1
+        updated_page = "Organization"
+
+        mock_filter.return_value.exclude.return_value = [self.portfolio_admin2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        # Call function
+        result = send_portfolio_organization_update_email(editor, self.portfolio, updated_page)
+
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_org_update_notification.txt",
+            "emails/portfolio_org_update_notification_subject.txt",
+            to_address=self.admin_user2.email,
+            context=ANY,
+        )
+        self.assertTrue(result)

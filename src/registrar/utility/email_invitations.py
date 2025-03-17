@@ -264,7 +264,7 @@ def send_portfolio_organization_update_email(editor, portfolio, updated_page):
                     "editor": editor,
                     "portfolio_admin": user,
                     "date": date.today(),
-                    "updated_info": "Organization",
+                    "updated_info": updated_page,
                 },
             )
         except EmailSendingError:
