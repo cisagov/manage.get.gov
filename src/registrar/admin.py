@@ -1457,10 +1457,11 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
 
         # Check if user is in OMB analysts group
         if request.user.groups.filter(name="omb_analysts_group").exists():
-            annotated_qs = self.get_annotated_queryset(qs)
-            return annotated_qs.filter(
-                converted_federal_type=BranchChoices.EXECUTIVE,
-            )
+            # annotated_qs = self.get_annotated_queryset(qs)
+            # return annotated_qs.filter(
+            #     converted_federal_type=BranchChoices.EXECUTIVE,
+            # )
+            return qs.filter(federal_agency__federal_type=BranchChoices.EXECUTIVE)
 
         return qs  # Return full queryset if the user doesn't have the restriction
 

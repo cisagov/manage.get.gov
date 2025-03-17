@@ -3819,8 +3819,8 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertNotContains(response, "id_federal_type")
         self.assertNotContains(response, "id_acronym")
         self.assertNotContains(response, "id_is_fceb")
-        self.assertNotContains(response, "closelink")
-        self.assertContains(response, "Save")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
         self.assertNotContains(response, "Delete")
 
     @less_console_noise_decorator
@@ -4083,8 +4083,8 @@ class TestPortfolioAdmin(TestCase):
         self.assertNotContains(response, "id_city")
         self.assertNotContains(response, "id_zipcode")
         self.assertNotContains(response, "id_urbanization")
-        self.assertNotContains(response, "closelink")
-        self.assertContains(response, "Save")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
         self.assertNotContains(response, "Delete")
 
     @less_console_noise_decorator
