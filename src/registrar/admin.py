@@ -1248,6 +1248,11 @@ class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
     resource_classes = [HostIpResource]
     model = models.HostIP
 
+    search_fields = ["host__name", "address"]
+    search_help_text = "Search by host name or address."
+    list_display = ("host", "address",)
+
+
 
 class ContactResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
