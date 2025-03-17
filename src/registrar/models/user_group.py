@@ -171,22 +171,22 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "federalagency",
-                "permissions": ["change_federalagency"],
+                "permissions": ["view_federalagency"],
             },
             {
                 "app_label": "registrar",
                 "model": "portfolio",
-                "permissions": ["change_portfolio"],
+                "permissions": ["view_portfolio"],
             },
             {
                 "app_label": "registrar",
                 "model": "suborganization",
-                "permissions": ["change_suborganization"],
+                "permissions": ["view_suborganization"],
             },
             {
                 "app_label": "registrar",
                 "model": "seniorofficial",
-                "permissions": ["change_seniorofficial"],
+                "permissions": ["view_seniorofficial"],
             },
         ]
 
