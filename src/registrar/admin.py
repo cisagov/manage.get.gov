@@ -1473,15 +1473,6 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
                 return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
 
-    def has_change_permission(self, request, obj=None):
-        """Restrict update permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
-        return super().has_change_permission(request, obj)
-
 
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -4898,15 +4889,6 @@ class PortfolioAdmin(ListHeaderAdmin):
                 return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
 
-    def has_change_permission(self, request, obj=None):
-        """Restrict update permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_type == BranchChoices.EXECUTIVE
-        return super().has_change_permission(request, obj)
-
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
         Add the summary for the portfolio members field (list of members that link to change_forms)."""
@@ -5012,15 +4994,6 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-
-    def has_change_permission(self, request, obj=None):
-        """Restrict update permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.federal_type == BranchChoices.EXECUTIVE
-        return super().has_change_permission(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -5192,15 +5165,6 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
-
-    def has_change_permission(self, request, obj=None):
-        """Restrict update permissions based on group membership and model attributes."""
-        if request.user.has_perm("registrar.full_access_permission"):
-            return True
-        if obj:
-            if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
-        return super().has_change_permission(request, obj)
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):
