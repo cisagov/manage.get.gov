@@ -25,9 +25,18 @@ class Command(BaseCommand, PopulateScriptTemplate):
             ),
         )
 
+        parser.add_argument(
+            "--target_domain",
+            help=(
+                "Updates the public contact on a given domain name (case insensitive). "
+                "Use this option to avoid doing a mass-update to every public contact record."
+            ),
+        )
+
     def handle(self, **kwargs):
         """Loops through each valid User object and updates its verification_type value"""
         overwrite_updated_contacts = kwargs.get("overwrite_updated_contacts")
+        target_domain = kwargs.get("target_domain")
         default_emails = {email for email in DefaultEmail}
 
         # Don't update records we've already updated
@@ -49,7 +58,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
             "email": default_emails,
         }
 
-        filter_condition = {"email__in": default_emails}
+        if not target_domain:
+            filter_condition = {"email__in": default_emails}
+        else:
+            filter_condition = {"email__in": default_emails, "domain__name": target_domain}
         self.mass_update_records(PublicContact, filter_condition, [], skip_bulk_update=True)
 
     def update_record(self, record: PublicContact):
