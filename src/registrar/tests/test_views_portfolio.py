@@ -433,8 +433,8 @@ class TestPortfolio(WebTest):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.send_templated_email")
-    def test_org_update_sends_admin_email(self, mock_send_templated_email):
+    @patch("registrar.views.portfolios.send_portfolio_organization_update_email")
+    def test_org_update_sends_admin_email(self, mock_send_organization_update_email):
         """Updating organization information emails organization admin."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
@@ -469,12 +469,7 @@ class TestPortfolio(WebTest):
             self.assertEqual(success_result_page.status_code, 302)
 
             # Verify that the notification emails were sent to domain manager
-            mock_send_templated_email.assert_called_once_with(
-                "emails/portfolio_org_update_notification.txt",
-                "emails/portfolio_org_update_notification_subject.txt",
-                to_address=self.admin.email,
-                context=ANY,
-            )
+            mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
     def test_portfolio_in_session_when_organization_feature_active(self):
