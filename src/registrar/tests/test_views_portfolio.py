@@ -2,7 +2,7 @@ from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.config import settings
 from registrar.models import Portfolio, SeniorOfficial
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
 from django_webtest import WebTest  # type: ignore
 from django.core.handlers.wsgi import WSGIRequest
 from registrar.models import (
