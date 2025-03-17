@@ -2621,7 +2621,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # Verify EPP create/update calls were made
         expected_update = self._convertPublicContactToEpp(
-            self.default_registrant_old_email, disclose_email=False, disclose_fields=[]
+            self.default_registrant_old_email, disclose_email=False, disclose_fields={}
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
@@ -2688,6 +2688,6 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # Verify EPP create/update calls were made
         expected_update = self._convertPublicContactToEpp(
-            self.mixed_default_contact, disclose_email=False, disclose_fields=[]
+            self.mixed_default_contact, disclose_email=False, disclose_fields={}
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
