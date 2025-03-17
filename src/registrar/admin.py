@@ -4147,6 +4147,7 @@ class PublicContactResource(resources.ModelResource):
 
 class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     """Custom PublicContact admin class."""
+
     resource_classes = [PublicContactResource]
 
     change_form_template = "django/admin/email_clipboard_change_form.html"
