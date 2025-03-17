@@ -1001,7 +1001,7 @@ class TestRegistrantContacts(MockEppLib):
                     )
                 else:
                     expectedCreateCommand = self._convertPublicContactToEpp(
-                        expected_contact, disclose_email=False, disclose_fields=[]
+                        expected_contact, disclose_email=False, disclose_fields={}
                     )
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
                 # The emails should match on both items
@@ -1087,9 +1087,6 @@ class TestRegistrantContacts(MockEppLib):
         )
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL, DF.VOICE, DF.ADDR})
-        self.assertIn(DF.EMAIL, result.disclose.fields)
-        self.assertIn(DF.VOICE, result.disclose.fields)
-        self.assertIn(DF.ADDR, result.disclose.fields)
         self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
 
     @less_console_noise_decorator
@@ -1138,7 +1135,7 @@ class TestRegistrantContacts(MockEppLib):
             expectedTechContact.registry_id = "defaultTech"
             domain.technical_contact = expectedTechContact
             expectedCreateCommand = self._convertPublicContactToEpp(
-                expectedTechContact, disclose_email=False, disclose_fields=[]
+                expectedTechContact, disclose_email=False, disclose_fields={}
             )
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
