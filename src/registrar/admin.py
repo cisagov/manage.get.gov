@@ -4154,6 +4154,7 @@ class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     list_display = ("registry_id", "contact_type", "domain", "name")
     search_fields = ["registry_id", "domain__name", "name"]
     search_help_text = "Search by registry id, domain, or name."
+    list_filter = ("contact_type",)
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if extra_context is None:
