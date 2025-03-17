@@ -1793,7 +1793,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     & Q(domain__domain_info__portfolio__federal_agency__isnull=False),
                     then=F("domain__domain_info__portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return the federal agency's federal_type
                 default=F("domain__domain_info__federal_agency__federal_type"),
             ),
         )
@@ -2435,7 +2435,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return the federal_type from federal agency
                 default=F("federal_agency__federal_type"),
             ),
         )
@@ -2520,7 +2520,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     class FederalTypeFilter(admin.SimpleListFilter):
         """Custom Federal Type filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's federal type.  If not, use the
-        organization in the Domain Request object."""
+        organization in the Domain Request object's federal agency."""
 
         title = "federal type"
         parameter_name = "converted_federal_types"
@@ -2561,7 +2561,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(portfolio__federal_agency__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_type=self.value())
+                    | Q(portfolio__isnull=True, federal_agency__federal_type=self.value())
                 )
             return queryset
 
@@ -3474,7 +3474,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return federal type from federal agency
                 default=F("federal_agency__federal_type"),
             ),
         )
@@ -3932,7 +3932,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(domain_info__portfolio__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
                 )
             return queryset
 
@@ -3959,7 +3959,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
                     then=F("domain_info__portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return federal type from federal agency
                 default=F("domain_info__federal_agency__federal_type"),
             ),
             converted_organization_name=Case(
@@ -4872,7 +4872,7 @@ class PortfolioAdmin(ListHeaderAdmin):
                     Q(federal_agency__isnull=False),
                     then=F("federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return empty string
                 default=Value(""),
             ),
         )
@@ -5164,7 +5164,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return empty string
                 default=Value(""),
             ),
         )
