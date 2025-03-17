@@ -458,6 +458,20 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         Processes removed domains by deleting corresponding UserDomainRole instances.
         """
         if removed_domain_ids:
+            # Notify domain managers for domains which the member is being removed from
+            # Fetch Domain objects from removed_domain_ids
+            removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+            # need to get the domains from removed_domain_ids
+            for domain in removed_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=self.request.user,
+                    manager_removed=member,
+                    manager_removed_email=member.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        self.request, "Could not send email notification to existing domain managers for %s", domain
+                    )
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
@@ -790,6 +804,21 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         """
         if not removed_domain_ids:
             return
+
+        # Notify domain managers for domains which the member is being removed from
+        # Fetch Domain objects from removed_domain_ids
+        removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+        # need to get the domains from removed_domain_ids
+        for domain in removed_domains:
+            if not send_domain_manager_removal_emails_to_domain_managers(
+                removed_by_user=self.request.user,
+                manager_removed=None,
+                manager_removed_email=email,
+                domain=domain,
+            ):
+                messages.warning(
+                    self.request, "Could not send email notification to existing domain managers for %s", domain
+                )
 
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(

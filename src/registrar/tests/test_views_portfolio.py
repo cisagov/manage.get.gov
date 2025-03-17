@@ -2669,7 +2669,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_domain_invitation_email")
-    def test_post_with_valid_added_domains(self, mock_send_domain_email):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_post_with_valid_added_domains(self, send_domain_manager_removal_emails, mock_send_domain_email):
         """Test that domains can be successfully added."""
         self.client.force_login(self.user)
 
@@ -2688,6 +2689,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
+        # assert that send_domain_manager_removal_emails_to_domain_managers is not called
+        send_domain_manager_removal_emails.assert_not_called()
         # Verify that the invitation email was sent
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -2700,13 +2703,16 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_domain_invitation_email")
-    def test_post_with_valid_removed_domains(self, mock_send_domain_email):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_post_with_valid_removed_domains(self, send_domain_manager_removal_emails, mock_send_domain_email):
         """Test that domains can be successfully removed."""
         self.client.force_login(self.user)
 
         # Create some UserDomainRole objects
         domains = [self.domain1, self.domain2, self.domain3]
         UserDomainRole.objects.bulk_create([UserDomainRole(domain=domain, user=self.user) for domain in domains])
+
+        send_domain_manager_removal_emails.return_value = True
 
         data = {
             "removed_domains": json.dumps([self.domain1.id, self.domain2.id]),
@@ -2724,7 +2730,19 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
         # assert that send_domain_invitation_email is not called
         mock_send_domain_email.assert_not_called()
-
+        # assert that send_domain_manager_removal_emails_to_domain_managers is called twice
+        send_domain_manager_removal_emails.assert_any_call(
+            removed_by_user=self.user,
+            manager_removed=self.portfolio_permission.user,
+            manager_removed_email=self.portfolio_permission.user.email,
+            domain=self.domain1,
+        )
+        send_domain_manager_removal_emails.assert_any_call(
+            removed_by_user=self.user,
+            manager_removed=self.portfolio_permission.user,
+            manager_removed_email=self.portfolio_permission.user.email,
+            domain=self.domain2,
+        )
         UserDomainRole.objects.all().delete()
 
     @less_console_noise_decorator
