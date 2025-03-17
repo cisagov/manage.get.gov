@@ -75,9 +75,8 @@ class Command(BaseCommand, PopulateScriptTemplate):
         record.street1 = "1110 N. Glebe Rd"
         record.pc = "22201"
         record.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
-        logger.info(f"Updating default values for '{record}'.")
         record.save()
-        logger.info(f"Updated '{record}' in EPP.")
+        logger.info(f"{TerminalColors.OKCYAN}Updated '{record}' in EPP.{TerminalColors.ENDC}")
 
     def should_skip_record(self, record) -> bool:  # noqa
         """Skips updating a public contact if it contains different default info."""
@@ -86,7 +85,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 f"Skipping legacy verisign contact '{record}'. "
                 f"The registry_id field has a length less than 16 characters."
             )
-            logger.warning(f"{TerminalColors.OKCYAN}{message}{TerminalColors.ENDC}")
+            logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             return True
 
         for key, expected_values in self.old_and_new_default_contact_values.items():
@@ -97,6 +96,6 @@ class Command(BaseCommand, PopulateScriptTemplate):
                     f"The field '{key}' does not match the default.\n"
                     f"Details: DB value - {record_field}, expected value(s) - {expected_values}"
                 )
-                logger.warning(f"{TerminalColors.OKCYAN}{message}{TerminalColors.ENDC}")
+                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
                 return True
         return False

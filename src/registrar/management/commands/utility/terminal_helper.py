@@ -87,7 +87,7 @@ class PopulateScriptTemplate(ABC):
         raise NotImplementedError
 
     def mass_update_records(
-        self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False
+        self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False, show_record_count=False
     ):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
@@ -117,13 +117,14 @@ class PopulateScriptTemplate(ABC):
 
         # apply custom filter
         records = self.custom_filter(records)
+        records_length = len(records)
 
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
         proposed_changes = (
             "==Proposed Changes==\n"
-            f"Number of {readable_class_name} objects to change: {len(records)}\n"
+            f"Number of {readable_class_name} objects to change: {len(records_length)}\n"
             f"These fields will be updated on each record: {fields_to_update}"
         )
 
@@ -143,9 +144,11 @@ class PopulateScriptTemplate(ABC):
         to_update: List[object_class] = []
         to_skip: List[object_class] = []
         failed_to_update: List[object_class] = []
-        for record in records:
+        for i, record in enumerate(records, start=1):
             try:
                 if not self.should_skip_record(record):
+                    if show_record_count:
+                        logger.info(f"{TerminalColors.BOLD}Record {i}/{records_length}{TerminalColors.ENDC}")
                     self.update_record(record)
                     to_update.append(record)
                 else:
