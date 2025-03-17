@@ -249,7 +249,7 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
         portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    ).exclude(user__email=editor_email)
+    )
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user

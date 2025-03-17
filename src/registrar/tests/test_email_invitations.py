@@ -1148,7 +1148,7 @@ class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
         editor = self.admin_user1
         updated_page = "Organization"
 
-        mock_filter.return_value.exclude.return_value = [self.portfolio_admin2]
+        mock_filter.return_value = [self.portfolio_admin1, self.portfolio_admin2]
         mock_send_templated_email.return_value = None  # No exception means success
 
         # Call function
