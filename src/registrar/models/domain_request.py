@@ -59,6 +59,16 @@ class DomainRequest(TimeStampedModel):
         REDIRECT = "redirect"
         OTHER = "other"
 
+        @classmethod
+        def get_purpose_label(cls, purpose_name: str):
+            """Returns the associated label for a given purpose name"""
+            if purpose_name == cls.WEBSITE:
+                return "Used for a new website"
+            elif purpose_name == cls.REDIRECT:
+                return "Used as a redirect for an existing website"
+            else:
+                return "Not for a website"
+
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
