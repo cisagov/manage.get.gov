@@ -1117,6 +1117,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
 
 class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
     """Unit tests for send_portfolio_update_emails_to_portfolio_admins function."""
+
     def setUp(self):
         """Set up test data."""
         self.email = "removed.admin@example.com"
