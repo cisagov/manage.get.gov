@@ -170,6 +170,7 @@ class PopulateScriptTemplate(ABC):
         )
 
     def bulk_update_fields(self, object_class, to_update, fields_to_update):
+        """Bulk updates the given fields"""
         ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
     def get_class_name(self, sender) -> str:
