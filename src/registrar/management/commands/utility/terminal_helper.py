@@ -251,9 +251,10 @@ class TerminalHelper:
                 verify_message="** Some records were skipped, or some failed to update. **",
                 prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
             )
-        
+
+        non_zero_counts = {category: count for category, count in counts.items() if count > 0}
         messages = []
-        for category, count in counts.items():
+        for category, count in non_zero_counts.items():
             match category:
                 case "added":
                     label, values, debug_color = "Added", add, TerminalColors.OKBLUE
