@@ -63,7 +63,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
             filter_condition = {"email__in": default_emails, "domain__name": target_domain}
         # This is decorative since we are skipping bulk update
         fields_to_update = ["name", "street1", "pc", "email"]
-        self.mass_update_records(PublicContact, filter_condition, fields_to_update)
+        self.mass_update_records(PublicContact, filter_condition, fields_to_update, show_record_count=True)
 
     def bulk_update_fields(self, *args, **kwargs):
         """Skip bulk update since we need to manually save each field"""
