@@ -26,7 +26,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0141_alter_portfolioinvitation_additional_permissions_and_more"),
+        ("registrar", "0142_domainrequest_feb_naming_requirements_and_more"),
     ]
 
     operations = [
