@@ -525,12 +525,15 @@ class DomainRequest(TimeStampedModel):
     feb_naming_requirements_details = models.TextField(
         null=True,
         blank=True,
+        help_text="Required if requested domain that doesn't meet naming requirements",
+        verbose_name="Domain name rationale",
     )
 
     feb_purpose_choice = models.CharField(
         null=True,
         blank=True,
         choices=FEBPurposeChoices.choices,
+        verbose_name="Purpose type",
     )
 
     working_with_eop = models.BooleanField(
@@ -538,17 +541,26 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    eop_contact = models.ForeignKey(
-        "registrar.Contact",
+    eop_stakeholder_first_name = models.CharField(
         null=True,
         blank=True,
-        related_name="eop_contact",
-        on_delete=models.PROTECT,
+        verbose_name="EOP Stakeholder First Name",
+    )
+
+    eop_stakeholder_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Last Name",
+    )
+
+    eop_stakeholder_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Email",
     )
 
     # This field is alternately used for generic domain purpose explanations
     # and for explanations of the specific purpose chosen with feb_purpose_choice
-    # by a Federal Executive Branch agency.
     purpose = models.TextField(
         null=True,
         blank=True,
@@ -562,6 +574,7 @@ class DomainRequest(TimeStampedModel):
     time_frame_details = models.TextField(
         null=True,
         blank=True,
+        verbose_name="Target time frame",
     )
 
     is_interagency_initiative = models.BooleanField(
@@ -572,6 +585,7 @@ class DomainRequest(TimeStampedModel):
     interagency_initiative_details = models.TextField(
         null=True,
         blank=True,
+        verbose_name="Interagency initiative",
     )
 
     alternative_domains = models.ManyToManyField(
