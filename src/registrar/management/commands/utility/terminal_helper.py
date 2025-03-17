@@ -148,10 +148,10 @@ class PopulateScriptTemplate(ABC):
         to_skip: List[object_class] = []
         failed_to_update: List[object_class] = []
         for i, record in enumerate(records, start=1):
+            if show_record_count:
+                logger.info(f"{TerminalColors.BOLD}Record {i}/{records_length}{TerminalColors.ENDC}")
             try:
                 if not self.should_skip_record(record):
-                    if show_record_count:
-                        logger.info(f"{TerminalColors.BOLD}Record {i}/{records_length}{TerminalColors.ENDC}")
                     self.update_record(record)
                     to_update.append(record)
                 else:
