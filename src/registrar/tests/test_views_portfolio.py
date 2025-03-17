@@ -1657,16 +1657,19 @@ class TestPortfolioMemberDeleteView(WebTest):
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain, portfolio=self.portfolio
+        )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
         UserPortfolioPermission.objects.all().delete()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         UserDomainRole.objects.all().delete()
         DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
@@ -1676,7 +1679,10 @@ class TestPortfolioMemberDeleteView(WebTest):
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_delete_view_members_table_active_requests(self, send_member_removal, send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_delete_view_members_table_active_requests(
+        self, send_domain_manager_removal_emails, send_member_removal, send_removal_emails
+    ):
         """Error state w/ deleting a member with active request on Members Table"""
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
@@ -1718,13 +1724,18 @@ class TestPortfolioMemberDeleteView(WebTest):
             send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is not called
             send_member_removal.assert_not_called()
+            # assert that send_domain_manager_removal_emails is not called
+            send_domain_manager_removal_emails.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_delete_view_members_table_only_admin(self, send_member_removal, send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_delete_view_members_table_only_admin(
+        self, send_domain_manager_removal_emails, send_member_removal, send_removal_emails
+    ):
         """Error state w/ deleting a member that's the only admin on Members Table"""
 
         # I'm a user with admin permission
@@ -1757,13 +1768,18 @@ class TestPortfolioMemberDeleteView(WebTest):
             send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is not called
             send_member_removal.assert_not_called()
+            # assert that send_domain_manager_removal_emails is not called
+            send_domain_manager_removal_emails.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_table_delete_member_success(self, send_member_removal, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_table_delete_member_success(
+        self, send_domain_manager_removal_emails, send_member_removal, mock_send_removal_emails
+    ):
         """Success state with deleting on Members Table page bc no active request AND not only admin"""
 
         # I'm a user
@@ -1787,6 +1803,9 @@ class TestPortfolioMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+
+        # Set up the member as a domain manager
+        UserDomainRole.objects.get_or_create(user=member, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         # Member removal email sent successfully
         send_member_removal.return_value = True
@@ -1815,6 +1834,8 @@ class TestPortfolioMemberDeleteView(WebTest):
             mock_send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is called
             send_member_removal.assert_called_once()
+            # assert that send_domain_manager_removal_emails_to_domain_managers
+            send_domain_manager_removal_emails.assert_called_once()
 
             # Get the arguments passed to send_portfolio_member_permission_remove_email
             _, called_kwargs = send_member_removal.call_args
@@ -1823,6 +1844,15 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["permissions"].user, upp.user)
             self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
+
+            # Get the arguments passed to send_domain_manager_removal_emails_to_domain_managers
+            _, called_kwargs = send_domain_manager_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["removed_by_user"], self.user)
+            self.assertEqual(called_kwargs["manager_removed"], upp.user)
+            self.assertEqual(called_kwargs["manager_removed_email"], upp.user.email)
+            self.assertEqual(called_kwargs["domain"], self.domain)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
