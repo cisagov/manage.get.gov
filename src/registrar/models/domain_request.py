@@ -1505,7 +1505,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):
