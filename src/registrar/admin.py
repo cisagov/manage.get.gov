@@ -4836,19 +4836,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields
 
-    def get_annotated_queryset(self, queryset):
-        return queryset.annotate(
-            converted_federal_type=Case(
-                # When portfolio is present, use its value instead
-                When(
-                    Q(federal_agency__isnull=False),
-                    then=F("federal_agency__federal_type"),
-                ),
-                # Otherwise, return empty string
-                default=Value(""),
-            ),
-        )
-
     def get_queryset(self, request):
         """Restrict queryset based on user permissions."""
         qs = super().get_queryset(request)
@@ -4856,11 +4843,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         # Check if user is in OMB analysts group
         if request.user.groups.filter(name="omb_analysts_group").exists():
             self.is_omb_analyst = True
-            annotated_qs = self.get_annotated_queryset(qs)
-            return annotated_qs.filter(
-                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-                converted_federal_type=BranchChoices.EXECUTIVE,
-            )
+            return qs.filter(federal_agency__federal_type=BranchChoices.EXECUTIVE)
 
         return qs  # Return full queryset if the user doesn't have the restriction
 
@@ -5110,34 +5093,14 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         extra_context = {"domain_requests": domain_requests, "domains": domains}
         return super().change_view(request, object_id, form_url, extra_context)
 
-    def get_annotated_queryset(self, queryset):
-        return queryset.annotate(
-            converted_federal_type=Case(
-                # When portfolio is present, use its value instead
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
-                    then=F("portfolio__federal_agency__federal_type"),
-                ),
-                # Otherwise, return empty string
-                default=Value(""),
-            ),
-        )
-
     def get_queryset(self, request):
-        """Custom get_queryset to filter by portfolio if portfolio is in the
-        request params."""
+        """Custom get_queryset to filter for OMB analysts."""
         qs = super().get_queryset(request)
-        # Check if a 'portfolio' parameter is passed in the request
-        portfolio_id = request.GET.get("portfolio")
-        if portfolio_id:
-            # Further filter the queryset by the portfolio
-            qs = qs.filter(portfolio=portfolio_id)
         # Check if user is in OMB analysts group
         if request.user.groups.filter(name="omb_analysts_group").exists():
-            annotated_qs = self.get_annotated_queryset(qs)
-            return annotated_qs.filter(
+            return qs.filter(
                 portfolio__organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-                converted_federal_type=BranchChoices.EXECUTIVE,
+                portfolio__federal_agency__federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
 
@@ -5147,7 +5110,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE
+                return obj.portfolio and obj.portfolio.federal_agency and obj.portfolio.federal_agency.federal_type == BranchChoices.EXECUTIVE
         return super().has_view_permission(request, obj)
 
 
