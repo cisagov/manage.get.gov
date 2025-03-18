@@ -92,7 +92,7 @@
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
-            <h4 class="margin-bottom-0">EOP Stakeholder</h4>
+            <h4 class="margin-bottom-0">Interagency Initiative</h4>
             {% if domain_request.is_interagency_initiative is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.is_interagency_initiative %}
@@ -112,8 +112,8 @@
             {% if domain_request.working_with_eop is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.working_with_eop %}
-                <p class="margin-y-0">{{domain_request.eop_contact.first_name}} {{domain_request.eop_contact.last_name}}</p>
-                <p class="margin-y-0">{{domain_request.eop_contact.email}}</p>
+                <p class="margin-y-0">{{domain_request.eop_stakeholder_first_name}} {{domain_request.eop_stakeholder_last_name}}</p>
+                <p class="margin-y-0">{{domain_request.eop_stakeholder_email}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}

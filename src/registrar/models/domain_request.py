@@ -528,12 +528,22 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    eop_contact = models.ForeignKey(
-        "registrar.Contact",
+    eop_stakeholder_first_name = models.CharField(
         null=True,
         blank=True,
-        related_name="eop_contact",
-        on_delete=models.PROTECT,
+        verbose_name="EOP Stakeholder First Name",
+    )
+
+    eop_stakeholder_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Last Name",
+    )
+
+    eop_stakeholder_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Email",
     )
 
     # This field is alternately used for generic domain purpose explanations
@@ -1518,7 +1528,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):

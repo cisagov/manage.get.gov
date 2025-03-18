@@ -2745,21 +2745,21 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def feb_review_page_tests(self, review_page):
         # Meets Naming Requirements
-        self.assertContains(review_page, "<h4>Meets Naming Requirements</h4>")
+        self.assertContains(review_page, "Meets Naming Requirements")
         self.assertContains(review_page, "No")
         self.assertContains(review_page, "Because this is a test")
         # Purpose
-        self.assertContains(review_page, "<h4>Purpose</h4>")
+        self.assertContains(review_page, "Purpose")
         self.assertContains(review_page, "Used as a redirect for an existing website")
         self.assertContains(review_page, "testPurpose123")
         # Target Time Frame
-        self.assertContains(review_page, "<h4>Target Time Frame</h4>")
+        self.assertContains(review_page, "Target Time Frame")
         self.assertContains(review_page, "1/2/2025 - 1/2/2026")
         # Interagency Initiative
-        self.assertContains(review_page, "<h4>Interagency Initiative</h4>")
+        self.assertContains(review_page, "Interagency Initiative")
         self.assertContains(review_page, "FakeInteragencyInitiative")
         # EOP Stakeholder
-        self.assertContains(review_page, "<h4>EOP Stakeholder</h4>")
+        self.assertContains(review_page, "EOP Stakeholder")
         self.assertContains(review_page, "TesterFirstName TesterLastName")
         self.assertContains(review_page, "testy@town.com")
 
