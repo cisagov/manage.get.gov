@@ -3930,17 +3930,59 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "email": self.user.email,
             },
+            follow=True,
         )
         self.assertEqual(response.status_code, 200)
+        with open("debug_response.html", "w") as f:
+            f.write(response.content.decode("utf-8"))
 
         # Verify messages
         self.assertContains(
             response,
-            f"{self.user.email} is already a member of another .gov organization.",
+            "User is already a member of this portfolio.",
+        )
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
+
+        # assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_existing_member_uppercase(self, mock_send_email):
+        """Tests the member invitation flow for existing portfolio member with a different case."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "email": self.user.email.upper(),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        with open("debug_response.html", "w") as f:
+            f.write(response.content.decode("utf-8"))
+
+        # Verify messages
+        self.assertContains(
+            response,
+            "User is already a member of this portfolio.",
         )
 
         # Validate Database has not changed

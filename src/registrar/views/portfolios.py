@@ -970,7 +970,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         portfolio = form.cleaned_data["portfolio"]
         is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
 
-        requested_user = User.objects.filter(email=requested_email).first()
+        requested_user = User.objects.filter(email__iexact=requested_email).first()
         permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
             if not requested_user or not permission_exists:
