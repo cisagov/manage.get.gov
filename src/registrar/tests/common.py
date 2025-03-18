@@ -1956,16 +1956,20 @@ class MockEppLib(TestCase):
     def _convertPublicContactToEpp(
         self,
         contact: PublicContact,
-        disclose_email=False,
+        disclose=False,
         createContact=True,
         disclose_fields=None,
         disclose_types=None,
     ):
         DF = common.DiscloseField
         if disclose_fields is None:
-            disclose_fields = {DF.EMAIL}
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
+            disclose_fields = {field for field in DF} - fields
 
-        di = common.Disclose(flag=disclose_email, fields=disclose_fields, types=disclose_types)
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc"}
+
+        di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(

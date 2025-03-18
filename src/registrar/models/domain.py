@@ -245,6 +245,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -1680,20 +1681,18 @@ class Domain(TimeStampedModel, DomainHelper):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
+        # You can find each enum here:
+        # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        disclose_fields = {"fields": {}, "flag": False}
-        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
-            hidden_security_emails = [email for email in DefaultEmail]
-            disclose_fields = {
-                "fields": {DF.EMAIL},
-                "flag": contact.email not in hidden_security_emails,
-            }
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        all_disclose_fields = {field for field in DF} - excluded_disclose_fields
+        disclose_fields = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
+        if contact.contact_type == contact.ContactTypeChoices.SECURITY and contact.email not in [
+            email for email in DefaultEmail
+        ]:
+            disclose_fields["fields"] -= {DF.EMAIL}
         elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            disclose_fields = {
-                "fields": {DF.EMAIL, DF.VOICE, DF.ADDR},
-                "types": {DF.ADDR: "loc"},
-                "flag": True,
-            }
+            disclose_fields["fields"] -= {DF.EMAIL, DF.VOICE, DF.ADDR}
 
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
         return epp.Disclose(**disclose_fields)  # type: ignore
