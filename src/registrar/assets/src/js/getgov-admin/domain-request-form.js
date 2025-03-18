@@ -465,23 +465,25 @@ class CustomizableEmailBase {
     }
 
     initializeModalConfirm() {
+        // When the modal confirm button is present, add a listener
         if (this.modalConfirm) {
             this.modalConfirm.addEventListener("click", () => {
                 this.textarea.removeAttribute('readonly');
                 this.textarea.focus();
-                    hideElement(this.directEditButton);
-                    hideElement(this.modalTrigger);  
+                hideElement(this.directEditButton);
+                hideElement(this.modalTrigger);  
             });
         }
     }
 
     initializeDirectEditButton() {
+        // When the direct edit button is present, add a listener
         if (this.directEditButton) {
             this.directEditButton.addEventListener("click", () => {
                 this.textarea.removeAttribute('readonly');
                 this.textarea.focus();
-                    hideElement(this.directEditButton);
-                    hideElement(this.modalTrigger);  
+                hideElement(this.directEditButton);
+                hideElement(this.modalTrigger);  
             });
         }
     }

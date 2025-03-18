@@ -112,7 +112,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
         (IS_CISA_ANALYST, lambda: user.has_perm("registrar.analyst_access_permission")),
-        (IS_OMB_ANALYST, lambda: user.has_perm("registrar.omb_analyst_access_permission")),
+        (IS_OMB_ANALYST, lambda: user.groups.filter(name="omb_analysts_group").exists()),
         (IS_FULL_ACCESS, lambda: user.has_perm("registrar.full_access_permission")),
         (
             IS_DOMAIN_MANAGER,

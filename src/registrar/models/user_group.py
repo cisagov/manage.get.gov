@@ -160,11 +160,6 @@ class UserGroup(Group):
             },
             {
                 "app_label": "registrar",
-                "model": "user",
-                "permissions": ["omb_analyst_access_permission"],
-            },
-            {
-                "app_label": "registrar",
                 "model": "domaininvitation",
                 "permissions": ["view_domaininvitation"],
             },

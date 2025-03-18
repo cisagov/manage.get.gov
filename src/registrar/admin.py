@@ -4361,7 +4361,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if (
             request.user.has_perm("registrar.full_access_permission")
             or request.user.has_perm("registrar.analyst_access_permission")
-            or request.user.has_perm("registrar.omb_analyst_access_permission")
+            or request.user.groups.filter(name="omb_analysts_group").exists()
         ):
             return True
         return super().has_change_permission(request, obj)
