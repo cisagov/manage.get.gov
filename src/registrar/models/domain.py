@@ -880,6 +880,7 @@ class Domain(TimeStampedModel, DomainHelper):
         which inturn call this function)
         Will throw error if contact type is not the same as expectType
         Raises ValueError if expected type doesn't match the contact type"""
+
         if expectedType != contact.contact_type:
             raise ValueError("Cannot set a contact with a different contact type, expected type was %s" % expectedType)
 
@@ -892,7 +893,6 @@ class Domain(TimeStampedModel, DomainHelper):
         duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
             domain=self, contact_type=contact.contact_type
         )
-
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
@@ -1690,9 +1690,9 @@ class Domain(TimeStampedModel, DomainHelper):
         if contact.contact_type == contact.ContactTypeChoices.SECURITY and contact.email not in [
             email for email in DefaultEmail
         ]:
-            disclose_fields["fields"] -= {DF.EMAIL}
+            disclose_fields["fields"] -= {DF.EMAIL}  # type: ignore
         elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            disclose_fields["fields"] -= {DF.EMAIL, DF.VOICE, DF.ADDR}
+            disclose_fields["fields"] -= {DF.EMAIL, DF.VOICE, DF.ADDR}  # type: ignore
 
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
         return epp.Disclose(**disclose_fields)  # type: ignore
