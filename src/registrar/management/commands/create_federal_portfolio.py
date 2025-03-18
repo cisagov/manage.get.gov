@@ -191,8 +191,9 @@ class Command(BaseCommand):
             self.post_process_started_domain_requests(agencies, portfolios)
 
     def get_or_create_portfolio(self, federal_agency):
+        portfolio_name = normalize_string(federal_agency.agency, lowercase=False)
         portfolio, created = Portfolio.objects.get_or_create(
-            organization_name=federal_agency.agency,
+            organization_name=portfolio_name,
             federal_agency=federal_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             creator=User.get_default_user(),
@@ -228,7 +229,8 @@ class Command(BaseCommand):
                 )
                 logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             else:
-                suborg = Suborganization(name=name, portfolio=portfolio)
+                suborg_name = normalize_string(name)
+                suborg = Suborganization(name=suborg_name, portfolio=portfolio)
                 self.suborganization_changes.add.append(suborg)
 
         suborg_add_count = len(self.suborganization_changes.add)
@@ -256,12 +258,12 @@ class Command(BaseCommand):
             logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             return None
 
-        # TODO - this needs a normalize step on suborg!
         # Get all suborg information and store it in a dict to avoid doing a db call
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_info in domain_infos:
+            org_name = normalize_string(domain_info.organization_name, lowercase=False)
             domain_info.portfolio = portfolio
-            domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
+            domain_info.sub_organization = suborgs.get(org_name, None)
             self.domain_info_changes.update.append(domain_info)
 
         DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
@@ -289,11 +291,11 @@ class Command(BaseCommand):
             return None
 
         # Get all suborg information and store it in a dict to avoid doing a db call
-        # TODO - this needs a normalize step on suborg!
         suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
         for domain_request in domain_requests:
+            org_name = normalize_string(domain_request.organization_name, lowercase=False)
             domain_request.portfolio = portfolio
-            domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
+            domain_request.sub_organization = suborgs.get(org_name, None)
             if domain_request.sub_organization is None:
                 domain_request.requested_suborganization = normalize_string(
                     domain_request.organization_name, lowercase=False
