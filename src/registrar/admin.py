@@ -1404,19 +1404,6 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
     # in autocomplete_fields for Senior Official
     ordering = ["first_name", "last_name"]
 
-    def get_annotated_queryset(self, queryset):
-        return queryset.annotate(
-            converted_federal_type=Case(
-                # When portfolio is present, use its value instead
-                When(
-                    Q(federal_agency__isnull=False),
-                    then=F("federal_agency__federal_type"),
-                ),
-                # Otherwise, return the natively assigned value
-                default=Value(""),
-            ),
-        )
-
     readonly_fields = []
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
@@ -1457,10 +1444,6 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
 
         # Check if user is in OMB analysts group
         if request.user.groups.filter(name="omb_analysts_group").exists():
-            # annotated_qs = self.get_annotated_queryset(qs)
-            # return annotated_qs.filter(
-            #     converted_federal_type=BranchChoices.EXECUTIVE,
-            # )
             return qs.filter(federal_agency__federal_type=BranchChoices.EXECUTIVE)
 
         return qs  # Return full queryset if the user doesn't have the restriction
