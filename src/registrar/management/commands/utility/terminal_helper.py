@@ -200,10 +200,11 @@ class TerminalHelper:
         skip,
         fail,
         debug: bool,
-        log_header="============= FINISHED ===============",
+        log_header="============= FINISHED =============",
         skipped_header="----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----",
         failed_header="----- UPDATE FAILED -----",
         display_as_str=False,
+        detailed_prompt_title="Do you wish to see the full list of failed, skipped and updated records?"
     ):
         """Generates a formatted summary of script execution results with colored output.
         
@@ -247,9 +248,9 @@ class TerminalHelper:
         if not debug and counts["failed"] > 0 or counts["skipped"] > 0:
             display_detailed_logs = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                prompt_message=f'You will see {counts["failed"]} failed and {counts["updated"]} skipped records.',
+                prompt_message=f'You will see {counts["failed"]} failed and {counts["skipped"]} skipped records.',
                 verify_message="** Some records were skipped, or some failed to update. **",
-                prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
+                prompt_title=detailed_prompt_title,
             )
 
         non_zero_counts = {category: count for category, count in counts.items() if count > 0}
@@ -272,11 +273,11 @@ class TerminalHelper:
             if debug or display_detailed_logs:
                 display_values = [str(v) for v in values] if display_as_str else values
                 debug_message = f"{label}: {display_values}"
-                TerminalHelper.colorful_logger(logger.info, debug_color, debug_message)
+                logger.info(f"{debug_color}{debug_message}{TerminalColors.ENDC}")
 
-        final_message = f"\n{log_header}" + "\n".join(messages)
+        final_message = f"\n{log_header}\n" + "\n".join(messages)
         if counts["failed"] > 0:
-            TerminalHelper.colorful_logger("ERROR", "FAIL", final_message)
+            logger.error(f"{TerminalColors.FAIL}{final_message}{TerminalColors.ENDC}")
         elif counts["skipped"] > 0:
             TerminalHelper.colorful_logger("WARNING", "YELLOW", final_message)
         else:
