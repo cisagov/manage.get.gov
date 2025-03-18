@@ -1,8 +1,6 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
 from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm
-from registrar.models.contact import Contact
-
 
 class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
     """
