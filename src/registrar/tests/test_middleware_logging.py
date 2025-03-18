@@ -1,6 +1,5 @@
 from django.test import TestCase, RequestFactory, override_settings
 from unittest.mock import patch, MagicMock
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 
 from registrar.registrar_middleware import RequestLoggingMiddleware
