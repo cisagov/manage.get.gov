@@ -383,7 +383,7 @@ class CustomizableEmailBase {
     initializeFormGroups() {
         let isStatus = false;
         if (this.statusSelect) {
-            this.statusSelect.value == this.statusToCheck;
+            isStatus = this.statusSelect.value == this.statusToCheck;
         } else {
             // statusSelect does not exist, indicating readonly
             if (this.dropdownFormGroup) {
