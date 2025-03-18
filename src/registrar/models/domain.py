@@ -1681,20 +1681,19 @@ class Domain(TimeStampedModel, DomainHelper):
         """creates a disclose object that can be added to a contact Create using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
+        # You can find each enum here: 
+        # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        disclose_fields = {"fields": {}, "flag": False}
-        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
-            hidden_security_emails = [email for email in DefaultEmail]
-            disclose_fields = {
-                "fields": {DF.EMAIL},
-                "flag": contact.email not in hidden_security_emails,
-            }
+        all_disclose_fields = {field for field in DF if field != DF.NOTIFY_EMAIL}
+        disclose_fields = {"fields": all_disclose_fields, "flag": False}
+        if (
+            contact.contact_type == contact.ContactTypeChoices.SECURITY and 
+            contact.email not in [email for email in DefaultEmail]
+        ):
+            disclose_fields["fields"] -= {DF.EMAIL}
         elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            disclose_fields = {
-                "fields": {DF.EMAIL, DF.VOICE, DF.ADDR},
-                "types": {DF.ADDR: "loc"},
-                "flag": True,
-            }
+            disclose_fields["fields"] -= {DF.EMAIL, DF.VOICE, DF.ADDR}
+            disclose_fields["types"] = {DF.ADDR: "loc"}
 
         logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
         return epp.Disclose(**disclose_fields)  # type: ignore

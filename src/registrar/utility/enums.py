@@ -39,6 +39,9 @@ class DefaultEmail(StrEnum):
     """
 
     PUBLIC_CONTACT_DEFAULT = "help@get.gov"
+    # We used to use this email for default public contacts.
+    # This is retained for data correctness, but it will be phased out.
+    # help@get.gov is the current email that we use for these now.
     OLD_PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
 
