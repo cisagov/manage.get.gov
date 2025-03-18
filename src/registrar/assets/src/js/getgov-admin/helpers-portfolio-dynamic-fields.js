@@ -12,7 +12,9 @@ export function handlePortfolioSelection(
     suborgDropdownSelector="#id_sub_organization"
 ) {
     // These dropdown are select2 fields so they must be interacted with via jquery
+    // In the event that these fields are readonly, need a variable to reference their row
     const portfolioDropdown = django.jQuery(portfolioDropdownSelector);
+    const portfolioField = document.querySelector(".field-portfolio");
     const suborganizationDropdown = django.jQuery(suborgDropdownSelector);
     const suborganizationField = document.querySelector(".field-sub_organization");
     const requestedSuborganizationField = document.querySelector(".field-requested_suborganization");
@@ -394,14 +396,30 @@ export function handlePortfolioSelection(
      * - Various global field elements (e.g., `suborganizationField`, `seniorOfficialField`, `portfolioOrgTypeFieldSet`) are used.
      */
     function updatePortfolioFieldsDisplay() {
-        // Retrieve the selected portfolio ID
-        let portfolio_id = portfolioDropdown.val();
+        let portfolio_id = null;
+        let portfolio_selected = false;
+        // portfolio will be either readonly or a dropdown, handle both cases
+        if (portfolioDropdown.length) { // need to test length since the query will always be defined, even if not in DOM
+            // Retrieve the selected portfolio ID
+            portfolio_id = portfolioDropdown.val();
+            if (portfolio_id) {
+                portfolio_selected = true;
+            }
+        } else {
+            // get readonly field value
+            let portfolio = portfolioField.querySelector(".readonly").innerText;
+            if (portfolio != "-") {
+                portfolio_selected = true;
+            }
+        }
 
-        if (portfolio_id) {
+        if (portfolio_selected) {
             // A portfolio is selected - update suborganization dropdown and show/hide relevant fields
 
-            // Update suborganization dropdown for the selected portfolio
-            updateSubOrganizationDropdown(portfolio_id);
+            if (portfolio_id) {
+                // Update suborganization dropdown for the selected portfolio
+                updateSubOrganizationDropdown(portfolio_id);
+            }
 
             // Show fields relevant to a selected portfolio
             if (suborganizationField) showElement(suborganizationField);
@@ -468,10 +486,22 @@ export function handlePortfolioSelection(
      * This function ensures the form dynamically reflects whether a specific suborganization is being selected or requested.
      */
     function updateSuborganizationFieldsDisplay() {
-        let portfolio_id = portfolioDropdown.val();
+        let portfolio_selected = false;
+        // portfolio will be either readonly or a dropdown, handle both cases
+        if (portfolioDropdown.length) { // need to test length since the query will always be defined, even if not in DOM
+            // Retrieve the selected portfolio ID
+            if (portfolioDropdown.val()) {
+                portfolio_selected = true;
+            }
+        } else {
+            // get readonly field value
+            if (portfolioField.querySelector(".readonly").innerText != "-") {
+                portfolio_selected = true;
+            }
+        }
         let suborganization_id = suborganizationDropdown.val();
 
-        if (portfolio_id && !suborganization_id) {
+        if (portfolio_selected && !suborganization_id) {
             // Show suborganization request fields
             if (requestedSuborganizationField) showElement(requestedSuborganizationField);
             if (suborganizationCity) showElement(suborganizationCity);
