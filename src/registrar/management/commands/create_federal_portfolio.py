@@ -125,11 +125,14 @@ class Command(BaseCommand):
             portfolio, created = self.get_or_create_portfolio(federal_agency)
             if skip_existing_portfolios and not created:
                 message = (
-                    "Skipping modifications to suborgs, domain requests, and "
-                    "domains due to the --skip_existing_portfolios flag. Portfolio already exists."
+                    f"Portfolio '{portfolio}' already exists."
+                    "Skipping modifications to suborgs, domain requests, "
+                    "domains, and mangers due to the --skip_existing_portfolios flag. "
                 )
                 logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             else:
+                # TODO - Split this into two for loops? Could include post process
+                # Maybe post process steps should be options for the script?
                 # if parse_suborganizations
                 self.create_suborganizations(portfolio, federal_agency)
                 if parse_domains:
@@ -141,11 +144,11 @@ class Command(BaseCommand):
                 portfolios.append(portfolio)
                 if parse_managers:
                     self.handle_portfolio_managers(portfolio)
+        # for portfolio in portfolios:
 
-        # POST PROCESS STEP: Add additional suborg info where applicable.
-        updated_suborg_count = self.post_process_all_suborganization_fields(agencies)
-        message = f"Added city and state_territory information to {updated_suborg_count} suborgs."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+        # == POST PROCESS STEPS == #
+        # Post process step: Add additional suborg info where applicable.
+        self.post_process_all_suborganization_fields(agencies)
         TerminalHelper.log_script_run_summary(
             **vars(self.portfolio_changes),
             debug=False,
@@ -551,7 +554,7 @@ class Command(BaseCommand):
 
         if not domain and not request:
             message = f"Skipping adding city / state_territory information to suborg: {suborg}. Bad data."
-            TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+            logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             return
 
         # PRIORITY:
@@ -567,9 +570,3 @@ class Command(BaseCommand):
         elif request and use_location_for_request:
             suborg.city = normalize_string(request.city, lowercase=False)
             suborg.state_territory = request.state_territory
-
-        message = (
-            f"Added city/state_territory to suborg: {suborg}. "
-            f"city - {suborg.city}, state - {suborg.state_territory}"
-        )
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
