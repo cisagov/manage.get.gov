@@ -121,15 +121,14 @@ class Command(BaseCommand):
         portfolios = []
         for federal_agency in agencies:
             message = f"Processing federal agency '{federal_agency.agency}'..."
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
+            logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
             portfolio, created = self.get_or_create_portfolio(federal_agency)
             if skip_existing_portfolios and not created:
-                TerminalHelper.colorful_logger(
-                    logger.warning,
-                    TerminalColors.YELLOW,
+                message = (
                     "Skipping modifications to suborgs, domain requests, and "
-                    "domains due to the --skip_existing_portfolios flag. Portfolio already exists.",
+                    "domains due to the --skip_existing_portfolios flag. Portfolio already exists."
                 )
+                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             else:
                 # if parse_suborganizations
                 self.create_suborganizations(portfolio, federal_agency)
@@ -203,22 +202,18 @@ class Command(BaseCommand):
 
         if created:
             self.portfolio_changes.add.append(portfolio)
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, f"Created portfolio '{portfolio}'")
+            logger.info(f"{TerminalColors.OKGREEN}Created portfolio '{portfolio}'.{TerminalColors.ENDC}")
         else:
             self.skipped_portfolios.add(portfolio)
-            TerminalHelper.colorful_logger(
-                logger.info,
-                TerminalColors.YELLOW,
-                f"Portfolio with organization name '{portfolio}' already exists. Skipping create.",
-            )
-        
+            message = f"Portfolio with organization name '{portfolio}' already exists. Skipping create."
+            logger.info(f"{TerminalColors.OKGREEN}{message}{TerminalColors.ENDC}")
+
         return portfolio, created
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
         valid_agencies = federal_agency.domaininformation_set.filter(organization_name__isnull=False)
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
-        # TODO - this needs to do a iexact / normalize step
         existing_org_names = set(
             Suborganization.objects
             .filter(name__in=org_names)
@@ -231,7 +226,7 @@ class Command(BaseCommand):
                     f"Skipping suborganization create on record '{name}'. "
                     "The federal agency name is the same as the portfolio name."
                 )
-                TerminalHelper.colorful_logger(logger.warning, TerminalColors.YELLOW, message)
+                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             else:
                 suborg = Suborganization(name=name, portfolio=portfolio)
                 self.suborganization_changes.add.append(suborg)
@@ -239,15 +234,86 @@ class Command(BaseCommand):
         suborg_add_count = len(self.suborganization_changes.add)
         if suborg_add_count > 0:
             Suborganization.objects.bulk_create(self.suborganization_changes.add)
-            TerminalHelper.colorful_logger(
-                logger.info, TerminalColors.OKGREEN, f"Added {len(suborg_add_count)} suborganizations to '{federal_agency}'."
-            )
+            message = f"Added {suborg_add_count} suborganizations to '{federal_agency}'."
+            logger.info(f"{TerminalColors.OKGREEN}{message}{TerminalColors.ENDC}")
         else:
-            TerminalHelper.colorful_logger(
-                logger.warning, 
-                TerminalColors.YELLOW, 
-                f"No suborganizations added for '{federal_agency}'."
-            )
+            message = f"No suborganizations added for '{federal_agency}'."
+            logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
+
+    def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """
+        Associate portfolio with domains for a federal agency.
+        Updates all relevant domain information records.
+
+        Returns a queryset of DomainInformation objects, or None if nothing changed.
+        """
+        domain_infos = federal_agency.domaininformation_set.all()
+        if not domain_infos.exists():
+            message = f"""
+            Portfolio '{portfolio}' not added to domains: no valid records found.
+            The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
+            """
+            logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
+            return None
+
+        # TODO - this needs a normalize step on suborg!
+        # Get all suborg information and store it in a dict to avoid doing a db call
+        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
+        for domain_info in domain_infos:
+            domain_info.portfolio = portfolio
+            domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
+            self.domain_info_changes.update.append(domain_info)
+
+        DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
+        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
+        logger.info(f"{TerminalColors.OKGREEN}{message}{TerminalColors.ENDC}")
+
+    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
+        """
+        Associate portfolio with domain requests for a federal agency.
+        Updates all relevant domain request records.
+        """
+        invalid_states = [
+            DomainRequest.DomainRequestStatus.STARTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.REJECTED,
+        ]
+        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
+        if not domain_requests.exists():
+            message = f"""
+            Portfolio '{portfolio}' not added to domain requests: nothing to add found.
+            Excluded statuses: STARTED, INELIGIBLE, REJECTED.
+            """
+            logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
+            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+            return None
+
+        # Get all suborg information and store it in a dict to avoid doing a db call
+        # TODO - this needs a normalize step on suborg!
+        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
+        for domain_request in domain_requests:
+            domain_request.portfolio = portfolio
+            domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
+            if domain_request.sub_organization is None:
+                domain_request.requested_suborganization = normalize_string(
+                    domain_request.organization_name, lowercase=False
+                )
+                domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
+                domain_request.suborganization_state_territory = domain_request.state_territory
+            self.domain_request_changes.add.append(portfolio)
+
+        DomainRequest.objects.bulk_update(
+            domain_requests,
+            [
+                "portfolio",
+                "sub_organization",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
+            ],
+        )
+        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
+        logger.info(f"{TerminalColors.OKGREEN}{message}{TerminalColors.ENDC}")
 
     def add_managers_to_portfolio(self, portfolio: Portfolio):
         """
@@ -362,92 +428,6 @@ class Command(BaseCommand):
         ):
             DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
             TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
-
-    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
-        """
-        Associate portfolio with domain requests for a federal agency.
-        Updates all relevant domain request records.
-        """
-        invalid_states = [
-            DomainRequest.DomainRequestStatus.STARTED,
-            DomainRequest.DomainRequestStatus.INELIGIBLE,
-            DomainRequest.DomainRequestStatus.REJECTED,
-        ]
-        domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
-        if not domain_requests.exists():
-            message = f"""
-            Portfolio '{portfolio}' not added to domain requests: no valid records found.
-            This means that a filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            Excluded statuses: STARTED, INELIGIBLE, REJECTED.
-            Filter info: DomainRequest.objects.filter(federal_agency=federal_agency).exclude(
-                status__in=invalid_states
-            )
-            """
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-            return None
-
-        # Get all suborg information and store it in a dict to avoid doing a db call
-        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
-        for domain_request in domain_requests:
-            # Set the portfolio
-            domain_request.portfolio = portfolio
-
-            # Set suborg info
-            domain_request.sub_organization = suborgs.get(domain_request.organization_name, None)
-            if domain_request.sub_organization is None:
-                domain_request.requested_suborganization = normalize_string(
-                    domain_request.organization_name, lowercase=False
-                )
-                domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
-                domain_request.suborganization_state_territory = domain_request.state_territory
-
-            self.updated_portfolios.add(portfolio)
-
-        DomainRequest.objects.bulk_update(
-            domain_requests,
-            [
-                "portfolio",
-                "sub_organization",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
-            ],
-        )
-        message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
-
-    def handle_portfolio_domains(self, portfolio: Portfolio, federal_agency: FederalAgency):
-        """
-        Associate portfolio with domains for a federal agency.
-        Updates all relevant domain information records.
-
-        Returns a queryset of DomainInformation objects, or None if nothing changed.
-        """
-        domain_infos = federal_agency.domaininformation_set.all()
-        if not domain_infos.exists():
-            message = f"""
-            Portfolio '{portfolio}' not added to domains: no valid records found.
-            The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            Filter info: DomainInformation.objects.filter(federal_agency=federal_agency)
-            """
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
-            return None
-
-        # Get all suborg information and store it in a dict to avoid doing a db call
-        suborgs = Suborganization.objects.filter(portfolio=portfolio).in_bulk(field_name="name")
-        for domain_info in domain_infos:
-            # Does this need a log?
-            suborg = suborgs.get(domain_info.organization_name, None)
-            if suborg:
-                domain_info.portfolio = portfolio
-                domain_info.sub_organization = suborgs.get(domain_info.organization_name, None)
-                self.domain_info_changes.update.append(domain_info)
-            else:
-                self.domain_info_changes.skip.append(domain_info)
-
-        DomainInformation.objects.bulk_update(domain_infos, ["portfolio", "sub_organization"])
-        message = f"Added portfolio '{portfolio}' to {len(domain_infos)} domains."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.OKGREEN, message)
 
     def post_process_all_suborganization_fields(self, agencies):
         """Batch updates suborganization locations from domain and request data.
