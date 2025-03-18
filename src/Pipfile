@@ -22,6 +22,7 @@ django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
 django-fsm = "2.8.1"
+django-viewflow = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'

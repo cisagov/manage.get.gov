@@ -16,6 +16,7 @@ from registrar.utility.waffle import flag_is_active_for_user
 from waffle.decorators import flag_is_active
 from django.utils import timezone
 from datetime import timedelta
+from registrar.models.flows import DomainInvitationFlow, PortfolioInvitationFlow
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -360,7 +361,8 @@ class User(AbstractUser):
             email__iexact=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
         ):
             try:
-                invitation.retrieve()
+                flow = DomainInvitationFlow(invitation)
+                flow.retrieve()
                 invitation.save()
             except RuntimeError:
                 # retrieving should not fail because of a missing user, but
@@ -398,7 +400,8 @@ class User(AbstractUser):
             )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
-                    invitation.retrieve()
+                    flow = PortfolioInvitationFlow(invitation)
+                    flow.retrieve()
                     invitation.save()
                 except RuntimeError:
                     # retrieving should not fail because of a missing user, but

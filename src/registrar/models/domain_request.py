@@ -4,26 +4,27 @@ import logging
 from django.apps import apps
 from django.conf import settings
 from django.db import models
-from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from viewflow import fsm
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
+from registrar.utility.db_helpers import object_is_being_created
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
 from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
-from .utility.time_stamped_model import TimeStampedModel
+from registrar.models.utility.state_controlled_model import StateControlledModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
 logger = logging.getLogger(__name__)
 
 
-class DomainRequest(TimeStampedModel):
+class DomainRequest(StateControlledModel):
     """A registrant's domain request for a new domain."""
 
     class Meta:
@@ -296,10 +297,9 @@ class DomainRequest(TimeStampedModel):
             return cls(action_needed_reason).label if action_needed_reason else None
 
     # #### Internal fields about the domain request #####
-    status = FSMField(
+    status = models.CharField(
         choices=DomainRequestStatus.choices,  # possible states as an array of constants
         default=DomainRequestStatus.STARTED,  # sensible default
-        protected=False,  # can change state directly, particularly in Django admin
     )
 
     rejection_reason = models.TextField(
@@ -653,6 +653,13 @@ class DomainRequest(TimeStampedModel):
         null=True,
         blank=True,
     )
+
+    # def __setattr__(self, name, value):
+    #     """ Overrides the setter ('=' operator) with custom logic """
+
+    #     if name == "status" and not object_is_being_created(self) :
+    #         raise ValidationError("Direct changes to 'status' are not allowed.")
+    #     super().__setattr__(name, value)
 
     def is_awaiting_review(self) -> bool:
         """Checks if the current status is in submitted or in_review"""
@@ -1029,193 +1036,6 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
-    @transition(
-        field="status",
-        source=[
-            DomainRequestStatus.STARTED,
-            DomainRequestStatus.IN_REVIEW,
-            DomainRequestStatus.ACTION_NEEDED,
-            DomainRequestStatus.WITHDRAWN,
-        ],
-        target=DomainRequestStatus.SUBMITTED,
-    )
-    def submit(self):
-        """Submit an domain request that is started.
-
-        As a side effect, an email notification is sent."""
-
-        # check our conditions here inside the `submit` method so that we
-        # can raise more informative exceptions
-
-        # requested_domain could be None here
-        if not hasattr(self, "requested_domain") or self.requested_domain is None:
-            raise ValueError("Requested domain is missing.")
-
-        DraftDomain = apps.get_model("registrar.DraftDomain")
-        if not DraftDomain.string_could_be_domain(self.requested_domain.name):
-            raise ValueError("Requested domain is not a valid domain name.")
-        # if the domain has not been submitted before this  must be the first time
-        if not self.first_submitted_date:
-            self.first_submitted_date = timezone.now().date()
-
-        # Update last_submitted_date to today
-        self.last_submitted_date = timezone.now().date()
-        self.save()
-
-        # Limit email notifications to transitions from Started and Withdrawn
-        limited_statuses = [self.DomainRequestStatus.STARTED, self.DomainRequestStatus.WITHDRAWN]
-
-        bcc_address = ""
-        if settings.IS_PRODUCTION:
-            bcc_address = settings.DEFAULT_FROM_EMAIL
-
-        if self.status in limited_statuses:
-            self._send_status_update_email(
-                "submission confirmation",
-                "emails/submission_confirmation.txt",
-                "emails/submission_confirmation_subject.txt",
-                send_email=True,
-                bcc_address=bcc_address,
-            )
-
-    @transition(
-        field="status",
-        source=[
-            DomainRequestStatus.SUBMITTED,
-            DomainRequestStatus.ACTION_NEEDED,
-            DomainRequestStatus.APPROVED,
-            DomainRequestStatus.REJECTED,
-            DomainRequestStatus.INELIGIBLE,
-        ],
-        target=DomainRequestStatus.IN_REVIEW,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
-    )
-    def in_review(self):
-        """Investigate an domain request that has been submitted.
-
-        This action is logged.
-
-        This action cleans up the rejection status if moving away from rejected.
-
-        As side effects this will delete the domain and domain_information
-        (will cascade) when they exist."""
-
-        if self.status == self.DomainRequestStatus.APPROVED:
-            self.delete_and_clean_up_domain("in_review")
-        elif self.status == self.DomainRequestStatus.REJECTED:
-            self.rejection_reason = None
-        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
-            self.action_needed_reason = None
-
-        literal = DomainRequest.DomainRequestStatus.IN_REVIEW
-        # Check if the tuple exists, then grab its value
-        in_review = literal if literal is not None else "In Review"
-        logger.info(f"A status change occurred. {self} was changed to '{in_review}'")
-
-    @transition(
-        field="status",
-        source=[
-            DomainRequestStatus.IN_REVIEW,
-            DomainRequestStatus.APPROVED,
-            DomainRequestStatus.REJECTED,
-            DomainRequestStatus.INELIGIBLE,
-        ],
-        target=DomainRequestStatus.ACTION_NEEDED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
-    )
-    def action_needed(self):
-        """Send back an domain request that is under investigation or rejected.
-
-        This action is logged.
-
-        This action cleans up the rejection status if moving away from rejected.
-
-        As side effects this will delete the domain and domain_information
-        (will cascade) when they exist.
-
-        Afterwards, we send out an email for action_needed in def save().
-        See the function send_custom_status_update_email.
-        """
-
-        if self.status == self.DomainRequestStatus.APPROVED:
-            self.delete_and_clean_up_domain("action_needed")
-
-        elif self.status == self.DomainRequestStatus.REJECTED:
-            self.rejection_reason = None
-
-        # Check if the tuple is setup correctly, then grab its value.
-
-        literal = DomainRequest.DomainRequestStatus.ACTION_NEEDED
-        action_needed = literal if literal is not None else "Action Needed"
-        logger.info(f"A status change occurred. {self} was changed to '{action_needed}'")
-
-    @transition(
-        field="status",
-        source=[
-            DomainRequestStatus.SUBMITTED,
-            DomainRequestStatus.IN_REVIEW,
-            DomainRequestStatus.ACTION_NEEDED,
-            DomainRequestStatus.REJECTED,
-        ],
-        target=DomainRequestStatus.APPROVED,
-        conditions=[investigator_exists_and_is_staff],
-    )
-    def approve(self, send_email=True):
-        """Approve an domain request that has been submitted.
-
-        This action cleans up the rejection status if moving away from rejected.
-
-        This has substantial side-effects because it creates another database
-        object for the approved Domain and makes the user who created the
-        domain request into an admin on that domain. It also triggers an email
-        notification."""
-
-        should_save = False
-        if self.federal_agency is None:
-            self.federal_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
-            should_save = True
-
-        if self.is_requesting_new_suborganization():
-            self.sub_organization = self.create_requested_suborganization()
-            should_save = True
-
-        if should_save:
-            self.save()
-
-        # create the domain
-        Domain = apps.get_model("registrar.Domain")
-
-        # == Check that the domain_request is valid == #
-        if Domain.objects.filter(name=self.requested_domain.name).exists():
-            raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
-
-        # == Create the domain and related components == #
-        created_domain = Domain.objects.create(name=self.requested_domain.name)
-        self.approved_domain = created_domain
-
-        # copy the information from DomainRequest into domaininformation
-        DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
-
-        # create the permission for the user
-        UserDomainRole = apps.get_model("registrar.UserDomainRole")
-        UserDomainRole.objects.get_or_create(
-            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
-        )
-
-        if self.status == self.DomainRequestStatus.REJECTED:
-            self.rejection_reason = None
-        elif self.status == self.DomainRequestStatus.ACTION_NEEDED:
-            self.action_needed_reason = None
-
-        # == Send out an email == #
-        self._send_status_update_email(
-            "domain request approved",
-            "emails/status_change_approved.txt",
-            "emails/status_change_approved_subject.txt",
-            send_email=send_email,
-        )
-
     def is_withdrawable(self):
         """Helper function that determines if the request can be withdrawn in its current status"""
         # This list is equivalent to the source field on withdraw. We need a better way to
@@ -1226,68 +1046,6 @@ class DomainRequest(TimeStampedModel):
             self.DomainRequestStatus.IN_REVIEW,
             self.DomainRequestStatus.ACTION_NEEDED,
         ]
-
-    @transition(
-        field="status",
-        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
-        target=DomainRequestStatus.WITHDRAWN,
-    )
-    def withdraw(self):
-        """Withdraw an domain request that has been submitted."""
-
-        self._send_status_update_email(
-            "withdraw",
-            "emails/domain_request_withdrawn.txt",
-            "emails/domain_request_withdrawn_subject.txt",
-        )
-
-    @transition(
-        field="status",
-        source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
-        target=DomainRequestStatus.REJECTED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
-    )
-    def reject(self):
-        """Reject an domain request that has been submitted.
-
-        This action is logged.
-
-        This action cleans up the action needed status if moving away from action needed.
-
-        As side effects this will delete the domain and domain_information
-        (will cascade) when they exist.
-
-        Afterwards, we send out an email for reject in def save().
-        See the function send_custom_status_update_email.
-        """
-
-        if self.status == self.DomainRequestStatus.APPROVED:
-            self.delete_and_clean_up_domain("reject")
-
-    @transition(
-        field="status",
-        source=[
-            DomainRequestStatus.IN_REVIEW,
-            DomainRequestStatus.ACTION_NEEDED,
-            DomainRequestStatus.APPROVED,
-            DomainRequestStatus.REJECTED,
-        ],
-        target=DomainRequestStatus.INELIGIBLE,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
-    )
-    def reject_with_prejudice(self):
-        """The applicant is a bad actor, reject with prejudice.
-
-        No email As a side effect, but we block the applicant from editing
-        any existing domains/domain requests and from submitting new aplications.
-        We do this by setting an ineligible status on the user, which the
-        permissions classes test against. This will also delete the domain
-        and domain_information (will cascade) when they exist."""
-
-        if self.status == self.DomainRequestStatus.APPROVED:
-            self.delete_and_clean_up_domain("reject_with_prejudice")
-
-        self.creator.restrict_user()
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.
@@ -1380,7 +1138,7 @@ class DomainRequest(TimeStampedModel):
     # ## Form policies ## #
     #
     # These methods control what questions need to be answered by applicants
-    # during the domain request flow. They are policies about the domain request so
+    # during the domain request dom. They are policies about the domain request so
     # they appear here.
 
     def show_organization_federal(self) -> bool:
