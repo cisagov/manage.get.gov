@@ -5110,7 +5110,11 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return True
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
-                return obj.portfolio and obj.portfolio.federal_agency and obj.portfolio.federal_agency.federal_type == BranchChoices.EXECUTIVE
+                return (
+                    obj.portfolio
+                    and obj.portfolio.federal_agency
+                    and obj.portfolio.federal_agency.federal_type == BranchChoices.EXECUTIVE
+                )
         return super().has_view_permission(request, obj)
 
 
