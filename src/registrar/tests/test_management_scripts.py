@@ -2558,6 +2558,9 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
         self.default_registrant_old_email.save()
+        DF = common.DiscloseField
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
 
     def tearDown(self):
         """Clean up test data."""
@@ -2592,9 +2595,8 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         # Verify EPP create/update calls were made
         expected_update = self._convertPublicContactToEpp(
             self.old_default_contact,
-            disclose_email=True,
-            disclose_fields={"email", "voice", "addr"},
-            disclose_types={"addr": "loc"},
+            disclose=False,
+            disclose_fields=self.all_disclose_fields - {"email", "voice", "addr"},
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
@@ -2613,15 +2615,15 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.assertEqual(self.default_registrant_old_email.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
         # Verify values match the default
-        default_admin = PublicContact.get_default_administrative()
-        self.assertEqual(self.default_registrant_old_email.name, default_admin.name)
-        self.assertEqual(self.default_registrant_old_email.street1, default_admin.street1)
-        self.assertEqual(self.default_registrant_old_email.pc, default_admin.pc)
-        self.assertEqual(self.default_registrant_old_email.email, default_admin.email)
+        default_reg = PublicContact.get_default_registrant()
+        self.assertEqual(self.default_registrant_old_email.name, default_reg.name)
+        self.assertEqual(self.default_registrant_old_email.street1, default_reg.street1)
+        self.assertEqual(self.default_registrant_old_email.pc, default_reg.pc)
+        self.assertEqual(self.default_registrant_old_email.email, default_reg.email)
 
         # Verify EPP create/update calls were made
         expected_update = self._convertPublicContactToEpp(
-            self.default_registrant_old_email, disclose_email=False, disclose_fields={}
+            self.default_registrant_old_email, disclose=False, disclose_fields=self.all_disclose_fields
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
@@ -2688,6 +2690,6 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # Verify EPP create/update calls were made
         expected_update = self._convertPublicContactToEpp(
-            self.mixed_default_contact, disclose_email=False, disclose_fields={}
+            self.mixed_default_contact, disclose=False, disclose_fields=self.all_disclose_fields
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
