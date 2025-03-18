@@ -1949,8 +1949,11 @@ class MockEppLib(TestCase):
     ):
         DF = common.DiscloseField
         if disclose_fields is None:
-            fields = {DF.NOTIFY_EMAIL, DF.EMAIL}
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
             disclose_fields = {field for field in DF} - fields
+
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc"}
 
         di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
