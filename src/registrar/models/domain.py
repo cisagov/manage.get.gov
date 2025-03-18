@@ -1685,7 +1685,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF if field != DF.NOTIFY_EMAIL}
-        disclose_fields = {"fields": all_disclose_fields, "flag": False}
+        disclose_fields = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
         if (
             contact.contact_type == contact.ContactTypeChoices.SECURITY and 
             contact.email not in [email for email in DefaultEmail]
