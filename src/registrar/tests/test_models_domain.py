@@ -723,7 +723,8 @@ class TestRegistrantContacts(MockEppLib):
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
         DF = common.DiscloseField
-        self.all_disclose_fields = {field for field in DF if field != DF.NOTIFY_EMAIL}
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        self.all_disclose_fields = {field for field in DF if field not in excluded_disclose_fields}
 
     def tearDown(self):
         super().tearDown()

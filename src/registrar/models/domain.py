@@ -1684,7 +1684,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # You can find each enum here: 
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        all_disclose_fields = {field for field in DF if field != DF.NOTIFY_EMAIL}
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        all_disclose_fields = {field for field in DF if field not in excluded_disclose_fields}
         disclose_fields = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
         if (
             contact.contact_type == contact.ContactTypeChoices.SECURITY and 
