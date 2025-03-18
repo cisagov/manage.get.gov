@@ -579,8 +579,8 @@ class DomainExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -1654,8 +1654,8 @@ class DomainRequestExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
