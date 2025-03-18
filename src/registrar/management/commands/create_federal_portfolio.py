@@ -82,7 +82,7 @@ class Command(BaseCommand):
             help="Adds portfolio to DomainInformation",
         )
         parser.add_argument(
-            "--add_managers",
+            "--parse_managers",
             action=argparse.BooleanOptionalAction,
             help="Add all domain managers of the portfolio's domains to the organization.",
         )
@@ -97,12 +97,12 @@ class Command(BaseCommand):
         branch = options.get("branch")
         parse_requests = options.get("parse_requests")
         parse_domains = options.get("parse_domains")
-        add_managers = options.get("add_managers")
+        parse_managers = options.get("parse_managers")
         skip_existing_portfolios = options.get("skip_existing_portfolios")
 
         # Parse script params
-        if not (parse_requests or parse_domains or add_managers):
-            raise CommandError("You must specify at least one of --parse_requests, --parse_domains, or --add_managers.")
+        if not (parse_requests or parse_domains or parse_managers):
+            raise CommandError("You must specify at least one of --parse_requests, --parse_domains, or --parse_managers.")
 
         # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
@@ -139,8 +139,8 @@ class Command(BaseCommand):
                     self.handle_portfolio_requests(portfolio, federal_agency)
 
                 portfolios.append(portfolio)
-                if add_managers:
-                    self.add_managers_to_portfolio(portfolio)
+                if parse_managers:
+                    self.handle_portfolio_managers(portfolio)
 
         # POST PROCESS STEP: Add additional suborg info where applicable.
         updated_suborg_count = self.post_process_all_suborganization_fields(agencies)
@@ -154,7 +154,7 @@ class Command(BaseCommand):
             display_as_str=True,
         )
 
-        if add_managers:
+        if parse_managers:
             TerminalHelper.log_script_run_summary(
                 **vars(self.user_domain_role_changes),
                 log_header="----- MANAGERS ADDED -----",
@@ -213,6 +213,9 @@ class Command(BaseCommand):
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
+        message = f"Creating suborgs for portfolio {portfolio}."
+        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+
         valid_agencies = federal_agency.domaininformation_set.filter(organization_name__isnull=False)
         org_names = set(valid_agencies.values_list("organization_name", flat=True))
         existing_org_names = set(
@@ -249,6 +252,9 @@ class Command(BaseCommand):
 
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
+        message = f"Adding domains to portfolio {portfolio}."
+        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+
         domain_infos = federal_agency.domaininformation_set.all()
         if not domain_infos.exists():
             message = f"""
@@ -275,6 +281,9 @@ class Command(BaseCommand):
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
         """
+        message = f"Adding domain requests to portfolio {portfolio}."
+        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+
         invalid_states = [
             DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
@@ -317,72 +326,68 @@ class Command(BaseCommand):
         message = f"Added portfolio '{portfolio}' to {len(domain_requests)} domain requests."
         logger.info(f"{TerminalColors.OKGREEN}{message}{TerminalColors.ENDC}")
 
-    def add_managers_to_portfolio(self, portfolio: Portfolio):
+    # TODO - this doesn't send an email out, should it?
+    def handle_portfolio_managers(self, portfolio: Portfolio):
         """
         Add all domain managers of the portfolio's domains to the organization.
         This includes adding them to the correct group and creating portfolio invitations.
         """
-        logger.info(f"Adding managers for portfolio {portfolio}")
+        message = f"Adding managers to portfolio {portfolio}."
+        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
 
-        # Fetch all domains associated with the portfolio
-        domains = Domain.objects.filter(domain_info__portfolio=portfolio)
-        domain_managers: set[UserDomainRole] = set()
+        domains = portfolio.information_portfolio.all().values_list("domain", flat=True)
 
         # Fetch all users with manager roles for the domains
-        # select_related means that a db query will not be occur when you do user_domain_role.user
-        # Its similar to a set or dict in that it costs slightly more upfront in exchange for perf later
         user_domain_roles = UserDomainRole.objects.select_related("user").filter(
             domain__in=domains, role=UserDomainRole.Roles.MANAGER
         )
-        domain_managers.update(user_domain_roles)
+        existing_permissions = UserPortfolioPermission.objects.filter(
+            user__in=user_domain_roles.values_list("user")
+        ).in_bulk(field_name="user")
+        for user_domain_role in user_domain_roles:
+            user = user_domain_role.user
+            if user not in existing_permissions:
+                permission = UserPortfolioPermission(
+                    portfolio=portfolio,
+                    user=user,
+                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                )
+                self.user_domain_role_changes.add.append(permission)
+                logger.info(f"Added manager '{permission.user}' to portfolio '{portfolio}'.")
+            else:
+                existing_permission = existing_permissions.get(user)
+                self.user_domain_role_changes.skip.append(existing_permission)
+                logger.info(f"Manager '{permission.user}' already exists in portfolio '{portfolio}'.")
 
-        invited_managers: set[str] = set()
+        # Bulk create user portfolio permissions
+        UserPortfolioPermission.objects.bulk_create(self.user_domain_role_changes.add)
 
+        # TODO - needs normalize step
         # Get the emails of invited managers
         domain_invitations = DomainInvitation.objects.filter(
             domain__in=domains, status=DomainInvitation.DomainInvitationStatus.INVITED
-        ).values_list("email", flat=True)
-        invited_managers.update(domain_invitations)
-
-        for user_domain_role in domain_managers:
-            try:
-                # manager is a user id
-                user = user_domain_role.user
-                _, created = UserPortfolioPermission.objects.get_or_create(
-                    portfolio=portfolio,
-                    user=user,
-                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
-                )
-                self.added_managers.add(user)
-                if created:
-                    logger.info(f"Added manager '{user}' to portfolio '{portfolio}'")
-                else:
-                    logger.info(f"Manager '{user}' already exists in portfolio '{portfolio}'")
-            except User.DoesNotExist:
-                self.failed_managers.add(user)
-                logger.debug(f"User '{user}' does not exist")
-
-        for email in invited_managers:
-            self.create_portfolio_invitation(portfolio, email)
-
-    def create_portfolio_invitation(self, portfolio: Portfolio, email: str):
-        """
-        Create a portfolio invitation for the given email.
-        """
-        _, created = PortfolioInvitation.objects.get_or_create(
-            portfolio=portfolio,
-            email=email,
-            defaults={
-                "status": PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-                "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            },
         )
-        if created:
-            self.added_invitations.add(email)
-            logger.info(f"Created portfolio invitation for '{email}' to portfolio '{portfolio}'")
-        else:
-            self.skipped_invitations.add(email)
-            logger.info(f"Found existing portfolio invitation for '{email}' to portfolio '{portfolio}'")
+        existing_invitations = PortfolioInvitation.objects.filter(
+            email__in=domain_invitations.values_list("email")
+        ).in_bulk(field_name="user")
+        for domain_invitation in domain_invitations:
+            email = domain_invitation.email
+            if email not in existing_invitations:
+                invitation = PortfolioInvitation(
+                    portfolio=portfolio,
+                    email=email,
+                    status = PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+                    roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                )
+                self.portfolio_invitation_changes.add.append(invitation)
+                logger.info(f"Added invitation '{email}' to portfolio '{portfolio}'.")
+            else:
+                existing_invitation = existing_invitations.get(email)
+                self.portfolio_invitation_changes.skip.append(existing_invitation)
+                logger.info(f"Invitation '{email}' already exists in portfolio '{portfolio}'.")
+
+        # Bulk create portfolio invitations
+        PortfolioInvitation.objects.bulk_create(self.user_domain_role_changes.add)
 
     def post_process_started_domain_requests(self, agencies, portfolios):
         """
