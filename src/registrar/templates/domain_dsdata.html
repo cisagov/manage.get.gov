@@ -274,64 +274,66 @@
     DS records defined on the domain.
     {% endcomment %} 
 
-    <section class="add-dsdata-form display-none section-outlined">
+    <div class="add-dsdata-form display-none">
       {% include "includes/required_fields.html" %} 
-      <form class="usa-form usa-form--extra-large" method="post" novalidate>
-        <h2>Add DS record</h2>
-        {% csrf_token %}
-        {{ formset.management_form }}
-        {% for form in formset %}
-        <div class="repeatable-form">
-          <div class="grid-row grid-gap-2 flex-end">
-            <div class="tablet:grid-col-4">
-              {% with sublabel_text="Numbers (0-9) only." %}
-                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                  {% input_with_errors form.key_tag %}
-                {% endwith %}
-              {% endwith %}
-            </div>
-            <div class="tablet:grid-col-4">
-              {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.algorithm %}
-              {% endwith %}
-            </div>
-            <div class="tablet:grid-col-4">
-              {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.digest_type %}
-              {% endwith %}
-            </div>
-          </div>
-    
-          <div class="grid-row">
-            <div class="grid-col">
-              {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
-                {% with hide_character_count=True %}
+      <section class="section-outlined">
+        <form class="usa-form usa-form--extra-large" method="post" novalidate>
+          <h2>Add DS record</h2>
+          {% csrf_token %}
+          {{ formset.management_form }}
+          {% for form in formset %}
+          <div class="repeatable-form">
+            <div class="grid-row grid-gap-2 flex-end">
+              <div class="tablet:grid-col-4">
+                {% with sublabel_text="Numbers (0-9) only." %}
                   {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
-                    {% input_with_errors form.digest %}
+                    {% input_with_errors form.key_tag %}
                   {% endwith %}
                 {% endwith %}
-              {% endwith %}
+              </div>
+              <div class="tablet:grid-col-4">
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.algorithm %}
+                {% endwith %}
+              </div>
+              <div class="tablet:grid-col-4">
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.digest_type %}
+                {% endwith %}
+              </div>
+            </div>
+    
+            <div class="grid-row">
+              <div class="grid-col">
+                {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                  {% with hide_character_count=True %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.digest %}
+                    {% endwith %}
+                  {% endwith %}
+                {% endwith %}
+              </div>
             </div>
           </div>
-        </div>
-        {% endfor %}
-        <div class="margin-top-2">
-          <button
-            type="button"
-            class="usa-button usa-button--outline dsdata-cancel-add-form"
-            name="btn-cancel-click"
-            aria-label="Reset the data in the DS records to the registry state (undo changes)"
-          >Cancel
-          </button>
-          <button
-            id="save-ds-data"
-            type="submit"
-            class="usa-button"
-          >Save
-          </button>
-        </div>
-      </form>
-    </section>
+          {% endfor %}
+          <div class="margin-top-2">
+            <button
+              type="button"
+              class="usa-button usa-button--outline dsdata-cancel-add-form"
+              name="btn-cancel-click"
+              aria-label="Reset the data in the DS records to the registry state (undo changes)"
+            >Cancel
+            </button>
+            <button
+              id="save-ds-data"
+              type="submit"
+              class="usa-button"
+            >Save
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   {% endif %}
 
   <a
