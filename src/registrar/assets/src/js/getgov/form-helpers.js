@@ -43,6 +43,11 @@ export function removeErrorsFromElement(domElement) {
     domElement.querySelectorAll("select.usa-input--error").forEach(select => {
         select.classList.remove("usa-input--error");
     });
+
+    // Remove the 'usa-input--error' class from all textarea elements
+    domElement.querySelectorAll("textarea.usa-input--error").forEach(textarea => {
+        textarea.classList.remove("usa-input--error");
+    });
 }
 
 /**
