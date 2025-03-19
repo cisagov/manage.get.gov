@@ -985,7 +985,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("=====================")
 
         contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
-        for contact_type, contact in contacts:
+        for contact in contacts:
             if contact:
                 self.print_contact_info_epp(contact)
 
