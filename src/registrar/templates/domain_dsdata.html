@@ -71,7 +71,7 @@
         {% if forloop.last %}
 
           {% comment %}This section renders the Add DS data form.{% endcomment %}
-          <section class="add-dsdata-form display-none section-outlined">
+          <section class="add-dsdata-form display-none section-outlined section-outlined--extra-padding">
             <h2 class="margin-top-0">Add DS record</h2>
             <div class="repeatable-form">
               <div class="grid-row grid-gap-2 flex-end">
@@ -123,13 +123,13 @@
         {% endif %}
       {% endfor %}
 
-      <div class="margin-top-4" tabindex="0" id="domains__table-wrapper">
+      <div class="usa-table-container--scrollable margin-top-4" tabindex="0">
         <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dsdata-table">
           <thead>
             <tr>
               <th scope="col" role="columnheader">Key tag</th>
               <th scope="col" role="columnheader">Algorithm</th>
-              <th scope="col" role="columnheader">Digest type</th>
+              <th scope="col" role="columnheader" class="width-100px">Digest type</th>
               <th scope="col" role="columnheader">Digest</th>
               <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
             </tr>
@@ -276,7 +276,7 @@
 
     <div class="add-dsdata-form display-none">
       {% include "includes/required_fields.html" %} 
-      <section class="section-outlined">
+      <section class="section-outlined section-outlined--extra-padding">
         <form class="usa-form usa-form--extra-large" method="post" novalidate>
           <h2>Add DS record</h2>
           {% csrf_token %}

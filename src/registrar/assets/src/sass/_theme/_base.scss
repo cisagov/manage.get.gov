@@ -79,6 +79,10 @@ body {
   }
 }
 
+.section-outlined--extra-padding {
+  padding: units(2) units(3) units(3);
+}
+
 .section-outlined--border-base-light {
   border: 1px solid color('base-light');
 }
@@ -294,6 +298,10 @@ Fit-content itself does not work.
 
 .width-40p {
   width: 40%;
+}
+
+.width-100px {
+  width: 100px;
 }
 
 .minh-143px {

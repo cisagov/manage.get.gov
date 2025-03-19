@@ -82,7 +82,7 @@
           This section does not render if the last form has initial data (this occurs if 13 nameservers already exist)
           {% endcomment %}
 
-          <section class="add-nameservers-form display-none section-outlined">
+          <section class="add-nameservers-form display-none section-outlined section-outlined--extra-padding">
             {{ form.domain }}
             <h2>Add a name server</h2>
             <div class="repeatable-form">
@@ -242,7 +242,7 @@
     {% endcomment %} 
     <div class="add-nameservers-form display-none">   
       {% include "includes/required_fields.html" %} 
-      <section class="section-outlined">
+      <section class="section-outlined section-outlined--extra-padding">
         <form class="usa-form usa-form--extra-large" method="post" novalidate>
           <h2>Add name servers</h2>
           {% csrf_token %}
