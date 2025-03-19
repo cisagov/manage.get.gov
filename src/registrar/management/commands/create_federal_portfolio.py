@@ -173,7 +173,7 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
-        # Parse portfolios
+        # == Handle portfolios == #
         # TODO - some kind of duplicate check
         agencies_set = {normalize_string(agency.agency): agency for agency in agencies}
         portfolios = set()
@@ -189,11 +189,22 @@ class Command(BaseCommand):
             else:
                 portfolios.add(portfolio)
 
-        # Add additional fields to portfolio
+        # == Handle suborganizations == #
         for portfolio in portfolios:
             org_name = normalize_string(portfolio.organization_name)
             federal_agency = agencies_set.get(org_name)
             self.create_suborganizations(portfolio, federal_agency)
+
+        # Create suborganizations
+        self.suborganization_changes.bulk_create()
+        message = f"Added {len(self.suborganization_changes.add)} suborganizations to portfolios."
+        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+
+        # == Handle domains, requests, and managers == #
+        for portfolio in portfolios:
+            org_name = normalize_string(portfolio.organization_name)
+            federal_agency = agencies_set.get(org_name)
+            
             if parse_domains:
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
@@ -202,38 +213,6 @@ class Command(BaseCommand):
 
             if parse_managers:
                 self.handle_portfolio_managers(portfolio)
-
-        # == Mass create/update records == #
-        self.commit_changes_to_db()
-
-        # == POST PROCESS STEPS == #
-        # Post processing step: Remove the federal agency if it matches the portfolio name.
-        if parse_requests:
-            prompt_message = (
-                "This action will update domain requests even if they aren't on a portfolio."
-                "\nNOTE: This will modify domain requests, even if no portfolios were created."
-                "\nIn the event no portfolios *are* created, then this step will target "
-                "the existing portfolios with your given params."
-                "\nThis step is entirely optional, and is just for extra data cleanup."
-            )
-            if TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate=False,
-                prompt_message=prompt_message,
-                prompt_title=(
-                    "POST PROCESS STEP: Do you want to clear federal agency on (related) started domain requests?"
-                ),
-                verify_message="*** THIS STEP IS OPTIONAL ***",
-            ):
-                self.post_process_started_domain_requests(agencies, portfolios)
-
-        # == PRINT RUN SUMMARY == #
-        self.print_final_run_summary(parse_domains, parse_requests, parse_managers, debug)
-
-    def commit_changes_to_db(self):
-        # Create suborganizations
-        self.suborganization_changes.bulk_create()
-        message = f"Added {len(self.suborganization_changes.add)} suborganizations to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
 
         # Update DomainInformation
         self.domain_info_changes.bulk_update(["portfolio", "sub_organization"])
@@ -247,6 +226,7 @@ class Command(BaseCommand):
             "requested_suborganization",
             "suborganization_city",
             "suborganization_state_territory",
+            "federal_agency",
         ])
         message = f"Added {len(self.domain_request_changes.update)} domain requests to portfolios."
         logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
@@ -260,6 +240,9 @@ class Command(BaseCommand):
         self.portfolio_invitation_changes.bulk_create()
         message = f"Added {len(self.portfolio_invitation_changes.add)} manager invitations to portfolios."
         logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+
+        # == PRINT RUN SUMMARY == #
+        self.print_final_run_summary(parse_domains, parse_requests, parse_managers, debug)
 
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
         self.portfolio_changes.print_script_run_summary(
@@ -470,11 +453,6 @@ class Command(BaseCommand):
         """
         domain_infos = federal_agency.domaininformation_set.all()
         if not domain_infos.exists():
-            message = f"""
-            Portfolio '{portfolio}' not added to domains: no valid records found.
-            The filter on DomainInformation for the federal_agency '{federal_agency}' returned no results.
-            """
-            logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             return None
 
         # Get all suborg information and store it in a dict to avoid doing a db call
@@ -518,6 +496,26 @@ class Command(BaseCommand):
                 domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
                 domain_request.suborganization_state_territory = domain_request.state_territory
             self.domain_request_changes.update.append(domain_request)
+
+        # TODO - add this option as a FLAG to pass into the script directly
+        # For each STARTED request, clear the federal agency under these conditions:
+        # 1. A portfolio *already exists* with the same name as the federal agency.
+        # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
+        # 3. The domain request is in status "started".
+        # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
+        started_domain_requests = federal_agency.domainrequest_set.filter(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            organization_name__isnull=False,
+        )
+
+        portfolio_name = normalize_string(portfolio.organization_name)
+
+        # Update the request, assuming the given agency name matches the portfolio name
+        for domain_request in started_domain_requests:
+            agency_name = normalize_string(domain_request.federal_agency.agency)
+            if agency_name == portfolio_name:
+                domain_request.federal_agency = None
+                self.domain_request_changes.update.append(domain_request)
 
     def handle_portfolio_managers(self, portfolio: Portfolio):
         """
@@ -574,113 +572,3 @@ class Command(BaseCommand):
                 existing_invitation = existing_invitations.get(email)
                 self.portfolio_invitation_changes.skip.append(existing_invitation)
                 logger.info(f"Invitation '{email}' already exists in portfolio '{portfolio}'.")
-
-    def post_process_started_domain_requests(self, agencies, portfolios):
-        """
-        Removes duplicate organization data by clearing federal_agency when it matches the portfolio name.
-        Only processes domain requests in STARTED status.
-        """
-        message = "Removing duplicate portfolio and federal_agency values from domain requests..."
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, message)
-
-        # For each request, clear the federal agency under these conditions:
-        # 1. A portfolio *already exists* with the same name as the federal agency.
-        # 2. Said portfolio (or portfolios) are only the ones specified at the start of the script.
-        # 3. The domain request is in status "started".
-        # Note: Both names are normalized so excess spaces are stripped and the string is lowercased.
-
-        domain_requests_to_update = DomainRequest.objects.filter(
-            federal_agency__in=agencies,
-            federal_agency__agency__isnull=False,
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            organization_name__isnull=False,
-        )
-
-        if domain_requests_to_update.count() == 0:
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "No domain requests to update.")
-            return
-
-        portfolio_set = {normalize_string(portfolio.organization_name) for portfolio in portfolios if portfolio}
-
-        # Update the request, assuming the given agency name matches the portfolio name
-        updated_requests = []
-        for req in domain_requests_to_update:
-            agency_name = normalize_string(req.federal_agency.agency)
-            if agency_name in portfolio_set:
-                req.federal_agency = None
-                updated_requests.append(req)
-
-        # Execute the update and Log the results
-        if TerminalHelper.prompt_for_execution(
-            system_exit_on_terminate=False,
-            prompt_message=(
-                f"{len(domain_requests_to_update)} domain requests will be updated. "
-                f"These records will be changed: {[str(req) for req in updated_requests]}"
-            ),
-            prompt_title="Do you wish to commit this update to the database?",
-        ):
-            DomainRequest.objects.bulk_update(updated_requests, ["federal_agency"])
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.OKBLUE, "Action completed successfully.")
-
-    def post_process_all_suborganization_fields(self, agencies):
-        """Batch updates suborganization locations from domain and request data.
-
-        Args:
-            agencies: List of FederalAgency objects to process
-
-        Returns:
-            int: Number of suborganizations updated
-
-        Priority for location data:
-        1. Domain information
-        2. Domain request suborganization fields
-        3. Domain request standard fields
-        """
-        # Common filter between domaininformation / domain request.
-        # Filter by only the agencies we've updated thus far.
-        # Then, only process records without null portfolio, org name, or suborg name.
-        base_filter = Q(
-            federal_agency__in=agencies,
-            portfolio__isnull=False,
-            organization_name__isnull=False,
-            sub_organization__isnull=False,
-        ) & ~Q(organization_name__iexact=F("portfolio__organization_name"))
-
-        # First: Remove null city / state_territory values on domain info / domain requests.
-        # We want to add city data if there is data to add to begin with!
-        domains = DomainInformation.objects.filter(
-            base_filter,
-            Q(city__isnull=False, state_territory__isnull=False),
-        )
-        requests = DomainRequest.objects.filter(
-            base_filter,
-            (
-                Q(city__isnull=False, state_territory__isnull=False)
-                | Q(suborganization_city__isnull=False, suborganization_state_territory__isnull=False)
-            ),
-        )
-
-        # Second: Group domains and requests by normalized organization name.
-        # This means that later down the line we have to account for "duplicate" org names.
-        domains_dict = {}
-        requests_dict = {}
-        for domain in domains:
-            normalized_name = normalize_string(domain.organization_name)
-            domains_dict.setdefault(normalized_name, []).append(domain)
-
-        for request in requests:
-            normalized_name = normalize_string(request.organization_name)
-            requests_dict.setdefault(normalized_name, []).append(request)
-
-        # Third: Get suborganizations to update
-        suborgs_to_edit = Suborganization.objects.filter(
-            Q(id__in=domains.values_list("sub_organization", flat=True))
-            | Q(id__in=requests.values_list("sub_organization", flat=True))
-        )
-
-        # Fourth: Process each suborg to add city / state territory info
-        for suborg in suborgs_to_edit:
-            self.set_suborganization_location(suborg, domains_dict, requests_dict)
-
-        # Fifth: Perform a bulk update
-        return Suborganization.objects.bulk_update(suborgs_to_edit, ["city", "state_territory"])
