@@ -256,13 +256,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # req = commands.CheckDomain([domain_name])
         # return registry.send(req, cleaned=True).res_data[0].avail
 
-        '''
+        """
         1. Check for Invalid Domain and then check for availability
         2. If domain is available, return True
         3. If not available -> check for pendingDelete status
         4. If pendingDelete found, return False 
         5. Check keyError?
-        '''
+        """
 
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
@@ -278,8 +278,8 @@ class Domain(TimeStampedModel, DomainHelper):
         print("***** MODELS/DOMAIN.PY Response res_data[0]:", response.res_data[0])
 
         if response.res_data[0].avail:
-                return True
-        
+            return True
+
         # If not avail, check registry using InfoDomain
         try:
             info_req = commands.InfoDomain(domain_name)
