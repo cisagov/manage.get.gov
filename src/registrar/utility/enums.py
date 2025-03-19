@@ -50,7 +50,6 @@ class DefaultEmail(StrEnum):
         return [email for email in cls]
 
 
-
 class DefaultUserValues(StrEnum):
     """Stores default values for a default user.
 
