@@ -76,33 +76,6 @@ class PublicContact(TimeStampedModel):
     )
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
-    def save(self, *args, **kwargs):
-        """Save to the registry and also locally in the registrar database."""
-        skip_epp_save = kwargs.pop("skip_epp_save", False)
-        if hasattr(self, "domain") and not skip_epp_save:
-            self.add_to_domain_in_epp()
-        super().save(*args, **kwargs)
-
-    def add_to_domain_in_epp(self):
-        """Adds the current contact to the underlying domain in EPP."""
-        match self.contact_type:
-            case PublicContact.ContactTypeChoices.REGISTRANT:
-                self.domain.registrant_contact = self
-            case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                self.domain.administrative_contact = self
-            case PublicContact.ContactTypeChoices.TECHNICAL:
-                self.domain.technical_contact = self
-            case PublicContact.ContactTypeChoices.SECURITY:
-                self.domain.security_contact = self
-
-    def print_contact_info_epp(self):
-        """Prints registry data for this PublicContact for easier debugging"""
-        results = self.domain._request_contact_info(self, get_result_as_dict=True)
-        logger.info("Contact Info from EPP:")
-        logger.info("=====================")
-        for key, value in results.items():
-            logger.info(f"{key}: {value}")
-
     @classmethod
     def get_default_registrant(cls):
         return cls(

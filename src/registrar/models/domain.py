@@ -971,6 +971,24 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("making technical contact")
         self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.TECHNICAL)
 
+    def print_contact_info_epp(self, contact: PublicContact):
+        """Prints registry data for this PublicContact for easier debugging"""
+        results = self._request_contact_info(contact, get_result_as_dict=True)
+        logger.info("---------------------")
+        logger.info(f"EPP info for {contact.contact_type}:")
+        logger.info("---------------------")
+        for key, value in results.items():
+            logger.info(f"{key}: {value}")
+
+    def print_all_domain_contact_info_epp(self):
+        """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
+        logger.info(f"Contact info for {self}:")
+        logger.info("=====================")
+        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
+        for contact in contacts:
+            if contact:
+                self.print_contact_info_epp(contact)
+
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
         because then it should be live, theoretically.
@@ -1678,24 +1696,26 @@ class Domain(TimeStampedModel, DomainHelper):
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):
-        """creates a disclose object that can be added to a contact Create using
+        """creates a disclose object that can be added to a contact Create or Update using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
         # You can find each enum here:
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
-        all_disclose_fields = {field for field in DF} - excluded_disclose_fields
-        disclose_fields = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
-        if contact.contact_type == contact.ContactTypeChoices.SECURITY and contact.email not in [
-            email for email in DefaultEmail
-        ]:
-            disclose_fields["fields"] -= {DF.EMAIL}
-        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            disclose_fields["fields"] -= {DF.EMAIL, DF.VOICE, DF.ADDR}
+        all_disclose_fields = {field for field in DF}
+        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
 
-        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose_fields.get("flag"))
-        return epp.Disclose(**disclose_fields)  # type: ignore
+        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+            if contact.email not in DefaultEmail.get_all_emails():
+                fields_to_remove.add(DF.EMAIL)
+        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
+            fields_to_remove.update({DF.EMAIL, DF.VOICE, DF.ADDR})
+
+        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
+
+        logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
+        return epp.Disclose(**disclose_args)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore
