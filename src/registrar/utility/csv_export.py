@@ -38,10 +38,15 @@ from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
 from registrar.models.utility.orm_helper import ArrayRemoveNull
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
+from registrar.models.utility.portfolio_helper import (
+    get_role_display,
+    get_domain_requests_display,
+    get_domains_display,
+    get_members_display,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -479,15 +484,15 @@ class MemberExport(BaseExport):
         """
         return [
             "Email",
-            "Organization admin",
+            "Member access",
             "Invited by",
             "Joined date",
             "Last active",
             "Domain requests",
-            "Member management",
-            "Domain management",
-            "Number of domains",
+            "Members",
             "Domains",
+            "Number domains assigned",
+            "Domain assignments",
         ]
 
     @classmethod
@@ -503,15 +508,15 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Organization admin": bool(UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles),
+            "Member access": get_role_display(roles),
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
-            "Domain requests": UserPortfolioPermission.get_domain_request_permission_display(roles, permissions),
-            "Member management": UserPortfolioPermission.get_member_permission_display(roles, permissions),
-            "Domain management": bool(length_user_managed_domains > 0),
-            "Number of domains": length_user_managed_domains,
-            "Domains": ",".join(user_managed_domains),
+            "Domain requests": f"{get_domain_requests_display(roles, permissions)}",
+            "Members": f"{get_members_display(roles, permissions)}",
+            "Domains": f"{get_domains_display(roles, permissions)}",
+            "Number domains assigned": length_user_managed_domains,
+            "Domain assignments": ", ".join(user_managed_domains),
         }
         return [FIELDS.get(column, "") for column in columns]
 
@@ -574,8 +579,8 @@ class DomainExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -1649,8 +1654,8 @@ class DomainRequestExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(

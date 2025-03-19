@@ -54,6 +54,11 @@ class DomainRequest(TimeStampedModel):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
 
+    class FEBPurposeChoices(models.TextChoices):
+        WEBSITE = "website"
+        REDIRECT = "redirect"
+        OTHER = "other"
+
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
@@ -501,16 +506,56 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
+    # Fields specific to Federal Executive Branch agencies, used by OMB for reviewing requests
+    feb_naming_requirements = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    feb_naming_requirements_details = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    feb_purpose_choice = models.CharField(
+        null=True,
+        blank=True,
+        choices=FEBPurposeChoices.choices,
+    )
+
+    # This field is alternately used for generic domain purpose explanations
+    # and for explanations of the specific purpose chosen with feb_purpose_choice
+    # by a Federal Executive Branch agency.
+    purpose = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    has_timeframe = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    time_frame_details = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    is_interagency_initiative = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    interagency_initiative_details = models.TextField(
+        null=True,
+        blank=True,
+    )
+
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
         help_text="Other domain names the creator provided for consideration",
-    )
-
-    purpose = models.TextField(
-        null=True,
-        blank=True,
     )
 
     other_contacts = models.ManyToManyField(
@@ -1389,6 +1434,12 @@ class DomainRequest(TimeStampedModel):
             has_details = False
         return has_details
 
+    def is_feb(self) -> bool:
+        """Is this domain request for a Federal Executive Branch agency?"""
+        if self.portfolio:
+            return self.portfolio.federal_type == BranchChoices.EXECUTIVE
+        return False
+
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
@@ -1454,7 +1505,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):

@@ -1,4 +1,4 @@
-import { submitForm } from './helpers.js';
+import { submitForm } from './form-helpers.js';
 
 export function initDomainManagersPage() {
     document.addEventListener('DOMContentLoaded', function() {

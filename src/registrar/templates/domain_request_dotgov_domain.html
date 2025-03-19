@@ -2,19 +2,19 @@
 {% load static field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">our naming requirements</a>. Your domain name must:
+  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% if requires_feb_questions %}https://get.gov/domains/executive-branch-guidance/{% else %}{% public_site_url 'domains/choosing' %}{% endif %}">our naming requirements</a>. Your domain name must:
     <ul class="usa-list">
       <li>Be available </li>
-      <li>Relate to your organization’s name, location, and/or services </li>
+      <li>Relate to your organization's name, location, and/or services </li>
       <li>Be unlikely to mislead or confuse the general public (even if your domain is only intended for a specific audience) </li>
     </ul>
   </p>
 
   <p>Names that <em>uniquely apply to your organization</em> are likely to be approved over names that could also apply to other organizations. 
-    {% if not is_federal %}In most instances, this requires including your state’s two-letter abbreviation.{% endif %}</p> 
+    {% if not is_federal %}In most instances, this requires including your state's two-letter abbreviation.{% endif %}</p> 
   
   {% if not portfolio %}
-  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
+  <p>Requests for your organization's initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
   {% endif %}
 
   <p>Note that <strong>only federal agencies can request generic terms</strong> like
@@ -41,9 +41,10 @@
     <legend>
       <h2>What .gov domain do you want?</h2>
     </legend>
-
-    <p id="domain_instructions" class="margin-top-05">After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. If your domain passes these initial checks, we’ll verify that it meets all our requirements after you complete the rest of this form.</p>
-
+    <p id="domain_instructions" class="margin-top-05">
+      After you enter your domain, we'll make sure it's available and that it meets some of our naming requirements. 
+      If your domain passes these initial checks, we'll verify that it meets all our requirements after you complete the rest of this form.
+    </p>
     {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
       {# attr_validate / validate="domain" invokes code in getgov.min.js #}
       {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
@@ -61,12 +62,11 @@
 
   <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
-      <h2>Alternative domains (optional)</h2>
+      <h2 id="alternative-domains-title">Alternative domains (optional)</h2>
     </legend>
-
-    <p id="alt_domain_instructions" class="margin-top-05">Are there other domains you’d like if we can’t give
-    you your first choice?</p>
-
+    <p id="alt_domain_instructions" class="margin-top-05">
+      Are there other domains you'd like if we can't give you your first choice?
+    </p>
     {% with attr_aria_labelledby="alt_domain_instructions" %}
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
       {% with attr_validate="domain" append_gov=True add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
@@ -79,25 +79,60 @@
         {% endfor %}
       {% endwith %}
     {% endwith %}
-
-    <button type="button" value="save" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
+    
+    <div class="usa-sr-only" id="alternative-domains__add-another-alternative">Add another alternative domain</div> 
+    <button aria-labelledby="alternative-domains-title" aria-describedby="alternative-domains__add-another-alternative" type="button" value="save" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-      </svg><span class="margin-left-05">Add another alternative</span>
+        <use xlink:href="{% static 'img/sprite.svg' %}#add_circle"></use>
+      </svg>
+      <span class="margin-left-05">Add another alternative</span>
     </button>
-
     <div class="margin-bottom-3">
+      <div class="usa-sr-only" id="alternative-domains__check-availability">Check domain availability</div> 
       <button
       id="validate-alt-domains-availability"
       type="button"
       class="usa-button usa-button--outline"
       validate-for="{{ forms.1.requested_domain.auto_id }}"
+      aria-labelledby="alternative-domains-title"
+      aria-describedby="alternative-domains__check-availability"
       >Check availability</button>
     </div>
-    
+    <p class="margin-top-05">
+      If you're not sure this is the domain you want, that's ok. You can change the domain later.
+    </p>
+  </fieldset>
 
-  <p class="margin-top-05">If you’re not sure this is the domain you want, that’s ok. You can change the domain later. </p>
+  {{ forms.2.management_form }}
+  {{ forms.3.management_form }}
 
-</fieldset>
+  {% if requires_feb_questions %}
+    <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
+      <legend>
+        <h2>Does this submission meet each domain naming requirement?</h2>
+      </legend>
+      <p id="dotgov-domain-naming-requirements" class="margin-top-05">
+        OMB will review each request against the domain 
+        <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">
+          naming requirements for executive branch agencies
+        </a>. 
+        Agency submissions are expected to meet each requirement.
+      </p>
+      {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% input_with_errors forms.2.feb_naming_requirements %}
+      {% endwith %}
+
+      {# Conditional Details Field – only shown when the executive naming requirements radio is "False" #}
+      <div id="domain-naming-requirements-details-container" class="conditional-panel" style="display: none;">
+        <p class="usa-label">
+          Provide details below <span class="usa-label--required">*</span>
+        </p>
+        {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
+          {% input_with_errors forms.3.feb_naming_requirements_details %}
+        {% endwith %}
+        <p class="usa-hint">Maximum 2000 characters allowed.</p>
+      </div>
+    </fieldset>
+  {% endif %}
 
 {% endblock %}
