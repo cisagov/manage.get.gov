@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.test import TestCase, RequestFactory, Client
 from django.contrib.admin.sites import AdminSite
 from registrar import models
+from registrar.utility.constants import BranchChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
@@ -57,6 +58,7 @@ from .common import (
     MockDbForSharedTests,
     AuditedAdminMockData,
     completed_domain_request,
+    create_omb_analyst_user,
     create_test_user,
     generic_domain_object,
     less_console_noise,
@@ -136,18 +138,25 @@ class TestDomainInvitationAdmin(WebTest):
     csrf_checks = False
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         super().setUpClass()
-        self.site = AdminSite()
-        self.factory = RequestFactory()
-        self.superuser = create_superuser()
+        cls.site = AdminSite()
+        cls.factory = RequestFactory()
 
     def setUp(self):
         super().setUp()
+        self.superuser = create_superuser()
+        self.cisa_analyst = create_user()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = ListHeaderAdmin(model=DomainInvitationAdmin, admin_site=AdminSite())
         self.domain = Domain.objects.create(name="example.com")
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
         self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
-        DomainInformation.objects.create(domain=self.domain, portfolio=self.portfolio, creator=self.superuser)
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.domain, portfolio=self.portfolio, creator=self.superuser
+        )
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.client.force_login(self.superuser)
@@ -159,9 +168,123 @@ class TestDomainInvitationAdmin(WebTest):
         DomainInvitation.objects.all().delete()
         DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         Domain.objects.all().delete()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.cisa_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view_non_feb_domain(self):
+        """Ensure OMB analysts cannot view non-federal domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertNotContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view_feb_domain(self):
+        """Ensure OMB analysts can view federal executive branch domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view domain invitations but not update."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.cisa_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_domain")
+        self.assertNotContains(response, "id_email")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change_non_feb_domain(self):
+        """Ensure OMB analysts cannot change non-federal domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 302)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change_feb_domain(self):
+        """Ensure OMB analysts can view federal executive branch domains."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        # update domain
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_domain")
+        self.assertNotContains(response, "id_email")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change domain invitations."""
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        response = self.client.get(reverse("admin:registrar_domaininvitation_change", args=[invitation.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, invitation.email)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_domain")
+        self.assertContains(response, "id_email")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_domain(self):
+        """Ensure OMB analysts can apply filters and only federal executive branch domains show."""
+        # create invitation on domain that is not FEB
+        invitation = DomainInvitation.objects.create(email="test@example.com", domain=self.domain)
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(
+            reverse("admin:registrar_domaininvitation_changelist"),
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
+        )
+        self.assertNotContains(response, invitation.email)
+        # update domain
+        self.portfolio.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        self.portfolio.federal_agency = self.fed_agency
+        self.portfolio.save()
+        response = self.client.get(
+            reverse("admin:registrar_domaininvitation_changelist"),
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
+        )
+        self.assertContains(response, invitation.email)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -1139,6 +1262,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.client = Client(HTTP_HOST="localhost:8080")
         self.superuser = create_superuser()
         self.testuser = create_test_user()
+        self.omb_analyst = create_omb_analyst_user()
         self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
@@ -1147,6 +1271,26 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         Contact.objects.all().delete()
         User.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user portfolio permissions list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot change user portfolio permission."""
+        self.client.force_login(self.omb_analyst)
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.client.get(
+            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_change_form_description(self):
@@ -1204,6 +1348,7 @@ class TestPortfolioInvitationAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.omb_analyst = create_omb_analyst_user()
         self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
 
     def tearDown(self):
@@ -1216,6 +1361,26 @@ class TestPortfolioInvitationAdmin(TestCase):
     @classmethod
     def tearDownClass(self):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view portfolio invitations list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolioinvitation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot change portfolio invitation."""
+        self.client.force_login(self.omb_analyst)
+        invitation, _ = PortfolioInvitation.objects.get_or_create(
+            email=self.superuser.email, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        response = self.client.get(
+            "/admin/registrar/portfolioinvitation/{}/change/".format(invitation.pk),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -1791,6 +1956,8 @@ class TestHostAdmin(TestCase):
         cls.factory = RequestFactory()
         cls.admin = MyHostAdmin(model=Host, admin_site=cls.site)
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
 
     def setUp(self):
         """Setup environment for a mock admin user"""
@@ -1805,6 +1972,20 @@ class TestHostAdmin(TestCase):
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure analysts cannot view hosts list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_host_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view hosts list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_host_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -1870,6 +2051,7 @@ class TestDomainInformationAdmin(TestCase):
         cls.admin = DomainInformationAdmin(model=DomainInformation, admin_site=cls.site)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.mock_data_generator = AuditedAdminMockData()
         cls.test_helper = GenericTestHelper(
             factory=cls.factory,
@@ -1881,18 +2063,80 @@ class TestDomainInformationAdmin(TestCase):
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.nonfeddomain = Domain.objects.create(name="nonfeddomain.com")
+        self.feddomain = Domain.objects.create(name="feddomain.com")
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.feddomain, portfolio=self.portfolio, creator=self.superuser
+        )
 
     def tearDown(self):
         """Delete all Users, Domains, and UserDomainRoles"""
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         Contact.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
         User.objects.all().delete()
         SeniorOfficial.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts cannot view domain information list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view domain information list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view domain information list."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_domaininformation_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feddomain.name)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts cannot view/edit domain information directly."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot view/edit domain information directly."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can view/change domain information directly."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse("admin:registrar_domaininformation_change", args=[self.feddomain.domain_info.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feddomain.name)
 
     @less_console_noise_decorator
     def test_domain_information_senior_official_is_alphabetically_sorted(self):
@@ -2258,6 +2502,8 @@ class TestUserDomainRoleAdmin(WebTest):
         cls.factory = RequestFactory()
         cls.admin = UserDomainRoleAdmin(model=UserDomainRole, admin_site=cls.site)
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.test_helper = GenericTestHelper(
             factory=cls.factory,
             user=cls.superuser,
@@ -2284,6 +2530,31 @@ class TestUserDomainRoleAdmin(WebTest):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure analysts cannot view user domain roles list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_changelist"))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user domain roles list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts cannot view/edit user domain roles list."""
+        domain, _ = Domain.objects.get_or_create(name="anyrandomdomain.com")
+        user_domain_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.superuser, domain=domain, role=[UserDomainRole.Roles.MANAGER]
+        )
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_change", args=[user_domain_role.id]))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -2580,6 +2851,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         cls.admin = MyUserAdmin(model=get_user_model(), admin_site=admin_site)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
 
     def setUp(self):
@@ -2595,6 +2867,13 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view users list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_user_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -3221,6 +3500,7 @@ class TestContactAdmin(TestCase):
         cls.admin = ContactAdmin(model=Contact, admin_site=None)
         cls.superuser = create_superuser()
         cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
 
     def setUp(self):
         super().setUp()
@@ -3235,6 +3515,13 @@ class TestContactAdmin(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view contact list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_contact_changelist"))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -3282,6 +3569,7 @@ class TestVerifiedByStaffAdmin(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = VerifiedByStaffAdmin(model=VerifiedByStaff, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3300,17 +3588,19 @@ class TestVerifiedByStaffAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view verified by staff list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_verifiedbystaff_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/verifiedbystaff/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_verifiedbystaff_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
-
         # Test for a description snippet
         self.assertContains(
             response, "This table contains users who have been allowed to bypass " "identity proofing through Login.gov"
@@ -3365,6 +3655,7 @@ class TestWebsiteAdmin(TestCase):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = WebsiteAdmin(model=Website, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3376,14 +3667,17 @@ class TestWebsiteAdmin(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view website list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_website_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/website/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_website_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3392,13 +3686,14 @@ class TestWebsiteAdmin(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestDraftDomain(TestCase):
+class TestDraftDomainAdmin(TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = DraftDomainAdmin(model=DraftDomain, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3417,14 +3712,17 @@ class TestDraftDomain(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view draft domain list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_draftdomain_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/draftdomain/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_draftdomain_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3435,13 +3733,21 @@ class TestDraftDomain(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestFederalAgency(TestCase):
+class TestFederalAgencyAdmin(TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
+        cls.non_feb_agency = FederalAgency.objects.create(
+            agency="Fake judicial agency", federal_type=BranchChoices.JUDICIAL
+        )
+        cls.feb_agency = FederalAgency.objects.create(
+            agency="Fake executive agency", federal_type=BranchChoices.EXECUTIVE
+        )
         cls.admin = FederalAgencyAdmin(model=FederalAgency, admin_site=cls.site)
         cls.factory = RequestFactory()
         cls.test_helper = GenericTestHelper(admin=cls.admin)
@@ -3453,6 +3759,100 @@ class TestFederalAgency(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view federal agencies."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view FEB agencies but not other branches."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view domain invitations."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view/edit federal agencies list."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_agency")
+        self.assertContains(response, "id_federal_type")
+        self.assertContains(response, "id_acronym")
+        self.assertContains(response, "id_is_fceb")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can change FEB agencies but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_agency")
+        self.assertNotContains(response, "id_federal_type")
+        self.assertNotContains(response, "id_acronym")
+        self.assertNotContains(response, "id_is_fceb")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change all federal agencies."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.non_feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_federalagency_change", args=[self.feb_agency.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_agency.agency)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_agency")
+        self.assertContains(response, "id_federal_type")
+        self.assertContains(response, "id_acronym")
+        self.assertContains(response, "id_is_fceb")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_agencies(self):
+        """Ensure OMB analysts can apply filters and only federal agencies show."""
+        self.client.force_login(self.omb_analyst)
+        # in setup, created two agencies: Fake judicial agency and Fake executive agency
+        # only executive agency should show up with the search for 'fake'
+        response = self.client.get(
+            reverse("admin:registrar_federalagency_changelist"),
+            data={"q": "fake"},
+        )
+        self.assertNotContains(response, self.non_feb_agency.agency)
+        self.assertContains(response, self.feb_agency.agency)
 
     @less_console_noise_decorator
     def test_has_model_description(self):
@@ -3471,11 +3871,12 @@ class TestFederalAgency(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestPublicContact(TestCase):
+class TestPublicContactAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = PublicContactAdmin(model=PublicContact, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3487,15 +3888,18 @@ class TestPublicContact(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view public contact list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         p = "adminpass"
         self.client.login(username="superuser", password=p)
-        response = self.client.get(
-            "/admin/registrar/publiccontact/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3504,11 +3908,12 @@ class TestPublicContact(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestTransitionDomain(TestCase):
+class TestTransitionDomainAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = TransitionDomainAdmin(model=TransitionDomain, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3520,14 +3925,17 @@ class TestTransitionDomain(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view transition domain list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_transitiondomain_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/transitiondomain/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_transitiondomain_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3536,11 +3944,12 @@ class TestTransitionDomain(TestCase):
         self.assertContains(response, "Show more")
 
 
-class TestUserGroup(TestCase):
+class TestUserGroupAdmin(TestCase):
     def setUp(self):
         super().setUp()
         self.site = AdminSite()
         self.superuser = create_superuser()
+        self.omb_analyst = create_omb_analyst_user()
         self.admin = UserGroupAdmin(model=UserGroup, admin_site=self.site)
         self.factory = RequestFactory()
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -3551,14 +3960,17 @@ class TestUserGroup(TestCase):
         User.objects.all().delete()
 
     @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts cannot view user group list."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_usergroup_changelist"))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
         self.client.force_login(self.superuser)
-        response = self.client.get(
-            "/admin/registrar/usergroup/",
-            follow=True,
-        )
-
+        response = self.client.get(reverse("admin:registrar_usergroup_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
@@ -3575,12 +3987,23 @@ class TestPortfolioAdmin(TestCase):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.staffuser = create_user()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
         cls.factory = RequestFactory()
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+        self.feb_agency = FederalAgency.objects.create(
+            agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        self.feb_portfolio = Portfolio.objects.create(
+            organization_name="Test FEB portfolio",
+            creator=self.superuser,
+            federal_agency=self.feb_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
 
     def tearDown(self):
         Suborganization.objects.all().delete()
@@ -3588,7 +4011,117 @@ class TestPortfolioAdmin(TestCase):
         DomainRequest.objects.all().delete()
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.feb_agency.delete()
         User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_analyst_view(self):
+        """Ensure regular analysts can view portfolios."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view FEB portfolios but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_superuser_view(self):
+        """Ensure superusers can view portfolios."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+
+    @less_console_noise_decorator
+    def test_analyst_change(self):
+        """Ensure regular analysts can view/edit portfolios."""
+        self.client.force_login(self.staffuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_organization_name")
+        self.assertContains(response, "id_notes")
+        self.assertContains(response, "id_organization_type")
+        self.assertContains(response, "id_state_territory")
+        self.assertContains(response, "id_address_line1")
+        self.assertContains(response, "id_address_line2")
+        self.assertContains(response, "id_city")
+        self.assertContains(response, "id_zipcode")
+        self.assertContains(response, "id_urbanization")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can change FEB portfolios but not others."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertNotContains(response, "id_organization_name")
+        self.assertNotContains(response, "id_notes")
+        self.assertNotContains(response, "id_organization_type")
+        self.assertNotContains(response, "id_state_territory")
+        self.assertNotContains(response, "id_address_line1")
+        self.assertNotContains(response, "id_address_line2")
+        self.assertNotContains(response, "id_city")
+        self.assertNotContains(response, "id_zipcode")
+        self.assertNotContains(response, "id_urbanization")
+        self.assertContains(response, "closelink")
+        self.assertNotContains(response, "Save")
+        self.assertNotContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_superuser_change(self):
+        """Ensure superusers can change all portfolios."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.feb_portfolio.organization_name)
+        # test whether fields are readonly or editable
+        self.assertContains(response, "id_organization_name")
+        self.assertContains(response, "id_notes")
+        self.assertContains(response, "id_organization_type")
+        self.assertContains(response, "id_state_territory")
+        self.assertContains(response, "id_address_line1")
+        self.assertContains(response, "id_address_line2")
+        self.assertContains(response, "id_city")
+        self.assertContains(response, "id_zipcode")
+        self.assertContains(response, "id_urbanization")
+        self.assertNotContains(response, "closelink")
+        self.assertContains(response, "Save")
+        self.assertContains(response, "Delete")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_filter_feb_portfolios(self):
+        """Ensure OMB analysts can apply filters and only feb portfolios show."""
+        self.client.force_login(self.omb_analyst)
+        # in setup, created two portfolios: Test portfolio and Test FEB portfolio
+        # only executive portfolio should show up with the search for 'portfolio'
+        response = self.client.get(
+            reverse("admin:registrar_portfolio_changelist"),
+            data={"q": "test"},
+        )
+        self.assertNotContains(response, self.portfolio.organization_name)
+        self.assertContains(response, self.feb_portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_created_on_display(self):
@@ -3777,6 +4310,7 @@ class TestTransferUser(WebTest):
         super().setUpClass()
         cls.site = AdminSite()
         cls.superuser = create_superuser()
+        cls.omb_analyst = create_omb_analyst_user()
         cls.admin = PortfolioAdmin(model=Portfolio, admin_site=cls.site)
         cls.factory = RequestFactory()
 
@@ -3796,6 +4330,13 @@ class TestTransferUser(WebTest):
         Domain.objects.all().delete()
         Portfolio.objects.all().delete()
         UserDomainRole.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_omb_analyst(self):
+        """Ensure OMB analysts cannot view transfer_user."""
+        self.client.force_login(self.omb_analyst)
+        response = self.client.get(reverse("transfer_user", args=[self.user1.pk]))
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_transfer_user_shows_current_and_selected_user_information(self):

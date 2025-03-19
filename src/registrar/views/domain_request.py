@@ -227,7 +227,6 @@ class DomainRequestWizard(TemplateView):
                 creator=self.request.user,
                 portfolio=portfolio,
             )
-
             # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
@@ -598,7 +597,6 @@ class RequestingEntity(DomainRequestWizard):
                     "suborganization_state_territory": None,
                 }
             )
-
         super().save(forms)
 
 
@@ -931,11 +929,9 @@ class Finished(DomainRequestWizard):
     forms = []  # type: ignore
 
     def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-        context["domain_request_id"] = self.domain_request.id
         # clean up this wizard session, because we are done with it
         del self.storage
-        return render(self.request, self.template_name, context)
+        return render(self.request, self.template_name)
 
 
 @grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
