@@ -123,148 +123,146 @@
         {% endif %}
       {% endfor %}
 
-      <div class="usa-table-container--scrollable margin-top-4" tabindex="0">
-        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dsdata-table">
-          <thead>
-            <tr>
-              <th scope="col" role="columnheader">Key tag</th>
-              <th scope="col" role="columnheader">Algorithm</th>
-              <th scope="col" role="columnheader" class="width-100px">Digest type</th>
-              <th scope="col" role="columnheader">Digest</th>
-              <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for form in formset %}
-              {% if not forloop.last or form.initial %}
+      <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked margin-top-4" id="dsdata-table">
+        <thead>
+          <tr>
+            <th scope="col" role="columnheader">Key tag</th>
+            <th scope="col" role="columnheader">Algorithm</th>
+            <th scope="col" role="columnheader" class="width-100px">Digest type</th>
+            <th scope="col" role="columnheader">Digest</th>
+            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+            {% if not forloop.last or form.initial %}
 
-                {% comment %}
-                This section renders table rows for each existing DS data records. Two rows are rendered, a readonly row
-                and an edit row. Only one of which is displayed at a time.
-                {% endcomment %}
-                
-                <!-- Readonly row -->
-                <tr>
-                  <td>{{ form.key_tag.value }}</td>
-                  <td>
-                    <span class="ellipsis ellipsis--15">
-                      {% for value, label in form.algorithm.field.choices %}
-                        {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
-                          {{ label }}
-                        {% endif %}
-                      {% endfor %}
-                    </span>
-                  </td>
-                  <td>
-                    {% for value, label in form.digest_type.field.choices %}
-                      {% if value|stringformat:"s" == form.digest_type.value|stringformat:"s" %}
+              {% comment %}
+              This section renders table rows for each existing DS data records. Two rows are rendered, a readonly row
+              and an edit row. Only one of which is displayed at a time.
+              {% endcomment %}
+              
+              <!-- Readonly row -->
+              <tr>
+                <td>{{ form.key_tag.value }}</td>
+                <td>
+                  <span class="ellipsis ellipsis--15">
+                    {% for value, label in form.algorithm.field.choices %}
+                      {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
                         {{ label }}
                       {% endif %}
                     {% endfor %}
-                  </td>
-                  <td>
-                    <span class="ellipsis ellipsis--23">{{ form.digest.value }}</span>
-                  </td>
-                  <td class="padding-right-0">
-                    <div class="tablet:display-flex tablet:flex-row">
-                      <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 dsdata-edit'>
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                          <use xlink:href="/public/img/sprite.svg#edit"></use>
-                        </svg>
-                        Edit <span class="usa-sr-only">DS record {{forloop.counter}}</span>
-                      </button>
+                  </span>
+                </td>
+                <td>
+                  {% for value, label in form.digest_type.field.choices %}
+                    {% if value|stringformat:"s" == form.digest_type.value|stringformat:"s" %}
+                      {{ label }}
+                    {% endif %}
+                  {% endfor %}
+                </td>
+                <td>
+                  <span class="ellipsis ellipsis--23">{{ form.digest.value }}</span>
+                </td>
+                <td class="padding-right-0">
+                  <div class="tablet:display-flex tablet:flex-row">
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 dsdata-edit'>
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#edit"></use>
+                      </svg>
+                      Edit <span class="usa-sr-only">DS record {{forloop.counter}}</span>
+                    </button>
 
-                      <a 
-                        role="button" 
-                        id="button-trigger-delete-dsdata-{{ forloop.counter }}"
-                        class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex dsdata-delete-kebab"
-                      >
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                          <use xlink:href="/public/img/sprite.svg#delete"></use>
-                        </svg>
-                        Delete
-                      </a>
+                    <a 
+                      role="button" 
+                      id="button-trigger-delete-dsdata-{{ forloop.counter }}"
+                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex dsdata-delete-kebab"
+                    >
+                      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#delete"></use>
+                      </svg>
+                      Delete
+                    </a>
 
-                      <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                        <div class="usa-accordion__heading">
-                          <button
-                            type="button"
-                            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
-                            aria-expanded="false"
-                            aria-controls="more-actions-dsdata-{{ forloop.counter }}"
-                            aria-label="More Actions for DS record {{ forloop.counter }}"
-                          >
-                            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
-                            </svg>
-                          </button>
-                        </div>
-                        <div id="more-actions-dsdata-{{ forloop.counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
-                          <h2>More options</h2>
-                          <button 
-                            type="button" 
-                            class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary dsdata-delete-kebab"
-                            name="btn-delete-kebab-click"
-                            aria-label="Delete DS record {{ forloop.counter }} from the registry"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                      <div class="usa-accordion__heading">
+                        <button
+                          type="button"
+                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
+                          aria-expanded="false"
+                          aria-controls="more-actions-dsdata-{{ forloop.counter }}"
+                          aria-label="More Actions for DS record {{ forloop.counter }}"
+                        >
+                          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                            <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                          </svg>
+                        </button>
+                      </div>
+                      <div id="more-actions-dsdata-{{ forloop.counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                        <h2>More options</h2>
+                        <button 
+                          type="button" 
+                          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary dsdata-delete-kebab"
+                          name="btn-delete-kebab-click"
+                          aria-label="Delete DS record {{ forloop.counter }} from the registry"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
-                  </td>
-                </tr>
-                <!-- Edit row -->
-                <tr class="edit-row display-none">
-                  <td class="text-bottom">
-                    {% with sublabel_text="Numbers (0-9) only." %}
-                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
-                        {% input_with_errors form.key_tag %}
-                      {% endwith %}
-                    {% endwith %}
-                  </td>
-                  <td class="text-bottom">
+                  </div>
+                </td>
+              </tr>
+              <!-- Edit row -->
+              <tr class="edit-row display-none">
+                <td class="text-bottom">
+                  {% with sublabel_text="Numbers (0-9) only." %}
                     {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
-                        {% input_with_errors form.algorithm %}
-                      {% endwith %}
-                  </td>
-                  <td class="text-bottom">
-                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
-                        {% input_with_errors form.digest_type %}
-                      {% endwith %}
-                  </td>
-                  <td class="text-bottom">
-                    {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
-                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
-                        {% input_with_errors form.digest %}
-                      {% endwith %}
+                      {% input_with_errors form.key_tag %}
                     {% endwith %}
-                  </td>
-                  <td class="padding-right-0 text-bottom">
-                    <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
-                    
-                    <button
-                          type="button"
-                          class="usa-button usa-button--unstyled display-block dsdata-cancel"
-                          name="btn-cancel-click"
-                          aria-label="Reset the data in the DS record form to the registry state (undo changes)"
-                      >Cancel
-                    </button>
-                    <button
-                          type="button"
-                          class="usa-button usa-button--unstyled display-block text-secondary dsdata-delete"
-                          name="btn-delete-click"
-                          aria-label="Delete the DS record from the registry"
-                      >Delete
-                    </button>
-                    <div class="display-none">{{ form.DELETE }}</div>
-                  </td>
-                </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                  {% endwith %}
+                </td>
+                <td class="text-bottom">
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
+                      {% input_with_errors form.algorithm %}
+                    {% endwith %}
+                </td>
+                <td class="text-bottom">
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
+                      {% input_with_errors form.digest_type %}
+                    {% endwith %}
+                </td>
+                <td class="text-bottom">
+                  {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
+                      {% input_with_errors form.digest %}
+                    {% endwith %}
+                  {% endwith %}
+                </td>
+                <td class="padding-right-0 text-bottom">
+                  <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
+                  
+                  <button
+                        type="button"
+                        class="usa-button usa-button--unstyled display-block dsdata-cancel"
+                        name="btn-cancel-click"
+                        aria-label="Reset the data in the DS record form to the registry state (undo changes)"
+                    >Cancel
+                  </button>
+                  <button
+                        type="button"
+                        class="usa-button usa-button--unstyled display-block text-secondary dsdata-delete"
+                        name="btn-delete-click"
+                        aria-label="Delete the DS record from the registry"
+                    >Delete
+                  </button>
+                  <div class="display-none">{{ form.DELETE }}</div>
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
     </form>
 
   {% else %}
