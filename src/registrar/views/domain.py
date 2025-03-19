@@ -398,7 +398,7 @@ class DomainView(DomainBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_emails = [email for email in DefaultEmail]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
 
@@ -456,7 +456,7 @@ class DomainRenewalView(DomainBaseView):
 
         context = super().get_context_data(**kwargs)
 
-        default_emails = [email for email in DefaultEmail]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
 
@@ -1166,7 +1166,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         initial = super().get_initial()
         security_contact = self.object.security_contact
 
-        invalid_emails = [email for email in DefaultEmail]
+        invalid_emails = DefaultEmail.get_all_emails()
         if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial

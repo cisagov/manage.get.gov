@@ -1107,12 +1107,12 @@ class TestRegistrantContacts(MockEppLib):
         dummy_contact = domain.get_default_security_contact()
 
         # Create contact with empty fields list
-        result = self._convertPublicContactToEpp(dummy_contact, disclose=True, disclose_fields={})
+        result = self._convertPublicContactToEpp(dummy_contact, disclose=True, disclose_fields={DF.EMAIL})
 
         # Verify disclosure settings
         DF = common.DiscloseField
         self.assertEqual(result.disclose.flag, True)
-        self.assertEqual(result.disclose.fields, {})
+        self.assertEqual(result.disclose.fields, {DF.EMAIL})
         self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
 
     def test_not_disclosed_on_default_security_contact(self):

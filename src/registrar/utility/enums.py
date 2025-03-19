@@ -45,6 +45,11 @@ class DefaultEmail(StrEnum):
     OLD_PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
 
+    @classmethod
+    def get_all_emails(cls):
+        return [email for email in cls]
+
+
 
 class DefaultUserValues(StrEnum):
     """Stores default values for a default user.
