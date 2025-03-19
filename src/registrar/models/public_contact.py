@@ -41,6 +41,21 @@ class PublicContact(TimeStampedModel):
         TECHNICAL = "tech", "Technical"
         SECURITY = "security", "Security"
 
+    def save(self, *args, **kwargs):
+        """Save to the registry and also locally in the registrar database."""
+        skip_epp_save = kwargs.pop("skip_epp_save", False)
+        if hasattr(self, "domain") and not skip_epp_save:
+            match self.contact_type:
+                case PublicContact.ContactTypeChoices.REGISTRANT:
+                    self.domain.registrant_contact = self
+                case PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                    self.domain.administrative_contact = self
+                case PublicContact.ContactTypeChoices.TECHNICAL:
+                    self.domain.technical_contact = self
+                case PublicContact.ContactTypeChoices.SECURITY:
+                    self.domain.security_contact = self
+        super().save(*args, **kwargs)
+
     contact_type = models.CharField(
         max_length=14,
         choices=ContactTypeChoices.choices,
