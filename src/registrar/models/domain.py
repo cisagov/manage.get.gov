@@ -244,7 +244,26 @@ class Domain(TimeStampedModel, DomainHelper):
         This is called by the availablility api and
         is called in the validate function on the request/domain page
 
-        throws- RegistryError or InvalidDomainError"""
+        Throws: RegistryError or InvalidDomainError"""
+
+        # if not cls.string_could_be_domain(domain):
+        #     logger.warning("Not a valid domain: %s" % str(domain))
+        #     # throw invalid domain error so that it can be caught in
+        #     # validate_and_handle_errors in domain_helper
+        #     raise errors.InvalidDomainError()
+
+        # domain_name = domain.lower()
+        # req = commands.CheckDomain([domain_name])
+        # return registry.send(req, cleaned=True).res_data[0].avail
+
+        '''
+        1. Check for Invalid Domain and then check for availability
+        2. If domain is available, return True
+        3. If not available -> check for pendingDelete status
+        4. If pendingDelete found, return False 
+        5. Check keyError?
+        '''
+
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -253,7 +272,49 @@ class Domain(TimeStampedModel, DomainHelper):
 
         domain_name = domain.lower()
         req = commands.CheckDomain([domain_name])
-        return registry.send(req, cleaned=True).res_data[0].avail
+        response = registry.send(req, cleaned=True)
+
+        print("***** MODELS/DOMAIN.PY Response:", response)
+        print("***** MODELS/DOMAIN.PY Response res_data[0]:", response.res_data[0])
+
+        if response.res_data[0].avail:
+                return True
+        
+        # If not avail, check registry using InfoDomain
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
+
+            print("***** MODELS/DOMAIN.PY IN TRY info_response is:", info_response)
+            """
+            InfoDomainResult(code=1000, msg='Command completed successfully', 
+            res_data=[InfoDomainResultData(roid='DF1364752-GOV', 
+            statuses=[Status(state='serverTransferProhibited', description=None, lang='en')], 
+            cl_id='gov2023-ote', cr_id='gov2023-ote', cr_date=datetime.datetime(2023, 10, 23, 17, 8, 9, tzinfo=tzlocal()), 
+            up_id='gov2023-ote', up_date=datetime.datetime(2023, 10, 28, 17, 8, 9, tzinfo=tzlocal()), 
+            tr_date=None, name='meoward.gov', registrant='sh8013', admins=[], nsset=None, 
+            keyset=None, ex_date=datetime.date(2024, 10, 23), auth_info=DomainAuthInfo(pw='feedabee'))], 
+            cl_tr_id='wup7ad#2025-03-17T22:21:39.298149', sv_tr_id='aOQBDg4fQoSMGemppS5AdQ==-73ca', 
+            extensions=[], msg_q=None)
+            """
+            print("***** MODELS/DOMAIN.PY IN TRY Response info_response.res_data[0]:", info_response.res_data[0])
+
+            domain_status_state = [status.state for status in info_response.res_data[0].statuses]
+
+            # domain_status_state = [status.state for status in response.res_data[0].statuses]
+
+            print(f"***** Domain statuses for {domain_name} is: {domain_status_state}")
+            # if "serverTransferProhibited" in domain_status_state:
+            #     print("***** Just checking it comes into here!")
+            if "pendingDelete" in domain_status_state:
+                logger.info(f"Domain {domain_name} is still in pendingDelete status.")
+                return False
+        except KeyError:
+            logger.info(f"Domain {domain_name} status check encountered a KeyError. It may be fully deleted.")
+        except Exception as e:
+            logger.warning(f"Failed to retrieve domain statuses for {domain_name}: {e}")
+
+        return False
 
     @classmethod
     def registered(cls, domain: str) -> bool:
@@ -774,8 +835,12 @@ class Domain(TimeStampedModel, DomainHelper):
         A domain's status indicates various properties. See Domain.Status.
         """
         try:
-            return self._get_property("statuses")
+            statuses = self._get_property("statuses")
+            print(f"!!!!! Fetched statuses: {statuses}")
+            return statuses
+            # return self._get_property("statuses")
         except KeyError:
+            print("!!!! Returns KeyError")
             logger.error("Can't retrieve status from domain info")
             return []
 

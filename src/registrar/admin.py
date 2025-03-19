@@ -45,6 +45,10 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from epplibwrapper import (
+    CLIENT as registry,
+    commands,
+)
 from epplibwrapper.errors import ErrorCode, RegistryError
 from registrar.models.user_domain_role import UserDomainRole
 from waffle.admin import FlagAdmin
@@ -71,6 +75,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 
 logger = logging.getLogger(__name__)
 
@@ -2887,6 +2892,67 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         should_proceed = True
         error_message = None
 
+        '''
+        Check if it already exists in the Domain model
+        Then check if that is in the pendingDelete state (which it can only be in if it's already a domain)
+        NOTE: This won't work bc you have to pull from registry the exact state
+        '''
+        # if obj.requested_domain is not None:
+        #     existing_domain = Domain.objects.filter(name=obj.requested_domain.name).first()
+
+        #     # if it exists + the status is pendingDelete 
+        #     if existing_domain and existing_domain.status == "pendingDelete":
+        #         error_message = f"The domain '{existing_domain.name}' is in 'pendingDelete' status, and the request cannot be approved until it is fully deleted."
+        #         should_proceed = False
+        #         # Display error and prevent further processing
+        #         messages.set_level(request, messages.ERROR)
+        #         messages.error(request, error_message)
+        #         return (obj, should_proceed)
+        
+        '''
+        Let's try this method?
+        If transition to APPROVED:
+
+        Check if:
+        1. If the domain request is not approved in previous state (original status)
+        2. If the new status that's supposed to be triggered IS approved
+        3. That it's a valid domain? Do we need this check or is this extra
+
+        If it is then:
+        * Go through the domain check like in availabile! 
+        ''' 
+        print("***** original_obj.status is", original_obj.status)
+        print("***** obj.status is", obj.status)
+
+        if (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
+        ):
+            domain_name = original_obj.requested_domain.name
+            print(f"***** Domain_name is {domain_name}")
+
+            try:
+                # Do same check in available()
+                info_req = commands.InfoDomain(domain_name)
+                info_response = registry.send(info_req, cleaned=True)
+                domain_status_state = [status.state for status in info_response.res_data[0].statuses]
+                print(f"***** Domain statuses for {domain_name} is: {domain_status_state}")
+                if "pendingDelete" in domain_status_state:
+                    print("***** In the if pendingDelete check yay!")
+                    error_message = (
+                        f"The domain '{domain_name}' is still in 'pendingDelete' status "
+                        "in the registry and cannot be approved at this time."
+                    )
+
+            except Exception as e:
+                print("In the Exception state")
+                logger.error(f"Failed to check registry status for {domain_name}: {e}")
+                error_message = (
+                    f"Failed to verify domain status in registry. "
+                    "Please try again or contact support."
+                )
+            
         # Get the method that should be run given the status
         selected_method = self.get_status_method_mapping(obj)
         if selected_method is None:
@@ -3092,6 +3158,56 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             logger.error(f"Object with object_id {object_id} does not exist: {e}")
         except Exception as e:
             logger.error(f"An error occurred during change_view: {e}")
+
+        # CHANGE ADDED HERE
+
+        # for field in domain_request._meta.get_fields():
+        #     print(f"$$$$$ {field.name}: {getattr(domain_request, field.name, None)}")
+
+        '''
+        What we want: 
+        if this domain has the status pendingdelete, 
+        then show an error to the analyst and block the transition to approved. 
+        And thus do not create any new domain/domain info object yet
+
+        I am stuck on: How to call the requested domain here and check it's status for pendingDelete.
+        I thought about calling available, but it returns False also if it's literally no available 
+        available also only returns a bool 
+
+        Could edit it to return a bool and the name of the domain and then call it here only 
+        if it's pending delete? I feel like I'm overcomplicating it though
+
+        Maybe also can't use InfoDomain because it's not a domain yet and instead a domain request?
+        Well in order to be in pendingDelete you'd have to have been a domain and not a domain request anymore, maybe?
+        '''
+
+        # domain_name = domain_request.requested_domain.name.lower()
+        # req = commands.InfoDomain(domain_name)
+        # response = registry.send(req, cleaned=True)  
+
+        # If we use checkdomain:
+        # print("response.res_data[0] is", response.res_data[0])
+        # response.res_data[0] is CheckDomainResultData(name='indeed-employee-sea.gov', avail=True, reason=None)
+
+        # 1. This means we can't grab the status from here 
+        # 2. Which also means we can't check for pendingDelete here 
+
+        # if response:
+        #     domain_status_state = [status.state for status in response.res_data[0].statuses]
+
+        #     print(f"%%%%%%% domain_statuses for {domain_request.requested_domain} is {domain_status_state}")
+        # else:
+        #     print(f"%%%%%%% Failed to fetch InfoDomain for {domain_request.requested_domain}")
+        #     domain_statuses = []
+
+
+        # # Check if 'pendingDelete' status exists in the list
+        # if any(status.state == 'pendingDelete' for status in domain_statuses):
+        #     messages.error(
+        #         request,
+        #         f"Cannot approve domain request '{domain.name}' because the domain is still in pendingDelete status."
+        #     )
+        #     return self.response_change(request, domain_request)  # Prevent approval
 
         # Initialize extra_context and add filtered entries
         extra_context = extra_context or {}
