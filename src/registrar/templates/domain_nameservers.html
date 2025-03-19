@@ -140,7 +140,7 @@
 
               {{ form.domain }}
               <!-- Readonly row -->
-              <tr class="view-only-row">
+              <tr>
                 <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
                 <td class="padding-right-0">
                   <div class="tablet:display-flex tablet:flex-row">
@@ -166,12 +166,12 @@
                       <div class="usa-accordion__heading">
                         <button
                           type="button"
-                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
+                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                           aria-expanded="false"
                           aria-controls="more-actions-{{ form.server.value }}"
                           aria-label="More Actions for ({{ form.server.value }})"
                         >
-                          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                             <use xlink:href="/public/img/sprite.svg#more_vert"></use>
                           </svg>
                         </button>

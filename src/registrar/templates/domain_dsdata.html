@@ -144,7 +144,7 @@
                 {% endcomment %}
                 
                 <!-- Readonly row -->
-                <tr>
+                <tr class="view-only-row">
                   <td>{{ form.key_tag.value }}</td>
                   <td>
                     <span class="ellipsis ellipsis--15">
@@ -189,12 +189,12 @@
                         <div class="usa-accordion__heading">
                           <button
                             type="button"
-                            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
+                            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                             aria-expanded="false"
                             aria-controls="more-actions-dsdata-{{ forloop.counter }}"
                             aria-label="More Actions for DS record {{ forloop.counter }}"
                           >
-                            <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                               <use xlink:href="/public/img/sprite.svg#more_vert"></use>
                             </svg>
                           </button>
