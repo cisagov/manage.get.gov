@@ -328,14 +328,7 @@ class Command(BaseCommand):
             .values_list("name", flat=True)
         )
         for name in org_names - existing_org_names:
-            if normalize_string(name) == normalize_string(portfolio.organization_name):
-                self.suborganization_changes.skip.append(suborg)
-                message = (
-                    f"Skipping suborganization create on record '{name}'. "
-                    "The federal agency name is the same as the portfolio name."
-                )
-                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
-            else:
+            if normalize_string(name) != normalize_string(portfolio.organization_name):
                 suborg = Suborganization(name=name, portfolio=portfolio)
                 # TODO - change this portion
                 if suborg.name not in [org.name for org in self.suborganization_changes.add]:
