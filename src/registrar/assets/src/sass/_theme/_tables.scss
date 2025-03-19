@@ -7,7 +7,7 @@ th {
 
 .dotgov-table--stacked {
   td, th {
-    padding: units(1) units(1) units(2px) 0;
+    padding: units(1) units(2) units(2px) 0;
     border: none;
   }
 
@@ -139,6 +139,12 @@ th {
 .dotgov-table--cell-padding-2 {
   td, th {
     padding: units(2);
+  }
+}
+
+.dotgov-table--cell-padding-1-1-2px-0 {
+  td, th {
+    padding: units(1) units(1) units(2px) 0;
   }
 }
 

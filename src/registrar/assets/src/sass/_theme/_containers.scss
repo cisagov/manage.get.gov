@@ -15,6 +15,11 @@
       padding-left: $widescreen-x-padding !important;
       padding-right: $widescreen-x-padding !important;
     }
+
+    // Accomodate sideanv + table layouts
+    .grid-col--sidenav {
+      max-width: 230px;
+    }
 }
 
 // matches max-width to equal the max-width of .grid-container
@@ -23,8 +28,4 @@
 // where is_widescreen_centered is used in the html).
 .max-width--grid-container {
   max-width: 1024px;
-}
-
-.grid-col--sidenav {
-  max-width: 230px;
 }
