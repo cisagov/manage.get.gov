@@ -974,7 +974,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def print_contact_info_epp(self, contact: PublicContact):
         """Prints registry data for this PublicContact for easier debugging"""
         results = self._request_contact_info(contact, get_result_as_dict=True)
-        logger.info(f"EPP info for {contact.display_contact_type()}:")
+        logger.info(f"EPP info for {contact.contact_type}:")
         logger.info("---------------------")
         for key, value in results.items():
             logger.info(f"{key}: {value}")
