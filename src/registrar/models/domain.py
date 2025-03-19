@@ -1678,7 +1678,7 @@ class Domain(TimeStampedModel, DomainHelper):
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):
-        """creates a disclose object that can be added to a contact Create using
+        """creates a disclose object that can be added to a contact Create or Update using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
         # You can find each enum here:
