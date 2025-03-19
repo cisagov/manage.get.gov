@@ -140,7 +140,7 @@
 
               {{ form.domain }}
               <!-- Readonly row -->
-              <tr>
+              <tr class="view-only-row">
                 <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
                 <td class="padding-right-0">
                   <div class="tablet:display-flex tablet:flex-row">
@@ -154,7 +154,7 @@
                     <a 
                       role="button" 
                       id="button-trigger-delete-{{ form.server.value }}"
-                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
+                      class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
                     >
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
