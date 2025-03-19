@@ -237,7 +237,7 @@
                       {% endwith %}
                   </td>
                   <td class="text-bottom">
-                    {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                    {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." inline_error_class="font-body-xs" %}
                       {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True %}
                         {% input_with_errors form.digest %}
                       {% endwith %}
