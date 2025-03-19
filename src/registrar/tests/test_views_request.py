@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
+from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -53,6 +54,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
@@ -2545,6 +2547,128 @@ class DomainRequestTests(TestWithUser, WebTest):
         dotgov_page = current_sites_result.click(str(self.TITLES["dotgov_domain"]), index=0)
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
+
+    # @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    def test_domain_request_dotgov_domain_FEB_questions(self):
+        """
+        Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
+        contains additional questions for OMB.
+        """
+        agency, _ = FederalAgency.objects.get_or_create(
+            agency="US Treasury Dept",
+            federal_type=BranchChoices.EXECUTIVE,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            creator=self.user,
+            organization_name="Test Portfolio",
+            organization_type=Portfolio.OrganizationChoices.FEDERAL,
+            federal_agency=agency,
+        )
+
+        portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        intro_page = self.app.get(reverse("domain-request:start"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        portfolio_requesting_entity = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- REQUESTING ENTITY PAGE  ----
+        requesting_entity_form = portfolio_requesting_entity.forms[0]
+        requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requesting_entity_result = requesting_entity_form.submit()
+
+        # ---- CURRENT SITES PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_page = requesting_entity_result.follow()
+        current_sites_form = current_sites_page.forms[0]
+        current_sites_form["current_sites-0-website"] = "www.treasury.com"
+
+        # test saving the page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        current_sites_result = current_sites_form.submit()
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = current_sites_result.follow()
+
+        # separate out these tests for readability
+        self.feb_dotgov_domain_tests(dotgov_page)
+
+        # Now proceed with the actual test
+        domain_form = dotgov_page.forms[0]
+        domain = "test.gov"
+        domain_form["dotgov_domain-requested_domain"] = domain
+        domain_form["dotgov_domain-feb_naming_requirements"] = "True"
+        domain_form["dotgov_domain-feb_naming_requirements_details"] = "test"
+        with patch(
+            "registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain", return_value=domain
+        ):  # noqa
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            domain_result = domain_form.submit()
+
+        # ---- PURPOSE PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_page = domain_result.follow()
+
+        self.feb_purpose_page_tests(purpose_page)
+
+    def feb_purpose_page_tests(self, purpose_page):
+        self.assertContains(purpose_page, "What is the purpose of your requested domain?")
+
+        # Make sure the purpose selector form is present
+        self.assertContains(purpose_page, "feb_purpose_choice")
+
+        # Make sure the purpose details form is present
+        self.assertContains(purpose_page, "purpose-details")
+
+        # Make sure the timeframe yes/no form is present
+        self.assertContains(purpose_page, "purpose-has_timeframe")
+
+        # Make sure the timeframe details form is present
+        self.assertContains(purpose_page, "purpose-time_frame_details")
+
+        # Make sure the interagency initiative yes/no form is present
+        self.assertContains(purpose_page, "purpose-is_interagency_initiative")
+
+        # Make sure the interagency initiative details form is present
+        self.assertContains(purpose_page, "purpose-interagency_initiative_details")
+
+    def feb_dotgov_domain_tests(self, dotgov_page):
+        # Make sure the dynamic example content doesn't show
+        self.assertNotContains(dotgov_page, "medicare.gov")
+
+        # Make sure the link at the top directs to OPM FEB guidance
+        self.assertContains(dotgov_page, "https://get.gov/domains/executive-branch-guidance/")
+
+        # Check for header of first FEB form
+        self.assertContains(dotgov_page, "Does this submission meet each domain naming requirement?")
+
+        # Check for label of second FEB form
+        self.assertContains(dotgov_page, "Provide details below")
+
+        # Check that the yes/no form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements")
+
+        # Check that the details form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements_details")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

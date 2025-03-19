@@ -86,7 +86,6 @@ class RequestingEntityForm(RegistrarForm):
             return {}
         # get the domain request as a dict, per usual method
         domain_request_dict = {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
-
         # set sub_organization to 'other' if is_requesting_new_suborganization is True
         if isinstance(obj, DomainRequest) and obj.is_requesting_new_suborganization():
             domain_request_dict["sub_organization"] = "other"
@@ -608,7 +607,10 @@ class DotGovDomainForm(RegistrarForm):
     )
 
 
-class PurposeForm(RegistrarForm):
+class PurposeDetailsForm(BaseDeletableRegistrarForm):
+
+    field_name = "purpose"
+
     purpose = forms.CharField(
         label="Purpose",
         widget=forms.Textarea(
