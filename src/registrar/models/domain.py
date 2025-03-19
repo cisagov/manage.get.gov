@@ -1712,7 +1712,7 @@ class Domain(TimeStampedModel, DomainHelper):
         elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
             fields_to_remove.update({DF.EMAIL, DF.VOICE, DF.ADDR})
 
-        disclose_args["fields"].difference_update(fields_to_remove)
+        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
 
         logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
         return epp.Disclose(**disclose_args)  # type: ignore
