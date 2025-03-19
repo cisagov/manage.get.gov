@@ -67,10 +67,10 @@
 // Currently, that's not an issue since that Members table is not wrapped in the
 // reponsive wrapper.
 @include at-media-max("desktop") {
-    tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
+    tr:not(.edit-row):last-of-type .usa-accordion--more-actions .usa-accordion__content {
         top: auto;
         bottom: -10px;
-        right: 30px;
+        right: 20px;
     }
 }
 
