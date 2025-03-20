@@ -27,7 +27,7 @@ export class DSDataForm {
 
 
     /**
-     * Determines the initial display state of the DS dara form,
+     * Determines the initial display state of the DS data form,
      * handling validation errors and setting visibility of elements accordingly.
      */
     initializeDSDataFormDisplay() {
