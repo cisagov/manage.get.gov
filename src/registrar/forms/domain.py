@@ -680,7 +680,7 @@ class DomainDsdataForm(forms.Form):
         key_tag = cleaned_data.get("key_tag", 0)
         try:
             key_tag = int(key_tag)
-            if key_tag <= 0 or key_tag > 65535:
+            if key_tag < 0 or key_tag > 65535:
                 self.add_error(
                     "key_tag",
                     DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE),
@@ -705,8 +705,41 @@ class DomainDsdataForm(forms.Form):
         return cleaned_data
 
 
+class BaseDsdataFormset(forms.BaseFormSet):
+    def clean(self):
+        """Check for duplicate entries in the formset."""
+
+        duplicate_errors = self._check_for_duplicates()
+        if duplicate_errors:
+            raise forms.ValidationError("Duplicate DS records found. Each DS record must be unique.")
+
+    def _check_for_duplicates(self):
+        """Check for duplicate entries in the DS data forms"""
+
+        seen_ds_records = set()
+        duplicate_found = False
+
+        for form in self.forms:
+            if form.cleaned_data.get("key_tag") and not form.cleaned_data.get("DELETE", False):
+                ds_tuple = (
+                    form.cleaned_data["key_tag"],
+                    form.cleaned_data["algorithm"],
+                    form.cleaned_data["digest_type"],
+                    form.cleaned_data["digest"],
+                )
+
+                if ds_tuple in seen_ds_records:
+                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    duplicate_found = True  # Track that we found at least one duplicate
+                
+                seen_ds_records.add(ds_tuple)
+        
+        return duplicate_found  # Returns True if any duplicates were found
+
+
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
+    formset=BaseDsdataFormset,
     extra=1,
     can_delete=True,
 )
