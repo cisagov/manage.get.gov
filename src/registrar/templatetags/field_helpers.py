@@ -114,7 +114,7 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     # do some work for various edge cases
 
-    if "maxlength" in attrs:
+    if "maxlength" in attrs and "hide_character_count" not in attrs:
         # associate the field programmatically with its hint text
         described_by.append(f"{attrs['id']}__message")
 
