@@ -28,36 +28,21 @@ class Command(BaseCommand):
             self.update = []
             self.skip = []
             self.fail = []
-        
+
         def print_script_run_summary(self, no_changes_message, **kwargs):
             """Helper function that runs TerminalHelper.log_script_run_summary on this object."""
             if self.has_changes():
-                TerminalHelper.log_script_run_summary(
-                    self.add,
-                    self.update,
-                    self.skip,
-                    self.fail,
-                    **kwargs
-                )
+                TerminalHelper.log_script_run_summary(self.add, self.update, self.skip, self.fail, **kwargs)
             else:
                 logger.info(f"{TerminalColors.BOLD}{no_changes_message}{TerminalColors.ENDC}")
-        
+
         def has_changes(self) -> bool:
-            num_changes = [
-                len(self.add),
-                len(self.update),
-                len(self.skip),
-                len(self.fail)
-            ]
+            num_changes = [len(self.add), len(self.update), len(self.skip), len(self.fail)]
             return any([num_change > 0 for num_change in num_changes])
 
         def bulk_create(self):
             try:
-                ScriptDataHelper.bulk_create_fields(
-                    self.model_class,
-                    self.add,
-                    quiet=True
-                )
+                ScriptDataHelper.bulk_create_fields(self.model_class, self.add, quiet=True)
             except Exception as err:
                 # In this case, just swap the fail and add lists
                 self.fail = self.add.copy()
@@ -66,12 +51,7 @@ class Command(BaseCommand):
 
         def bulk_update(self, fields_to_update):
             try:
-                ScriptDataHelper.bulk_update_fields(
-                    self.model_class,
-                    self.update,
-                    fields_to_update,
-                    quiet=True
-                )
+                ScriptDataHelper.bulk_update_fields(self.model_class, self.update, fields_to_update, quiet=True)
             except Exception as err:
                 # In this case, just swap the fail and update lists
                 self.fail = self.update.copy()
@@ -81,13 +61,6 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         """Defines fields to track what portfolios were updated, skipped, or just outright failed."""
         super().__init__(*args, **kwargs)
-        self.updated_portfolios = set()
-        self.skipped_portfolios = set()
-        self.failed_portfolios = set()
-        self.added_managers = set()
-        self.added_invitations = set()
-        self.skipped_invitations = set()
-        self.failed_managers = set()
         self.portfolio_changes = self.ChangeTracker(model_class=Portfolio)
         self.suborganization_changes = self.ChangeTracker(model_class=Suborganization)
         self.domain_info_changes = self.ChangeTracker(model_class=DomainInformation)
@@ -158,11 +131,13 @@ class Command(BaseCommand):
 
         # Parse script params
         if not (parse_requests or parse_domains or parse_managers):
-            raise CommandError("You must specify at least one of --parse_requests, --parse_domains, or --parse_managers.")
+            raise CommandError(
+                "You must specify at least one of --parse_requests, --parse_domains, or --parse_managers."
+            )
 
         # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
-        agencies = FederalAgency.objects.filter(**federal_agency_filter).distinct()
+        agencies = FederalAgency.objects.filter(agency__isnull=False, **federal_agency_filter).distinct()
         if not agencies.exists():
             if agency_name:
                 raise CommandError(
@@ -173,145 +148,148 @@ class Command(BaseCommand):
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
 
-        # == Handle portfolios == #
-        # TODO - some kind of duplicate check
+        # == Handle portfolios and suborganizations == #
+        # TODO - some kind of duplicate check on agencies and existing portfolios
+        existing_portfolios = Portfolio.objects.filter(
+            organization_name__in=agencies.values_list("agency", flat=True),
+            organization_name__isnull=False
+        )
+        existing_portfolios_set = {normalize_string(p.organization_name): p for p in existing_portfolios}
         agencies_set = {normalize_string(agency.agency): agency for agency in agencies}
-        portfolios = set()
         for federal_agency in agencies_set.values():
-            portfolio, created = self.get_or_create_portfolio(federal_agency)
-            if skip_existing_portfolios and not created:
-                message = (
-                    f"Portfolio '{portfolio}' already exists."
-                    "Skipping modifications to suborgs, domain requests, "
-                    "domains, and mangers due to the --skip_existing_portfolios flag. "
+            portfolio_name = normalize_string(federal_agency.agency, lowercase=False)
+            portfolio = existing_portfolios_set.get(portfolio_name, None)
+            new_portfolio = portfolio is None
+            if new_portfolio:
+                portfolio = Portfolio(
+                    organization_name=portfolio_name,
+                    federal_agency=federal_agency,
+                    organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                    creator=User.get_default_user(),
+                    notes="Auto-generated record",
+                    senior_official=federal_agency.so_federal_agency.first(),
                 )
-                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
+                self.portfolio_changes.add.append(portfolio)
+                logger.info(f"{TerminalColors.OKGREEN}Created portfolio '{portfolio}'.{TerminalColors.ENDC}")
             else:
-                portfolios.add(portfolio)
+                self.portfolio_changes.skip.append(portfolio)
+                message = f"Portfolio '{portfolio}' already exists. Skipping create."
+                logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
 
-        # == Handle suborganizations == #
-        for portfolio in portfolios:
-            org_name = normalize_string(portfolio.organization_name)
-            federal_agency = agencies_set.get(org_name)
-            self.create_suborganizations(portfolio, federal_agency)
+            if not (skip_existing_portfolios and not new_portfolio):
+                self.create_suborganizations(portfolio, federal_agency)
+
+        # NOTE - exceptions to portfolio and suborg are intentionally uncaught.
+        # parse domains, requests, and managers all rely on these fields to function.
+        # An error here means everything down the line is compromised.
+        # The individual parse steps, however, are independent from eachother.
+
+        # Create portfolios
+        self.portfolio_changes.bulk_create()
 
         # Create suborganizations
         self.suborganization_changes.bulk_create()
-        message = f"Added {len(self.suborganization_changes.add)} suborganizations to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
 
         # == Handle domains, requests, and managers == #
-        for portfolio in portfolios:
+        portfolios_to_modify = set(list(existing_portfolios) + self.portfolio_changes.add)
+        for portfolio in portfolios_to_modify:
             org_name = normalize_string(portfolio.organization_name)
             federal_agency = agencies_set.get(org_name)
-            
+
             if parse_domains:
                 self.handle_portfolio_domains(portfolio, federal_agency)
 
             if parse_requests:
-                self.handle_portfolio_requests(portfolio, federal_agency)
+                self.handle_portfolio_requests(portfolio, federal_agency, debug)
 
             if parse_managers:
-                self.handle_portfolio_managers(portfolio)
+                self.handle_portfolio_managers(portfolio, debug)
 
         # Update DomainInformation
-        self.domain_info_changes.bulk_update(["portfolio", "sub_organization"])
-        message = f"Added {len(self.suborganization_changes.update)} domains to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+        try:
+            self.domain_info_changes.bulk_update(["portfolio", "sub_organization"])
+        except Exception as err:
+            logger.error(f"{TerminalColors.FAIL}Could not bulk update domain infos.{TerminalColors.ENDC}")
+            logger.error(err, exc_info=True)
 
         # Update DomainRequest
-        self.domain_request_changes.bulk_update([
-            "portfolio",
-            "sub_organization",
-            "requested_suborganization",
-            "suborganization_city",
-            "suborganization_state_territory",
-            "federal_agency",
-        ])
-        message = f"Added {len(self.domain_request_changes.update)} domain requests to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
+        try:
+            self.domain_request_changes.bulk_update(
+                [
+                    "portfolio",
+                    "sub_organization",
+                    "requested_suborganization",
+                    "suborganization_city",
+                    "suborganization_state_territory",
+                    "federal_agency",
+                ]
+            )
+        except Exception as err:
+            logger.error(f"{TerminalColors.FAIL}Could not bulk update domain requests.{TerminalColors.ENDC}")
+            logger.error(err, exc_info=True)
 
         # Create UserPortfolioPermission
         self.user_portfolio_perm_changes.bulk_create()
-        message = f"Added {len(self.user_portfolio_perm_changes.add)} managers to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
 
-        # Create PortfolioInvitation 
+        # Create PortfolioInvitation
         self.portfolio_invitation_changes.bulk_create()
-        message = f"Added {len(self.portfolio_invitation_changes.add)} manager invitations to portfolios."
-        logger.info(f"{TerminalColors.MAGENTA}{message}{TerminalColors.ENDC}")
 
         # == PRINT RUN SUMMARY == #
         self.print_final_run_summary(parse_domains, parse_requests, parse_managers, debug)
 
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
         self.portfolio_changes.print_script_run_summary(
-            no_changes_message="\n============= No portfolios changed. =============",
+            no_changes_message="\n||============= No portfolios changed. =============||",
             debug=debug,
-            log_header="||============= PORTFOLIOS =============||",
+            log_header="============= PORTFOLIOS =============",
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
+            detailed_prompt_title="PORTFOLIOS: Do you wish to see the full list of failed, skipped and updated records?",
             display_as_str=True,
         )
         self.suborganization_changes.print_script_run_summary(
-            no_changes_message="\n============= No suborganizations changed. =============",
+            no_changes_message="\n||============= No suborganizations changed. =============||",
             debug=debug,
             log_header="============= SUBORGANIZATIONS =============",
             skipped_header="----- SUBORGANIZATIONS SKIPPED (SAME NAME AS PORTFOLIO NAME) -----",
+            detailed_prompt_title="SUBORGANIZATIONS: Do you wish to see the full list of failed, skipped and updated records?",
             display_as_str=True,
         )
 
         if parse_domains:
             self.domain_info_changes.print_script_run_summary(
-                no_changes_message="\n============= No domains changed. =============",
+                no_changes_message="||============= No domains changed. =============||",
                 debug=debug,
                 log_header="============= DOMAINS =============",
+                detailed_prompt_title="DOMAINS: Do you wish to see the full list of failed, skipped and updated records?",
                 display_as_str=True,
             )
 
         if parse_requests:
             self.domain_request_changes.print_script_run_summary(
-                no_changes_message="\n============= No domain requests changed. =============",
+                no_changes_message="||============= No domain requests changed. =============||",
                 debug=debug,
                 log_header="============= DOMAIN REQUESTS =============",
+                detailed_prompt_title="DOMAIN REQUESTS: Do you wish to see the full list of failed, skipped and updated records?",
                 display_as_str=True,
             )
 
         if parse_managers:
             self.user_portfolio_perm_changes.print_script_run_summary(
-                no_changes_message="\n============= No managers changed. =============",
+                no_changes_message="||============= No managers changed. =============||",
                 log_header="============= MANAGERS =============",
                 skipped_header="----- MANAGERS SKIPPED (ALREADY EXISTED) -----",
                 debug=debug,
+                detailed_prompt_title="MANAGERS: Do you wish to see the full list of failed, skipped and updated records?",
                 display_as_str=True,
             )
             self.portfolio_invitation_changes.print_script_run_summary(
-                no_changes_message="\n============= No manager invitations changed. =============",
+                no_changes_message="||============= No manager invitations changed. =============||",
                 log_header="============= MANAGER INVITATIONS =============",
                 debug=debug,
                 skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
+                detailed_prompt_title="MANAGER INVITATIONS: Do you wish to see the full list of failed, skipped and updated records?",
                 display_as_str=True,
             )
-
-    def get_or_create_portfolio(self, federal_agency):
-        portfolio_name = normalize_string(federal_agency.agency, lowercase=False)
-        portfolio, created = Portfolio.objects.get_or_create(
-            organization_name=portfolio_name,
-            federal_agency=federal_agency,
-            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=User.get_default_user(),
-            notes="Auto-generated record",
-            senior_official=federal_agency.so_federal_agency.first(),
-        )
-
-        if created:
-            self.portfolio_changes.add.append(portfolio)
-            logger.info(f"{TerminalColors.OKGREEN}Created portfolio '{portfolio}'.{TerminalColors.ENDC}")
-        else:
-            self.skipped_portfolios.add(portfolio)
-            message = f"Portfolio '{portfolio}' already exists. Skipping create."
-            logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
-
-        return portfolio, created
 
     def create_suborganizations(self, portfolio: Portfolio, federal_agency: FederalAgency):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
@@ -322,11 +300,7 @@ class Command(BaseCommand):
         requests = federal_agency.domainrequest_set.filter(base_filter)
 
         org_names = set(domains.values_list("organization_name", flat=True))
-        existing_org_names = set(
-            Suborganization.objects
-            .filter(name__in=org_names)
-            .values_list("name", flat=True)
-        )
+        existing_org_names = set(Suborganization.objects.filter(name__in=org_names).values_list("name", flat=True))
         for name in org_names - existing_org_names:
             if normalize_string(name) != normalize_string(portfolio.organization_name):
                 suborg = Suborganization(name=name, portfolio=portfolio)
@@ -338,7 +312,7 @@ class Command(BaseCommand):
         # This can vary per domain and request, so this is a seperate step.
         # First: Filter domains and requests by those that have data
         valid_domains = domains.filter(
-            city__isnull=False, 
+            city__isnull=False,
             state_territory__isnull=False,
             portfolio__isnull=False,
             sub_organization__isnull=False,
@@ -456,7 +430,7 @@ class Command(BaseCommand):
             domain_info.sub_organization = suborgs.get(org_name, None)
             self.domain_info_changes.update.append(domain_info)
 
-    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency):
+    def handle_portfolio_requests(self, portfolio: Portfolio, federal_agency: FederalAgency, debug):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
@@ -468,12 +442,12 @@ class Command(BaseCommand):
         ]
         domain_requests = DomainRequest.objects.filter(federal_agency=federal_agency).exclude(status__in=invalid_states)
         if not domain_requests.exists():
-            message = f"""
-            Portfolio '{portfolio}' not added to domain requests: nothing to add found.
-            Excluded statuses: STARTED, INELIGIBLE, REJECTED.
-            """
-            logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
-            TerminalHelper.colorful_logger(logger.info, TerminalColors.YELLOW, message)
+            if debug:
+                message = (
+                f"Portfolio '{portfolio}' not added to domain requests: nothing to add found."
+                "Excluded statuses: STARTED, INELIGIBLE, REJECTED."
+                )
+                logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
             return None
 
         # Get all suborg information and store it in a dict to avoid doing a db call
@@ -522,8 +496,7 @@ class Command(BaseCommand):
             domain__in=domains, role=UserDomainRole.Roles.MANAGER
         )
         existing_permissions = UserPortfolioPermission.objects.filter(
-            user__in=user_domain_roles.values_list("user"),
-            portfolio=portfolio
+            user__in=user_domain_roles.values_list("user"), portfolio=portfolio
         )
         existing_permissions_dict = {permission.user: permission for permission in existing_permissions}
         for user_domain_role in user_domain_roles:
@@ -535,19 +508,20 @@ class Command(BaseCommand):
                     roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
                 self.user_portfolio_perm_changes.add.append(permission)
-                logger.info(f"Added manager '{permission.user}' to portfolio '{portfolio}'.")
+                if debug:
+                    logger.info(f"Added manager '{permission.user}' to portfolio '{portfolio}'.")
             else:
                 existing_permission = existing_permissions_dict.get(user)
                 self.user_portfolio_perm_changes.skip.append(existing_permission)
-                logger.info(f"Manager '{user}' already exists on portfolio '{portfolio}'.")
+                if debug:
+                    logger.info(f"Manager '{user}' already exists on portfolio '{portfolio}'.")
 
         # Get the emails of invited managers
         domain_invitations = DomainInvitation.objects.filter(
             domain__in=domains, status=DomainInvitation.DomainInvitationStatus.INVITED
         )
         existing_invitations = PortfolioInvitation.objects.filter(
-            email__in=domain_invitations.values_list("email"),
-            portfolio=portfolio
+            email__in=domain_invitations.values_list("email"), portfolio=portfolio
         )
         existing_invitation_dict = {normalize_string(invite.email): invite for invite in existing_invitations}
         for domain_invitation in domain_invitations:
@@ -556,8 +530,8 @@ class Command(BaseCommand):
                 invitation = PortfolioInvitation(
                     portfolio=portfolio,
                     email=email,
-                    status = PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-                    roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                    status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
                 self.portfolio_invitation_changes.add.append(invitation)
                 logger.info(f"Added invitation '{email}' to portfolio '{portfolio}'.")

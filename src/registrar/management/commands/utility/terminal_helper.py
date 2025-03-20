@@ -61,7 +61,7 @@ class ScriptDataHelper:
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
             model_class.objects.bulk_update(page.object_list, fields_to_update)
-    
+
     @staticmethod
     def bulk_create_fields(model_class, update_list, batch_size=1000, quiet=False):
         """
@@ -146,15 +146,17 @@ class PopulateScriptTemplate(ABC):
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
-        proposed_changes = f"""==Proposed Changes==
-            Number of {readable_class_name} objects to change: {len(records)}
-            These fields will be updated on each record: {fields_to_update}
-            """
+        proposed_changes = (
+            "==Proposed Changes==\n"
+            f"Number of {readable_class_name} objects to change: {len(records)}\n"
+            f"These fields will be updated on each record: {fields_to_update}"
+        )
 
         if verbose:
-            proposed_changes = f"""{proposed_changes}
-            These records will be updated: {list(records.all())}
-            """
+            proposed_changes = (
+                f"{proposed_changes}\n"
+                f"These records will be updated: {list(records.all())}"
+            )
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
@@ -219,7 +221,6 @@ class PopulateScriptTemplate(ABC):
 
 class TerminalHelper:
 
-
     @staticmethod
     def log_script_run_summary(
         add,
@@ -231,10 +232,10 @@ class TerminalHelper:
         skipped_header="----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----",
         failed_header="----- UPDATE FAILED -----",
         display_as_str=False,
-        detailed_prompt_title="Do you wish to see the full list of failed, skipped and updated records?"
+        detailed_prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
     ):
         """Generates a formatted summary of script execution results with colored output.
-        
+
         Displays counts and details of successful, failed, and skipped operations.
         In debug mode or when prompted, shows full record details.
         Uses color coding: green for success, yellow for skipped, red for failures.
@@ -306,9 +307,9 @@ class TerminalHelper:
         if counts["failed"] > 0:
             logger.error(f"{TerminalColors.FAIL}{final_message}{TerminalColors.ENDC}")
         elif counts["skipped"] > 0:
-            TerminalHelper.colorful_logger("WARNING", "YELLOW", final_message)
+            logger.warning(f"{TerminalColors.YELLOW}{final_message}{TerminalColors.ENDC}")
         else:
-            TerminalHelper.colorful_logger("INFO", "OKGREEN", final_message)
+            logger.info(f"{TerminalColors.OKGREEN}{final_message}{TerminalColors.ENDC}")
 
     @staticmethod
     def query_yes_no(question: str, default="yes"):
