@@ -615,7 +615,8 @@ class PurposeDetailsForm(BaseDeletableRegistrarForm):
         label="Purpose",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                "aria-label": "What is the purpose of your requested domain? \
+                Describe how you’ll use your .gov domain. \
                 Will it be used for a website, email, or something else?"
             }
         ),
@@ -921,6 +922,7 @@ class AnythingElseYesNoForm(BaseYesNoForm):
 
 
 class RequirementsForm(RegistrarForm):
+
     is_policy_acknowledged = forms.BooleanField(
         label="I read and agree to the requirements for operating a .gov domain.",
         error_messages={
