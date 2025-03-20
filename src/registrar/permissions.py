@@ -182,7 +182,7 @@ def validate_permissions():
             url_name = pattern.name
             
             if url_name:
-                # Skip check for health endpoint which intentionally has no decorator
+                # Skip check for endpoints that intentionally have no decorator
                 if url_name in UNCHECKED_URLS:
                     return
                     

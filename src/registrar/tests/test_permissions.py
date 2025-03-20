@@ -8,9 +8,9 @@ These tests ensure that:
 """
 
 from django.test import TestCase
-from django.urls import reverse, NoReverseMatch
+from django.urls import reverse
 from registrar.models.user_domain_role import UserDomainRole
-from registrar.permissions import URL_PERMISSIONS, verify_all_urls_have_permissions, validate_permissions
+from registrar.permissions import verify_all_urls_have_permissions, validate_permissions
 from registrar.tests.common import MockDbForIndividualTests
 
 
