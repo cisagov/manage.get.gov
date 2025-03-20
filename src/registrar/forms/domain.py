@@ -708,6 +708,8 @@ class DomainDsdataForm(forms.Form):
 class BaseDsdataFormset(forms.BaseFormSet):
     def clean(self):
         """Check for duplicate entries in the formset."""
+        if any(self.errors):
+            return  # Skip duplicate checking if other errors exist
 
         duplicate_errors = self._check_for_duplicates()
         if duplicate_errors:
@@ -725,15 +727,15 @@ class BaseDsdataFormset(forms.BaseFormSet):
                     form.cleaned_data["key_tag"],
                     form.cleaned_data["algorithm"],
                     form.cleaned_data["digest_type"],
-                    form.cleaned_data["digest"],
+                    form.cleaned_data["digest"].upper(),
                 )
 
                 if ds_tuple in seen_ds_records:
                     form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
                     duplicate_found = True  # Track that we found at least one duplicate
-                
+
                 seen_ds_records.add(ds_tuple)
-        
+
         return duplicate_found  # Returns True if any duplicates were found
 
 
