@@ -971,24 +971,6 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.info("making technical contact")
         self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.TECHNICAL)
 
-    def print_contact_info_epp(self, contact: PublicContact):
-        """Prints registry data for this PublicContact for easier debugging"""
-        results = self._request_contact_info(contact, get_result_as_dict=True)
-        logger.info("---------------------")
-        logger.info(f"EPP info for {contact.contact_type}:")
-        logger.info("---------------------")
-        for key, value in results.items():
-            logger.info(f"{key}: {value}")
-
-    def print_all_domain_contact_info_epp(self):
-        """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
-        logger.info(f"Contact info for {self}:")
-        logger.info("=====================")
-        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
-        for contact in contacts:
-            if contact:
-                self.print_contact_info_epp(contact)
-
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
         because then it should be live, theoretically.
