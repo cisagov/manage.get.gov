@@ -216,31 +216,31 @@
                 </tr>
                 <!-- Edit row -->
                 <tr class="edit-row display-none">
-                  <td class="text-bottom">
+                  <td class="text-bottom" data-label="Key tag">
                     {% with sublabel_text="Numbers (0-9) only." %}
                       {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
                         {% input_with_errors form.key_tag %}
                       {% endwith %}
                     {% endwith %}
                   </td>
-                  <td class="text-bottom">
+                  <td class="text-bottom" data-label="Key tag">
                     {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
                         {% input_with_errors form.algorithm %}
                       {% endwith %}
                   </td>
-                  <td class="text-bottom">
+                  <td class="text-bottom" data-label="Digest type">
                     {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
                         {% input_with_errors form.digest_type %}
                       {% endwith %}
                   </td>
-                  <td class="text-bottom">
+                  <td class="text-bottom" data-label="Digest">
                     {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
                       {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
                         {% input_with_errors form.digest %}
                       {% endwith %}
                     {% endwith %}
                   </td>
-                  <td class="padding-right-0 text-bottom">
+                  <td class="padding-right-0 text-bottom" data-label="Action">
                     <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
                     <button
