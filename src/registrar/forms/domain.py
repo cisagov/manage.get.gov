@@ -680,7 +680,7 @@ class DomainDsdataForm(forms.Form):
         key_tag = cleaned_data.get("key_tag", 0)
         try:
             key_tag = int(key_tag)
-            if key_tag < 0 or key_tag > 65535:
+            if key_tag <= 0 or key_tag > 65535:
                 self.add_error(
                     "key_tag",
                     DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE),

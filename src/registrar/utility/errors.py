@@ -262,7 +262,7 @@ class DsDataError(Exception):
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
         DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be less than 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be greater than 0 and less than 65535."),
         DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
     }
 
