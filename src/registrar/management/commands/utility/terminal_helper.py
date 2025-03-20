@@ -153,10 +153,7 @@ class PopulateScriptTemplate(ABC):
         )
 
         if verbose:
-            proposed_changes = (
-                f"{proposed_changes}\n"
-                f"These records will be updated: {list(records.all())}"
-            )
+            proposed_changes = f"{proposed_changes}\n" f"These records will be updated: {list(records.all())}"
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
@@ -223,7 +220,7 @@ class TerminalHelper:
 
     @staticmethod
     def log_script_run_summary(
-        add,
+        create,
         update,
         skip,
         fail,
@@ -253,7 +250,7 @@ class TerminalHelper:
 
         Output Format (if count > 0 for each category):
             [log_header]
-            Added W entries
+            Created W entries
             Updated X entries
             [skipped_header]
             Skipped updating Y entries
@@ -265,7 +262,7 @@ class TerminalHelper:
         - Converts each item to string if display_as_str is True
         """
         counts = {
-            "added": len(add),
+            "created": len(create),
             "updated": len(update),
             "skipped": len(skip),
             "failed": len(fail),
@@ -285,8 +282,8 @@ class TerminalHelper:
         messages = []
         for category, count in non_zero_counts.items():
             match category:
-                case "added":
-                    label, values, debug_color = "Added", add, TerminalColors.OKBLUE
+                case "created":
+                    label, values, debug_color = "Created", create, TerminalColors.OKBLUE
                 case "updated":
                     label, values, debug_color = "Updated", update, TerminalColors.OKCYAN
                 case "skipped":
