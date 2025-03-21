@@ -175,7 +175,7 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     # Conditionally add the data-initial-value attribute
     if context.get("add_initial_value_attr", False):
-        attrs["data-initial-value"] = field.initial or ""
+        attrs["data-initial-value"] = field.initial if field.initial is not None else ""
 
     # ask Django to give us the widget dict
     # see Widget.get_context() on
