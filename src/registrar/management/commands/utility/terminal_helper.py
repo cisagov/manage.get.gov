@@ -52,6 +52,8 @@ class ScriptDataHelper:
 
         Usage:
             ScriptDataHelper.bulk_update_fields(Domain, page.object_list, ["first_ready"])
+        
+        Returns: A queryset of the updated objets
         """
         if not quiet:
             logger.info(f"{TerminalColors.YELLOW} Bulk updating fields... {TerminalColors.ENDC}")
@@ -63,7 +65,7 @@ class ScriptDataHelper:
             model_class.objects.bulk_update(page.object_list, fields_to_update)
 
     @staticmethod
-    def bulk_create_fields(model_class, update_list, batch_size=1000, quiet=False):
+    def bulk_create_fields(model_class, update_list, batch_size=1000, return_created=False, quiet=False):
         """
         This function performs a bulk create operation on a specified Django model class in batches.
         It uses Django's Paginator to handle large datasets in a memory-efficient manner.
@@ -80,13 +82,22 @@ class ScriptDataHelper:
                     or large field values, you may need to decrease this value to prevent out-of-memory errors.
         Usage:
             ScriptDataHelper.bulk_add_fields(Domain, page.object_list)
+        
+        Returns: A queryset of the added objects
         """
         if not quiet:
             logger.info(f"{TerminalColors.YELLOW} Bulk adding fields... {TerminalColors.ENDC}")
+
+        created_objs = []
         paginator = Paginator(update_list, batch_size)
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
-            model_class.objects.bulk_create(page.object_list)
+            all_created = model_class.objects.bulk_create(page.object_list)
+            if return_created:
+                created_objs.extend([created.id for created in all_created])
+        if return_created:
+            return model_class.objects.filter(id__in=created_objs)
+        return None
 
 
 class PopulateScriptTemplate(ABC):
