@@ -164,4 +164,4 @@ class PublicContact(TimeStampedModel):
         return cls._meta.get_field("registry_id").max_length
 
     def __str__(self):
-        return f"{self.name} <{self.email}>" f"id: {self.registry_id} " f"type: {self.contact_type}"
+        return self.registry_id
