@@ -136,6 +136,7 @@ class FSMErrorCodes(IntEnum):
     INVESTIGATOR_NOT_STAFF = 3
     NO_REJECTION_REASON = 4
     NO_ACTION_NEEDED_REASON = 5
+    DOMAIN_IS_PENDING_DELETE = 6
 
 
 class FSMDomainRequestError(Exception):
@@ -150,6 +151,7 @@ class FSMDomainRequestError(Exception):
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
         FSMErrorCodes.NO_ACTION_NEEDED_REASON: ("A reason is required for this status."),
+        FSMErrorCodes.DOMAIN_IS_PENDING_DELETE: ("Domain of same name is currently in pending delete state."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

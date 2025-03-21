@@ -246,24 +246,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         Throws: RegistryError or InvalidDomainError"""
 
-        # if not cls.string_could_be_domain(domain):
-        #     logger.warning("Not a valid domain: %s" % str(domain))
-        #     # throw invalid domain error so that it can be caught in
-        #     # validate_and_handle_errors in domain_helper
-        #     raise errors.InvalidDomainError()
-
-        # domain_name = domain.lower()
-        # req = commands.CheckDomain([domain_name])
-        # return registry.send(req, cleaned=True).res_data[0].avail
-
-        """
-        1. Check for Invalid Domain and then check for availability
-        2. If domain is available, return True
-        3. If not available -> check for pendingDelete status
-        4. If pendingDelete found, return False 
-        5. Check keyError?
-        """
-
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -280,39 +262,40 @@ class Domain(TimeStampedModel, DomainHelper):
         if response.res_data[0].avail:
             return True
 
+    @classmethod
+    def is_pending_delete(cls, domain: str) -> bool:
+        # TODO: Write blurb here still
+        domain_name = domain.lower()
+
+        print("***** in is_pending_delete")
         # If not avail, check registry using InfoDomain
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
 
-            print("***** MODELS/DOMAIN.PY IN TRY info_response is:", info_response)
-            """
-            InfoDomainResult(code=1000, msg='Command completed successfully', 
-            res_data=[InfoDomainResultData(roid='DF1364752-GOV', 
-            statuses=[Status(state='serverTransferProhibited', description=None, lang='en')], 
-            cl_id='gov2023-ote', cr_id='gov2023-ote', cr_date=datetime.datetime(2023, 10, 23, 17, 8, 9, tzinfo=tzlocal()), 
-            up_id='gov2023-ote', up_date=datetime.datetime(2023, 10, 28, 17, 8, 9, tzinfo=tzlocal()), 
-            tr_date=None, name='meoward.gov', registrant='sh8013', admins=[], nsset=None, 
-            keyset=None, ex_date=datetime.date(2024, 10, 23), auth_info=DomainAuthInfo(pw='feedabee'))], 
-            cl_tr_id='wup7ad#2025-03-17T22:21:39.298149', sv_tr_id='aOQBDg4fQoSMGemppS5AdQ==-73ca', 
-            extensions=[], msg_q=None)
-            """
-            print("***** MODELS/DOMAIN.PY IN TRY Response info_response.res_data[0]:", info_response.res_data[0])
+        info_req = commands.InfoDomain(domain_name)
+        info_response = registry.send(info_req, cleaned=True)
 
-            domain_status_state = [status.state for status in info_response.res_data[0].statuses]
+        print("***** MODELS/DOMAIN.PY IN TRY info_response is:", info_response)
+        """
+        InfoDomainResult(code=1000, msg='Command completed successfully', 
+        res_data=[InfoDomainResultData(roid='DF1364752-GOV', 
+        statuses=[Status(state='serverTransferProhibited', description=None, lang='en')], 
+        cl_id='gov2023-ote', cr_id='gov2023-ote', cr_date=datetime.datetime(2023, 10, 23, 17, 8, 9, tzinfo=tzlocal()), 
+        up_id='gov2023-ote', up_date=datetime.datetime(2023, 10, 28, 17, 8, 9, tzinfo=tzlocal()), 
+        tr_date=None, name='meoward.gov', registrant='sh8013', admins=[], nsset=None, 
+        keyset=None, ex_date=datetime.date(2024, 10, 23), auth_info=DomainAuthInfo(pw='feedabee'))], 
+        cl_tr_id='wup7ad#2025-03-17T22:21:39.298149', sv_tr_id='aOQBDg4fQoSMGemppS5AdQ==-73ca', 
+        extensions=[], msg_q=None)
+        """
 
-            # domain_status_state = [status.state for status in response.res_data[0].statuses]
+        # Ensure res_data exists and is not empty
+        if info_response and info_response.res_data:
+            res_data = info_response.res_data[0]
+            print("***** MODELS/DOMAIN.PY IN IF Response info_response.res_data[0]:", info_response.res_data[0])
 
+            domain_status_state = [status.state for status in res_data.statuses]
             print(f"***** Domain statuses for {domain_name} is: {domain_status_state}")
-            # if "serverTransferProhibited" in domain_status_state:
-            #     print("***** Just checking it comes into here!")
-            if "pendingDelete" in domain_status_state:
-                logger.info(f"Domain {domain_name} is still in pendingDelete status.")
-                return False
-        except KeyError:
-            logger.info(f"Domain {domain_name} status check encountered a KeyError. It may be fully deleted.")
-        except Exception as e:
-            logger.warning(f"Failed to retrieve domain statuses for {domain_name}: {e}")
+
+            # Check for pendingDelete status
+            return "pendingDelete" not in domain_status_state
 
         return False
 
@@ -2065,7 +2048,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
+
         data = data_response.res_data[0]
+
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
@@ -2074,10 +2059,33 @@ class Domain(TimeStampedModel, DomainHelper):
             "_hosts": getattr(data, "hosts", ...),
             "name": getattr(data, "name", ...),
             "registrant": getattr(data, "registrant", ...),
-            "statuses": getattr(data, "statuses", ...),
+            "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
             "tr_date": getattr(data, "tr_date", ...),
             "up_date": getattr(data, "up_date", ...),
         }
+
+        # Have it return/raise this for checking for Deleted
+        #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
+        # raise RegistryError(
+        #     message=f"Domain '{domain_name}' no longer exists in the registry and is DELETED.",
+        #     error_code=2303,
+        # )
+
+        ###  Original code
+        # data = data_response.res_data[0]
+
+        # return {
+        #     "auth_info": getattr(data, "auth_info", ...),
+        #     "_contacts": getattr(data, "contacts", ...),
+        #     "cr_date": getattr(data, "cr_date", ...),
+        #     "ex_date": getattr(data, "ex_date", ...),
+        #     "_hosts": getattr(data, "hosts", ...),
+        #     "name": getattr(data, "name", ...),
+        #     "registrant": getattr(data, "registrant", ...),
+        #     "statuses": getattr(data, "statuses", ...),
+        #     "tr_date": getattr(data, "tr_date", ...),
+        #     "up_date": getattr(data, "up_date", ...),
+        # }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""

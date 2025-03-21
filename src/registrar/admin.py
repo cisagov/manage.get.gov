@@ -2892,46 +2892,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         should_proceed = True
         error_message = None
 
-        """
-        Let's try this method?
-        If transition to APPROVED:
+        print("##### original_obj.status is", original_obj.status)
+        print("##### obj.status is", obj.status)
+        domain_name = original_obj.requested_domain.name
 
-        Check if:
-        1. If the domain request is not approved in previous state (original status)
-        2. If the new status that's supposed to be triggered IS approved
-        3. That it's a valid domain? Do we need this check or is this extra
-
-        If it is then:
-        * Go through the domain check like in availabile! 
-        """
-        print("***** original_obj.status is", original_obj.status)
-        print("***** obj.status is", obj.status)
-
-        if (
-            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
-            and original_obj.requested_domain is not None
-        ):
-            domain_name = original_obj.requested_domain.name
-            print(f"***** Domain_name is {domain_name}")
-
-            try:
-                # Do same check in available()
-                info_req = commands.InfoDomain(domain_name)
-                info_response = registry.send(info_req, cleaned=True)
-                domain_status_state = [status.state for status in info_response.res_data[0].statuses]
-                print(f"***** Domain statuses for {domain_name} is: {domain_status_state}")
-                if "pendingDelete" in domain_status_state:
-                    print("***** In the if pendingDelete check yay!")
-                    error_message = (
-                        f"The domain '{domain_name}' is still in 'pendingDelete' status "
-                        "in the registry and cannot be approved at this time."
-                    )
-
-            except Exception as e:
-                print("In the Exception state")
-                logger.error(f"Failed to check registry status for {domain_name}: {e}")
-                error_message = f"Failed to verify domain status in registry. " "Please try again or contact support."
+        # if (
+        #     original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+        #     and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+        #     and original_obj.requested_domain is not None
+        #     and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+        #     and Domain.is_pending_delete(domain_name)
+        # ):
+        #     print(f"##### in the if statement - {domain_name} is not available, yay")
+        #     # raise FSMDomainRequestError(code=FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
+        #     error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
+        # print(f"##### error_message is - {error_message}")
 
         # Get the method that should be run given the status
         selected_method = self.get_status_method_mapping(obj)
@@ -2953,6 +2928,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             # duplicated in the model and the error is raised from the model.
             # This avoids an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
+        elif (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
+            and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+            and Domain.is_pending_delete(domain_name)
+        ):
+            # TODO: Write blurb here
+            print(f"##### in the elif statement - {domain_name} is not available, yay")
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
         elif (
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
@@ -2986,6 +2971,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             except FSMDomainRequestError as err:
                 logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
+
+        print(f"##### error_message is - {error_message}")
 
         if error_message is not None:
             # Clear the success message

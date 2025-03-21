@@ -1185,9 +1185,27 @@ class DomainRequest(TimeStampedModel):
         # create the domain
         Domain = apps.get_model("registrar.Domain")
 
+        print("##### BEFORE the Domain.available check")
+        print(
+            "##### Domain.is_pending_delete(self.requested_domain.name)",
+            Domain.is_pending_delete(self.requested_domain.name),
+        )
+        print("##### self.requested_domain.name is", self.requested_domain.name)
+
         # == Check that the domain_request is valid == #
+        # if Domain.objects.filter(name=self.requested_domain.name).exists():
+        #     print("##### If it already exists, we do another check")
+        #     if Domain.is_pending_delete(self.requested_domain.name):
+        #         print(f"***** in the if statement - {self.requested_domain.name} is not available, yay")
+        #         raise FSMDomainRequestError(code=FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
+        #     else:
+        #         print("##### in the else statement")
+        #         raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+
         if Domain.objects.filter(name=self.requested_domain.name).exists():
             raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+
+        print("##### AFTER the Domain.available check")
 
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
