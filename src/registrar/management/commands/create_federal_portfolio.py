@@ -43,7 +43,9 @@ class Command(BaseCommand):
 
         def bulk_create(self):
             try:
-                res = ScriptDataHelper.bulk_create_fields(self.model_class, self.create, return_created=True, quiet=True)
+                res = ScriptDataHelper.bulk_create_fields(
+                    self.model_class, self.create, return_created=True, quiet=True
+                )
                 self.create = res
                 return res
             except Exception as err:
@@ -241,9 +243,7 @@ class Command(BaseCommand):
 
         # == Handle managers (no bulk_create) == #
         if parse_managers:
-            domain_infos = DomainInformation.objects.filter(
-                portfolio__in=portfolios_to_use
-            )
+            domain_infos = DomainInformation.objects.filter(portfolio__in=portfolios_to_use)
             domains = Domain.objects.filter(domain_info__in=domain_infos)
 
             # Create UserPortfolioPermission
@@ -320,7 +320,8 @@ class Command(BaseCommand):
             # Org name must not be null, and must not be the portfolio name
             Q(
                 organization_name__isnull=False,
-            ) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
+            )
+            & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             # Only get relevant data to the agency/portfolio we are targeting
             Q(federal_agency__in=agencies) | Q(portfolio__in=portfolios),
         )
@@ -328,7 +329,8 @@ class Command(BaseCommand):
             # Org name must not be null, and must not be the portfolio name
             Q(
                 organization_name__isnull=False,
-            ) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
+            )
+            & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             # Only get relevant data to the agency/portfolio we are targeting
             Q(federal_agency__in=agencies) | Q(portfolio__in=portfolios),
         )
@@ -356,7 +358,7 @@ class Command(BaseCommand):
                 # Don't add the record if the suborg name would equal the portfolio name
                 if norm_org_name == portfolio_name:
                     continue
-                
+
                 new_suborg_name = None
                 if len(domains) == 1:
                     new_suborg_name = domains[0].organization_name
@@ -365,7 +367,8 @@ class Command(BaseCommand):
                     best_record = max(
                         domains,
                         key=lambda rank: (
-                            -domain.organization_name.count(" "), count_capitals(domain.organization_name, leading_only=True)
+                            -domain.organization_name.count(" "),
+                            count_capitals(domain.organization_name, leading_only=True),
                         ),
                     )
                     new_suborg_name = best_record.organization_name
@@ -397,8 +400,8 @@ class Command(BaseCommand):
             use_location_for_domain = all(
                 d.city
                 and d.state_territory
-                and d.city == reference.city 
-                and d.state_territory == reference.state_territory 
+                and d.city == reference.city
+                and d.state_territory == reference.state_territory
                 for d in domains
             )
             if use_location_for_domain:
@@ -464,9 +467,7 @@ class Command(BaseCommand):
             updated_domains.add(domain_info)
 
         if not updated_domains and debug:
-            message = (
-                f"Portfolio '{portfolio}' not added to domains: nothing to add found."
-            )
+            message = f"Portfolio '{portfolio}' not added to domains: nothing to add found."
             logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
 
         return updated_domains
@@ -512,32 +513,21 @@ class Command(BaseCommand):
             updated_domain_requests.add(domain_request)
 
         if not updated_domain_requests and debug:
-            message = (
-                f"Portfolio '{portfolio}' not added to domain requests: nothing to add found."
-            )
+            message = f"Portfolio '{portfolio}' not added to domain requests: nothing to add found."
             logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
 
         return updated_domain_requests
 
     def create_user_portfolio_permissions(self, domains):
         user_domain_roles = UserDomainRole.objects.select_related(
-            "user", 
-            "domain", 
-            "domain__domain_info", 
-            "domain__domain_info__portfolio"
-        ).filter(
-            domain__in=domains,
-            domain__domain_info__portfolio__isnull=False,
-            role=UserDomainRole.Roles.MANAGER
-        )
+            "user", "domain", "domain__domain_info", "domain__domain_info__portfolio"
+        ).filter(domain__in=domains, domain__domain_info__portfolio__isnull=False, role=UserDomainRole.Roles.MANAGER)
         for user_domain_role in user_domain_roles:
             user = user_domain_role.user
             permission, created = UserPortfolioPermission.objects.get_or_create(
                 portfolio=user_domain_role.domain.domain_info.portfolio,
                 user=user,
-                defaults={
-                    "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-                }
+                defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
             )
             if created:
                 self.user_portfolio_perm_changes.create.append(permission)
@@ -546,13 +536,11 @@ class Command(BaseCommand):
 
     def create_portfolio_invitations(self, domains):
         domain_invitations = DomainInvitation.objects.select_related(
-            "domain",
-            "domain__domain_info", 
-            "domain__domain_info__portfolio"
+            "domain", "domain__domain_info", "domain__domain_info__portfolio"
         ).filter(
             domain__in=domains,
             domain__domain_info__portfolio__isnull=False,
-            status=DomainInvitation.DomainInvitationStatus.INVITED
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
         )
         for domain_invitation in domain_invitations:
             email = normalize_string(domain_invitation.email)

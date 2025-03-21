@@ -52,7 +52,7 @@ class ScriptDataHelper:
 
         Usage:
             ScriptDataHelper.bulk_update_fields(Domain, page.object_list, ["first_ready"])
-        
+
         Returns: A queryset of the updated objets
         """
         if not quiet:
@@ -82,7 +82,7 @@ class ScriptDataHelper:
                     or large field values, you may need to decrease this value to prevent out-of-memory errors.
         Usage:
             ScriptDataHelper.bulk_add_fields(Domain, page.object_list)
-        
+
         Returns: A queryset of the added objects
         """
         if not quiet:
