@@ -5,21 +5,64 @@ import os
 from django.core.management import BaseCommand
 
 logger = logging.getLogger(__name__)
+#-----------------------------------------------------------------------
+#                           SUMMARY
+# This script was created with the help of AI to quickly scaffold a way
+# to analyze our codebase for EPP commands.  It was used as part of an
+# effort to document out EPP command event flow, and can be reused
+# in the event that we update this flow.
+#
+# You can choose to scan all the files in a given folder, or just a specific
+# file.  This can be done by setting the DEFAULT_FOLDER_PATH and DEFAULT_FILE_PATH
+# respectively, or by passing in parameters to the script execution command in the console.
+#
+# There are 3 outputs to choose from:
+# - Summary only (a simple list of all EPP commads found. Set summary_only=True to select this output)
+# - Group by command (After each EPP commands a list of all the parent functions that call them is also printed to the console. Set summary_only=False and group_by_function=False)
+# - Group by function (The list of EPP commands are grouped by all the parent functions that call them. Set summary_only=False and group_by_function=True)
+#-----------------------------------------------------------------------
 
-# Dynamically set the default folder path to 'src/registrar/models' relative to the script's location
-DEFAULT_FOLDER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../models')
-DEFAULT_FOLDER_PATH = os.path.normpath(DEFAULT_FOLDER_PATH)
+#---------------------------
+#         DEFAULTS
+# Used if no parameters were given
+#---------------------------
+# Default folder to scan for EPP commands
+DEFAULT_FOLDER_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../models'))
 
-# Set the default file path to a specific file within the DEFAULT_FOLDER_PATH
-DEFAULT_FILE_PATH = "" #os.path.join(DEFAULT_FOLDER_PATH, 'domain.py')
+# Dfault file to scan for EPP commands (if this is null, will scan default folder path)
+DEFAULT_FILE_PATH = os.path.join(DEFAULT_FOLDER_PATH, 'domain.py')
 
-# Boolean to control whether to group by function
+#---------------------------
+#     OUTPUT SETTINGS
+#---------------------------
+# Boolean to control whether to group by function.
+#
+# If TRUE, the output will be a list of all functions
+# that have EPP commands, along with the EPP commands
+# The format of the output will be
+# FUNCTION_NAME
+#   |-- EPP_COMMAND_NAME
+#   |-- EPP_COMMAND_NAME
+#   |-- (etc)
+#
+# If FALSE, the output will be a list of all EPP commands
+# along wih all the parent functions that call them
+# The format of the output in this case will be
+# EPP_COMMAND_NAME
+#   |-- FUNCTION_NAME
+#   |-- FUNCTION_NAME
+#   |-- (etc)
 group_by_function = False
 
 # Boolean to control whether to only print a summary of unique EPP commands
+# If set to true, the above lists will not print and instead we will just 
+# get a distinct list of all EPP commands found
 summary_only = True
 
 
+#---------------------------
+#     MAIN FUNCTION
+#---------------------------
 class Command(BaseCommand):
     help = "Parse Python files in a folder or specific file for EPP commands and print them to the console."
 
@@ -29,7 +72,7 @@ class Command(BaseCommand):
             type=str,
             nargs="?",
             default=DEFAULT_FOLDER_PATH,
-            help="Path to the folder containing Python files to scan for EPP commands",
+            help="Path to the folder containing Python files to scan for EPP commands (optional)",
         )
         parser.add_argument(
             "file_path",
