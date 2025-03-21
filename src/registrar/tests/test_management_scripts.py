@@ -1473,6 +1473,7 @@ class TestCreateFederalPortfolio(TestCase):
                 generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
+                organization_name="Testorg"
             )
             self.domain_request.approve()
             self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
@@ -1529,13 +1530,10 @@ class TestCreateFederalPortfolio(TestCase):
 
     @less_console_noise_decorator
     def test_post_process_started_domain_requests_existing_portfolio(self):
-        """Ensures that federal agency is cleared when agency name matches portfolio name.
-        As the name implies, this implicitly tests the "post_process_started_domain_requests" function.
-        """
+        """Ensures that federal agency is cleared when agency name matches portfolio name."""
         federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
 
         # Test records with portfolios and no org names
-        # Create a portfolio. This script skips over "started"
         portfolio = Portfolio.objects.create(organization_name="Sugarcane", creator=self.user)
         # Create a domain request with matching org name
         matching_request = completed_domain_request(
@@ -1822,12 +1820,12 @@ class TestCreateFederalPortfolio(TestCase):
 
         # We expect a error to be thrown when we dont pass parse requests or domains
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --parse_managers."
         ):
             self.run_create_federal_portfolio(branch="executive")
 
         with self.assertRaisesRegex(
-            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --add_managers."
+            CommandError, "You must specify at least one of --parse_requests, --parse_domains, or --parse_managers."
         ):
             self.run_create_federal_portfolio(agency_name="test")
 
@@ -1877,7 +1875,7 @@ class TestCreateFederalPortfolio(TestCase):
         UserDomainRole.objects.create(user=manager2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         # Run the management command
-        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, add_managers=True)
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True)
 
         # Check that the portfolio was created
         self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
@@ -1900,7 +1898,7 @@ class TestCreateFederalPortfolio(TestCase):
         )
 
         # Run the management command
-        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, add_managers=True)
+        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True)
 
         # Check that the portfolio was created
         self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
@@ -1917,7 +1915,7 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Verify that no duplicate invitations are created
         self.run_create_federal_portfolio(
-            agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True
+            agency_name=self.federal_agency.agency, parse_requests=True, parse_managers=True
         )
         invitations = PortfolioInvitation.objects.filter(email="manager1@example.com", portfolio=self.portfolio)
         self.assertEqual(
@@ -1945,7 +1943,7 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Run the management command
         self.run_create_federal_portfolio(
-            agency_name=self.federal_agency.agency, parse_requests=True, add_managers=True
+            agency_name=self.federal_agency.agency, parse_requests=True, parse_managers=True
         )
 
         # Ensure that the manager is not duplicated
@@ -1993,7 +1991,7 @@ class TestCreateFederalPortfolio(TestCase):
         self.run_create_federal_portfolio(
             agency_name=self.federal_agency.agency,
             parse_requests=True,
-            add_managers=True,
+            parse_managers=True,
             skip_existing_portfolios=True,
         )
 
