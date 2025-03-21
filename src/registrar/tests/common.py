@@ -1444,10 +1444,8 @@ class MockEppLib(TestCase):
         ],
     )
 
-    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
-    )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultTech", "help@get.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
@@ -1962,14 +1960,23 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
+            disclose_fields = {field for field in DF} - fields
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc"}
+
+        di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
