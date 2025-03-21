@@ -2603,6 +2603,32 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     @less_console_noise_decorator
+    def test_ds_data_form_duplicate(self):
+        """DS data form errors with invalid data (duplicate DS)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # all four form fields are required, so will test with each blank
+        add_data_page.forms[0]["form-0-key_tag"] = 1234
+        add_data_page.forms[0]["form-0-algorithm"] = 3
+        add_data_page.forms[0]["form-0-digest_type"] = 1
+        add_data_page.forms[0]["form-0-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        add_data_page.forms[0]["form-1-key_tag"] = 1234
+        add_data_page.forms[0]["form-1-algorithm"] = 3
+        add_data_page.forms[0]["form-1-digest_type"] = 1
+        add_data_page.forms[0]["form-1-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_keytag(self):
         """DS data form errors with invalid data (key tag too large)
 
@@ -2703,8 +2729,6 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # first two nameservers are required, so if we empty one out we should
-        # get a form error
         add_data_page.forms[0]["form-0-key_tag"] = "1234"
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256
