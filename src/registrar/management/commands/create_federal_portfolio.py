@@ -9,7 +9,7 @@ from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.generic_helper import normalize_string
+from registrar.models.utility.generic_helper import count_capitals, normalize_string
 from django.db.models import F, Q
 
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -321,8 +321,6 @@ class Command(BaseCommand):
 
         portfolios = portfolio_dict.values()
         agencies = agency_dict.values()
-        existing_suborgs = Suborganization.objects.filter(portfolio__in=portfolios)
-        suborg_dict = {normalize_string(org.name): org for org in existing_suborgs}
 
         domains = DomainInformation.objects.filter(
             # Org name must not be null, and must not be the portfolio name
@@ -341,23 +339,11 @@ class Command(BaseCommand):
             Q(federal_agency__in=agencies) | Q(portfolio__in=portfolios),
         )
 
-        # Normalize all suborg names so we don't add duplicate data unintentionally.
-        for portfolio_name, portfolio in portfolio_dict.items():
-            for domain in domains:
-                if normalize_string(domain.federal_agency.agency) != portfolio_name:
-                    continue
+        # First: get all existing suborgs
+        existing_suborgs = Suborganization.objects.filter(portfolio__in=portfolios)
+        suborg_dict = {normalize_string(org.name): org for org in existing_suborgs}
 
-                org_name = domain.organization_name
-                norm_org_name = normalize_string(domain.organization_name)
-                # If the suborg already exists or if we've already added it, don't add it again.
-                if norm_org_name not in suborg_dict and norm_org_name not in created_suborgs:
-                    suborg = Suborganization(name=org_name, portfolio=portfolio)
-                    created_suborgs[norm_org_name] = suborg
-
-        # Add location information to suborgs.
-        # This can vary per domain and request, so this is a seperate step.
-
-        # First: Group domains and requests by normalized organization name.
+        # Second: Group domains and requests by normalized organization name.
         domains_dict = {}
         requests_dict = {}
         for domain in domains:
@@ -368,25 +354,47 @@ class Command(BaseCommand):
             normalized_name = normalize_string(request.organization_name)
             requests_dict.setdefault(normalized_name, []).append(request)
 
-        # Second: Process each suborg to add city / state territory info
-        for norm_name, suborg in created_suborgs.items():
-            self.set_suborganization_location(norm_name, suborg, domains_dict, requests_dict)
+        # Third: Parse through each group of domains that have the same organization names,
+        # then create *one* suborg record from it.
+        # Normalize all suborg names so we don't add duplicate data unintentionally.
+        for portfolio_name, portfolio in portfolio_dict.items():
+            for norm_org_name, domains in domains_dict.items():
+                if norm_org_name == portfolio_name:
+                    continue
+                
+                new_suborg_name = None
+                if len(domains) == 1:
+                    new_suborg_name = domains[0].organization_name
+                elif len(domains) > 1:
+                    # Pick the best record for a suborg name (fewest spaces, most leading capitals)
+                    best_record = max(
+                        domains,
+                        key=lambda rank: (
+                            -domain.organization_name.count(" "), count_capitals(domain.organization_name, leading_only=True)
+                        ),
+                    )
+                    new_suborg_name = best_record.organization_name
+
+                # If the suborg already exists, don't add it again.
+                if norm_org_name not in suborg_dict and norm_org_name not in created_suborgs:
+                    requests = requests_dict.get(norm_org_name)
+                    suborg = Suborganization(name=new_suborg_name, portfolio=portfolio)
+                    self.set_suborganization_location(suborg, domains, requests)
+                    created_suborgs[norm_org_name] = suborg
 
         return created_suborgs
 
-    def set_suborganization_location(self, normalized_suborg_name, suborg, domains_dict, requests_dict):
+    def set_suborganization_location(self, suborg, domains, requests):
         """Updates a single suborganization's location data if valid.
 
         Args:
             suborg: Suborganization to update
-            domains_dict: Dict of domain info records grouped by org name
-            requests_dict: Dict of domain requests grouped by org name
+            domains: omain info records grouped by org name
+            requests: domain requests grouped by org name
 
-        Priority matches parent method. Updates are skipped if location data conflicts
+        Updates are skipped if location data conflicts
         between multiple records of the same type.
         """
-        domains = domains_dict.get(normalized_suborg_name, [])
-        requests = requests_dict.get(normalized_suborg_name, [])
 
         # Try to get matching domain info
         domain = None
