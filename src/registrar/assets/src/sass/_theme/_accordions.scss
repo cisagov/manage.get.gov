@@ -39,6 +39,9 @@
     .margin-top-0 {
         margin-top: 0 !important;
     }
+    .margin-top-2px {
+        margin-top: 2px !important;
+    }
 }
 
 // This will work in responsive tables if we overwrite the overflow value on the table container
@@ -67,10 +70,11 @@
 // Currently, that's not an issue since that Members table is not wrapped in the
 // reponsive wrapper.
 @include at-media-max("desktop") {
-    tr:last-of-type .usa-accordion--more-actions .usa-accordion__content {
+    tr:last-of-type .usa-accordion--more-actions .usa-accordion__content,
+    tr.view-only-row:nth-last-of-type(2) .usa-accordion--more-actions .usa-accordion__content {
         top: auto;
         bottom: -10px;
-        right: 30px;
+        right: 20px;
     }
 }
 

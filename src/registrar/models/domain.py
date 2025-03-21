@@ -646,7 +646,6 @@ class Domain(TimeStampedModel, DomainHelper):
         oldDnssecdata = self.dnssecdata
         addDnssecdata: dict = {}
         remDnssecdata: dict = {}
-
         if _dnssecdata and _dnssecdata.dsData is not None:
             # initialize addDnssecdata and remDnssecdata for dsData
             addDnssecdata["dsData"] = _dnssecdata.dsData

@@ -7,8 +7,10 @@ error messages, if necessary.
 
 {% load widget_tweaks %}
 
-{% if widget.attrs.maxlength %}
-<div class="usa-character-count">
+{% if widget.attrs.maxlength or field.widget_type == 'textarea' %}
+  {% if not widget.attrs.hide_character_count %}
+    <div class="usa-character-count">
+  {% endif %}
 {% endif %}
 
 {% if field.use_fieldset %}
@@ -35,7 +37,7 @@ error messages, if necessary.
   {% endif %}
 
   {% if sublabel_text %}
-    <p id="{{ widget.attrs.id }}__sublabel" class="text-base margin-top-2px margin-bottom-1">
+    <p id="{{ widget.attrs.id }}__sublabel" class="{% if use_small_sublabel_text %}font-body-xs {% endif %}text-base margin-top-2px margin-bottom-1">
       {# If the link_text appears more than once, the first instance will be a link and the other instances will be ignored #}
       {% if link_text and link_text in sublabel_text %}
         {% with link_index=sublabel_text|find_index:link_text %}
@@ -52,11 +54,11 @@ error messages, if necessary.
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
     {% for error in field.errors %}
-      <div class="usa-error-message display-flex" role="alert">
+      <div class="usa-error-message display-flex{% if inline_error_class %} {{ inline_error_class }}{% endif %}" role="alert">
         <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
           <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
         </svg>
-        <span class="margin-left-05">{{ error }}</span>
+        <span class="margin-left-05 flex-1">{{ error }}</span>
       </div>
     {% endfor %}
     </div>
@@ -92,14 +94,15 @@ error messages, if necessary.
   </div>
 {% endif %}
 
-{% if widget.attrs.maxlength and not do_not_show_max_chars %}
-  <span
-    id="{{ widget.attrs.id }}__message"
-    class="usa-character-count__message"
-    aria-live="polite"
-  >
-    You can enter up to {{ widget.attrs.maxlength }} characters
-  </span>
-
-</div>
+{% if field.widget_type == 'textarea' or widget.attrs.maxlength %}
+    {% if not widget.attrs.hide_character_count %}
+        <span
+          id="{{ widget.attrs.id }}__message"
+          class="usa-character-count__message"
+          aria-live="polite"
+        >
+          You can enter up to {{ widget.attrs.maxlength }} characters
+        </span>
+      </div>
+    {% endif %}
 {% endif %}

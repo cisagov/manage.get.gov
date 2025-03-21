@@ -27,7 +27,7 @@ export class DomainsTable extends BaseTable {
 
     if (this.portfolioValue) {
       markupForSuborganizationRow = `
-        <td>
+        <td data-label="Suborganization">
             <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
         </td>
       `
@@ -56,7 +56,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td class="width--action-column">
+      <td data-label="Action" class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row flex-align-center margin-right-2">
           <a href="${actionUrl}">
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
