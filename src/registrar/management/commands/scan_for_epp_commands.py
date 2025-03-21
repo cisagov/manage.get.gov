@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Default folder to scan for EPP commands
 DEFAULT_FOLDER_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../models'))
 
-# Dfault file to scan for EPP commands (if this is null, will scan default folder path)
+# Default file to scan for EPP commands (if this is null, will scan default folder path)
 DEFAULT_FILE_PATH = os.path.join(DEFAULT_FOLDER_PATH, 'domain.py')
 
 #---------------------------
