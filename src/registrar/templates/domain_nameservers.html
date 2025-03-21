@@ -121,7 +121,7 @@
 
 
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="nameserver-table">
-        <caption class="sr-only">Your registered domains</caption>
+        <caption class="sr-only">Your Name server records</caption>
         <thead>
           <tr>
             <th scope="col" role="columnheader">Name servers</th>
@@ -141,8 +141,8 @@
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>
-                <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
-                <td class="padding-right-0">
+                <td colspan="2" aria-colspan="2" data-label="Name server (IP address)">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
+                <td class="padding-right-0" data-label="Action">
                   <div class="tablet:display-flex tablet:flex-row">
                     <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 nameserver-edit'>
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -206,7 +206,7 @@
                     {% input_with_errors form.ip %}
                   {% endwith %}
                 </td>
-                <td class="padding-right-0 text-bottom">
+                <td class="padding-right-0 text-bottom" data-label="Action">
                     <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
                     <button
