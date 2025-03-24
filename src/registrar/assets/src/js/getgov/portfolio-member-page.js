@@ -193,14 +193,10 @@ export function initAddNewMemberPageListeners() {
 }
 
 // Initalize the radio for the member pages
-export function initPortfolioMemberPage() {
+export function initPortfolioMemberPageRadio() {
   document.addEventListener("DOMContentLoaded", () => {
       let memberForm = document.getElementById("member_form");
-      let newMemberForm = document.getElementById("add_member_form");
-      let editSelfWarningModal = document.getElementById("toggle-member-permissions-edit-self");
-      let editSelfWarningModalConfirm = document.getElementById("member-permissions-edit-self");
-
-      // Init the radio
+      let newMemberForm = document.getElementById("add_member_form")
       if (memberForm || newMemberForm) {
         hookupRadioTogglerListener(
           'role', 
@@ -209,24 +205,6 @@ export function initPortfolioMemberPage() {
             'organization_member': 'member-basic-permissions'
           }
         );
-      }
-
-      // Init the "edit self" warning modal
-      if (memberForm && editSelfWarningModal) {
-        var canSubmit = false;
-        memberForm.addEventListener("submit", function(e) {
-          if (!canSubmit) {
-            e.preventDefault();
-          }
-          editSelfWarningModal.click();
-        });
-        
-        if (editSelfWarningModalConfirm) {
-          editSelfWarningModalConfirm.addEventListener("click", function() {
-            canSubmit = true;
-            memberForm.submit();
-          });
-        }
       }
   });
 }
