@@ -880,6 +880,7 @@ class Domain(TimeStampedModel, DomainHelper):
         which inturn call this function)
         Will throw error if contact type is not the same as expectType
         Raises ValueError if expected type doesn't match the contact type"""
+
         if expectedType != contact.contact_type:
             raise ValueError("Cannot set a contact with a different contact type, expected type was %s" % expectedType)
 
@@ -892,7 +893,6 @@ class Domain(TimeStampedModel, DomainHelper):
         duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
             domain=self, contact_type=contact.contact_type
         )
-
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
@@ -970,6 +970,24 @@ class Domain(TimeStampedModel, DomainHelper):
     def technical_contact(self, contact: PublicContact):
         logger.info("making technical contact")
         self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.TECHNICAL)
+
+    def print_contact_info_epp(self, contact: PublicContact):
+        """Prints registry data for this PublicContact for easier debugging"""
+        results = self._request_contact_info(contact, get_result_as_dict=True)
+        logger.info("---------------------")
+        logger.info(f"EPP info for {contact.contact_type}:")
+        logger.info("---------------------")
+        for key, value in results.items():
+            logger.info(f"{key}: {value}")
+
+    def print_all_domain_contact_info_epp(self):
+        """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
+        logger.info(f"Contact info for {self}:")
+        logger.info("=====================")
+        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
+        for contact in contacts:
+            if contact:
+                self.print_contact_info_epp(contact)
 
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
@@ -1351,10 +1369,14 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         return street_dict
 
-    def _request_contact_info(self, contact: PublicContact):
+    def _request_contact_info(self, contact: PublicContact, get_result_as_dict=False):
+        """Grabs the resultant contact information in epp for this public contact
+        by using the InfoContact command.
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
         try:
             req = commands.InfoContact(id=contact.registry_id)
-            return registry.send(req, cleaned=True).res_data[0]
+            result = registry.send(req, cleaned=True).res_data[0]
+            return result if not get_result_as_dict else vars(result)
         except RegistryError as error:
             logger.error(
                 "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
@@ -1674,22 +1696,26 @@ class Domain(TimeStampedModel, DomainHelper):
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):
-        """creates a disclose object that can be added to a contact Create using
+        """creates a disclose object that can be added to a contact Create or Update using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
-        is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
+        # You can find each enum here:
+        # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        fields = {DF.EMAIL}
+        all_disclose_fields = {field for field in DF}
+        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
 
-        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        disclose = is_security and contact.email not in hidden_security_emails
-        # Delete after testing on other devices
-        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
-        # Will only disclose DF.EMAIL if its not the default
-        return epp.Disclose(
-            flag=disclose,
-            fields=fields,
-        )
+        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+            if contact.email not in DefaultEmail.get_all_emails():
+                fields_to_remove.add(DF.EMAIL)
+        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
+            fields_to_remove.update({DF.EMAIL, DF.VOICE, DF.ADDR})
+
+        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
+
+        logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
+        return epp.Disclose(**disclose_args)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore
