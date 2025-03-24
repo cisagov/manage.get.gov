@@ -258,37 +258,45 @@ class Command(BaseCommand):
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
         self.portfolio_changes.print_script_run_summary(
             no_changes_message="||============= No portfolios changed. =============||",
-            debug=debug,
             log_header="============= PORTFOLIOS =============",
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
-            detailed_prompt_title="PORTFOLIOS: Do you wish to see the full list of failed, skipped and updated records?",
+            detailed_prompt_title=(
+                "PORTFOLIOS: Do you wish to see the full list of failed, skipped and updated records?"
+            ),
             display_as_str=True,
+            debug=debug,
         )
         self.suborganization_changes.print_script_run_summary(
             no_changes_message="||============= No suborganizations changed. =============||",
-            debug=debug,
             log_header="============= SUBORGANIZATIONS =============",
             skipped_header="----- SUBORGANIZATIONS SKIPPED (SAME NAME AS PORTFOLIO NAME) -----",
-            detailed_prompt_title="SUBORGANIZATIONS: Do you wish to see the full list of failed, skipped and updated records?",
+            detailed_prompt_title=(
+                "SUBORGANIZATIONS: Do you wish to see the full list of failed, skipped and updated records?"
+            ),
             display_as_str=True,
+            debug=debug,
         )
 
         if parse_domains:
             self.domain_info_changes.print_script_run_summary(
                 no_changes_message="||============= No domains changed. =============||",
-                debug=debug,
                 log_header="============= DOMAINS =============",
-                detailed_prompt_title="DOMAINS: Do you wish to see the full list of failed, skipped and updated records?",
+                detailed_prompt_title=(
+                    "DOMAINS: Do you wish to see the full list of failed, skipped and updated records?"
+                ),
                 display_as_str=True,
+                debug=debug,
             )
 
         if parse_requests:
             self.domain_request_changes.print_script_run_summary(
                 no_changes_message="||============= No domain requests changed. =============||",
-                debug=debug,
                 log_header="============= DOMAIN REQUESTS =============",
-                detailed_prompt_title="DOMAIN REQUESTS: Do you wish to see the full list of failed, skipped and updated records?",
+                detailed_prompt_title=(
+                    "DOMAIN REQUESTS: Do you wish to see the full list of failed, skipped and updated records?"
+                ),
                 display_as_str=True,
+                debug=debug,
             )
 
         if parse_managers:
@@ -296,17 +304,21 @@ class Command(BaseCommand):
                 no_changes_message="||============= No managers changed. =============||",
                 log_header="============= MANAGERS =============",
                 skipped_header="----- MANAGERS SKIPPED (ALREADY EXISTED) -----",
-                debug=debug,
-                detailed_prompt_title="MANAGERS: Do you wish to see the full list of failed, skipped and updated records?",
+                detailed_prompt_title=(
+                    "MANAGERS: Do you wish to see the full list of failed, skipped and updated records?"
+                ),
                 display_as_str=True,
+                debug=debug,
             )
             self.portfolio_invitation_changes.print_script_run_summary(
                 no_changes_message="||============= No manager invitations changed. =============||",
                 log_header="============= MANAGER INVITATIONS =============",
-                debug=debug,
                 skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
-                detailed_prompt_title="MANAGER INVITATIONS: Do you wish to see the full list of failed, skipped and updated records?",
+                detailed_prompt_title=(
+                    "MANAGER INVITATIONS: Do you wish to see the full list of failed, skipped and updated records?"
+                ),
                 display_as_str=True,
+                debug=debug,
             )
 
     def create_suborganizations(self, portfolio_dict, agency_dict):
