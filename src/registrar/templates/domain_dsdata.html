@@ -68,9 +68,13 @@
       {{ formset.management_form }}
 
       {% for form in formset %}
-        {% if forloop.last %}
+        {% if forloop.last and not form.initial %}
 
-          {% comment %}This section renders the Add DS data form.{% endcomment %}
+          {% comment %}
+          This section renders the Add DS data form.
+          This section does not render if the last form has initial data (this occurs if 8 DS data records already exist)
+          {% endcomment %}
+          
           <section class="add-dsdata-form display-none section-outlined section-outlined--extra-padding">
             <h2 class="margin-top-0">Add DS record</h2>
             <div class="repeatable-form">
