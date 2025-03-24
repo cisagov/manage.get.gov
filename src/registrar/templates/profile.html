@@ -16,7 +16,7 @@ Edit your User Profile |
         <div class="desktop:grid-col-8 desktop:grid-offset-2">
             {% if messages %}
             {% for message in messages %}
-            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3">
+            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3" role="alert">
                 <div class="usa-alert__body">
                 {{ message }}
                 </div>

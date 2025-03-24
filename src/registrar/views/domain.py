@@ -68,7 +68,11 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from ..utility.email_invitations import (
+    send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
+    send_portfolio_invitation_email,
+)
 from django import forms
 
 logger = logging.getLogger(__name__)
@@ -398,7 +402,7 @@ class DomainView(DomainBaseView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
 
@@ -456,7 +460,7 @@ class DomainRenewalView(DomainBaseView):
 
         context = super().get_context_data(**kwargs)
 
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
 
@@ -889,13 +893,12 @@ class DomainNameserversView(DomainFormBaseView):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
         initial_data = []
-
         if nameservers is not None:
             # Add existing nameservers as initial data
             initial_data.extend({"server": name, "ip": ",".join(ip)} for name, ip in nameservers)
 
-        # Ensure at least 3 fields, filled or empty
-        while len(initial_data) < 2:
+        # Ensure 2 fields in the case we have no data
+        if len(initial_data) == 0:
             initial_data.append({})
 
         return initial_data
@@ -917,11 +920,6 @@ class DomainNameserversView(DomainFormBaseView):
 
         for i, form in enumerate(formset):
             form.fields["server"].label += f" {i+1}"
-            if i < 2:
-                form.fields["server"].required = True
-            else:
-                form.fields["server"].required = False
-                form.fields["server"].label += " (optional)"
             form.fields["domain"].initial = self.object.name
         return formset
 
@@ -932,8 +930,6 @@ class DomainNameserversView(DomainFormBaseView):
         """
         self._get_domain(request)
         formset = self.get_form()
-
-        logger.debug("got formet")
 
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
@@ -1174,7 +1170,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         initial = super().get_initial()
         security_contact = self.object.security_contact
 
-        invalid_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        invalid_emails = DefaultEmail.get_all_emails()
         if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial
@@ -1482,47 +1478,16 @@ class DomainDeleteUserView(DeleteView):
         super().form_valid(form)
 
         # Email all domain managers that domain manager has been removed
-        domain = self.object.domain
-
-        context = {
-            "domain": domain,
-            "removed_by": self.request.user,
-            "manager_removed": self.object.user,
-            "date": date.today(),
-            "changes": "Domain Manager",
-        }
-        self.email_domain_managers(
-            domain,
-            "emails/domain_manager_deleted_notification.txt",
-            "emails/domain_manager_deleted_notification_subject.txt",
-            context,
+        send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.request.user,
+            manager_removed=self.object.user,
+            manager_removed_email=self.object.user.email,
+            domain=self.object.domain,
         )
 
         # Add a success message
         messages.success(self.request, self.get_success_message())
         return redirect(self.get_success_url())
-
-    def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
-        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
-            "user", flat=True
-        )
-        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-
-        for email in emails:
-            try:
-                send_templated_email(
-                    template,
-                    subject_template,
-                    to_address=email,
-                    context=context,
-                )
-            except EmailSendingError:
-                logger.warning(
-                    "Could not send notification email to %s for domain %s",
-                    email,
-                    domain.name,
-                    exc_info=True,
-                )
 
     def post(self, request, *args, **kwargs):
         """Custom post implementation to ensure last userdomainrole is not removed and to
