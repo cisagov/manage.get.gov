@@ -2888,25 +2888,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         Returns a tuple: (obj: DomainRequest, should_proceed: bool)
         """
-
+        # print("$$$$ IN THE _HANDLE_STATUS_CHANGE FUNCTION")
         should_proceed = True
         error_message = None
-
-        print("##### original_obj.status is", original_obj.status)
-        print("##### obj.status is", obj.status)
         domain_name = original_obj.requested_domain.name
-
-        # if (
-        #     original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
-        #     and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
-        #     and original_obj.requested_domain is not None
-        #     and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
-        #     and Domain.is_pending_delete(domain_name)
-        # ):
-        #     print(f"##### in the if statement - {domain_name} is not available, yay")
-        #     # raise FSMDomainRequestError(code=FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
-        #     error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
-        # print(f"##### error_message is - {error_message}")
 
         # Get the method that should be run given the status
         selected_method = self.get_status_method_mapping(obj)
@@ -2935,8 +2920,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
             and Domain.is_pending_delete(domain_name)
         ):
-            # TODO: Write blurb here
-            print(f"##### in the elif statement - {domain_name} is not available, yay")
+            # 1. If the domain request is not approved in previous state (original status)
+            # 2. If the new status that's supposed to be triggered IS approved
+            # 3. That it's a valid domain
+            # 4. That the domain name already exists
+            # 5. AND that the domain is currently in pendingDelete state
+            print("$$$$ in _handle_status_change")
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
         elif (
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED

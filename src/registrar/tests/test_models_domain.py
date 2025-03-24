@@ -666,6 +666,56 @@ class TestDomainAvailable(MockEppLib):
             self.assertFalse(available)
             patcher.stop()
 
+    def test_is_pending_delete(self):
+        """
+        Scenario: Testing if a domain is in pendingDelete status from the registry
+            Should return True
+
+        * Mock EPP response with pendingDelete status
+        * Validate InfoDomain command is called
+        * Validate response given mock
+        """
+
+        def side_effect(_request, cleaned):
+            mock_response = MagicMock()
+            mock_response.res_data = [MagicMock(statuses=[MagicMock(state="pendingDelete")])]
+            return mock_response
+
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            mocked_send.side_effect = side_effect
+
+            result = Domain.is_pending_delete("is-pending-delete.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("is-pending-delete.gov"), cleaned=True)
+
+            # Assert: The result is False because of pendingDelete status
+            self.assertTrue(result)
+
+    def test_is_not_pending_delete(self):
+        """
+        Scenario: Testing if a domain is NOT in pendingDelete status.
+            Should return False.
+
+        * Mock EPP response without pendingDelete status (isserverTransferProhibited)
+        * Validate response given mock
+        * Validate response given mock
+        """
+
+        def side_effect(_request, cleaned):
+            mock_response = MagicMock()
+            mock_response.res_data = [
+                MagicMock(statuses=[MagicMock(state="serverTransferProhibited"), MagicMock(state="ok")])
+            ]
+            return mock_response
+
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            mocked_send.side_effect = side_effect
+
+            result = Domain.is_pending_delete("is-not-pending.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("is-not-pending.gov"), cleaned=True)
+            self.assertFalse(result)
+
     def test_domain_available_with_invalid_error(self):
         """
         Scenario: Testing whether an invalid domain is available
