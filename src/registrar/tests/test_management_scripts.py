@@ -2596,7 +2596,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         expected_update = self._convertPublicContactToEpp(
             self.old_default_contact,
             disclose=False,
-            disclose_fields=self.all_disclose_fields - {"email", "voice", "addr"},
+            disclose_fields=self.all_disclose_fields - {"name", "email", "voice", "addr"},
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
