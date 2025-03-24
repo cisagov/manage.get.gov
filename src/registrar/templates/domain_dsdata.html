@@ -218,7 +218,7 @@
                 <!-- Edit row -->
                 <tr class="edit-row display-none">
                   <td class="text-bottom">
-                    {% with sublabel_text="(1-65534)." %}
+                    {% with sublabel_text="(0-65535)." %}
                       {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
                         {% input_with_errors form.key_tag %}
                       {% endwith %}
