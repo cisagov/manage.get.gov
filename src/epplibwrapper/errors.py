@@ -62,14 +62,18 @@ class RegistryError(Exception):
         - 2501 - 2502 Something malicious or abusive may have occurred
     """
 
-    def __init__(self, *args, code=None, note="", **kwargs):
+    def __init__(self, *args, code=None, note="", response=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.code = code
+        self.response = response
         # note is a string that can be used to provide additional context
         self.note = note
 
+
     def should_retry(self):
-        return self.code == ErrorCode.COMMAND_FAILED
+        # COMMAND_USE_ERROR is returning with message, Registrar is not logged in,
+        # which can be recovered from with a retry
+        return self.code == ErrorCode.COMMAND_FAILED or self.code == ErrorCode.COMMAND_USE_ERROR
 
     def is_transport_error(self):
         return self.code == ErrorCode.TRANSPORT_ERROR

@@ -100,7 +100,7 @@ class EPPLibWrapper:
         response = self._client.send(self._login)  # type: ignore
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
-            raise LoginError(response.msg)  # type: ignore
+            raise LoginError(response.msg, response=response)  # type: ignore
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
@@ -144,14 +144,14 @@ class EPPLibWrapper:
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
             logger.error(f"{message} Error: {err}")
-            raise RegistryError(message) from err
+            raise LoginError(message, response=err.response) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
-                raise RegistryError(response.msg, code=response.code)
+                raise RegistryError(response.msg, code=response.code, response=response)
             else:
                 return response
 
@@ -182,7 +182,10 @@ class EPPLibWrapper:
                 or err.should_retry()
             ):
                 message = f"{cmd_type} failed and will be retried"
-                logger.info(f"{message} Error: {err}")
+                info_message = f"{message} Error: {err}"
+                if err.response:
+                    info_message = f"{info_message}. cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}"
+                logger.info(f"{info_message}")
                 return self._retry(command)
             else:
                 raise err
