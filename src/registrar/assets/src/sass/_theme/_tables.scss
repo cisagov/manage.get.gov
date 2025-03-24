@@ -142,12 +142,6 @@ th {
   }
 }
 
-.dotgov-table--cell-padding-1-1-2px-0 {
-  td, th {
-    padding: units(1) units(1) units(2px) 0;
-  }
-}
-
 .usa-table--striped tbody tr:nth-child(odd) th,
 .usa-table--striped tbody tr:nth-child(odd) td {
   background-color: color('primary-lightest');
