@@ -405,6 +405,10 @@ class DomainView(DomainBaseView):
         default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
+        context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
+            user=self.request.user,
+            portfolio=self.request.session.get("portfolio")
+        ).first()
 
         security_email = self.object.get_security_email()
         if security_email is None or security_email in default_emails:
