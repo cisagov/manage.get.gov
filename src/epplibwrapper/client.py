@@ -144,7 +144,7 @@ class EPPLibWrapper:
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
             logger.error(f"{message} Error: {err}")
-            raise LoginError(message, response=err.response) from err
+            raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
             logger.error(f"{message} Error: {err}")
