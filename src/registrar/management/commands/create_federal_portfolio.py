@@ -257,7 +257,7 @@ class Command(BaseCommand):
 
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
         self.portfolio_changes.print_script_run_summary(
-            no_changes_message="\n||============= No portfolios changed. =============||",
+            no_changes_message="||============= No portfolios changed. =============||",
             debug=debug,
             log_header="============= PORTFOLIOS =============",
             skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
@@ -265,7 +265,7 @@ class Command(BaseCommand):
             display_as_str=True,
         )
         self.suborganization_changes.print_script_run_summary(
-            no_changes_message="\n||============= No suborganizations changed. =============||",
+            no_changes_message="||============= No suborganizations changed. =============||",
             debug=debug,
             log_header="============= SUBORGANIZATIONS =============",
             skipped_header="----- SUBORGANIZATIONS SKIPPED (SAME NAME AS PORTFOLIO NAME) -----",
@@ -507,7 +507,7 @@ class Command(BaseCommand):
                 # Clear the federal agency for started domain requests
                 agency_name = normalize_string(domain_request.federal_agency.agency)
                 portfolio_name = normalize_string(portfolio.organization_name)
-                if not domain_request.portfolio and agency_name == portfolio_name:
+                if agency_name == portfolio_name:
                     domain_request.federal_agency = None
                     logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
             updated_domain_requests.add(domain_request)

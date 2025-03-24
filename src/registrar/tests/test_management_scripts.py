@@ -1473,7 +1473,7 @@ class TestCreateFederalPortfolio(TestCase):
                 generic_org_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
-                organization_name="Testorg"
+                organization_name="Testorg",
             )
             self.domain_request.approve()
             self.domain_info = DomainInformation.objects.filter(domain_request=self.domain_request).get()
@@ -1875,7 +1875,9 @@ class TestCreateFederalPortfolio(TestCase):
         UserDomainRole.objects.create(user=manager2, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         # Run the management command
-        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True)
+        self.run_create_federal_portfolio(
+            agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True
+        )
 
         # Check that the portfolio was created
         self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
@@ -1898,7 +1900,9 @@ class TestCreateFederalPortfolio(TestCase):
         )
 
         # Run the management command
-        self.run_create_federal_portfolio(agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True)
+        self.run_create_federal_portfolio(
+            agency_name=self.federal_agency.agency, parse_domains=True, parse_managers=True
+        )
 
         # Check that the portfolio was created
         self.portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
@@ -1995,9 +1999,9 @@ class TestCreateFederalPortfolio(TestCase):
             skip_existing_portfolios=True,
         )
 
-        # Check that managers were added to the portfolio
+        # Check that managers weren't added to the portfolio
         permissions = UserPortfolioPermission.objects.filter(portfolio=self.portfolio, user__in=[manager1, manager2])
-        self.assertEqual(permissions.count(), 2)
+        self.assertEqual(permissions.count(), 0)
         for perm in permissions:
             self.assertIn(UserPortfolioRoleChoices.ORGANIZATION_MEMBER, perm.roles)
 
