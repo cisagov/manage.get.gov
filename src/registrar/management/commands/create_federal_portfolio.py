@@ -336,6 +336,10 @@ class Command(BaseCommand):
         )
 
         # First: get all existing suborgs
+        # NOTE: .all() is a heavy query, but unavoidable as we need to check for duplicate names.
+        # This is not quite as heavy as just using a for loop and .get_or_create, but worth noting.
+        # Change this if you can find a way to avoid doing this.
+        # This won't scale great for 10k+ records.
         existing_suborgs = Suborganization.objects.all()
         suborg_dict = {normalize_string(org.name): org for org in existing_suborgs}
 
