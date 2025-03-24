@@ -743,6 +743,7 @@ DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
     formset=BaseDsdataFormset,
     extra=1,
+    max_num=8,
     can_delete=True,
 )
 

@@ -178,6 +178,8 @@ export class DSDataForm {
                 if (keyTagInput) {
                     keyTagInput.focus();
                 }
+            } else {
+                this.addAlert("error", "You’ve reached the maximum amount of DS Data records (8). To add another record, you’ll need to delete one of your saved records.");
             }
         };
         if (this.formChanged) {
