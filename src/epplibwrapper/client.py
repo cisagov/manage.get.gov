@@ -100,7 +100,7 @@ class EPPLibWrapper:
         response = self._client.send(self._login)  # type: ignore
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
-            raise LoginError(response.msg, response=response)  # type: ignore
+            raise LoginError(response.msg)  # type: ignore
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
