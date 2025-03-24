@@ -703,6 +703,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
         initial=1,
     )
 
+
 @grant_access(IS_STAFF)
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
