@@ -2,6 +2,7 @@ from django import forms
 from django.core.validators import MaxLengthValidator
 from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm
 
+
 class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
     """
     Form for verifying if the domain request meets the Federal Executive Branch domain naming requirements.
