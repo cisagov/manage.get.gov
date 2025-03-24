@@ -336,7 +336,7 @@ class Command(BaseCommand):
         )
 
         # First: get all existing suborgs
-        existing_suborgs = Suborganization.objects.filter(portfolio__in=portfolios)
+        existing_suborgs = Suborganization.objects.all()
         suborg_dict = {normalize_string(org.name): org for org in existing_suborgs}
 
         # Second: Group domains and requests by normalized organization name.
@@ -354,6 +354,7 @@ class Command(BaseCommand):
         # then create *one* suborg record from it.
         # Normalize all suborg names so we don't add duplicate data unintentionally.
         for portfolio_name, portfolio in portfolio_dict.items():
+            # For a given agency, find all domains that list suborg info for it.
             for norm_org_name, domains in domains_dict.items():
                 # Don't add the record if the suborg name would equal the portfolio name
                 if norm_org_name == portfolio_name:
@@ -361,7 +362,7 @@ class Command(BaseCommand):
 
                 new_suborg_name = None
                 if len(domains) == 1:
-                    new_suborg_name = domains[0].organization_name
+                    new_suborg_name = normalize_string(domains[0].organization_name, lowercase=False)
                 elif len(domains) > 1:
                     # Pick the best record for a suborg name (fewest spaces, most leading capitals)
                     best_record = max(
@@ -371,7 +372,7 @@ class Command(BaseCommand):
                             count_capitals(domain.organization_name, leading_only=True),
                         ),
                     )
-                    new_suborg_name = best_record.organization_name
+                    new_suborg_name = normalize_string(best_record.organization_name, lowercase=False)
 
                 # If the suborg already exists, don't add it again.
                 if norm_org_name not in suborg_dict and norm_org_name not in created_suborgs:
