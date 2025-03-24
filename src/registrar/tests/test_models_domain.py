@@ -1003,12 +1003,11 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact, disclose=False, disclose_fields=disclose_fields
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    disclose_fields = self.all_disclose_fields - {"email", "voice", "addr"}
+                    disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact,
                         disclose=False,
                         disclose_fields=disclose_fields,
-                        disclose_types={"addr": "loc"},
                     )
                 else:
                     expectedCreateCommand = self._convertPublicContactToEpp(
@@ -1029,7 +1028,9 @@ class TestRegistrantContacts(MockEppLib):
             DF = common.DiscloseField
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types={DF.ADDR: "loc"}),
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
                 "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
@@ -1054,7 +1055,9 @@ class TestRegistrantContacts(MockEppLib):
             # Separated for linter
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types={DF.ADDR: "loc"}),
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
                 "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
@@ -1113,7 +1116,7 @@ class TestRegistrantContacts(MockEppLib):
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL})
-        self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
+        self.assertEqual(result.disclose.types, {DF.ADDR: "loc", DF.NAME: "loc"})
 
     def test_not_disclosed_on_default_security_contact(self):
         """
