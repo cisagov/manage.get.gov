@@ -56,9 +56,7 @@ class Command(BaseCommand):
 
         def bulk_update(self, fields_to_update):
             try:
-                res = ScriptDataHelper.bulk_update_fields(self.model_class, self.update, fields_to_update, quiet=True)
-                self.update = res
-                return res
+                ScriptDataHelper.bulk_update_fields(self.model_class, self.update, fields_to_update, quiet=True)
             except Exception as err:
                 # In this case, just swap the fail and update lists
                 self.fail = self.update.copy()
