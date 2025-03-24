@@ -18,6 +18,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
+from registrar.models.flows import PortfolioInvitationFlow
 from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
 from registrar.models import (
     Domain,
@@ -1366,7 +1367,8 @@ class DomainAddUserView(DomainFormBaseView):
                 )
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
-                    portfolio_invitation.retrieve()
+                    flow = PortfolioInvitationFlow(portfolio_invitation)
+                    flow.retrieve()
                     portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
 

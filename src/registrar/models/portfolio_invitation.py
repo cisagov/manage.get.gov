@@ -2,7 +2,6 @@
 
 import logging
 from django.db import models
-from django_fsm import FSMField, transition
 from django.contrib.auth import get_user_model
 from registrar.models import DomainInvitation, UserPortfolioPermission
 from .utility.portfolio_helper import (
@@ -19,13 +18,13 @@ from .utility.portfolio_helper import (
     get_role_display,
     validate_portfolio_invitation,
 )  # type: ignore
-from .utility.time_stamped_model import TimeStampedModel
+from .utility.state_controlled_model import StateControlledModel
 from django.contrib.postgres.fields import ArrayField
 
 logger = logging.getLogger(__name__)
 
 
-class PortfolioInvitation(TimeStampedModel):
+class PortfolioInvitation(StateControlledModel):
     class Meta:
         """Contains meta information about this class"""
 
@@ -70,10 +69,9 @@ class PortfolioInvitation(TimeStampedModel):
         help_text="Select one or more additional permissions.",
     )
 
-    status = FSMField(
+    status = models.CharField(
         choices=PortfolioInvitationStatus.choices,
         default=PortfolioInvitationStatus.INVITED,
-        protected=True,  # can't alter state except through transition methods!
     )
 
     def __str__(self):
@@ -180,33 +178,6 @@ class PortfolioInvitation(TimeStampedModel):
             str: The display name of the user's member management permissions description.
         """
         return get_members_description_display(self.roles, self.additional_permissions)
-
-    @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
-    def retrieve(self):
-        """When an invitation is retrieved, create the corresponding permission.
-
-        Raises:
-            RuntimeError if no matching user can be found.
-        """
-
-        # get a user with this email address
-        User = get_user_model()
-        try:
-            user = User.objects.get(email=self.email)
-        except User.DoesNotExist:
-            # should not happen because a matching user should exist before
-            # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
-
-        # and create a role for that user on this portfolio
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            portfolio=self.portfolio, user=user
-        )
-        if self.roles and len(self.roles) > 0:
-            user_portfolio_permission.roles = self.roles
-        if self.additional_permissions and len(self.additional_permissions) > 0:
-            user_portfolio_permission.additional_permissions = self.additional_permissions
-        user_portfolio_permission.save()
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""

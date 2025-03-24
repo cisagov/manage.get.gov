@@ -25,6 +25,7 @@ from registrar.models import (
     UserDomainRole,
     UserPortfolioPermission,
 )
+from registrar.models.flows import PortfolioInvitationFlow
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
@@ -1118,7 +1119,8 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 portfolio_invitation = form.save()
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
-                    portfolio_invitation.retrieve()
+                    flow = PortfolioInvitationFlow(portfolio_invitation)
+                    flow.retrieve()
                     portfolio_invitation.save()
                 messages.success(self.request, f"{requested_email} has been invited.")
             else:
