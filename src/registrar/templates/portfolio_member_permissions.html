@@ -109,4 +109,26 @@
     </div>
   </form>
 </div>
+
+{% comment %} If an admin is trying to edit themselves, show a modal {% endcomment %}
+  {% if member and member.id == request.user.id %}
+  <a
+  id="toggle-member-permissions-edit-self"
+  href="#modal-member-permissions-edit-self"
+  class="display-none"
+  aria-controls="modal-member-permissions-edit-self"
+  data-open-modal
+  >Edit self</a>
+  <div
+    class="usa-modal"
+    id="modal-member-permissions-edit-self"
+    data-force-action
+  >
+    {% if is_only_admin %}
+      {% include 'includes/modal.html' with modal_heading="You are the only admin on this organization." modal_description="Add another administrator to remove yourself from this organization." modal_button_id="member-permissions-edit-self" cancel_button_only=True %}
+    {% else %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your own permissions?" modal_description="This could permanently impact your access. <strong>This cannot be undone.</strong>" modal_button_id="member-permissions-edit-self" modal_button_text="Yes, I know what I'm doing!" %}
+    {% endif %}
+  </div>
+  {% endif %}
 {% endblock portfolio_content%}

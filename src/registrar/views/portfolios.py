@@ -259,6 +259,12 @@ class PortfolioMemberEditView(DetailView, View):
         user = portfolio_permission.user
 
         form = self.form_class(instance=portfolio_permission)
+        admin_count = UserPortfolioPermission.objects.filter(
+            portfolio=request.session["portfolio"],
+            roles__overlap=[
+                UserPortfolioRoleChoices.ORGANIZATION_ADMIN
+            ]
+        ).count()
 
         return render(
             request,
@@ -267,6 +273,7 @@ class PortfolioMemberEditView(DetailView, View):
                 "form": form,
                 "member": user,
                 "portfolio_permission": portfolio_permission,
+                "is_only_admin": admin_count < 2
             },
         )
 
