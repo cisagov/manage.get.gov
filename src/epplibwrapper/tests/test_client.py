@@ -310,10 +310,10 @@ class TestClient(TestCase):
         mock_close.assert_called_once()
         # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
         self.assertEquals(mock_send.call_count, 5)
-        # Assertion proper logging; note that the 
+        # Assertion proper logging; note that the
         mock_logger.info.assert_called_once_with(
             "InfoDomainCommand failed and will be retried Error: Registrar is not logging in.| cltrid is cl_tr_id svtrid is sv_tr_id"
-        )      
+        )
 
     @less_console_noise_decorator
     def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):

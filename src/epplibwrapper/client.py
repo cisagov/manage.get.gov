@@ -184,7 +184,9 @@ class EPPLibWrapper:
                 message = f"{cmd_type} failed and will be retried"
                 info_message = f"{message} Error: {err}"
                 if err.response:
-                    info_message = f"{info_message}| cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}"
+                    info_message = (
+                        f"{info_message}| cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}"
+                    )
                 logger.info(f"{info_message}")
                 return self._retry(command)
             else:

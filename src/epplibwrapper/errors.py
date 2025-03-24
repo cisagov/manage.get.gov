@@ -69,7 +69,6 @@ class RegistryError(Exception):
         # note is a string that can be used to provide additional context
         self.note = note
 
-
     def should_retry(self):
         # COMMAND_USE_ERROR is returning with message, Registrar is not logged in,
         # which can be recovered from with a retry
