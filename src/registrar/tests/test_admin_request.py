@@ -2271,7 +2271,7 @@ class TestDomainRequestAdmin(MockEppLib):
     def test_error_when_approving_domain_in_pending_delete_state(self):
         """If in pendingDelete state from in review -> approve not allowed."""
 
-        # 1. Create domain 
+        # 1. Create domain
         to_be_in_pending_deleted = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.SUBMITTED, name="meoward1.gov"
         )
@@ -2282,9 +2282,7 @@ class TestDomainRequestAdmin(MockEppLib):
         to_be_in_pending_deleted.save()
 
         # 3. Update request as a superuser
-        request = self.factory.post(
-            f"/admin/registrar/domainrequest/{to_be_in_pending_deleted.pk}/change/"
-        )
+        request = self.factory.post(f"/admin/registrar/domainrequest/{to_be_in_pending_deleted.pk}/change/")
         request.user = self.superuser
         request.session = {}
 
@@ -2307,7 +2305,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 request,
                 "Domain of same name is currently in pending delete state.",
             )
-
 
     @less_console_noise
     def test_no_error_when_saving_to_approved_and_domain_exists(self):

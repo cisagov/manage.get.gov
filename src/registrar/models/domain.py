@@ -2025,22 +2025,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         data = data_response.res_data[0]
 
-        return {
-            "auth_info": getattr(data, "auth_info", ...),
-            "_contacts": getattr(data, "contacts", ...),
-            "cr_date": getattr(data, "cr_date", ...),
-            "ex_date": getattr(data, "ex_date", ...),
-            "_hosts": getattr(data, "hosts", ...),
-            "name": getattr(data, "name", ...),
-            "registrant": getattr(data, "registrant", ...),
-            "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
-            "tr_date": getattr(data, "tr_date", ...),
-            "up_date": getattr(data, "up_date", ...),
-        }
-
-        ###  Original code
-        # data = data_response.res_data[0]
-
         # return {
         #     "auth_info": getattr(data, "auth_info", ...),
         #     "_contacts": getattr(data, "contacts", ...),
@@ -2049,10 +2033,26 @@ class Domain(TimeStampedModel, DomainHelper):
         #     "_hosts": getattr(data, "hosts", ...),
         #     "name": getattr(data, "name", ...),
         #     "registrant": getattr(data, "registrant", ...),
-        #     "statuses": getattr(data, "statuses", ...),
+        #     "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
         #     "tr_date": getattr(data, "tr_date", ...),
         #     "up_date": getattr(data, "up_date", ...),
         # }
+
+        ##  Original code
+        data = data_response.res_data[0]
+
+        return {
+            "auth_info": getattr(data, "auth_info", ...),
+            "_contacts": getattr(data, "contacts", ...),
+            "cr_date": getattr(data, "cr_date", ...),
+            "ex_date": getattr(data, "ex_date", ...),
+            "_hosts": getattr(data, "hosts", ...),
+            "name": getattr(data, "name", ...),
+            "registrant": getattr(data, "registrant", ...),
+            "statuses": getattr(data, "statuses", ...),
+            "tr_date": getattr(data, "tr_date", ...),
+            "up_date": getattr(data, "up_date", ...),
+        }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""
