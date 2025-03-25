@@ -254,10 +254,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         domain_name = domain.lower()
         req = commands.CheckDomain([domain_name])
-        response = registry.send(req, cleaned=True)
-
-        if response.res_data[0].avail:
-            return True
+        return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
