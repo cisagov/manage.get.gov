@@ -1003,7 +1003,7 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact, disclose=False, disclose_fields=disclose_fields
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    disclose_fields = self.all_disclose_fields - {"email", "voice", "addr"}
+                    disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact,
                         disclose=False,
@@ -1029,7 +1029,9 @@ class TestRegistrantContacts(MockEppLib):
             DF = common.DiscloseField
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types={DF.ADDR: "loc"}),
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
                 "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
@@ -1054,7 +1056,9 @@ class TestRegistrantContacts(MockEppLib):
             # Separated for linter
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types={DF.ADDR: "loc"}),
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
                 "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
@@ -1108,7 +1112,9 @@ class TestRegistrantContacts(MockEppLib):
 
         DF = common.DiscloseField
         # Create contact with empty fields list
-        result = self._convertPublicContactToEpp(dummy_contact, disclose=True, disclose_fields={DF.EMAIL})
+        result = self._convertPublicContactToEpp(
+            dummy_contact, disclose=True, disclose_fields={DF.ADDR: "loc", DF.NAME: "loc"}
+        )
 
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
