@@ -2048,8 +2048,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         For #3596: Uncomment this return statement, and comment out the other return statement.
         This is for force setting the pendingDelete statue (see statuses).I will remove this 
-        return when I merge as this is for testing purposes only.
-        """
+        return when I merge as this is for testing purposes only. """
 
         # return {
         #     "auth_info": getattr(data, "auth_info", ...),
