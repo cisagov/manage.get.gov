@@ -688,7 +688,6 @@ class TestDomainAvailable(MockEppLib):
 
             mocked_send.assert_called_once_with(commands.InfoDomain("is-pending-delete.gov"), cleaned=True)
 
-            # Assert: The result is False because of pendingDelete status
             self.assertTrue(result)
 
     def test_is_not_pending_delete(self):

@@ -791,9 +791,7 @@ class Domain(TimeStampedModel, DomainHelper):
         A domain's status indicates various properties. See Domain.Status.
         """
         try:
-            statuses = self._get_property("statuses")
-            return statuses
-            # return self._get_property("statuses")
+            return self._get_property("statuses")
         except KeyError:
             logger.error("Can't retrieve status from domain info")
             return []
