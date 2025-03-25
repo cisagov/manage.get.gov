@@ -244,7 +244,7 @@ class Domain(TimeStampedModel, DomainHelper):
         This is called by the availablility api and
         is called in the validate function on the request/domain page
 
-        Throws: RegistryError or InvalidDomainError"""
+        throws- RegistryError or InvalidDomainError"""
 
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
