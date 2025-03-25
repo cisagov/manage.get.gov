@@ -234,7 +234,11 @@ def _is_domain_manager(user, **kwargs):
         return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
     domain_invitation_id = kwargs.get("domain_invitation_pk")
     if domain_invitation_id:
-        return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
+        return DomainInvitation.objects.filter(
+            id=domain_invitation_id,
+            domain__permissions__user=user,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        ).exists()
     return False
 
 
