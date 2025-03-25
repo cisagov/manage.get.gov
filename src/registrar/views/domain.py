@@ -1067,10 +1067,6 @@ class DomainDsDataView(DomainFormBaseView):
                 for record in dnssecdata.dsData
             )
 
-        # Ensure at least 1 record, filled or empty
-        while len(initial_data) == 0:
-            initial_data.append({})
-
         return initial_data
 
     def get_success_url(self):
@@ -1089,29 +1085,8 @@ class DomainDsDataView(DomainFormBaseView):
         """Formset submission posts to this view."""
         self._get_domain(request)
         formset = self.get_form()
-        override = False
 
-        # This is called by the form cancel button,
-        # and also by the modal's X and cancel buttons
-        if "btn-cancel-click" in request.POST:
-            url = self.get_success_url()
-            return HttpResponseRedirect(url)
-
-        # This is called by the Disable DNSSEC modal to override
-        if "disable-override-click" in request.POST:
-            override = True
-
-        # This is called when all DNSSEC data has been deleted and the
-        # Save button is pressed
-        if len(formset) == 0 and formset.initial != [{}] and override is False:
-            # trigger the modal
-            # get context data from super() rather than self
-            # to preserve the context["form"]
-            context = super().get_context_data(form=formset)
-            context["trigger_modal"] = True
-            return self.render_to_response(context)
-
-        if formset.is_valid() or override:
+        if formset.is_valid():
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
@@ -1123,11 +1098,12 @@ class DomainDsDataView(DomainFormBaseView):
         dnssecdata = extensions.DNSSECExtension()
 
         for form in formset:
+            if form.cleaned_data.get("DELETE"):  # Check if form is marked for deletion
+                continue  # Skip processing this form
+
             try:
-                # if 'delete' not in form.cleaned_data
-                # or form.cleaned_data['delete'] == False:
                 dsrecord = {
-                    "keyTag": form.cleaned_data["key_tag"],
+                    "keyTag": int(form.cleaned_data["key_tag"]),
                     "alg": int(form.cleaned_data["algorithm"]),
                     "digestType": int(form.cleaned_data["digest_type"]),
                     "digest": form.cleaned_data["digest"],
