@@ -203,6 +203,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
+    # Our own router logs that included user info to speed up log tracing time on stable
+    "registrar.registrar_middleware.RequestLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
