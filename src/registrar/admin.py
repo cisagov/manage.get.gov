@@ -3096,15 +3096,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # Hide FEB fields behind the organization requests flag
             # and only show them if the portfolio is executive
             if not (obj and obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE):
-                excluded_fields.extend([
-                    "feb_naming_requirements_details",
-                    "feb_purpose_choice",
-                    "time_frame_details",
-                    "interagency_initiative_details",
-                    "eop_stakeholder_first_name",
-                    "eop_stakeholder_last_name",
-                    "eop_stakeholder_email",
-                ])
+                excluded_fields.extend(
+                    [
+                        "feb_naming_requirements_details",
+                        "feb_purpose_choice",
+                        "time_frame_details",
+                        "interagency_initiative_details",
+                        "eop_stakeholder_first_name",
+                        "eop_stakeholder_last_name",
+                        "eop_stakeholder_email",
+                    ]
+                )
                 # This makes .gov domain collapsable underneath Requested By
                 fieldsets[2][1]["classes"] = ["collapse--dgfieldset"]
             modified_fieldsets = []

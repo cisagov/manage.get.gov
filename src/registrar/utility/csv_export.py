@@ -1841,7 +1841,9 @@ class DomainRequestExport(BaseExport):
 
         # FEB fields
         purpose_type = model.get("feb_purpose_choice")
-        purpose_type_display = DomainRequest.FEBPurposeChoices.get_purpose_label(purpose_type) if purpose_type else "N/A"
+        purpose_type_display = (
+            DomainRequest.FEBPurposeChoices.get_purpose_label(purpose_type) if purpose_type else "N/A"
+        )
         eop_stakeholder_first_name = model.get("eop_stakeholder_first_name")
         eop_stakeholder_last_name = model.get("eop_stakeholder_last_name")
         if not eop_stakeholder_first_name or not eop_stakeholder_last_name:

@@ -1029,7 +1029,7 @@ class DomainRequest(TimeStampedModel):
             if not context:
                 has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
                 is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
-                requires_feb_questions = self.requires_feb_questions()
+                requires_feb_questions = self.is_feb() and is_org_user
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
