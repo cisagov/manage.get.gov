@@ -213,20 +213,30 @@ export function initPortfolioMemberPage() {
 
       // Init the "edit self" warning modal
       if (memberForm && editSelfWarningModal) {
-        var canSubmit = false;
+        var canSubmit = document.querySelector(`input[name="role"]:checked`)?.value != "organization_member";
+        let radioButtons = document.querySelectorAll(`input[name="role"]`);
+        radioButtons.forEach(function (radioButton) {
+          radioButton.addEventListener("change", function() {
+            selectedValue = radioButton.checked ? radioButton.value : null;
+            canSubmit = selectedValue != "organization_member";
+          });
+        });
+
         memberForm.addEventListener("submit", function(e) {
           if (!canSubmit) {
             e.preventDefault();
+            editSelfWarningModal.click();
           }
-          editSelfWarningModal.click();
         });
-        
+
         if (editSelfWarningModalConfirm) {
           editSelfWarningModalConfirm.addEventListener("click", function() {
             canSubmit = true;
             memberForm.submit();
           });
         }
+
       }
   });
+
 }

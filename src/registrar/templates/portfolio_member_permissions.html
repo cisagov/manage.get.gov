@@ -127,7 +127,7 @@
     {% if is_only_admin %}
       {% include 'includes/modal.html' with modal_heading="You are the only admin on this organization." modal_description="Add another administrator to remove yourself from this organization." modal_button_id="member-permissions-edit-self" cancel_button_only=True %}
     {% else %}
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your own permissions?" modal_description="This could permanently impact your access. <strong>This cannot be undone.</strong>" modal_button_id="member-permissions-edit-self" modal_button_text="Yes, I know what I'm doing!" %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member access?" modal_description="You’ve selected basic access, which means you’ll no longer have the ability to manage user permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my access" %}
     {% endif %}
   </div>
   {% endif %}
