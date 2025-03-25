@@ -1112,9 +1112,7 @@ class TestRegistrantContacts(MockEppLib):
 
         DF = common.DiscloseField
         # Create contact with empty fields list
-        result = self._convertPublicContactToEpp(
-            dummy_contact, disclose=True, disclose_fields={DF.EMAIL}
-        )
+        result = self._convertPublicContactToEpp(dummy_contact, disclose=True, disclose_fields={DF.EMAIL})
 
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
