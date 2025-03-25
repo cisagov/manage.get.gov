@@ -1974,7 +1974,7 @@ class MockEppLib(TestCase):
             disclose_fields = {field for field in DF} - fields
 
         if disclose_types is None:
-            disclose_types = {DF.ADDR: "loc"}
+            disclose_types = {DF.ADDR: "loc", DF.NAME: "loc"}
 
         di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
