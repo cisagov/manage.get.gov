@@ -1703,14 +1703,14 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF}
-        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc"}}
+        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
 
         fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         if contact.contact_type == contact.ContactTypeChoices.SECURITY:
             if contact.email not in DefaultEmail.get_all_emails():
                 fields_to_remove.add(DF.EMAIL)
         elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            fields_to_remove.update({DF.EMAIL, DF.VOICE, DF.ADDR})
+            fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
 
         disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
 
