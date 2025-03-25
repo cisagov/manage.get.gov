@@ -2020,21 +2020,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         data = data_response.res_data[0]
 
-        # return {
-        #     "auth_info": getattr(data, "auth_info", ...),
-        #     "_contacts": getattr(data, "contacts", ...),
-        #     "cr_date": getattr(data, "cr_date", ...),
-        #     "ex_date": getattr(data, "ex_date", ...),
-        #     "_hosts": getattr(data, "hosts", ...),
-        #     "name": getattr(data, "name", ...),
-        #     "registrant": getattr(data, "registrant", ...),
-        #     "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
-        #     "tr_date": getattr(data, "tr_date", ...),
-        #     "up_date": getattr(data, "up_date", ...),
-        # }
-
-        data = data_response.res_data[0]
-
+        """
+        TODO BEFORE MERGE OF #3596:
+        We are using this return for testing on my sandbox only to force the pendingDelete state
+        (see statuses).I will remove this return and uncomment the other return below when 
+        merging as this is for testing purposes only.
+        """
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
@@ -2043,10 +2034,23 @@ class Domain(TimeStampedModel, DomainHelper):
             "_hosts": getattr(data, "hosts", ...),
             "name": getattr(data, "name", ...),
             "registrant": getattr(data, "registrant", ...),
-            "statuses": getattr(data, "statuses", ...),
+            "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
             "tr_date": getattr(data, "tr_date", ...),
             "up_date": getattr(data, "up_date", ...),
         }
+
+        # return {
+        #     "auth_info": getattr(data, "auth_info", ...),
+        #     "_contacts": getattr(data, "contacts", ...),
+        #     "cr_date": getattr(data, "cr_date", ...),
+        #     "ex_date": getattr(data, "ex_date", ...),
+        #     "_hosts": getattr(data, "hosts", ...),
+        #     "name": getattr(data, "name", ...),
+        #     "registrant": getattr(data, "registrant", ...),
+        #     "statuses": getattr(data, "statuses", ...),
+        #     "tr_date": getattr(data, "tr_date", ...),
+        #     "up_date": getattr(data, "up_date", ...),
+        # }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""
