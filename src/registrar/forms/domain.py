@@ -2,7 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
@@ -630,14 +630,10 @@ class DomainDsdataForm(forms.Form):
         if not re.match(r"^[0-9a-fA-F]+$", value):
             raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
 
-    key_tag = forms.IntegerField(
+    key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        validators=[
-            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-        ],
-        error_messages={"required": ("Key tag is required.")},
+        error_messages={"required": "Key tag is required."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -663,6 +659,13 @@ class DomainDsdataForm(forms.Form):
         error_messages={
             "required": "Digest is required.",
         },
+        widget=forms.Textarea(
+            attrs={
+                "maxlength": "64",
+                "class": "text-wrap usa-textarea--digest",
+                "hide_character_count": "True",
+            }
+        ),
     )
 
     def clean(self):
@@ -672,6 +675,22 @@ class DomainDsdataForm(forms.Form):
         cleaned_data = super().clean()
         digest_type = cleaned_data.get("digest_type", 0)
         digest = cleaned_data.get("digest", "")
+
+        # Convert key_tag to an integer safely
+        key_tag = cleaned_data.get("key_tag", 0)
+        try:
+            key_tag = int(key_tag)
+            if key_tag < 0 or key_tag > 65535:
+                self.add_error(
+                    "key_tag",
+                    DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE),
+                )
+        except ValueError:
+            self.add_error(
+                "key_tag",
+                DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS),
+            )
+
         # validate length of digest depending on digest_type
         if digest_type == 1 and len(digest) != 40:
             self.add_error(
@@ -686,9 +705,45 @@ class DomainDsdataForm(forms.Form):
         return cleaned_data
 
 
+class BaseDsdataFormset(forms.BaseFormSet):
+    def clean(self):
+        """Check for duplicate entries in the formset."""
+        if any(self.errors):
+            return  # Skip duplicate checking if other errors exist
+
+        duplicate_errors = self._check_for_duplicates()
+        if duplicate_errors:
+            raise forms.ValidationError("Duplicate DS records found. Each DS record must be unique.")
+
+    def _check_for_duplicates(self):
+        """Check for duplicate entries in the DS data forms"""
+
+        seen_ds_records = set()
+        duplicate_found = False
+
+        for form in self.forms:
+            if form.cleaned_data.get("key_tag") and not form.cleaned_data.get("DELETE", False):
+                ds_tuple = (
+                    form.cleaned_data["key_tag"],
+                    form.cleaned_data["algorithm"],
+                    form.cleaned_data["digest_type"],
+                    form.cleaned_data["digest"].upper(),
+                )
+
+                if ds_tuple in seen_ds_records:
+                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    duplicate_found = True  # Track that we found at least one duplicate
+
+                seen_ds_records.add(ds_tuple)
+
+        return duplicate_found  # Returns True if any duplicates were found
+
+
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
-    extra=0,
+    formset=BaseDsdataFormset,
+    extra=1,
+    max_num=8,
     can_delete=True,
 )
 
