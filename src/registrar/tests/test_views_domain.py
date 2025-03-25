@@ -441,10 +441,11 @@ class TestDomainDetail(TestDomainOverview):
         user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
-        # Check that alert message displays properly
+        # Check that alert message displays properly.
+        # This message is different for one user on the portfolio vs multiple.
         self.assertContains(
             detail_page,
-            "If you need to make updates, contact one of the listed domain managers.",
+            "If you need to become a domain manager, edit the domain assignments",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")

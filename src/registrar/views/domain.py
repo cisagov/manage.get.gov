@@ -406,8 +406,7 @@ class DomainView(DomainBaseView):
 
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
-            user=self.request.user,
-            portfolio=self.request.session.get("portfolio")
+            user=self.request.user, portfolio=self.request.session.get("portfolio")
         ).first()
 
         security_email = self.object.get_security_email()
