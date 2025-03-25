@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "4.2.17"
+django = "4.2.20"
 cfenv = "*"
 django-cors-headers = "*"
 pycryptodomex = "*"
@@ -34,6 +34,7 @@ tblib = "*"
 django-admin-multiple-choice-list-filter = "*"
 django-import-export = "*"
 django-waffle = "*"
+cryptography = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

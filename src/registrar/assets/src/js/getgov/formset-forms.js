@@ -84,7 +84,7 @@ function markForm(e, formLabel){
 }
   
 /**
- * Prepare the namerservers, DS data and Other Contacts formsets' delete button
+ * Prepare the Other Contacts formsets' delete button
  * for the last added form. We call this from the Add function
  * 
  */
@@ -108,7 +108,7 @@ function prepareNewDeleteButton(btn, formLabel) {
 }
   
 /**
- * Prepare the namerservers, DS data and Other Contacts formsets' delete buttons
+ * Prepare the Other Contacts formsets' delete buttons
  * We will call this on the forms init
  * 
  */
@@ -172,16 +172,11 @@ export function initFormsetsForms() {
   let cloneIndex = 0;
   let formLabel = '';
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
-  let isDsDataForm = document.querySelector(".ds-data-form");
   let isDotgovDomain = document.querySelector(".dotgov-domain-form");
-  if( !(isOtherContactsForm || isDotgovDomain || isDsDataForm) ){
+  if( !(isOtherContactsForm || isDotgovDomain) ){
     return
   }
-  // DNSSEC: DS Data
-  if (isDsDataForm) {
-    formLabel = "DS data record";
-  // The Other Contacts form
-  } else if (isOtherContactsForm) {
+  if (isOtherContactsForm) {
     formLabel = "Organization contact";
     container = document.querySelector("#other-employees");
     formIdentifier = "other_contacts"
@@ -285,28 +280,5 @@ export function initFormsetsForms() {
       let newDeleteButton = newForm.querySelector(".delete-record");
       if (newDeleteButton)
         prepareNewDeleteButton(newDeleteButton, formLabel);
-  }
-}
-
-export function triggerModalOnDsDataForm() {
-  let saveButon = document.querySelector("#save-ds-data");
-
-  // The view context will cause a hitherto hidden modal trigger to
-  // show up. On save, we'll test for that modal trigger appearing. We'll
-  // run that test once every 100 ms for 5 secs, which should balance performance
-  // while accounting for network or lag issues.
-  if (saveButon) {
-    let i = 0;
-    var tryToTriggerModal = setInterval(function() {
-        i++;
-        if (i > 100) {
-          clearInterval(tryToTriggerModal);
-        }
-        let modalTrigger = document.querySelector("#ds-toggle-dnssec-alert");
-        if (modalTrigger) {
-          modalTrigger.click()
-          clearInterval(tryToTriggerModal);
-        }
-    }, 50);
   }
 }
