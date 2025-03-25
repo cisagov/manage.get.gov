@@ -280,7 +280,7 @@ class TestClient(TestCase):
         mock_close = MagicMock()
         # create success and failure result messages
         send_command_success_result = self.fake_result(1000, "Command completed successfully")
-        send_command_failure_result = self.fake_result(2002, "Registrar is not logging in.")
+        send_command_failure_result = self.fake_result(2002, "Registrar is not logged in.")
         # side_effect for send call, initial send(login) succeeds during initialization, next send(command)
         # fails, subsequent sends (logout, login, command) all succeed
         send_call_count = 0
@@ -312,7 +312,7 @@ class TestClient(TestCase):
         self.assertEquals(mock_send.call_count, 5)
         # Assertion proper logging; note that the
         mock_logger.info.assert_called_once_with(
-            "InfoDomainCommand failed and will be retried Error: Registrar is not logging in.| cltrid is cl_tr_id svtrid is sv_tr_id"
+            "InfoDomainCommand failed and will be retried Error: Registrar is not logged in.| cltrid is cl_tr_id svtrid is sv_tr_id"
         )
 
     @less_console_noise_decorator

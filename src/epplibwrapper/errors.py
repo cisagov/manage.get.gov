@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
 class ErrorCode(IntEnum):
@@ -52,6 +52,10 @@ class ErrorCode(IntEnum):
     SESSION_LIMIT_EXCEEDED_SERVER_CLOSING_CONNECTION = 2502
 
 
+class RegistryErrorMessage(Enum):
+    REGISTRAR_NOT_LOGGED_IN = "Registrar is not logged in."
+
+
 class RegistryError(Exception):
     """
     Overview of registry response codes from RFC 5730. See RFC 5730 for full text.
@@ -72,7 +76,11 @@ class RegistryError(Exception):
     def should_retry(self):
         # COMMAND_USE_ERROR is returning with message, Registrar is not logged in,
         # which can be recovered from with a retry
-        return self.code == ErrorCode.COMMAND_FAILED or self.code == ErrorCode.COMMAND_USE_ERROR
+        return self.code == ErrorCode.COMMAND_FAILED or (
+            self.code == ErrorCode.COMMAND_USE_ERROR
+            and self.response
+            and getattr(self.response, "msg", None) == RegistryErrorMessage.REGISTRAR_NOT_LOGGED_IN.value
+        )
 
     def is_transport_error(self):
         return self.code == ErrorCode.TRANSPORT_ERROR
