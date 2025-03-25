@@ -256,9 +256,6 @@ class Domain(TimeStampedModel, DomainHelper):
         req = commands.CheckDomain([domain_name])
         response = registry.send(req, cleaned=True)
 
-        print("***** MODELS/DOMAIN.PY Response:", response)
-        print("***** MODELS/DOMAIN.PY Response res_data[0]:", response.res_data[0])
-
         if response.res_data[0].avail:
             return True
 
@@ -798,11 +795,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         try:
             statuses = self._get_property("statuses")
-            print(f"!!!!! Fetched statuses: {statuses}")
             return statuses
             # return self._get_property("statuses")
         except KeyError:
-            print("!!!! Returns KeyError")
             logger.error("Can't retrieve status from domain info")
             return []
 
@@ -2042,13 +2037,6 @@ class Domain(TimeStampedModel, DomainHelper):
             "tr_date": getattr(data, "tr_date", ...),
             "up_date": getattr(data, "up_date", ...),
         }
-
-        # Have it return/raise this for checking for Deleted
-        #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
-        # raise RegistryError(
-        #     message=f"Domain '{domain_name}' no longer exists in the registry and is DELETED.",
-        #     error_code=2303,
-        # )
 
         ###  Original code
         # data = data_response.res_data[0]

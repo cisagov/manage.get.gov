@@ -2888,7 +2888,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         Returns a tuple: (obj: DomainRequest, should_proceed: bool)
         """
-        # print("$$$$ IN THE _HANDLE_STATUS_CHANGE FUNCTION")
         should_proceed = True
         error_message = None
         domain_name = original_obj.requested_domain.name
@@ -2917,15 +2916,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
             and original_obj.requested_domain is not None
-            and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
             and Domain.is_pending_delete(domain_name)
         ):
             # 1. If the domain request is not approved in previous state (original status)
             # 2. If the new status that's supposed to be triggered IS approved
             # 3. That it's a valid domain
-            # 4. That the domain name already exists
-            # 5. AND that the domain is currently in pendingDelete state
-            print("$$$$ in _handle_status_change")
+            # 4. AND that the domain is currently in pendingDelete state
             error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
         elif (
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
@@ -2960,8 +2956,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             except FSMDomainRequestError as err:
                 logger.warning(f"An error encountered when trying to change status: {err}")
                 error_message = err.message
-
-        print(f"##### error_message is - {error_message}")
 
         if error_message is not None:
             # Clear the success message

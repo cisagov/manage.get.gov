@@ -47,6 +47,7 @@ from unittest.mock import ANY, patch
 from django.conf import settings
 import boto3_mocking  # type: ignore
 import logging
+from django.contrib.messages.storage.fallback import FallbackStorage
 
 logger = logging.getLogger(__name__)
 
@@ -2267,74 +2268,46 @@ class TestDomainRequestAdmin(MockEppLib):
                 "Cannot approve. Requested domain is already in use.",
             )
 
-    # @less_console_noise
     def test_error_when_approving_domain_in_pending_delete_state(self):
-        """Prevent approving a domain when another request with the same name is in pendingDelete."""
+        """If in pendingDelete state from in review -> approve not allowed."""
 
-        # 1. Create two domain requests with the same name
-        to_be_pending_delete_state_domain_request = completed_domain_request(
+        # 1. Create domain 
+        to_be_in_pending_deleted = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.SUBMITTED, name="meoward1.gov"
         )
-        print("#1 to_be_pending_delete_state_domain_request is", to_be_pending_delete_state_domain_request)
+        to_be_in_pending_deleted.creator = self.superuser
 
-        to_be_in_review_to_try_to_approve_domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.SUBMITTED, name="meoward1.gov"
-        )
-        print(
-            "#1 to_be_in_review_to_try_to_approve_domain_request is", to_be_in_review_to_try_to_approve_domain_request
-        )
+        # 2. Put domain into in-review state
+        to_be_in_pending_deleted.status = DomainRequest.DomainRequestStatus.IN_REVIEW
+        to_be_in_pending_deleted.save()
 
-        # 2. Approve to_be_pending_delete_state_domain_request
-        to_be_pending_delete_state_domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
-        to_be_pending_delete_state_domain_request.save()
-
-        # # 2.5 And put it into pendingDelete state
-        # with patch("registrar.models.domain.Domain.is_pending_delete", return_value=True):
-        #     to_be_pending_delete_state_domain_request.save()
-
-
-        # 3. Put to_be_in_review_to_try_to_approve_domain_request into in-review state
-        to_be_in_review_to_try_to_approve_domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
-        to_be_in_review_to_try_to_approve_domain_request.save()
-
-        # 4. Update request as a superuser
+        # 3. Update request as a superuser
         request = self.factory.post(
-            f"/admin/registrar/domainrequest/{to_be_in_review_to_try_to_approve_domain_request.pk}/change/"
+            f"/admin/registrar/domainrequest/{to_be_in_pending_deleted.pk}/change/"
         )
         request.user = self.superuser
         request.session = {}
 
-        print("#4 to_be_pending_delete_state_domain_request is", to_be_pending_delete_state_domain_request)
-        print(
-            "#4 to_be_in_review_to_try_to_approve_domain_request is", to_be_in_review_to_try_to_approve_domain_request
-        )
+        setattr(request, "_messages", FallbackStorage(request))
 
-        # 5. Use ExitStack for combine patching like above
-        with ExitStack() as stack:
-            print("$$$$$ Do we get into the with ExitStack statement")
+        # 4. Use ExitStack for combine patching like above
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), ExitStack() as stack:
             # Patch django.contrib.messages.error
             stack.enter_context(patch.object(messages, "error"))
 
-            with patch("registrar.models.domain.Domain.is_pending_delete", return_value=True) as pending_patch:
-                # to_be_in_review_to_try_to_approve_domain_request.save()
-                print("$$$$$ inside the second with statement")
-
-                # Attempt to approve to_be_in_review_to_try_to_approve_domain_request
-                # (which should fail due to to_be_pending_delete_state_domain_request being in pendingDelete)
-                to_be_in_review_to_try_to_approve_domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
-                print("to_be_in_review_to_try_to_approve_domain_request is ", to_be_in_review_to_try_to_approve_domain_request)
+            with patch("registrar.models.domain.Domain.is_pending_delete", return_value=True):
+                # Attempt to approve to_be_in_pending_deleted
+                # (which should fail due is_pending_delete == True so nothing can get approved)
+                to_be_in_pending_deleted.status = DomainRequest.DomainRequestStatus.APPROVED
 
                 # Save the model with the patched request
-                self.admin.save_model(request, to_be_in_review_to_try_to_approve_domain_request, None, True)
+                self.admin.save_model(request, to_be_in_pending_deleted, None, True)
 
-                print("$$$$ pending_patch.call_args_list is", pending_patch.call_args_list)
-                print("$$$$ pending_patch.called is", pending_patch.called)
-                
-            # Assert that the correct error message is displayed
             messages.error.assert_called_once_with(
                 request,
                 "Domain of same name is currently in pending delete state.",
             )
+
 
     @less_console_noise
     def test_no_error_when_saving_to_approved_and_domain_exists(self):
