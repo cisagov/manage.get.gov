@@ -695,15 +695,15 @@ class Domain(TimeStampedModel, DomainHelper):
             added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
             deleted_record = "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None
 
-            if added_record:
-                registry.send(addRequest, cleaned=True)
-                dsdata_change_log = f"{user_email} added a DS data record"
             if deleted_record:
                 registry.send(remRequest, cleaned=True)
+                dsdata_change_log = f"{user_email} deleted a DS data record"
+            if added_record:
+                registry.send(addRequest, cleaned=True)
                 if dsdata_change_log != "":  # if they add and remove a record at same time
                     dsdata_change_log = f"{user_email} added and deleted a DS data record"
                 else:
-                    dsdata_change_log = f"{user_email} deleted a DS data record"
+                    dsdata_change_log = f"{user_email} added a DS data record"
             if dsdata_change_log != "":
                 self.dsdata_last_change = dsdata_change_log
                 self.save()  # audit log will now record this as a change
