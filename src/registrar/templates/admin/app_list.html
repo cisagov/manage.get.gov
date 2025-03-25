@@ -63,6 +63,7 @@
       </table>
     </div>
   {% endfor %}
+  {% if perms.registrar.analyst_access_permission or perms.full_access_permission %}
   <div class="module">
     <table class="width-full">
       <caption class="text-bold">Analytics</caption>
@@ -78,6 +79,7 @@
       </tbody>
     </table>
   </div>
+  {% endif %}
 {% else %}
   <p>{% translate 'You don’t have permission to view or edit anything.' %}</p>
 {% endif %}

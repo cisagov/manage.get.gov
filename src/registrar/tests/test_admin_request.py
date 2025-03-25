@@ -1,6 +1,8 @@
 from datetime import datetime
 from django.forms import ValidationError
 from django.utils import timezone
+from registrar.models.federal_agency import FederalAgency
+from registrar.utility.constants import BranchChoices
 from waffle.testutils import override_flag
 import re
 from django.test import RequestFactory, Client, TestCase, override_settings
@@ -37,6 +39,7 @@ from .common import (
     less_console_noise,
     create_superuser,
     create_user,
+    create_omb_analyst_user,
     multiple_unalphabetical_domain_objects,
     MockEppLib,
     GenericTestHelper,
@@ -68,6 +71,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        self.ombanalyst = create_omb_analyst_user()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.test_helper = GenericTestHelper(
             factory=self.factory,
@@ -79,6 +83,12 @@ class TestDomainRequestAdmin(MockEppLib):
         self.mock_client = MockSESClient()
         allowed_emails = [AllowedEmail(email="mayor@igorville.gov"), AllowedEmail(email="help@get.gov")]
         AllowedEmail.objects.bulk_create(allowed_emails)
+
+    def setUp(self):
+        super().setUp()
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -92,6 +102,7 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.all().delete()
         Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         self.mock_client.EMAILS_SENT.clear()
 
     @classmethod
@@ -99,6 +110,71 @@ class TestDomainRequestAdmin(MockEppLib):
         super().tearDownClass()
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
+
+    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view domain request list."""
+        febportfolio = Portfolio.objects.create(
+            organization_name="new portfolio",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.fed_agency,
+            creator=self.ombanalyst,
+        )
+        nonfebportfolio = Portfolio.objects.create(
+            organization_name="non feb portfolio",
+            creator=self.ombanalyst,
+        )
+        nonfebdomainrequest = completed_domain_request(
+            name="test1234nonfeb.gov",
+            portfolio=nonfebportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        febdomainrequest = completed_domain_request(
+            name="test1234feb.gov",
+            portfolio=febportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        self.client.force_login(self.ombanalyst)
+        response = self.client.get(reverse("admin:registrar_domainrequest_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, febdomainrequest.requested_domain.name)
+        self.assertNotContains(response, nonfebdomainrequest.requested_domain.name)
+        self.assertNotContains(response, ">Import<")
+        self.assertNotContains(response, ">Export<")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can view/edit federal executive branch domain requests."""
+        self.client.force_login(self.ombanalyst)
+        febportfolio = Portfolio.objects.create(
+            organization_name="new portfolio",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.fed_agency,
+            creator=self.ombanalyst,
+        )
+        nonfebportfolio = Portfolio.objects.create(
+            organization_name="non feb portfolio",
+            creator=self.ombanalyst,
+        )
+        nonfebdomainrequest = completed_domain_request(
+            name="test1234nonfeb.gov",
+            portfolio=nonfebportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        febdomainrequest = completed_domain_request(
+            name="test1234feb.gov",
+            portfolio=febportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        response = self.client.get(reverse("admin:registrar_domainrequest_change", args=[nonfebdomainrequest.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_domainrequest_change", args=[febdomainrequest.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, febdomainrequest.requested_domain.name)
+        # test buttons
+        self.assertContains(response, "Save")
+        self.assertNotContains(response, ">Delete<")
 
     @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
@@ -1984,6 +2060,10 @@ class TestDomainRequestAdmin(MockEppLib):
             "feb_naming_requirements",
             "feb_naming_requirements_details",
             "feb_purpose_choice",
+            "working_with_eop",
+            "eop_stakeholder_first_name",
+            "eop_stakeholder_last_name",
+            "eop_stakeholder_email",
             "purpose",
             "has_timeframe",
             "time_frame_details",
@@ -2068,6 +2148,86 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
+            ]
+
+            self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_omb_analyst(self):
+        with less_console_noise():
+            request = self.factory.get("/")  # Use the correct method and path
+            request.user = self.ombanalyst
+
+            readonly_fields = self.admin.get_readonly_fields(request)
+
+            expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
+                "other_contacts",
+                "current_websites",
+                "alternative_domains",
+                "is_election_board",
+                "status_history",
+                "federal_agency",
+                "creator",
+                "about_your_organization",
+                "requested_domain",
+                "approved_domain",
+                "alternative_domains",
+                "purpose",
+                "no_other_contacts_rationale",
+                "anything_else",
+                "is_policy_acknowledged",
+                "cisa_representative_first_name",
+                "cisa_representative_last_name",
+                "cisa_representative_email",
+                "status",
+                "investigator",
+                "notes",
+                "senior_official",
+                "organization_type",
+                "organization_name",
+                "state_territory",
+                "address_line1",
+                "address_line2",
+                "city",
+                "zipcode",
+                "urbanization",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
+                "is_election_board",
+                "organization_type",
+                "federal_type",
+                "federal_agency",
+                "tribe_name",
+                "federally_recognized_tribe",
+                "state_recognized_tribe",
+                "about_your_organization",
+                "rejection_reason",
+                "rejection_reason_email",
+                "action_needed_reason",
+                "action_needed_reason_email",
+                "portfolio",
+                "sub_organization",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)

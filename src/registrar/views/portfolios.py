@@ -29,12 +29,14 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
+    send_portfolio_update_emails_to_portfolio_admins,
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
@@ -193,6 +195,31 @@ class PortfolioMemberDeleteView(View):
                 messages.warning(
                     request, f"Could not send email notification to {portfolio_member_permission.user.email}"
                 )
+
+            # Notify domain managers for domains which the member is being removed from
+            # Get list of portfolio domains that the member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_member_permission.user.email,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user=portfolio_member_permission.user,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=portfolio_member_permission.user,
+                    manager_removed_email=portfolio_member_permission.user.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -432,6 +459,20 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         Processes removed domains by deleting corresponding UserDomainRole instances.
         """
         if removed_domain_ids:
+            # Notify domain managers for domains which the member is being removed from
+            # Fetch Domain objects from removed_domain_ids
+            removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+            # need to get the domains from removed_domain_ids
+            for domain in removed_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=self.request.user,
+                    manager_removed=member,
+                    manager_removed_email=member.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        self.request, "Could not send email notification to existing domain managers for %s", domain
+                    )
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
@@ -502,6 +543,31 @@ class PortfolioInvitedMemberDeleteView(View):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
+
+            # Notify domain managers for domains which the invited member is being removed from
+            # Get list of portfolio domains that the invited member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=None,
+                    manager_removed_email=portfolio_invitation.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -740,6 +806,21 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         if not removed_domain_ids:
             return
 
+        # Notify domain managers for domains which the member is being removed from
+        # Fetch Domain objects from removed_domain_ids
+        removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+        # need to get the domains from removed_domain_ids
+        for domain in removed_domains:
+            if not send_domain_manager_removal_emails_to_domain_managers(
+                removed_by_user=self.request.user,
+                manager_removed=None,
+                manager_removed_email=email,
+                domain=domain,
+            ):
+                messages.warning(
+                    self.request, "Could not send email notification to existing domain managers for %s", domain
+                )
+
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(
             domain_id__in=removed_domain_ids,
@@ -850,6 +931,20 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
+            user = request.user
+            try:
+                if not send_portfolio_update_emails_to_portfolio_admins(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
+                ):
+                    messages.warning(self.request, "Could not send email notification to all organization admins.")
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
@@ -901,6 +996,45 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
+
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests to process form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            user = request.user
+            try:
+                if not send_portfolio_update_emails_to_portfolio_admins(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
+                ):
+                    messages.warning(self.request, "Could not send email notification to all organization admins.")
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Handle the case when the form is valid."""
+        self.object = form.save(commit=False)
+        self.object.creator = self.request.user
+        self.object.save()
+        messages.success(self.request, "The senior official information for this portfolio has been updated.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle the case when the form is invalid."""
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        """Redirect to the overview page for the portfolio."""
+        return reverse("senior-official")
 
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
@@ -970,7 +1104,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         portfolio = form.cleaned_data["portfolio"]
         is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
 
-        requested_user = User.objects.filter(email=requested_email).first()
+        requested_user = User.objects.filter(email__iexact=requested_email).first()
         permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
             if not requested_user or not permission_exists:

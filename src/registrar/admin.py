@@ -75,6 +75,19 @@ from django.utils.translation import gettext_lazy as _
 logger = logging.getLogger(__name__)
 
 
+class ImportExportRegistrarModelAdmin(ImportExportModelAdmin):
+
+    def has_import_permission(self, request):
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm(
+            "registrar.full_access_permission"
+        )
+
+    def has_export_permission(self, request):
+        return request.user.has_perm("registrar.analyst_access_permission") or request.user.has_perm(
+            "registrar.full_access_permission"
+        )
+
+
 class FsmModelResource(resources.ModelResource):
     """ModelResource is extended to support importing of tables which
     have FSMFields.  ModelResource is extended with the following changes
@@ -465,7 +478,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not domain_request.creator.is_restricted():
+            if not domain_request.creator.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
 
     def get_custom_field_transitions(self, instance, field):
@@ -919,7 +932,7 @@ class ListHeaderAdmin(AuditedAdmin, OrderableFieldsMixin):
         return filters
 
 
-class MyUserAdmin(BaseUserAdmin, ImportExportModelAdmin):
+class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
     """Custom user admin class to use our inlines."""
 
     resource_classes = [UserResource]
@@ -1224,7 +1237,7 @@ class HostResource(resources.ModelResource):
         model = models.Host
 
 
-class MyHostAdmin(AuditedAdmin, ImportExportModelAdmin):
+class MyHostAdmin(AuditedAdmin, ImportExportRegistrarModelAdmin):
     """Custom host admin class to use our inlines."""
 
     resource_classes = [HostResource]
@@ -1242,7 +1255,7 @@ class HostIpResource(resources.ModelResource):
         model = models.HostIP
 
 
-class HostIpAdmin(AuditedAdmin, ImportExportModelAdmin):
+class HostIpAdmin(AuditedAdmin, ImportExportRegistrarModelAdmin):
     """Custom host ip admin class"""
 
     resource_classes = [HostIpResource]
@@ -1257,7 +1270,7 @@ class ContactResource(resources.ModelResource):
         model = models.Contact
 
 
-class ContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class ContactAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom contact admin class to add search."""
 
     resource_classes = [ContactResource]
@@ -1391,6 +1404,59 @@ class SeniorOfficialAdmin(ListHeaderAdmin):
     # in autocomplete_fields for Senior Official
     ordering = ["first_name", "last_name"]
 
+    readonly_fields = []
+
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
+
+    omb_analyst_readonly_fields = [
+        "first_name",
+        "last_name",
+        "title",
+        "phone",
+        "email",
+        "federal_agency",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have conditions that determine which fields are read-only:
+        admin user permissions and analyst (cisa or omb) status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
+
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(federal_agency__federal_type=BranchChoices.EXECUTIVE)
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return obj.federal_agency and obj.federal_agency.federal_type == BranchChoices.EXECUTIVE
+        return super().has_view_permission(request, obj)
+
 
 class WebsiteResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -1400,7 +1466,7 @@ class WebsiteResource(resources.ModelResource):
         model = models.Website
 
 
-class WebsiteAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class WebsiteAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom website admin class."""
 
     resource_classes = [WebsiteResource]
@@ -1501,7 +1567,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
             obj.delete()  # Calls the overridden delete method on each instance
 
 
-class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom user domain role admin class."""
 
     resource_classes = [UserDomainRoleResource]
@@ -1684,6 +1750,63 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
     # Override for the delete confirmation page on the domain table (bulk delete action)
     delete_selected_confirmation_template = "django/admin/domain_invitation_delete_selected_confirmation.html"
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            converted_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    domain__domain_info__portfolio__isnull=False,
+                    then=F("domain__domain_info__portfolio__organization_type"),
+                ),
+                # Otherwise, return the natively assigned value
+                default=F("domain__domain_info__generic_org_type"),
+            ),
+            converted_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(domain__domain_info__portfolio__isnull=False)
+                    & Q(domain__domain_info__portfolio__federal_agency__isnull=False),
+                    then=F("domain__domain_info__portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the federal agency's federal_type
+                default=F("domain__domain_info__federal_agency__federal_type"),
+            ),
+        )
+
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return (
+                    obj.domain.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.domain.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
+                )
+        return super().has_view_permission(request, obj)
+
+    # Select domain invitations to change -> Domain invitations
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["tabtitle"] = "Domain invitations"
+        # Get the filtered values
+        return super().changelist_view(request, extra_context=extra_context)
+
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Override the change_view to add the invitation obj for the change_form_object_tools template"""
 
@@ -1846,7 +1969,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 requested_user = get_requested_user(requested_email)
 
                 permission_exists = UserPortfolioPermission.objects.filter(
-                    user__email=requested_email, portfolio=portfolio, user__email__isnull=False
+                    user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
                 if not permission_exists:
                     # if permission does not exist for a user with requested_email, send email
@@ -1856,9 +1979,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         portfolio=portfolio,
                         is_admin_invitation=is_admin_invitation,
                     ):
-                        messages.warning(
-                            self.request, "Could not send email notification to existing organization admins."
-                        )
+                        messages.warning(request, "Could not send email notification to existing organization admins.")
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
@@ -1907,7 +2028,7 @@ class DomainInformationResource(resources.ModelResource):
         model = models.DomainInformation
 
 
-class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Customize domain information admin class."""
 
     class GenericOrgFilter(admin.SimpleListFilter):
@@ -2184,6 +2305,47 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "is_policy_acknowledged",
     ]
 
+    # Read only that we'll leverage for OMB Analysts
+    omb_analyst_readonly_fields = [
+        "federal_agency",
+        "creator",
+        "about_your_organization",
+        "anything_else",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+        "domain_request",
+        "notes",
+        "senior_official",
+        "organization_type",
+        "organization_name",
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
+        "organization_type",
+        "federal_type",
+        "federal_agency",
+        "tribe_name",
+        "federally_recognized_tribe",
+        "state_recognized_tribe",
+        "about_your_organization",
+        "portfolio",
+        "sub_organization",
+    ]
+
     # For each filter_horizontal, init in admin js initFilterHorizontalWidget
     # to activate the edit/delete/view buttons
     filter_horizontal = ("other_contacts",)
@@ -2212,6 +2374,10 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
@@ -2228,6 +2394,38 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            conv_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("generic_org_type"),
+            ),
+            conv_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return the federal_type from federal agency
+                default=F("federal_agency__federal_type"),
+            ),
+        )
+
+    def get_queryset(self, request):
+        """Custom get_queryset to filter by portfolio if portfolio is in the
+        request params."""
+        qs = super().get_queryset(request)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_federal_type=BranchChoices.EXECUTIVE,
+            )
+        return qs
+
 
 class DomainRequestResource(FsmModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -2237,7 +2435,7 @@ class DomainRequestResource(FsmModelResource):
         model = models.DomainRequest
 
 
-class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain requests admin class."""
 
     resource_classes = [DomainRequestResource]
@@ -2295,7 +2493,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     class FederalTypeFilter(admin.SimpleListFilter):
         """Custom Federal Type filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's federal type.  If not, use the
-        organization in the Domain Request object."""
+        organization in the Domain Request object's federal agency."""
 
         title = "federal type"
         parameter_name = "converted_federal_types"
@@ -2336,7 +2534,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(portfolio__federal_agency__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_type=self.value())
+                    | Q(portfolio__isnull=True, federal_agency__federal_type=self.value())
                 )
             return queryset
 
@@ -2751,6 +2949,62 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         "cisa_representative_email",
     ]
 
+    # Read only that we'll leverage for OMB Analysts
+    omb_analyst_readonly_fields = [
+        "federal_agency",
+        "creator",
+        "about_your_organization",
+        "requested_domain",
+        "approved_domain",
+        "alternative_domains",
+        "purpose",
+        "no_other_contacts_rationale",
+        "anything_else",
+        "is_policy_acknowledged",
+        "cisa_representative_first_name",
+        "cisa_representative_last_name",
+        "cisa_representative_email",
+        "status",
+        "investigator",
+        "notes",
+        "senior_official",
+        "organization_type",
+        "organization_name",
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+        "portfolio_organization_type",
+        "portfolio_federal_type",
+        "portfolio_organization_name",
+        "portfolio_federal_agency",
+        "portfolio_state_territory",
+        "portfolio_address_line1",
+        "portfolio_address_line2",
+        "portfolio_city",
+        "portfolio_zipcode",
+        "portfolio_urbanization",
+        "is_election_board",
+        "organization_type",
+        "federal_type",
+        "federal_agency",
+        "tribe_name",
+        "federally_recognized_tribe",
+        "state_recognized_tribe",
+        "about_your_organization",
+        "rejection_reason",
+        "rejection_reason_email",
+        "action_needed_reason",
+        "action_needed_reason_email",
+        "portfolio",
+        "sub_organization",
+        "requested_suborganization",
+        "suborganization_city",
+        "suborganization_state_territory",
+    ]
+
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
@@ -2991,6 +3245,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
@@ -3174,6 +3432,25 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         use_sort = db_field.name != "senior_official"
         return super().formfield_for_foreignkey(db_field, request, use_admin_sort_fields=use_sort, **kwargs)
 
+    def get_annotated_queryset(self, queryset):
+        return queryset.annotate(
+            conv_generic_org_type=Case(
+                # When portfolio is present, use its value instead
+                When(portfolio__isnull=False, then=F("portfolio__organization_type")),
+                # Otherwise, return the natively assigned value
+                default=F("generic_org_type"),
+            ),
+            conv_federal_type=Case(
+                # When portfolio is present, use its value instead
+                When(
+                    Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
+                    then=F("portfolio__federal_agency__federal_type"),
+                ),
+                # Otherwise, return federal type from federal agency
+                default=F("federal_agency__federal_type"),
+            ),
+        )
+
     def get_queryset(self, request):
         """Custom get_queryset to filter by portfolio if portfolio is in the
         request params."""
@@ -3183,7 +3460,38 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(portfolio=portfolio_id)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            annotated_qs = self.get_annotated_queryset(qs)
+            return annotated_qs.filter(
+                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_federal_type=BranchChoices.EXECUTIVE,
+            )
         return qs
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return (
+                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.converted_federal_type == BranchChoices.EXECUTIVE
+                )
+        return super().has_view_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        """Restrict update permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return (
+                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.converted_federal_type == BranchChoices.EXECUTIVE
+                )
+        return super().has_change_permission(request, obj)
 
     def get_search_results(self, request, queryset, search_term):
         # Call the parent's method to apply default search logic
@@ -3203,6 +3511,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             combined_queryset = base_queryset
 
         return combined_queryset, use_distinct
+
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass the 'is_omb_analyst' attribute to the form."""
+        form = super().get_form(request, obj, **kwargs)
+
+        # Store attribute in the form for template access
+        form.show_contact_as_plain_text = request.user.groups.filter(name="omb_analysts_group").exists()
+
+        return form
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -3234,6 +3551,16 @@ class DomainInformationInline(admin.StackedInline):
     form = DomainInformationInlineForm
     template = "django/admin/includes/domain_info_inline_stacked.html"
     model = models.DomainInformation
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the admin class and define a default value for is_omb_analyst."""
+        super().__init__(*args, **kwargs)
+        self.is_omb_analyst = False  # Default value in case it's accessed before being set
+
+    def get_queryset(self, request):
+        """Ensure self.is_omb_analyst is set early."""
+        self.is_omb_analyst = request.user.groups.filter(name="omb_analysts_group").exists()
+        return super().get_queryset(request)
 
     # Define methods to display fields from the related portfolio
     def portfolio_senior_official(self, obj) -> Optional[SeniorOfficial]:
@@ -3302,6 +3629,7 @@ class DomainInformationInline(admin.StackedInline):
     fieldsets = copy.deepcopy(list(DomainInformationAdmin.fieldsets))
     readonly_fields = copy.deepcopy(DomainInformationAdmin.readonly_fields)
     analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.analyst_readonly_fields)
+    omb_analyst_readonly_fields = copy.deepcopy(DomainInformationAdmin.omb_analyst_readonly_fields)
     autocomplete_fields = copy.deepcopy(DomainInformationAdmin.autocomplete_fields)
 
     def get_domain_managers(self, obj):
@@ -3322,12 +3650,16 @@ class DomainInformationInline(admin.StackedInline):
         if not domain_managers:
             return "No domain managers found."
 
-        domain_manager_details = "<table><thead><tr><th>UID</th><th>Name</th><th>Email</th></tr></thead><tbody>"
+        domain_manager_details = "<table><thead><tr>"
+        if not self.is_omb_analyst:
+            domain_manager_details += "<th>UID</th>"
+        domain_manager_details += "<th>Name</th><th>Email</th></tr></thead><tbody>"
         for domain_manager in domain_managers:
             full_name = domain_manager.get_formatted_name()
             change_url = reverse("admin:registrar_user_change", args=[domain_manager.pk])
             domain_manager_details += "<tr>"
-            domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
+            if not self.is_omb_analyst:
+                domain_manager_details += f'<td><a href="{change_url}">{escape(domain_manager.username)}</a>'
             domain_manager_details += f"<td>{escape(full_name)}</td>"
             domain_manager_details += f"<td>{escape(domain_manager.email)}</td>"
             domain_manager_details += "</tr>"
@@ -3359,7 +3691,8 @@ class DomainInformationInline(admin.StackedInline):
 
         superuser_perm = request.user.has_perm("registrar.full_access_permission")
         analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-        if analyst_perm and not superuser_perm:
+        omb_analyst_perm = request.user.groups.filter(name="omb_analysts_group").exists()
+        if (analyst_perm or omb_analyst_perm) and not superuser_perm:
             return True
         return super().has_change_permission(request, obj)
 
@@ -3433,6 +3766,23 @@ class DomainInformationInline(admin.StackedInline):
 
         return modified_fieldsets
 
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass the 'is_omb_analyst' attribute to the form."""
+        form = super().get_form(request, obj, **kwargs)
+
+        # Store attribute in the form for template access
+        self.is_omb_analyst = request.user.groups.filter(name="omb_analysts_group").exists()
+        form.show_contact_as_plain_text = self.is_omb_analyst
+        form.is_omb_analyst = self.is_omb_analyst
+
+        return form
+
+    def get_formset(self, request, obj=None, **kwargs):
+        """Attach request to the formset so that it can be available in the form"""
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.request = request  # Attach request to form
+        return formset
+
 
 class DomainResource(FsmModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -3442,7 +3792,7 @@ class DomainResource(FsmModelResource):
         model = models.Domain
 
 
-class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
@@ -3554,7 +3904,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(domain_info__portfolio__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
                 )
             return queryset
 
@@ -3581,7 +3931,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
                     Q(domain_info__portfolio__isnull=False) & Q(domain_info__portfolio__federal_agency__isnull=False),
                     then=F("domain_info__portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
+                # Otherwise, return federal type from federal agency
                 default=F("domain_info__federal_agency__federal_type"),
             ),
             converted_organization_name=Case(
@@ -4008,8 +4358,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         # Fixes a bug wherein users which are only is_staff
         # can access 'change' when GET,
         # but cannot access this page when it is a request of type POST.
-        if request.user.has_perm("registrar.full_access_permission") or request.user.has_perm(
-            "registrar.analyst_access_permission"
+        if (
+            request.user.has_perm("registrar.full_access_permission")
+            or request.user.has_perm("registrar.analyst_access_permission")
+            or request.user.groups.filter(name="omb_analysts_group").exists()
         ):
             return True
         return super().has_change_permission(request, obj)
@@ -4024,7 +4376,36 @@ class DomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
         if portfolio_id:
             # Further filter the queryset by the portfolio
             qs = qs.filter(domain_info__portfolio=portfolio_id)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(
+                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_federal_type=BranchChoices.EXECUTIVE,
+            )
         return qs
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return (
+                    obj.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and obj.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
+                )
+        return super().has_view_permission(request, obj)
+
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass the 'is_omb_analyst' attribute to the form."""
+        form = super().get_form(request, obj, **kwargs)
+
+        # Store attribute in the form for template access
+        is_omb_analyst = request.user.groups.filter(name="omb_analysts_group").exists()
+        form.show_contact_as_plain_text = is_omb_analyst
+        form.is_omb_analyst = is_omb_analyst
+
+        return form
 
 
 class DraftDomainResource(resources.ModelResource):
@@ -4035,7 +4416,7 @@ class DraftDomainResource(resources.ModelResource):
         model = models.DraftDomain
 
 
-class DraftDomainAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DraftDomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom draft domain admin class."""
 
     resource_classes = [DraftDomainResource]
@@ -4147,7 +4528,7 @@ class PublicContactResource(resources.ModelResource):
         self.after_save_instance(instance, using_transactions, dry_run)
 
 
-class PublicContactAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class PublicContactAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom PublicContact admin class."""
 
     resource_classes = [PublicContactResource]
@@ -4201,6 +4582,11 @@ class PortfolioAdmin(ListHeaderAdmin):
         fields = "__all__"
 
     _meta = Meta()
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the admin class and define a default value for is_omb_analyst."""
+        super().__init__(*args, **kwargs)
+        self.is_omb_analyst = False  # Default value in case it's accessed before being set
 
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
@@ -4282,6 +4668,19 @@ class PortfolioAdmin(ListHeaderAdmin):
     # Even though this is empty, I will leave it as a stub for easy changes in the future
     # rather than strip it out of our logic.
     analyst_readonly_fields = []  # type: ignore
+
+    omb_analyst_readonly_fields = [
+        "notes",
+        "organization_type",
+        "organization_name",
+        "federal_agency",
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+    ]
 
     def get_admin_users(self, obj):
         # Filter UserPortfolioPermission objects related to the portfolio
@@ -4368,6 +4767,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns the number of administrators for this portfolio"""
         admin_count = len(self.get_user_portfolio_permission_admins(obj))
         if admin_count > 0:
+            if self.is_omb_analyst:
+                return format_html(f"{admin_count} administrators")
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
             return format_html(f'<a href="{url}">{admin_count} admins</a>')
@@ -4379,6 +4780,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns the number of basic members for this portfolio"""
         member_count = len(self.get_user_portfolio_permission_non_admins(obj))
         if member_count > 0:
+            if self.is_omb_analyst:
+                return format_html(f"{member_count} members")
             url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
             # Create a clickable link with the count
             return format_html(f'<a href="{url}">{member_count} basic members</a>')
@@ -4424,11 +4827,34 @@ class PortfolioAdmin(ListHeaderAdmin):
 
         if request.user.has_perm("registrar.full_access_permission"):
             return readonly_fields
-
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups
         readonly_fields.extend([field for field in self.analyst_readonly_fields])
         return readonly_fields
+
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            self.is_omb_analyst = True
+            return qs.filter(federal_agency__federal_type=BranchChoices.EXECUTIVE)
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return obj.federal_type == BranchChoices.EXECUTIVE
+        return super().has_view_permission(request, obj)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add related suborganizations and domain groups.
@@ -4474,6 +4900,17 @@ class PortfolioAdmin(ListHeaderAdmin):
 
         super().save_model(request, obj, form, change)
 
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass the 'is_omb_analyst' attribute to the form."""
+        form = super().get_form(request, obj, **kwargs)
+
+        # Store attribute in the form for template access
+        self.is_omb_analyst = request.user.groups.filter(name="omb_analysts_group").exists()
+        form.show_contact_as_plain_text = self.is_omb_analyst
+        form.is_omb_analyst = self.is_omb_analyst
+
+        return form
+
 
 class FederalAgencyResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
@@ -4483,12 +4920,65 @@ class FederalAgencyResource(resources.ModelResource):
         model = models.FederalAgency
 
 
-class FederalAgencyAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_display = ["agency"]
     search_fields = ["agency"]
     search_help_text = "Search by federal agency."
     ordering = ["agency"]
     resource_classes = [FederalAgencyResource]
+
+    # Readonly fields for analysts and superusers
+    readonly_fields = []
+
+    # Read only that we'll leverage for CISA Analysts
+    analyst_readonly_fields = []  # type: ignore
+
+    # Read only that we'll leverage for OMB Analysts
+    omb_analyst_readonly_fields = [
+        "agency",
+        "federal_type",
+        "acronym",
+        "is_fceb",
+    ]
+
+    def get_queryset(self, request):
+        """Restrict queryset based on user permissions."""
+        qs = super().get_queryset(request)
+
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(
+                federal_type=BranchChoices.EXECUTIVE,
+            )
+
+        return qs  # Return full queryset if the user doesn't have the restriction
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return obj.federal_type == BranchChoices.EXECUTIVE
+        return super().has_view_permission(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have 2 conditions that determine which fields are read-only:
+        admin user permissions and the domain request creator's status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
 
 
 class UserGroupAdmin(AuditedAdmin):
@@ -4539,11 +5029,11 @@ class WaffleFlagAdmin(FlagAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-class DomainGroupAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class DomainGroupAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_display = ["name", "portfolio"]
 
 
-class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
+class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     list_display = ["name", "portfolio"]
     autocomplete_fields = [
@@ -4553,6 +5043,38 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
     search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
+
+    readonly_fields = []
+
+    # Even though this is empty, I will leave it as a stub for easy changes in the future
+    # rather than strip it out of our logic.
+    analyst_readonly_fields = []  # type: ignore
+
+    omb_analyst_readonly_fields = [
+        "name",
+        "portfolio",
+        "city",
+        "state_territory",
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        """Set the read-only state on form elements.
+        We have conditions that determine which fields are read-only:
+        admin user permissions and analyst (cisa or omb) status, so
+        we'll use the baseline readonly_fields and extend it as needed.
+        """
+        readonly_fields = list(self.readonly_fields)
+
+        if request.user.has_perm("registrar.full_access_permission"):
+            return readonly_fields
+        # Return restrictive Read-only fields for OMB analysts
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            return readonly_fields
+        # Return restrictive Read-only fields for analysts and
+        # users who might not belong to groups
+        readonly_fields.extend([field for field in self.analyst_readonly_fields])
+        return readonly_fields
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add suborg's related domains and requests to context"""
@@ -4570,6 +5092,30 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportModelAdmin):
 
         extra_context = {"domain_requests": domain_requests, "domains": domains}
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def get_queryset(self, request):
+        """Custom get_queryset to filter for OMB analysts."""
+        qs = super().get_queryset(request)
+        # Check if user is in OMB analysts group
+        if request.user.groups.filter(name="omb_analysts_group").exists():
+            return qs.filter(
+                portfolio__organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+                portfolio__federal_agency__federal_type=BranchChoices.EXECUTIVE,
+            )
+        return qs
+
+    def has_view_permission(self, request, obj=None):
+        """Restrict view permissions based on group membership and model attributes."""
+        if request.user.has_perm("registrar.full_access_permission"):
+            return True
+        if obj:
+            if request.user.groups.filter(name="omb_analysts_group").exists():
+                return (
+                    obj.portfolio
+                    and obj.portfolio.federal_agency
+                    and obj.portfolio.federal_agency.federal_type == BranchChoices.EXECUTIVE
+                )
+        return super().has_view_permission(request, obj)
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):

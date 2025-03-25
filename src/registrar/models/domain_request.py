@@ -523,6 +523,29 @@ class DomainRequest(TimeStampedModel):
         choices=FEBPurposeChoices.choices,
     )
 
+    working_with_eop = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    eop_stakeholder_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder First Name",
+    )
+
+    eop_stakeholder_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Last Name",
+    )
+
+    eop_stakeholder_email = models.EmailField(
+        null=True,
+        blank=True,
+        verbose_name="EOP Stakeholder Email",
+    )
+
     # This field is alternately used for generic domain purpose explanations
     # and for explanations of the specific purpose chosen with feb_purpose_choice
     # by a Federal Executive Branch agency.
@@ -1505,7 +1528,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):
