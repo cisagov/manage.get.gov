@@ -8,12 +8,47 @@ Current websites: {% for site in domain_request.current_websites.all %}
 {% endfor %}{% endif %}
 .gov domain:
 {{ domain_request.requested_domain.name }}
+{% if requires_feb_questions %}
+    Meets Naming Requirements
+    {% if domain_request.feb_naming_requirements %}
+        {{ domain_request.feb_naming_requirements }}
+    {% else %}
+        No
+        {{ domain_request.feb_naming_requirements_details }}
+    {% endif %}
+{% endif %}
 {% if domain_request.alternative_domains.all %}
 Alternative domains:
 {% for site in domain_request.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}
 {% endfor %}{% endif %}
 Purpose of your domain:
+{% if requires_feb_questions %}
+{{ domain_request.feb_purpose_choice }}
 {{ domain_request.purpose }}
+Target time frame:
+{% if domain_request.has_target_time_frame %}
+{{ domain_request.time_frame_details }}
+{% else %}
+No
+{% endif %}
+Interagency initiative:
+{% if domain_request.is_interagency_initiative %}
+{{ domain_request.interagency_initiative_details }}
+{% else %}
+No
+{% endif %}
+{% else %}
+{{ domain_request.purpose }}
+{% endif %}
+{% if requires_feb_questions %}
+EOP Stakeholder:
+{% if domain_request.working_with_eop %}
+{{ domain_request.eop_contact.first_name }} {{ domain_request.eop_contact.last_name }}
+{{ domain_request.eop_contact.email }}
+{% else %}
+No
+{% endif %}
+{% endif %}
 {% if domain_request.anything_else %}
 Additional details:
 {{ domain_request.anything_else }}
