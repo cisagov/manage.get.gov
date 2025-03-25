@@ -579,8 +579,8 @@ class DomainExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -740,7 +740,7 @@ class DomainExport(BaseExport):
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
         security_contact_email = model.get("security_contact_email")
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        invalid_emails = DefaultEmail.get_all_emails()
         if (
             not security_contact_email
             or not isinstance(security_contact_email, str)
@@ -1654,8 +1654,8 @@ class DomainRequestExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(

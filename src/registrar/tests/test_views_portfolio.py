@@ -376,8 +376,8 @@ class TestPortfolio(WebTest):
             self.assertContains(page, "Non-Federal Agency")
 
     @less_console_noise_decorator
-    def test_domain_org_name_address_form(self):
-        """Submitting changes works on the org name address page."""
+    def test_org_form_invalid_update(self):
+        """Organization form will not redirect on invalid formsets."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
@@ -398,10 +398,78 @@ class TestPortfolio(WebTest):
 
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             success_result_page = portfolio_org_name_page.form.submit()
+            # Form will not validate with missing required field (zipcode)
             self.assertEqual(success_result_page.status_code, 200)
 
             self.assertContains(success_result_page, "6 Downing st")
             self.assertContains(success_result_page, "London")
+
+    @less_console_noise_decorator
+    def test_org_form_valid_update(self):
+        """Organization form will redirect on valid formsets."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            portfolio_additional_permissions = [
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
+
+            self.portfolio.address_line1 = "1600 Penn Ave"
+            self.portfolio.save()
+            portfolio_org_name_page = self.app.get(reverse("organization"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+            # Form validates and redirects with all required fields
+            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+            portfolio_org_name_page.form["city"] = "London"
+            portfolio_org_name_page.form["zipcode"] = "11111"
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            success_result_page = portfolio_org_name_page.form.submit()
+            self.assertEqual(success_result_page.status_code, 302)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.send_portfolio_update_emails_to_portfolio_admins")
+    def test_org_update_sends_admin_email(self, mock_send_organization_update_email):
+        """Updating organization information emails organization admin."""
+        with override_flag("organization_feature", active=True):
+            self.app.set_user(self.user.username)
+            self.admin, _ = User.objects.get_or_create(
+                email="mayor@igorville.com", first_name="Hello", last_name="World"
+            )
+
+            portfolio_additional_permissions = [
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ]
+            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            )
+            portfolio_permission_admin, _ = UserPortfolioPermission.objects.get_or_create(
+                user=self.admin,
+                portfolio=self.portfolio,
+                additional_permissions=portfolio_additional_permissions,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            )
+
+            self.portfolio.address_line1 = "1600 Penn Ave"
+            self.portfolio.save()
+            portfolio_org_name_page = self.app.get(reverse("organization"))
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+            portfolio_org_name_page.form["city"] = "London"
+            portfolio_org_name_page.form["zipcode"] = "11111"
+
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            success_result_page = portfolio_org_name_page.form.submit()
+            self.assertEqual(success_result_page.status_code, 302)
+
+            # Verify that the notification emails were sent to domain manager
+            mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
     def test_portfolio_in_session_when_organization_feature_active(self):
@@ -1657,16 +1725,19 @@ class TestPortfolioMemberDeleteView(WebTest):
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            creator=self.user, domain=self.domain, portfolio=self.portfolio
+        )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
         UserPortfolioPermission.objects.all().delete()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         UserDomainRole.objects.all().delete()
         DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
@@ -1676,7 +1747,10 @@ class TestPortfolioMemberDeleteView(WebTest):
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_delete_view_members_table_active_requests(self, send_member_removal, send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_delete_view_members_table_active_requests(
+        self, send_domain_manager_removal_emails, send_member_removal, send_removal_emails
+    ):
         """Error state w/ deleting a member with active request on Members Table"""
         # I'm a user
         UserPortfolioPermission.objects.get_or_create(
@@ -1718,13 +1792,18 @@ class TestPortfolioMemberDeleteView(WebTest):
             send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is not called
             send_member_removal.assert_not_called()
+            # assert that send_domain_manager_removal_emails is not called
+            send_domain_manager_removal_emails.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_delete_view_members_table_only_admin(self, send_member_removal, send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_delete_view_members_table_only_admin(
+        self, send_domain_manager_removal_emails, send_member_removal, send_removal_emails
+    ):
         """Error state w/ deleting a member that's the only admin on Members Table"""
 
         # I'm a user with admin permission
@@ -1757,13 +1836,18 @@ class TestPortfolioMemberDeleteView(WebTest):
             send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is not called
             send_member_removal.assert_not_called()
+            # assert that send_domain_manager_removal_emails is not called
+            send_domain_manager_removal_emails.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
-    def test_portfolio_member_table_delete_member_success(self, send_member_removal, mock_send_removal_emails):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_table_delete_member_success(
+        self, send_domain_manager_removal_emails, send_member_removal, mock_send_removal_emails
+    ):
         """Success state with deleting on Members Table page bc no active request AND not only admin"""
 
         # I'm a user
@@ -1787,6 +1871,9 @@ class TestPortfolioMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+
+        # Set up the member as a domain manager
+        UserDomainRole.objects.get_or_create(user=member, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
 
         # Member removal email sent successfully
         send_member_removal.return_value = True
@@ -1815,6 +1902,8 @@ class TestPortfolioMemberDeleteView(WebTest):
             mock_send_removal_emails.assert_not_called()
             # assert that send_portfolio_member_permission_remove_email is called
             send_member_removal.assert_called_once()
+            # assert that send_domain_manager_removal_emails_to_domain_managers
+            send_domain_manager_removal_emails.assert_called_once()
 
             # Get the arguments passed to send_portfolio_member_permission_remove_email
             _, called_kwargs = send_member_removal.call_args
@@ -1823,6 +1912,15 @@ class TestPortfolioMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["requestor"], self.user)
             self.assertEqual(called_kwargs["permissions"].user, upp.user)
             self.assertEqual(called_kwargs["permissions"].portfolio, upp.portfolio)
+
+            # Get the arguments passed to send_domain_manager_removal_emails_to_domain_managers
+            _, called_kwargs = send_domain_manager_removal_emails.call_args
+
+            # Assert the email content
+            self.assertEqual(called_kwargs["removed_by_user"], self.user)
+            self.assertEqual(called_kwargs["manager_removed"], upp.user)
+            self.assertEqual(called_kwargs["manager_removed_email"], upp.user.email)
+            self.assertEqual(called_kwargs["domain"], self.domain)
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -2639,7 +2737,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_domain_invitation_email")
-    def test_post_with_valid_added_domains(self, mock_send_domain_email):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_post_with_valid_added_domains(self, send_domain_manager_removal_emails, mock_send_domain_email):
         """Test that domains can be successfully added."""
         self.client.force_login(self.user)
 
@@ -2658,6 +2757,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
+        # assert that send_domain_manager_removal_emails_to_domain_managers is not called
+        send_domain_manager_removal_emails.assert_not_called()
         # Verify that the invitation email was sent
         mock_send_domain_email.assert_called_once()
         call_args = mock_send_domain_email.call_args.kwargs
@@ -2670,13 +2771,16 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     @override_flag("organization_feature", active=True)
     @override_flag("organization_members", active=True)
     @patch("registrar.views.portfolios.send_domain_invitation_email")
-    def test_post_with_valid_removed_domains(self, mock_send_domain_email):
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_post_with_valid_removed_domains(self, send_domain_manager_removal_emails, mock_send_domain_email):
         """Test that domains can be successfully removed."""
         self.client.force_login(self.user)
 
         # Create some UserDomainRole objects
         domains = [self.domain1, self.domain2, self.domain3]
         UserDomainRole.objects.bulk_create([UserDomainRole(domain=domain, user=self.user) for domain in domains])
+
+        send_domain_manager_removal_emails.return_value = True
 
         data = {
             "removed_domains": json.dumps([self.domain1.id, self.domain2.id]),
@@ -2694,7 +2798,19 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
         # assert that send_domain_invitation_email is not called
         mock_send_domain_email.assert_not_called()
-
+        # assert that send_domain_manager_removal_emails_to_domain_managers is called twice
+        send_domain_manager_removal_emails.assert_any_call(
+            removed_by_user=self.user,
+            manager_removed=self.portfolio_permission.user,
+            manager_removed_email=self.portfolio_permission.user.email,
+            domain=self.domain1,
+        )
+        send_domain_manager_removal_emails.assert_any_call(
+            removed_by_user=self.user,
+            manager_removed=self.portfolio_permission.user,
+            manager_removed_email=self.portfolio_permission.user.email,
+            domain=self.domain2,
+        )
         UserDomainRole.objects.all().delete()
 
     @less_console_noise_decorator
@@ -3930,17 +4046,59 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         response = self.client.post(
             reverse("new-member"),
             {
-                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
-                "domain_request_permission_member": UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS.value,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
                 "email": self.user.email,
             },
+            follow=True,
         )
         self.assertEqual(response.status_code, 200)
+        with open("debug_response.html", "w") as f:
+            f.write(response.content.decode("utf-8"))
 
         # Verify messages
         self.assertContains(
             response,
-            f"{self.user.email} is already a member of another .gov organization.",
+            "User is already a member of this portfolio.",
+        )
+
+        # Validate Database has not changed
+        invite_count_after = PortfolioInvitation.objects.count()
+        self.assertEqual(invite_count_after, invite_count_before)
+
+        # assert that send_portfolio_invitation_email is not called
+        mock_send_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_member_invite_for_existing_member_uppercase(self, mock_send_email):
+        """Tests the member invitation flow for existing portfolio member with a different case."""
+        self.client.force_login(self.user)
+
+        # Simulate a session to ensure continuity
+        session_id = self.client.session.session_key
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        invite_count_before = PortfolioInvitation.objects.count()
+
+        # Simulate submission of member invite for user who has already been invited
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "email": self.user.email.upper(),
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        with open("debug_response.html", "w") as f:
+            f.write(response.content.decode("utf-8"))
+
+        # Verify messages
+        self.assertContains(
+            response,
+            "User is already a member of this portfolio.",
         )
 
         # Validate Database has not changed

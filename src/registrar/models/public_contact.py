@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from random import choices
 from string import ascii_uppercase, ascii_lowercase, digits
@@ -7,6 +8,9 @@ from django.db import models
 from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_id():
@@ -92,15 +96,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             registry_id=get_id(),
-            name="CSD/CB – Attn: Cameron Dixon",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="CISA – NGR STOP 0645",
-            street2="1110 N. Glebe Rd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
-            pc="20598-0645",
+            pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -110,14 +113,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
             registry_id=get_id(),
-            name="Program Manager",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -127,14 +130,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
             registry_id=get_id(),
-            name="Registry Customer Service",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
@@ -144,14 +147,14 @@ class PublicContact(TimeStampedModel):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.SECURITY,
             registry_id=get_id(),
-            name="Registry Customer Service",
+            name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
-            street1="4200 Wilson Blvd.",
+            street1="1110 N. Glebe Rd",
             city="Arlington",
             sp="VA",
             pc="22201",
             cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT.value,
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )

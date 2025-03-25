@@ -1010,6 +1010,27 @@ def create_user(**kwargs):
     return user
 
 
+def create_omb_analyst_user(**kwargs):
+    """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
+    User = get_user_model()
+    p = "userpass"
+    user = User.objects.create_user(
+        username=kwargs.get("username", "ombanalystuser"),
+        email=kwargs.get("email", "ombanalyst@example.com"),
+        first_name=kwargs.get("first_name", "first"),
+        last_name=kwargs.get("last_name", "last"),
+        is_staff=kwargs.get("is_staff", True),
+        title=kwargs.get("title", "title"),
+        password=kwargs.get("password", p),
+        phone=kwargs.get("phone", "8003111234"),
+    )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="omb_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
+
+
 def create_test_user():
     username = "test_user"
     first_name = "First"
@@ -1423,10 +1444,8 @@ class MockEppLib(TestCase):
         ],
     )
 
-    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
-    )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultTech", "help@get.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
@@ -1941,14 +1960,23 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
+            disclose_fields = {field for field in DF} - fields
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc", DF.NAME: "loc"}
+
+        di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(
