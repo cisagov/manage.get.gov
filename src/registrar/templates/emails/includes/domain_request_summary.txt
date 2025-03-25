@@ -41,6 +41,7 @@ Alternative domains:
 {% endfor %}{% endif %}
 Purpose of your domain:
 {{ domain_request.purpose }}
+
 Your contact information:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
 
@@ -48,8 +49,7 @@ Other employees from your organization:{% for other in domain_request.other_cont
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=other %}{% endspaceless %}
 {% empty %}
 {{ domain_request.no_other_contacts_rationale }}
-{% endfor %}
-{% if domain_request.anything_else %}
-    Anything else?
-    {{ domain_request.anything_else }}
+{% endfor %}{% if domain_request.anything_else %}
+Anything else?
+{{ domain_request.anything_else }}
 {% endif %}
