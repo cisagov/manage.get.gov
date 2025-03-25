@@ -1178,6 +1178,9 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
         context["Step"] = PortfolioDomainRequestStep.__members__
         context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
         context["form_titles"] = wizard.titles
+        logger.debug(self.object.is_feb())
+        logger.debug(flag_is_active_for_user(self.request.user, "organization_feature"))
+        context["requires_feb_questions"] = self.object.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
         return context
 
 
