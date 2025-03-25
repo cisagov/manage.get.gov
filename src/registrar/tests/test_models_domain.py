@@ -1008,7 +1008,7 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact,
                         disclose=False,
                         disclose_fields=disclose_fields,
-                        disclose_types={"addr": "loc"},
+                        disclose_types={"addr": "loc", "name": "loc"},
                     )
                 else:
                     expectedCreateCommand = self._convertPublicContactToEpp(
@@ -1119,7 +1119,7 @@ class TestRegistrantContacts(MockEppLib):
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL})
-        self.assertEqual(result.disclose.types, {DF.ADDR: "loc"})
+        self.assertEqual(result.disclose.types, {DF.ADDR: "loc", DF.NAME: "loc"})
 
     def test_not_disclosed_on_default_security_contact(self):
         """
