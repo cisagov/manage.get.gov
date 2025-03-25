@@ -1008,6 +1008,7 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact,
                         disclose=False,
                         disclose_fields=disclose_fields,
+                        disclose_types={"addr": "loc", "name": "loc"},
                     )
                 else:
                     expectedCreateCommand = self._convertPublicContactToEpp(
