@@ -129,6 +129,7 @@ class FSMErrorCodes(IntEnum):
         - 3 INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
         - 4 NO_REJECTION_REASON No rejection reason is specified
         - 5 NO_ACTION_NEEDED_REASON No action needed reason is specified
+        - 6 DOMAIN_IS_PENDING_DELETE Domain is in pending delete state
     """
 
     APPROVE_DOMAIN_IN_USE = 1
