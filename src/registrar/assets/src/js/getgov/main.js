@@ -1,7 +1,8 @@
 import { hookupYesNoListener, hookupCallbacksToRadioToggler } from './radios.js';
 import { initDomainValidators } from './domain-validators.js';
-import { initFormsetsForms, triggerModalOnDsDataForm } from './formset-forms.js';
-import { initFormNameservers } from './form-nameservers'
+import { initFormsetsForms } from './formset-forms.js';
+import { initFormNameservers } from './form-nameservers';
+import { initFormDSData } from './form-dsdata.js';
 import { initializeUrbanizationToggle } from './urbanization.js';
 import { userProfileListener, finishUserSetupListener } from './user-profile.js';
 import { handleRequestingEntityFieldset } from './requesting-entity.js';
@@ -13,7 +14,6 @@ import { initEditMemberDomainsTable } from './table-edit-member-domains.js';
 import { initPortfolioNewMemberPageToggle, initAddNewMemberPageListeners, initPortfolioMemberPageRadio } from './portfolio-member-page.js';
 import { initDomainRequestForm } from './domain-request-form.js';
 import { initDomainManagersPage } from './domain-managers.js';
-import { initDomainDSData } from './domain-dsdata.js';
 import { initDomainDNSSEC } from './domain-dnssec.js';
 import { initFormErrorHandling } from './form-errors.js';
 import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
@@ -22,8 +22,8 @@ import { initButtonLinks } from '../getgov-admin/button-utils.js';
 initDomainValidators();
 
 initFormsetsForms();
-triggerModalOnDsDataForm();
 initFormNameservers();
+initFormDSData();
 
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
@@ -52,7 +52,6 @@ initEditMemberDomainsTable();
 
 initDomainRequestForm();
 initDomainManagersPage();
-initDomainDSData();
 initDomainDNSSEC();
 
 initFormErrorHandling();
