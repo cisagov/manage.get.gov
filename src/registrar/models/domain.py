@@ -23,6 +23,7 @@ from registrar.utility.errors import (
 )
 
 from epplibwrapper import (
+    CLIENT as registry,
     commands,
     common as epp,
     extensions,
