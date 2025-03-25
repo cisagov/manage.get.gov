@@ -74,7 +74,7 @@ export class DomainRequestsTable extends BaseTable {
 
     if (this.portfolioValue) {
       markupCreatorRow = `
-        <td>
+        <td data-label="Created by">
             <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
         </td>
       `
@@ -117,7 +117,7 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td class="width--action-column">
+      <td data-label="Action" class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
