@@ -23,7 +23,6 @@ from registrar.utility.errors import (
 )
 
 from epplibwrapper import (
-    CLIENT as registry,
     commands,
     common as epp,
     extensions,
@@ -2038,7 +2037,6 @@ class Domain(TimeStampedModel, DomainHelper):
         #     "up_date": getattr(data, "up_date", ...),
         # }
 
-        ##  Original code
         data = data_response.res_data[0]
 
         return {
