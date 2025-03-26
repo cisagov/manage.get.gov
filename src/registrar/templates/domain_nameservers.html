@@ -82,7 +82,7 @@
           This section does not render if the last form has initial data (this occurs if 13 nameservers already exist)
           {% endcomment %}
 
-          <section class="add-nameservers-form display-none section-outlined">
+          <section class="add-nameservers-form display-none section-outlined section-outlined--extra-padding">
             {{ form.domain }}
             <h2>Add a name server</h2>
             <div class="repeatable-form">
@@ -121,7 +121,7 @@
 
 
       <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="nameserver-table">
-        <caption class="sr-only">Your registered domains</caption>
+        <caption class="sr-only">Your Name server records</caption>
         <thead>
           <tr>
             <th scope="col" role="columnheader">Name servers</th>
@@ -141,8 +141,8 @@
               {{ form.domain }}
               <!-- Readonly row -->
               <tr>
-                <td colspan="2" aria-colspan="2">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
-                <td class="padding-right-0">
+                <td colspan="2" aria-colspan="2" data-label="Name server (IP address)">{{ form.server.value }} {% if form.ip.value %}({{ form.ip.value }}){% endif %}</td>
+                <td class="padding-right-0" data-label="Action">
                   <div class="tablet:display-flex tablet:flex-row">
                     <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 nameserver-edit'>
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -154,7 +154,7 @@
                     <a 
                       role="button" 
                       id="button-trigger-delete-{{ form.server.value }}"
-                      class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
+                      class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
                     >
                       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
@@ -166,12 +166,12 @@
                       <div class="usa-accordion__heading">
                         <button
                           type="button"
-                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-0"
+                          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                           aria-expanded="false"
                           aria-controls="more-actions-{{ form.server.value }}"
                           aria-label="More Actions for ({{ form.server.value }})"
                         >
-                          <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                             <use xlink:href="/public/img/sprite.svg#more_vert"></use>
                           </svg>
                         </button>
@@ -180,7 +180,7 @@
                         <h2>More options</h2>
                         <button 
                           type="button" 
-                          class="usa-button usa-button--unstyled text-no-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary nameserver-delete-kebab"
+                          class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary nameserver-delete-kebab"
                           name="btn-delete-kebab-click"
                           aria-label="Delete the name server from the registry"
                         >
@@ -206,7 +206,7 @@
                     {% input_with_errors form.ip %}
                   {% endwith %}
                 </td>
-                <td class="padding-right-0 text-bottom">
+                <td class="padding-right-0 text-bottom" data-label="Action">
                     <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
                     
                     <button
@@ -240,57 +240,58 @@
     This section renders Add New Nameservers form which renders when there are no existing
     nameservers defined on the domain.
     {% endcomment %} 
-       
-    <section class="add-nameservers-form display-none section-outlined">
+    <div class="add-nameservers-form display-none">   
       {% include "includes/required_fields.html" %} 
-      <form class="usa-form usa-form--extra-large" method="post" novalidate>
-        <h2>Add name servers</h2>
-        {% csrf_token %}
-        {{ formset.management_form }}
-        {% for form in formset %}
-        {{ form.domain }}
-        <div class="repeatable-form">
-          <div class="grid-row grid-gap-2 flex-end minh-143px">
-            <div class="tablet:grid-col-6">
-              {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" add_group_class="usa-form-group--unstyled-error margin-top-2" %}
-                {% if forloop.counter <= 2 %}
-                  {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
-                  {% with attr_required=True add_initial_value_attr=True span_for_text=True %}
-                    {% input_with_errors form.server %}
-                  {% endwith %}
-                {% else %}
-                  {% with span_for_text=True add_initial_value_attr=True %}
-                    {% input_with_errors form.server %}
+      <section class="section-outlined section-outlined--extra-padding">
+        <form class="usa-form usa-form--extra-large" method="post" novalidate>
+          <h2>Add name servers</h2>
+          {% csrf_token %}
+          {{ formset.management_form }}
+          {% for form in formset %}
+          {{ form.domain }}
+          <div class="repeatable-form">
+            <div class="grid-row grid-gap-2 flex-end minh-143px">
+              <div class="tablet:grid-col-6">
+                {% with sublabel_text="Example: ns"|concat:forloop.counter|concat:".example.com" add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                  {% if forloop.counter <= 2 %}
+                    {# span_for_text will wrap the copy in s <span>, which we'll use in the JS for this component #}
+                    {% with attr_required=True add_initial_value_attr=True span_for_text=True %}
+                      {% input_with_errors form.server %}
                     {% endwith %}
-                {% endif %}
-              {% endwith %}
-            </div>
-            <div class="tablet:grid-col-6">
-              {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="usa-form-group--unstyled-error margin-top-2" %}
-                {% input_with_errors form.ip %}
-              {% endwith %}
+                  {% else %}
+                    {% with span_for_text=True add_initial_value_attr=True %}
+                      {% input_with_errors form.server %}
+                      {% endwith %}
+                  {% endif %}
+                {% endwith %}
+              </div>
+              <div class="tablet:grid-col-6">
+                {% with attr_required=True add_initial_value_attr=True label_text=form.ip.label sublabel_text="Example: 86.124.49.54 or 2001:db8::1234:5678" add_aria_label="Name server "|concat:forloop.counter|concat:" "|concat:form.ip.label add_group_class="usa-form-group--unstyled-error margin-top-2" %}
+                  {% input_with_errors form.ip %}
+                {% endwith %}
+              </div>
             </div>
           </div>
-        </div>
-        {% endfor %}
+          {% endfor %}
           
-        <div class="margin-top-2">
-          <button
-            type="button"
-            class="usa-button usa-button--outline nameserver-cancel-add-form"
-            name="btn-cancel-click"
-            aria-label="Reset the data in the name server form to the registry state (undo changes)"
-          >Cancel
-          </button>
-          <button
-                type="submit"
-                class="usa-button"
-            >Save
-          </button>
-        </div>
-      </form>
+          <div class="margin-top-2">
+            <button
+              type="button"
+              class="usa-button usa-button--outline nameserver-cancel-add-form"
+              name="btn-cancel-click"
+              aria-label="Reset the data in the name server form to the registry state (undo changes)"
+            >Cancel
+            </button>
+            <button
+                  type="submit"
+                  class="usa-button"
+              >Save
+            </button>
+          </div>
+        </form>
 
-    </section>
+      </section>
+    </div>
 
   {% endif %}
 
@@ -308,6 +309,22 @@
     aria-describedby="You have unsaved changes that will be lost."
   >
     {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_id="unsaved-changes-click-button" modal_button_text="Continue without saving" cancel_button_text="Go back" %}
+  </div>
+  
+  <a
+    id="cancel_changes_trigger"
+    href="#cancel-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="cancel-changes-modal"
+    data-open-modal
+    >Trigger cancel changes modal</a>
+  <div 
+    class="usa-modal"
+    id="cancel-changes-modal"
+    aria-labelledby="Are you sure you want to cancel your changes?"
+    aria-describedby="This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="This action cannot be undone." modal_button_id="cancel-changes-click-button" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
   </div>
 
   <a
