@@ -2845,7 +2845,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "cisa_representative_email",
                     "eop_stakeholder_first_name",
                     "eop_stakeholder_last_name",
-                    "eop_stakeholder_email",
                 ]
             },
         ),
@@ -3079,7 +3078,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                         "interagency_initiative_details",
                         "eop_stakeholder_first_name",
                         "eop_stakeholder_last_name",
-                        "eop_stakeholder_email",
                     ]
                 )
             modified_fieldsets = []

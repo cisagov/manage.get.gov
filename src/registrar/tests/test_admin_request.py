@@ -2063,7 +2063,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "working_with_eop",
             "eop_stakeholder_first_name",
             "eop_stakeholder_last_name",
-            "eop_stakeholder_email",
             "purpose",
             "has_timeframe",
             "time_frame_details",

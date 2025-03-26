@@ -549,12 +549,6 @@ class DomainRequest(TimeStampedModel):
         verbose_name="EOP Stakeholder Last Name",
     )
 
-    eop_stakeholder_email = models.EmailField(
-        null=True,
-        blank=True,
-        verbose_name="EOP Stakeholder Email",
-    )
-
     # This field is alternately used for generic domain purpose explanations
     # and for explanations of the specific purpose chosen with feb_purpose_choice
     purpose = models.TextField(

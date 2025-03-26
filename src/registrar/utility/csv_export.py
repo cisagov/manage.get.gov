@@ -1898,7 +1898,6 @@ class DomainRequestExport(BaseExport):
             "Target time frame": model.get("time_frame_details", None),
             "Interagency initiative": model.get("interagency_initiative_details", None),
             "EOP stakeholder name": eop_stakeholder_name,
-            "EOP stakeholder email": model.get("eop_stakeholder_email", None),
         }
 
         row = [FIELDS.get(column, "") for column in columns]

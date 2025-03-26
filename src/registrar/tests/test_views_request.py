@@ -2648,7 +2648,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
         additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
         additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
-        additional_details_form["portfolio_additional_details-email"] = "testy@town.com"
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2761,7 +2760,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # EOP Stakeholder
         self.assertContains(review_page, "EOP Stakeholder")
         self.assertContains(review_page, "TesterFirstName TesterLastName")
-        self.assertContains(review_page, "testy@town.com")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

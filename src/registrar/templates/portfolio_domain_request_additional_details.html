@@ -6,60 +6,58 @@
 {% endblock %}
 
 {% block form_fields %}
-    {% if requires_feb_questions %}
+  {% if requires_feb_questions %}
+      <fieldset class="usa-fieldset">
+        {{forms.0.management_form}}
+        {{forms.1.management_form}}
         {{forms.2.management_form}}
         {{forms.3.management_form}}
-        {{forms.4.management_form}}
-        {{forms.5.management_form}}
-        <fieldset class="usa-fieldset">          
-            <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
-            
-            <p class="margin-bottom-0 margin-top-1">
-              <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-            </p>
-            {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-              {% input_with_errors forms.0.working_with_eop %}
-            {% endwith %}
+        <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+        </p>
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+          {% input_with_errors forms.0.working_with_eop %}
+        {% endwith %}
 
-            <div id="eop-contact-container" class="conditional-panel display-none">
-              <p class="margin-bottom-0 margin-top-1">
-                Provide the name and email of the person you're working with.<span class="usa-label--required">*</span>
-              </p>
-              {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-                {% input_with_errors forms.1.first_name %}
-                {% input_with_errors forms.1.last_name %}
-                {% input_with_errors forms.1.email %}
-              {% endwith %}
-            </div>
-
-            <h2 class="margin-top-0 margin-bottom-0">Is there anything else you'd like us to know about your domain request?</h2> 
-            <p class="margin-bottom-0 margin-top-1">
-              <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-            </p>
-            {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-              {% input_with_errors forms.2.has_anything_else_text %}
-            {% endwith %}
-    
-            <div id="anything-else-details-container" class="conditional-panel display-none">
-              <p class="usa-label">
-                <em>Provide details below <span class="usa-label--required">*</span></em>
-              </p>
-              {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
-                {% input_with_errors forms.3.anything_else %}
-              {% endwith %}
-            </div>
-        </fieldset>
-    {% else %}
-        <fieldset class="usa-fieldset">          
-            <h2 class="margin-top-0 margin-bottom-0">Is there anything else you’d like us to know about your domain request?</h2> 
-        </legend>
-        </fieldset>
-
-        <div id="anything-else">
-            <p><em>This question is optional.</em></p>
-            {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
-                {% input_with_errors forms.3.anything_else %}
-            {% endwith %}
+        <div id="eop-contact-container" class="conditional-panel display-none">
+          <p class="margin-bottom-0 margin-top-1">
+            Provide the name and email of the person you're working with.<span class="usa-label--required">*</span>
+          </p>
+          {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.1.first_name %}
+            {% input_with_errors forms.1.last_name %}
+          {% endwith %}
         </div>
-    {% endif %}
+
+        <h2>Is there anything else you'd like us to know about your domain request?</h2> 
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+        </p>
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+          {% input_with_errors forms.2.has_anything_else_text %}
+        {% endwith %}
+
+        <div id="anything-else-details-container" class="conditional-panel display-none">
+          <p class="usa-label">
+            <em>Provide details below <span class="usa-label--required">*</span></em>
+          </p>
+          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+            {% input_with_errors forms.3.anything_else %}
+          {% endwith %}
+        </div>
+      </fieldset>
+  {% else %}
+      <fieldset class="usa-fieldset">          
+          <h2 class="margin-top-0 margin-bottom-0">Is there anything else you’d like us to know about your domain request?</h2> 
+      </legend>
+      </fieldset>
+
+      <div id="anything-else">
+          <p><em>This question is optional.</em></p>
+          {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
+              {% input_with_errors forms.3.anything_else %}
+          {% endwith %}
+      </div>
+  {% endif %}
 {% endblock %}

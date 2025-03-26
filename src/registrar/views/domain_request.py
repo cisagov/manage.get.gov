@@ -625,6 +625,11 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             2: FEBAnythingElseYesNoForm
             3: PortfolioAnythingElseForm
         """
+        if not self.requires_feb_questions():
+            for i in range(3):
+                forms[i].mark_form_for_deletion()
+            # If FEB questions aren't required, validate only the anything else form
+            return forms[3].is_valid()
         eop_forms_valid = True
         if not forms[0].is_valid():
             # If the user isn't working with EOP, don't validate the EOP contact form
