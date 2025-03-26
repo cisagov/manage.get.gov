@@ -32,6 +32,7 @@ from registrar.models import (
     Portfolio,
     Suborganization,
 )
+from registrar.utility.enums import DefaultEmail
 import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
@@ -2506,3 +2507,189 @@ class TestRemovePortfolios(TestCase):
 
         # Check that the portfolio was deleted
         self.assertFalse(Portfolio.objects.filter(organization_name="Test with suborg").exists())
+
+
+class TestUpdateDefaultPublicContacts(MockEppLib):
+    """Tests for the update_default_public_contacts management command."""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        """Setup test data with PublicContact records."""
+        super().setUp()
+        self.domain_request = completed_domain_request(
+            name="testdomain.gov",
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+        )
+        self.domain_request.approve()
+        self.domain = self.domain_request.approved_domain
+
+        # 1. PublicContact with all old default values
+        self.old_default_contact = self.domain.get_default_administrative_contact()
+        self.old_default_contact.registry_id = "failAdmin1234567"
+        self.old_default_contact.name = "CSD/CB – ATTN: Cameron Dixon"
+        self.old_default_contact.street1 = "CISA – NGR STOP 0645"
+        self.old_default_contact.pc = "20598-0645"
+        self.old_default_contact.email = DefaultEmail.OLD_PUBLIC_CONTACT_DEFAULT
+        self.old_default_contact.save()
+
+        # 2. PublicContact with current default email but old values for other fields
+        self.mixed_default_contact = self.domain.get_default_technical_contact()
+        self.mixed_default_contact.registry_id = "failTech12345678"
+        self.mixed_default_contact.save(skip_epp_save=True)
+        self.mixed_default_contact.name = "registry customer service"
+        self.mixed_default_contact.street1 = "4200 Wilson Blvd."
+        self.mixed_default_contact.pc = "22201"
+        self.mixed_default_contact.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
+        self.mixed_default_contact.save()
+
+        # 3. PublicContact with non-default values
+        self.non_default_contact = self.domain.get_default_security_contact()
+        self.non_default_contact.registry_id = "failSec123456789"
+        self.non_default_contact.domain = self.domain
+        self.non_default_contact.save(skip_epp_save=True)
+        self.non_default_contact.name = "Hotdogs"
+        self.non_default_contact.street1 = "123 hotdog town"
+        self.non_default_contact.pc = "22111"
+        self.non_default_contact.email = "thehotdogman@igorville.gov"
+        self.non_default_contact.save()
+
+        # 4. Create a default contact but with an old email
+        self.default_registrant_old_email = self.domain.get_default_registrant_contact()
+        self.default_registrant_old_email.registry_id = "failReg123456789"
+        self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
+        self.default_registrant_old_email.save()
+        DF = common.DiscloseField
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
+
+    def tearDown(self):
+        """Clean up test data."""
+        super().tearDown()
+        PublicContact.objects.all().delete()
+        Domain.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        User.objects.all().delete()
+
+    @patch("registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit", return_value=True)
+    @less_console_noise_decorator
+    def run_update_default_public_contacts(self, mock_prompt, **kwargs):
+        """Execute the update_default_public_contacts command with options."""
+        call_command("update_default_public_contacts", **kwargs)
+
+    # @less_console_noise_decorator
+    def test_updates_old_default_contact(self):
+        """
+        Test that contacts with old default values are updated to new default values.
+        Also tests for string normalization.
+        """
+        self.run_update_default_public_contacts()
+        self.old_default_contact.refresh_from_db()
+
+        # Verify updates occurred
+        self.assertEqual(self.old_default_contact.name, "CSD/CB – Attn: .gov TLD")
+        self.assertEqual(self.old_default_contact.street1, "1110 N. Glebe Rd")
+        self.assertEqual(self.old_default_contact.pc, "22201")
+        self.assertEqual(self.old_default_contact.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
+
+        # Verify EPP create/update calls were made
+        expected_update = self._convertPublicContactToEpp(
+            self.old_default_contact,
+            disclose=False,
+            disclose_fields=self.all_disclose_fields - {"name", "email", "voice", "addr"},
+        )
+        self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
+
+    @less_console_noise_decorator
+    def test_updates_with_default_contact_values(self):
+        """
+        Test that contacts created from the default helper function with old email are updated.
+        """
+        self.run_update_default_public_contacts()
+        self.default_registrant_old_email.refresh_from_db()
+
+        # Verify updates occurred
+        self.assertEqual(self.default_registrant_old_email.name, "CSD/CB – Attn: .gov TLD")
+        self.assertEqual(self.default_registrant_old_email.street1, "1110 N. Glebe Rd")
+        self.assertEqual(self.default_registrant_old_email.pc, "22201")
+        self.assertEqual(self.default_registrant_old_email.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
+
+        # Verify values match the default
+        default_reg = PublicContact.get_default_registrant()
+        self.assertEqual(self.default_registrant_old_email.name, default_reg.name)
+        self.assertEqual(self.default_registrant_old_email.street1, default_reg.street1)
+        self.assertEqual(self.default_registrant_old_email.pc, default_reg.pc)
+        self.assertEqual(self.default_registrant_old_email.email, default_reg.email)
+
+        # Verify EPP create/update calls were made
+        expected_update = self._convertPublicContactToEpp(
+            self.default_registrant_old_email, disclose=False, disclose_fields=self.all_disclose_fields
+        )
+        self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
+
+    @less_console_noise_decorator
+    def test_skips_non_default_contacts(self):
+        """
+        Test that contacts with non-default values are skipped.
+        """
+        original_name = self.non_default_contact.name
+        original_street1 = self.non_default_contact.street1
+        original_pc = self.non_default_contact.pc
+        original_email = self.non_default_contact.email
+
+        self.run_update_default_public_contacts()
+        self.non_default_contact.refresh_from_db()
+
+        # Verify no updates occurred
+        self.assertEqual(self.non_default_contact.name, original_name)
+        self.assertEqual(self.non_default_contact.street1, original_street1)
+        self.assertEqual(self.non_default_contact.pc, original_pc)
+        self.assertEqual(self.non_default_contact.email, original_email)
+
+        # Ensure that the update is still skipped even with the override flag
+        self.run_update_default_public_contacts(overwrite_updated_contacts=True)
+        self.non_default_contact.refresh_from_db()
+
+        # Verify no updates occurred
+        self.assertEqual(self.non_default_contact.name, original_name)
+        self.assertEqual(self.non_default_contact.street1, original_street1)
+        self.assertEqual(self.non_default_contact.pc, original_pc)
+        self.assertEqual(self.non_default_contact.email, original_email)
+
+    @less_console_noise_decorator
+    def test_skips_contacts_with_current_default_email_by_default(self):
+        """
+        Test that contacts with the current default email are skipped when not using the override flag.
+        """
+        # Get original values
+        original_name = self.mixed_default_contact.name
+        original_street1 = self.mixed_default_contact.street1
+
+        self.run_update_default_public_contacts()
+        self.mixed_default_contact.refresh_from_db()
+
+        # Verify no updates occurred
+        self.assertEqual(self.mixed_default_contact.name, original_name)
+        self.assertEqual(self.mixed_default_contact.street1, original_street1)
+        self.assertEqual(self.mixed_default_contact.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
+
+    @less_console_noise_decorator
+    def test_updates_with_overwrite_flag(self):
+        """
+        Test that contacts with the current default email are updated when using the override flag.
+        """
+        # Run the command with the override flag
+        self.run_update_default_public_contacts(overwrite_updated_contacts=True)
+        self.mixed_default_contact.refresh_from_db()
+
+        # Verify updates occurred
+        self.assertEqual(self.mixed_default_contact.name, "CSD/CB – Attn: .gov TLD")
+        self.assertEqual(self.mixed_default_contact.street1, "1110 N. Glebe Rd")
+        self.assertEqual(self.mixed_default_contact.pc, "22201")
+        self.assertEqual(self.mixed_default_contact.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
+
+        # Verify EPP create/update calls were made
+        expected_update = self._convertPublicContactToEpp(
+            self.mixed_default_contact, disclose=False, disclose_fields=self.all_disclose_fields
+        )
+        self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
