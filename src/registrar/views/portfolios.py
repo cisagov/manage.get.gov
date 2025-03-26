@@ -114,6 +114,7 @@ class PortfolioMemberView(DetailView, View):
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
                 "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
+                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio),
             },
         )
 
@@ -160,8 +161,8 @@ class PortfolioMemberDeleteView(View):
             )
         if member.is_only_admin_of_portfolio(portfolio):
             return (
-                "There must be at least one admin in your organization. Give another member admin "
-                "permissions, make sure they log into the registrar, and then remove this member."
+                "You can't remove yourself because you're the only admin for this organization. "
+                "To remove yourself, you'll need to add another admin."
             )
         return None
 
@@ -259,13 +260,6 @@ class PortfolioMemberEditView(DetailView, View):
         user = portfolio_permission.user
 
         form = self.form_class(instance=portfolio_permission)
-        admin_count = UserPortfolioPermission.objects.filter(
-            portfolio=request.session["portfolio"],
-            roles__overlap=[
-                UserPortfolioRoleChoices.ORGANIZATION_ADMIN
-            ]
-        ).count()
-
         return render(
             request,
             self.template_name,
@@ -273,7 +267,7 @@ class PortfolioMemberEditView(DetailView, View):
                 "form": form,
                 "member": user,
                 "portfolio_permission": portfolio_permission,
-                "is_only_admin": admin_count < 2
+                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio)
             },
         )
 
