@@ -1826,10 +1826,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             )
 
             self.assertEqual(response.status_code, 400)
-            expected_error_message = (
-                "There must be at least one admin in your organization. Give another member admin "
-                "permissions, make sure they log into the registrar, and then remove this member."
-            )
+            expected_error_message = "the only admin for this organization"
             self.assertContains(response, expected_error_message, status_code=400)
 
             # assert that send_portfolio_admin_removal_emails is not called
@@ -2155,10 +2152,7 @@ class TestPortfolioMemberDeleteView(WebTest):
 
                 self.assertEqual(response.status_code, 302)
 
-                expected_error_message = (
-                    "There must be at least one admin in your organization. Give another member admin "
-                    "permissions, make sure they log into the registrar, and then remove this member."
-                )
+                expected_error_message = "the only admin for this organization."
 
                 args, kwargs = mock_error.call_args
                 # Check if first arg is a WSGIRequest, confirms request object passed correctly
