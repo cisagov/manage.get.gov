@@ -18,7 +18,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
             "--overwrite_updated_contacts",
             action=argparse.BooleanOptionalAction,
             help=(
-                "Loops over PublicContacts with the email 'help@get.gov' when enabled."
+                "Loops over PublicContacts with an email of 'help@get.gov' when enabled."
                 "Use this setting if the record was updated in the DB but not correctly in EPP."
             ),
         )
