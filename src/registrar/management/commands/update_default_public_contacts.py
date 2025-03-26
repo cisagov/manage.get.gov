@@ -27,7 +27,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
             "--target_domain",
             help=(
                 "Updates the public contact on a given domain name (case insensitive). "
-                "Use this option to avoid doing a mass-update to every public contact record."
+                "Use this option to avoid doing a mass-update of every public contact record."
             ),
         )
 
