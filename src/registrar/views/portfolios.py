@@ -267,7 +267,7 @@ class PortfolioMemberEditView(DetailView, View):
                 "form": form,
                 "member": user,
                 "portfolio_permission": portfolio_permission,
-                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio)
+                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio),
             },
         )
 

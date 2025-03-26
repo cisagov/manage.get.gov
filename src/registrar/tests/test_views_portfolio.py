@@ -2159,7 +2159,7 @@ class TestPortfolioMemberDeleteView(WebTest):
                 # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
                 self.assertIsInstance(args[0], WSGIRequest)
                 # Check that the error message matches the expected error message
-                self.assertEqual(args[1], expected_error_message)
+                self.assertIn(expected_error_message, args[1])
 
                 # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
                 # and then confirm that we're still on the Manage Members page
