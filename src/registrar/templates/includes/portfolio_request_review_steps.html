@@ -67,10 +67,10 @@
     {% endif %}
 
     {% if step == Step.PURPOSE %}
-        {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-        {% endwith %}
         {% if requires_feb_questions %}
+            {% with title=form_titles|get_item:step %}
+                {% include "includes/summary_item.html" with title=title value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
             <h4 class="margin-bottom-0">Purpose</h4>
             {% if domain_request.feb_purpose_choice %}
                 <p class="margin-y-0">{{purpose_label}}</p>
@@ -94,6 +94,10 @@
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
+        {% else %}
+            {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
         {% endif %}
     {% endif %}
 
