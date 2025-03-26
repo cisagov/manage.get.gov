@@ -261,14 +261,21 @@ class Domain(TimeStampedModel, DomainHelper):
         """Check if domain is pendingDelete state via response from registry."""
         domain_name = domain.lower()
 
-        info_req = commands.InfoDomain(domain_name)
-        info_response = registry.send(info_req, cleaned=True)
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
 
-        # Ensure res_data exists and is not empty
-        if info_response and info_response.res_data:
-            domain_status_state = [status.state for status in info_response.res_data[0].statuses]
-            # Return True if in pendingDelete status, else False
-            return "pendingDelete" in domain_status_state
+            # Ensure res_data exists and is not empty
+            if info_response and info_response.res_data:
+                domain_status_state = [status.state for status in info_response.res_data[0].statuses]
+                # Return True if in pendingDelete status, else False
+                return "pendingDelete" in domain_status_state
+        except RegistryError as err:
+            if not err.is_connection_error():
+                logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
+                return False
+            else:
+                raise err
 
         return False
 
