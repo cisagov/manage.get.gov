@@ -418,14 +418,15 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
         """
         super().clean()
         role = self.cleaned_data.get("role")
-        if role and self.instance.user.is_only_admin_of_portfolio(self.instance.portfolio):
-            # This is how you associate a validation error to a particular field.
-            # The alternative is to do this in clean_role, but execution order matters.
-            raise forms.ValidationError({"role": forms.ValidationError(
-                "You can't change your member access because you're "
-                "the only admin for this organization. "
-                "To change your access, you'll need to add another admin."
-            )})
+        if self.instance and hasattr(self.instance, "user") and hasattr(self.instance, "portfolio"):
+            if role and self.instance.user.is_only_admin_of_portfolio(self.instance.portfolio):
+                # This is how you associate a validation error to a particular field.
+                # The alternative is to do this in clean_role, but execution order matters.
+                raise forms.ValidationError({"role": forms.ValidationError(
+                    "You can't change your member access because you're "
+                    "the only admin for this organization. "
+                    "To change your access, you'll need to add another admin."
+                )})
 
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
