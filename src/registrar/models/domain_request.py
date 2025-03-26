@@ -55,19 +55,17 @@ class DomainRequest(TimeStampedModel):
             return cls(status_name).label if status_name else None
 
     class FEBPurposeChoices(models.TextChoices):
-        WEBSITE = "website"
-        REDIRECT = "redirect"
-        OTHER = "other"
+        WEBSITE = "website", "Used for a new website"
+        REDIRECT = "redirect", "Used as a redirect for an existing website"
+        OTHER = "other", "Not for a website"
 
         @classmethod
         def get_purpose_label(cls, purpose_name: str):
             """Returns the associated label for a given purpose name"""
-            if purpose_name == cls.WEBSITE:
-                return "Used for a new website"
-            elif purpose_name == cls.REDIRECT:
-                return "Used as a redirect for an existing website"
-            else:
-                return "Not for a website"
+            logger.debug(f"purpose_name: {purpose_name}")
+            logger.debug(f"label: {cls(purpose_name).label}")
+            return cls(purpose_name).label if purpose_name else None
+
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -520,6 +518,7 @@ class DomainRequest(TimeStampedModel):
     feb_naming_requirements = models.BooleanField(
         null=True,
         blank=True,
+        verbose_name="Meets Naming Requirements",
     )
 
     feb_naming_requirements_details = models.TextField(
@@ -1030,12 +1029,14 @@ class DomainRequest(TimeStampedModel):
                 has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
                 is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.purpose)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
                     "is_org_user": is_org_user,
                     "requires_feb_questions": requires_feb_questions,
+                    "purpose_label": purpose_label,
                 }
 
             if custom_email_content:

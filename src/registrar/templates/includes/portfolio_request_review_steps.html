@@ -72,14 +72,8 @@
         {% endwith %}
         {% if requires_feb_questions %}
             <h4 class="margin-bottom-0">Purpose</h4>
-            {% if domain_request.feb_purpose_choice == "website" %}
-                <p class="margin-y-0">Used for a new website</p>
-                <p class="margin-y-0">{{domain_request.purpose}}</p>
-            {% elif domain_request.feb_purpose_choice == "redirect" %}
-                <p class="margin-y-0">Used as a redirect for an existing website</p>
-                <p class="margin-y-0">{{domain_request.purpose}}</p>
-            {% elif domain_request.feb_purpose_choice == "other" %}
-                <p class="margin-y-0">Not for a website</p>
+            {% if domain_request.feb_purpose_choice %}
+                <p class="margin-y-0">{{purpose_label}}</p>
                 <p class="margin-y-0">{{domain_request.purpose}}</p>
             {% else %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
