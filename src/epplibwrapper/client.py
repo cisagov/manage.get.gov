@@ -174,6 +174,8 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
+            if err.response:
+                logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
             if (
                 err.is_transport_error()
                 or err.is_connection_error()
@@ -182,12 +184,7 @@ class EPPLibWrapper:
                 or err.should_retry()
             ):
                 message = f"{cmd_type} failed and will be retried"
-                info_message = f"{message} Error: {err}"
-                if err.response:
-                    info_message = (
-                        f"{info_message}| cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}"
-                    )
-                logger.info(f"{info_message}")
+                logger.info(f"{message} Error: {err}")
                 return self._retry(command)
             else:
                 raise err
