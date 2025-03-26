@@ -67,7 +67,7 @@ class Command(BaseCommand, PopulateScriptTemplate):
         """Skip bulk update since we need to manually save each field.
         Our EPP logic is tied to an override of .save(), and this also associates
         with our caching logic for this area of the code.
-        
+
         Since bulk update does not trigger .save() for each field, we have to
         call it manually.
         """
