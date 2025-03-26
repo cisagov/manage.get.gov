@@ -2741,26 +2741,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
     # ------ FEB fields ------
-    def feb_naming_requirements_details(self, obj):
-        return obj.feb_naming_requirements_details if obj.feb_naming_requirements else ""
-
-    def feb_purpose_choice(self, obj):
-        return obj.feb_purpose_choice if obj.feb_purpose_choice else ""
-
-    def time_frame_details(self, obj):
-        return obj.time_frame_details if obj.has_timeframe else ""
-
-    def interagency_initiative_details(self, obj):
-        return obj.interagency_initiative_details if obj.is_interagency_initiative else ""
-
-    def eop_stakeholder_first_name(self, obj):
-        return obj.eop_stakeholder_first_name if obj.eop_stakeholder_first_name else ""
-
-    def eop_stakeholder_last_name(self, obj):
-        return obj.eop_stakeholder_last_name if obj.eop_stakeholder_last_name else ""
-
-    def eop_stakeholder_email(self, obj):
-        return obj.eop_stakeholder_email if obj.eop_stakeholder_email else ""
 
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
