@@ -55,7 +55,7 @@ class DomainRequest(TimeStampedModel):
             return cls(status_name).label if status_name else None
 
     class FEBPurposeChoices(models.TextChoices):
-        WEBSITE = "website", "Used for a new website"
+        WEBSITE = "new", "Used for a new website"
         REDIRECT = "redirect", "Used as a redirect for an existing website"
         OTHER = "other", "Not for a website"
 
@@ -1029,7 +1029,7 @@ class DomainRequest(TimeStampedModel):
                 has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
                 is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
-                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.purpose)
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email

@@ -966,6 +966,7 @@ class Review(DomainRequestWizard):
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
         context["requires_feb_questions"] = self.requires_feb_questions()
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
         return context
 
     def goto_next_step(self):
@@ -1182,7 +1183,7 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
         context["requires_feb_questions"] = self.object.is_feb() and flag_is_active_for_user(
             self.request.user, "organization_feature"
         )
-        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.object.purpose)
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.object.feb_purpose_choice)
         return context
 
 

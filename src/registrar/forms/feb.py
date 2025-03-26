@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
 from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm
+from registrar.models.domain_request import DomainRequest
 
 
 class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
@@ -41,11 +42,7 @@ class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
 
     field_name = "feb_purpose_choice"
 
-    form_choices = (
-        ("new", "Used for a new website"),
-        ("redirect", "Used as a redirect for an existing website"),
-        ("other", "Not for a website"),
-    )
+    form_choices = DomainRequest.FEBPurposeChoices.choices
 
     feb_purpose_choice = forms.ChoiceField(
         required=True,
