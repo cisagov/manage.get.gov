@@ -2754,7 +2754,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def eop_stakeholder_email(self, obj):
         return obj.eop_stakeholder_email if obj.eop_stakeholder_email else ""
-    
+
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
     def status_history(self, obj):

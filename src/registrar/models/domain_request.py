@@ -60,12 +60,9 @@ class DomainRequest(TimeStampedModel):
         OTHER = "other", "Not for a website"
 
         @classmethod
-        def get_purpose_label(cls, purpose_name: str):
+        def get_purpose_label(cls, purpose_name: str | None):
             """Returns the associated label for a given purpose name"""
-            logger.debug(f"purpose_name: {purpose_name}")
-            logger.debug(f"label: {cls(purpose_name).label}")
             return cls(purpose_name).label if purpose_name else None
-
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"

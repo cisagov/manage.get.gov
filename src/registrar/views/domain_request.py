@@ -966,7 +966,9 @@ class Review(DomainRequestWizard):
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
         context["requires_feb_questions"] = self.requires_feb_questions()
-        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
+            self.domain_request.feb_purpose_choice
+        )
         return context
 
     def goto_next_step(self):
