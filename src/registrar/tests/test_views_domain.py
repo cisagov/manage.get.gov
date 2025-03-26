@@ -1084,8 +1084,8 @@ class TestDomainManagers(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_templated_email")
-    def test_domain_remove_manager(self, mock_send_templated_email):
+    @patch("registrar.views.domain.send_domain_manager_removal_emails_to_domain_managers")
+    def test_domain_remove_manager(self, mock_send_email):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
@@ -1094,11 +1094,11 @@ class TestDomainManagers(TestDomainOverview):
         )
 
         # Verify that the notification emails were sent to domain manager
-        mock_send_templated_email.assert_called_once_with(
-            "emails/domain_manager_deleted_notification.txt",
-            "emails/domain_manager_deleted_notification_subject.txt",
-            to_address="info@example.com",
-            context=ANY,
+        mock_send_email.assert_called_once_with(
+            removed_by_user=self.user,
+            manager_removed=self.manager,
+            manager_removed_email=self.manager.email,
+            domain=self.domain,
         )
 
     @less_console_noise_decorator
@@ -2547,8 +2547,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS data added")
-        self.assertContains(page, "Add new record")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Add DS record")
 
     @less_console_noise_decorator
     def test_ds_form_loads_with_ds_data(self):
@@ -2556,26 +2556,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS data record 1")
-
-    @less_console_noise_decorator
-    def test_ds_data_form_modal(self):
-        """When user clicks on save, a modal pops up."""
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        # Assert that a hidden trigger for the modal does not exist.
-        # This hidden trigger will pop on the page when certain condition are met:
-        # 1) Initial form contained DS data, 2) All data is deleted and form is
-        # submitted.
-        self.assertNotContains(add_data_page, "Trigger Disable DNSSEC Modal")
-        # Simulate a delete all data
-        form_data = {}
-        response = self.client.post(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}),
-            data=form_data,
-        )
-        self.assertEqual(response.status_code, 200)  # Adjust status code as needed
-        # Now check to see whether the JS trigger for the modal is present on the page
-        self.assertContains(response, "Trigger Disable DNSSEC Modal")
+        self.assertContains(page, "Add DS record")  # assert add form is present
+        self.assertContains(page, "Action")  # assert table is present
 
     @less_console_noise_decorator
     def test_ds_data_form_submits(self):
@@ -2621,6 +2603,32 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     @less_console_noise_decorator
+    def test_ds_data_form_duplicate(self):
+        """DS data form errors with invalid data (duplicate DS)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # all four form fields are required, so will test with each blank
+        add_data_page.forms[0]["form-0-key_tag"] = 1234
+        add_data_page.forms[0]["form-0-algorithm"] = 3
+        add_data_page.forms[0]["form-0-digest_type"] = 1
+        add_data_page.forms[0]["form-0-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        add_data_page.forms[0]["form-1-key_tag"] = 1234
+        add_data_page.forms[0]["form-1-algorithm"] = 3
+        add_data_page.forms[0]["form-1-digest_type"] = 1
+        add_data_page.forms[0]["form-1-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_keytag(self):
         """DS data form errors with invalid data (key tag too large)
 
@@ -2641,6 +2649,29 @@ class TestDomainDNSSEC(TestDomainOverview):
         # the field.
         self.assertContains(
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
+    def test_ds_data_form_invalid_keytag_chars(self):
+        """DS data form errors with invalid data (key tag not numeric)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "invalid"  # not numeric
+        add_data_page.forms[0]["form-0-algorithm"] = ""
+        add_data_page.forms[0]["form-0-digest_type"] = ""
+        add_data_page.forms[0]["form-0-digest"] = ""
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS)), count=2, status_code=200
         )
 
     @less_console_noise_decorator
@@ -2698,8 +2729,6 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # first two nameservers are required, so if we empty one out we should
-        # get a form error
         add_data_page.forms[0]["form-0-key_tag"] = "1234"
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256

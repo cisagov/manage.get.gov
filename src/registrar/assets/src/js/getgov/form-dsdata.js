@@ -1,11 +1,10 @@
 import { showElement, hideElement, scrollToElement } from './helpers';
 import { removeErrorsFromElement, removeFormErrors } from './form-helpers';
 
-export class NameserverForm {
+export class DSDataForm {
     constructor() {
-        this.addNameserverButton = document.getElementById('nameserver-add-button');
-        this.addNameserversForm = document.querySelector('.add-nameservers-form');
-        this.domain = '';
+        this.addDSDataButton = document.getElementById('dsdata-add-button');
+        this.addDSDataForm = document.querySelector('.add-dsdata-form');
         this.formChanged = false;
         this.callback = null;
 
@@ -19,53 +18,31 @@ export class NameserverForm {
     }
 
     /**
-     * Initialize the NameserverForm by setting up display and event listeners.
+     * Initialize the DSDataForm by setting up display and event listeners.
      */
     init() {
-        this.initializeNameserverFormDisplay();
+        this.initializeDSDataFormDisplay();
         this.initializeEventListeners();
     }
 
 
     /**
-     * Determines the initial display state of the nameserver form,
+     * Determines the initial display state of the DS data form,
      * handling validation errors and setting visibility of elements accordingly.
      */
-    initializeNameserverFormDisplay() {
+    initializeDSDataFormDisplay() {
 
-        const domainName = document.getElementById('id_form-0-domain');
-        if (domainName) {
-            this.domain = domainName.value;
-        } else {
-            console.warn("Form expects a dom element, id_form-0-domain");
-        }
-
-        // Check if exactly two nameserver forms exist: id_form-1-server is present but id_form-2-server is not
-        const secondNameserver = document.getElementById('id_form-1-server');
-        const thirdNameserver = document.getElementById('id_form-2-server'); // This should not exist
-
-        // Check if there are error messages in the form (indicated by elements with class 'usa-alert--error')
-        const errorMessages = document.querySelectorAll('.usa-alert--error');
-
-        // This check indicates that there are exactly two forms (which is the case for the Add New Nameservers form)
-        // and there is at least one error in the form. In this case, show the Add New Nameservers form, and 
-        // indicate that the form has changed
-        if (this.addNameserversForm && secondNameserver && !thirdNameserver && errorMessages.length > 0) {
-            showElement(this.addNameserversForm);
-            this.formChanged = true;
-        }
-
-        // This check indicates that there is either an Add New Nameservers form or an Add New Nameserver form
+        // This check indicates that there is an Add DS Data form
         // and that form has errors in it. In this case, show the form, and indicate that the form has
         // changed.
-        if (this.addNameserversForm && this.addNameserversForm.querySelector('.usa-input--error')) {
-            showElement(this.addNameserversForm);
+        if (this.addDSDataForm && this.addDSDataForm.querySelector('.usa-input--error')) {
+            showElement(this.addDSDataForm);
             this.formChanged = true;
         }
 
         // handle display of table view errors
         // if error exists in an edit-row, make that row show, and readonly row hide
-        const formTable = document.getElementById('nameserver-table')
+        const formTable = document.getElementById('dsdata-table')
         if (formTable) {
             const editRows = formTable.querySelectorAll('.edit-row');
             editRows.forEach(editRow => {
@@ -78,91 +55,52 @@ export class NameserverForm {
             })
         }
 
-        // hide ip in forms unless nameserver ends with domain name
-        let formIndex = 0;
-        while (document.getElementById('id_form-' + formIndex + '-domain')) {
-            let serverInput = document.getElementById('id_form-' + formIndex + '-server');
-            let ipInput = document.getElementById('id_form-' + formIndex + '-ip');
-            if (serverInput && ipInput) {
-                let serverValue = serverInput.value.trim(); // Get the value and trim spaces
-                let ipParent = ipInput.parentElement; // Get the parent element of ipInput
-        
-                if (ipParent && !serverValue.endsWith('.' + this.domain)) { 
-                    hideElement(ipParent); // Hide the parent element of ipInput
-                }
-            }
-            formIndex++;
-        }
     }
 
     /**
      * Attaches event listeners to relevant UI elements for interaction handling.
      */
     initializeEventListeners() {
-        this.addNameserverButton.addEventListener('click', this.handleAddFormClick);
+        this.addDSDataButton.addEventListener('click', this.handleAddFormClick);
     
-        const editButtons = document.querySelectorAll('.nameserver-edit');
+        const editButtons = document.querySelectorAll('.dsdata-edit');
         editButtons.forEach(editButton => {
             editButton.addEventListener('click', this.handleEditClick);
         });
     
-        const cancelButtons = document.querySelectorAll('.nameserver-cancel');
+        const cancelButtons = document.querySelectorAll('.dsdata-cancel');
         cancelButtons.forEach(cancelButton => {
             cancelButton.addEventListener('click', this.handleCancelClick);
         });
 
-        const cancelAddFormButtons = document.querySelectorAll('.nameserver-cancel-add-form');
+        const cancelAddFormButtons = document.querySelectorAll('.dsdata-cancel-add-form');
         cancelAddFormButtons.forEach(cancelAddFormButton => {
             cancelAddFormButton.addEventListener('click', this.handleCancelAddFormClick);
         });
 
-        const deleteButtons = document.querySelectorAll('.nameserver-delete');
+        const deleteButtons = document.querySelectorAll('.dsdata-delete');
         deleteButtons.forEach(deleteButton => {
             deleteButton.addEventListener('click', this.handleDeleteClick);
         });
 
-        const deleteKebabButtons = document.querySelectorAll('.nameserver-delete-kebab');
+        const deleteKebabButtons = document.querySelectorAll('.dsdata-delete-kebab');
         deleteKebabButtons.forEach(deleteKebabButton => {
             deleteKebabButton.addEventListener('click', this.handleDeleteKebabClick);
         });
 
-        const textInputs = document.querySelectorAll("input[type='text']");
-        textInputs.forEach(input => {
+        const inputs = document.querySelectorAll("input[type='text'], textarea");
+        inputs.forEach(input => {
             input.addEventListener("input", () => {
                 this.formChanged = true;
             });
         });
 
-        // Add a specific listener for 'id_form-{number}-server' inputs to make
-        // nameserver forms 'smart'. Inputs on server field will change the
-        // display value of the associated IP address field.
-        let formIndex = 0;
-        while (document.getElementById(`id_form-${formIndex}-server`)) {
-            let serverInput = document.getElementById(`id_form-${formIndex}-server`);
-            let ipInput = document.getElementById(`id_form-${formIndex}-ip`);
-            if (serverInput && ipInput) {
-                let ipParent = ipInput.parentElement; // Get the parent element of ipInput
-                let ipTd = ipParent.parentElement;
-                // add an event listener on the server input that adjusts visibility
-                // and value of the ip input (and its parent) 
-                serverInput.addEventListener("input", () => {
-                    let serverValue = serverInput.value.trim();
-                    if (ipParent && ipTd) {
-                        if (serverValue.endsWith('.' + this.domain)) {
-                            showElement(ipParent); // Show IP field if the condition matches
-                            ipTd.classList.add('width-40p');
-                        } else {
-                            hideElement(ipParent); // Hide IP field otherwise
-                            ipTd.classList.remove('width-40p');
-                            ipInput.value = ""; // Set the IP value to blank
-                        }
-                    } else {
-                        console.warn("Expected DOM element but did not find it");
-                    }
-                });
-            }
-            formIndex++; // Move to the next index
-        }
+        const selects = document.querySelectorAll("select");
+        selects.forEach(select => {
+            select.addEventListener("change", () => {
+                this.formChanged = true;
+            });
+        });
 
         // Set event listeners on the submit buttons for the modals. Event listeners
         // should execute the callback function, which has its logic updated prior
@@ -194,6 +132,15 @@ export class NameserverForm {
                 this.executeCallback();
             });
         }
+        const disable_dnssec_modal = document.getElementById('disable-dnssec-modal');
+        if (disable_dnssec_modal) {
+            const submitButton = document.getElementById('disable-dnssec-click-button');
+            const closeButton = disable_dnssec_modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+                closeButton.click();
+                this.executeCallback();
+            });
+        }
 
     }
 
@@ -210,7 +157,7 @@ export class NameserverForm {
     }
 
     /**
-     * Handles clicking the 'Add Nameserver' button, showing the form if needed.
+     * Handles clicking the 'Add DS data' button, showing the form if needed.
      * @param {Event} event - Click event
      */
     handleAddFormClick(event) {
@@ -219,15 +166,20 @@ export class NameserverForm {
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
             });
-            if (this.addNameserversForm) {
-                // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
-                if (!this.addNameserversForm.classList.contains('display-none')) {
-                    this.resetAddNameserversForm();
+            if (this.addDSDataForm) {
+                // Check if this.addDSDataForm is visible (i.e., does not have 'display-none')
+                if (!this.addDSDataForm.classList.contains('display-none')) {
+                    this.resetAddDSDataForm();
                 }
-                // show nameservers form
-                showElement(this.addNameserversForm);
+                // show add ds data form
+                showElement(this.addDSDataForm);
+                // focus on key tag in the form
+                let keyTagInput = this.addDSDataForm.querySelector('input[name$="-key_tag"]');
+                if (keyTagInput) {
+                    keyTagInput.focus();
+                }
             } else {
-                this.addAlert("error", "You’ve reached the maximum amount of name server records (13). To add another record, you’ll need to delete one of your saved records.");
+                this.addAlert("error", "You’ve reached the maximum amount of DS Data records (8). To add another record, you’ll need to delete one of your saved records.");
             }
         };
         if (this.formChanged) {
@@ -259,9 +211,9 @@ export class NameserverForm {
             document.querySelectorAll('tr.edit-row:not(.display-none)').forEach(openEditRow => {
                 this.resetEditRowAndFormAndCollapseEditRow(openEditRow);
             });
-            // Check if this.addNameserversForm is visible (i.e., does not have 'display-none')
-            if (this.addNameserversForm && !this.addNameserversForm.classList.contains('display-none')) {
-                this.resetAddNameserversForm();
+            // Check if this.addDSDataForm is visible (i.e., does not have 'display-none')
+            if (this.addDSDataForm && !this.addDSDataForm.classList.contains('display-none')) {
+                this.resetAddDSDataForm();
             }
             // hide and show rows as appropriate
             hideElement(readOnlyRow);
@@ -279,8 +231,8 @@ export class NameserverForm {
     }
 
     /**
-     * Handles clicking a 'Delete' button on an edit row, which hattempts to delete the nameserver
-     * after displaying modal and performing check for minimum number of nameservers.
+     * Handles clicking a 'Delete' button on an edit row, which hattempts to delete the DS record
+     * after displaying modal.
      * @param {Event} event - Click event
      */
     handleDeleteClick(event) {
@@ -294,8 +246,8 @@ export class NameserverForm {
     }
 
     /**
-     * Handles clicking a 'Delete' button on a readonly row in a kebab, which attempts to delete the nameserver
-     * after displaying modal and performing check for minimum number of nameservers.
+     * Handles clicking a 'Delete' button on a readonly row in a kebab, which attempts to delete the DS record
+     * after displaying modal.
      * @param {Event} event - Click event
      */
     handleDeleteKebabClick(event) {
@@ -313,42 +265,44 @@ export class NameserverForm {
     }
 
     /**
-     * Deletes a nameserver row after verifying the minimum required nameservers exist.
-     * If there are only two nameservers left, deletion is prevented, and an alert is shown.
+     * Deletes a DS record row. If there is only one DS record, prompt the user
+     * that they will be disabling DNSSEC. Otherwise, prompt with delete confiration.
      * If deletion proceeds, the input fields are cleared, and the form is submitted.
-     * @param {HTMLElement} editRow - The row corresponding to the nameserver being deleted.
+     * @param {HTMLElement} editRow - The row corresponding to the DS record being deleted.
      */
     deleteRow(editRow) {
-        // Check if at least two nameserver forms exist
-        const fourthNameserver = document.getElementById('id_form-3-server'); // This should exist
-        // This checks that at least 3 nameservers exist prior to the delete of a row, and if not
-        // display an error alert
-        if (fourthNameserver) {
-            this.callback = () => {
-                hideElement(editRow);
-                let textInputs = editRow.querySelectorAll("input[type='text']");
-                textInputs.forEach(input => {
-                    input.value = "";
-                });
-                document.querySelector("form").submit();
-            };
+        // update the callback method
+        this.callback = () => {
+            hideElement(editRow);
+            let deleteInput = editRow.querySelector("input[name$='-DELETE']");
+            if (deleteInput) {
+                deleteInput.checked = true;
+            }
+            document.querySelector("form").submit();
+        };
+        // Check if at least 2 DS data records exist before the delete row action is taken
+        const thirdDSData = document.getElementById('id_form-2-key_tag')
+        if (thirdDSData) {
             let modalTrigger = document.querySelector('#delete_trigger');
             if (modalTrigger) {
                 modalTrigger.click();
             }
         } else {
-            this.addAlert("error", "At least two name servers are required. To proceed, add a new name server before removing this name server. If you need help, email us at help@get.gov.");
+            let modalTrigger = document.querySelector('#disable_dnssec_trigger');
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
         }
     }
 
     /**
-     * Handles the click event on the "Cancel" button in the add nameserver form.
+     * Handles the click event on the "Cancel" button in the add DS data form.
      * Resets the form fields and hides the add form section.
      * @param {Event} event - Click event
      */
     handleCancelAddFormClick(event) {
         this.callback = () => {
-            this.resetAddNameserversForm();
+            this.resetAddDSDataForm();
         }
         if (this.formChanged) {
             // Show the cancel changes confirmation modal
@@ -419,21 +373,21 @@ export class NameserverForm {
     }
 
     /**
-     * Resets the 'Add Nameserver' form by clearing its input fields, removing errors, 
+     * Resets the 'Add DS data' form by clearing its input fields, removing errors, 
      * and hiding the form to return it to its initial state.
      */
-    resetAddNameserversForm() {
-        if (this.addNameserversForm) {
-            // reset the values set in addNameserversForm
-            this.resetInputValuesInElement(this.addNameserversForm);
-            // remove errors from the addNameserversForm
-            removeErrorsFromElement(this.addNameserversForm);
+    resetAddDSDataForm() {
+        if (this.addDSDataForm) {
+            // reset the values set in addDSDataForm
+            this.resetInputValuesInElement(this.addDSDataForm);
+            // remove errors from the addDSDataForm
+            removeErrorsFromElement(this.addDSDataForm);
             // remove errors from the entire form
             removeFormErrors();
             // reset formChanged
             this.resetFormChanged();
-            // hide the addNameserversForm
-            hideElement(this.addNameserversForm);
+            // hide the addDSDataForm
+            hideElement(this.addDSDataForm);
         }
     }
 
@@ -444,12 +398,22 @@ export class NameserverForm {
      */
     resetInputValuesInElement(domElement) {
         const inputEvent = new Event('input');
-        let textInputs = domElement.querySelectorAll("input[type='text']");
-        textInputs.forEach(input => {
+        const changeEvent = new Event('change');
+        // Reset text inputs
+        const inputs = document.querySelectorAll("input[type='text'], textarea");
+        inputs.forEach(input => {
             // Reset input value to its initial stored value
             input.value = input.dataset.initialValue;
             // Dispatch input event to update any event-driven changes
             input.dispatchEvent(inputEvent);
+        });
+        // Reset select elements
+        let selects = domElement.querySelectorAll("select");
+        selects.forEach(select => {
+            // Reset select value to its initial stored value
+            select.value = select.dataset.initialValue;
+            // Dispatch change event to update any event-driven changes
+            select.dispatchEvent(changeEvent);
         });
     }
 
@@ -460,23 +424,33 @@ export class NameserverForm {
      * @param {HTMLElement} readOnlyRow - The row where values will be displayed in a non-editable format.
      */
     copyEditRowToReadonlyRow(editRow, readOnlyRow) {
-        let textInputs = editRow.querySelectorAll("input[type='text']");
+        let keyTagInput = editRow.querySelector("input[type='text']");
+        let selects = editRow.querySelectorAll("select");
+        let digestInput = editRow.querySelector("textarea");
         let tds = readOnlyRow.querySelectorAll("td");
-        let updatedText = '';
 
-        // If a server name exists, store its value
-        if (textInputs[0]) {
-            updatedText = textInputs[0].value;
+        // Copy the key tag input value
+        if (keyTagInput) {
+            tds[0].innerText = keyTagInput.value || "";
         }
 
-        // If an IP address exists, append it in parentheses next to the server name
-        if (textInputs[1] && textInputs[1].value) {
-            updatedText = updatedText + " (" + textInputs[1].value + ")";
+        // Copy select values (showing the selected label instead of value)
+        if (selects[0]) {
+            let selectedOption = selects[0].options[selects[0].selectedIndex];
+            if (tds[1]) {
+                tds[1].innerHTML = `<span class="ellipsis ellipsis--15">${selectedOption ? selectedOption.text : ""}</span>`;
+            }
+        }
+        if (selects[1]) {
+            let selectedOption = selects[1].options[selects[1].selectedIndex];
+            if (tds[2]) {
+                tds[2].innerText = selectedOption ? selectedOption.text : "";
+            }
         }
 
-        // Assign the formatted text to the first column of the readonly row
-        if (tds[0]) {
-            tds[0].innerText = updatedText;
+        // Copy the digest input value
+        if (digestInput) {
+            tds[3].innerHTML = `<span class="ellipsis ellipsis--23">${digestInput.value || ""}</span>`;
         }
     }
 
@@ -535,13 +509,13 @@ export class NameserverForm {
 }
 
 /**
- * Initializes the NameserverForm when the DOM is fully loaded.
+ * Initializes the DSDataForm when the DOM is fully loaded.
  */
-export function initFormNameservers() {
+export function initFormDSData() {
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.getElementById('nameserver-add-button')) {
-            const nameserverForm = new NameserverForm();
-            nameserverForm.init();
+        if (document.getElementById('dsdata-add-button')) {
+            const dsDataForm = new DSDataForm();
+            dsDataForm.init();
         }
     });
 }

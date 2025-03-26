@@ -103,7 +103,7 @@ export function generateKebabHTML(action, unique_id, modal_button_text, screen_r
       <div class="usa-accordion__heading">
         <button
           type="button"
-          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions"
+          class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
           aria-expanded="false"
           aria-controls="more-actions-${unique_id}"
           aria-label="${screen_reader_text}"
