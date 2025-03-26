@@ -183,7 +183,8 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        # return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        return True
 
     @property
     def prefix(self):
