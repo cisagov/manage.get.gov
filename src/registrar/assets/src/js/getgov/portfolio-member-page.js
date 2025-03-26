@@ -211,8 +211,12 @@ export function initPortfolioMemberPage() {
         );
       }
 
-      // Init the "edit self" warning modal
-      if (memberForm && editSelfWarningModal) {
+      // Init the "edit self" warning modal, which triggers when the user is trying to edit themselves.
+      // The dom will include these elements when this occurs.
+      // NOTE: This logic does not trigger when the user is the ONLY admin in the portfolio.
+      // This is because info alerts are used rather than modals in this case.
+      if (memberForm && editSelfWarningModal && editSelfWarningModalConfirm) {
+        // Only show the warning modal when the user is changing their ROLE.
         var canSubmit = document.querySelector(`input[name="role"]:checked`)?.value != "organization_member";
         let radioButtons = document.querySelectorAll(`input[name="role"]`);
         radioButtons.forEach(function (radioButton) {
@@ -221,21 +225,20 @@ export function initPortfolioMemberPage() {
             canSubmit = selectedValue != "organization_member";
           });
         });
-
+        
+        // Prevent form submission assuming org member is selected for role, and open the modal.
         memberForm.addEventListener("submit", function(e) {
           if (!canSubmit) {
             e.preventDefault();
             editSelfWarningModal.click();
           }
         });
-
-        if (editSelfWarningModalConfirm) {
-          editSelfWarningModalConfirm.addEventListener("click", function() {
-            canSubmit = true;
-            memberForm.submit();
-          });
-        }
-
+        
+        // Hook the confirm button on the modal to form submission.
+        editSelfWarningModalConfirm.addEventListener("click", function() {
+          canSubmit = true;
+          memberForm.submit();
+        });
       }
   });
 

@@ -4639,6 +4639,17 @@ class TestPortfolioMemberEditView(WebTest):
         # Get the user's admin permission
         admin_permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
 
+        # Create a second permission so the user isn't just deleting themselves
+        member = create_test_user()
+        UserPortfolioPermission.objects.create(
+            user=member, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        # First, verify that the change modal is on the page
+        response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Yes, change my access")
+
         response = self.client.post(
             reverse("member-permissions", kwargs={"member_pk": admin_permission.id}),
             {
@@ -4651,6 +4662,39 @@ class TestPortfolioMemberEditView(WebTest):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], reverse("home"))
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_admin_removing_own_admin_role_only_admin(self):
+        """Tests that admin removing their own admin role when they are the only admin
+        throws a validation error.
+        """
+
+        self.client.force_login(self.user)
+
+        # Get the user's admin permission
+        admin_permission = UserPortfolioPermission.objects.get(user=self.user, portfolio=self.portfolio)
+
+        # First, verify that the info alert is present on the page
+        response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "To remove yourself or change your member access")
+
+        # Then, verify that the right form error is shown
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": admin_permission.id}),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "domain_permissions": UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+                "member_permissions": "no_access",
+                "domain_request_permissions": "no_access",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        error_message = "the only admin for this organization"
+        self.assertIn(error_message, str(response.context["form"].errors))
 
 
 class TestPortfolioInvitedMemberEditView(WebTest):
