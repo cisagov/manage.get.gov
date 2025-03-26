@@ -2050,18 +2050,18 @@ class Domain(TimeStampedModel, DomainHelper):
         This is for force setting the pendingDelete statue (see statuses).I will remove this 
         return when I merge as this is for testing purposes only. """  # noqa: W291
 
-        # return {
-        #     "auth_info": getattr(data, "auth_info", ...),
-        #     "_contacts": getattr(data, "contacts", ...),
-        #     "cr_date": getattr(data, "cr_date", ...),
-        #     "ex_date": getattr(data, "ex_date", ...),
-        #     "_hosts": getattr(data, "hosts", ...),
-        #     "name": getattr(data, "name", ...),
-        #     "registrant": getattr(data, "registrant", ...),
-        #     "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
-        #     "tr_date": getattr(data, "tr_date", ...),
-        #     "up_date": getattr(data, "up_date", ...),
-        # }
+        return {
+            "auth_info": getattr(data, "auth_info", ...),
+            "_contacts": getattr(data, "contacts", ...),
+            "cr_date": getattr(data, "cr_date", ...),
+            "ex_date": getattr(data, "ex_date", ...),
+            "_hosts": getattr(data, "hosts", ...),
+            "name": getattr(data, "name", ...),
+            "registrant": getattr(data, "registrant", ...),
+            "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
+            "tr_date": getattr(data, "tr_date", ...),
+            "up_date": getattr(data, "up_date", ...),
+        }
 
         return {
             "auth_info": getattr(data, "auth_info", ...),
