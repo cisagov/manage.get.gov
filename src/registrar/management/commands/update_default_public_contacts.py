@@ -64,7 +64,13 @@ class Command(BaseCommand, PopulateScriptTemplate):
         self.mass_update_records(PublicContact, filter_condition, fields_to_update, show_record_count=True)
 
     def bulk_update_fields(self, *args, **kwargs):
-        """Skip bulk update since we need to manually save each field"""
+        """Skip bulk update since we need to manually save each field.
+        Our EPP logic is tied to an override of .save(), and this also associates
+        with our caching logic for this area of the code.
+        
+        Since bulk update does not trigger .save() for each field, we have to
+        call it manually.
+        """
         return None
 
     def update_record(self, record: PublicContact):
