@@ -1092,7 +1092,7 @@ def completed_domain_request(  # noqa
         email="testy@town.com",
         phone="(555) 555 5555",
     )
-    domain, _ = DraftDomain.objects.get_or_create(name=name)
+    domain = DraftDomain.objects.create(name=name)
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
