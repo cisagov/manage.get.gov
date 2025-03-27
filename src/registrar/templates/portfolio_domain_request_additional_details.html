@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block form_fields %}
+  {% include "includes/required_fields.html" %} 
   {% if requires_feb_questions %}
       <fieldset class="usa-fieldset">
         {{forms.0.management_form}}
@@ -13,6 +14,7 @@
         {{forms.2.management_form}}
         {{forms.3.management_form}}
         <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
+        <p class="margin-bottom-2 margin-top-2">Working with the EOP is not required to request a .gov domain.</p>
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
@@ -21,8 +23,8 @@
         {% endwith %}
 
         <div id="eop-contact-container" class="conditional-panel display-none">
-          <p class="margin-bottom-0 margin-top-1">
-            Provide the name and email of the person you're working with.<span class="usa-label--required">*</span>
+          <p class="margin-bottom-3 margin-top-3">
+            <em>Provide the name of the person you're working with. <span class="usa-label--required">*</span></em>
           </p>
           {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
             {% input_with_errors forms.1.first_name %}
@@ -39,8 +41,8 @@
         {% endwith %}
 
         <div id="anything-else-details-container" class="conditional-panel display-none">
-          <p class="usa-label">
-            <em>Provide details below <span class="usa-label--required">*</span></em>
+          <p class="margin-bottom-3 margin-top-3">
+            <em>Provide details below. <span class="usa-label--required">*</span></em>
           </p>
           {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
             {% input_with_errors forms.3.anything_else %}
