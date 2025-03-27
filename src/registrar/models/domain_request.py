@@ -515,7 +515,7 @@ class DomainRequest(TimeStampedModel):
     feb_naming_requirements = models.BooleanField(
         null=True,
         blank=True,
-        verbose_name="Meets Naming Requirements",
+        verbose_name="Meets naming requirements",
     )
 
     feb_naming_requirements_details = models.TextField(
@@ -540,13 +540,13 @@ class DomainRequest(TimeStampedModel):
     eop_stakeholder_first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="EOP Stakeholder First Name",
+        verbose_name="EOP contact first name",
     )
 
     eop_stakeholder_last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="EOP Stakeholder Last Name",
+        verbose_name="EOP contact last name",
     )
 
     # This field is alternately used for generic domain purpose explanations

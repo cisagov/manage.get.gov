@@ -2742,22 +2742,22 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
     def feb_review_page_tests(self, review_page):
-        # Meets Naming Requirements
-        self.assertContains(review_page, "Meets Naming Requirements")
+        # Meets naming requirements
+        self.assertContains(review_page, "Meets naming requirements")
         self.assertContains(review_page, "No")
         self.assertContains(review_page, "Because this is a test")
         # Purpose
         self.assertContains(review_page, "Purpose")
         self.assertContains(review_page, "Used as a redirect for an existing website")
         self.assertContains(review_page, "testPurpose123")
-        # Target Time Frame
-        self.assertContains(review_page, "Target Time Frame")
+        # Target time frame
+        self.assertContains(review_page, "Target time frame")
         self.assertContains(review_page, "1/2/2025 - 1/2/2026")
-        # Interagency Initiative
-        self.assertContains(review_page, "Interagency Initiative")
+        # Interagency initiative
+        self.assertContains(review_page, "Interagency initiative")
         self.assertContains(review_page, "FakeInteragencyInitiative")
-        # EOP Stakeholder
-        self.assertContains(review_page, "EOP Stakeholder")
+        # EOP contact
+        self.assertContains(review_page, "EOP contact")
         self.assertContains(review_page, "TesterFirstName TesterLastName")
 
     @less_console_noise_decorator

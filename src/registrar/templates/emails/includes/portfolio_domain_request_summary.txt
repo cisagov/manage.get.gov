@@ -9,7 +9,7 @@ Current websites: {% for site in domain_request.current_websites.all %}
 .gov domain:
 {{ domain_request.requested_domain.name }}
 {% if requires_feb_questions %}
-    Meets Naming Requirements
+    Meets naming requirements
     {% if domain_request.feb_naming_requirements %}
         {{ domain_request.feb_naming_requirements }}
     {% else %}
@@ -41,7 +41,7 @@ No
 {{ domain_request.purpose }}
 {% endif %}
 {% if requires_feb_questions %}
-EOP Stakeholder:
+EOP contact:
 {% if domain_request.working_with_eop %}
 {{ domain_request.eop_contact.first_name }} {{ domain_request.eop_contact.last_name }}
 {{ domain_request.eop_contact.email }}
