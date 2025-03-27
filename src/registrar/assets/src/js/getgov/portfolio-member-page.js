@@ -224,7 +224,7 @@ export function initPortfolioMemberPage() {
         let radioButtons = document.querySelectorAll(`input[name="role"]`);
         radioButtons.forEach(function (radioButton) {
           radioButton.addEventListener("change", function() {
-            selectedValue = radioButton.checked ? radioButton.value : null;
+            let selectedValue = radioButton.checked ? radioButton.value : null;
             canSubmit = selectedValue != "organization_member";
             console.log("selected value")
             console.log(selectedValue)
