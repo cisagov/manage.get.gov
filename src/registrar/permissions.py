@@ -161,13 +161,13 @@ def verify_all_urls_have_permissions():
         # Skip URLResolver objects (like admin.site.urls)
         if isinstance(pattern, URLResolver):
             continue
-        
+
         if hasattr(pattern, "name") and pattern.name:
             if pattern.name not in URL_PERMISSIONS and pattern.name not in UNCHECKED_URLS:
                 missing_permissions.append(pattern.name)
         else:
             raise ValueError(f"URL pattern {pattern} has no name")
-        
+
     if missing_names:
         raise ValueError(f"The following URL patterns have no name: {missing_names}")
 
