@@ -267,7 +267,8 @@ class Domain(TimeStampedModel, DomainHelper):
             # Ensure res_data exists and is not empty
             if info_response and info_response.res_data:
                 # Use _extract_data_from_response bc it's same thing but jsonified
-                domain_status_state = cls._extract_data_from_response(cls, info_response).get("statuses")
+                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
+                domain_status_state = domain_response.get("statuses")
                 if "pendingDelete" in str(domain_status_state):
                     return True
         except RegistryError as err:

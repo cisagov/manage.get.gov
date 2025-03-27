@@ -676,17 +676,22 @@ class TestDomainAvailable(MockEppLib):
         * Validate response given mock
         """
 
-        def side_effect(_request, cleaned):
+        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
+            "registrar.models.domain.Domain._extract_data_from_response"
+        ) as mocked_extract:
+
+            # Mock the registry response
             mock_response = MagicMock()
             mock_response.res_data = [MagicMock(statuses=[MagicMock(state="pendingDelete")])]
-            return mock_response
+            mocked_send.return_value = mock_response
 
-        with patch("registrar.models.domain.registry.send") as mocked_send:
-            mocked_send.side_effect = side_effect
+            # Mock JSONified response
+            mocked_extract.return_value = {"statuses": ["pendingDelete"]}
 
             result = Domain.is_pending_delete("is-pending-delete.gov")
 
             mocked_send.assert_called_once_with(commands.InfoDomain("is-pending-delete.gov"), cleaned=True)
+            mocked_extract.assert_called_once()
 
             self.assertTrue(result)
 
@@ -697,22 +702,28 @@ class TestDomainAvailable(MockEppLib):
 
         * Mock EPP response without pendingDelete status (isserverTransferProhibited)
         * Validate response given mock
-        * Validate response given mock
         """
 
-        def side_effect(_request, cleaned):
+        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
+            "registrar.models.domain.Domain._extract_data_from_response"
+        ) as mocked_extract:
+
+            # Mock the registry response
             mock_response = MagicMock()
             mock_response.res_data = [
                 MagicMock(statuses=[MagicMock(state="serverTransferProhibited"), MagicMock(state="ok")])
             ]
-            return mock_response
+            mocked_send.return_value = mock_response
 
-        with patch("registrar.models.domain.registry.send") as mocked_send:
-            mocked_send.side_effect = side_effect
+            # Mock JSONified response
+            mocked_extract.return_value = {"statuses": ["serverTransferProhibited", "ok"]}
 
             result = Domain.is_pending_delete("is-not-pending.gov")
 
+            # Assertions
             mocked_send.assert_called_once_with(commands.InfoDomain("is-not-pending.gov"), cleaned=True)
+            mocked_extract.assert_called_once()
+
             self.assertFalse(result)
 
     def test_domain_available_with_invalid_error(self):
