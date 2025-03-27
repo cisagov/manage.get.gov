@@ -264,19 +264,18 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             info_req = commands.InfoDomain(domain_name)
             info_response = registry.send(info_req, cleaned=True)
-
             # Ensure res_data exists and is not empty
             if info_response and info_response.res_data:
-                domain_status_state = [status.state for status in info_response.res_data[0].statuses]
-                # Return True if in pendingDelete status, else False
-                return "pendingDelete" in domain_status_state
+                # Use _extract_data_from_response bc it's same thing but jsonified
+                domain_status_state = cls._extract_data_from_response(cls, info_response).get("statuses")
+                if "pendingDelete" in str(domain_status_state):
+                    return True
         except RegistryError as err:
             if not err.is_connection_error():
                 logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
                 return False
             else:
                 raise err
-
         return False
 
     @classmethod
@@ -2052,11 +2051,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         data = data_response.res_data[0]
 
-        """
-        For #3596: Uncomment this return statement, and comment out the other return statement.
-        This is for force setting the pendingDelete statue (see statuses).I will remove this 
-        return when I merge as this is for testing purposes only. """  # noqa: W291
-
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
@@ -2065,23 +2059,10 @@ class Domain(TimeStampedModel, DomainHelper):
             "_hosts": getattr(data, "hosts", ...),
             "name": getattr(data, "name", ...),
             "registrant": getattr(data, "registrant", ...),
-            "statuses": [epp.Status(state="pendingDelete", description="", lang="en")],
+            "statuses": getattr(data, "statuses", ...),
             "tr_date": getattr(data, "tr_date", ...),
             "up_date": getattr(data, "up_date", ...),
         }
-
-        # return {
-        #     "auth_info": getattr(data, "auth_info", ...),
-        #     "_contacts": getattr(data, "contacts", ...),
-        #     "cr_date": getattr(data, "cr_date", ...),
-        #     "ex_date": getattr(data, "ex_date", ...),
-        #     "_hosts": getattr(data, "hosts", ...),
-        #     "name": getattr(data, "name", ...),
-        #     "registrant": getattr(data, "registrant", ...),
-        #     "statuses": getattr(data, "statuses", ...),
-        #     "tr_date": getattr(data, "tr_date", ...),
-        #     "up_date": getattr(data, "up_date", ...),
-        # }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""
