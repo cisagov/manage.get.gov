@@ -124,7 +124,9 @@ class PopulateScriptTemplate(ABC):
         """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False):
+    def mass_update_records(
+        self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False, show_record_count=False
+    ):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
@@ -144,6 +146,9 @@ class PopulateScriptTemplate(ABC):
             verbose: Whether to print a detailed run summary *before* run confirmation.
                 Default: False.
 
+            show_record_count: Whether to show a 'Record 1/10' dialog when running update.
+                Default: False.
+
         Raises:
             NotImplementedError: If you do not define update_record before using this function.
             TypeError: If custom_filter is not Callable.
@@ -153,13 +158,14 @@ class PopulateScriptTemplate(ABC):
 
         # apply custom filter
         records = self.custom_filter(records)
+        records_length = len(records)
 
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
         proposed_changes = (
             "==Proposed Changes==\n"
-            f"Number of {readable_class_name} objects to change: {len(records)}\n"
+            f"Number of {readable_class_name} objects to change: {records_length}\n"
             f"These fields will be updated on each record: {fields_to_update}"
         )
 
@@ -177,7 +183,9 @@ class PopulateScriptTemplate(ABC):
         to_update: List[object_class] = []
         to_skip: List[object_class] = []
         failed_to_update: List[object_class] = []
-        for record in records:
+        for i, record in enumerate(records, start=1):
+            if show_record_count:
+                logger.info(f"{TerminalColors.BOLD}Record {i}/{records_length}{TerminalColors.ENDC}")
             try:
                 if not self.should_skip_record(record):
                     self.update_record(record)
@@ -191,7 +199,7 @@ class PopulateScriptTemplate(ABC):
                 logger.error(fail_message)
 
         # Do a bulk update on the desired field
-        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
+        self.bulk_update_fields(object_class, to_update, fields_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(
@@ -203,6 +211,10 @@ class PopulateScriptTemplate(ABC):
             log_header=self.run_summary_header,
             display_as_str=True,
         )
+
+    def bulk_update_fields(self, object_class, to_update, fields_to_update):
+        """Bulk updates the given fields"""
+        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
     def get_class_name(self, sender) -> str:
         """Returns the class name that we want to display for the terminal prompt.
@@ -516,4 +528,4 @@ class TerminalHelper:
             terminal_color = color
 
         colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
-        log_method(colored_message, exc_info=exc_info)
+        return log_method(colored_message, exc_info=exc_info)
