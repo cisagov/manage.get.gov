@@ -3057,36 +3057,45 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
+        excluded_fields = set()
+        feb_fields = [
+            "feb_naming_requirements_details",
+            "feb_purpose_choice",
+            "time_frame_details",
+            "interagency_initiative_details",
+            "eop_stakeholder_first_name",
+            "eop_stakeholder_last_name",
+        ]
+
+        org_fields = [
+            "portfolio",
+            "sub_organization",
+            "requested_suborganization",
+            "suborganization_city",
+            "suborganization_state_territory",
+        ]
+
+        org_flag = flag_is_active_for_user(request.user, "organization_requests")
+        # Hide FEB fields for non-FEB requests
+        if not (obj and obj.portfolio and obj.is_feb()):
+            logger.debug(f"obj: {obj}")
+            logger.debug(f"obj.portfolio: {obj.portfolio}")
+            logger.debug(f"obj.is_feb(): {obj.is_feb()}")
+            logger.debug(f"feb breakdown: {obj.portfolio.federal_type}")
+            excluded_fields.update(feb_fields)
+
         # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not flag_is_active_for_user(request.user, "organization_requests"):
-            excluded_fields = [
-                "portfolio",
-                "sub_organization",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
-            ]
-            # Hide FEB fields behind the organization requests flag
-            # and only show them if the portfolio is executive
-            if not (obj and obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE):
-                excluded_fields.extend(
-                    [
-                        "feb_naming_requirements_details",
-                        "feb_purpose_choice",
-                        "time_frame_details",
-                        "interagency_initiative_details",
-                        "eop_stakeholder_first_name",
-                        "eop_stakeholder_last_name",
-                    ]
-                )
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in excluded_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
-        return fieldsets
+        if not org_flag:
+            excluded_fields.update(org_fields)
+            excluded_fields.update(feb_fields)
+
+        modified_fieldsets = []
+        for name, data in fieldsets:
+            fields = data.get("fields", [])
+            fields = tuple(field for field in fields if field not in excluded_fields)
+            modified_fieldsets.append((name, {**data, "fields": fields}))
+        return modified_fieldsets
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):

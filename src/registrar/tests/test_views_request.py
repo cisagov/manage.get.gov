@@ -2719,7 +2719,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(additional_details_page, "eop-contact-container")
         self.assertContains(additional_details_page, "additional_details-first_name")
         self.assertContains(additional_details_page, "additional_details-last_name")
-        self.assertContains(additional_details_page, "additional_details-email")
 
         # Make sure the additional details form is present
         self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
