@@ -392,10 +392,29 @@ class MemberExport(BaseExport):
         )
 
         # Invitations
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
-            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=F("domain__name"))
+        domain_invitations = Subquery(
+            DomainInvitation.objects.filter(
+                email=OuterRef("email"),
+                domain__domain_info__portfolio=portfolio
+            )
+            .values("email")  # Select a stable field
+            .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
+            .values("domain_list")  # Ensure only one value is returned
+        )
+        
+
+        # EXTRA FILTER CALL REMOVES THE ERROR
+        # The second filtering call might be forcing Django's ORM to evaluate the query and create a predictable execution plan.
+        # This can prevent Django from incorrectly treating the subquery as returning multiple rows.
+        # Django querysets are lazy. If domain_invitations is reused within a subquery, it could be evaluated improperly, leading to unexpected results.
+        # domain_invitations = DomainInvitation.objects.filter(
+        #     email="jaxon.silva@gsa.gov",  # Check if email matches the OuterRef("email")
+        #     domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
+        # ).annotate(domain_info=F("domain__name"))
+        # print(f"jaxon.silva@gsa.gov {domain_invitations}")
+        # print("------------------")
+
+        
         invitations = (
             PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             .filter(portfolio=portfolio)
@@ -407,12 +426,7 @@ class MemberExport(BaseExport):
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
                 # Use ArrayRemove to return an empty list when no domain invitations are found
-                domain_info=ArrayRemoveNull(
-                    ArrayAgg(
-                        Subquery(domain_invitations.values("domain_info")),
-                        distinct=True,
-                    )
-                ),
+                domain_info=domain_invitations,
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
