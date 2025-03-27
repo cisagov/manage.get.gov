@@ -2,6 +2,7 @@
 Centralized permissions management for the registrar.
 """
 
+from django.urls import URLResolver
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
     IS_STAFF,
@@ -141,6 +142,7 @@ UNCHECKED_URLS = [
     "available",
     "rdap",
     "todo",
+    "logout",
 ]
 
 
@@ -153,12 +155,22 @@ def verify_all_urls_have_permissions():
 
     resolver = get_resolver()
     missing_permissions = []
+    missing_names = []
 
     # Collect all URL pattern names
     for pattern in resolver.url_patterns:
+        # Skip URLResolver objects (like admin.site.urls)
+        if isinstance(pattern, URLResolver):
+            continue
+        
         if hasattr(pattern, "name") and pattern.name:
             if pattern.name not in URL_PERMISSIONS and pattern.name not in UNCHECKED_URLS:
                 missing_permissions.append(pattern.name)
+        else:
+            raise ValueError(f"URL pattern {pattern} has no name")
+        
+    if missing_names:
+        raise ValueError(f"The following URL patterns have no name: {missing_names}")
 
     return missing_permissions
 
