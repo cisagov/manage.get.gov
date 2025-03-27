@@ -264,19 +264,19 @@ class Domain(TimeStampedModel, DomainHelper):
         try:
             info_req = commands.InfoDomain(domain_name)
             info_response = registry.send(info_req, cleaned=True)
-
             # Ensure res_data exists and is not empty
             if info_response and info_response.res_data:
-                domain_status_state = [status.state for status in info_response.res_data[0].statuses]
-                # Return True if in pendingDelete status, else False
-                return "pendingDelete" in domain_status_state
+                # Use _extract_data_from_response bc it's same thing but jsonified
+                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
+                domain_status_state = domain_response.get("statuses")
+                if "pendingDelete" in str(domain_status_state):
+                    return True
         except RegistryError as err:
             if not err.is_connection_error():
                 logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
                 return False
             else:
                 raise err
-
         return False
 
     @classmethod
