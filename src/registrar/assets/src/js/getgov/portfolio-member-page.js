@@ -216,18 +216,13 @@ export function initPortfolioMemberPage() {
       // NOTE: This logic does not trigger when the user is the ONLY admin in the portfolio.
       // This is because info alerts are used rather than modals in this case.
       if (memberForm && editSelfWarningModal) {
-        console.log("Test")
         // Only show the warning modal when the user is changing their ROLE.
         var canSubmit = document.querySelector(`input[name="role"]:checked`)?.value != "organization_member";
-        console.log("can submit")
-        console.log(canSubmit)
         let radioButtons = document.querySelectorAll(`input[name="role"]`);
         radioButtons.forEach(function (radioButton) {
           radioButton.addEventListener("change", function() {
             let selectedValue = radioButton.checked ? radioButton.value : null;
             canSubmit = selectedValue != "organization_member";
-            console.log("selected value")
-            console.log(selectedValue)
           });
         });
         

@@ -98,7 +98,7 @@ Organization member
   </address>
 
   {% if portfolio_permission %}
-    {% if is_only_admin %}
+    {% if member and member.id == request.user.id and is_only_admin %}
     <div class="usa-alert usa-alert--info usa-alert--slim">
       <div class="usa-alert__body">
         <p class="usa-alert__text ">

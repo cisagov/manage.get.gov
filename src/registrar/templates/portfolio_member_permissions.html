@@ -82,7 +82,7 @@
       <h2 class="margin-top-0">Member access</h2>
     </legend>
     
-    {% if is_only_admin %}
+    {% if member and member.id == request.user.id and is_only_admin %}
     <div class="usa-alert usa-alert--info usa-alert--slim margin-top-1 margin-bottom-1">
       <div class="usa-alert__body">
         <p class="usa-alert__text ">
@@ -124,21 +124,21 @@
   </form>
 </div>
 
-{% comment %} If an admin is trying to edit themselves, show a modal {% endcomment %}
+  {% comment %} If an admin is trying to edit themselves, show a modal {% endcomment %}
   {% if member and member.id == request.user.id and not is_only_admin %}
-  <a
-  id="toggle-member-permissions-edit-self"
-  href="#modal-member-permissions-edit-self"
-  class="display-none"
-  aria-controls="modal-member-permissions-edit-self"
-  data-open-modal
-  >Edit self</a>
-  <div
-    class="usa-modal"
-    id="modal-member-permissions-edit-self"
-    data-force-action
-  >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member access?" modal_description="You’ve selected basic access, which means you’ll no longer have the ability to manage user permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my access" %}
-  </div>
+    <a
+    id="toggle-member-permissions-edit-self"
+    href="#modal-member-permissions-edit-self"
+    class="display-none"
+    aria-controls="modal-member-permissions-edit-self"
+    data-open-modal
+    >Edit self</a>
+    <div
+      class="usa-modal"
+      id="modal-member-permissions-edit-self"
+      data-force-action
+    >
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member access?" modal_description="You’ve selected basic access, which means you’ll no longer have the ability to manage user permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my access" %}
+    </div>
   {% endif %}
 {% endblock portfolio_content%}
