@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="domainrequest",
             name="feb_naming_requirements",
-            field=models.BooleanField(blank=True, null=True, verbose_name="Meets Naming Requirements"),
+            field=models.BooleanField(blank=True, null=True, verbose_name="Meets naming requirements"),
         ),
         migrations.AlterField(
             model_name="domainrequest",
