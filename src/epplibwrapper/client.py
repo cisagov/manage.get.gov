@@ -44,7 +44,7 @@ class EPPLibWrapper:
         """Initialize settings which will be used for all connections."""
 
         TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "Connection Initialized")
-        
+
         # set _client to None initially. In the event that the __init__ fails
         # before _client initializes, app should still start and be in a state
         # that it can attempt _client initialization on send attempts
@@ -170,11 +170,10 @@ class EPPLibWrapper:
 
     def send(self, command, *, cleaned=False):
         """Login, then send the command. Retry once if an error is found"""
-        
 
         # try to prevent use of this method without appropriate safeguards
         cmd_type = command.__class__.__name__
-        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "COMMAND SENT: "+cmd_type)
+        TerminalHelper.colorful_logger(logger.info, TerminalColors.MAGENTA, "COMMAND SENT: " + cmd_type)
 
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")

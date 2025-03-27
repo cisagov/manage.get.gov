@@ -5,7 +5,7 @@ import os
 from django.core.management import BaseCommand
 
 logger = logging.getLogger(__name__)
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 #                           SUMMARY
 # This script was created with the help of AI to quickly scaffold a way
 # to analyze our codebase for EPP commands.  It was used as part of an
@@ -17,24 +17,27 @@ logger = logging.getLogger(__name__)
 # respectively, or by passing in parameters to the script execution command in the console.
 #
 # There are 3 outputs to choose from:
-# - Summary only (a simple list of all EPP commads found. Set summary_only=True to select this output)
-# - Group by command (After each EPP commands a list of all the parent functions that call them is also printed to the console. Set summary_only=False and group_by_function=False)
-# - Group by function (The list of EPP commands are grouped by all the parent functions that call them. Set summary_only=False and group_by_function=True)
-#-----------------------------------------------------------------------
+# - Summary only (a simple list of all EPP commads found. Set summary_only=True
+# to select this output)
+# - Group by command (After each EPP commands a list of all the parent functions
+# that call them is also printed to the console. Set summary_only=False and group_by_function=False)
+# - Group by function (The list of EPP commands are grouped by all the parent
+# functions that call them. Set summary_only=False and group_by_function=True)
+# -----------------------------------------------------------------------
 
-#---------------------------
+# ---------------------------
 #         DEFAULTS
 # Used if no parameters were given
-#---------------------------
+# ---------------------------
 # Default folder to scan for EPP commands
-DEFAULT_FOLDER_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../models'))
+DEFAULT_FOLDER_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models"))
 
 # Default file to scan for EPP commands (if this is null, will scan default folder path)
-DEFAULT_FILE_PATH = os.path.join(DEFAULT_FOLDER_PATH, 'domain.py')
+DEFAULT_FILE_PATH = os.path.join(DEFAULT_FOLDER_PATH, "domain.py")
 
-#---------------------------
+# ---------------------------
 #     OUTPUT SETTINGS
-#---------------------------
+# ---------------------------
 # Boolean to control whether to group by function.
 #
 # If TRUE, the output will be a list of all functions
@@ -55,14 +58,14 @@ DEFAULT_FILE_PATH = os.path.join(DEFAULT_FOLDER_PATH, 'domain.py')
 group_by_function = False
 
 # Boolean to control whether to only print a summary of unique EPP commands
-# If set to true, the above lists will not print and instead we will just 
+# If set to true, the above lists will not print and instead we will just
 # get a distinct list of all EPP commands found
 summary_only = True
 
 
-#---------------------------
+# ---------------------------
 #     MAIN FUNCTION
-#---------------------------
+# ---------------------------
 class Command(BaseCommand):
     help = "Parse Python files in a folder or specific file for EPP commands and print them to the console."
 
@@ -85,7 +88,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         folder_path = options["folder_path"]
         file_path = options["file_path"]
-        
+
         if file_path:  # If file_path is provided, scan that file
             logger.info(f"Scanning file: {file_path}")
             self.process_file(file_path)
@@ -122,14 +125,13 @@ class Command(BaseCommand):
         command_to_functions = {}
 
         # Traverse the file and gather function -> command and command -> function mappings
-        last_pos = 0
         for match in function_matches:
             function_name = match.group(1)
             function_start = match.start()
-            function_end = content.find('def ', function_start + 1)  # Find the start of the next function
+            function_end = content.find("def ", function_start + 1)  # Find the start of the next function
 
             # If there's no next function, go until the end of the file
-            function_body = content[function_start:function_end if function_end != -1 else None]
+            function_body = content[function_start : function_end if function_end != -1 else None]
 
             commands_in_function = re.findall(r"commands\.([a-zA-Z_]+)", function_body)
 
@@ -156,7 +158,7 @@ class Command(BaseCommand):
                     logger.info(f"EPP commands from {file_path} printed to console.")
                 else:
                     logger.info(f"No EPP commands found in {file_path}.")
-                    
+
             else:
                 function_to_commands, command_to_functions = self.analyze_functions_and_commands(content)
                 if group_by_function:
