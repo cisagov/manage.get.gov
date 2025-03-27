@@ -11,9 +11,9 @@
       <fieldset class="usa-fieldset">
         {{forms.0.management_form}}
         {{forms.1.management_form}}
-        {{forms.2.management_form}}
-        {{forms.3.management_form}}
-        <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
+        <legend>
+          <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
+        </legend>
         <p class="margin-bottom-2 margin-top-2">Working with the EOP is not required to request a .gov domain.</p>
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
@@ -31,8 +31,14 @@
             {% input_with_errors forms.1.last_name %}
           {% endwith %}
         </div>
-
-        <h2>Is there anything else you'd like us to know about your domain request?</h2> 
+      </fieldset>
+        
+      <fieldset class="usa-fieldset">
+        {{forms.2.management_form}}
+        {{forms.3.management_form}}
+        <legend>
+          <h2>Is there anything else you'd like us to know about your domain request?</h2> 
+        </legend>
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
@@ -51,7 +57,7 @@
       </fieldset>
   {% else %}
       <fieldset class="usa-fieldset">          
-          <h2 class="margin-top-0 margin-bottom-0">Is there anything else you’d like us to know about your domain request?</h2> 
+        <h2 class="margin-top-0 margin-bottom-0">Is there anything else you’d like us to know about your domain request?</h2> 
       </legend>
       </fieldset>
 

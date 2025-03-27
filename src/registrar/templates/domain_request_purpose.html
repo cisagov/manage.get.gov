@@ -12,14 +12,12 @@
 
 {% block form_fields %}
   {% if requires_feb_questions %}
-      <fieldset class="usa-fieldset margin-top-0 dotgov-domain-form">
+      <fieldset class="usa-fieldset margin-top-0">
         {{forms.0.management_form}}
         {{forms.1.management_form}}
-        {{forms.2.management_form}}
-        {{forms.3.management_form}}
-        {{forms.4.management_form}}
-        {{forms.5.management_form}}
-        <h2>What is the purpose of your requested domain?</h2>
+        <legend>
+          <h2>What is the purpose of your requested domain?</h2>
+        </legend>
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
@@ -35,41 +33,51 @@
             {% input_with_errors forms.1.purpose %}
           {% endwith %}
         </div>
-
-        <h2>Do you have a target time frame for launching this domain?</h2>
-        <p class="margin-bottom-0 margin-top-1">
-          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-        </p>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-          {% input_with_errors forms.2.has_timeframe %}
-        {% endwith %}
-
-        <div id="purpose-timeframe-details-container" class="conditional-panel">
+        </fieldset>
+        <fieldset class="usa-fieldset margin-top-2">
+          {{forms.2.management_form}}
+          {{forms.3.management_form}}
+          <legend>
+            <h2>Do you have a target time frame for launching this domain?</h2>
+          </legend>
           <p class="margin-bottom-0 margin-top-1">
-            <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
-            {% input_with_errors forms.3.time_frame_details %}
+          {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.2.has_timeframe %}
           {% endwith %}
-        </div>
 
-        <h2>Will the domain name be used for an interagency initiative?</h2>
-        <p class="margin-bottom-0 margin-top-1">
-          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
-        </p>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
-          {% input_with_errors forms.4.is_interagency_initiative %}
-        {% endwith %}
-
-        <div id="purpose-interagency-initaitive-details-container" class="conditional-panel">
+          <div id="purpose-timeframe-details-container" class="conditional-panel">
+            <p class="margin-bottom-0 margin-top-1">
+              <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            </p>
+            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+              {% input_with_errors forms.3.time_frame_details %}
+            {% endwith %}
+          </div>
+        </fieldset>
+        <fieldset class="usa-fieldset margin-top-2">
+          {{forms.4.management_form}}
+          {{forms.5.management_form}}
+          <legend>
+            <h2>Will the domain name be used for an interagency initiative?</h2>
+          </legend>
           <p class="margin-bottom-0 margin-top-1">
-            <em>Name the agencies that will be involved in this initiative. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
-            {% input_with_errors forms.5.interagency_initiative_details %}
+          {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.4.is_interagency_initiative %}
           {% endwith %}
-        </div>
-      </fieldset>
+
+          <div id="purpose-interagency-initaitive-details-container" class="conditional-panel">
+            <p class="margin-bottom-0 margin-top-1">
+              <em>Name the agencies that will be involved in this initiative. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            </p>
+            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+              {% input_with_errors forms.5.interagency_initiative_details %}
+            {% endwith %}
+          </div>
+        </fieldset>
   {% else %}
     <h2>What is the purpose of your requested domain?</h2>
     <p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
