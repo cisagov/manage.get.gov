@@ -156,7 +156,7 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
-                raise RegistryError(response.msg, code=response.code)
+                raise RegistryError(response.msg, code=response.code, response=response)
             else:
                 return response
 
@@ -183,6 +183,8 @@ class EPPLibWrapper:
         try:
             return self._send(command)
         except RegistryError as err:
+            if err.response:
+                logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
             if (
                 err.is_transport_error()
                 or err.is_connection_error()

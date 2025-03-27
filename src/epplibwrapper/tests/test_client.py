@@ -265,6 +265,58 @@ class TestClient(TestCase):
         self.assertEquals(mock_send.call_count, 5)
 
     @less_console_noise_decorator
+    @patch("epplibwrapper.client.Client")
+    @patch("epplibwrapper.client.logger")
+    def test_send_command_2002_failure_prompts_successful_retry(self, mock_logger, mock_client):
+        """Test when the send("InfoDomainCommand) call fails with a 2002, prompting a retry
+        and the subsequent send("InfoDomainCommand) call succeeds
+        Flow:
+        Initialization succeeds
+        Send command fails (with 2002 code) prompting retry
+        Client closes and re-initializes, and command succeeds"""
+        # Mock the Client instance and its methods
+        # connect() and close() should succeed throughout
+        mock_connect = MagicMock()
+        mock_close = MagicMock()
+        # create success and failure result messages
+        send_command_success_result = self.fake_result(1000, "Command completed successfully")
+        send_command_failure_result = self.fake_result(2002, "Registrar is not logged in.")
+        # side_effect for send call, initial send(login) succeeds during initialization, next send(command)
+        # fails, subsequent sends (logout, login, command) all succeed
+        send_call_count = 0
+
+        # Create a mock command
+        mock_command = MagicMock()
+        mock_command.__class__.__name__ = "InfoDomainCommand"
+
+        def side_effect(*args, **kwargs):
+            nonlocal send_call_count
+            send_call_count += 1
+            if send_call_count == 2:
+                return send_command_failure_result
+            else:
+                return send_command_success_result
+
+        mock_send = MagicMock(side_effect=side_effect)
+        mock_client.return_value.connect = mock_connect
+        mock_client.return_value.close = mock_close
+        mock_client.return_value.send = mock_send
+        # Create EPPLibWrapper instance and initialize client
+        wrapper = EPPLibWrapper()
+        wrapper.send(mock_command, cleaned=True)
+        # connect() is called twice, once during initialization of app, once during retry
+        self.assertEquals(mock_connect.call_count, 2)
+        # close() is called once, during retry
+        mock_close.assert_called_once()
+        # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
+        self.assertEquals(mock_send.call_count, 5)
+        # Assertion proper logging; note that the
+        mock_logger.info.assert_any_call(
+            "InfoDomainCommand failed and will be retried Error: Registrar is not logged in."
+        )
+        mock_logger.info.assert_any_call("cltrid is cl_tr_id svtrid is sv_tr_id")
+
+    @less_console_noise_decorator
     def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):
         """
         Raises a ConcurrentObjectUseError, which gevent throws when accessing

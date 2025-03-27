@@ -32,7 +32,7 @@ class ScriptDataHelper:
     """Helper method with utilities to speed up development of scripts that do DB operations"""
 
     @staticmethod
-    def bulk_update_fields(model_class, update_list, fields_to_update, batch_size=1000):
+    def bulk_update_fields(model_class, update_list, fields_to_update, batch_size=1000, quiet=False):
         """
         This function performs a bulk update operation on a specified Django model class in batches.
         It uses Django's Paginator to handle large datasets in a memory-efficient manner.
@@ -51,15 +51,53 @@ class ScriptDataHelper:
         fields_to_update: Specifies which fields to update.
 
         Usage:
-            bulk_update_fields(Domain, page.object_list, ["first_ready"])
+            ScriptDataHelper.bulk_update_fields(Domain, page.object_list, ["first_ready"])
+
+        Returns: A queryset of the updated objets
         """
-        logger.info(f"{TerminalColors.YELLOW} Bulk updating fields... {TerminalColors.ENDC}")
+        if not quiet:
+            logger.info(f"{TerminalColors.YELLOW} Bulk updating fields... {TerminalColors.ENDC}")
         # Create a Paginator object. Bulk_update on the full dataset
         # is too memory intensive for our current app config, so we can chunk this data instead.
         paginator = Paginator(update_list, batch_size)
         for page_num in paginator.page_range:
             page = paginator.page(page_num)
             model_class.objects.bulk_update(page.object_list, fields_to_update)
+
+    @staticmethod
+    def bulk_create_fields(model_class, update_list, batch_size=1000, return_created=False, quiet=False):
+        """
+        This function performs a bulk create operation on a specified Django model class in batches.
+        It uses Django's Paginator to handle large datasets in a memory-efficient manner.
+
+        Parameters:
+        model_class: The Django model class that you want to perform the bulk update on.
+                    This should be the actual class, not a string of the class name.
+
+        update_list: A list of model instances that you want to update. Each instance in the list
+                    should already have the updated values set on the instance.
+
+        batch_size:  The maximum number of model instances to update in a single database query.
+                    Defaults to 1000. If you're dealing with models that have a large number of fields,
+                    or large field values, you may need to decrease this value to prevent out-of-memory errors.
+        Usage:
+            ScriptDataHelper.bulk_add_fields(Domain, page.object_list)
+
+        Returns: A queryset of the added objects
+        """
+        if not quiet:
+            logger.info(f"{TerminalColors.YELLOW} Bulk adding fields... {TerminalColors.ENDC}")
+
+        created_objs = []
+        paginator = Paginator(update_list, batch_size)
+        for page_num in paginator.page_range:
+            page = paginator.page(page_num)
+            all_created = model_class.objects.bulk_create(page.object_list)
+            if return_created:
+                created_objs.extend([created.id for created in all_created])
+        if return_created:
+            return model_class.objects.filter(id__in=created_objs)
+        return None
 
 
 class PopulateScriptTemplate(ABC):
@@ -86,7 +124,9 @@ class PopulateScriptTemplate(ABC):
         """
         raise NotImplementedError
 
-    def mass_update_records(self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False):
+    def mass_update_records(
+        self, object_class, filter_conditions, fields_to_update, debug=True, verbose=False, show_record_count=False
+    ):
         """Loops through each valid "object_class" object - specified by filter_conditions - and
         updates fields defined by fields_to_update using update_record.
 
@@ -106,6 +146,9 @@ class PopulateScriptTemplate(ABC):
             verbose: Whether to print a detailed run summary *before* run confirmation.
                 Default: False.
 
+            show_record_count: Whether to show a 'Record 1/10' dialog when running update.
+                Default: False.
+
         Raises:
             NotImplementedError: If you do not define update_record before using this function.
             TypeError: If custom_filter is not Callable.
@@ -115,19 +158,19 @@ class PopulateScriptTemplate(ABC):
 
         # apply custom filter
         records = self.custom_filter(records)
+        records_length = len(records)
 
         readable_class_name = self.get_class_name(object_class)
 
         # for use in the execution prompt.
-        proposed_changes = f"""==Proposed Changes==
-            Number of {readable_class_name} objects to change: {len(records)}
-            These fields will be updated on each record: {fields_to_update}
-            """
+        proposed_changes = (
+            "==Proposed Changes==\n"
+            f"Number of {readable_class_name} objects to change: {records_length}\n"
+            f"These fields will be updated on each record: {fields_to_update}"
+        )
 
         if verbose:
-            proposed_changes = f"""{proposed_changes}
-            These records will be updated: {list(records.all())}
-            """
+            proposed_changes = f"{proposed_changes}\n" f"These records will be updated: {list(records.all())}"
 
         # Code execution will stop here if the user prompts "N"
         TerminalHelper.prompt_for_execution(
@@ -140,7 +183,9 @@ class PopulateScriptTemplate(ABC):
         to_update: List[object_class] = []
         to_skip: List[object_class] = []
         failed_to_update: List[object_class] = []
-        for record in records:
+        for i, record in enumerate(records, start=1):
+            if show_record_count:
+                logger.info(f"{TerminalColors.BOLD}Record {i}/{records_length}{TerminalColors.ENDC}")
             try:
                 if not self.should_skip_record(record):
                     self.update_record(record)
@@ -154,17 +199,22 @@ class PopulateScriptTemplate(ABC):
                 logger.error(fail_message)
 
         # Do a bulk update on the desired field
-        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
+        self.bulk_update_fields(object_class, to_update, fields_to_update)
 
         # Log what happened
         TerminalHelper.log_script_run_summary(
             to_update,
             failed_to_update,
             to_skip,
+            [],
             debug=debug,
             log_header=self.run_summary_header,
             display_as_str=True,
         )
+
+    def bulk_update_fields(self, object_class, to_update, fields_to_update):
+        """Bulk updates the given fields"""
+        ScriptDataHelper.bulk_update_fields(object_class, to_update, fields_to_update)
 
     def get_class_name(self, sender) -> str:
         """Returns the class name that we want to display for the terminal prompt.
@@ -190,81 +240,96 @@ class PopulateScriptTemplate(ABC):
 
 
 class TerminalHelper:
+
     @staticmethod
     def log_script_run_summary(
-        to_update, failed_to_update, skipped, debug: bool, log_header=None, skipped_header=None, display_as_str=False
+        create,
+        update,
+        skip,
+        fail,
+        debug: bool,
+        log_header="============= FINISHED =============",
+        skipped_header="----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----",
+        failed_header="----- UPDATE FAILED -----",
+        display_as_str=False,
+        detailed_prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
     ):
-        """Prints success, failed, and skipped counts, as well as
-        all affected objects."""
-        update_success_count = len(to_update)
-        update_failed_count = len(failed_to_update)
-        update_skipped_count = len(skipped)
+        """Generates a formatted summary of script execution results with colored output.
 
-        if log_header is None:
-            log_header = "============= FINISHED ==============="
+        Displays counts and details of successful, failed, and skipped operations.
+        In debug mode or when prompted, shows full record details.
+        Uses color coding: green for success, yellow for skipped, red for failures.
 
-        if skipped_header is None:
-            skipped_header = "----- SOME DATA WAS INVALID (NEEDS MANUAL PATCHING) -----"
+        Args:
+            to_update: Records that were successfully updated
+            failed_to_update: Records that failed to update
+            skipped: Records that were intentionally skipped
+            to_add: Records that were newly added
+            debug: If True, shows detailed record information
+            log_header: Custom header for the summary (default: "FINISHED")
+            skipped_header: Custom header for skipped records section
+            failed_header: Custom header for failed records section
+            display_as_str: If True, converts records to strings for display
+
+        Output Format (if count > 0 for each category):
+            [log_header]
+            Created W entries
+            Updated X entries
+            [skipped_header]
+            Skipped updating Y entries
+            [failed_header]
+            Failed to update Z entries
+
+        Debug output (if enabled):
+        - Directly prints each list for each category (add, update, etc)
+        - Converts each item to string if display_as_str is True
+        """
+        counts = {
+            "created": len(create),
+            "updated": len(update),
+            "skipped": len(skip),
+            "failed": len(fail),
+        }
 
         # Give the user the option to see failed / skipped records if any exist.
         display_detailed_logs = False
-        if not debug and update_failed_count > 0 or update_skipped_count > 0:
+        if not debug and counts["failed"] > 0 or counts["skipped"] > 0:
             display_detailed_logs = TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=False,
-                prompt_message=f"You will see {update_failed_count} failed and {update_skipped_count} skipped records.",
+                prompt_message=f'You will see {counts["failed"]} failed and {counts["skipped"]} skipped records.',
                 verify_message="** Some records were skipped, or some failed to update. **",
-                prompt_title="Do you wish to see the full list of failed, skipped and updated records?",
+                prompt_title=detailed_prompt_title,
             )
 
-        # Prepare debug messages
-        if debug or display_detailed_logs:
-            updated_display = [str(u) for u in to_update] if display_as_str else to_update
-            skipped_display = [str(s) for s in skipped] if display_as_str else skipped
-            failed_display = [str(f) for f in failed_to_update] if display_as_str else failed_to_update
-            debug_messages = {
-                "success": (f"{TerminalColors.OKCYAN}Updated: {updated_display}{TerminalColors.ENDC}\n"),
-                "skipped": (f"{TerminalColors.YELLOW}Skipped: {skipped_display}{TerminalColors.ENDC}\n"),
-                "failed": (f"{TerminalColors.FAIL}Failed: {failed_display}{TerminalColors.ENDC}\n"),
-            }
+        non_zero_counts = {category: count for category, count in counts.items() if count > 0}
+        messages = []
+        for category, count in non_zero_counts.items():
+            match category:
+                case "created":
+                    label, values, debug_color = "Created", create, TerminalColors.OKBLUE
+                case "updated":
+                    label, values, debug_color = "Updated", update, TerminalColors.OKCYAN
+                case "skipped":
+                    label, values, debug_color = "Skipped updating", skip, TerminalColors.YELLOW
+                    messages.append(skipped_header)
+                case "failed":
+                    label, values, debug_color = "Failed to update", fail, TerminalColors.FAIL
+                    messages.append(failed_header)
+            messages.append(f"{label} {count} entries")
 
-            # Print out a list of everything that was changed, if we have any changes to log.
-            # Otherwise, don't print anything.
-            TerminalHelper.print_conditional(
-                True,
-                f"{debug_messages.get('success') if update_success_count > 0 else ''}"
-                f"{debug_messages.get('skipped') if update_skipped_count > 0 else ''}"
-                f"{debug_messages.get('failed') if update_failed_count > 0 else ''}",
-            )
+            # Print debug messages (prints the internal add, update, skip, fail lists)
+            if debug or display_detailed_logs:
+                display_values = [str(v) for v in values] if display_as_str else values
+                debug_message = f"{label}: {display_values}"
+                logger.info(f"{debug_color}{debug_message}{TerminalColors.ENDC}")
 
-        if update_failed_count == 0 and update_skipped_count == 0:
-            logger.info(
-                f"""{TerminalColors.OKGREEN}
-                {log_header}
-                Updated {update_success_count} entries
-                {TerminalColors.ENDC}
-                """
-            )
-        elif update_failed_count == 0:
-            logger.warning(
-                f"""{TerminalColors.YELLOW}
-                {log_header}
-                Updated {update_success_count} entries
-                {skipped_header}
-                Skipped updating {update_skipped_count} entries
-                {TerminalColors.ENDC}
-                """
-            )
+        final_message = f"\n{log_header}\n" + "\n".join(messages)
+        if counts["failed"] > 0:
+            logger.error(f"{TerminalColors.FAIL}{final_message}{TerminalColors.ENDC}")
+        elif counts["skipped"] > 0:
+            logger.warning(f"{TerminalColors.YELLOW}{final_message}{TerminalColors.ENDC}")
         else:
-            logger.error(
-                f"""{TerminalColors.FAIL}
-                {log_header}
-                Updated {update_success_count} entries
-                ----- UPDATE FAILED -----
-                Failed to update {update_failed_count} entries,
-                Skipped updating {update_skipped_count} entries
-                {TerminalColors.ENDC}
-                """
-            )
+            logger.info(f"{TerminalColors.OKGREEN}{final_message}{TerminalColors.ENDC}")
 
     @staticmethod
     def query_yes_no(question: str, default="yes"):
@@ -402,11 +467,11 @@ class TerminalHelper:
         # and ask if they wish to proceed
         proceed_execution = TerminalHelper.query_yes_no_exit(
             f"\n{TerminalColors.OKCYAN}"
-            "====================================================="
-            f"\n{prompt_title}\n"
-            "====================================================="
-            f"\n{verify_message}\n"
-            f"\n{prompt_message}\n"
+            "=====================================================\n"
+            f"{prompt_title}\n"
+            "=====================================================\n"
+            f"{verify_message}\n"
+            f"{prompt_message}\n"
             f"{TerminalColors.FAIL}"
             f"Proceed? (Y = proceed, N = {action_description_for_selecting_no})"
             f"{TerminalColors.ENDC}"
@@ -463,4 +528,4 @@ class TerminalHelper:
             terminal_color = color
 
         colored_message = f"{terminal_color}{message}{TerminalColors.ENDC}"
-        log_method(colored_message, exc_info=exc_info)
+        return log_method(colored_message, exc_info=exc_info)
