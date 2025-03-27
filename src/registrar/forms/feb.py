@@ -12,6 +12,8 @@ class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrar
 
     field_name = "feb_naming_requirements"
 
+    required_error_message = "Select \"Yes\" if your submission meets each domain naming requirement. Select \"No\" if it doesn't meet each requirement."  # noqa: E501
+
     @property
     def form_is_checked(self):
         """
@@ -26,7 +28,7 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(attrs={"maxlength": "2000"}),
         max_length=2000,
         required=True,
-        error_messages={"required": ("This field is required.")},
+        error_messages={"required": ("Provide details on why your submission does not meet each domain naming requirement.")},  # noqa: E501
         validators=[
             MaxLengthValidator(
                 2000,
