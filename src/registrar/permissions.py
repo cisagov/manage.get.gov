@@ -2,7 +2,7 @@
 Centralized permissions management for the registrar.
 """
 
-from django.urls import URLResolver
+from django.urls import URLResolver, get_resolver, URLPattern
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
     IS_STAFF,
@@ -151,7 +151,6 @@ def verify_all_urls_have_permissions():
     Utility function to verify that all URLs in the application have defined permissions
     in the permissions mapping.
     """
-    from django.urls import get_resolver
 
     resolver = get_resolver()
     missing_permissions = []
@@ -182,7 +181,6 @@ def validate_permissions():  # noqa: C901
 
     Returns a dictionary of issues found.
     """
-    from django.urls import get_resolver, URLPattern, URLResolver
 
     resolver = get_resolver()
     issues = {
