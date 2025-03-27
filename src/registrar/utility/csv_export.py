@@ -395,7 +395,8 @@ class MemberExport(BaseExport):
         domain_invitations = Subquery(
             DomainInvitation.objects.filter(
                 email=OuterRef("email"),
-                domain__domain_info__portfolio=portfolio
+                domain__domain_info__portfolio=portfolio,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             )
             .values("email")  # Select a stable field
             .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
