@@ -193,10 +193,14 @@ export function initAddNewMemberPageListeners() {
 }
 
 // Initalize the radio for the member pages
-export function initPortfolioMemberPageRadio() {
+export function initPortfolioMemberPage() {
   document.addEventListener("DOMContentLoaded", () => {
       let memberForm = document.getElementById("member_form");
-      let newMemberForm = document.getElementById("add_member_form")
+      let newMemberForm = document.getElementById("add_member_form");
+      let editSelfWarningModal = document.getElementById("toggle-member-permissions-edit-self");
+      let editSelfWarningModalConfirm = document.getElementById("member-permissions-edit-self");
+
+      // Init the radio
       if (memberForm || newMemberForm) {
         hookupRadioTogglerListener(
           'role', 
