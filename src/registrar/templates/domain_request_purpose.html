@@ -26,7 +26,9 @@
         {% endwith %}
 
         <div id="purpose-details-container" class="conditional-panel display-none">
-          <p><em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em></p>
+          <p class="margin-bottom-3 margin-top-3">
+            <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+          </p>
           {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
             {% input_with_errors forms.1.purpose %}
           {% endwith %}
@@ -46,7 +48,7 @@
           {% endwith %}
 
           <div id="purpose-timeframe-details-container" class="conditional-panel">
-            <p>
+            <p class="margin-bottom-3 margin-top-3">
               <em>Provide details on your target time frame. Is there special significance of this day (legal requirement, announcement, event, etc.)? <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
             </p>
             {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
@@ -68,7 +70,7 @@
           {% endwith %}
 
           <div id="purpose-interagency-initaitive-details-container" class="conditional-panel">
-            <p>
+            <p class="margin-bottom-3 margin-top-3">
               <em>Name the agencies that will be involved in this initiative. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
             </p>
             {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}

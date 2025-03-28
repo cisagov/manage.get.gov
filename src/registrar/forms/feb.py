@@ -12,7 +12,7 @@ class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrar
 
     field_name = "feb_naming_requirements"
 
-    required_error_message = "Select \"Yes\" if your submission meets each domain naming requirement. Select \"No\" if it doesn't meet each requirement."  # noqa: E501
+    required_error_message = "Select “Yes” if your submission meets each domain naming requirement. Select “No” if it doesn’t meet each requirement."  # noqa: E501
 
     @property
     def form_is_checked(self):
