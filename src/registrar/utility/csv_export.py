@@ -37,7 +37,6 @@ from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
@@ -391,10 +390,6 @@ class MemberExport(BaseExport):
             .values(*shared_columns)
         )
 
-        print("permissions")
-        print(permissions)
-        print("--------")
-
         # Invitations
         domain_invitations = Subquery(
             DomainInvitation.objects.filter(
@@ -406,20 +401,7 @@ class MemberExport(BaseExport):
             .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
             .values("domain_list")  # Ensure only one value is returned
         )
-        
 
-        # EXTRA FILTER CALL REMOVES THE ERROR
-        # The second filtering call might be forcing Django's ORM to evaluate the query and create a predictable execution plan.
-        # This can prevent Django from incorrectly treating the subquery as returning multiple rows.
-        # Django querysets are lazy. If domain_invitations is reused within a subquery, it could be evaluated improperly, leading to unexpected results.
-        # domain_invitations = DomainInvitation.objects.filter(
-        #     email="jaxon.silva@gsa.gov",  # Check if email matches the OuterRef("email")
-        #     domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        # ).annotate(domain_info=F("domain__name"))
-        # print(f"jaxon.silva@gsa.gov {domain_invitations}")
-        # print("------------------")
-
-        
         invitations = (
             PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             .filter(portfolio=portfolio)
@@ -438,11 +420,6 @@ class MemberExport(BaseExport):
             )
             .values(*shared_columns)
         )
-
-        print("invitations")
-        print(invitations)
-        print("--------")
-
 
         # Adding a order_by increases output predictability.
         # Doesn't matter as much for normal use, but makes tests easier.
