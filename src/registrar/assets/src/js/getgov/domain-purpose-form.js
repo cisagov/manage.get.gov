@@ -14,8 +14,8 @@ export const domain_purpose_choice_callbacks = {
             //show the purpose details container
             showElement(element);
             // change just the text inside the em tag
-            const labelElement = element.querySelector('.usa-label em');
-            labelElement.innerHTML = 'Explain why a new domain is need instead ofusing a' +
+            const labelElement = element.querySelector('p em');
+            labelElement.innerHTML = 'Explain why a new domain is need instead of using a' +
                 'subdomain of an existing website.' +
                 '<br><br>' + // Adding double line break for spacing
                 'Include any information or data that shows how the new domain would ' +
@@ -37,7 +37,7 @@ export const domain_purpose_choice_callbacks = {
             // show the purpose details container
             showElement(element);
             // change just the text inside the em tag
-            const labelElement = element.querySelector('.usa-label em');
+            const labelElement = element.querySelector('p em');
             labelElement.innerHTML = 'Explain why a redirect is necessary. ' +
                 '<span class="usa-label--required">*</span>';
                 
@@ -56,7 +56,7 @@ export const domain_purpose_choice_callbacks = {
             // Show the purpose details container
             showElement(element);
             // change just the text inside the em tag
-            const labelElement = element.querySelector('.usa-label em');
+            const labelElement = element.querySelector('p em');
             labelElement.innerHTML = 'Describe how this domain will be used. ' +
                 '<span class="usa-label--required">*</span>';
                 
@@ -65,19 +65,6 @@ export const domain_purpose_choice_callbacks = {
         },
         element: document.getElementById('purpose-details-container')
     }
-}
-
-// Function to check if errors are currently displayed
-function checkForErrors(element) {
-    const errorMessage = element.querySelector('#id_purpose-purpose__error-message');
-    const formGroup = element.querySelector('.usa-form-group.usa-form-group--error');
-    
-    // If either errors exist, set the flag to true
-    if (errorMessage || formGroup) {
-        errorsHaveBeenDisplayed = true;
-    }
-    
-    return errorsHaveBeenDisplayed;
 }
 
 // Helper function to clear error messages in a textarea
