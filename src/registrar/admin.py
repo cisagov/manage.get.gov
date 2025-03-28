@@ -72,6 +72,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -3191,9 +3192,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         Returns a tuple: (obj: DomainRequest, should_proceed: bool)
         """
-
         should_proceed = True
         error_message = None
+        domain_name = original_obj.requested_domain.name
 
         # Get the method that should be run given the status
         selected_method = self.get_status_method_mapping(obj)
@@ -3215,6 +3216,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # duplicated in the model and the error is raised from the model.
             # This avoids an ugly Django error screen.
             error_message = "This action is not permitted. The domain is already active."
+        elif (
+            original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
+            and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
+            and original_obj.requested_domain is not None
+            and Domain.is_pending_delete(domain_name)
+        ):
+            # 1. If the domain request is not approved in previous state (original status)
+            # 2. If the new status that's supposed to be triggered IS approved
+            # 3. That it's a valid domain
+            # 4. AND that the domain is currently in pendingDelete state
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.DOMAIN_IS_PENDING_DELETE)
         elif (
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED

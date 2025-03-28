@@ -73,9 +73,16 @@
       {% if is_portfolio_user and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body">
+          {% if not is_portfolio_admin %}
           <p class="usa-alert__text ">
             You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
           </p>
+          {% else %}
+          {% url 'member' member_pk=user_portfolio_permission.id as edit_member_url %}
+          <p class="usa-alert__text ">
+            You don't have access to manage {{domain.name}}. If you need to become a domain manager, edit the domain assignments in your <a href="{{edit_member_url}}">member profile</a>.
+          </p>
+          {% endif %}
         </div>
       </div>
       {% endif %}
