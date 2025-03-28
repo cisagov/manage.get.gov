@@ -1841,6 +1841,18 @@ class DomainRequestExport(BaseExport):
         details = [cisa_rep, model.get("anything_else")]
         additional_details = " | ".join([field for field in details if field])
 
+        # FEB fields
+        purpose_type = model.get("feb_purpose_choice")
+        purpose_type_display = (
+            DomainRequest.FEBPurposeChoices.get_purpose_label(purpose_type) if purpose_type else "N/A"
+        )
+        eop_stakeholder_first_name = model.get("eop_stakeholder_first_name")
+        eop_stakeholder_last_name = model.get("eop_stakeholder_last_name")
+        if not eop_stakeholder_first_name or not eop_stakeholder_last_name:
+            eop_stakeholder_name = None
+        else:
+            eop_stakeholder_name = f"{eop_stakeholder_first_name} {eop_stakeholder_last_name}"
+
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = {
@@ -1882,6 +1894,12 @@ class DomainRequestExport(BaseExport):
             "Last submitted date": model.get("last_submitted_date"),
             "First submitted date": model.get("first_submitted_date"),
             "Last status update": model.get("last_status_update"),
+            # FEB only fields
+            "Purpose": purpose_type_display,
+            "Domain name rationale": model.get("feb_naming_requirements_details", None),
+            "Target time frame": model.get("time_frame_details", None),
+            "Interagency initiative": model.get("interagency_initiative_details", None),
+            "EOP stakeholder name": eop_stakeholder_name,
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -1927,6 +1945,12 @@ class DomainRequestDataType(DomainRequestExport):
             "Last submitted date",
             "First submitted date",
             "Last status update",
+            "Purpose",
+            "Domain name rationale",
+            "Target time frame",
+            "Interagency initiative",
+            "EOP stakeholder name",
+            "EOP stakeholder email",
         ]
 
     @classmethod
@@ -2071,6 +2095,12 @@ class DomainRequestDataFull(DomainRequestExport):
             "CISA regional representative",
             "Current websites",
             "Investigator",
+            "Purpose",
+            "Domain name rationale",
+            "Target time frame",
+            "Interagency initiative",
+            "EOP stakeholder name",
+            "EOP stakeholder email",
         ]
 
     @classmethod

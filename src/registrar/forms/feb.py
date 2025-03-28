@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
 from registrar.forms.utility.wizard_form_helper import BaseDeletableRegistrarForm, BaseYesNoForm
+from registrar.models.domain_request import DomainRequest
 
 
 class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
@@ -10,6 +11,8 @@ class ExecutiveNamingRequirementsYesNoForm(BaseYesNoForm, BaseDeletableRegistrar
     """
 
     field_name = "feb_naming_requirements"
+
+    required_error_message = "Select “Yes” if your submission meets each domain naming requirement. Select “No” if it doesn’t meet each requirement."  # noqa: E501
 
     @property
     def form_is_checked(self):
@@ -25,7 +28,9 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(attrs={"maxlength": "2000"}),
         max_length=2000,
         required=True,
-        error_messages={"required": ("This field is required.")},
+        error_messages={
+            "required": ("Provide details on why your submission does not meet each domain naming requirement.")
+        },  # noqa: E501
         validators=[
             MaxLengthValidator(
                 2000,
@@ -41,18 +46,14 @@ class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
 
     field_name = "feb_purpose_choice"
 
-    form_choices = (
-        ("new", "Used for a new website"),
-        ("redirect", "Used as a redirect for an existing website"),
-        ("other", "Not for a website"),
-    )
+    form_choices = DomainRequest.FEBPurposeChoices.choices
 
     feb_purpose_choice = forms.ChoiceField(
         required=True,
         choices=form_choices,
         widget=forms.RadioSelect,
         error_messages={
-            "required": "This question is required.",
+            "required": "Select the purpose of your requested domain.",
         },
         label="Select one",
     )
@@ -65,6 +66,10 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
     """
 
     field_name = "has_timeframe"
+    required_error_message = (
+        "Select “Yes” if you have a target time frame for"
+        " launching this domain. Select “No” if you don’t have a target time frame."
+    )
 
     @property
     def form_is_checked(self):
@@ -79,7 +84,7 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
         label="time_frame_details",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "Provide details on your target timeframe. \
+                "aria-label": "Provide details on your target time frame. \
                     Is there a special significance to this date (legal requirement, announcement, event, etc)?"
             }
         ),
@@ -89,7 +94,7 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
                 message="Response must be less than 2000 characters.",
             )
         ],
-        error_messages={"required": "Provide details on your target timeframe."},
+        error_messages={"required": "Provide details on your target time frame."},
     )
 
 
@@ -100,6 +105,10 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
     """
 
     field_name = "is_interagency_initiative"
+    required_error_message = (
+        "Select “Yes” if the domain will be used for an "
+        "interagency initiative. Select “No” if it won’t be used for an interagency initiative."
+    )
 
     @property
     def form_is_checked(self):
@@ -156,29 +165,12 @@ class EOPContactForm(BaseDeletableRegistrarForm):
         error_messages={"required": "Enter the last name / family name of this contact."},
         required=True,
     )
-    email = forms.EmailField(
-        label="Email",
-        max_length=None,
-        error_messages={
-            "required": ("Enter an email address in the required format, like name@example.com."),
-            "invalid": ("Enter an email address in the required format, like name@example.com."),
-        },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
-        required=True,
-        help_text="Enter an email address in the required format, like name@example.com.",
-    )
 
     @classmethod
     def from_database(cls, obj):
         return {
             "first_name": obj.eop_stakeholder_first_name,
             "last_name": obj.eop_stakeholder_last_name,
-            "email": obj.eop_stakeholder_email,
         }
 
     def to_database(self, obj):
@@ -192,7 +184,6 @@ class EOPContactForm(BaseDeletableRegistrarForm):
             return
         obj.eop_stakeholder_first_name = self.cleaned_data["first_name"]
         obj.eop_stakeholder_last_name = self.cleaned_data["last_name"]
-        obj.eop_stakeholder_email = self.cleaned_data["email"]
         obj.save()
 
 

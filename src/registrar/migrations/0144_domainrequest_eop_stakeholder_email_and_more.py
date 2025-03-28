@@ -13,17 +13,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="domainrequest",
             name="eop_stakeholder_email",
-            field=models.EmailField(blank=True, max_length=254, null=True, verbose_name="EOP Stakeholder Email"),
+            field=models.EmailField(blank=True, max_length=254, null=True, verbose_name="EOP contact email"),
         ),
         migrations.AddField(
             model_name="domainrequest",
             name="eop_stakeholder_first_name",
-            field=models.CharField(blank=True, null=True, verbose_name="EOP Stakeholder First Name"),
+            field=models.CharField(blank=True, null=True, verbose_name="EOP contact first name"),
         ),
         migrations.AddField(
             model_name="domainrequest",
             name="eop_stakeholder_last_name",
-            field=models.CharField(blank=True, null=True, verbose_name="EOP Stakeholder Last Name"),
+            field=models.CharField(blank=True, null=True, verbose_name="EOP contact last name"),
         ),
         migrations.AddField(
             model_name="domainrequest",
