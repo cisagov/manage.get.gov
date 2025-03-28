@@ -438,7 +438,7 @@ class MemberExport(BaseExport):
         # Doesn't matter as much for normal use, but makes tests easier.
         # We should also just be ordering by default anyway.
         members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
-        return convert_queryset_to_dict(members, is_model=False)
+        return convert_queryset_to_dict(members, is_model=False, key="email_display")
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
