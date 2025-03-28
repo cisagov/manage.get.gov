@@ -5,9 +5,9 @@ import re
 import time
 from datetime import date, timedelta
 from typing import Optional
-from django.db import transaction
+from django.apps import apps
+from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
-from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
@@ -75,6 +75,21 @@ class Domain(TimeStampedModel, DomainHelper):
             models.Index(fields=["name"]),
             models.Index(fields=["state"]),
         ]
+        # Check name field and excludes deleted state
+
+        # state=self.__class__.State.DELETED
+        # state=Domain.State.Deleted
+        # state="DELETED"
+        # state=("deleted", "Deleted")
+        def __init_subclass__(cls, **kwargs):
+            """Set constraints after model is fully loaded."""
+            super().__init_subclass__(**kwargs)
+            Domain = apps.get_model("registrar.Domain")
+            cls._meta.constraints = [
+                models.UniqueConstraint(
+                    fields=["name"], condition=~models.Q(state=Domain.State.DELETED), name="unique_name_except_deleted"
+                )
+            ]
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -1211,7 +1226,7 @@ class Domain(TimeStampedModel, DomainHelper):
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=True,
+        unique=False,
         help_text="Fully qualified domain name",
         verbose_name="domain",
     )
@@ -2051,7 +2066,12 @@ class Domain(TimeStampedModel, DomainHelper):
         """extract data from response from registry"""
 
         data = data_response.res_data[0]
-
+        # Have it return/raise this for checking for Deleted
+        #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
+        # raise RegistryError(
+        #     message=f"Domain no longer exists in the registry and is DELETED.",
+        #     error_code=2303,
+        # )
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),

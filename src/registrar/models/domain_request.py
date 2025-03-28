@@ -1208,8 +1208,14 @@ class DomainRequest(TimeStampedModel):
         # create the domain
         Domain = apps.get_model("registrar.Domain")
 
-        # == Check that the domain_request is valid == #
-        if Domain.objects.filter(name=self.requested_domain.name).exists():
+        """
+        Checks that the domain_request:
+        1. Filters by specific domain name
+        2. Excludes any domain in the DELETED state
+        3. Check if there are any non DELETED state domains with same name
+        """
+        if Domain.objects.filter(name=self.requested_domain.name).exclude(state=Domain.State.DELETED).exists():
+            print("**** Approve Function -> In the if statement and domain in use")
             raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
         # == Create the domain and related components == #
