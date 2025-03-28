@@ -28,7 +28,9 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(attrs={"maxlength": "2000"}),
         max_length=2000,
         required=True,
-        error_messages={"required": ("Provide details on why your submission does not meet each domain naming requirement.")},  # noqa: E501
+        error_messages={
+            "required": ("Provide details on why your submission does not meet each domain naming requirement.")
+        },  # noqa: E501
         validators=[
             MaxLengthValidator(
                 2000,
@@ -64,8 +66,10 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
     """
 
     field_name = "has_timeframe"
-    required_error_message = "Select “Yes” if you have a target time frame for" \
-    " launching this domain. Select “No” if you don’t have a target time frame."
+    required_error_message = (
+        "Select “Yes” if you have a target time frame for"
+        " launching this domain. Select “No” if you don’t have a target time frame."
+    )
 
     @property
     def form_is_checked(self):
@@ -101,8 +105,10 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
     """
 
     field_name = "is_interagency_initiative"
-    required_error_message = "Select “Yes” if the domain will be used for an " \
-    "interagency initiative. Select “No” if it won’t be used for an interagency initiative."
+    required_error_message = (
+        "Select “Yes” if the domain will be used for an "
+        "interagency initiative. Select “No” if it won’t be used for an interagency initiative."
+    )
 
     @property
     def form_is_checked(self):
