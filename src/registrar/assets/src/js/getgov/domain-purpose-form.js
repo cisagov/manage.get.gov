@@ -15,11 +15,11 @@ export const domain_purpose_choice_callbacks = {
             showElement(element);
             // change just the text inside the em tag
             const labelElement = element.querySelector('.usa-label em');
-            labelElement.innerHTML = 'Explain why a new domain is required and why a ' +
-                'subdomain of an existing domain doesn\'t meet your needs.' +
+            labelElement.innerHTML = 'Explain why a new domain is need instead ofusing a' +
+                'subdomain of an existing website.' +
                 '<br><br>' + // Adding double line break for spacing
-                'Include any data that supports a clear public benefit or ' +
-                'evidence user need for this new domain. ' +
+                'Include any information or data that shows how the new domain would ' +
+                'benefit the public or meet user needs. ' +
                 '<span class="usa-label--required">*</span>';
                 
             // Mark that we're no longer in initial load

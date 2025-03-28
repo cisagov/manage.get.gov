@@ -80,7 +80,7 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
         label="time_frame_details",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "Provide details on your target timeframe. \
+                "aria-label": "Provide details on your target time frame. \
                     Is there a special significance to this date (legal requirement, announcement, event, etc)?"
             }
         ),
