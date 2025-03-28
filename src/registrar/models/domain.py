@@ -77,19 +77,57 @@ class Domain(TimeStampedModel, DomainHelper):
         ]
         # Check name field and excludes deleted state
 
+        # Tried these below in the state = section in the condition
         # state=self.__class__.State.DELETED
         # state=Domain.State.Deleted
         # state="DELETED"
         # state=("deleted", "Deleted")
-        def __init_subclass__(cls, **kwargs):
-            """Set constraints after model is fully loaded."""
-            super().__init_subclass__(**kwargs)
-            Domain = apps.get_model("registrar.Domain")
-            cls._meta.constraints = [
-                models.UniqueConstraint(
-                    fields=["name"], condition=~models.Q(state=Domain.State.DELETED), name="unique_name_except_deleted"
-                )
-            ]
+
+        """
+        Django documentation:
+        https://docs.djangoproject.com/en/5.1/ref/models/constraints/
+        UniqueConstraint(fields=["user"], condition=Q(status="DRAFT"), name="unique_draft_user")
+
+        Below I've left 3 different types of "set ups" for constraints
+        and there's more above for how to do the "state" part. 
+
+        Migration steps are:
+        docker compose exec app bash
+        ./manage.py showmigrations registrar
+        ./manage.py makemigrations registrar
+        ./manage.py migrate registrar migration_file_#_here
+
+        Remember to docker compose down/up as well when working with migrations
+        """
+
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=["name"], condition=~models.Q(state=("deleted", "DELETED")), name="unique_name_except_deleted"
+        #     )
+        # ]
+
+        # constraints = [
+        #     models.CheckConstraint(
+        #         check=~models.Q(state="deleted"),
+        #         name="check_not_deleted_state"
+        #     ),
+        #     models.UniqueConstraint(
+        #         fields=["name"],
+        #         condition=~models.Q(state="deleted"),
+        #         name="unique_name_except_deleted"
+        #     ),
+        # ]
+
+        # constraints = [
+        #     models.CheckConstraint(
+        #         check=~models.Q(state=State.DELETED),
+        #         name="exclude_deleted"
+        #     ),
+        #     models.UniqueConstraint(
+        #         fields=["name"],
+        #         name="unique_name_except_deleted"
+        #     )
+        # ]
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
