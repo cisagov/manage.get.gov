@@ -144,7 +144,12 @@ class Command(BaseCommand):
         # Log what happened
         log_header = "============= FINISHED UPDATE FOR DOMAINREQUEST ==============="
         TerminalHelper.log_script_run_summary(
-            self.request_to_update, self.request_failed_to_update, self.request_skipped, True, log_header
+            self.request_to_update,
+            self.request_failed_to_update,
+            self.request_skipped,
+            [],
+            debug=True,
+            log_header=log_header,
         )
 
         update_skipped_count = len(self.request_to_update)
@@ -195,7 +200,7 @@ class Command(BaseCommand):
         # Log what happened
         log_header = "============= FINISHED UPDATE FOR DOMAININFORMATION ==============="
         TerminalHelper.log_script_run_summary(
-            self.di_to_update, self.di_failed_to_update, self.di_skipped, True, log_header
+            self.di_to_update, self.di_failed_to_update, self.di_skipped, [], debug=True, log_header=log_header
         )
 
         update_skipped_count = len(self.di_skipped)

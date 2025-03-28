@@ -75,11 +75,25 @@
       <!-- Member email -->
     </fieldset>
 
+
   <!-- Member access radio buttons (Toggles other sections) -->
   <fieldset class="usa-fieldset">
     <legend>
       <h2 class="margin-top-0">Member access</h2>
     </legend>
+    
+    {% if member and member.id == request.user.id and is_only_admin %}
+    <div class="usa-alert usa-alert--info usa-alert--slim margin-top-1 margin-bottom-1">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text ">
+          You're the only admin for this organization.
+          Organizations must have at least one admin.
+          To remove yourself or change your member access,
+          you'll need to add another admin.
+        </p>
+      </div>
+    </div>
+    {% endif %}
 
     <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
 
@@ -109,4 +123,22 @@
     </div>
   </form>
 </div>
+
+  {% comment %} If an admin is trying to edit themselves, show a modal {% endcomment %}
+  {% if member and member.id == request.user.id and not is_only_admin %}
+    <a
+    id="toggle-member-permissions-edit-self"
+    href="#modal-member-permissions-edit-self"
+    class="display-none"
+    aria-controls="modal-member-permissions-edit-self"
+    data-open-modal
+    >Edit self</a>
+    <div
+      class="usa-modal"
+      id="modal-member-permissions-edit-self"
+      data-force-action
+    >
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member access?" modal_description="You’ve selected basic access, which means you’ll no longer be able to manage member permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my access" %}
+    </div>
+  {% endif %}
 {% endblock portfolio_content%}
