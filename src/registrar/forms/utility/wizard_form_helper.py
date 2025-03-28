@@ -234,9 +234,12 @@ class BaseYesNoForm(RegistrarForm):
     # For instance, this could be "has_other_contacts"
     field_name: str
 
+    # This field can be overriden to show a custom error
+    # message.
     required_error_message = "This question is required."
 
     # Default form choice mapping. Default is suitable for most cases.
+    # Override for more complex scenarios.
     form_choices = ((True, "Yes"), (False, "No"))
 
     def __init__(self, *args, **kwargs):

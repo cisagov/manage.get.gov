@@ -11,14 +11,12 @@
       <fieldset class="usa-fieldset">
         {{forms.0.management_form}}
         {{forms.1.management_form}}
-        <legend>
-          <h2 class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
-        </legend>
-        <p class="margin-bottom-2 margin-top-2">Working with the EOP is not required to request a .gov domain.</p>
+        <h2 id="working-with-eop--question" class="margin-top-0 margin-bottom-0">Are you working with someone in the Executive Office of the President (EOP) on this request?</h2> 
+        <p id="working-with-eop--requirement" class="margin-bottom-2 margin-top-2">Working with the EOP is not required to request a .gov domain.</p>
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" add_aria_describedby="working-with-eop--requirement" add_legend_heading="Are you working with someone in the Executive Office of the President (EOP) on this request?" %}
           {% input_with_errors forms.0.working_with_eop %}
         {% endwith %}
 
@@ -36,13 +34,11 @@
       <fieldset class="usa-fieldset" aria-labelledby="anything-else-question">
         {{forms.2.management_form}}
         {{forms.3.management_form}}
-        <legend>
-          <h2 id="anything-else-question">Is there anything else you'd like us to know about your domain request?</h2> 
-        </legend>
+        <h2 id="anything-else-question">Is there anything else you'd like us to know about your domain request?</h2> 
         <p class="margin-bottom-0 margin-top-1">
           <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
-        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" add_legend_heading="Is there anything else you'd like us to know about your domain request?"%}
           {% input_with_errors forms.2.has_anything_else_text %}
         {% endwith %}
 
