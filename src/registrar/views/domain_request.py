@@ -797,11 +797,11 @@ class Purpose(DomainRequestWizard):
             option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
             if option == "new":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Explain why a new domain is required."
+                    "required": "Provide details on why a new domain is required."
                 }
             elif option == "redirect":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Explain why a redirect is needed."
+                    "required": "Provide details on why a redirect is necessary."
                 }
             elif option == "other":
                 purpose_details_form.fields["purpose"].error_messages = {
