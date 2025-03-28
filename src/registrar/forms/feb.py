@@ -94,7 +94,7 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
                 message="Response must be less than 2000 characters.",
             )
         ],
-        error_messages={"required": "Provide details on your target timeframe."},
+        error_messages={"required": "Provide details on your target time frame."},
     )
 
 
