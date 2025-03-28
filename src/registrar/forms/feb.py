@@ -51,7 +51,7 @@ class FEBPurposeOptionsForm(BaseDeletableRegistrarForm):
         choices=form_choices,
         widget=forms.RadioSelect,
         error_messages={
-            "required": "This question is required.",
+            "required": "Select the purpose of your requested domain.",
         },
         label="Select one",
     )
@@ -64,6 +64,8 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
     """
 
     field_name = "has_timeframe"
+    required_error_message = "Select “Yes” if you have a target time frame for" \
+    " launching this domain. Select “No” if you don’t have a target time frame."
 
     @property
     def form_is_checked(self):
@@ -99,6 +101,8 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
     """
 
     field_name = "is_interagency_initiative"
+    required_error_message = "Select “Yes” if the domain will be used for an " \
+    "interagency initiative. Select “No” if it won’t be used for an interagency initiative."
 
     @property
     def form_is_checked(self):
