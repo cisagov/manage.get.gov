@@ -15,7 +15,7 @@ export const domain_purpose_choice_callbacks = {
             showElement(element);
             // change just the text inside the em tag
             const labelElement = element.querySelector('p em');
-            labelElement.innerHTML = 'Explain why a new domain is need instead of using a' +
+            labelElement.innerHTML = 'Explain why a new domain name is needed instead of using a' +
                 'subdomain of an existing website.' +
                 '<br><br>' + // Adding double line break for spacing
                 'Include any information or data that shows how the new domain would ' +
