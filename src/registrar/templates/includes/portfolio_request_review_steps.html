@@ -10,19 +10,19 @@
     {% if step == Step.REQUESTING_ENTITY %}
         {% with title=form_titles|get_item:step %}
         {% if domain_request.sub_organization %}
-            {% include "includes/summary_item.html" with value=domain_request.sub_organization edit_link=domain_request_url %}
+            {% include "includes/summary_item.html" with title=title value=domain_request.sub_organization editable=is_editable edit_link=domain_request_url %}
             {% comment %} We don't have city or state_territory for suborganizations yet, so no data should display {% endcomment %}
         {% elif domain_request.requesting_entity_is_suborganization %}
-            {% include "includes/summary_item.html" with value=domain_request.requested_suborganization edit_link=domain_request_url %}
+            {% include "includes/summary_item.html" with title=title value=domain_request.requested_suborganization editable=is_editable edit_link=domain_request_url %}
             <p class="margin-y-0">{{domain_request.suborganization_city}}, {{domain_request.suborganization_state_territory}}</p>
         {% elif domain_request.requesting_entity_is_portfolio %}
-            {% include "includes/summary_item.html" with value=domain_request.portfolio.organization_name edit_link=domain_request_url %}
+            {% include "includes/summary_item.html" with title=title value=domain_request.portfolio.organization_name editable=is_editable edit_link=domain_request_url %}
             {% if domain_request.portfolio.city and domain_request.portfolio.state_territory %}
                 <p class="margin-y-0">{{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}</p>
             {% endif %}
         {% else %}
             {% with value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
-                {% include "includes/summary_item.html" with edit_link=domain_request_url %}
+                {% include "includes/summary_item.html" with title=title editable=is_editable edit_link=domain_request_url %}
             {% endwith %}
         {% endif %}
         {% endwith %}
