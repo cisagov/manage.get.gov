@@ -37,7 +37,6 @@ from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
@@ -392,10 +391,17 @@ class MemberExport(BaseExport):
         )
 
         # Invitations
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
-            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=F("domain__name"))
+        domain_invitations = Subquery(
+            DomainInvitation.objects.filter(
+                email=OuterRef("email"),
+                domain__domain_info__portfolio=portfolio,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            )
+            .values("email")  # Select a stable field
+            .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
+            .values("domain_list")  # Ensure only one value is returned
+        )
+
         invitations = (
             PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             .filter(portfolio=portfolio)
@@ -407,23 +413,19 @@ class MemberExport(BaseExport):
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
                 # Use ArrayRemove to return an empty list when no domain invitations are found
-                domain_info=ArrayRemoveNull(
-                    ArrayAgg(
-                        Subquery(domain_invitations.values("domain_info")),
-                        distinct=True,
-                    )
-                ),
+                domain_info=domain_invitations,
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
             )
             .values(*shared_columns)
         )
+
         # Adding a order_by increases output predictability.
         # Doesn't matter as much for normal use, but makes tests easier.
         # We should also just be ordering by default anyway.
         members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
-        return convert_queryset_to_dict(members, is_model=False)
+        return convert_queryset_to_dict(members, is_model=False, key="email_display")
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):

@@ -205,12 +205,7 @@ class PortfolioMembersJson(View):
         return queryset
 
     def serialize_members(self, request, portfolio, item, user):
-        # Check if the user can edit other users
-        user_can_edit_other_users = any(
-            user.has_perm(perm) for perm in ["registrar.full_access_permission", "registrar.change_user"]
-        )
-
-        view_only = not user.has_edit_members_portfolio_permission(portfolio) or not user_can_edit_other_users
+        view_only = not user.has_edit_members_portfolio_permission(portfolio)
 
         is_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in (item.get("roles") or [])
 

@@ -1092,7 +1092,7 @@ def completed_domain_request(  # noqa
         email="testy@town.com",
         phone="(555) 555 5555",
     )
-    domain, _ = DraftDomain.objects.get_or_create(name=name)
+    domain = DraftDomain.objects.create(name=name)
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -1931,7 +1931,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail" and self.mockedSendFunction.call_count == 3:
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
@@ -1946,7 +1953,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockDeleteContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail":
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists:
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:
             return MagicMock(
