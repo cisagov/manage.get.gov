@@ -2648,7 +2648,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
         additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
         additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
-        additional_details_form["portfolio_additional_details-email"] = "testy@town.com"
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2720,7 +2719,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(additional_details_page, "eop-contact-container")
         self.assertContains(additional_details_page, "additional_details-first_name")
         self.assertContains(additional_details_page, "additional_details-last_name")
-        self.assertContains(additional_details_page, "additional_details-email")
 
         # Make sure the additional details form is present
         self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
@@ -2744,24 +2742,23 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
     def feb_review_page_tests(self, review_page):
-        # Meets Naming Requirements
-        self.assertContains(review_page, "Meets Naming Requirements")
+        # Meets naming requirements
+        self.assertContains(review_page, "Meets naming requirements")
         self.assertContains(review_page, "No")
         self.assertContains(review_page, "Because this is a test")
         # Purpose
         self.assertContains(review_page, "Purpose")
         self.assertContains(review_page, "Used as a redirect for an existing website")
         self.assertContains(review_page, "testPurpose123")
-        # Target Time Frame
-        self.assertContains(review_page, "Target Time Frame")
+        # Target time frame
+        self.assertContains(review_page, "Target time frame")
         self.assertContains(review_page, "1/2/2025 - 1/2/2026")
-        # Interagency Initiative
-        self.assertContains(review_page, "Interagency Initiative")
+        # Interagency initiative
+        self.assertContains(review_page, "Interagency initiative")
         self.assertContains(review_page, "FakeInteragencyInitiative")
-        # EOP Stakeholder
-        self.assertContains(review_page, "EOP Stakeholder")
+        # EOP contact
+        self.assertContains(review_page, "EOP contact")
         self.assertContains(review_page, "TesterFirstName TesterLastName")
-        self.assertContains(review_page, "testy@town.com")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

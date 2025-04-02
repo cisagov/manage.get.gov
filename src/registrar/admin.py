@@ -2742,38 +2742,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
     # ------ FEB fields ------
-    def feb_naming_requirements_details(self, obj):
-        return obj.feb_naming_requirements_details if obj.feb_naming_requirements else ""
-
-    feb_naming_requirements_details.short_description = "Domain Name Rationale:"  # type: ignore
-
-    def feb_purpose_choice(self, obj):
-        return obj.feb_purpose_choice if obj.feb_purpose_choice else ""
-
-    feb_purpose_choice.short_description = "Purpose type:"  # type: ignore
-
-    def time_frame_details(self, obj):
-        return obj.time_frame_details if obj.has_timeframe else ""
-
-    time_frame_details.short_description = "Target time frame:"  # type: ignore
-
-    def interagency_initiative_details(self, obj):
-        return obj.interagency_initiative_details if obj.is_interagency_initiative else ""
-
-    interagency_initiative_details.short_description = "Interagency Initiative:"  # type: ignore
-
-    def eop_stakeholder_first_name(self, obj):
-        return obj.eop_stakeholder_first_name if obj.eop_stakeholder_first_name else ""
-
-    def eop_stakeholder_last_name(self, obj):
-        return obj.eop_stakeholder_last_name if obj.eop_stakeholder_last_name else ""
-
-    def eop_stakeholder_email(self, obj):
-        return obj.eop_stakeholder_email if obj.eop_stakeholder_email else ""
-
-    eop_stakeholder_first_name.short_description = "EOP Stakeholder First Name"  # type: ignore
-    eop_stakeholder_last_name.short_description = "EOP Stakeholder Last Name"  # type: ignore
-    eop_stakeholder_email.short_description = "EOP Stakeholder Email"  # type: ignore
 
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
@@ -2878,7 +2846,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "cisa_representative_email",
                     "eop_stakeholder_first_name",
                     "eop_stakeholder_last_name",
-                    "eop_stakeholder_email",
                 ]
             },
         ),
@@ -3091,39 +3058,41 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
+        excluded_fields = set()
+        feb_fields = [
+            "feb_naming_requirements_details",
+            "feb_purpose_choice",
+            "time_frame_details",
+            "interagency_initiative_details",
+            "eop_stakeholder_first_name",
+            "eop_stakeholder_last_name",
+        ]
+
+        org_fields = [
+            "portfolio",
+            "sub_organization",
+            "requested_suborganization",
+            "suborganization_city",
+            "suborganization_state_territory",
+        ]
+
+        org_flag = flag_is_active_for_user(request.user, "organization_requests")
+        # Hide FEB fields for non-FEB requests
+        if not (obj and obj.portfolio and obj.is_feb()):
+            excluded_fields.update(feb_fields)
+
         # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not flag_is_active_for_user(request.user, "organization_requests"):
-            excluded_fields = [
-                "portfolio",
-                "sub_organization",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
-            ]
-            # Hide FEB fields behind the organization requests flag
-            # and only show them if the portfolio is executive
-            if not (obj and obj.portfolio and obj.portfolio.federal_type == BranchChoices.EXECUTIVE):
-                excluded_fields.extend(
-                    [
-                        "feb_naming_requirements_details",
-                        "feb_purpose_choice",
-                        "time_frame_details",
-                        "interagency_initiative_details",
-                        "eop_stakeholder_first_name",
-                        "eop_stakeholder_last_name",
-                        "eop_stakeholder_email",
-                    ]
-                )
-                # This makes .gov domain collapsable underneath Requested By
-                fieldsets[2][1]["classes"] = ["collapse--dgfieldset"]
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in excluded_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
-        return fieldsets
+        if not org_flag:
+            excluded_fields.update(org_fields)
+            excluded_fields.update(feb_fields)
+
+        modified_fieldsets = []
+        for name, data in fieldsets:
+            fields = data.get("fields", [])
+            fields = tuple(field for field in fields if field not in excluded_fields)
+            modified_fieldsets.append((name, {**data, "fields": fields}))
+        return modified_fieldsets
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):

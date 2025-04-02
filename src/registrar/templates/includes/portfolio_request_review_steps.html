@@ -54,7 +54,7 @@
             </ul>
         {% endif %}
         {% if requires_feb_questions %}
-            <h4 class="margin-bottom-0">Meets Naming Requirements</h4>
+            <h4 class="margin-bottom-0">Meets naming requirements</h4>
             {% if domain_request.feb_naming_requirements is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.feb_naming_requirements %}
@@ -67,24 +67,18 @@
     {% endif %}
 
     {% if step == Step.PURPOSE %}
-        {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-        {% endwith %}
         {% if requires_feb_questions %}
+            {% with title=form_titles|get_item:step %}
+                {% include "includes/summary_item.html" with title=title value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
             <h4 class="margin-bottom-0">Purpose</h4>
-            {% if domain_request.feb_purpose_choice == "website" %}
-                <p class="margin-y-0">Used for a new website</p>
-                <p class="margin-y-0">{{domain_request.purpose}}</p>
-            {% elif domain_request.feb_purpose_choice == "redirect" %}
-                <p class="margin-y-0">Used as a redirect for an existing website</p>
-                <p class="margin-y-0">{{domain_request.purpose}}</p>
-            {% elif domain_request.feb_purpose_choice == "other" %}
-                <p class="margin-y-0">Not for a website</p>
+            {% if domain_request.feb_purpose_choice %}
+                <p class="margin-y-0">{{purpose_label}}</p>
                 <p class="margin-y-0">{{domain_request.purpose}}</p>
             {% else %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% endif %}
-            <h4 class="margin-bottom-0">Target Time Frame</h4>
+            <h4 class="margin-bottom-0">Target time frame</h4>
             {% if domain_request.has_timeframe is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.has_timeframe %}
@@ -92,7 +86,7 @@
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
-            <h4 class="margin-bottom-0">Interagency Initiative</h4>
+            <h4 class="margin-bottom-0">Interagency initiative</h4>
             {% if domain_request.is_interagency_initiative is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.is_interagency_initiative %}
@@ -100,23 +94,36 @@
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
+        {% else %}
+            {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
         {% endif %}
     {% endif %}
 
     {% if step == Step.ADDITIONAL_DETAILS %}
-        {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"None" %}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-        {% endwith %}
         {% if requires_feb_questions %}
-            <h4 class="margin-bottom-0">EOP Stakeholder</h4>
+            {% with title=form_titles|get_item:step %}
+                {% include "includes/summary_item.html" with title=title value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
+            <h4 class="margin-bottom-0">EOP contact</h4>
             {% if domain_request.working_with_eop is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.working_with_eop %}
                 <p class="margin-y-0">{{domain_request.eop_stakeholder_first_name}} {{domain_request.eop_stakeholder_last_name}}</p>
-                <p class="margin-y-0">{{domain_request.eop_stakeholder_email}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
+            <h4 class="margin-bottom-0">Anything else</h4>
+            {% if domain_request.anything_else %}
+                <p class="margin-y-0">{{domain_request.anything_else}}</p>
+            {% else %}
+                <p class="margin-y-0">None</p>
+            {% endif %}
+        {% else %}
+            {% with title=form_titles|get_item:step value=domain_request.anything_else|default:"None" %}
+                {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
+            {% endwith %}
         {% endif %}
     {% endif %}
 

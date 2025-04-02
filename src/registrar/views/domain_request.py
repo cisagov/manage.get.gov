@@ -625,6 +625,11 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             2: FEBAnythingElseYesNoForm
             3: PortfolioAnythingElseForm
         """
+        if not self.requires_feb_questions():
+            for i in range(3):
+                forms[i].mark_form_for_deletion()
+            # If FEB questions aren't required, validate only the anything else form
+            return forms[3].is_valid()
         eop_forms_valid = True
         if not forms[0].is_valid():
             # If the user isn't working with EOP, don't validate the EOP contact form
@@ -792,11 +797,11 @@ class Purpose(DomainRequestWizard):
             option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
             if option == "new":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Explain why a new domain is required."
+                    "required": "Provide details on why a new domain is required."
                 }
             elif option == "redirect":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Explain why a redirect is needed."
+                    "required": "Provide details on why a redirect is necessary."
                 }
             elif option == "other":
                 purpose_details_form.fields["purpose"].error_messages = {
@@ -965,6 +970,9 @@ class Review(DomainRequestWizard):
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
         context["requires_feb_questions"] = self.requires_feb_questions()
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
+            self.domain_request.feb_purpose_choice
+        )
         return context
 
     def goto_next_step(self):
@@ -1178,11 +1186,10 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
         context["Step"] = PortfolioDomainRequestStep.__members__
         context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
         context["form_titles"] = wizard.titles
-        logger.debug(self.object.is_feb())
-        logger.debug(flag_is_active_for_user(self.request.user, "organization_feature"))
         context["requires_feb_questions"] = self.object.is_feb() and flag_is_active_for_user(
             self.request.user, "organization_feature"
         )
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.object.feb_purpose_choice)
         return context
 
 
