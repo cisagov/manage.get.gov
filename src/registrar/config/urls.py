@@ -171,6 +171,7 @@ urlpatterns = [
     path(
         "admin/logout/",
         RedirectView.as_view(pattern_name="logout", permanent=False),
+        name="logout",
     ),
     path(
         "admin/analytics/export_data_type/",

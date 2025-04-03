@@ -90,6 +90,14 @@ class UserGroup(Group):
                     "delete_userportfoliopermission",
                 ],
             },
+            {
+                "app_label": "registrar",
+                "model": "portfolioinvitation",
+                "permissions": [
+                    "add_portfolioinvitation",
+                    "view_portfolioinvitation",
+                ],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end

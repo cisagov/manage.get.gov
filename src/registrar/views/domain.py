@@ -15,6 +15,7 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
@@ -405,6 +406,9 @@ class DomainView(DomainBaseView):
         default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
+        context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
+            user=self.request.user, portfolio=self.request.session.get("portfolio")
+        ).first()
 
         security_email = self.object.get_security_email()
         if security_email is None or security_email in default_emails:
@@ -707,6 +711,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
     )
 
 
+@grant_access(IS_STAFF)
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
