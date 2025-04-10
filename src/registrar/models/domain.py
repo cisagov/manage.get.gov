@@ -1284,7 +1284,8 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
 
         threshold_date = now + timedelta(days=60)
-        return now <= self.expiration_date <= threshold_date
+        # Test with code the same as main
+        return now < self.expiration_date <= threshold_date
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
