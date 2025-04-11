@@ -259,7 +259,6 @@ class HomeTests(TestWithUser):
         test_role.delete()
         test_domain.delete()
 
-
     @less_console_noise_decorator
     def test_state_help_text_no_expiration_date(self):
         """Tests if each domain state has help text when expiration date is None"""
