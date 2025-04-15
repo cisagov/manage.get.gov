@@ -327,7 +327,6 @@ class DomainRequestWizard(TemplateView):
         # present message that domain request cannot be submitted
         pending_requests = self.pending_requests()
         if not flag_is_active_for_user(self.request.user, "organization_feature") and len(pending_requests) > 0:
-            logger.debug("flag is active for user %s: %s" % self.request.user, flag_is_active_for_user(self.request.user, "organization_feature"))
             message_header = "You cannot submit this request yet"
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4> "
