@@ -23,6 +23,7 @@ from registrar.models.user import User
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
+from registrar.views.utility.invitation_helper import get_org_membership
 
 logger = logging.getLogger(__name__)
 
@@ -326,7 +327,9 @@ class DomainRequestWizard(TemplateView):
         # if pending requests exist and user does not have approved domains,
         # present message that domain request cannot be submitted
         pending_requests = self.pending_requests()
-        if len(pending_requests) > 0:
+        portfolio = self.request.session.get("portfolio")
+        _, member_of_this_org = get_org_membership(portfolio, self.request.user.email, self.request.user)
+        if not member_of_this_org and len(pending_requests) > 0:
             message_header = "You cannot submit this request yet"
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4> "
