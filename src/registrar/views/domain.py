@@ -26,7 +26,6 @@ from registrar.models import (
     DomainInformation,
     DomainInvitation,
     PortfolioInvitation,
-    User,
     UserDomainRole,
     PublicContact,
 )
@@ -333,7 +332,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if flag_is_active_for_user(self.request.user, "organization_feature") and (not info or info.portfolio):
+                    if flag_is_active_for_user(self.request.user, "organization_feature") and (
+                        not info or info.portfolio
+                    ):
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -371,14 +372,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         for role in manager_roles:
             manager = role.user
-            context["recipient"]=manager
+            context["recipient"] = manager
             try:
-                send_templated_email(
-                    template,
-                    subject_template,
-                    to_address=manager.email,
-                    context=context
-                )
+                send_templated_email(template, subject_template, to_address=manager.email, context=context)
             except EmailSendingError:
                 logger.warning(
                     "Could not send notification email to %s for domain %s",
