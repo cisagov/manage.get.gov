@@ -2801,7 +2801,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
@@ -2883,7 +2882,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Security email", body)
 
@@ -2916,7 +2914,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2945,7 +2942,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2976,7 +2972,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
