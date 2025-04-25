@@ -2806,6 +2806,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
@@ -2977,6 +2978,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_senior_official_when_portfolio(self):
         """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""
