@@ -16,6 +16,7 @@ We use [django-waffle](https://waffle.readthedocs.io/en/stable/) for our feature
 4. (Important) Set the field `Everyone` to `Unknown`. This field overrides all other settings when set to anything else.
 5. Configure the settings as you see fit.
 
+
 ## Enabling a feature flag with portfolio permissions
 1. Go to file `context_processors.py`
 2. Add feature flag name to the `porfolio_context` within the `portfolio_permissions` method. 
