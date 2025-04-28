@@ -1,4 +1,4 @@
-# 26. Django Waffle library for Feature Flags
+# 27. Ajax for Dynamic Content
 
 Date: 2024-05-22 (back dated)
 
