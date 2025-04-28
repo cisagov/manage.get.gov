@@ -2980,7 +2980,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     def test_no_notification_on_senior_official_when_portfolio(self):
-        """Test that an email is not sent when the senior official information is changed word
+        """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""
 
         self.domain_information.senior_official = Contact.objects.create(
