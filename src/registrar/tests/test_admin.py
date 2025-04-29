@@ -3536,7 +3536,7 @@ class TestContactAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "Contacts include anyone who has access to the registrar (known as “users”)")
+        self.assertContains(response, "This table contains anyone listed in a non-portfolio domain request")
         self.assertContains(response, "Show more")
 
     def test_readonly_when_restricted_staffuser(self):
@@ -3867,7 +3867,7 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "This table does not have a description yet.")
+        self.assertContains(response, "This table is used to populate \"federal agency\"")
         self.assertContains(response, "Show more")
 
 
