@@ -1,11 +1,36 @@
 <p>
-This table contains all domain requests that have been started within the registrar and the status of those requests. 
-Updating values here will immediately update the corresponding values that users see in the registrar. 
+    This table contains all .gov domain requests. If a green checkmark appears next to the “requested domain” 
+    in this table, then it came from a portfolio organization. Updating values in this table will immediately 
+    update the corresponding values that users see in the registrar. 
 </p>
 
 <p>
-Once a domain request has been adjudicated, the details of that request should not be modified. 
-To update attributes (like an organization’s name) after a domain’s approval, 
-go to <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>. 
-Similar fields display on each Domain page, but edits made there will not affect the corresponding domain request.
+    A domain request will have one of the following 
+    <a class="text-underline" href="https://get.gov/help/domain-requests/#check-the-status-of-your-domain-request">statuses</a>:
+</p>
+<ul>
+    <li>Started</li>
+    <li>Submitted *</li>
+    <li>In review</li>
+    <li>Action needed *</li>
+    <li>Rejected *</li>
+    <li>Withdrawn *</li>
+    <li>Ineligible</li>
+    <li>Approved *</li>
+</ul>
+
+<p>
+    If you change the status to one of those marked with an asterisk, then an email will be sent to the creator of that request.
+</p>
+<p>
+    Once a domain request has been adjudicated (i.e., set to Rejected, Withdrawn, Ineligible, or Approved), the details of that 
+    request should not be modified. To update attributes (like an organization’s name) after a domain’s approval, go to 
+    <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>. Similar fields display on each 
+    domain page, but edits made there will not affect the corresponding request.
+</p>
+
+<p>
+    If a domain is accidentally approved, an entry will be added to the 
+    <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a> table and an approval email will 
+    be sent. However, if the status is changed back before name servers are added, the request can be processed normally.
 </p>

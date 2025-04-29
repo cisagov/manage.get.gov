@@ -13,6 +13,9 @@ class HostIP(TimeStampedModel):
     This model exists to make hosts/nameservers and ip addresses
     available when registry is not available.
     """
+    class Meta:
+        verbose_name = "Host IP"
+        verbose_name_plural = "Host IPs"
 
     address = models.CharField(
         max_length=46,
