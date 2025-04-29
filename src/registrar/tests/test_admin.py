@@ -3867,7 +3867,7 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, 'If a federal agency name is incorrect')
+        self.assertContains(response, "If a federal agency name is incorrect")
         self.assertContains(response, "Show more")
 
 
