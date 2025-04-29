@@ -23,13 +23,6 @@ class UserFixture:
 
     ADMINS = [
         {
-            "username": "4aa78480-6272-42f9-ac29-a034ebdd9231",
-            "first_name": "Kaitlin",
-            "last_name": "Abbitt",
-            "email": "kaitlin.abbitt@cisa.dhs.gov",
-            "title": "Captain pirate",
-        },
-        {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
