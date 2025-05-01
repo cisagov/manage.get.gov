@@ -648,7 +648,6 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
-    r"/admin/logout"
 ]
 
 # where to go after logging out
