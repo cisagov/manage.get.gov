@@ -151,7 +151,7 @@ def send_templated_email(  # noqa
             )
 
     except Exception as exc:
-        raise EmailSendingError("Could not send SES email.", exc) from exc
+        raise EmailSendingError("Could not send SES email.") from exc
 
 
 def _can_send_email(to_address, bcc_address):
