@@ -1025,7 +1025,7 @@ class Review(DomainRequestWizard):
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
-                "erin.song@gsa.gov",
+                "ombdotgov@omb.eop.gov",
                 context=context,
             )
             logger.info(f"A submission confirmation email was sent to ombdotgov@omb.eop.gov")
