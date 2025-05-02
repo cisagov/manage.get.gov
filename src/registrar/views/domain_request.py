@@ -730,7 +730,7 @@ class DotgovDomain(DomainRequestWizard):
           3: ExecutiveNamingRequirementsDetailsForm
         """
         logger.debug("Validating dotgov domain form")
-        return True # TODO: remove after testing
+        return True  # TODO: remove after testing
         # If FEB questions aren't required, validate only non-FEB forms
         if not self.requires_feb_questions():
             forms_list[2].mark_form_for_deletion()
@@ -1007,21 +1007,19 @@ class Review(DomainRequestWizard):
             self.send_omb_submission_email()
         return self.done()
 
-
     def send_omb_submission_email(self):
         """Send a notification to OMB that a domain request has been submitted.
         Uses omb_submission_confirmation.txt template.
         """
-        is_analyst_action = "analyst_action" in self.request.session and "analyst_action_location" in self.request.session
+        is_analyst_action = (
+            "analyst_action" in self.request.session and "analyst_action_location" in self.request.session
+        )
         if is_analyst_action:
             logger.debug("No notification sent: Action was conducted by an analyst")
             return
 
         try:
-            context = {
-                "domain_request": self.domain_request,
-                "date": date.today()
-            }
+            context = {"domain_request": self.domain_request, "date": date.today()}
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
