@@ -1040,7 +1040,7 @@ class Finished(DomainRequestWizard):
     def get(self, request, *args, **kwargs):
         # clean up this wizard session, because we are done with it
         del self.storage
-        return render(self.request, self.template_name)\
+        return render(self.request, self.template_name)
 
 
 @grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
