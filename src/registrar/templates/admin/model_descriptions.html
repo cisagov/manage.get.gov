@@ -48,6 +48,8 @@
         {% include "django/admin/includes/descriptions/suborganization_description.html" %}
     {% elif opts.model_name == 'waffleflag' %}
         {% include "django/admin/includes/descriptions/waffle_flag_description.html" %}
+    {% elif opts.model_name == 'domaingroup' %}
+        {% include "django/admin/includes/descriptions/domain_group_description.html" %}
     {% else %}
         <p>This table does not have a description yet.</p>
     {% endif %}
