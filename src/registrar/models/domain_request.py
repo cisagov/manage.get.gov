@@ -1101,13 +1101,15 @@ class DomainRequest(TimeStampedModel):
             bcc_address = settings.DEFAULT_FROM_EMAIL
 
         if self.status in limited_statuses:
-            self._send_status_update_email(
-                "submission confirmation",
-                "emails/submission_confirmation.txt",
-                "emails/submission_confirmation_subject.txt",
-                send_email=True,
-                bcc_address=bcc_address,
-            )
+            # TODO: uncomment after testing
+            print("skip emailing portfolio members")
+            # self._send_status_update_email(
+            #     "submission confirmation",
+            #     "emails/submission_confirmation.txt",
+            #     "emails/submission_confirmation_subject.txt",
+            #     send_email=True,
+            #     bcc_address=bcc_address,
+            # )
 
     @transition(
         field="status",
