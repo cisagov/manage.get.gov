@@ -124,7 +124,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertNotContains(response, "Get registry status")
         self.assertNotContains(response, "Extend expiration date")
         self.assertNotContains(response, "Remove from registry")
-        self.assertContains(response, "Place hold")
+        self.assertNotContains(response, "Place hold")
         self.assertContains(response, "Save")
         self.assertNotContains(response, ">Delete<")
         # test whether fields are readonly or editable

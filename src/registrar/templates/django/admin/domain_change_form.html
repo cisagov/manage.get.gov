@@ -9,41 +9,41 @@
 {% endblock content %}
 
 {% block field_sets %}
-    <div class="display-flex flex-row flex-justify submit-row">
-        <div class="flex-align-self-start button-list-mobile">
-            {% if not adminform.form.is_omb_analyst %}
-            <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
-            {# Dja has margin styles defined on inputs as is. Lets work with it, rather than fight it. #}
-            <span class="mini-spacer"></span>
-            <input type="submit" value="Get registry status" name="_get_status">
-            {% endif %}
+    {% if not adminform.form.is_omb_analyst %}
+        <div class="display-flex flex-row flex-justify submit-row">
+
+            <div class="flex-align-self-start button-list-mobile">
+                <input id="manageDomainSubmitButton" type="submit" value="Manage domain" name="_edit_domain">
+                {# Dja has margin styles defined on inputs as is. Lets work with it, rather than fight it. #}
+                <span class="mini-spacer"></span>
+                <input type="submit" value="Get registry status" name="_get_status">
+            </div>
+
+            <div class="desktop:flex-align-self-end">
+                {% if original.state != original.State.DELETED %}
+                    <a class="text-middle" href="#toggle-extend-expiration-alert" aria-controls="toggle-extend-expiration-alert" data-open-modal>
+                        Extend expiration date
+                    </a>
+                    <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+                {% endif %}
+                {% if original.state == original.State.READY %}
+                    <a class="text-middle" href="#toggle-place-on-hold" aria-controls="toggle-place-on-hold" data-open-modal>
+                        Place hold
+                    </a>
+                {% elif original.state == original.State.ON_HOLD %}
+                    <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
+                {% endif %}
+                {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
+                    <span class="margin-left-05 margin-right-05 text-middle"> | </span>
+                {% endif %}
+                {% if original.state != original.State.DELETED %}
+                    <a class="text-middle" href="#toggle-remove-from-registry" aria-controls="toggle-remove-from-registry" data-open-modal>
+                        Remove from registry
+                    </a>
+                {% endif %}
+            </div>
         </div>
-        <div class="desktop:flex-align-self-end">
-            {% if original.state != original.State.DELETED and not adminform.form.is_omb_analyst %}
-            <a class="text-middle" href="#toggle-extend-expiration-alert" aria-controls="toggle-extend-expiration-alert" data-open-modal>
-                Extend expiration date
-            </a>
-            <span class="margin-left-05 margin-right-05 text-middle"> | </span>
-            {% endif %}
-            {% if original.state == original.State.READY %}
-            <a class="text-middle" href="#toggle-place-on-hold" aria-controls="toggle-place-on-hold" data-open-modal>
-                Place hold
-            </a>
-            {% elif original.state == original.State.ON_HOLD %}
-            <input type="submit" value="Remove hold" name="_remove_client_hold" class="custom-link-button">
-            {% endif %}
-            {% if original.state == original.State.READY or original.state == original.State.ON_HOLD %}
-            {% if not adminform.form.is_omb_analyst %}
-            <span class="margin-left-05 margin-right-05 text-middle"> | </span>
-            {% endif %}
-            {% endif %}
-            {% if original.state != original.State.DELETED and not adminform.form.is_omb_analyst %}
-            <a class="text-middle" href="#toggle-remove-from-registry" aria-controls="toggle-remove-from-registry" data-open-modal>
-                Remove from registry
-            </a>
-        {% endif %}
-        </div>
-    </div>
+    {% endif %}
 
     {% for fieldset in adminform %}
         {% include "django/admin/includes/domain_fieldset.html" with state_help_message=state_help_message %}
