@@ -6,6 +6,7 @@ export class MembersTable extends BaseTable {
 
   constructor() {
     super('member');
+    this.currentSortBy = 'member';
   }
 
   getBaseUrl() {
