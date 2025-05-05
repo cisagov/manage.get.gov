@@ -36,6 +36,20 @@
         {% include "django/admin/includes/descriptions/portfolio_invitation_description.html" %}
     {% elif opts.model_name == 'allowedemail' %}
         {% include "django/admin/includes/descriptions/allowed_email_description.html" %}
+    {% elif opts.model_name == 'federalagency' %}
+        {% include "django/admin/includes/descriptions/federal_agency_description.html" %}
+    {% elif opts.model_name == 'hostip' %}
+        {% include "django/admin/includes/descriptions/host_ip_description.html" %}
+    {% elif opts.model_name == 'portfolio' %}
+        {% include "django/admin/includes/descriptions/portfolio_description.html" %}
+    {% elif opts.model_name == 'seniorofficial' %}
+        {% include "django/admin/includes/descriptions/senior_official_description.html" %}
+    {% elif opts.model_name == 'suborganization' %}
+        {% include "django/admin/includes/descriptions/suborganization_description.html" %}
+    {% elif opts.model_name == 'waffleflag' %}
+        {% include "django/admin/includes/descriptions/waffle_flag_description.html" %}
+    {% elif opts.model_name == 'domaingroup' %}
+        {% include "django/admin/includes/descriptions/domain_group_description.html" %}
     {% else %}
         <p>This table does not have a description yet.</p>
     {% endif %}
