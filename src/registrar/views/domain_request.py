@@ -265,6 +265,11 @@ class DomainRequestWizard(TemplateView):
         self.domain_request.submit()  # change the status to submitted
         self.domain_request.save()
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
+        if self.requires_feb_questions():
+            try:
+                self.send_omb_submission_email()
+            except Exception:
+                messages.warning(request, "Could not send email confirmation to OMB.")
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
@@ -1003,8 +1008,6 @@ class Review(DomainRequestWizard):
         #     return self.goto(self.steps.current)
 
         # Notify OMB if an FEB request has been submitted
-        if self.requires_feb_questions():
-            self.send_omb_submission_email()
         return self.done()
 
     def send_omb_submission_email(self):
