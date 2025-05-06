@@ -162,3 +162,5 @@ There is an unresolved issue with python package installation that occurs after 
 
 ## Developing Using Docker
 While we have unresolved issues with certain devices, you can pull a pre-built docker image from matthewswspence/getgov-base that comes with all the needed packages installed. To do this, you will need to change the very first line in the main [Dockerfile](../../src/Dockerfile) to `FROM matthewswspence/getgov-base:latest`. Note: this change will need to be reverted before any branch can be merged. Additionally, this will only resolve the [checksum error](#checksum-error), you will still need to resolve any other issues through the listed instructions. We are actively working to resolve this inconvenience.
+
+Just testing down here if I am still verified when I push stuff up yay
