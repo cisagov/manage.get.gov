@@ -1068,6 +1068,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
+        "portfolios",
     ]
 
     # TODO: delete after we merge organization feature
