@@ -2971,7 +2971,40 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
+    @override_flag("organization_feature", active=True)
+    def test_get_fieldsets_cisa_analyst_organization(self):
+        with less_console_noise():
+            request = self.client.request().wsgi_request
+            request.user = self.staffuser
+            fieldsets = self.admin.get_fieldsets(request)
+            expected_fieldsets = (
+                (
+                    None,
+                    {
+                        "fields": (
+                            "status",
+                            "verification_type",
+                        )
+                    },
+                ),
+                ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+                (
+                    "Permissions",
+                    {
+                        "fields": (
+                            "is_active",
+                            "groups",
+                        )
+                    },
+                ),
+                ("Important dates", {"fields": ("last_login", "date_joined")}),
+                ("Associated portfolios", {"fields": ("portfolios",)}),
+            )
+
+            self.assertEqual(fieldsets, expected_fieldsets)
+
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
         """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
 
