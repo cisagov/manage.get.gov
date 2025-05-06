@@ -268,8 +268,8 @@ class DomainRequestWizard(TemplateView):
         if self.requires_feb_questions():
             try:
                 self.send_omb_submission_email()
-            except EmailSendingError:
-                messages.warning(request, "Could not send email confirmation to OMB.")
+            except Exception:
+                messages.warning(domain_request, "Could not send email confirmation to OMB.")
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
