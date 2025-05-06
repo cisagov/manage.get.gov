@@ -265,6 +265,7 @@ class DomainRequestWizard(TemplateView):
         self.domain_request.submit()  # change the status to submitted
         self.domain_request.save()
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
+        # Notify OMB if an FEB request has been submitted
         if self.requires_feb_questions():
             try:
                 self.send_omb_submission_email()
@@ -1007,7 +1008,6 @@ class Review(DomainRequestWizard):
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
 
-        # Notify OMB if an FEB request has been submitted
         return self.done()
 
     def send_omb_submission_email(self):
