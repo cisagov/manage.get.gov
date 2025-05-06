@@ -268,7 +268,7 @@ class DomainRequestWizard(TemplateView):
         if self.requires_feb_questions():
             try:
                 self.send_omb_submission_email()
-            except Exception:
+            except EmailSendingError:
                 messages.warning(request, "Could not send email confirmation to OMB.")
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
