@@ -14,6 +14,10 @@ class HostIP(TimeStampedModel):
     available when registry is not available.
     """
 
+    class Meta:
+        verbose_name = "Host IP"
+        verbose_name_plural = "Host IPs"
+
     address = models.CharField(
         max_length=46,
         null=False,
