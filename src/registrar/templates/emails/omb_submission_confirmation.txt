@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi OMB.
+Hi OMB,
 
 The {{ domain_request.portfolio.organization_name }} has requested a new .gov domain:
 

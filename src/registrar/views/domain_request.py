@@ -736,7 +736,6 @@ class DotgovDomain(DomainRequestWizard):
           3: ExecutiveNamingRequirementsDetailsForm
         """
         logger.debug("Validating dotgov domain form")
-        return True  # TODO: remove after testing
         # If FEB questions aren't required, validate only non-FEB forms
         if not self.requires_feb_questions():
             forms_list[2].mark_form_for_deletion()
