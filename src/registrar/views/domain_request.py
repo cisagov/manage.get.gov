@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -24,6 +25,7 @@ from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
+from ..utility.email import send_templated_email, EmailSendingError
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +265,12 @@ class DomainRequestWizard(TemplateView):
         self.domain_request.submit()  # change the status to submitted
         self.domain_request.save()
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
+        # Notify OMB if an FEB request has been submitted
+        if self.requires_feb_questions():
+            try:
+                self.send_omb_submission_email()
+            except Exception:
+                logger.warning(self.domain_request, "Could not send email confirmation to OMB.")
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
@@ -979,7 +987,6 @@ class Review(DomainRequestWizard):
         return context
 
     def goto_next_step(self):
-        return self.done()
         # TODO: validate before saving, show errors
         # Extra info:
         #
@@ -999,6 +1006,31 @@ class Review(DomainRequestWizard):
         # else:
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
+
+        return self.done()
+
+    def send_omb_submission_email(self):
+        """Send a notification to OMB that a domain request has been submitted.
+        Uses omb_submission_confirmation.txt template.
+        """
+        is_analyst_action = (
+            "analyst_action" in self.request.session and "analyst_action_location" in self.request.session
+        )
+        if is_analyst_action:
+            logger.debug("No notification sent: Action was conducted by an analyst")
+            return
+
+        try:
+            context = {"domain_request": self.domain_request, "date": date.today()}
+            send_templated_email(
+                "emails/omb_submission_confirmation.txt",
+                "emails/omb_submission_confirmation_subject.txt",
+                "ombdotgov@omb.eop.gov",
+                context=context,
+            )
+            logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
+        except EmailSendingError:
+            logger.warning("Failed to send confirmation email", exc_info=True)
 
 
 class Finished(DomainRequestWizard):
