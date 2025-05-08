@@ -1264,7 +1264,8 @@ class Domain(TimeStampedModel, DomainHelper):
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=False,
+        unique=True,
+        # unique=False,
         help_text="Fully qualified domain name",
         verbose_name="domain",
     )
