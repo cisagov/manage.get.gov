@@ -1068,6 +1068,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         "Important dates",
         "last_login",
         "date_joined",
+        "portfolios",
     ]
 
     # TODO: delete after we merge organization feature
@@ -2741,6 +2742,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
+    # ------ FEB fields ------
+
     # This is just a placeholder. This field will be populated in the detail_table_fieldset view.
     # This is not a field that exists on the model.
     def status_history(self, obj):
@@ -2821,7 +2824,16 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 ]
             },
         ),
-        (".gov domain", {"fields": ["requested_domain", "alternative_domains"]}),
+        (
+            ".gov domain",
+            {
+                "fields": [
+                    "requested_domain",
+                    "alternative_domains",
+                    "feb_naming_requirements_details",
+                ]
+            },
+        ),
         (
             "Contacts",
             {
@@ -2833,10 +2845,24 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "cisa_representative_first_name",
                     "cisa_representative_last_name",
                     "cisa_representative_email",
+                    "eop_stakeholder_first_name",
+                    "eop_stakeholder_last_name",
                 ]
             },
         ),
-        ("Background info", {"fields": ["purpose", "anything_else", "current_websites"]}),
+        (
+            "Background info",
+            {
+                "fields": [
+                    "feb_purpose_choice",
+                    "purpose",
+                    "time_frame_details",
+                    "interagency_initiative_details",
+                    "anything_else",
+                    "current_websites",
+                ]
+            },
+        ),
         (
             "Type of organization",
             {
@@ -3033,23 +3059,41 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
+        excluded_fields = set()
+        feb_fields = [
+            "feb_naming_requirements_details",
+            "feb_purpose_choice",
+            "time_frame_details",
+            "interagency_initiative_details",
+            "eop_stakeholder_first_name",
+            "eop_stakeholder_last_name",
+        ]
+
+        org_fields = [
+            "portfolio",
+            "sub_organization",
+            "requested_suborganization",
+            "suborganization_city",
+            "suborganization_state_territory",
+        ]
+
+        org_flag = flag_is_active_for_user(request.user, "organization_requests")
+        # Hide FEB fields for non-FEB requests
+        if not (obj and obj.portfolio and obj.is_feb()):
+            excluded_fields.update(feb_fields)
+
         # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not flag_is_active_for_user(request.user, "organization_requests"):
-            excluded_fields = [
-                "portfolio",
-                "sub_organization",
-                "requested_suborganization",
-                "suborganization_city",
-                "suborganization_state_territory",
-            ]
-            modified_fieldsets = []
-            for name, data in fieldsets:
-                fields = data.get("fields", [])
-                fields = tuple(field for field in fields if field not in excluded_fields)
-                modified_fieldsets.append((name, {**data, "fields": fields}))
-            return modified_fieldsets
-        return fieldsets
+        if not org_flag:
+            excluded_fields.update(org_fields)
+            excluded_fields.update(feb_fields)
+
+        modified_fieldsets = []
+        for name, data in fieldsets:
+            fields = data.get("fields", [])
+            fields = tuple(field for field in fields if field not in excluded_fields)
+            modified_fieldsets.append((name, {**data, "fields": fields}))
+        return modified_fieldsets
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):

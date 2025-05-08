@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django_webtest import WebTest  # type: ignore
@@ -191,7 +191,7 @@ class HomeTests(TestWithUser):
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
                 # Create a domain and a UserRole with the given params
                 test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
-                test_domain.expiration_date = date.today()
+                test_domain.expiration_date = date.today() + timedelta(days=61)
                 test_domain.save()
 
                 user_role, _ = UserDomainRole.objects.get_or_create(
@@ -231,6 +231,30 @@ class HomeTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
+
+        test_role.delete()
+        test_domain.delete()
+
+    @less_console_noise_decorator
+    def test_state_help_text_is_expiring(self):
+        """Tests if each domain state has help text when expired"""
+        is_expiring_text = "This domain is expiring soon"
+        test_domain, _ = Domain.objects.get_or_create(name="is-expiring.gov", state=Domain.State.READY)
+        test_domain.expiration_date = date.today()
+        test_domain.save()
+
+        test_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Grab the json response of the domains list
+        response = self.client.get("/get-domains-json/")
+
+        # Make sure the domain is in the response
+        self.assertContains(response, "is-expiring.gov", count=1)
+
+        # Check that we have the right text content.
+        self.assertContains(response, is_expiring_text, count=1)
 
         test_role.delete()
         test_domain.delete()

@@ -294,7 +294,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "This table contains all domain requests")
+        self.assertContains(response, "This table contains all .gov domain requests")
         self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
@@ -2064,7 +2064,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "working_with_eop",
             "eop_stakeholder_first_name",
             "eop_stakeholder_last_name",
-            "eop_stakeholder_email",
             "purpose",
             "has_timeframe",
             "time_frame_details",

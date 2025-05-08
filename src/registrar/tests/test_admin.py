@@ -2971,7 +2971,40 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
+    @override_flag("organization_feature", active=True)
+    def test_get_fieldsets_cisa_analyst_organization(self):
+        with less_console_noise():
+            request = self.client.request().wsgi_request
+            request.user = self.staffuser
+            fieldsets = self.admin.get_fieldsets(request)
+            expected_fieldsets = (
+                (
+                    None,
+                    {
+                        "fields": (
+                            "status",
+                            "verification_type",
+                        )
+                    },
+                ),
+                ("User profile", {"fields": ("first_name", "middle_name", "last_name", "title", "email", "phone")}),
+                (
+                    "Permissions",
+                    {
+                        "fields": (
+                            "is_active",
+                            "groups",
+                        )
+                    },
+                ),
+                ("Important dates", {"fields": ("last_login", "date_joined")}),
+                ("Associated portfolios", {"fields": ("portfolios",)}),
+            )
+
+            self.assertEqual(fieldsets, expected_fieldsets)
+
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
         """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
 
@@ -3536,7 +3569,7 @@ class TestContactAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "Contacts include anyone who has access to the registrar (known as “users”)")
+        self.assertContains(response, "This table contains anyone listed in a non-portfolio domain request")
         self.assertContains(response, "Show more")
 
     def test_readonly_when_restricted_staffuser(self):
@@ -3867,7 +3900,7 @@ class TestFederalAgencyAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "This table does not have a description yet.")
+        self.assertContains(response, "If a federal agency name is incorrect")
         self.assertContains(response, "Show more")
 
 
