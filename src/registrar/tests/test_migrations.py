@@ -43,6 +43,8 @@ class TestGroups(TestCase):
             "add_portfolio",
             "change_portfolio",
             "delete_portfolio",
+            "add_portfolioinvitation",
+            "view_portfolioinvitation",
             "add_seniorofficial",
             "change_seniorofficial",
             "delete_seniorofficial",

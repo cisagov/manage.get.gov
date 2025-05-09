@@ -17,7 +17,7 @@ export function hookupYesNoListener(radioButtonName, elementIdToShowIfYes, eleme
         'False': elementIdToShowIfNo
     });
 }
-  
+
 /** 
  * Hookup listeners for radio togglers in form fields.
  * 
@@ -61,6 +61,60 @@ export function hookupRadioTogglerListener(radioButtonName, valueToElementMap) {
             let elementToShow = document.getElementById(valueToElementMap[selectedValue]);
             if (elementToShow) {
             showElement(elementToShow);
+            }
+        }
+    }
+
+    if (radioButtons && radioButtons.length) {
+        // Add event listener to each radio button
+        radioButtons.forEach(function (radioButton) {
+            radioButton.addEventListener('change', handleRadioButtonChange);
+        });
+    
+        // Initialize by checking the current state
+        handleRadioButtonChange();
+    }
+}
+  
+/** 
+ * Hookup listeners for radio togglers in form fields.
+ * 
+ * Parameters:
+ *  - radioButtonName: The "name=" value for the radio buttons being used as togglers
+ *  - valueToCallbackMap: An object where keys are the values of the radio buttons, 
+ *    and values are dictionaries containing a 'callback' key and an optional 'element' key. 
+ *    If provided, the element will be passed in as the second argument to the callback function.
+ * 
+ * Usage Example:
+ * Assuming you have radio buttons with values 'option1', 'option2', and 'option3',
+ * and corresponding callback functions 'function1', 'function2', 'function3' that will
+ * apply to elements 'element1', 'element2', 'element3' respectively.
+ * 
+ * hookupCallbacksToRadioToggler('exampleRadioGroup', {
+ *      'option1': {callback: function1, element: element1},
+ *      'option2': {callback: function2, element: element2},
+ *      'option3': {callback: function3}  // No element provided
+ *    });
+ * 
+ * Picking the 'option1' radio button will call function1('option1', element1).
+ * Picking the 'option3' radio button will call function3('option3') without a second parameter.
+ **/
+export function hookupCallbacksToRadioToggler(radioButtonName, valueToCallbackMap) {
+    // Get the radio buttons
+    let radioButtons = document.querySelectorAll(`input[name="${radioButtonName}"]`);
+    
+    function handleRadioButtonChange() {
+        // Find the checked radio button
+        let radioButtonChecked = document.querySelector(`input[name="${radioButtonName}"]:checked`);
+        let selectedValue = radioButtonChecked ? radioButtonChecked.value : null;
+    
+        // Execute the callback function for the selected value
+        if (selectedValue && valueToCallbackMap[selectedValue]) {
+            const entry = valueToCallbackMap[selectedValue];
+            if ('element' in entry) {
+                entry.callback(selectedValue, entry.element);
+            } else {
+                entry.callback(selectedValue);
             }
         }
     }

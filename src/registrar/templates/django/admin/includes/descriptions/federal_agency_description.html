@@ -1,0 +1,21 @@
+<p>This table is used to populate “federal agency” drop-down menus in the registrar and in the following Django tables:</p>
+
+<ul>
+    <li>
+        <a class="text-underline" href="{% url 'admin:registrar_domainrequest_changelist' %}">Domain requests</a>
+    </li>
+    <li>
+        <a class="text-underline" href="{% url 'admin:registrar_domain_changelist' %}">Domains</a>
+    </li>
+    <li>
+        <a class="text-underline" href="{% url 'admin:registrar_portfolio_changelist' %}">Portfolios</a>
+    </li>
+    <li>
+        <a class="text-underline" href="{% url 'admin:registrar_seniorofficial_changelist' %}">Senior officials</a>
+    </li>
+</ul>
+
+<p>
+    If a federal agency name is incorrect or needs to be changed, you should edit the existing record rather than create a 
+    new one. That way relationships with that record do not break within other Django tables.
+</p>

@@ -1,0 +1,17 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+
+{% block content_subtitle %}
+    <div class="usa-alert usa-alert--info usa-alert--slim">
+        <div class="usa-alert__body margin-left-1 maxw-none">
+            <p class="usa-alert__text maxw-none">
+                If you cancel the portfolio invitation here, it won't trigger any email notifications. 
+                It also won't remove the user's portfolio access if they already logged in. Go to the 
+                <a href="{% url 'admin:registrar_userportfoliopermission_changelist' %}">
+                    User Portfolio Permissions
+                </a>
+                table if you want to remove their portfolio access.
+            </p>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}

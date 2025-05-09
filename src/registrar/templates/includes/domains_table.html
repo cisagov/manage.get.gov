@@ -26,54 +26,32 @@
 {% endif %}
 
 <section class="section-outlined domains margin-top-0{% if portfolio %} section-outlined--border-base-light{% endif %}" id="domains">
-  <div class="section-outlined__header margin-bottom-3 {% if not portfolio %} section-outlined__header--no-portfolio justify-content-space-between{% else %} grid-row{% endif %}">
+  <div class="section-outlined__header margin-bottom-3 grid-row">
     {% if not portfolio %}
-      <h2 id="domains-header" class="display-inline-block">Domains</h2>
+      <div class="grid-row grid-col-12">
+        <h2 id="domains-header" class="display-inline-block flex-fill">Domains</h2>
+        <!-- ---------- EXPORT (non-org placement) ---------- -->
+        {% if user_domain_count and user_domain_count > 0 %}
+          {% with export_aria="Domains report component" export_url='export_data_type_user' %}
+              {% include "includes/export.html" %}
+          {% endwith %}
+        {% endif %}
+      </div>
     {% else %}
       <!-- Embedding the portfolio value in a data attribute -->
       <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
     {% endif %}
-    <div class="section-outlined__search section-outlined__search--widescreen {% if portfolio %}mobile:grid-col-12 desktop:grid-col-6{% endif %}">
-      <section aria-label="Domains search component" class="margin-top-2">
-        <form class="usa-search usa-search--small" method="POST" role="search">
-          {% csrf_token %}
-          <button class="usa-button usa-button--unstyled margin-right-3 display-none" id="domains__reset-search" type="button">
-            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-              <use xlink:href="{%static 'img/sprite.svg'%}#close"></use>
-            </svg>
-            Reset
-          </button>
-          <label id="domains__search-label" class="usa-sr-only" for="domains__search-field">Search by domain name</label>
-          <input
-            class="usa-input"
-            id="domains__search-field"
-            type="search"
-            name="domains-search"
-            placeholder="Search by domain name"
-          />
-          <button class="usa-button" type="submit" id="domains__search-field-submit" aria-labelledby="domains__search-label">
-            <img
-              src="{% static 'img/usa-icons-bg/search--white.svg' %}"
-              class="usa-search__submit-icon"
-              alt="Search"
-            />
-          </button>
-        </form>
-      </section>
-    </div>
-    {% if user_domain_count and user_domain_count > 0 %}
-    <div class="section-outlined__utility-button mobile-lg:padding-right-105 {% if portfolio %} mobile:grid-col-12 desktop:grid-col-6 desktop:padding-left-3{% endif %}">
-      <section aria-label="Domains report component" class="margin-top-205">
-        <a href="{% url 'export_data_type_user' %}" class="usa-button usa-button--unstyled usa-button--with-icon usa-button--justify-right">
-          <svg class="usa-icon usa-icon--large" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-            <use xlink:href="{%static 'img/sprite.svg'%}#file_download"></use>
-          </svg>Export as CSV
-        </a>
-      </section>
-    </div>
+    <!-- ---------- SEARCH ---------- -->
+    {% with label_text="Search by domain name" item_name="domains" aria_label_text="Domains search component"%}
+      {% include "includes/search.html" %}
+    {% endwith %}
+    <!-- ---------- EXPORT (org placement) ---------- -->
+    {% if user_domain_count and user_domain_count > 0 and portfolio%}
+      {% with export_aria="Domains report component" export_url='export_data_type_user' %}
+          {% include "includes/export.html" %}
+      {% endwith %}
     {% endif %}
   </div>
-
   <!-- Non org model banner -->
   {% if num_expiring_domains > 0 and not portfolio %}
   <section class="usa-site-alert--slim usa-site-alert--info margin-bottom-2 {% if add_class %}{{ add_class }}{% endif %}" aria-label="Site alert">
@@ -198,7 +176,7 @@
       </svg>
     </button>
   </div>
-  <div class="display-none usa-table-container--scrollable margin-top-0" tabindex="0" id="domains__table-wrapper">
+  <div class="display-none usa-table-container--scrollable usa-table-container--override-overflow margin-top-0" tabindex="0" id="domains__table-wrapper">
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>

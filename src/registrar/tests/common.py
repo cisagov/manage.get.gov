@@ -1010,6 +1010,27 @@ def create_user(**kwargs):
     return user
 
 
+def create_omb_analyst_user(**kwargs):
+    """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
+    User = get_user_model()
+    p = "userpass"
+    user = User.objects.create_user(
+        username=kwargs.get("username", "ombanalystuser"),
+        email=kwargs.get("email", "ombanalyst@example.com"),
+        first_name=kwargs.get("first_name", "first"),
+        last_name=kwargs.get("last_name", "last"),
+        is_staff=kwargs.get("is_staff", True),
+        title=kwargs.get("title", "title"),
+        password=kwargs.get("password", p),
+        phone=kwargs.get("phone", "8003111234"),
+    )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="omb_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
+
+
 def create_test_user():
     username = "test_user"
     first_name = "First"
@@ -1071,7 +1092,7 @@ def completed_domain_request(  # noqa
         email="testy@town.com",
         phone="(555) 555 5555",
     )
-    domain, _ = DraftDomain.objects.get_or_create(name=name)
+    domain = DraftDomain.objects.create(name=name)
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -1423,10 +1444,8 @@ class MockEppLib(TestCase):
         ],
     )
 
-    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
-    )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultTech", "help@get.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
@@ -1449,7 +1468,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainThreeHosts = fakedEppObject(
-        "my-nameserver.gov",
+        "threenameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
@@ -1460,7 +1479,7 @@ class MockEppLib(TestCase):
     )
 
     infoDomainFourHosts = fakedEppObject(
-        "fournameserversDomain.gov",
+        "fournameserversdomain.gov",
         cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
         contacts=[],
         hosts=[
@@ -1468,6 +1487,47 @@ class MockEppLib(TestCase):
             "ns1.my-nameserver-2.com",
             "ns1.cats-are-superior3.com",
             "ns1.explosive-chicken-nuggets.com",
+        ],
+    )
+
+    infoDomainTwelveHosts = fakedEppObject(
+        "twelvenameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+        ],
+    )
+
+    infoDomainThirteenHosts = fakedEppObject(
+        "thirteennameserversdomain.gov",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[],
+        hosts=[
+            "ns1.my-nameserver-1.com",
+            "ns1.my-nameserver-2.com",
+            "ns1.cats-are-superior3.com",
+            "ns1.explosive-chicken-nuggets.com",
+            "ns5.example.com",
+            "ns6.example.com",
+            "ns7.example.com",
+            "ns8.example.com",
+            "ns9.example.com",
+            "ns10.example.com",
+            "ns11.example.com",
+            "ns12.example.com",
+            "ns13.example.com",
         ],
     )
 
@@ -1585,6 +1645,26 @@ class MockEppLib(TestCase):
             "ns1.justnameserver.com",
             "ns2.justnameserver.com",
         ],
+    )
+
+    noNameserver = fakedEppObject(
+        "nonameserver.com",
+        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        contacts=[
+            common.DomainContact(
+                contact="securityContact",
+                type=PublicContact.ContactTypeChoices.SECURITY,
+            ),
+            common.DomainContact(
+                contact="technicalContact",
+                type=PublicContact.ContactTypeChoices.TECHNICAL,
+            ),
+            common.DomainContact(
+                contact="adminContact",
+                type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            ),
+        ],
+        hosts=[],
     )
 
     infoDomainCheckHostIPCombo = fakedEppObject(
@@ -1801,10 +1881,13 @@ class MockEppLib(TestCase):
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
             "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
+            "twelvenameserversdomain.gov": (self.infoDomainTwelveHosts, None),
+            "thirteennameserversdomain.gov": (self.infoDomainThirteenHosts, None),
             "defaultsecurity.gov": (self.InfoDomainWithDefaultSecurityContact, None),
             "adomain2.gov": (self.InfoDomainWithVerisignSecurityContact, None),
             "defaulttechnical.gov": (self.InfoDomainWithDefaultTechnicalContact, None),
             "justnameserver.com": (self.justNameserver, None),
+            "nonameserver.com": (self.noNameserver, None),
             "meoward.gov": (self.mockDataInfoDomainSubdomain, None),
             "meow.gov": (self.mockDataInfoDomainSubdomainAndIPAddress, None),
             "fakemeow.gov": (self.mockDataInfoDomainNotSubdomainNoIP, None),
@@ -1848,7 +1931,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail" and self.mockedSendFunction.call_count == 3:
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
@@ -1863,7 +1953,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockDeleteContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail":
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists:
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:
             return MagicMock(
@@ -1877,14 +1974,23 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
+            disclose_fields = {field for field in DF} - fields
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc", DF.NAME: "loc"}
+
+        di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(

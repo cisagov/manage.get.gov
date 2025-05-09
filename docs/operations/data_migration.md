@@ -894,32 +894,32 @@ Example: `cf ssh getgov-za`
 
 #### Step 5: Running the script
 To create a specific portfolio: 
-```./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
+```./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --parse_domains --parse_requests --parse_managers```
 Example (only requests): `./manage.py create_federal_portfolio "AMTRAK" --parse_requests`
 
 To create a portfolios for all federal agencies in a branch: 
-```./manage.py create_federal_portfolio --branch "{executive|legislative|judicial}" --both```
+```./manage.py create_federal_portfolio --branch "{executive|legislative|judicial}" --parse_domains --parse_requests --parse_managers```
 Example (only requests): `./manage.py create_federal_portfolio --branch "executive" --parse_requests`
 
 ### Running locally
 
 #### Step 1: Running the script
-```docker-compose exec app ./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --both```
+```docker-compose exec app ./manage.py create_federal_portfolio --agency_name "{federal_agency_name}" --parse_domains```
 
 ##### Parameters
 |   | Parameter                    | Description                                                                                |
 |:-:|:---------------------------- |:-------------------------------------------------------------------------------------------|
 | 1 | **agency_name**              | Name of the FederalAgency record surrounded by quotes. For instance,"AMTRAK".              |
 | 2 | **branch**                   | Creates a portfolio for each federal agency in a branch: executive, legislative, judicial  |
-| 3 | **both**                     | If True, runs parse_requests and parse_domains.                                            |
-| 4 | **parse_requests**           | If True, then the created portfolio is added to all related DomainRequests.                |
-| 5 | **parse_domains**            | If True, then the created portfolio is added to all related Domains.                       |
-| 6 | **add_managers**             | If True, then the created portfolio will add all managers of the portfolio domains as members of the portfolio, including invited managers.                                                                                      |
-| 7 | **skip_existing_portfolios** | If True, then the script will only create suborganizations, modify DomainRequest, and modify DomainInformation records only when creating a new portfolio. Use this flag when you do not want to modify existing records.       |
+| 3 | **parse_requests**           | If True, then the created portfolio is added to all related DomainRequests.                |
+| 4 | **parse_domains**            | If True, then the created portfolio is added to all related Domains.                       |
+| 5 | **parse_members**            | If True, then the created portfolio will add all managers of the portfolio domains as members of the portfolio, including invited managers.                                                                                      |
+| 6 | **skip_existing_portfolios** | If True, then the script will only create suborganizations, modify DomainRequest, and modify DomainInformation records only when creating a new portfolio. Use this flag when you do not want to modify existing records.       |
+| 7 | **Debug**                    | Increases log verbosity                                                                    |
 
 - Parameters #1-#2: Either `--agency_name` or `--branch` must be specified. Not both.
-- Parameters #2-#3, you cannot use `--both` while using these. You must specify either `--parse_requests` or `--parse_domains` seperately. While all of these parameters are optional in that you do not need to specify all of them,
-you must specify at least one to run this script.
+- Parameters #3-#5, while all of these parameters are optional in that you do not need to specify all of them,
+you must specify at least one to run this script. You can also chain all of them together.
 
 
 ## Patch suborganizations

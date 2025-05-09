@@ -21,6 +21,8 @@ function handlePortfolioFields(){
     const federalTypeField = document.querySelector(".field-federal_type");
     const urbanizationField = document.querySelector(".field-urbanization");
     const stateTerritoryDropdown = document.getElementById("id_state_territory");
+    const stateTerritoryField = document.querySelector(".field-state_territory");
+    const stateTerritoryReadonly = stateTerritoryField.querySelector(".readonly");
     const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
     const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
     const federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
@@ -85,9 +87,9 @@ function handlePortfolioFields(){
      * 2. else show org name, hide federal agency, hide federal type if applicable
      */
     function handleOrganizationTypeChange() {
-        if (organizationTypeDropdown && organizationNameField) {
-            let selectedValue = organizationTypeDropdown.value;
-            if (selectedValue === "federal") {
+        if (organizationTypeField && organizationNameField) {
+            let selectedValue = organizationTypeDropdown ? organizationTypeDropdown.value : organizationTypeReadonly.innerText;
+            if (selectedValue === "federal" || selectedValue === "Federal") {
                 hideElement(organizationNameField);
                 showElement(federalAgencyField);
                 if (federalTypeField) {
@@ -207,8 +209,8 @@ function handlePortfolioFields(){
      * Handle urbanization
      */
     function handleStateTerritoryChange() {
-        let selectedValue = stateTerritoryDropdown.value;
-        if (selectedValue === "PR") {
+        let selectedValue = stateTerritoryDropdown ? stateTerritoryDropdown.value : stateTerritoryReadonly.innerText;
+        if (selectedValue === "PR" || selectedValue === "Puerto Rico (PR)") {
             showElement(urbanizationField)
         } else {
             hideElement(urbanizationField)
@@ -265,7 +267,7 @@ function handlePortfolioFields(){
      * Initializes necessary data and display configurations for the portfolio fields.
      */
     function initializePortfolioSettings() {
-        if (urbanizationField && stateTerritoryDropdown) {
+        if (urbanizationField && stateTerritoryField) {
             handleStateTerritoryChange();
         }
         handleOrganizationTypeChange();
@@ -285,9 +287,11 @@ function handlePortfolioFields(){
                 handleStateTerritoryChange();
             });
         }
-        organizationTypeDropdown.addEventListener("change", function() {
-            handleOrganizationTypeChange();
-        });
+        if (organizationTypeDropdown) {
+            organizationTypeDropdown.addEventListener("change", function() {
+                handleOrganizationTypeChange();
+            });
+        }
     }
 
     // Run initial setup functions

@@ -33,8 +33,8 @@
         {{ tabtitle }} |
     {% else %}
         {{ title }} |
-    {% endif %}
-    {{ site_title|default:_('Django site admin') }}
+    {% endif %} 
+    Django admin
 {% endblock %}
 
 {% block extrastyle %}{{ block.super }}
@@ -87,7 +87,7 @@
           {% if user.has_usable_password %}
               <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
           {% endif %}
-              <a href="{% url 'admin:logout' %}" id="admin-logout-button">{% translate 'Log out' %}</a>
+              <a href="{% url 'logout' %}" id="admin-logout-button">{% translate 'Log out' %}</a>
           {% include "admin/color_theme_toggle.html" %}
         {% endblock %}
     </div>

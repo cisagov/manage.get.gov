@@ -7,7 +7,7 @@
 
   <!-- Banner for if_policy_acknowledged -->
   {% if form.is_policy_acknowledged.errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2">
+    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
       <div class="usa-alert__body">
         {% for error in form.is_policy_acknowledged.errors %}
           <p class="usa-alert__text">{{ error }}</p>

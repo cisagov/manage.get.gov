@@ -79,3 +79,14 @@ legend.float-left-tablet + button.float-right-tablet {
 .bg-gray-1 .usa-radio {
   background: color('gray-1');
 }
+
+.usa-textarea--digest {
+  max-height: 4rem;
+  min-width: 13rem;
+  resize: none;
+  overflow: hidden;
+}
+
+.usa-form .usa-button.margin-top-2 {
+  margin-top: units(2) !important;
+}

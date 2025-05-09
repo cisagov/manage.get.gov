@@ -22,6 +22,7 @@ from registrar.models.utility.portfolio_helper import (
     get_domains_display,
     get_members_description_display,
     get_members_display,
+    get_portfolio_invitation_associations,
 )
 
 logger = logging.getLogger(__name__)
@@ -410,6 +411,27 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
         model = UserPortfolioPermission
         fields = ["roles", "additional_permissions"]
 
+    def clean(self):
+        """
+        Override of clean to ensure that the user isn't removing themselves
+        if they're the only portfolio admin
+        """
+        super().clean()
+        role = self.cleaned_data.get("role")
+        if self.instance and hasattr(self.instance, "user") and hasattr(self.instance, "portfolio"):
+            if role and self.instance.user.is_only_admin_of_portfolio(self.instance.portfolio):
+                # This is how you associate a validation error to a particular field.
+                # The alternative is to do this in clean_role, but execution order matters.
+                raise forms.ValidationError(
+                    {
+                        "role": forms.ValidationError(
+                            "You can't change your member access because you're "
+                            "the only admin for this organization. "
+                            "To change your access, you'll need to add another admin."
+                        )
+                    }
+                )
+
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
     """
@@ -445,3 +467,35 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
     class Meta:
         model = PortfolioInvitation
         fields = ["portfolio", "email", "roles", "additional_permissions"]
+
+    def _post_clean(self):
+        """
+        Override _post_clean to customize model validation errors.
+        This runs after form clean is complete, but before the errors are displayed.
+        """
+        try:
+            super()._post_clean()
+            self.instance.clean()
+        except forms.ValidationError as e:
+            override_error = False
+            if hasattr(e, "code"):
+                field = "email" if "email" in self.fields else None
+                if e.code == "has_existing_permissions":
+                    existing_permissions, existing_invitations = get_portfolio_invitation_associations(self.instance)
+
+                    same_portfolio_for_permissions = existing_permissions.exclude(portfolio=self.instance.portfolio)
+                    same_portfolio_for_invitations = existing_invitations.exclude(portfolio=self.instance.portfolio)
+                    if same_portfolio_for_permissions.exists() or same_portfolio_for_invitations.exists():
+                        self.add_error(
+                            field, f"{self.instance.email} is already a member of another .gov organization."
+                        )
+                    override_error = True
+                elif e.code == "has_existing_invitations":
+                    self.add_error(
+                        field, f"{self.instance.email} has already been invited to another .gov organization."
+                    )
+                    override_error = True
+
+            # Errors denoted as "__all__" are special error types reserved for the model level clean function
+            if override_error and "__all__" in self._errors:
+                del self._errors["__all__"]

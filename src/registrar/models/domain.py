@@ -245,6 +245,7 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -254,6 +255,29 @@ class Domain(TimeStampedModel, DomainHelper):
         domain_name = domain.lower()
         req = commands.CheckDomain([domain_name])
         return registry.send(req, cleaned=True).res_data[0].avail
+
+    @classmethod
+    def is_pending_delete(cls, domain: str) -> bool:
+        """Check if domain is pendingDelete state via response from registry."""
+        domain_name = domain.lower()
+
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
+            # Ensure res_data exists and is not empty
+            if info_response and info_response.res_data:
+                # Use _extract_data_from_response bc it's same thing but jsonified
+                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
+                domain_status_state = domain_response.get("statuses")
+                if "pendingDelete" in str(domain_status_state):
+                    return True
+        except RegistryError as err:
+            if not err.is_connection_error():
+                logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
+                return False
+            else:
+                raise err
+        return False
 
     @classmethod
     def registered(cls, domain: str) -> bool:
@@ -645,7 +669,6 @@ class Domain(TimeStampedModel, DomainHelper):
         oldDnssecdata = self.dnssecdata
         addDnssecdata: dict = {}
         remDnssecdata: dict = {}
-
         if _dnssecdata and _dnssecdata.dsData is not None:
             # initialize addDnssecdata and remDnssecdata for dsData
             addDnssecdata["dsData"] = _dnssecdata.dsData
@@ -696,15 +719,15 @@ class Domain(TimeStampedModel, DomainHelper):
             added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
             deleted_record = "dsData" in _remDnssecdata and _remDnssecdata["dsData"] is not None
 
-            if added_record:
-                registry.send(addRequest, cleaned=True)
-                dsdata_change_log = f"{user_email} added a DS data record"
             if deleted_record:
                 registry.send(remRequest, cleaned=True)
+                dsdata_change_log = f"{user_email} deleted a DS data record"
+            if added_record:
+                registry.send(addRequest, cleaned=True)
                 if dsdata_change_log != "":  # if they add and remove a record at same time
                     dsdata_change_log = f"{user_email} added and deleted a DS data record"
                 else:
-                    dsdata_change_log = f"{user_email} deleted a DS data record"
+                    dsdata_change_log = f"{user_email} added a DS data record"
             if dsdata_change_log != "":
                 self.dsdata_last_change = dsdata_change_log
                 self.save()  # audit log will now record this as a change
@@ -879,6 +902,7 @@ class Domain(TimeStampedModel, DomainHelper):
         which inturn call this function)
         Will throw error if contact type is not the same as expectType
         Raises ValueError if expected type doesn't match the contact type"""
+
         if expectedType != contact.contact_type:
             raise ValueError("Cannot set a contact with a different contact type, expected type was %s" % expectedType)
 
@@ -891,7 +915,6 @@ class Domain(TimeStampedModel, DomainHelper):
         duplicate_contacts = PublicContact.objects.exclude(registry_id=contact.registry_id).filter(
             domain=self, contact_type=contact.contact_type
         )
-
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
         errorCode = self._make_contact_in_registry(contact)
@@ -969,6 +992,24 @@ class Domain(TimeStampedModel, DomainHelper):
     def technical_contact(self, contact: PublicContact):
         logger.info("making technical contact")
         self._set_singleton_contact(contact, expectedType=contact.ContactTypeChoices.TECHNICAL)
+
+    def print_contact_info_epp(self, contact: PublicContact):
+        """Prints registry data for this PublicContact for easier debugging"""
+        results = self._request_contact_info(contact, get_result_as_dict=True)
+        logger.info("---------------------")
+        logger.info(f"EPP info for {contact.contact_type}:")
+        logger.info("---------------------")
+        for key, value in results.items():
+            logger.info(f"{key}: {value}")
+
+    def print_all_domain_contact_info_epp(self):
+        """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
+        logger.info(f"Contact info for {self}:")
+        logger.info("=====================")
+        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
+        for contact in contacts:
+            if contact:
+                self.print_contact_info_epp(contact)
 
     def is_active(self) -> bool:
         """Currently just returns if the state is created,
@@ -1243,7 +1284,7 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
 
         threshold_date = now + timedelta(days=60)
-        return now < self.expiration_date <= threshold_date
+        return now <= self.expiration_date <= threshold_date
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
@@ -1350,10 +1391,14 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         return street_dict
 
-    def _request_contact_info(self, contact: PublicContact):
+    def _request_contact_info(self, contact: PublicContact, get_result_as_dict=False):
+        """Grabs the resultant contact information in epp for this public contact
+        by using the InfoContact command.
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
         try:
             req = commands.InfoContact(id=contact.registry_id)
-            return registry.send(req, cleaned=True).res_data[0]
+            result = registry.send(req, cleaned=True).res_data[0]
+            return result if not get_result_as_dict else vars(result)
         except RegistryError as error:
             logger.error(
                 "Registry threw error for contact id %s contact type is %s, error code is\n %s full error is %s",  # noqa
@@ -1673,22 +1718,26 @@ class Domain(TimeStampedModel, DomainHelper):
         return help_text
 
     def _disclose_fields(self, contact: PublicContact):
-        """creates a disclose object that can be added to a contact Create using
+        """creates a disclose object that can be added to a contact Create or Update using
         .disclose= <this function> on the command before sending.
         if item is security email then make sure email is visible"""
-        is_security = contact.contact_type == contact.ContactTypeChoices.SECURITY
+        # You can find each enum here:
+        # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        fields = {DF.EMAIL}
+        all_disclose_fields = {field for field in DF}
+        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
 
-        hidden_security_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
-        disclose = is_security and contact.email not in hidden_security_emails
-        # Delete after testing on other devices
-        logger.info("Updated domain contact %s to disclose: %s", contact.email, disclose)
-        # Will only disclose DF.EMAIL if its not the default
-        return epp.Disclose(
-            flag=disclose,
-            fields=fields,
-        )
+        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+            if contact.email not in DefaultEmail.get_all_emails():
+                fields_to_remove.add(DF.EMAIL)
+        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
+            fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
+
+        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
+
+        logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
+        return epp.Disclose(**disclose_args)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
         return epp.PostalInfo(  # type: ignore
@@ -2000,7 +2049,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
+
         data = data_response.res_data[0]
+
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),

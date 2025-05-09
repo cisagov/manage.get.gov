@@ -54,6 +54,16 @@ class DomainRequest(TimeStampedModel):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
 
+    class FEBPurposeChoices(models.TextChoices):
+        WEBSITE = "new", "Used for a new website"
+        REDIRECT = "redirect", "Used as a redirect for an existing website"
+        OTHER = "other", "Not for a website"
+
+        @classmethod
+        def get_purpose_label(cls, purpose_name: str | None):
+            """Returns the associated label for a given purpose name"""
+            return cls(purpose_name).label if purpose_name else None
+
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
         ALASKA = "AK", "Alaska (AK)"
@@ -501,16 +511,78 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
+    # Fields specific to Federal Executive Branch agencies, used by OMB for reviewing requests
+    feb_naming_requirements = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name="Meets naming requirements",
+    )
+
+    feb_naming_requirements_details = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Required if requested domain that doesn't meet naming requirements",
+        verbose_name="Domain name rationale",
+    )
+
+    feb_purpose_choice = models.CharField(
+        null=True,
+        blank=True,
+        choices=FEBPurposeChoices.choices,
+        verbose_name="Purpose type",
+    )
+
+    working_with_eop = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    eop_stakeholder_first_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP contact first name",
+    )
+
+    eop_stakeholder_last_name = models.CharField(
+        null=True,
+        blank=True,
+        verbose_name="EOP contact last name",
+    )
+
+    # This field is alternately used for generic domain purpose explanations
+    # and for explanations of the specific purpose chosen with feb_purpose_choice
+    purpose = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    has_timeframe = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    time_frame_details = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Target time frame",
+    )
+
+    is_interagency_initiative = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    interagency_initiative_details = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Interagency initiative",
+    )
+
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
         help_text="Other domain names the creator provided for consideration",
-    )
-
-    purpose = models.TextField(
-        null=True,
-        blank=True,
     )
 
     other_contacts = models.ManyToManyField(
@@ -947,11 +1019,15 @@ class DomainRequest(TimeStampedModel):
             if not context:
                 has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
                 is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
+                requires_feb_questions = self.is_feb() and is_org_user
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
                     "is_org_user": is_org_user,
+                    "requires_feb_questions": requires_feb_questions,
+                    "purpose_label": purpose_label,
                 }
 
             if custom_email_content:
@@ -1389,6 +1465,12 @@ class DomainRequest(TimeStampedModel):
             has_details = False
         return has_details
 
+    def is_feb(self) -> bool:
+        """Is this domain request for a Federal Executive Branch agency?"""
+        if self.portfolio:
+            return self.portfolio.federal_type == BranchChoices.EXECUTIVE
+        return False
+
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
@@ -1454,7 +1536,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):

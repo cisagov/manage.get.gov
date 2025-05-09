@@ -60,6 +60,7 @@ class UserProfileForm(forms.ModelForm):
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
+        self.fields["email"].widget.attrs["hide_character_count"] = "True"
         self.fields["phone"].error_messages["required"] = "Enter your phone number."
 
         if self.instance and self.instance.phone:

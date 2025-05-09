@@ -85,19 +85,6 @@ export function getCsrfToken() {
 }
 
 /**
- * Helper function to submit a form
- * @param {} form_id - the id of the form to be submitted
- */
-export function submitForm(form_id) {
-    let form = document.getElementById(form_id);
-    if (form) {
-        form.submit();
-    } else {
-        console.error("Form '" + form_id + "' not found.");
-    }
-}
-
-/**
  * Helper function to strip HTML tags
  * THIS IS NOT SUITABLE FOR SANITIZING DANGEROUS STRINGS
  */

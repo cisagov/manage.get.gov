@@ -79,6 +79,10 @@ body {
   }
 }
 
+.section-outlined--extra-padding {
+  padding: units(2) units(3) units(3);
+}
+
 .section-outlined--border-base-light {
   border: 1px solid color('base-light');
 }
@@ -99,9 +103,7 @@ body {
     }
     .section-outlined__search {
       flex-grow: 4;
-      // Align right
       max-width: 383px;
-      margin-left: auto;
     }
   }
 }
@@ -190,6 +192,9 @@ abbr[title] {
   .visible-mobile-flex {
     display: none!important;
   }
+  .text-right--tablet {
+    text-align: right;
+  }
 }
 
 
@@ -216,6 +221,10 @@ abbr[title] {
   max-width: 23ch;
 }
 
+.ellipsis--15 {
+  max-width: 15ch;
+}
+
 .vertical-align-middle {
   vertical-align: middle;
 }
@@ -224,11 +233,6 @@ abbr[title] {
   .ellipsis--desktop-50 {
     max-width: 50ch;
   }
-}
-
-// Boost this USWDS utility class for the accordions in the portfolio requests table
-.left-auto {
-  left: auto!important;
 }
 
 .usa-banner__inner--widescreen  {
@@ -290,4 +294,12 @@ Fit-content itself does not work.
 .width--action-column {
   width: 3%;
   padding-right: 0px !important;
+}
+
+.width-40p {
+  width: 40%;
+}
+
+.minh-143px {
+  min-height: 143px;
 }

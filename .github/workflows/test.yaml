@@ -1,4 +1,4 @@
-# test.yml
+# test.yaml
 name: Testing
 
 on:
@@ -46,7 +46,7 @@ jobs:
           docker compose run app ./manage.py makemigrations --check
 
   pa11y-scan:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 

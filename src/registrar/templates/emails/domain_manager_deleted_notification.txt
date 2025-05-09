@@ -5,7 +5,7 @@ A domain manager was removed from {{ domain.name }}.
 
 REMOVED BY: {{ removed_by.email }}
 REMOVED ON: {{ date }}
-MANAGER REMOVED: {{ manager_removed.email }}
+MANAGER REMOVED: {{ manager_removed_email }}
 
 ----------------------------------------------------------------
 

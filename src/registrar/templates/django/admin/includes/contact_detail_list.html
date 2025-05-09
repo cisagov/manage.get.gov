@@ -6,7 +6,11 @@
 
     {% if show_formatted_name %}
         {% if user.get_formatted_name %}
-            <a class="contact_info_name" href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a>
+            {% if adminform.form.show_contact_as_plain_text %}
+                {{ user.get_formatted_name }}
+            {% else %}
+                <a class="contact_info_name" href="{% url 'admin:registrar_contact_change' user.id %}">{{ user.get_formatted_name }}</a>
+            {% endif %}
         {% else %}
             None
         {% endif %}

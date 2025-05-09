@@ -207,6 +207,17 @@ Linters:
 docker-compose exec app ./manage.py lint
 ```
 
+### Get availability for domain requests to work locally
+
+If you're on local (localhost:8080) and want to submit a domain request, and keep getting the "We’re experiencing a system error. Please wait a few minutes and try again. If you continue to get this error, contact help@get.gov." error, you can get past the availability check by updating the available() function in registrar/models/domain.py to return True and comment everything else out - see below for reference!
+
+```
+@classmethod
+def available(cls, domain: str) -> bool:
+  # Comment everything else out in the function
+  return True 
+```
+
 ### Testing behind logged in pages
 
 To test behind logged in pages with external tools, like `pa11y-ci` or `OWASP Zap`, add
@@ -305,15 +316,15 @@ You can also compile the **Sass** at any time using `npx gulp compile`. Similarl
 
 We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming convention for our custom classes. This is in line with how USWDS [approaches](https://designsystem.digital.gov/whats-new/updates/2019/04/08/introducing-uswds-2-0/) their CSS class architecture and helps keep our code cohesive and readable.
 
-### Upgrading USWDS and other JavaScript packages
+### Updating USWDS
 
 1. Version numbers can be manually controlled in `package.json`. Edit that, if desired.
-2. Now run `docker-compose run node npm update`.
-3. Then run `docker-compose up` to recompile and recopy the assets, or run `docker-compose updateUswds` if your docker is already up.
-4. Make note of the dotgov changes in uswds-edited.js.
-5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
-6. Put back the dotgov changes you made note of into uswds-edited.js.
-7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+2. Now run `npx gulp updateUswds`. Refer to [official docs](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) to see what this is doing.
+3. Make note of the dotgov changes in uswds-edited.js (Ctrl-F DOTGOV for modifications to USWDS compiled code).
+4. Copy over the newly compiled code from uswds.js into uswds-edited.js.
+5. Put back the dotgov changes you made note of into uswds-edited.js.
+6. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+7. Read the [release notes](https://github.com/uswds/uswds/releases) for the new versions installed, note 'Breaking' and 'Markup change' and make adjustments to the code base as needed.
 
 ## Finite State Machines
 

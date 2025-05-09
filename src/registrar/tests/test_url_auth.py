@@ -29,6 +29,8 @@ SAMPLE_KWARGS = {
     "user_pk": "1",
     "portfolio_id": "1",
     "user_id": "1",
+    "member_pk": "1",
+    "invitedmember_pk": "1",
 }
 
 # Our test suite will ignore some namespaces.

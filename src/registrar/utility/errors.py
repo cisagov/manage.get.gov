@@ -129,6 +129,7 @@ class FSMErrorCodes(IntEnum):
         - 3 INVESTIGATOR_NOT_STAFF Investigator is a non-staff user
         - 4 NO_REJECTION_REASON No rejection reason is specified
         - 5 NO_ACTION_NEEDED_REASON No action needed reason is specified
+        - 6 DOMAIN_IS_PENDING_DELETE Domain is in pending delete state
     """
 
     APPROVE_DOMAIN_IN_USE = 1
@@ -136,6 +137,7 @@ class FSMErrorCodes(IntEnum):
     INVESTIGATOR_NOT_STAFF = 3
     NO_REJECTION_REASON = 4
     NO_ACTION_NEEDED_REASON = 5
+    DOMAIN_IS_PENDING_DELETE = 6
 
 
 class FSMDomainRequestError(Exception):
@@ -150,6 +152,7 @@ class FSMDomainRequestError(Exception):
         FSMErrorCodes.INVESTIGATOR_NOT_STAFF: ("Investigator is not a staff user."),
         FSMErrorCodes.NO_REJECTION_REASON: ("A reason is required for this status."),
         FSMErrorCodes.NO_ACTION_NEEDED_REASON: ("A reason is required for this status."),
+        FSMErrorCodes.DOMAIN_IS_PENDING_DELETE: ("Domain of same name is currently in pending delete state."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
@@ -238,6 +241,7 @@ class DsDataErrorCodes(IntEnum):
         - 3 INVALID_DIGEST_SHA256 invalid digest for digest type SHA-256
         - 4 INVALID_DIGEST_CHARS invalid chars in digest
         - 5 INVALID_KEYTAG_SIZE invalid key tag size > 65535
+        - 6 INVALID_KEYTAG_CHARS invalid key tag, not numeric
     """
 
     BAD_DATA = 1
@@ -245,6 +249,7 @@ class DsDataErrorCodes(IntEnum):
     INVALID_DIGEST_SHA256 = 3
     INVALID_DIGEST_CHARS = 4
     INVALID_KEYTAG_SIZE = 5
+    INVALID_KEYTAG_CHARS = 6
 
 
 class DsDataError(Exception):
@@ -260,7 +265,8 @@ class DsDataError(Exception):
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
         DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Key tag must be less than 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
     }
 
     def __init__(self, *args, code=None, **kwargs):

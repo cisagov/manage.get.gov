@@ -90,6 +90,14 @@ class UserGroup(Group):
                     "delete_userportfoliopermission",
                 ],
             },
+            {
+                "app_label": "registrar",
+                "model": "portfolioinvitation",
+                "permissions": [
+                    "add_portfolioinvitation",
+                    "view_portfolioinvitation",
+                ],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end
@@ -138,6 +146,99 @@ class UserGroup(Group):
                 )
 
                 logger.debug("CISA Analyst permissions added to group " + cisa_analysts_group.name)
+        except Exception as e:
+            logger.error(f"Error creating analyst permissions group: {e}")
+
+    def create_omb_analyst_group(apps, schema_editor):
+        """This method gets run from a data migration."""
+
+        # Hard to pass self to these methods as the calls from migrations
+        # are only expecting apps and schema_editor, so we'll just define
+        # apps, schema_editor in the local scope instead
+        OMB_ANALYST_GROUP_PERMISSIONS = [
+            {
+                "app_label": "registrar",
+                "model": "domainrequest",
+                "permissions": ["change_domainrequest"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "domain",
+                "permissions": ["view_domain"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "domaininvitation",
+                "permissions": ["view_domaininvitation"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "federalagency",
+                "permissions": ["view_federalagency"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "portfolio",
+                "permissions": ["view_portfolio"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "suborganization",
+                "permissions": ["view_suborganization"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "seniorofficial",
+                "permissions": ["view_seniorofficial"],
+            },
+        ]
+
+        # Avoid error: You can't execute queries until the end
+        # of the 'atomic' block.
+        # From django docs:
+        # https://docs.djangoproject.com/en/4.2/topics/migrations/#data-migrations
+        # We can’t import the Person model directly as it may be a newer
+        # version than this migration expects. We use the historical version.
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        Permission = apps.get_model("auth", "Permission")
+        UserGroup = apps.get_model("registrar", "UserGroup")
+
+        logger.info("Going to create the OMB Analyst Group")
+        try:
+            omb_analysts_group, _ = UserGroup.objects.get_or_create(
+                name="omb_analysts_group",
+            )
+
+            omb_analysts_group.permissions.clear()
+
+            for permission in OMB_ANALYST_GROUP_PERMISSIONS:
+                app_label = permission["app_label"]
+                model_name = permission["model"]
+                permissions = permission["permissions"]
+
+                # Retrieve the content type for the app and model
+                content_type = ContentType.objects.get(app_label=app_label, model=model_name)
+
+                # Retrieve the permissions based on their codenames
+                permissions = Permission.objects.filter(content_type=content_type, codename__in=permissions)
+
+                # Assign the permissions to the group
+                omb_analysts_group.permissions.add(*permissions)
+
+                # Convert the permissions QuerySet to a list of codenames
+                permission_list = list(permissions.values_list("codename", flat=True))
+
+                logger.debug(
+                    app_label
+                    + " | "
+                    + model_name
+                    + " | "
+                    + ", ".join(permission_list)
+                    + " added to group "
+                    + omb_analysts_group.name
+                )
+
+                logger.debug("OMB Analyst permissions added to group " + omb_analysts_group.name)
         except Exception as e:
             logger.error(f"Error creating analyst permissions group: {e}")
 

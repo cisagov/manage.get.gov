@@ -59,6 +59,7 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.domain_with_ip, _ = Domain.objects.get_or_create(name="nameserverwithip.gov")
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
+        self.domain_no_nameserver, _ = Domain.objects.get_or_create(name="nonameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
         self.domain_on_hold, _ = Domain.objects.get_or_create(
             name="on-hold.gov",
@@ -84,17 +85,23 @@ class TestWithDomainPermissions(TestWithUser):
         # We could simply use domain (igorville) but this will be more readable in tests
         # that inherit this setUp
         self.domain_dnssec_none, _ = Domain.objects.get_or_create(name="dnssec-none.gov")
-
-        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversDomain.gov")
+        self.domain_with_three_nameservers, _ = Domain.objects.get_or_create(name="threenameserversdomain.gov")
+        self.domain_with_four_nameservers, _ = Domain.objects.get_or_create(name="fournameserversdomain.gov")
+        self.domain_with_twelve_nameservers, _ = Domain.objects.get_or_create(name="twelvenameserversdomain.gov")
+        self.domain_with_thirteen_nameservers, _ = Domain.objects.get_or_create(name="thirteennameserversdomain.gov")
 
         self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
 
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_thirteen_nameservers)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_twelve_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_three_nameservers)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
+        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_no_nameserver)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
@@ -121,7 +128,22 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user,
+            domain=self.domain_with_three_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
             domain=self.domain_with_four_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_twelve_nameservers,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_with_thirteen_nameservers,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -132,6 +154,11 @@ class TestWithDomainPermissions(TestWithUser):
         UserDomainRole.objects.get_or_create(
             user=self.user,
             domain=self.domain_just_nameserver,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain_no_nameserver,
             role=UserDomainRole.Roles.MANAGER,
         )
         UserDomainRole.objects.get_or_create(
@@ -414,10 +441,11 @@ class TestDomainDetail(TestDomainOverview):
         user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
-        # Check that alert message displays properly
+        # Check that alert message displays properly.
+        # This message is different for one user on the portfolio vs multiple.
         self.assertContains(
             detail_page,
-            "If you need to make updates, contact one of the listed domain managers.",
+            "If you need to become a domain manager, edit the domain assignments",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
@@ -712,7 +740,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%B %-d, %Y")
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
@@ -1057,8 +1085,8 @@ class TestDomainManagers(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_templated_email")
-    def test_domain_remove_manager(self, mock_send_templated_email):
+    @patch("registrar.views.domain.send_domain_manager_removal_emails_to_domain_managers")
+    def test_domain_remove_manager(self, mock_send_email):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
@@ -1067,11 +1095,11 @@ class TestDomainManagers(TestDomainOverview):
         )
 
         # Verify that the notification emails were sent to domain manager
-        mock_send_templated_email.assert_called_once_with(
-            "emails/domain_manager_deleted_notification.txt",
-            "emails/domain_manager_deleted_notification_subject.txt",
-            to_address="info@example.com",
-            context=ANY,
+        mock_send_email.assert_called_once_with(
+            removed_by_user=self.user,
+            manager_removed=self.manager,
+            manager_removed_email=self.manager.email,
+            domain=self.domain,
         )
 
     @less_console_noise_decorator
@@ -1479,11 +1507,17 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         Uses self.app WebTest because we need to interact with forms.
         """
         # initial nameservers page has one server with two ips
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_no_nameserver.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with only one nameserver, should error
         # regarding required fields
+        nameservers_page.form["form-0-server"] = "ns1.nonameserver.com"
+        nameservers_page.form["form-0-ip"] = "127.0.0.1"
+        nameservers_page.form["form-1-server"] = ""
+        nameservers_page.form["form-1-ip"] = ""
         result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
@@ -1722,53 +1756,91 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         """
 
         nameserver1 = ""
-        nameserver2 = "ns2.igorville.gov"
-        nameserver3 = "ns3.igorville.gov"
+        nameserver2 = "ns2.threenameserversdomain.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = ""
-        valid_ip_2 = "128.0.0.2"
-        valid_ip_3 = "128.0.0.3"
-        nameservers_page = self.app.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
+        valid_ip_2 = "128.8.8.1"
+        valid_ip_3 = "128.8.8.2"
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id})
+        )
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
+
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
+
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
+
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
 
-        nameserver1 = "ns1.igorville.gov"
+        nameserver1 = "ns1.threenameserversdomain.gov"
         nameserver2 = ""
-        nameserver3 = "ns3.igorville.gov"
+        nameserver3 = "ns3.threenameserversdomain.gov"
         valid_ip = "128.0.0.1"
         valid_ip_2 = ""
         valid_ip_3 = "128.0.0.3"
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        result = nameservers_page.form.submit()
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "3",
+            "form-0-domain": "threenameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "threenameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "threenameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "threenameserversdomain.gov",
+            "form-3-server": "",
+            "form-3-ip": "",
+        }
+
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
             result["Location"],
-            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
         )
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
@@ -1799,19 +1871,29 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # Minimal check to ensure the form is loaded correctly
-        self.assertEqual(nameservers_page.form["form-0-server"].value, "ns1.my-nameserver-1.com")
-        self.assertEqual(nameservers_page.form["form-3-server"].value, "ns1.explosive-chicken-nuggets.com")
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "form-TOTAL_FORMS": "4",
+            "form-INITIAL_FORMS": "4",
+            "form-0-domain": "fournameserversdomain.gov",
+            "form-0-server": nameserver1,
+            "form-0-ip": valid_ip,
+            "form-1-domain": "fournameserversdomain.gov",
+            "form-1-server": nameserver2,
+            "form-1-ip": valid_ip_2,
+            "form-2-domain": "fournameserversdomain.gov",
+            "form-2-server": nameserver3,
+            "form-2-ip": valid_ip_3,
+            "form-3-domain": "fournameserversdomain.gov",
+            "form-3-server": nameserver4,
+            "form-3-ip": valid_ip_4,
+        }
 
-        nameservers_page.form["form-0-server"] = nameserver1
-        nameservers_page.form["form-0-ip"] = valid_ip
-        nameservers_page.form["form-1-server"] = nameserver2
-        nameservers_page.form["form-1-ip"] = valid_ip_2
-        nameservers_page.form["form-2-server"] = nameserver3
-        nameservers_page.form["form-2-ip"] = valid_ip_3
-        nameservers_page.form["form-3-server"] = nameserver4
-        nameservers_page.form["form-3-ip"] = valid_ip_4
-        result = nameservers_page.form.submit()
+        result = self.app.post(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_four_nameservers.id}), form_data
+        )
 
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
@@ -1822,6 +1904,34 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         nameservers_page = result.follow()
         self.assertContains(nameservers_page, "The name servers for this domain have been updated")
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_12_entries(self):
+        """Nameserver form does not present info alert when 12 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_twelve_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertNotContains(
+            nameservers_page, "You’ve reached the maximum amount of allowed name server records (13)."
+        )
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_13_entries(self):
+        """Nameserver form present3 info alert when 13 enrties."""
+
+        nameservers_page = self.app.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_thirteen_nameservers.id})
+        )
+
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        self.assertContains(nameservers_page, "You’ve reached the maximum amount of allowed name server records (13).")
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_invalid(self):
@@ -1837,12 +1947,12 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-server"] = ""
         result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200
-        # error text appears four times, twice at the top of the page,
-        # once around each required field.
+        # error text appears twice, once at the top of the page,
+        # once around the required field.
         self.assertContains(
             result,
             "At least two name servers are required.",
-            count=4,
+            count=2,
             status_code=200,
         )
 
@@ -2080,62 +2190,6 @@ class TestDomainOrganization(TestDomainOverview):
         # Check the value of the input field
         organization_name_input = form.fields["organization_name"][0]
         self.assertEqual(organization_name_input.value, "Town of Igorville")
-
-        # Check if the input field is disabled
-        self.assertTrue("disabled" in organization_name_input.attrs)
-        self.assertEqual(organization_name_input.attrs.get("disabled"), "")
-
-        # Check for the value we want to update
-        self.assertContains(success_result_page, "Faketown")
-
-    @less_console_noise_decorator
-    def test_domain_org_name_address_form_federal(self):
-        """
-        Submitting a change to federal_agency is blocked for federal domains
-        """
-
-        fed_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.generic_org_type = fed_org_type
-        self.domain_information.save()
-        try:
-            federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
-            self.domain_information.federal_agency = federal_agency
-            self.domain_information.save()
-        except ValueError as err:
-            self.fail(f"A ValueError was caught during the test: {err}")
-
-        self.assertEqual(self.domain_information.generic_org_type, fed_org_type)
-
-        org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
-
-        form = org_name_page.forms[0]
-        # Check the value of the input field
-        agency_input = form.fields["federal_agency"][0]
-        self.assertEqual(agency_input.value, str(federal_agency.id))
-
-        # Check if the input field is disabled
-        self.assertTrue("disabled" in agency_input.attrs)
-        self.assertEqual(agency_input.attrs.get("disabled"), "")
-
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        org_name_page.form["federal_agency"] = FederalAgency.objects.filter(agency="Department of State").get().id
-        org_name_page.form["city"] = "Faketown"
-
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        # Make the change. The agency should be unchanged, but city should be modifiable.
-        success_result_page = org_name_page.form.submit()
-        self.assertEqual(success_result_page.status_code, 200)
-
-        # Check that the agency has not changed
-        self.assertEqual(self.domain_information.federal_agency.agency, "AMTRAK")
-
-        # Do another check on the form itself
-        form = success_result_page.forms[0]
-        # Check the value of the input field
-        organization_name_input = form.fields["federal_agency"][0]
-        self.assertEqual(organization_name_input.value, str(federal_agency.id))
 
         # Check if the input field is disabled
         self.assertTrue("disabled" in organization_name_input.attrs)
@@ -2494,8 +2548,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS data added")
-        self.assertContains(page, "Add new record")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Add DS record")
 
     @less_console_noise_decorator
     def test_ds_form_loads_with_ds_data(self):
@@ -2503,26 +2557,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS data record 1")
-
-    @less_console_noise_decorator
-    def test_ds_data_form_modal(self):
-        """When user clicks on save, a modal pops up."""
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        # Assert that a hidden trigger for the modal does not exist.
-        # This hidden trigger will pop on the page when certain condition are met:
-        # 1) Initial form contained DS data, 2) All data is deleted and form is
-        # submitted.
-        self.assertNotContains(add_data_page, "Trigger Disable DNSSEC Modal")
-        # Simulate a delete all data
-        form_data = {}
-        response = self.client.post(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}),
-            data=form_data,
-        )
-        self.assertEqual(response.status_code, 200)  # Adjust status code as needed
-        # Now check to see whether the JS trigger for the modal is present on the page
-        self.assertContains(response, "Trigger Disable DNSSEC Modal")
+        self.assertContains(page, "Add DS record")  # assert add form is present
+        self.assertContains(page, "Action")  # assert table is present
 
     @less_console_noise_decorator
     def test_ds_data_form_submits(self):
@@ -2568,6 +2604,32 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     @less_console_noise_decorator
+    def test_ds_data_form_duplicate(self):
+        """DS data form errors with invalid data (duplicate DS)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # all four form fields are required, so will test with each blank
+        add_data_page.forms[0]["form-0-key_tag"] = 1234
+        add_data_page.forms[0]["form-0-algorithm"] = 3
+        add_data_page.forms[0]["form-0-digest_type"] = 1
+        add_data_page.forms[0]["form-0-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        add_data_page.forms[0]["form-1-key_tag"] = 1234
+        add_data_page.forms[0]["form-1-algorithm"] = 3
+        add_data_page.forms[0]["form-1-digest_type"] = 1
+        add_data_page.forms[0]["form-1-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_keytag(self):
         """DS data form errors with invalid data (key tag too large)
 
@@ -2588,6 +2650,29 @@ class TestDomainDNSSEC(TestDomainOverview):
         # the field.
         self.assertContains(
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
+    def test_ds_data_form_invalid_keytag_chars(self):
+        """DS data form errors with invalid data (key tag not numeric)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "invalid"  # not numeric
+        add_data_page.forms[0]["form-0-algorithm"] = ""
+        add_data_page.forms[0]["form-0-digest_type"] = ""
+        add_data_page.forms[0]["form-0-digest"] = ""
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS)), count=2, status_code=200
         )
 
     @less_console_noise_decorator
@@ -2645,8 +2730,6 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # first two nameservers are required, so if we empty one out we should
-        # get a form error
         add_data_page.forms[0]["form-0-key_tag"] = "1234"
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256
@@ -2718,12 +2801,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
@@ -2800,7 +2883,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Security email", body)
 
@@ -2833,7 +2915,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2862,7 +2943,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2893,12 +2973,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_senior_official_when_portfolio(self):
         """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""

@@ -16,7 +16,11 @@
         {% for admin in admins %}
         {% url 'admin:registrar_userportfoliopermission_change' admin.pk as url %}
         <tr>
-            <td><a href={{url}}>{{ admin.user.get_formatted_name}}</a></td>
+            {% if adminform.form.is_omb_analyst %}
+                <td>{{ admin.user.get_formatted_name }}</td>
+            {% else %}
+                <td><a href={{url}}>{{ admin.user.get_formatted_name}}</a></td>
+            {% endif %}
             <td>{{ admin.user.title }}</td>
             <td>
                 {% if admin.user.email %}

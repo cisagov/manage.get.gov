@@ -2,7 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
@@ -65,7 +65,12 @@ class DomainNameserverForm(forms.Form):
 
     domain = forms.CharField(widget=forms.HiddenInput, required=False)
 
-    server = forms.CharField(label="Name server", strip=True)
+    server = forms.CharField(
+        label="Name server",
+        strip=True,
+        required=True,
+        error_messages={"required": "At least two name servers are required."},
+    )
 
     ip = forms.CharField(
         label="IP address (IPv4 or IPv6)",
@@ -75,13 +80,6 @@ class DomainNameserverForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DomainNameserverForm, self).__init__(*args, **kwargs)
-
-        # add custom error messages
-        self.fields["server"].error_messages.update(
-            {
-                "required": "At least two name servers are required.",
-            }
-        )
 
     def clean(self):
         # clean is called from clean_forms, which is called from is_valid
@@ -183,43 +181,83 @@ class DomainSuborganizationForm(forms.ModelForm):
 
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
-        """
-        Check for duplicate entries in the formset.
-        """
+        """Check for duplicate entries in the formset and ensure at least two valid nameservers."""
+        error_message = "At least two name servers are required."
 
-        # Check if there are at least two valid servers
-        valid_servers_count = sum(
-            1 for form in self.forms if form.cleaned_data.get("server") and form.cleaned_data.get("server").strip()
-        )
-        if valid_servers_count >= 2:
-            # If there are, remove the "At least two name servers are required" error from each form
-            # This will allow for successful submissions when the first or second entries are blanked
-            # but there are enough entries total
-            for form in self.forms:
-                if form.errors.get("server") == ["At least two name servers are required."]:
-                    form.errors.pop("server")
+        valid_forms, invalid_forms, empty_forms = self._categorize_forms(error_message)
+        self._enforce_minimum_nameservers(valid_forms, invalid_forms, empty_forms, error_message)
 
-        if any(self.errors):
-            # Don't bother validating the formset unless each form is valid on its own
+        if any(self.errors):  # Skip further validation if individual forms already have errors
             return
 
-        data = []
+        self._check_for_duplicates()
+
+    def _categorize_forms(self, error_message):
+        """Sort forms into valid, invalid or empty based on the 'server' field."""
+        valid_forms = []
+        invalid_forms = []
+        empty_forms = []
+
+        for form in self.forms:
+            if not self._is_server_validation_needed(form, error_message):
+                invalid_forms.append(form)
+                continue
+            server = form.cleaned_data.get("server", "").strip()
+            if server:
+                valid_forms.append(form)
+            else:
+                empty_forms.append(form)
+
+        return valid_forms, invalid_forms, empty_forms
+
+    def _is_server_validation_needed(self, form, error_message):
+        """Determine if server validation should be performed on a given form."""
+        return form.is_valid() or list(form.errors.get("server", [])) == [error_message]
+
+    def _enforce_minimum_nameservers(self, valid_forms, invalid_forms, empty_forms, error_message):
+        """Ensure at least two nameservers are provided, adjusting error messages as needed."""
+        if len(valid_forms) + len(invalid_forms) < 2:
+            self._add_required_error(empty_forms, error_message)
+        else:
+            self._remove_required_error_from_forms(error_message)
+
+    def _add_required_error(self, empty_forms, error_message):
+        """Add 'At least two name servers' error to one form and remove duplicates."""
+        error_added = False
+
+        for form in empty_forms:
+            if list(form.errors.get("server", [])) == [error_message]:
+                form.errors.pop("server")
+
+            if not error_added:
+                form.add_error("server", error_message)
+                error_added = True
+
+    def _remove_required_error_from_forms(self, error_message):
+        """Remove the 'At least two name servers' error from all forms if sufficient nameservers exist."""
+        for form in self.forms:
+            if form.errors.get("server") == [error_message]:
+                form.errors.pop("server")
+
+    def _check_for_duplicates(self):
+        """Ensure no duplicate nameservers exist within the formset."""
+        seen_servers = set()
         duplicates = []
 
-        for index, form in enumerate(self.forms):
-            if form.cleaned_data:
-                value = form.cleaned_data["server"]
-                # We need to make sure not to trigger the duplicate error in case the first and second nameservers
-                # are empty. If there are enough records in the formset, that error is an unecessary blocker.
-                # If there aren't, the required error will block the submit.
-                if value in data and not (form.cleaned_data.get("server", "").strip() == "" and index == 1):
-                    form.add_error(
-                        "server",
-                        NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=value),
-                    )
-                    duplicates.append(value)
-                else:
-                    data.append(value)
+        for form in self.forms:
+            if not form.cleaned_data:
+                continue
+
+            server = form.cleaned_data["server"].strip()
+
+            if server and server in seen_servers:
+                form.add_error(
+                    "server",
+                    NameserverError(code=nsErrorCodes.DUPLICATE_HOST, nameserver=server),
+                )
+                duplicates.append(server)
+            else:
+                seen_servers.add(server)
 
 
 NameserverFormset = formset_factory(
@@ -592,14 +630,10 @@ class DomainDsdataForm(forms.Form):
         if not re.match(r"^[0-9a-fA-F]+$", value):
             raise forms.ValidationError(str(DsDataError(code=DsDataErrorCodes.INVALID_DIGEST_CHARS)))
 
-    key_tag = forms.IntegerField(
+    key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        validators=[
-            MinValueValidator(0, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-            MaxValueValidator(65535, message=str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE))),
-        ],
-        error_messages={"required": ("Key tag is required.")},
+        error_messages={"required": "Key tag is required."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -625,6 +659,13 @@ class DomainDsdataForm(forms.Form):
         error_messages={
             "required": "Digest is required.",
         },
+        widget=forms.Textarea(
+            attrs={
+                "maxlength": "64",
+                "class": "text-wrap usa-textarea--digest",
+                "hide_character_count": "True",
+            }
+        ),
     )
 
     def clean(self):
@@ -634,6 +675,22 @@ class DomainDsdataForm(forms.Form):
         cleaned_data = super().clean()
         digest_type = cleaned_data.get("digest_type", 0)
         digest = cleaned_data.get("digest", "")
+
+        # Convert key_tag to an integer safely
+        key_tag = cleaned_data.get("key_tag", 0)
+        try:
+            key_tag = int(key_tag)
+            if key_tag < 0 or key_tag > 65535:
+                self.add_error(
+                    "key_tag",
+                    DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE),
+                )
+        except ValueError:
+            self.add_error(
+                "key_tag",
+                DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS),
+            )
+
         # validate length of digest depending on digest_type
         if digest_type == 1 and len(digest) != 40:
             self.add_error(
@@ -648,9 +705,45 @@ class DomainDsdataForm(forms.Form):
         return cleaned_data
 
 
+class BaseDsdataFormset(forms.BaseFormSet):
+    def clean(self):
+        """Check for duplicate entries in the formset."""
+        if any(self.errors):
+            return  # Skip duplicate checking if other errors exist
+
+        duplicate_errors = self._check_for_duplicates()
+        if duplicate_errors:
+            raise forms.ValidationError("Duplicate DS records found. Each DS record must be unique.")
+
+    def _check_for_duplicates(self):
+        """Check for duplicate entries in the DS data forms"""
+
+        seen_ds_records = set()
+        duplicate_found = False
+
+        for form in self.forms:
+            if form.cleaned_data.get("key_tag") and not form.cleaned_data.get("DELETE", False):
+                ds_tuple = (
+                    form.cleaned_data["key_tag"],
+                    form.cleaned_data["algorithm"],
+                    form.cleaned_data["digest_type"],
+                    form.cleaned_data["digest"].upper(),
+                )
+
+                if ds_tuple in seen_ds_records:
+                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    duplicate_found = True  # Track that we found at least one duplicate
+
+                seen_ds_records.add(ds_tuple)
+
+        return duplicate_found  # Returns True if any duplicates were found
+
+
 DomainDsdataFormset = formset_factory(
     DomainDsdataForm,
-    extra=0,
+    formset=BaseDsdataFormset,
+    extra=1,
+    max_num=8,
     can_delete=True,
 )
 

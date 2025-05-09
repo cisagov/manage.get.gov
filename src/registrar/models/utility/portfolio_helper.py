@@ -16,7 +16,7 @@ class UserPortfolioRoleChoices(models.TextChoices):
     """
 
     ORGANIZATION_ADMIN = "organization_admin", "Admin"
-    ORGANIZATION_MEMBER = "organization_member", "Member"
+    ORGANIZATION_MEMBER = "organization_member", "Basic"
 
     @classmethod
     def get_user_portfolio_role_label(cls, user_portfolio_role):
@@ -30,17 +30,17 @@ class UserPortfolioRoleChoices(models.TextChoices):
 class UserPortfolioPermissionChoices(models.TextChoices):
     """ """
 
-    VIEW_ALL_DOMAINS = "view_all_domains", "View all domains and domain reports"
-    VIEW_MANAGED_DOMAINS = "view_managed_domains", "View managed domains"
+    VIEW_ALL_DOMAINS = "view_all_domains", "Viewer"
+    VIEW_MANAGED_DOMAINS = "view_managed_domains", "Viewer, limited (domains they manage)"
 
-    VIEW_MEMBERS = "view_members", "View members"
-    EDIT_MEMBERS = "edit_members", "Create and edit members"
+    VIEW_MEMBERS = "view_members", "Viewer"
+    EDIT_MEMBERS = "edit_members", "Manager"
 
-    VIEW_ALL_REQUESTS = "view_all_requests", "View all requests"
-    EDIT_REQUESTS = "edit_requests", "Create and edit requests"
+    VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
+    EDIT_REQUESTS = "edit_requests", "Creator"
 
-    VIEW_PORTFOLIO = "view_portfolio", "View organization"
-    EDIT_PORTFOLIO = "edit_portfolio", "Edit organization"
+    VIEW_PORTFOLIO = "view_portfolio", "Viewer"
+    EDIT_PORTFOLIO = "edit_portfolio", "Manager"
 
     @classmethod
     def get_user_portfolio_permission_label(cls, user_portfolio_permission):
@@ -77,6 +77,13 @@ class MemberPermissionDisplay(StrEnum):
     MANAGER = "Manager"
     VIEWER = "Viewer"
     NONE = "None"
+
+
+def get_readable_roles(roles):
+    readable_roles = []
+    if roles:
+        readable_roles = sorted([UserPortfolioRoleChoices.get_user_portfolio_role_label(role) for role in roles])
+    return readable_roles
 
 
 def get_role_display(roles):
@@ -250,9 +257,6 @@ def validate_user_portfolio_permission(user_portfolio_permission):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
-    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
-    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
-
     has_portfolio = bool(user_portfolio_permission.portfolio_id)
     portfolio_permissions = set(user_portfolio_permission._get_portfolio_permissions())
 
@@ -279,24 +283,48 @@ def validate_user_portfolio_permission(user_portfolio_permission):
 
     # == Validate the multiple_porfolios flag. == #
     if not flag_is_active_for_user(user_portfolio_permission.user, "multiple_portfolios"):
-        existing_permissions = UserPortfolioPermission.objects.exclude(id=user_portfolio_permission.id).filter(
-            user=user_portfolio_permission.user
+        existing_permissions, existing_invitations = get_user_portfolio_permission_associations(
+            user_portfolio_permission
         )
         if existing_permissions.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_permissions",
             )
 
-        existing_invitations = PortfolioInvitation.objects.filter(email=user_portfolio_permission.user.email).exclude(
-            Q(portfolio=user_portfolio_permission.portfolio)
-            | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
-        )
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_invitations",
             )
+
+
+def get_user_portfolio_permission_associations(user_portfolio_permission):
+    """
+    Retrieves the associations for a user portfolio invitation.
+
+    Returns:
+      A tuple:
+        (existing_permissions, existing_invitations)
+      where:
+        - existing_permissions: UserPortfolioPermission objects excluding the current permission.
+        - existing_invitations: PortfolioInvitation objects for the user email excluding
+        the current invitation and those with status RETRIEVED.
+    """
+    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    existing_permissions = UserPortfolioPermission.objects.exclude(id=user_portfolio_permission.id).filter(
+        user=user_portfolio_permission.user
+    )
+    existing_invitations = PortfolioInvitation.objects.filter(
+        email__iexact=user_portfolio_permission.user.email
+    ).exclude(
+        Q(portfolio=user_portfolio_permission.portfolio)
+        | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+    )
+    return (existing_permissions, existing_invitations)
 
 
 def validate_portfolio_invitation(portfolio_invitation):
@@ -315,7 +343,6 @@ def validate_portfolio_invitation(portfolio_invitation):
     Raises:
         ValidationError: If any of the validation rules are violated.
     """
-    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     User = get_user_model()
 
@@ -342,27 +369,46 @@ def validate_portfolio_invitation(portfolio_invitation):
         )
 
     # == Validate the multiple_porfolios flag. == #
-    user = User.objects.filter(email=portfolio_invitation.email).first()
+    user = User.objects.filter(email__iexact=portfolio_invitation.email).first()
+
     # If user returns None, then we check for global assignment of multiple_portfolios.
     # Otherwise we just check on the user.
     if not flag_is_active_for_user(user, "multiple_portfolios"):
-        existing_permissions = UserPortfolioPermission.objects.filter(user=user)
-
-        existing_invitations = PortfolioInvitation.objects.filter(email=portfolio_invitation.email).exclude(
-            Q(id=portfolio_invitation.id) | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
-        )
-
+        existing_permissions, existing_invitations = get_portfolio_invitation_associations(portfolio_invitation)
         if existing_permissions.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_permissions",
             )
 
         if existing_invitations.exists():
             raise ValidationError(
                 "This user is already assigned to a portfolio invitation. "
-                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios."
+                "Based on current waffle flag settings, users cannot be assigned to multiple portfolios.",
+                code="has_existing_invitations",
             )
+
+
+def get_portfolio_invitation_associations(portfolio_invitation):
+    """
+    Retrieves the associations for a portfolio invitation.
+
+    Returns:
+      A tuple:
+        (existing_permissions, existing_invitations)
+      where:
+        - existing_permissions: UserPortfolioPermission objects matching the email.
+        - existing_invitations: PortfolioInvitation objects for the email excluding
+        the current invitation and those with status RETRIEVED.
+    """
+    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
+    UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
+    existing_permissions = UserPortfolioPermission.objects.filter(user__email__iexact=portfolio_invitation.email)
+    existing_invitations = PortfolioInvitation.objects.filter(email__iexact=portfolio_invitation.email).exclude(
+        Q(id=portfolio_invitation.id) | Q(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+    )
+    return (existing_permissions, existing_invitations)
 
 
 def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
