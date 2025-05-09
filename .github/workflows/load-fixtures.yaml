@@ -27,9 +27,9 @@ on:
           - bob
           - hotgov
           - litterbox
-          - ms
           - ad
           - ag
+          - dg
 
 jobs:
   load-fixtures:
