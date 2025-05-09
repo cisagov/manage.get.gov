@@ -28,9 +28,10 @@ jobs:
         || startsWith(github.head_ref, 'hotgov/')
         || startsWith(github.head_ref, 'litterbox/')
         || startsWith(github.head_ref, 'ag/')
-        || startsWith(github.head_ref, 'ms/')
         || startsWith(github.head_ref, 'ad/')
         || startsWith(github.head_ref, 'el/')
+        || startsWith(github.head_ref, 'dg/')
+
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
