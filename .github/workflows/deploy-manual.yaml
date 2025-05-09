@@ -29,7 +29,7 @@ on:
           - bob
           - hotgov
           - litterbox
-          - ms
+          - dg
           - ad
           - ag
       # GitHub Actions has no "good" way yet to dynamically input branches
