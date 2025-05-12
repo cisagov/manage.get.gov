@@ -114,7 +114,7 @@ need to be specified in the environment.
 
 ## REGISTRY_CL_ID and REGISTRY_PASSWORD
 
-These are the login credentials for accessing the registry and they are set by cloudflare. They should notify us if and when these ever need to be changed.
+These are the login credentials for accessing the registry and they are set by Cloudflare. Cloudflare should notify us if and when registry credentials ever need to be changed.
 
 ## Rotating REGISTRY_CERT, REGISTRY_KEY, and REGISTRY_KEY_PASSPHRASE for Cloudflare environments
 
