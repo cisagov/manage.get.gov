@@ -75,59 +75,12 @@ class Domain(TimeStampedModel, DomainHelper):
             models.Index(fields=["name"]),
             models.Index(fields=["state"]),
         ]
-        # Check name field and excludes deleted state
 
-        # Tried these below in the state = section in the condition
-        # state=self.__class__.State.DELETED
-        # state=Domain.State.Deleted
-        # state="DELETED"
-        # state=("deleted", "Deleted")
-
-        """
-        Django documentation:
-        https://docs.djangoproject.com/en/5.1/ref/models/constraints/
-        UniqueConstraint(fields=["user"], condition=Q(status="DRAFT"), name="unique_draft_user")
-
-        Below I've left 3 different types of "set ups" for constraints
-        and there's more above for how to do the "state" part. 
-
-        Migration steps are:
-        docker compose exec app bash
-        ./manage.py showmigrations registrar
-        ./manage.py makemigrations registrar
-        ./manage.py migrate registrar migration_file_#_here
-
-        Remember to docker compose down/up as well when working with migrations
-        """
-
-        # constraints = [
-        #     models.UniqueConstraint(
-        #         fields=["name"], condition=~models.Q(state=("deleted", "DELETED")), name="unique_name_except_deleted"
-        #     )
-        # ]
-
-        # constraints = [
-        #     models.CheckConstraint(
-        #         check=~models.Q(state="deleted"),
-        #         name="check_not_deleted_state"
-        #     ),
-        #     models.UniqueConstraint(
-        #         fields=["name"],
-        #         condition=~models.Q(state="deleted"),
-        #         name="unique_name_except_deleted"
-        #     ),
-        # ]
-
-        # constraints = [
-        #     models.CheckConstraint(
-        #         check=~models.Q(state=State.DELETED),
-        #         name="exclude_deleted"
-        #     ),
-        #     models.UniqueConstraint(
-        #         fields=["name"],
-        #         name="unique_name_except_deleted"
-        #     )
-        # ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"], condition=~models.Q(state=("deleted", "DELETED")), name="unique_name_except_deleted"
+            )
+        ]
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -1264,8 +1217,7 @@ class Domain(TimeStampedModel, DomainHelper):
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=True,
-        # unique=False,
+        unique=False,
         help_text="Fully qualified domain name",
         verbose_name="domain",
     )
@@ -2107,22 +2059,22 @@ class Domain(TimeStampedModel, DomainHelper):
         data = data_response.res_data[0]
         # Have it return/raise this for checking for Deleted
         #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
-        # raise RegistryError(
-        #     message=f"Domain no longer exists in the registry and is DELETED.",
-        #     error_code=2303,
-        # )
-        return {
-            "auth_info": getattr(data, "auth_info", ...),
-            "_contacts": getattr(data, "contacts", ...),
-            "cr_date": getattr(data, "cr_date", ...),
-            "ex_date": getattr(data, "ex_date", ...),
-            "_hosts": getattr(data, "hosts", ...),
-            "name": getattr(data, "name", ...),
-            "registrant": getattr(data, "registrant", ...),
-            "statuses": getattr(data, "statuses", ...),
-            "tr_date": getattr(data, "tr_date", ...),
-            "up_date": getattr(data, "up_date", ...),
-        }
+        raise RegistryError(
+            message=f"Domain no longer exists in the registry and is DELETED.",
+            error_code=2303,
+        )
+        # return {
+        #     "auth_info": getattr(data, "auth_info", ...),
+        #     "_contacts": getattr(data, "contacts", ...),
+        #     "cr_date": getattr(data, "cr_date", ...),
+        #     "ex_date": getattr(data, "ex_date", ...),
+        #     "_hosts": getattr(data, "hosts", ...),
+        #     "name": getattr(data, "name", ...),
+        #     "registrant": getattr(data, "registrant", ...),
+        #     "statuses": getattr(data, "statuses", ...),
+        #     "tr_date": getattr(data, "tr_date", ...),
+        #     "up_date": getattr(data, "up_date", ...),
+        # }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""
