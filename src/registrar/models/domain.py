@@ -5,7 +5,6 @@ import re
 import time
 from datetime import date, timedelta
 from typing import Optional
-from django.apps import apps
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
@@ -2056,11 +2055,11 @@ class Domain(TimeStampedModel, DomainHelper):
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
 
-        data = data_response.res_data[0]
+        # data = data_response.res_data[0]
         # Have it return/raise this for checking for Deleted
         #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
         raise RegistryError(
-            message=f"Domain no longer exists in the registry and is DELETED.",
+            message="Domain no longer exists in the registry and is DELETED.",
             error_code=2303,
         )
         # return {
