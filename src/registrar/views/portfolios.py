@@ -484,12 +484,10 @@ class PortfolioInvitedMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member.html"
-    # form_class = PortfolioInvitedMemberForm
     pk_url_kwarg = "invitedmember_pk"
 
     def get(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
-        # form = self.form_class(instance=portfolio_invitation)
 
         # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
         member_has_view_all_requests_portfolio_permission = (
