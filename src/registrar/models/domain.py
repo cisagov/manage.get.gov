@@ -2055,25 +2055,26 @@ class Domain(TimeStampedModel, DomainHelper):
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
 
-        # data = data_response.res_data[0]
+        data = data_response.res_data[0]
+        print("***** In the _extract_data_from_response function")
         # Have it return/raise this for checking for Deleted
         #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
-        raise RegistryError(
-            message="Domain no longer exists in the registry and is DELETED.",
-            error_code=2303,
-        )
-        # return {
-        #     "auth_info": getattr(data, "auth_info", ...),
-        #     "_contacts": getattr(data, "contacts", ...),
-        #     "cr_date": getattr(data, "cr_date", ...),
-        #     "ex_date": getattr(data, "ex_date", ...),
-        #     "_hosts": getattr(data, "hosts", ...),
-        #     "name": getattr(data, "name", ...),
-        #     "registrant": getattr(data, "registrant", ...),
-        #     "statuses": getattr(data, "statuses", ...),
-        #     "tr_date": getattr(data, "tr_date", ...),
-        #     "up_date": getattr(data, "up_date", ...),
-        # }
+        # raise RegistryError(
+        #     message="Domain no longer exists in the registry and is DELETED.",
+        #     error_code=2303,
+        # )
+        return {
+            "auth_info": getattr(data, "auth_info", ...),
+            "_contacts": getattr(data, "contacts", ...),
+            "cr_date": getattr(data, "cr_date", ...),
+            "ex_date": getattr(data, "ex_date", ...),
+            "_hosts": getattr(data, "hosts", ...),
+            "name": getattr(data, "name", ...),
+            "registrant": getattr(data, "registrant", ...),
+            "statuses": getattr(data, "statuses", ...),
+            "tr_date": getattr(data, "tr_date", ...),
+            "up_date": getattr(data, "up_date", ...),
+        }
 
     def _clean_cache(self, cache, data_response):
         """clean up the cache"""
