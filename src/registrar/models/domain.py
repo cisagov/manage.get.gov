@@ -77,7 +77,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         constraints = [
             models.UniqueConstraint(
-                fields=["name"], condition=~models.Q(state=("deleted", "DELETED")), name="unique_name_except_deleted"
+                fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             )
         ]
 
@@ -287,10 +287,12 @@ class Domain(TimeStampedModel, DomainHelper):
     def is_not_deleted(cls, domain: str) -> bool:
         """Check if the domain is *not* deleted (i.e., exists in the registry)."""
         domain_name = domain.lower()
+        print("!!!!!! in is_not_deleted - domain_name is", domain_name)
 
         try:
             info_req = commands.InfoDomain(domain_name)
             info_response = registry.send(info_req, cleaned=True)
+            print("!!!!!! in is_not_deleted - info_response.res_data is", info_response.res_data)
             if info_response and info_response.res_data:
                 return True
             return False  # No res_data implies likely deleted
@@ -298,8 +300,10 @@ class Domain(TimeStampedModel, DomainHelper):
             if not err.is_connection_error():
                 # 2303 = Object does not exist --> domain is deleted
                 if err.code == 2303:
+                    print("!!!!!! in is_not_deleted - error code was hit")
                     return False
                 logger.info(f"Unexpected registry error while checking domain -- {err}")
+                print("!!!!!! in is_not_deleted - error code was NOT hit")
                 return True  # Assume not deleted
             else:
                 raise err
