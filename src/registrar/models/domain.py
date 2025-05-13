@@ -242,7 +242,9 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def clean(self):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        print("*** in save statement")
+
         # check for if same name and are in any state EXCEPT deleted
         if self.state != self.State.DELETED:
             conflict = Domain.objects.filter(
@@ -257,11 +259,10 @@ class Domain(TimeStampedModel, DomainHelper):
         if conflict.exists():
             raise ValidationError(f"A non-deleted domain with the name '{self.name}' already exists.")
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.full_clean()  # dose clean_fields/clean which is customized above/validate_unique
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
+
         super().save(force_insert, force_update, using, update_fields)
 
     @classmethod
