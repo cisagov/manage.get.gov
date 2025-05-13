@@ -1683,6 +1683,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # Human-readable errors are introduced at the admin.py level,
         # as doing everything here would reduce reliablity.
         try:
+            print("***** IN deletedinepp")
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
             self.deleted = timezone.now()

@@ -4285,8 +4285,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            obj.deletedInEpp()
-            obj.save()
+            obj.delete_and_clean_up_domain(called_from="ADMIN DELETE")
+
+            # obj.deletedInEpp()
+            # obj.save()
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
