@@ -140,22 +140,10 @@ Ignore these notes for now:
 >>> domains = Domain.objects.filter(state=Domain.State.DELETED)
 >>> print(domains)
 <QuerySet [<Domain: drop-plan-everyone.gov>, <Domain: asdasddsadasdasd.gov>, <Domain: feel-itself-prevent.gov>, <Domain: ccic.gov>, <Domain: may12-1128am.gov>, <Domain: cityofabbevillega.gov>, <Domain: product-throw-music.gov>, <Domain: head-successful.gov>, <Domain: program-avoid.gov>]>
->>>  Domain.objects.filter(Q(("state", ("deleted", "DELETED"))))
-  File "<console>", line 1
-    Domain.objects.filter(Q(("state", ("deleted", "DELETED"))))
-IndentationError: unexpected indent
->>> Domain.objects.filter(Q(("state", ("deleted", "DELETED"))))
-Traceback (most recent call last):
-  File "<console>", line 1, in <module>
-NameError: name 'Q' is not defined
->>> Domain.objects.filter((("state", ("deleted", "DELETED"))))
-<QuerySet []>
->>> Domain.objects.filter((("state", ("Deleted"))))
-<QuerySet []>
->>> Domain.objects.filter((("state", ("deleted", "Deleted"))))
 <QuerySet []>
 >>> from django.db.models import Q
 >>> Domain.objects.filter(Q(state='deleted'))
 <QuerySet [<Domain: drop-plan-everyone.gov>, <Domain: asdasddsadasdasd.gov>, <Domain: feel-itself-prevent.gov>, <Domain: ccic.gov>, <Domain: may12-1128am.gov>, <Domain: cityofabbevillega.gov>, <Domain: product-throw-music.gov>, <Domain: head-successful.gov>, <Domain: program-avoid.gov>]>
 >>>
->>>
+>>> Domain.objects.filter(~Q(state="deleted")).values("name").annotate(c=Count("id")).filter(c__gt=1)
+<QuerySet []>

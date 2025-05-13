@@ -34,6 +34,8 @@ from epplibwrapper import (
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from django.db.models import DateField, TextField
+from django.core.exceptions import ValidationError
+
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
@@ -80,6 +82,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             )
         ]
+
+        # Domain name must be unique across all non-deletd domains
+        # If domain is in deleted state, its name can be reused - submitted/approved
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -238,6 +243,21 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        # check for if same name and are in any state EXCEPT deleted
+
+        if self.state != self.State.DELETED:
+            conflict = Domain.objects.filter(
+                name=self.name, state__in=[s for s in self.State.values if s != self.State.DELETED]
+            )
+
+        # if this domain alr exists (updating, creating), ignore
+        if self.pk:
+            conflict = conflict.exclude(pk=self.pk)
+
+        # if has conflict aka a db match, raise error
+        if conflict.exists():
+            raise ValidationError(f"A non-deleted domain with the name '{self.name}' already exists.")
+
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
