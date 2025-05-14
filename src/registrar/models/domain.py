@@ -246,15 +246,20 @@ class Domain(TimeStampedModel, DomainHelper):
         print("*** in save statement")
 
         # check for if same name and are in any state EXCEPT deleted
+        print("***** self.state is", self.state)
         if self.state != self.State.DELETED:
             conflict = Domain.objects.filter(
                 name=self.name, state__in=[s for s in self.State.values if s != self.State.DELETED]
             )
 
+        print("***** conflict is after 1ST CHECK", conflict)
+
+        print("***** self.pk is", self.pk)
         # if this domain alr exists (updating, creating), ignore
         if self.pk:
             conflict = conflict.exclude(pk=self.pk)
 
+        print("***** conflict is after 2ND CHECK", conflict)
         # if has conflict aka a db match, raise error
         if conflict.exists():
             raise ValidationError(f"A non-deleted domain with the name '{self.name}' already exists.")
