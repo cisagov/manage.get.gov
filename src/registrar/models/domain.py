@@ -289,6 +289,31 @@ class Domain(TimeStampedModel, DomainHelper):
         return False
 
     @classmethod
+    def is_not_deleted(cls, domain: str) -> bool:
+        """Check if the domain is *not* deleted (i.e., exists in the registry)."""
+        domain_name = domain.lower()
+        print("!!!!!! in is_not_deleted - domain_name is", domain_name)
+
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
+            print("!!!!!! in is_not_deleted - info_response.res_data is", info_response.res_data)
+            if info_response and info_response.res_data:
+                return True
+            return False  # No res_data implies likely deleted
+        except RegistryError as err:
+            if not err.is_connection_error():
+                # 2303 = Object does not exist --> domain is deleted
+                if err.code == 2303:
+                    print("!!!!!! in is_not_deleted - error code was hit")
+                    return False
+                logger.info(f"Unexpected registry error while checking domain -- {err}")
+                print("!!!!!! in is_not_deleted - error code was NOT hit")
+                return True  # Assume not deleted
+            else:
+                raise err
+
+    @classmethod
     def registered(cls, domain: str) -> bool:
         """Check if a domain is _not_ available."""
         return not cls.available(domain)
@@ -1642,7 +1667,6 @@ class Domain(TimeStampedModel, DomainHelper):
         # Human-readable errors are introduced at the admin.py level,
         # as doing everything here would reduce reliablity.
         try:
-            print("***** IN deletedinepp")
             logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
             self.deleted = timezone.now()
@@ -2061,13 +2085,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """extract data from response from registry"""
 
         data = data_response.res_data[0]
-        print("***** In the _extract_data_from_response function")
-        # Have it return/raise this for checking for Deleted
-        #   epplibwrapper/errors.py -> OBJECT_DOES_NOT_EXIST = 2303
-        # raise RegistryError(
-        #     message="Domain no longer exists in the registry and is DELETED.",
-        #     error_code=2303,
-        # )
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
