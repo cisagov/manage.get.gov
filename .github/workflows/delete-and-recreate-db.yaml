@@ -13,7 +13,6 @@ on:
         options:
         - el
         - ad
-        - ms
         - ag
         - litterbox
         - hotgov
@@ -32,6 +31,7 @@ on:
         - ab
         - rjm
         - dk
+        - dg
 
 jobs:
   reset-db:
