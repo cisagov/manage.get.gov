@@ -1222,6 +1222,7 @@ class DomainRequest(TimeStampedModel):
         2. Excludes any domain in the DELETED state
         3. Check if there are any non DELETED state domains with same name
         """
+        print("***** In the domain_request.py Approve function")
         if Domain.objects.filter(name=self.requested_domain.name).exclude(state=Domain.State.DELETED).exists():
             print("**** Approve Function -> in the if statement and domain in use")
             raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
