@@ -34,7 +34,6 @@ from epplibwrapper import (
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from django.db.models import DateField, TextField
-from django.core.exceptions import ValidationError
 
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
@@ -243,27 +242,6 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        # print("*** in save statement")
-
-        # # check for if same name and are in any state EXCEPT deleted
-        # print("***** self.state is", self.state)
-        # if self.state != self.State.DELETED:
-        #     conflict = Domain.objects.filter(
-        #         name=self.name, state__in=[s for s in self.State.values if s != self.State.DELETED]
-        #     )
-
-        # print("***** conflict is after 1ST CHECK", conflict)
-
-        # print("***** self.pk is", self.pk)
-        # # if this domain alr exists (updating, creating), ignore
-        # if self.pk:
-        #     conflict = conflict.exclude(pk=self.pk)
-
-        # print("***** conflict is after 2ND CHECK", conflict)
-        # # if has conflict aka a db match, raise error
-        # if conflict.exists():
-        #     raise ValidationError(f"A non-deleted domain with the name '{self.name}' already exists.")
-
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
@@ -309,31 +287,6 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 raise err
         return False
-
-    @classmethod
-    def is_not_deleted(cls, domain: str) -> bool:
-        """Check if the domain is *not* deleted (i.e., exists in the registry)."""
-        domain_name = domain.lower()
-        print("!!!!!! in is_not_deleted - domain_name is", domain_name)
-
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
-            print("!!!!!! in is_not_deleted - info_response.res_data is", info_response.res_data)
-            if info_response and info_response.res_data:
-                return True
-            return False  # No res_data implies likely deleted
-        except RegistryError as err:
-            if not err.is_connection_error():
-                # 2303 = Object does not exist --> domain is deleted
-                if err.code == 2303:
-                    print("!!!!!! in is_not_deleted - error code was hit")
-                    return False
-                logger.info(f"Unexpected registry error while checking domain -- {err}")
-                print("!!!!!! in is_not_deleted - error code was NOT hit")
-                return True  # Assume not deleted
-            else:
-                raise err
 
     @classmethod
     def registered(cls, domain: str) -> bool:
