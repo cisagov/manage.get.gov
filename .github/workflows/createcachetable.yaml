@@ -28,7 +28,8 @@ on:
           - ab
           - rjm
           - dk
-          - ms
+          - dg
+          - el
 
 jobs:
   createcachetable:
