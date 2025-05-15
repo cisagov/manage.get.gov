@@ -1216,6 +1216,10 @@ class DomainRequest(TimeStampedModel):
         # create the domain
         Domain = apps.get_model("registrar.Domain")
 
+        # == Check that the domain_request is valid == #
+        if Domain.objects.filter(name=self.requested_domain.name).exists():
+            raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
+
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
