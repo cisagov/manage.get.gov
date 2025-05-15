@@ -91,6 +91,8 @@ class UserProfileView(DetailView, FormMixin):
 
     def post(self, request, *args, **kwargs):
         """Handle post requests (form submissions)"""
+        import time
+        time.sleep(5)
         self.object = self.get_object()
         form = self.form_class(request.POST, instance=self.object)
 
