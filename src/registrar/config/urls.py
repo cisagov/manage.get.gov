@@ -159,6 +159,11 @@ urlpatterns = [
         name="no-portfolio-requests",
     ),
     path(
+        "organization-overview/",
+        views.PortfolioOrganizationMainView.as_view(),
+        name="organization-overview",
+    ),
+    path(
         "organization/",
         views.PortfolioOrganizationView.as_view(),
         name="organization",

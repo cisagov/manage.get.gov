@@ -1,0 +1,29 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Organization overview | {{ portfolio.name }}{% endblock %}
+
+{% block portfolio_content %}
+<div class="grid-row grid-gap">
+    <div class="tablet:grid-col-3">
+        <p class="font-body-md margin-top-0 margin-bottom-2
+                    text-primary-darker text-semibold"
+        >
+            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
+        </p>
+
+        {% include 'portfolio_organization_sidebar.html' %}
+    </div>
+
+    <div class="tablet:grid-col-9 main-content">
+        <h1>Organization overview</h1>
+        <h2>{{ portfolio }}</h2>
+
+        {% url 'organization' as url %}
+        {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' edit_link=url editable=has_edit_portfolio_permission %}
+
+        {% url 'senior-official' as url %}
+        {% include "includes/summary_item.html" with title='Senior official' value=portfolio.senior_official contact='true' edit_link=url view_button='true' %}
+    </div>
+</div>
+{% endblock %}
