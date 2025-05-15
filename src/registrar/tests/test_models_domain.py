@@ -771,6 +771,47 @@ class TestDomainAvailable(MockEppLib):
 
             self.assertFalse(result)
 
+    def test_is_not_deleted_returns_true(self):
+        """
+        TLDR: Domain is NOT DELETED
+
+        Scenario: Domain exists in the registry
+        Should return True
+
+        * Mock InfoDomain command to return valid res_data
+        * Validate send is called with correct domain
+        * Validate response is True
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            mock_response = MagicMock()
+            mock_response.res_data = [MagicMock()]  # non-empty res_data
+            mocked_send.return_value = mock_response
+
+            result = Domain.is_not_deleted("not-deleted.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("not-deleted.gov"), cleaned=True)
+            self.assertTrue(result)
+
+    def test_is_not_deleted_returns_false_when_domain_does_not_exist(self):
+        """
+        TLDR: Domain IS DELETED
+
+        Scenario: Domain does not exist in the registry
+        Should return False
+
+        * Mock registry.send to raise RegistryError with code 2303
+        * Validate response is False
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            error = RegistryError("Object does not exist")
+            error.code = 2303
+            error.is_connection_error = MagicMock(return_value=False)
+            mocked_send.side_effect = error
+
+            result = Domain.is_not_deleted("deleted.gov")
+
+            self.assertFalse(result)
+
     def test_domain_available_with_invalid_error(self):
         """
         Scenario: Testing whether an invalid domain is available

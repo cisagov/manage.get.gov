@@ -131,19 +131,3 @@ domain = Domain.objects.get_or_create(name="<that-domain-here>")
 11. Go to the Registrar page and you should now see the expiring domain
 
 If you want to be in the org model mode, turn the `organization_feature` waffle flag on, and add that domain via Django Admin to a portfolio to be able to view it.
-
-
-Ignore these notes for now:
-
->>> from registrar.models import Domain
->>> from registrar.models import User
->>> domains = Domain.objects.filter(state=Domain.State.DELETED)
->>> print(domains)
-<QuerySet [<Domain: drop-plan-everyone.gov>, <Domain: asdasddsadasdasd.gov>, <Domain: feel-itself-prevent.gov>, <Domain: ccic.gov>, <Domain: may12-1128am.gov>, <Domain: cityofabbevillega.gov>, <Domain: product-throw-music.gov>, <Domain: head-successful.gov>, <Domain: program-avoid.gov>]>
-<QuerySet []>
->>> from django.db.models import Q
->>> Domain.objects.filter(Q(state='deleted'))
-<QuerySet [<Domain: drop-plan-everyone.gov>, <Domain: asdasddsadasdasd.gov>, <Domain: feel-itself-prevent.gov>, <Domain: ccic.gov>, <Domain: may12-1128am.gov>, <Domain: cityofabbevillega.gov>, <Domain: product-throw-music.gov>, <Domain: head-successful.gov>, <Domain: program-avoid.gov>]>
->>>
->>> Domain.objects.filter(~Q(state="deleted")).values("name").annotate(c=Count("id")).filter(c__gt=1)
-<QuerySet []>

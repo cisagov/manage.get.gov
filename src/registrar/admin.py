@@ -4285,8 +4285,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            # obj.delete_and_clean_up_domain(called_from="ADMIN DELETE")
-
             obj.deletedInEpp()
             obj.save()
         except RegistryError as err:

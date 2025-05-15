@@ -76,14 +76,13 @@ class Domain(TimeStampedModel, DomainHelper):
             models.Index(fields=["state"]),
         ]
 
+        # Domain name must be unique across all non-deletd domains
+        # If domain is in deleted state, its name can be reused - submitted/approved
         constraints = [
             models.UniqueConstraint(
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             )
         ]
-
-        # Domain name must be unique across all non-deletd domains
-        # If domain is in deleted state, its name can be reused - submitted/approved
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -290,26 +289,23 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @classmethod
     def is_not_deleted(cls, domain: str) -> bool:
-        """Check if the domain is *not* deleted (i.e., exists in the registry)."""
+        """Check if the domain is NOT DELETED."""
         domain_name = domain.lower()
-        print("!!!!!! in is_not_deleted - domain_name is", domain_name)
 
         try:
             info_req = commands.InfoDomain(domain_name)
             info_response = registry.send(info_req, cleaned=True)
-            print("!!!!!! in is_not_deleted - info_response.res_data is", info_response.res_data)
             if info_response and info_response.res_data:
                 return True
-            return False  # No res_data implies likely deleted
+            # No res_data implies likely deleted
+            return False
         except RegistryError as err:
             if not err.is_connection_error():
-                # 2303 = Object does not exist --> domain is deleted
+                # 2303 = Object does not exist --> Domain is deleted
                 if err.code == 2303:
-                    print("!!!!!! in is_not_deleted - error code was hit")
                     return False
                 logger.info(f"Unexpected registry error while checking domain -- {err}")
-                print("!!!!!! in is_not_deleted - error code was NOT hit")
-                return True  # Assume not deleted
+                return True
             else:
                 raise err
 
