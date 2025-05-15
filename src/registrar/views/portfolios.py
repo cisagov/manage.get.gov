@@ -888,11 +888,13 @@ class PortfolioNoDomainRequestsView(View):
             context["portfolio_administrators"] = admin_users
         return context
 
+
 @grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioOrganizationView(DetailView):
     """
     View to handle displaying and updating overview of portfolio's information.
     """
+
     model = Portfolio
     template_name = "portfolio_organization.html"
     context_object_name = "portfolio"
