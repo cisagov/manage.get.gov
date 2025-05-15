@@ -771,7 +771,7 @@ class TestDomainAvailable(MockEppLib):
 
             self.assertFalse(result)
 
-    def test_is_not_deleted_returns_true(self):
+    def test_is_not_deleted_returns_true_when_domain_exists(self):
         """
         TLDR: Domain is NOT DELETED
 
