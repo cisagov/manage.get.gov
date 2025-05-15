@@ -74,7 +74,7 @@ class TestPortfolio(WebTest):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
 
-        so_portfolio_page = self.app.get(reverse("portfolio-senior-official"))
+        so_portfolio_page = self.app.get(reverse("organization-senior-official"))
         # Assert that we're on the right page
         self.assertContains(so_portfolio_page, "Senior official")
         self.assertContains(so_portfolio_page, "Saturn Enceladus")
