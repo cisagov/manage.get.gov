@@ -1,7 +1,7 @@
 {% extends 'portfolio_base.html' %}
 {% load static field_helpers%}
 
-{% block title %}Organization name and mailing address | {{ portfolio.name }}{% endblock %}
+{% block title %}Organization name and mailing address | {{ portfolio }}{% endblock %}
 
 {% load static %}
 
@@ -18,6 +18,19 @@
     </div>
 
     <div class="tablet:grid-col-9" id="main-content">
+        {% block breadcrumb %}
+        <!-- Navigation breadcrumbs -->
+        <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio organization breadcrumb">
+        <ol class="usa-breadcrumb__list">
+            <li class="usa-breadcrumb__list-item">
+            <a href="{% url 'organization' %}" class="usa-breadcrumb__link"><span>{{ portfolio }}</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+            <span>Organization</span>
+            </li>
+        </ol>
+        </nav>
+        {% endblock breadcrumb %}
         <!-- Form messages -->
         {% include "includes/form_errors.html" with form=form %}
         {% block messages %}
