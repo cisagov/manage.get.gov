@@ -240,9 +240,9 @@ def is_portfolio_subpage(path):
     Takes a path name, like '/organization/'."""
     # Since our pages aren't unified under a common path, we need this approach for now.
     url_names = [
-        "organization-overview",
         "organization",
-        "senior-official",
+        "organization-info",
+        "organization-senior-official",
     ]
     return get_url_name(path) in url_names
 

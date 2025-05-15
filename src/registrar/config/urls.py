@@ -159,19 +159,19 @@ urlpatterns = [
         name="no-portfolio-requests",
     ),
     path(
-        "organization-overview/",
-        views.PortfolioOrganizationMainView.as_view(),
-        name="organization-overview",
-    ),
-    path(
         "organization/",
         views.PortfolioOrganizationView.as_view(),
         name="organization",
     ),
     path(
-        "senior-official/",
+        "organization/organization-info",
+        views.PortfolioOrganizationInfoView.as_view(),
+        name="organization-info",
+    ),
+    path(
+        "organization/senior-official",
         views.PortfolioSeniorOfficialView.as_view(),
-        name="senior-official",
+        name="organization-senior-official",
     ),
     path(
         "admin/analytics/export_data_type/",

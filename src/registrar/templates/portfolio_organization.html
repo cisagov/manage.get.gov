@@ -1,9 +1,7 @@
 {% extends 'portfolio_base.html' %}
 {% load static field_helpers%}
 
-{% block title %}Organization name and mailing address | {{ portfolio.name }}{% endblock %}
-
-{% load static %}
+{% block title %}Organization overview | {{ portfolio.name }}{% endblock %}
 
 {% block portfolio_content %}
 <div class="grid-row grid-gap">
@@ -17,63 +15,15 @@
         {% include 'portfolio_organization_sidebar.html' %}
     </div>
 
-    <div class="tablet:grid-col-9" id="main-content">
-        <!-- Form messages -->
-        {% include "includes/form_errors.html" with form=form %}
-        {% block messages %}
-          {% include "includes/form_messages.html" %}
-        {% endblock messages%}
+    <div class="tablet:grid-col-9 main-content">
+        <h1>Organization overview</h1>
+        <h2>{{ portfolio }}</h2>
 
-        <h1>Organization</h1>
+        {% url 'organization-info' as url %}
+        {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' edit_link=url editable=has_edit_portfolio_permission %}
 
-        <p>The name of your organization will be publicly listed as the domain registrant.</p>
-
-        {% if has_edit_portfolio_permission %}
-            <p>
-                Your organization name can’t be updated here.
-                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-            </p>
-
-            {% include "includes/required_fields.html" %}
-            <form class="usa-form usa-form--large desktop:margin-top-4" method="post" novalidate>
-                {% csrf_token %}
-                <h4 class="margin-bottom-05">Organization name</h4>
-                <p class="margin-top-0">
-                    {{ portfolio.federal_agency }}
-                </p>
-                {% input_with_errors form.address_line1 %}
-                {% input_with_errors form.address_line2 %}
-                {% input_with_errors form.city %}
-                {% input_with_errors form.state_territory %}
-                {% with add_class="usa-input--small" sublabel_text="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789." %}
-                    {% input_with_errors form.zipcode %}
-                {% endwith %}
-                <button type="submit" class="usa-button">
-                Save
-                </button>
-            </form>
-        {% else %}
-            <h4 class="margin-bottom-05">Organization name</h4>
-            <p class="margin-top-0">
-                {{ portfolio.federal_agency }}
-            </p>
-            {% if form.address_line1.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.address_line1 %}
-            {% endif %}
-            {% if form.address_line2.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.address_line2 %}
-            {% endif %}
-            {% if form.city.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.city %}
-            {% endif %}
-            {% if form.state_territory.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.state_territory %}
-            {% endif %}
-            {% if form.zipcode.value is not None %}
-                {% include "includes/input_read_only.html" with field=form.zipcode %}
-            {% endif %}
-        {% endif %}
-
+        {% url 'organization-senior-official' as url %}
+        {% include "includes/summary_item.html" with title='Senior official' value=portfolio.senior_official contact='true' edit_link=url view_button='true' %}
     </div>
 </div>
 {% endblock %}

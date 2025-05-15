@@ -4,7 +4,7 @@
   <nav aria-label="Domain sections">
     <ul class="usa-sidenav">
       <li class="usa-sidenav__item">
-        {% url 'organization-overview' as url %} 
+        {% url 'organization' as url %} 
         <a href="{{ url }}" 
           {% if request.path == url %}class="usa-current"{% endif %}
         >
@@ -13,7 +13,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'organization' as url %} 
+        {% url 'organization-info' as url %} 
         <a href="{{ url }}" 
           {% if request.path == url %}class="usa-current"{% endif %}
         >
@@ -22,7 +22,7 @@
       </li>
 
       <li class="usa-sidenav__item">
-        {% url 'senior-official' as url %} 
+        {% url 'organization-senior-official' as url %} 
         <a href="{{ url }}"
         {% if request.path == url %}class="usa-current"{% endif %}
         >

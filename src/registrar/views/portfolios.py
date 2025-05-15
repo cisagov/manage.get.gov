@@ -889,12 +889,12 @@ class PortfolioNoDomainRequestsView(View):
         return context
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationMainView(DetailView):
+class PortfolioOrganizationView(DetailView):
     """
     View to handle displaying and updating overview of portfolio's information.
     """
     model = Portfolio
-    template_name = "portfolio_organization_detail.html"
+    template_name = "portfolio_organization.html"
     context_object_name = "portfolio"
 
     def get_context_data(self, **kwargs):
@@ -918,13 +918,13 @@ class PortfolioOrganizationMainView(DetailView):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationView(DetailView, FormMixin):
+class PortfolioOrganizationInfoView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
 
     model = Portfolio
-    template_name = "portfolio_organization.html"
+    template_name = "portfolio_organization_info.html"
     form_class = portfolioForms.PortfolioOrgAddressForm
     context_object_name = "portfolio"
 
