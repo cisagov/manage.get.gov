@@ -74,7 +74,7 @@ class TestPortfolio(WebTest):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
 
-        so_portfolio_page = self.app.get(reverse("senior-official"))
+        so_portfolio_page = self.app.get(reverse("portfolio-senior-official"))
         # Assert that we're on the right page
         self.assertContains(so_portfolio_page, "Senior official")
         self.assertContains(so_portfolio_page, "Saturn Enceladus")
@@ -196,7 +196,7 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_read_only(self):
+    def test_portfolio_organization_info_page_read_only(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -207,7 +207,7 @@ class TestPortfolio(WebTest):
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("organization"))
+            response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
@@ -218,7 +218,7 @@ class TestPortfolio(WebTest):
             self.assertContains(response, '<p class="margin-top-0">Los Angeles</p>')
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_edit_access(self):
+    def test_portfolio_organization_info_page_edit_access(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -232,7 +232,7 @@ class TestPortfolio(WebTest):
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("organization"))
+            response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
@@ -285,7 +285,7 @@ class TestPortfolio(WebTest):
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
             self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization</h1>")
+            self.assertContains(org_page, "<h1>Organization overview</h1>")
 
             # Both domain pages should not be accessible
             domain_page = self.app.get(reverse("domains"), expect_errors=True)
@@ -332,7 +332,7 @@ class TestPortfolio(WebTest):
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
             self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization</h1>")
+            self.assertContains(org_page, "<h1>Organization overview</h1>")
 
             # Both domain pages should not be accessible
             domain_page = self.app.get(reverse("domains"), expect_errors=True)
@@ -352,12 +352,12 @@ class TestPortfolio(WebTest):
             portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
-            page = self.app.get(reverse("organization"))
+            page = self.app.get(reverse("organization-info"))
             self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
-    def test_domain_org_name_address_content(self):
-        """Org name and address information appears on the page."""
+    def test_portfolio_org_info_includes_name_and_address(self):
+        """Org name and address appears on the org info page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
@@ -370,7 +370,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
-            page = self.app.get(reverse("organization"))
+            page = self.app.get(reverse("organization-info"))
             # Once in the sidenav, once in the main nav
             self.assertContains(page, "Hotel California", count=2)
             self.assertContains(page, "Non-Federal Agency")
@@ -390,7 +390,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
             portfolio_org_name_page.form["address_line1"] = "6 Downing st"
@@ -419,7 +419,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
             # Form validates and redirects with all required fields
@@ -458,7 +458,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             portfolio_org_name_page.form["address_line1"] = "6 Downing st"
             portfolio_org_name_page.form["city"] = "London"
