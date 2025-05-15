@@ -3229,7 +3229,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
             and original_obj.requested_domain is not None
             and Domain.objects.filter(name=original_obj.requested_domain.name).exists()
+            and Domain.is_not_deleted(domain_name)
         ):
+            # NOTE: We want to allow it to be approved again if it's already deleted
+            # So we want to exclude deleted
+
             # REDUNDANT CHECK:
             # This action (approving a request when the domain exists)
             # would still not go through even without this check as the rules are

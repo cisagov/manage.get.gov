@@ -5,9 +5,8 @@ import re
 import time
 from datetime import date, timedelta
 from typing import Optional
-from django.db import transaction
+from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
-from django.db import models, IntegrityError
 from django.utils import timezone
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
@@ -35,6 +34,7 @@ from epplibwrapper import (
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from django.db.models import DateField, TextField
+
 from .utility.domain_field import DomainField
 from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
@@ -74,6 +74,14 @@ class Domain(TimeStampedModel, DomainHelper):
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["state"]),
+        ]
+
+        # Domain name must be unique across all non-deletd domains
+        # If domain is in deleted state, its name can be reused - submitted/approved
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
+            )
         ]
 
     def __init__(self, *args, **kwargs):
@@ -236,6 +244,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
+
         super().save(force_insert, force_update, using, update_fields)
 
     @classmethod
@@ -245,7 +254,6 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
-
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -278,6 +286,28 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 raise err
         return False
+
+    @classmethod
+    def is_not_deleted(cls, domain: str) -> bool:
+        """Check if the domain is NOT DELETED."""
+        domain_name = domain.lower()
+
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
+            if info_response and info_response.res_data:
+                return True
+            # No res_data implies likely deleted
+            return False
+        except RegistryError as err:
+            if not err.is_connection_error():
+                # 2303 = Object does not exist --> Domain is deleted
+                if err.code == 2303:
+                    return False
+                logger.info(f"Unexpected registry error while checking domain -- {err}")
+                return True
+            else:
+                raise err
 
     @classmethod
     def registered(cls, domain: str) -> bool:
@@ -1211,7 +1241,7 @@ class Domain(TimeStampedModel, DomainHelper):
         max_length=253,
         blank=False,
         default=None,  # prevent saving without a value
-        unique=True,
+        unique=False,
         help_text="Fully qualified domain name",
         verbose_name="domain",
     )
@@ -2051,7 +2081,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """extract data from response from registry"""
 
         data = data_response.res_data[0]
-
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),
