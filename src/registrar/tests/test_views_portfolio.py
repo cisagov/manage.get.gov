@@ -197,7 +197,8 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_includes_org_info_and_senior_official(self):
-        """Test that portfolio user on the organization overview page includes sections on the organization's info and senior official"""
+        """Test that portfolio user on the organization overview page includes sections on the organization's 
+        info and senior official"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
@@ -229,7 +230,8 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
-        """Test that portfolio user on the organization overview page can click on the overview sections to their respective forms"""
+        """Test that portfolio user on the organization overview page can click on the overview 
+        sections to their respective forms"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
