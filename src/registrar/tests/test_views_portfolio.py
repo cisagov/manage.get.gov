@@ -268,7 +268,7 @@ class TestPortfolio(WebTest):
             org_overview_response = self.app.get(reverse("organization"))
             # Viewonly icons for org info and senior official (which is always viewonly)
             # visibility is html id of view only icon
-            self.assertContains(org_overview_response, 'visibility', count=2)
+            self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_section_icon(self):
@@ -286,7 +286,7 @@ class TestPortfolio(WebTest):
             org_overview_response = self.app.get(reverse("organization"))
             # Viewonly icons for org info and senior official (which is always viewonly)
             # visibility is html id of view only icon
-            self.assertContains(org_overview_response, 'visibility', count=2)
+            self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_read_only(self):
@@ -297,7 +297,7 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ],
         )
         self.portfolio.save()
@@ -305,7 +305,7 @@ class TestPortfolio(WebTest):
             # User can access view-only form via organization overview page
             org_overview_response = self.app.get(reverse("organization"))
             # Edit icons for org info (senior official is always viewonly)
-            self.assertContains(org_overview_response, 'Edit')
+            self.assertContains(org_overview_response, "Edit")
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_edit_access(self):
