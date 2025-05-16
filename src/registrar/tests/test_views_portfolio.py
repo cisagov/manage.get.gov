@@ -196,6 +196,61 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
+    def test_portfolio_organization_page_includes_org_info_and_senior_official(self):
+        """Test that portfolio user on the organization overview page includes sections on the organization's info and senior official"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        so = SeniorOfficial.objects.create(
+            first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
+        )
+
+        self.portfolio.senior_official = so
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.city = "Los Angeles"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # User can access organization info form via organization overview page
+            response = self.app.get(reverse("organization"))
+            self.assertEqual(response.status_code, 200)
+            # Organization overview page includes organization name
+            self.assertContains(response, "<h1>Organization overview</h1>")
+            self.assertContains(response, "<h2>Hotel California</h2>")
+            # Organization overview page includes organization info and senior official details
+            self.assertContains(response, "Los Angeles")
+            self.assertContains(response, "spacedivision@igorville.com")
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_page_directs_to_org_detail_forms(self):
+        """Test that portfolio user on the organization overview page can click on the overview sections to their respective forms"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # User can access organization info form via organization overview page
+            response = self.app.get(reverse("organization"))
+            # The overview page includes button to edit organization
+            org_info_url = reverse("organization-info")
+            org_senior_official_url = reverse("organization-senior-official")
+            self.assertContains(response, f'href="{org_info_url}"')
+            self.assertContains(response, f'href="{org_senior_official_url}"')
+
+    @less_console_noise_decorator
     def test_portfolio_organization_info_page_read_only(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
@@ -204,9 +259,13 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
-        self.portfolio.city = "Los Angeles"
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
+            # User can access view-only form via organization overview page
+            response = self.app.get(reverse("organization"))
+            # The overview page includes button to view organization
+            self.assertContains(response, "View")
+
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
@@ -231,7 +290,14 @@ class TestPortfolio(WebTest):
         )
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
+
         with override_flag("organization_feature", active=True):
+            # User can access editable form via organization overview page
+            response = self.app.get(reverse("organization"))
+            # The overview page includes button to edit organization
+            self.assertContains(response, "Edit")
+
+            # User can access editable form via organization info page
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
@@ -241,6 +307,33 @@ class TestPortfolio(WebTest):
             self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
             self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_detail_pages_include_breadcrumb(self):
+        """Test that breadcrumb menus display on portfolio detail pages"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # Breadcrumb appears on organization info page
+            org_info_response = self.app.get(reverse("organization-info"))
+            self._assert_has_organization_breadcrumb(org_info_response)
+            so_response = self.app.get(reverse("organization-senior-official"))
+            self._assert_has_organization_breadcrumb(so_response)
+
+    def _assert_has_organization_breadcrumb(self, response):
+        self.assertContains(response, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(response, "Hotel California")
+        self.assertContains(response, 'href="/organization/"')
 
     @less_console_noise_decorator
     @override_flag("organization_requests", active=True)
