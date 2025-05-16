@@ -63,7 +63,8 @@ URL_PERMISSIONS = {
     "domain-requests": [HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM],
     "no-portfolio-requests": [IS_PORTFOLIO_MEMBER],
     "organization": [IS_PORTFOLIO_MEMBER],
-    "senior-official": [IS_PORTFOLIO_MEMBER],
+    "organization-info": [IS_PORTFOLIO_MEMBER],
+    "organization-senior-official": [IS_PORTFOLIO_MEMBER],
     # Domain requests
     "domain-request-status": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
     "domain-request-status-viewonly": [HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL],

@@ -19,6 +19,20 @@
     </div>
 
     <div class="tablet:grid-col-9" id="main-content">
+        {% block breadcrumb %}
+        <!-- Navigation breadcrumbs -->
+        <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio organization breadcrumb">
+        <ol class="usa-breadcrumb__list">
+            <li class="usa-breadcrumb__list-item">
+            <a href="{% url 'organization' %}" class="usa-breadcrumb__link"><span>{{ portfolio }}</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+            <span>Senior official</span>
+            </li>
+        </ol>
+        </nav>
+        {% endblock breadcrumb %}
+
         {% include "includes/senior_official.html" with can_edit=False %}
     </div>
 </div>
