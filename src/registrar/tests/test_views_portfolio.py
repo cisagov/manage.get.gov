@@ -247,7 +247,7 @@ class TestPortfolio(WebTest):
             # User can access organization info form via organization overview page
             response = self.app.get(reverse("organization"))
             # The overview page includes button to edit organization
-            org_info_url = self.app.get(reverse("organization-info"))
+            org_info_url = reverse("organization-info")
             org_senior_official_url = reverse("organization-senior-official")
             self.assertContains(response, f'href="{org_info_url}"')
             self.assertContains(response, f'href="{org_senior_official_url}"')
