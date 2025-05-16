@@ -846,7 +846,7 @@ CSRF_HEADER_NAME = "HTTP_X_CRSIREFO"
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 
 # age of session cookies, in seconds (28800 = 8 hours)
-SESSION_COOKIE_AGE = 28800
+SESSION_COOKIE_AGE = 100
 
 # instruct the browser to forbid client-side JavaScript
 # from accessing the cookie
