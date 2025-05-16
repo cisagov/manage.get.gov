@@ -264,19 +264,19 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         with override_flag("organization_feature", active=True):
             # User can access view-only form via organization overview page
-            response = self.app.get(reverse("organization"))
+            org_overview_response = self.app.get(reverse("organization"))
             # The overview page includes button to view organization
-            self.assertContains(response, "View")
+            self.assertContains(org_overview_response, "View")
 
-            response = self.app.get(reverse("organization-info"))
+            org_info_response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(org_info_response.status_code, 200)
             # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
+            self.assertContains(org_info_response, '<h4 class="margin-bottom-05">Organization name</h4>')
             # The read only label for city will be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">City</h4>')
-            self.assertNotContains(response, 'for="id_city"')
-            self.assertContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            self.assertContains(org_info_response, '<h4 class="margin-bottom-05">City</h4>')
+            self.assertNotContains(org_info_response, 'for="id_city"')
+            self.assertContains(org_info_response, '<p class="margin-top-0">Los Angeles</p>')
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_edit_access(self):
@@ -466,7 +466,7 @@ class TestPortfolio(WebTest):
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
             page = self.app.get(reverse("organization-info"))
-            # Once in the sidenav, once in the main nav
+            # Org name in Sidenav, main nav, webpage title, and breadcrumb
             self.assertContains(page, "Hotel California", count=2)
             self.assertContains(page, "Non-Federal Agency")
 
