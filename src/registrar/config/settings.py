@@ -845,6 +845,8 @@ CSRF_HEADER_NAME = "HTTP_X_CRSIREFO"
 # individual form fields.
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 
+# 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 # age of session cookies, in seconds (28800 = 8 hours)
 SESSION_COOKIE_AGE = 100
 
