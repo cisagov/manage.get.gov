@@ -253,7 +253,7 @@ class TestPortfolio(WebTest):
             self.assertContains(response, f'href="{org_senior_official_url}"')
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_section_icon(self):
+    def test_portfolio_organization_page_section_viewonly_icon(self):
         """Test organization page setion displays viewonly icon for portfolio nonadmin member"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -271,7 +271,7 @@ class TestPortfolio(WebTest):
             self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_section_icon(self):
+    def test_portfolio_organization_page_section_edit_icon(self):
         """Test organization page setion displays viewonly icon for portfolio nonadmin member"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
