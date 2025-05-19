@@ -191,7 +191,7 @@ class UserFixture:
             "last_name": "Gutierrez",
             "email": "daisyguti56@gmail.com",
             "title": "Lima",
-        }
+        },
     ]
 
     STAFF = [
