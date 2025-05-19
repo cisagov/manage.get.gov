@@ -17,7 +17,7 @@
 
     <div class="tablet:grid-col-9 main-content">
         <h1>Organization overview</h1>
-        <h2>{{ portfolio }}</h2>
+        <h2 class="margin-top-2">{{ portfolio }}</h2>
 
         {% url 'organization-info' as url %}
         {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' edit_link=url editable=has_edit_portfolio_permission view_button='true' %}
