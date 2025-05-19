@@ -178,6 +178,20 @@ class UserFixture:
             "email": "jaxon.silva@cisa.dhs.gov",
             "title": "Designer",
         },
+        {
+            "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
+            "first_name": "Kim",
+            "last_name": "Allen",
+            "email": "kim+dotgov@truss.works",
+            "title": "Farmer",
+        },
+        {
+            "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
+            "first_name": "Kim",
+            "last_name": "Allen",
+            "email": "kim+dotgov@truss.works",
+            "title": "Farmer",
+        },
     ]
 
     STAFF = [
@@ -296,6 +310,18 @@ class UserFixture:
             "first_name": "Kaitlin-Analyst",
             "last_name": "Abbitt-Analyst",
             "email": "kaitlin.abbitt@gwe.cisa.dhs.gov",
+        },
+        {
+            "username": "79b55374-f1a3-4e06-8614-41ba70050cd5",
+            "first_name": "Kim-Analyst",
+            "last_name": "Allen-Analyst",
+            "email": "kim+a@truss.works",
+        },
+        {
+            "username": "79b55374-f1a3-4e06-8614-41ba70050cd5",
+            "first_name": "Kim-Analyst",
+            "last_name": "Allen-Analyst",
+            "email": "kim+a@truss.works",
         },
     ]
 
