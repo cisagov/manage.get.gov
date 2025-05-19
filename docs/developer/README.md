@@ -109,7 +109,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
 ### Adding an analyst-level user to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
 
-1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/)  identity sandbox login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
+1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/) via identity sandbox login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
 4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Engineers will handle the remaining steps for designers, stop here.
