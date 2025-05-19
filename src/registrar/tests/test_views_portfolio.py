@@ -223,7 +223,7 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 200)
             # Organization overview page includes organization name
             self.assertContains(response, "<h1>Organization overview</h1>")
-            self.assertContains(response, "<h2>Hotel California</h2>")
+            self.assertContains(response, "Hotel California</h2>")
             # Organization overview page includes organization info and senior official details
             self.assertContains(response, "Los Angeles")
             self.assertContains(response, "spacedivision@igorville.com")
