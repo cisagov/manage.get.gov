@@ -441,10 +441,11 @@ class TestDomainDetail(TestDomainOverview):
         user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
-        # Check that alert message displays properly
+        # Check that alert message displays properly.
+        # This message is different for one user on the portfolio vs multiple.
         self.assertContains(
             detail_page,
-            "If you need to make updates, contact one of the listed domain managers.",
+            "If you need to become a domain manager, edit the domain assignments",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
@@ -2800,12 +2801,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
@@ -2882,7 +2883,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Security email", body)
 
@@ -2915,7 +2915,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2944,7 +2943,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2975,12 +2973,12 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
     def test_no_notification_on_senior_official_when_portfolio(self):
         """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""

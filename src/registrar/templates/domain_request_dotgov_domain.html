@@ -2,19 +2,25 @@
 {% load static field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>Before requesting a .gov domain, please make sure it meets <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% if requires_feb_questions %}https://get.gov/domains/executive-branch-guidance/{% else %}{% public_site_url 'domains/choosing' %}{% endif %}">our naming requirements</a>. Your domain name must:
+  <p>
+    Before requesting a .gov domain, please make sure it meets 
+    {% if requires_feb_questions %}
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">our naming requirements for executive branch agencies</a>. Your domain name must:
+    {% else %}
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">our naming requirements</a>. Your domain name must:
+    {% endif %}
     <ul class="usa-list">
       <li>Be available </li>
-      <li>Relate to your organization's name, location, and/or services </li>
+      <li>Relate to your organization’s name, location, and/or services </li>
       <li>Be unlikely to mislead or confuse the general public (even if your domain is only intended for a specific audience) </li>
     </ul>
   </p>
 
   <p>Names that <em>uniquely apply to your organization</em> are likely to be approved over names that could also apply to other organizations. 
-    {% if not is_federal %}In most instances, this requires including your state's two-letter abbreviation.{% endif %}</p> 
+    {% if not is_federal %}In most instances, this requires including your state’s two-letter abbreviation.{% endif %}</p> 
   
   {% if not portfolio %}
-  <p>Requests for your organization's initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
+  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
   {% endif %}
 
   <p>Note that <strong>only federal agencies can request generic terms</strong> like
@@ -29,7 +35,7 @@
 
 
 {% block form_required_fields_help_text %}
-{# empty this block so it doesn't show on this page #}
+{# empty this block so it doesn’t show on this page #}
 {% endblock %}
 
 
@@ -42,8 +48,8 @@
       <h2>What .gov domain do you want?</h2>
     </legend>
     <p id="domain_instructions" class="margin-top-05">
-      After you enter your domain, we'll make sure it's available and that it meets some of our naming requirements. 
-      If your domain passes these initial checks, we'll verify that it meets all our requirements after you complete the rest of this form.
+      After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. 
+      If your domain passes these initial checks, we’ll verify that it meets all our requirements after you complete the rest of this form.
     </p>
     {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
       {# attr_validate / validate="domain" invokes code in getgov.min.js #}
@@ -65,7 +71,7 @@
       <h2 id="alternative-domains-title">Alternative domains (optional)</h2>
     </legend>
     <p id="alt_domain_instructions" class="margin-top-05">
-      Are there other domains you'd like if we can't give you your first choice?
+      Are there other domains you’d like if we can’t give you your first choice?
     </p>
     {% with attr_aria_labelledby="alt_domain_instructions" %}
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
@@ -99,7 +105,7 @@
       >Check availability</button>
     </div>
     <p class="margin-top-05">
-      If you're not sure this is the domain you want, that's ok. You can change the domain later.
+      If you’re not sure this is the domain you want, that’s ok. You can change the domain later.
     </p>
   </fieldset>
 
@@ -114,9 +120,10 @@
       <p id="dotgov-domain-naming-requirements" class="margin-top-05">
         OMB will review each request against the domain 
         <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">
-          naming requirements for executive branch agencies
-        </a>. 
-        Agency submissions are expected to meet each requirement.
+          naming requirements for executive branch agencies.</a> Agency submissions are expected to meet each requirement.
+      </p>
+      <p class="usa-label margin-top-0 margin-bottom-0">
+        <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
       </p>
       {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors forms.2.feb_naming_requirements %}
@@ -124,13 +131,12 @@
 
       {# Conditional Details Field – only shown when the executive naming requirements radio is "False" #}
       <div id="domain-naming-requirements-details-container" class="conditional-panel" style="display: none;">
-        <p class="usa-label">
-          Provide details below <span class="usa-label--required">*</span>
+        <p class="margin-bottom-3 margin-top-3">
+          <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
         {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
           {% input_with_errors forms.3.feb_naming_requirements_details %}
         {% endwith %}
-        <p class="usa-hint">Maximum 2000 characters allowed.</p>
       </div>
     </fieldset>
   {% endif %}

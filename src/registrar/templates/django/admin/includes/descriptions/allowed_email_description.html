@@ -1,6 +1,12 @@
-<p>This table is an email allow list for <strong>non-production</strong> environments.</p>
 <p>
-    If an email is sent out and the email does not exist within this table (or is not a subset of it), 
-    then no email will be sent.
+    This table contains all email addresses that have been added to the allowlist for 
+    <strong>non-production</strong> environments.
 </p>
-<p>If this table is populated in a production environment, no change will occur as it will simply be ignored.</p>
+<p>
+    If an email is triggered and the intended recipient doesn’t appear within this table 
+    (or isn’t a subset of an entry in this table), then the message won’t be sent to that email address.
+</p>
+<p>
+    If this table is populated in a production environment, it won’t have an effect on sending emails and 
+    will simply be ignored.
+</p>

@@ -24,6 +24,8 @@ export class DomainRequestsTable extends BaseTable {
   constructor() {
     super('domain-request');
     this.displayName = "domain request";
+    this.currentSortBy = 'last_submitted_date';
+    this.currentOrder = 'desc';
   }
 
   getBaseUrl() {

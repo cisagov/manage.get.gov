@@ -15,6 +15,7 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
@@ -25,7 +26,6 @@ from registrar.models import (
     DomainInformation,
     DomainInvitation,
     PortfolioInvitation,
-    User,
     UserDomainRole,
     PublicContact,
 )
@@ -332,7 +332,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if not info or info.portfolio:
+                    if flag_is_active_for_user(self.request.user, "organization_feature") and (
+                        not info or info.portfolio
+                    ):
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -366,31 +368,20 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         Will log a warning if the email fails to send for any reason, but will not raise an error.
         """
-        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
-            "user", flat=True
-        )
-        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-        try:
-            # Remove the current user so they aren't CC'ed, since they will be the "to_address"
-            emails.remove(self.request.user.email)  # type: ignore
-        except ValueError:
-            pass
+        manager_roles = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER)
 
-        try:
-            send_templated_email(
-                template,
-                subject_template,
-                to_address=self.request.user.email,  # type: ignore
-                context=context,
-                cc_addresses=emails,
-            )
-        except EmailSendingError:
-            logger.warning(
-                "Could not sent notification email to %s for domain %s",
-                emails,
-                domain.name,
-                exc_info=True,
-            )
+        for role in manager_roles:
+            manager = role.user
+            context["recipient"] = manager
+            try:
+                send_templated_email(template, subject_template, to_address=manager.email, context=context)
+            except EmailSendingError:
+                logger.warning(
+                    "Could not send notification email to %s for domain %s",
+                    manager.email,
+                    domain.name,
+                    exc_info=True,
+                )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
@@ -405,6 +396,9 @@ class DomainView(DomainBaseView):
         default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
+        context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
+            user=self.request.user, portfolio=self.request.session.get("portfolio")
+        ).first()
 
         security_email = self.object.get_security_email()
         if security_email is None or security_email in default_emails:
@@ -707,6 +701,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
     )
 
 
+@grant_access(IS_STAFF)
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm

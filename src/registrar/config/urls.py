@@ -169,10 +169,6 @@ urlpatterns = [
         name="senior-official",
     ),
     path(
-        "admin/logout/",
-        RedirectView.as_view(pattern_name="logout", permanent=False),
-    ),
-    path(
         "admin/analytics/export_data_type/",
         ExportDataType.as_view(),
         name="export_data_type",

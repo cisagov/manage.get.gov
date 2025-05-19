@@ -474,7 +474,7 @@ class User(AbstractUser):
         admin_count = admins.count()
 
         # Check if the current user is in the list of admins
-        if admin_count == 1 and admins.first().user == self:
+        if admin_count == 1 and admins.first() and admins.first().user == self:
             return True  # The user is the only admin
 
         # If there are other admins or the user is not the only one

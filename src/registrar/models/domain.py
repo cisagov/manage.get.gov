@@ -257,6 +257,29 @@ class Domain(TimeStampedModel, DomainHelper):
         return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
+    def is_pending_delete(cls, domain: str) -> bool:
+        """Check if domain is pendingDelete state via response from registry."""
+        domain_name = domain.lower()
+
+        try:
+            info_req = commands.InfoDomain(domain_name)
+            info_response = registry.send(info_req, cleaned=True)
+            # Ensure res_data exists and is not empty
+            if info_response and info_response.res_data:
+                # Use _extract_data_from_response bc it's same thing but jsonified
+                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
+                domain_status_state = domain_response.get("statuses")
+                if "pendingDelete" in str(domain_status_state):
+                    return True
+        except RegistryError as err:
+            if not err.is_connection_error():
+                logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
+                return False
+            else:
+                raise err
+        return False
+
+    @classmethod
     def registered(cls, domain: str) -> bool:
         """Check if a domain is _not_ available."""
         return not cls.available(domain)
@@ -1261,7 +1284,7 @@ class Domain(TimeStampedModel, DomainHelper):
         now = timezone.now().date()
 
         threshold_date = now + timedelta(days=60)
-        return now < self.expiration_date <= threshold_date
+        return now <= self.expiration_date <= threshold_date
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
@@ -2026,7 +2049,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
+
         data = data_response.res_data[0]
+
         return {
             "auth_info": getattr(data, "auth_info", ...),
             "_contacts": getattr(data, "contacts", ...),

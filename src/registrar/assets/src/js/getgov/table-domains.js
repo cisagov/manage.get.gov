@@ -5,6 +5,7 @@ export class DomainsTable extends BaseTable {
 
   constructor() {
     super('domain');
+    this.currentSortBy = 'name';
   }
   getBaseUrl() {
     return document.getElementById("get_domains_json_url");
