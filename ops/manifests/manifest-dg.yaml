@@ -18,7 +18,7 @@ applications:
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
     # Tell Django where it is being hosted
-    DJANGO_BASE_URL: https://getgov-ms.app.cloud.gov
+    DJANGO_BASE_URL: https://getgov-dg.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: DEBUG
     # tell django what log format to use: console or json. See settings.py for more details.
