@@ -16,7 +16,7 @@ fi
 
 upcase_name=$(printf "%s" "$1" | tr '[:lower:]' '[:upper:]')
 
-read -p "Are you on a new branch? We will have to commit this work. (y/n) " -n 1 -r
+read -p "Are you on a new branch? We will have to commit fffthis work. (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
