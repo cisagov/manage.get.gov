@@ -65,13 +65,11 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
-
 ## Documents to Review
 
 - [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
 - [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
-
 
 ## Setting up commit signing with GPG
 
