@@ -20,9 +20,11 @@ There are several tools we use locally that you will need to have.
   - If you are using Windows the cli will be under `cf8` or `cf7` depending on which version you install.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
-- [ ] [GPG](https://gnupg.org/download/) if you are using GPG to sign commits.
+- [ ] GPG or SSH to set up commit signing
+  - [GPG](https://gnupg.org/download/) if you are using GPG to sign commits.
   - Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
-  - This may not work on DHS devices. Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
+  - This may not work on DHS devices. 
+  - Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
 - [ ] Docker Community Edition*
 - [ ] Git*
 - [ ] VSCode (our preferred editor)*
@@ -42,7 +44,7 @@ The following tools are optional  but recommended. For DHS devices, these can be
 ## Access
 
 ### Steps for the onboardee
-- [ ] Setup commit signing in Github and with git locally using either [gpg](#setting-up-commit-signing-with-gpg) or [ssh](#setting-up-commit-signing-with-ssh).
+- [ ] Setup commit signing in Github and with git locally using either [gpg](#setting-up-commit-signing-with-gpg) or [ssh](#setting-up-commit-signing-with-ssh). (Note: commit _signing_ is different than GH _authentication_ through GPG or SSH)
 - [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/)
 - [ ] Email github@cisa.dhs.gov (cc: Cameron) to add you to the [CISA Github organization](https://github.com/getgov) and [.gov Team](https://github.com/orgs/cisagov/teams/gov).
 - [ ] Ensure you can login to your cloud.gov account via the CLI
@@ -58,21 +60,16 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] Identity sandbox accounts - 1 superuser access account and 1 analyst access account.
 - [ ] Login.gov account to access stable
 
-**Optional**
-- [ ] Add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
-
 ### Steps for the onboarder
 - [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
-
 
 ## Documents to Review
 
 - [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
 - [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
-
 
 ## Setting up commit signing with GPG
 
@@ -145,7 +142,7 @@ Now test commit signing is working by checking out a branch (`yourinitials/test-
 
 We have three types of environments: stable, staging, and sandbox. Stable (production)and staging (pre-prod) get deployed via tagged release, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer. 
 
-All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](../../ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](../../ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
+All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
 
 ## Known Issues
 
