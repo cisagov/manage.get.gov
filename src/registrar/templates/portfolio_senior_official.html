@@ -5,10 +5,10 @@
 
 {% load static %}
 
-{% block portfolio_content %}
+{% block portfolio_organization_content %}
 
-<div class="grid-row grid-gap">
-    <div class="tablet:grid-col-3">
+<div class="grid-row grid-gap max-width--grid-container">
+    <div class="tablet:grid-col-3 grid-col--sidenav">
         <p class="font-body-md margin-top-0 margin-bottom-2
                     text-primary-darker text-semibold"
         >
@@ -19,6 +19,20 @@
     </div>
 
     <div class="tablet:grid-col-9" id="main-content">
+        {% block breadcrumb %}
+        <!-- Navigation breadcrumbs -->
+        <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio organization breadcrumb">
+        <ol class="usa-breadcrumb__list">
+            <li class="usa-breadcrumb__list-item">
+            <a href="{% url 'organization' %}" class="usa-breadcrumb__link"><span>{{ portfolio }}</span></a>
+            </li>
+            <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+            <span>Senior official</span>
+            </li>
+        </ol>
+        </nav>
+        {% endblock breadcrumb %}
+
         {% include "includes/senior_official.html" with can_edit=False %}
     </div>
 </div>

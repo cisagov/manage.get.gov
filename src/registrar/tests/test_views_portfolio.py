@@ -74,7 +74,7 @@ class TestPortfolio(WebTest):
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
 
-        so_portfolio_page = self.app.get(reverse("senior-official"))
+        so_portfolio_page = self.app.get(reverse("organization-senior-official"))
         # Assert that we're on the right page
         self.assertContains(so_portfolio_page, "Senior official")
         self.assertContains(so_portfolio_page, "Saturn Enceladus")
@@ -196,29 +196,119 @@ class TestPortfolio(WebTest):
             self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_read_only(self):
-        """Test that user with a portfolio can access the portfolio organization page, read only"""
+    def test_portfolio_organization_page_includes_org_info_and_senior_official(self):
+        """Test that portfolio user on the organization overview page includes sections on the organization's
+        info and senior official"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        so = SeniorOfficial.objects.create(
+            first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
+        )
+
+        self.portfolio.senior_official = so
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.city = "Los Angeles"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # User can access organization info form via organization overview page
+            response = self.app.get(reverse("organization"))
+            self.assertEqual(response.status_code, 200)
+            # Organization overview page includes organization name
+            self.assertContains(response, "<h1>Organization overview</h1>")
+            self.assertContains(response, "Hotel California</h2>")
+            # Organization overview page includes organization info and senior official details
+            self.assertContains(response, "Los Angeles")
+            self.assertContains(response, "spacedivision@igorville.com")
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_page_directs_to_org_detail_forms(self):
+        """Test that portfolio user on the organization overview page can click on the overview
+        sections to their respective forms"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # User can access organization info form via organization overview page
+            response = self.app.get(reverse("organization"))
+            # The overview page includes button to edit organization
+            org_info_url = reverse("organization-info")
+            org_senior_official_url = reverse("organization-senior-official")
+            self.assertContains(response, f'href="{org_info_url}"')
+            self.assertContains(response, f'href="{org_senior_official_url}"')
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_page_section_viewonly_icon(self):
+        """Test organization page setion displays viewonly icon for portfolio nonadmin member"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
-        self.portfolio.city = "Los Angeles"
         self.portfolio.save()
+
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("organization"))
-            # Assert the response is a 200
-            self.assertEqual(response.status_code, 200)
-            # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
-            # The read only label for city will be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">City</h4>')
-            self.assertNotContains(response, 'for="id_city"')
-            self.assertContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            # User can access view-only form via organization overview page
+            org_overview_response = self.app.get(reverse("organization"))
+            # Viewonly icons for org info and senior official (which is always viewonly)
+            # visibility is html id of view only icon
+            self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
-    def test_portfolio_organization_page_edit_access(self):
+    def test_portfolio_organization_page_section_edit_icon(self):
+        """Test organization page setion displays viewonly icon for portfolio nonadmin member"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # User can access view-only form via organization overview page
+            org_overview_response = self.app.get(reverse("organization"))
+            # Viewonly icons for org info and senior official (which is always viewonly)
+            # visibility is html id of view only icon
+            self.assertContains(org_overview_response, "visibility", count=2)
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_info_page_read_only(self):
+        """Test that user with a portfolio can access the portfolio organization page, read only"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        self.portfolio.save()
+        with override_flag("organization_feature", active=True):
+            # User can access view-only form via organization overview page
+            org_overview_response = self.app.get(reverse("organization"))
+            # Edit icons for org info (senior official is always viewonly)
+            self.assertContains(org_overview_response, "Edit")
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_info_page_edit_access(self):
         """Test that user with a portfolio can access the portfolio organization page, read only"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -231,8 +321,10 @@ class TestPortfolio(WebTest):
         )
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
+
         with override_flag("organization_feature", active=True):
-            response = self.app.get(reverse("organization"))
+            # User can access editable form via organization info page
+            response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
             # The label for Federal agency will always be a h4
@@ -241,6 +333,33 @@ class TestPortfolio(WebTest):
             self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
             self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_detail_pages_include_breadcrumb(self):
+        """Test that breadcrumb menus display on portfolio detail pages"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+            ],
+        )
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            # Breadcrumb appears on organization info page
+            org_info_response = self.app.get(reverse("organization-info"))
+            self._assert_has_organization_breadcrumb(org_info_response)
+            so_response = self.app.get(reverse("organization-senior-official"))
+            self._assert_has_organization_breadcrumb(so_response)
+
+    def _assert_has_organization_breadcrumb(self, response):
+        self.assertContains(response, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(response, "Hotel California")
+        self.assertContains(response, 'href="/organization/"')
 
     @less_console_noise_decorator
     @override_flag("organization_requests", active=True)
@@ -285,7 +404,7 @@ class TestPortfolio(WebTest):
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
             self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization</h1>")
+            self.assertContains(org_page, "<h1>Organization overview</h1>")
 
             # Both domain pages should not be accessible
             domain_page = self.app.get(reverse("domains"), expect_errors=True)
@@ -332,7 +451,7 @@ class TestPortfolio(WebTest):
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
             self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization</h1>")
+            self.assertContains(org_page, "<h1>Organization overview</h1>")
 
             # Both domain pages should not be accessible
             domain_page = self.app.get(reverse("domains"), expect_errors=True)
@@ -352,12 +471,12 @@ class TestPortfolio(WebTest):
             portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
                 user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
             )
-            page = self.app.get(reverse("organization"))
+            page = self.app.get(reverse("organization-info"))
             self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
-    def test_domain_org_name_address_content(self):
-        """Org name and address information appears on the page."""
+    def test_portfolio_org_info_includes_name_and_address(self):
+        """Org name and address appears on the org info page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
             portfolio_additional_permissions = [
@@ -370,9 +489,9 @@ class TestPortfolio(WebTest):
 
             self.portfolio.organization_name = "Hotel California"
             self.portfolio.save()
-            page = self.app.get(reverse("organization"))
-            # Once in the sidenav, once in the main nav
-            self.assertContains(page, "Hotel California", count=2)
+            page = self.app.get(reverse("organization-info"))
+            # Org name in Sidenav, main nav, webpage title, and breadcrumb
+            self.assertContains(page, "Hotel California", count=4)
             self.assertContains(page, "Non-Federal Agency")
 
     @less_console_noise_decorator
@@ -390,7 +509,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
             portfolio_org_name_page.form["address_line1"] = "6 Downing st"
@@ -419,7 +538,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
             # Form validates and redirects with all required fields
@@ -458,7 +577,7 @@ class TestPortfolio(WebTest):
 
             self.portfolio.address_line1 = "1600 Penn Ave"
             self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization"))
+            portfolio_org_name_page = self.app.get(reverse("organization-info"))
             session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
             portfolio_org_name_page.form["address_line1"] = "6 Downing st"
             portfolio_org_name_page.form["city"] = "London"
