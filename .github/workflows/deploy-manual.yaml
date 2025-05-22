@@ -14,9 +14,10 @@ on:
         options:
           - ab
           - backup
+          - aa
           - el
           - cb
-          - dk
+          - kma
           - es
           - gd
           - ko
