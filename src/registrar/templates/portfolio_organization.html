@@ -4,7 +4,7 @@
 {% block title %}Organization overview | {{ portfolio }}{% endblock %}
 
 {% block portfolio_organization_content %}
-<div class="grid-row grid-gap">
+<div class="grid-row grid-gap max-width--grid-container">
     <div class="tablet:grid-col-3 grid-col--sidenav">
         <p class="font-body-md margin-top-0 margin-bottom-2
                     text-primary-darker text-semibold"
@@ -15,15 +15,18 @@
         {% include 'portfolio_organization_sidebar.html' %}
     </div>
 
-    <div class="tablet:grid-col-8" id="main-content">
-        <h1>Organization overview</h1>
-        <h2 class="margin-top-2">{{ portfolio }}</h2>
-
-        {% url 'organization-info' as url %}
-        {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' edit_link=url editable=has_edit_portfolio_permission view_button='true' portfolio_first_section='true'%}
-
-        {% url 'organization-senior-official' as url %}
-        {% include "includes/summary_item.html" with title='Senior official' value=portfolio.senior_official contact='true' edit_link=url view_button='true' %}
+    <div class="tablet:grid-col">
+        <main id="main-content">
+            <h1>Organization overview</h1>
+            <h2 class="margin-top-2">{{ portfolio }}</h2>
+    
+            {% url 'organization-info' as url %}
+            {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' edit_link=url editable=has_edit_portfolio_permission view_button='true' portfolio_first_section='true'%}
+    
+            {% url 'organization-senior-official' as url %}
+            {% include "includes/summary_item.html" with title='Senior official' value=portfolio.senior_official contact='true' edit_link=url view_button='true' %}
+    
+        </main>
     </div>
 </div>
 {% endblock %}

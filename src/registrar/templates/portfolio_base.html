@@ -8,10 +8,10 @@
             {% if user.is_authenticated %}
             {# the entire logged in page goes here #}
 
+            {# portfolio organization page layout #}
             {% block portfolio_organization_content %}{% endblock %}
             
             <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-              {# portfolio organization page layout #}
               <div class="desktop:grid-col-10{% if not is_widescreen_centered %} tablet:grid-col-11{% else %} tablet:grid-col-12 desktop:grid-offset-1{% endif %}">
                 {% block portfolio_content %}{% endblock %}
             
