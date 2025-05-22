@@ -60,9 +60,6 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] Identity sandbox accounts - 1 superuser access account and 1 analyst access account.
 - [ ] Login.gov account to access stable
 
-**Optional**
-- [ ] Add yourself as a codeowner if desired. See the [Developer readme](https://github.com/cisagov/getgov/blob/main/docs/developer/README.md) for how to do this and what it does.
-
 ### Steps for the onboarder
 - [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
