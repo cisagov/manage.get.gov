@@ -498,6 +498,51 @@ class TestDomainCreation(MockEppLib):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
+    def test_duplicate_domain_name_not_allowed_if_not_deleted(self):
+        """Can't create domain if name is not unique AND not deleted."""
+
+        # 1. Mocking that it's in active state
+        mock_first_domain = MagicMock(name="meoward-is-cool.gov", state="active")
+
+        with patch.object(Domain.objects, "create") as mock_create:
+            # 2. Mock the outcomes of like we are from a "real DB":
+            # A. Simulate a domain in ACTIVE state (from #1)
+            # B. Simulate a Integrity Error due to the UniqueConstraint we added
+            mock_create.side_effect = [mock_first_domain, IntegrityError("mocked constraint")]
+
+            # 3. "Create" but actually mocking it and make sure that it's in correct (ACTIVE) state
+            domain_1 = Domain.objects.create(name="meoward-is-cool.gov", state="active")
+            self.assertEqual(domain_1.state, "active")
+            mock_create.assert_called_once_with(name="meoward-is-cool.gov", state="active")
+
+            # 4. Asserting that when we do create it again we get the mocked IntegrityError
+            with self.assertRaises(IntegrityError):
+                Domain.objects.create(name="meoward-is-cool.gov", state="active")
+
+    def test_duplicate_domain_name_allowed_if_one_is_deleted(self):
+        """Can create domain with same name if one is deleted."""
+        with patch.object(Domain.objects, "create") as mock_create:
+            # 1. Simulate the states for it to be:
+            # A. First call to be in DELETED state
+            # B. Second call for it to be in ACTIVE
+            mock_create.side_effect = [
+                MagicMock(name="meoward-is-cool.gov", state="deleted"),
+                MagicMock(name="meoward-is-cool.gov", state="active"),
+            ]
+
+            # 2. 1A in action (above comment), and verification for correct state (DELETED) below
+            domain_1 = Domain.objects.create(name="meoward-is-cool.gov", state="deleted")
+            self.assertEqual(domain_1.state, "deleted")
+            mock_create.assert_called_once_with(name="meoward-is-cool.gov", state="deleted")
+
+            # 3. 1B in action, and verification for correc state (ACTIVE) below)
+            try:
+                domain_2 = Domain.objects.create(name="meoward-is-cool.gov", state="active")
+                self.assertEqual(domain_2.state, "active")
+                mock_create.assert_any_call(name="meoward-is-cool.gov", state="active")
+            except IntegrityError:
+                self.fail("Should allow same name if one is deleted")
+
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -723,6 +768,47 @@ class TestDomainAvailable(MockEppLib):
             # Assertions
             mocked_send.assert_called_once_with(commands.InfoDomain("is-not-pending.gov"), cleaned=True)
             mocked_extract.assert_called_once()
+
+            self.assertFalse(result)
+
+    def test_is_not_deleted_returns_true_when_domain_exists(self):
+        """
+        TLDR: Domain is NOT DELETED
+
+        Scenario: Domain exists in the registry
+        Should return True
+
+        * Mock InfoDomain command to return valid res_data
+        * Validate send is called with correct domain
+        * Validate response is True
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            mock_response = MagicMock()
+            mock_response.res_data = [MagicMock()]  # non-empty res_data
+            mocked_send.return_value = mock_response
+
+            result = Domain.is_not_deleted("not-deleted.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("not-deleted.gov"), cleaned=True)
+            self.assertTrue(result)
+
+    def test_is_not_deleted_returns_false_when_domain_does_not_exist(self):
+        """
+        TLDR: Domain IS DELETED
+
+        Scenario: Domain does not exist in the registry
+        Should return False
+
+        * Mock registry.send to raise RegistryError with code 2303
+        * Validate response is False
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            error = RegistryError("Object does not exist")
+            error.code = 2303
+            error.is_connection_error = MagicMock(return_value=False)
+            mocked_send.side_effect = error
+
+            result = Domain.is_not_deleted("deleted.gov")
 
             self.assertFalse(result)
 
