@@ -301,7 +301,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return False
         except RegistryError as err:
             if not err.is_connection_error():
-                # 2303 = Object does not exist --> Domain is deleted
+                # 2303 = Object does not exist -> Domain is deleted
                 if err.code == 2303:
                     return False
                 logger.info(f"Unexpected registry error while checking domain -- {err}")
