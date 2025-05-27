@@ -2748,7 +2748,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Because this is a test")
         # Purpose
         self.assertContains(review_page, "Purpose")
-        self.assertContains(review_page, "Used as a redirect for an existing website")
+        self.assertContains(review_page, "Used as a redirect for an existing or new website")
         self.assertContains(review_page, "testPurpose123")
         # Target time frame
         self.assertContains(review_page, "Target time frame")

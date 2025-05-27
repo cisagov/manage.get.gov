@@ -56,7 +56,7 @@ class DomainRequest(TimeStampedModel):
 
     class FEBPurposeChoices(models.TextChoices):
         WEBSITE = "new", "Used for a new website"
-        REDIRECT = "redirect", "Used as a redirect for an existing website"
+        REDIRECT = "redirect", "Used as a redirect for an existing or new website"
         OTHER = "other", "Not for a website"
 
         @classmethod
