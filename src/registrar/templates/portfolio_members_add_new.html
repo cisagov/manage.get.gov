@@ -11,10 +11,7 @@
 {% block portfolio_content %}
 
 <div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-  <!-- Form messages -->
-  {% block messages %}
-    {% include "includes/form_messages.html" %}
-  {% endblock messages%}
+
 
 <!-- Navigation breadcrumbs -->
 <nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Domain request breadcrumb">
@@ -28,7 +25,10 @@
   </ol>
 </nav>
 
-  <!-- Error message -->
+  <!-- Form messages -->
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
   {% include "includes/form_errors.html" with form=form %}
 
   <!-- Page header -->

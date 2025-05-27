@@ -9,10 +9,6 @@ Organization member
 
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-  <!-- Form messages -->
-  {% block messages %}
-    {% include "includes/form_messages.html" %}
-  {% endblock messages%}
 
   {% url 'members' as url %}
   <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
@@ -26,7 +22,10 @@ Organization member
   </ol>
   </nav>
   
-  <!-- Error message -->
+  <!-- Form messages -->
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
   {% include "includes/form_errors.html" with form=form %}
 
   <h1 class="margin-bottom-3">Manage member</h1>
