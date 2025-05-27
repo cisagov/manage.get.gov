@@ -88,6 +88,7 @@
       {% endif %}
     {% endif %}
 
+    <form id="step__review" class="usa-form usa-form--large">
 
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
@@ -101,8 +102,6 @@
         {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
       {% endif %}
     {% endif %}
-    
-    <form id="step__review" class="usa-form usa-form--large">
 
     {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
     {% if domain.dnssecdata is not None %}
