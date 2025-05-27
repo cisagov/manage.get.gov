@@ -22,6 +22,8 @@
   {{ block.super }}
   <div class="margin-top-2 tablet:grid-col-10">
     <h2 class="string-wrap margin-top-2">{{ domain.name }}</h2>
+    <form id="step__review" class="usa-form usa-form--large">
+
     <div
         class="usa-summary-box padding-y-2 margin-bottom-1"
         role="region"
@@ -87,8 +89,6 @@
       </div>
       {% endif %}
     {% endif %}
-
-    <form id="step__review" class="usa-form usa-form--large">
 
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
