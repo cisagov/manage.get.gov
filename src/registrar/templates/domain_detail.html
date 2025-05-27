@@ -102,13 +102,15 @@
       {% endif %}
     {% endif %}
     
+    <form id="step__review" class="usa-form usa-form--large">
+
     {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
     {% endif %}
-
+    
     {% if portfolio %}
       {% if has_any_domains_portfolio_permission and has_edit_portfolio_permission %}
         {% url 'domain-suborganization' domain_pk=domain.id as url %}
@@ -136,6 +138,7 @@
     {% else %}
       {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
     {% endif %}
+  </form>
 
   </div>
 {% endblock %}  {# domain_content #}
