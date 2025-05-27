@@ -22,8 +22,6 @@
   {{ block.super }}
   <div class="margin-top-2 tablet:grid-col-10">
     <h2 class="string-wrap margin-top-2">{{ domain.name }}</h2>
-    <form id="step__review" class="usa-form usa-form--large">
-
     <div
         class="usa-summary-box padding-y-2 margin-bottom-1"
         role="region"
@@ -90,6 +88,7 @@
       {% endif %}
     {% endif %}
 
+
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
@@ -102,7 +101,7 @@
         {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
       {% endif %}
     {% endif %}
-
+    
     {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
@@ -137,7 +136,6 @@
     {% else %}
       {% include "includes/summary_item.html" with title='Domain managers' list=True users=True value=domain.permissions.all edit_link=url editable=is_editable %}
     {% endif %}
-  </form>
 
   </div>
 {% endblock %}  {# domain_content #}
