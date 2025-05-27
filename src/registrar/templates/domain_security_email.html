@@ -5,8 +5,6 @@
 
 {% block domain_content %}
 
-  {% include "includes/form_errors.html" with form=form %}
-
   {% block breadcrumb %}
   {% if portfolio %}
   <!-- Navigation breadcrumbs -->
@@ -25,6 +23,9 @@
   </nav>
   {% endif %}
   {% endblock breadcrumb %}
+
+  <!-- Error message -->
+  {% include "includes/form_errors.html" with form=form %}
 
   <h1>Security email</h1>
 

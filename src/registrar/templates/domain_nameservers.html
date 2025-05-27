@@ -7,10 +7,6 @@
 
   {# this is right after the messages block in the parent template. #}
 
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
-
   {% if formset.initial|length >= formset.max_num %}
     <div class="usa-alert usa-alert--do-not-reset usa-alert--info usa-alert--slim margin-bottom-2" role="alert">
       <div class="usa-alert__body">
@@ -42,6 +38,11 @@
   </nav>
   {% endif %}
   {% endblock breadcrumb %}
+
+  <!-- Error message -->
+  {% for form in formset %}
+    {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
 
   <div class="grid-row grid-gap">
     <div class="tablet:grid-col-6">

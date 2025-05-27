@@ -5,10 +5,6 @@
 
 {% block domain_content %}
 
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
-
   {% block breadcrumb %}
   {% if portfolio %}
   <!-- Navigation breadcrumbs -->
@@ -33,6 +29,11 @@
   </nav>
   {% endif %}
   {% endblock breadcrumb %}
+
+  <!-- Error message -->
+  {% for form in formset %}
+      {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
 
   <div class="grid-row grid-gap">
     <div class="tablet:grid-col-6">
