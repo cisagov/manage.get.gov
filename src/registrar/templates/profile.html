@@ -14,15 +14,6 @@ Edit your User Profile |
 <main id="main-content" class="grid-container grid-container--widescreen">
     <div class="{% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
         <div class="desktop:grid-col-8 desktop:grid-offset-2">
-            {% if messages %}
-            {% for message in messages %}
-            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3" role="alert">
-                <div class="usa-alert__body">
-                {{ message }}
-                </div>
-            </div>
-            {% endfor %}
-            {% endif %}
 
             {% if show_back_button %}
             <a href="{% url form.initial.redirect %}" class="breadcrumb__back">
@@ -34,7 +25,18 @@ Edit your User Profile |
                 </p>
             </a>
             {% endif %}
-            
+
+            <!-- Form messages -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-3" role="alert">
+                <div class="usa-alert__body">
+                {{ message }}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
             {% include "includes/form_errors.html" with form=form %}
 
             {% if show_confirmation_modal %}
