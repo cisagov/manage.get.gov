@@ -23,7 +23,6 @@ Edit your User Profile |
             </div>
             {% endfor %}
             {% endif %}
-            {% include "includes/form_errors.html" with form=form %}
 
             {% if show_back_button %}
             <a href="{% url form.initial.redirect %}" class="breadcrumb__back">
@@ -36,6 +35,8 @@ Edit your User Profile |
             </a>
             {% endif %}
             
+            {% include "includes/form_errors.html" with form=form %}
+
             {% if show_confirmation_modal %}
                 <a
                     href="#toggle-confirmation-modal"
