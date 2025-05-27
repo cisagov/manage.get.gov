@@ -83,7 +83,6 @@ class DomainRequestWizard(TemplateView):
     # Titles for the portfolio context
     PORTFOLIO_TITLES = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
-        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
         PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
@@ -134,9 +133,6 @@ class DomainRequestWizard(TemplateView):
 
     PORTFOLIO_UNLOCKING_STEPS = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
-        PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
-        ),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         PortfolioDomainRequestStep.PURPOSE: lambda self: self.domain_request.purpose is not None,
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: lambda self: self.domain_request.anything_else is not None,
