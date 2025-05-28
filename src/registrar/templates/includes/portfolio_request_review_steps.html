@@ -66,19 +66,19 @@
             {% else %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% endif %}
-            <h4 class="margin-bottom-0">Target time frame</h4>
-            {% if domain_request.has_timeframe is None %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
-            {% elif domain_request.has_timeframe %}
-                <p class="margin-y-0">{{domain_request.time_frame_details}}</p>
-            {% else %}
-                <p class="margin-y-0">No</p>
-            {% endif %}
             <h4 class="margin-bottom-0">Interagency initiative</h4>
             {% if domain_request.is_interagency_initiative is None %}
                 <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
             {% elif domain_request.is_interagency_initiative %}
                 <p class="margin-y-0">{{domain_request.interagency_initiative_details}}</p>
+            {% else %}
+                <p class="margin-y-0">No</p>
+            {% endif %}
+            <h4 class="margin-bottom-0">Target time frame</h4>
+            {% if domain_request.has_timeframe is None %}
+                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+            {% elif domain_request.has_timeframe %}
+                <p class="margin-y-0">{{domain_request.time_frame_details}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
