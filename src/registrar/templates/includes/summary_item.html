@@ -1,6 +1,8 @@
 {% load static url_helpers %}
 
-<section class="summary-item margin-top-3">
+{% if portfolio_first_section %} <section  class="summary-item margin-top-2">
+{% else %} <section class="summary-item margin-top-3">
+{% endif %}
   <hr class="" aria-hidden="true" />
   <div class="display-flex flex-justify">
     <div>
