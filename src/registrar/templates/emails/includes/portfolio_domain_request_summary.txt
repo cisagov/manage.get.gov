@@ -2,10 +2,6 @@
 
 Requesting entity: {# if blockmakes a newline #}
 {{ domain_request|display_requesting_entity }}
-{% if domain_request.current_websites.exists %}
-Current websites: {% for site in domain_request.current_websites.all %}
-{% spaceless %}{{ site.website }}{% endspaceless %}
-{% endfor %}{% endif %}
 .gov domain:
 {{ domain_request.requested_domain.name }}
 {% if requires_feb_questions %}
@@ -25,15 +21,15 @@ Purpose of your domain:
 {% if requires_feb_questions %}
 {{ purpose_label }}
 {{ domain_request.purpose }}
-Target time frame:
-{% if domain_request.has_target_time_frame %}
-{{ domain_request.time_frame_details }}
-{% else %}
-No
-{% endif %}
 Interagency initiative:
 {% if domain_request.is_interagency_initiative %}
 {{ domain_request.interagency_initiative_details }}
+{% else %}
+No
+{% endif %}
+Target time frame:
+{% if domain_request.has_target_time_frame %}
+{{ domain_request.time_frame_details }}
 {% else %}
 No
 {% endif %}
