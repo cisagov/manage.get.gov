@@ -532,23 +532,6 @@ class DomainRequest(TimeStampedModel):
         verbose_name="Purpose type",
     )
 
-    working_with_eop = models.BooleanField(
-        null=True,
-        blank=True,
-    )
-
-    eop_stakeholder_first_name = models.CharField(
-        null=True,
-        blank=True,
-        verbose_name="EOP contact first name",
-    )
-
-    eop_stakeholder_last_name = models.CharField(
-        null=True,
-        blank=True,
-        verbose_name="EOP contact last name",
-    )
-
     # This field is alternately used for generic domain purpose explanations
     # and for explanations of the specific purpose chosen with feb_purpose_choice
     purpose = models.TextField(

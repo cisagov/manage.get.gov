@@ -611,8 +611,6 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
     forms = [
-        feb.WorkingWithEOPYesNoForm,
-        feb.EOPContactForm,
         feb.FEBAnythingElseYesNoForm,
         forms.PortfolioAnythingElseForm,
     ]
@@ -627,37 +625,29 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
         Validates the forms for portfolio additional details.
 
         Expected order of forms_list:
-            0: WorkingWithEOPYesNoForm
-            1: EOPContactForm
-            2: FEBAnythingElseYesNoForm
-            3: PortfolioAnythingElseForm
+            0: FEBAnythingElseYesNoForm
+            1: PortfolioAnythingElseForm
         """
+        feb_anything_else_yes_no_form = forms[0]
+        portfolio_anything_else_form = forms[1]
+
         if not self.requires_feb_questions():
-            for i in range(3):
+            for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return forms[3].is_valid()
-        eop_forms_valid = True
-        if not forms[0].is_valid():
-            # If the user isn't working with EOP, don't validate the EOP contact form
-            forms[1].mark_form_for_deletion()
-            eop_forms_valid = False
-        if forms[0].cleaned_data.get("working_with_eop"):
-            eop_forms_valid = forms[1].is_valid()
-        else:
-            forms[1].mark_form_for_deletion()
+            return feb_anything_else_yes_no_form.is_valid()
         anything_else_forms_valid = True
-        if not forms[2].is_valid():
-            forms[3].mark_form_for_deletion()
+        if not portfolio_anything_else_form.is_valid():
+            feb_anything_else_yes_no_form.mark_form_for_deletion()
             anything_else_forms_valid = False
-        if forms[2].cleaned_data.get("has_anything_else_text"):
-            forms[3].fields["anything_else"].required = True
-            forms[3].fields["anything_else"].error_messages[
+        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
+            feb_anything_else_yes_no_form.fields["anything_else"].required = True
+            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
                 "required"
             ] = "Please provide additional details you'd like us to know. \
                 If you have nothing to add, select 'No'."
-            anything_else_forms_valid = forms[3].is_valid()
-        return eop_forms_valid and anything_else_forms_valid
+            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
+        return anything_else_forms_valid
 
 
 # Non-portfolio pages

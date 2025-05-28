@@ -94,14 +94,6 @@
             {% with title=form_titles|get_item:step %}
                 {% include "includes/summary_item.html" with title=title value=" " heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
             {% endwith %}
-            <h4 class="margin-bottom-0">EOP contact</h4>
-            {% if domain_request.working_with_eop is None %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
-            {% elif domain_request.working_with_eop %}
-                <p class="margin-y-0">{{domain_request.eop_stakeholder_first_name}} {{domain_request.eop_stakeholder_last_name}}</p>
-            {% else %}
-                <p class="margin-y-0">No</p>
-            {% endif %}
             <h4 class="margin-bottom-0">Anything else</h4>
             {% if domain_request.anything_else %}
                 <p class="margin-y-0">{{domain_request.anything_else}}</p>

@@ -2645,7 +2645,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.feb_additional_details_page_tests(additional_details_page)
 
         additional_details_form = additional_details_page.forms[0]
-        additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
         additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
         additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
@@ -2709,16 +2708,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "feb_naming_requirements_details")
 
     def feb_additional_details_page_tests(self, additional_details_page):
-        test_text = "Are you working with someone in the Executive Office of the President (EOP) on this request?"
-        self.assertContains(additional_details_page, test_text)
-
-        # Make sure the EOP form is present
-        self.assertContains(additional_details_page, "working_with_eop")
-
-        # Make sure the EOP contact form is present
-        self.assertContains(additional_details_page, "eop-contact-container")
-        self.assertContains(additional_details_page, "additional_details-first_name")
-        self.assertContains(additional_details_page, "additional_details-last_name")
 
         # Make sure the additional details form is present
         self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
@@ -2756,9 +2745,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Interagency initiative
         self.assertContains(review_page, "Interagency initiative")
         self.assertContains(review_page, "FakeInteragencyInitiative")
-        # EOP contact
-        self.assertContains(review_page, "EOP contact")
-        self.assertContains(review_page, "TesterFirstName TesterLastName")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):

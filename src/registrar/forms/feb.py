@@ -131,62 +131,6 @@ class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
         error_messages={"required": "Name the agencies that will be involved in this initiative."},
     )
 
-
-class WorkingWithEOPYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
-    """
-    Form for determining if the Federal Executive Branch (FEB) agency is working with the
-    Executive Office of the President (EOP) on the domain request.
-    """
-
-    field_name = "working_with_eop"
-
-    @property
-    def form_is_checked(self):
-        """
-        Determines the initial checked state of the form based on the domain_request's attributes.
-        """
-        return self.domain_request.working_with_eop
-
-
-class EOPContactForm(BaseDeletableRegistrarForm):
-    """
-    Form for contact information of the representative of the
-    Executive Office of the President (EOP) that the Federal
-    Executive Branch (FEB) agency is working with.
-    """
-
-    first_name = forms.CharField(
-        label="First name / given name",
-        error_messages={"required": "Enter the first name / given name of this contact."},
-        required=True,
-    )
-    last_name = forms.CharField(
-        label="Last name / family name",
-        error_messages={"required": "Enter the last name / family name of this contact."},
-        required=True,
-    )
-
-    @classmethod
-    def from_database(cls, obj):
-        return {
-            "first_name": obj.eop_stakeholder_first_name,
-            "last_name": obj.eop_stakeholder_last_name,
-        }
-
-    def to_database(self, obj):
-        # This function overrides the behavior of the BaseDeletableRegistrarForm.
-        # in order to preserve deletable functionality, we need to call the
-        # superclass's to_database method if the form is marked for deletion.
-        if self.form_data_marked_for_deletion:
-            super().to_database(obj)
-            return
-        if not self.is_valid():
-            return
-        obj.eop_stakeholder_first_name = self.cleaned_data["first_name"]
-        obj.eop_stakeholder_last_name = self.cleaned_data["last_name"]
-        obj.save()
-
-
 class FEBAnythingElseYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
     """Yes/no toggle for the anything else question on additional details"""
 

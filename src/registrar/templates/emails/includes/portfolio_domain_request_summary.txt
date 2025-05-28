@@ -40,15 +40,6 @@ No
 {% else %}
 {{ domain_request.purpose }}
 {% endif %}
-{% if requires_feb_questions %}
-EOP contact:
-{% if domain_request.working_with_eop %}
-{{ domain_request.eop_contact.first_name }} {{ domain_request.eop_contact.last_name }}
-{{ domain_request.eop_contact.email }}
-{% else %}
-No
-{% endif %}
-{% endif %}
 {% if domain_request.anything_else %}
 Additional details:
 {{ domain_request.anything_else }}
