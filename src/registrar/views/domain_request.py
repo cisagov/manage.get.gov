@@ -943,14 +943,9 @@ class Requirements(DomainRequestWizard):
         # Pass the is_federal context to the form
         for form in forms_list:
             if isinstance(form, forms.RequirementsForm):
-                if self.requires_feb_questions():
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain."  # noqa: E501
-                    )
-                else:
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
-                    )
+                form.fields["is_policy_acknowledged"].label = (
+                    "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
+                )
 
         return forms_list
 

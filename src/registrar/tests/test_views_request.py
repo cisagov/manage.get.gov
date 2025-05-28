@@ -2727,7 +2727,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(requirements_page, "is_policy_acknowledged")
         self.assertContains(
             requirements_page,
-            "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.",
+            "I read and agree to the requirements for operating a .gov domain.",
         )
 
     def feb_review_page_tests(self, review_page):
