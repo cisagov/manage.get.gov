@@ -2594,20 +2594,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requesting_entity_result = requesting_entity_form.submit()
 
-        # ---- CURRENT SITES PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_page = requesting_entity_result.follow()
-        current_sites_form = current_sites_page.forms[0]
-        current_sites_form["current_sites-0-website"] = "www.treasury.com"
-
-        # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_result = current_sites_form.submit()
-
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page = current_sites_result.follow()
+        dotgov_page = requesting_entity_result.follow()
 
         # separate out these tests for readability
         self.feb_dotgov_domain_tests(dotgov_page)
@@ -2645,8 +2634,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.feb_additional_details_page_tests(additional_details_page)
 
         additional_details_form = additional_details_page.forms[0]
-        additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
-        additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2668,6 +2655,15 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.feb_review_page_tests(review_page)
 
     def feb_purpose_page_tests(self, purpose_page):
+        # Check for the 21st Century IDEA Act links
+        self.assertContains(
+            purpose_page, "https://digital.gov/resources/delivering-digital-first-public-experience/"
+        )
+        self.assertContains(
+            purpose_page,
+            "https://whitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
+        )
+
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")
 
         # Make sure the purpose selector form is present
@@ -2699,7 +2695,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "Does this submission meet each domain naming requirement?")
 
         # Check for label of second FEB form
-        self.assertContains(dotgov_page, "Provide details below")
+        self.assertContains(dotgov_page, "Provide details")
 
         # Check that the yes/no form was included
         self.assertContains(dotgov_page, "feb_naming_requirements")
@@ -2714,14 +2710,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(additional_details_page, "additional_details-anything_else")
 
     def feb_requirements_page_tests(self, requirements_page):
-        # Check for the 21st Century IDEA Act links
-        self.assertContains(
-            requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/"
-        )
-        self.assertContains(
-            requirements_page,
-            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
-        )
 
         # Check for the policy acknowledgement form
         self.assertContains(requirements_page, "is_policy_acknowledged")
@@ -3434,7 +3422,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, portfolio.organization_name)
 
             # We should only see one unlocked step
-            self.assertContains(detail_page, "#check_circle", count=4)
+            self.assertContains(detail_page, "#check_circle", count=3)
 
             # One pages should still be locked (additional details)
             self.assertContains(detail_page, "#lock", 1)
