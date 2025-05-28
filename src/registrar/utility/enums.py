@@ -100,7 +100,6 @@ class PortfolioDomainRequestStep(StrEnum):
     # By default, these will redirect to the normal request flow views.
     # After creating a new view, you will need to add this to urls.py.
     REQUESTING_ENTITY = "portfolio_requesting_entity"
-    CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
     ADDITIONAL_DETAILS = "portfolio_additional_details"

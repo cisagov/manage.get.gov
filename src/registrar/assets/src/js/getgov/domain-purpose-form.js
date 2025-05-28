@@ -15,12 +15,13 @@ export const domain_purpose_choice_callbacks = {
             showElement(element);
             // change just the text inside the em tag
             const labelElement = element.querySelector('p em');
-            labelElement.innerHTML = 'Explain why a new domain name is needed instead of using a ' +
-                'subdomain of an existing website.' +
-                '<br><br>' + // Adding double line break for spacing
-                'Include any information or data that shows how the new domain would ' +
-                'benefit the public or meet user needs. ' +
-                '<span class="usa-label--required">*</span>';
+            labelElement.innerHTML = `
+                <p>Describe how the domain will be used. Explain why a new domain name is needed
+                instead of using a subdomain or subdirectory of an existing website.</p>
+                <p>Include any qualitative or quantitative data that supports there being a
+                clear user need or public benefit for the new domain.
+                <span class="usa-label--required">*</span></p>
+                `;
                 
             // Mark that we're no longer in initial load
             isInitialLoad = false;
@@ -38,8 +39,13 @@ export const domain_purpose_choice_callbacks = {
             showElement(element);
             // change just the text inside the em tag
             const labelElement = element.querySelector('p em');
-            labelElement.innerHTML = 'Explain why a redirect is necessary. ' +
-                '<span class="usa-label--required">*</span>';
+            labelElement.innerHTML = `
+                <p>Describe how the domain will be used. Provide the URL where the
+                new domain will resolve and explain why a redirect is necessary.</p>
+                <p>Include any qualitative or quantitative data that supports
+                there being a clear user need or public benefit for the new domain as a redirect.
+                <span class="usa-label--required">*</span></p>
+                `;
                 
             // Mark that we're no longer in initial load
             isInitialLoad = false;
@@ -57,8 +63,11 @@ export const domain_purpose_choice_callbacks = {
             showElement(element);
             // change just the text inside the em tag
             const labelElement = element.querySelector('p em');
-            labelElement.innerHTML = 'Describe how this domain will be used. ' +
-                '<span class="usa-label--required">*</span>';
+            labelElement.innerHTML = `
+                <p>Describe how the domain will be used
+                (e.g. email, internal network purposes).
+                <span class="usa-label--required">*</span></p>
+                `;
                 
             // Mark that we're no longer in initial load
             isInitialLoad = false;

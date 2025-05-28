@@ -28,7 +28,6 @@ initFormDSData();
 hookupYesNoListener("other_contacts-has_other_contacts",'other-employees', 'no-other-employees');
 hookupYesNoListener("additional_details-has_anything_else_text",'anything-else', null);
 hookupYesNoListener("additional_details-has_cisa_representative",'cisa-representative', null);
-hookupYesNoListener("portfolio_additional_details-working_with_eop", "eop-contact-container", null);
 hookupYesNoListener("portfolio_additional_details-has_anything_else_text", 'anything-else-details-container', null);
 hookupYesNoListener("dotgov_domain-feb_naming_requirements", null, "domain-naming-requirements-details-container");
 

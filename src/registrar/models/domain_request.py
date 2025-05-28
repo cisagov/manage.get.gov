@@ -56,7 +56,7 @@ class DomainRequest(TimeStampedModel):
 
     class FEBPurposeChoices(models.TextChoices):
         WEBSITE = "new", "Used for a new website"
-        REDIRECT = "redirect", "Used as a redirect for an existing website"
+        REDIRECT = "redirect", "Used as a redirect for an existing or new website"
         OTHER = "other", "Not for a website"
 
         @classmethod
@@ -530,23 +530,6 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         choices=FEBPurposeChoices.choices,
         verbose_name="Purpose type",
-    )
-
-    working_with_eop = models.BooleanField(
-        null=True,
-        blank=True,
-    )
-
-    eop_stakeholder_first_name = models.CharField(
-        null=True,
-        blank=True,
-        verbose_name="EOP contact first name",
-    )
-
-    eop_stakeholder_last_name = models.CharField(
-        null=True,
-        blank=True,
-        verbose_name="EOP contact last name",
     )
 
     # This field is alternately used for generic domain purpose explanations
