@@ -23,10 +23,10 @@ class UserFixture:
 
     ADMINS = [
         {
-            "username": "c4953632-70bb-425c-b5d9-52e309cbdc24",
+            "username": "3e8613e2-e1f8-404d-a692-e5dc077828b2",
             "first_name": "Abe"
             "last_name": "Alam",
-            "email": "abe.alam2@gmail.com",
+            "email": "abraham.alam@ecstech.com",
         },
         {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
