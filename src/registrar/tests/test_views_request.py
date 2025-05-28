@@ -2656,9 +2656,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def feb_purpose_page_tests(self, purpose_page):
         # Check for the 21st Century IDEA Act links
-        self.assertContains(
-            purpose_page, "https://digital.gov/resources/delivering-digital-first-public-experience/"
-        )
+        self.assertContains(purpose_page, "https://digital.gov/resources/delivering-digital-first-public-experience/")
         self.assertContains(
             purpose_page,
             "https://whitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa

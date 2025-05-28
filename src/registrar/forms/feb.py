@@ -131,6 +131,7 @@ class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
         error_messages={"required": "Name the agencies that will be involved in this initiative."},
     )
 
+
 class FEBAnythingElseYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
     """Yes/no toggle for the anything else question on additional details"""
 
