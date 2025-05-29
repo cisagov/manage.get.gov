@@ -39,9 +39,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         How to run the code:
-        ./manage.py send_expiring_soon_domains_notification --all --test-email=<your-email-here> --test-cc-email=<your-email-here+cc>
+        ./manage.py send_expiring_soon_domains_notification --all
+        --test-email=<your-email-here> --test-cc-email=<your-email-here+cc>
         For example:
-        ./manage.py send_expiring_soon_domains_notification --all --test-email=rebecca.hsieh@truss.works --test-cc-email=rebecca.hsieh+cc@truss.works
+        ./manage.py send_expiring_soon_domains_notification --all
+        --test-email=rebecca.hsieh@truss.works --test-cc-email=rebecca.hsieh+cc@truss.works
         I've added to parameters so people can put in their own email, and it will trigger sending emails for all domains
 
         The "if" statement code is almost actual code, but some parts are removed and edited as it's JUST for testing
@@ -119,68 +121,68 @@ class Command(BaseCommand):
                     all_emails_sent = False
         # This is the proper code and I'll remove the else after
         # It's in an else so we can run the trial code above
-        else:
-            today = timezone.now().date()
-            days_to_check = [30, 7, 1]
-            all_emails_sent = True
+        # else:
+        #     today = timezone.now().date()
+        #     days_to_check = [30, 7, 1]
+        #     all_emails_sent = True
 
-            expiring_domains = Domain.objects.filter(
-                expiration_date__in=[today + timedelta(days=days) for days in days_to_check]
-            )
-            logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
-            for days_remaining in days_to_check:
-                # Todays date + however many days away and then filter for that expiration date
-                expiration_day = today + timedelta(days=days_remaining)
-                expiring_domains = Domain.objects.filter(expiration_date=expiration_day)
+        #     expiring_domains = Domain.objects.filter(
+        #         expiration_date__in=[today + timedelta(days=days) for days in days_to_check]
+        #     )
+        #     logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
+        #     for days_remaining in days_to_check:
+        #         # Todays date + however many days away and then filter for that expiration date
+        #         expiration_day = today + timedelta(days=days_remaining)
+        #         expiring_domains = Domain.objects.filter(expiration_date=expiration_day)
 
-                logger.info(f"Found {expiring_domains.count()} domains expiring in {days_remaining} days")
+        #         logger.info(f"Found {expiring_domains.count()} domains expiring in {days_remaining} days")
 
-                # Choose which email template to use based on domain state
-                for domain in expiring_domains:
-                    if domain.state == Domain.State.READY:
-                        template = "emails/ready_and_expiring_soon.txt"
-                        subject_template = "emails/ready_and_expiring_soon_subject.txt"
-                    elif domain.state in [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]:
-                        template = "emails/dns_needed_or_unknown_expiring_soon.txt"
-                        subject_template = "emails/dns_needed_or_unknown_expiring_soon_subject.txt"
+        #         # Choose which email template to use based on domain state
+        #         for domain in expiring_domains:
+        #             if domain.state == Domain.State.READY:
+        #                 template = "emails/ready_and_expiring_soon.txt"
+        #                 subject_template = "emails/ready_and_expiring_soon_subject.txt"
+        #             elif domain.state in [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]:
+        #                 template = "emails/dns_needed_or_unknown_expiring_soon.txt"
+        #                 subject_template = "emails/dns_needed_or_unknown_expiring_soon_subject.txt"
 
-                    context = {
-                        "domain": domain,
-                        "days_remaining": days_remaining,
-                        "expiration_date": domain.expiration_date,
-                    }
+        #             context = {
+        #                 "domain": domain,
+        #                 "days_remaining": days_remaining,
+        #                 "expiration_date": domain.expiration_date,
+        #             }
 
-                    # -- GRAB DOMAIN MANAGER EMAILS --
-                    domain_manager_emails = list(
-                        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
-                    )
+        #             # -- GRAB DOMAIN MANAGER EMAILS --
+        #             domain_manager_emails = list(
+        #                 UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        #             )
 
-                    # -- GRAB PORTFOLIO ADMIN EMAILS --
-                    user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
-                    portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list(
-                        "portfolio", flat=True
-                    )
-                    portfolio_admin_emails = list(
-                        UserPortfolioPermission.objects.filter(
-                            portfolio__in=portfolio_ids,
-                            roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                        )
-                        .values_list("user__email", flat=True)
-                        .distinct()
-                    )
+        #             # -- GRAB PORTFOLIO ADMIN EMAILS --
+        #             user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
+        #             portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list(
+        #                 "portfolio", flat=True
+        #             )
+        #             portfolio_admin_emails = list(
+        #                 UserPortfolioPermission.objects.filter(
+        #                     portfolio__in=portfolio_ids,
+        #                     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        #                 )
+        #                 .values_list("user__email", flat=True)
+        #                 .distinct()
+        #             )
 
-                    try:
-                        send_templated_email(
-                            template,
-                            subject_template,
-                            to_address=domain_manager_emails,
-                            cc_addresses=portfolio_admin_emails,
-                            context=context,
-                        )
-                        logger.info(f"Sent email for domain {domain.name} to managers and CC’d org admins")
-                    except EmailSendingError as e:
-                        logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
-                        all_emails_sent = False
+        #             try:
+        #                 send_templated_email(
+        #                     template,
+        #                     subject_template,
+        #                     to_address=domain_manager_emails,
+        #                     cc_addresses=portfolio_admin_emails,
+        #                     context=context,
+        #                 )
+        #                 logger.info(f"Sent email for domain {domain.name} to managers and CC’d org admins")
+        #             except EmailSendingError as e:
+        #                 logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
+        #                 all_emails_sent = False
 
         if all_emails_sent:
             self.stdout.write(self.style.SUCCESS("All domain expiration emails sent successfully."))
