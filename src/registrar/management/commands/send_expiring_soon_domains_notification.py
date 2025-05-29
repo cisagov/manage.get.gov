@@ -1,8 +1,10 @@
 import logging
-from datetime import timedelta
+
+# from datetime import timedelta
 
 from django.core.management import BaseCommand
-from django.utils import timezone
+
+# from django.utils import timezone
 
 from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
@@ -44,12 +46,13 @@ class Command(BaseCommand):
         For example:
         ./manage.py send_expiring_soon_domains_notification --all
         --test-email=rebecca.hsieh@truss.works --test-cc-email=rebecca.hsieh+cc@truss.works
-        I've added to parameters so people can put in their own email, and it will trigger sending emails for all domains
+        I've added to parameters so people can put in their own email,
+        and it will trigger sending emails for all domains
 
-        The "if" statement code is almost actual code, but some parts are removed and edited as it's JUST for testing
-        and you'll see for example that the days_remaining is 0 (versus 30/7/1).
+        The "if" statement code is almost actual code, but some parts are removed and edited
+        as it's JUST for testing and you'll see for example that the days_remaining is 0 (versus 30/7/1).
 
-        The "else" statement is the actual code I'll be pushing to production/should be critqued please!
+        The "else" statement is the actual code to be pushed to production/should be critqued please!
         """
 
         # These three lines below will be deleted, these are just for testing flags
