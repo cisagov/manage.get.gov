@@ -50,7 +50,7 @@ class Command(BaseCommand):
         The "else" statement is the actual code I'll be pushing to production/should be critqued please!
         """
 
-        # These two lines below will be deleted
+        # These three lines below will be deleted
         test_email = options.get("test_email")
         send_all = options.get("all")
         test_cc_email = options.get("test_cc_email")
@@ -80,107 +80,96 @@ class Command(BaseCommand):
                     "expiration_date": domain.expiration_date,
                 }
 
-                # user_domain_roles = UserDomainRole.objects.filter(domain=domain)
-                # domain_manager_emails = set(role.user.email for role in user_domain_roles)
+                # ---- SEND TO DOMAIN MANAGERS ----
+                domain_managers = (
+                    UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+                )
 
-                # portfolio = getattr(domain, "portfolio", None)
-
-                # admin_emails = set()
-                # if portfolio:
-                #     print("!!!! Do we come into this if portfolio check?")
-                #     admin_roles = UserPortfolioPermission.objects.filter(
-                #         portfolio=portfolio,
-                #         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                #     )
-                #     admin_emails = set(role.user.email for role in admin_roles)
-
-                # to_address = [test_email] if test_email else list(domain_manager_emails)
-                # cc_addresses = []
-                # print("!!! Do we even get to the addresses?")
-                # if test_email:
-                #     if test_cc_email:
-                #         cc_addresses.append(test_cc_email)
-                # else:
-                #     cc_addresses = list(admin_emails)
-
-                # logger.debug({
-                #     "template": template,
-                #     "subject_template": subject_template,
-                #     "to": list(domain_manager_emails),
-                #     "cc": list(admin_emails),
-                #     "context": context,
-                # })
-
-                # print({
-                #     "template": template,
-                #     "subject_template": subject_template,
-                #     "to": list(domain_manager_emails),
-                #     "cc": list(admin_emails),
-                #     "context": context,
-                # })
-
-                user_domain_roles = UserDomainRole.objects.filter(domain=domain)
-
-                for user_domain_role in user_domain_roles:
-                    print("!!!!! Do we come into the user domain role section")
-                    user = user_domain_role.user
-
-                    logger.info(
-                        f"Sending email to: {test_email if test_email else user.email} for domain {domain.name}"
-                    )
-
+                for email in domain_managers:
+                    print(f"Sending email to domain manager: {email}")
                     try:
                         send_templated_email(
                             template,
                             subject_template,
-                            to_address=test_email or user.email,
+                            to_address=test_email or email,
                             context=context,
                         )
-                        logger.info(f"Emailed domain manager {user.email} for domain {domain.name}")
-                    except EmailSendingError:
-                        logger.warning(f"Failed to email domain manager {user.email} for domain {domain.name}")
+                        logger.info(f"Emailed domain manager {email} for domain {domain.name}")
+                    except EmailSendingError as e:
+                        logger.warning(f"Failed to email domain manager {email} for domain {domain.name}. Reason: {e}")
                         all_emails_sent = False
 
-                    user_portfolio_ids = UserPortfolioPermission.objects.filter(user=user).values_list(
-                        "portfolio", flat=True
-                    )
+                # ---- SEND TO PORTFOLIO ADMINS ----
+                user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
+                portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list(
+                    "portfolio", flat=True
+                )
 
-                    admin_roles = UserPortfolioPermission.objects.filter(
-                        portfolio__in=user_portfolio_ids,
+                admin_emails = (
+                    UserPortfolioPermission.objects.filter(
+                        portfolio__in=portfolio_ids,
                         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
                     )
+                    .values_list("user__email", flat=True)
+                    .distinct()
+                )
 
-                    for admin_role in admin_roles:
-                        print("!!!!! Do we come into the admin role section")
-                        admin_email = admin_role.user.email
+                for email in admin_emails:
+                    print(f"Sending email to portfolio admin: {email}")
+                    try:
+                        send_templated_email(
+                            template,
+                            subject_template,
+                            to_address=test_cc_email or email,
+                            context=context,
+                        )
+                        logger.info(f"Emailed portfolio admin {email} for domain {domain.name}")
+                    except EmailSendingError as e:
+                        logger.warning(f"Failed to email portfolio admin {email} for domain {domain.name}. Reason: {e}")
+                        all_emails_sent = False
 
-                        try:
-                            send_templated_email(
-                                template,
-                                subject_template,
-                                to_address=test_cc_email or admin_email,
-                                context=context,
-                            )
-                            logger.info(f"Emailed portfolio admin {admin_email} for domain {domain.name}")
-                        except EmailSendingError:
-                            logger.warning(f"Failed to email portfolio admin {admin_email} for domain {domain.name}")
-                            all_emails_sent = False
+                # # --- Get domain manager emails ---
+                # domain_manager_emails = list(
+                #     UserDomainRole.objects.filter(domain=domain)
+                #     .values_list("user__email", flat=True)
+                #     .distinct()
+                # )
+
+                # # --- Get portfolio admin emails ---
+                # user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
+                # portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list("portfolio", flat=True)
+                # portfolio_admin_emails = list(
+                #     UserPortfolioPermission.objects.filter(
+                #         portfolio__in=portfolio_ids,
+                #         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                #     )
+                #     .values_list("user__email", flat=True)
+                #     .distinct()
+                # )
+
+                # # Log and send
+                # print(f"Domain managers for {domain.name}: {domain_manager_emails}")
+                # print(f"Portfolio admins for {domain.name}: {portfolio_admin_emails}")
+
+                # if test_email:
+                #     domain_manager_emails = [test_email]
+                # if test_cc_email:
+                #     portfolio_admin_emails = [test_cc_email]
 
                 # try:
                 #     send_templated_email(
                 #         template,
                 #         subject_template,
-                #         to_address=to_address,
-                #         cc_addresses=cc_addresses,
+                #         to_address=domain_manager_emails,
+                #         cc_addresses=portfolio_admin_emails,
                 #         context=context,
                 #     )
-                #     logger.info(
-                #         f"Emailed domain managers {domain_manager_emails} and portfolio admins {admin_emails} for domain {domain.name}."
-                #     )
+                #     logger.info(f"Sent email for domain {domain.name} to managers and CC’d admins")
                 # except EmailSendingError as e:
-                #     logger.warning(f"Failed to email domain managers and admins for domain {domain.name}. Reason is {e}")
+                #     logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
                 #     all_emails_sent = False
 
+        # Proper code but we ignoring this for now cause we trial running above
         # else:
         #     today = timezone.now().date()
         #     days_to_check = [30, 7, 1]
@@ -212,41 +201,45 @@ class Command(BaseCommand):
         #                 "expiration_date": domain.expiration_date,
         #             }
 
-        #             ### Emailing domain manager section
-        #             user_domain_roles = UserDomainRole.objects.filter(domain=domain)
-        #             domain_manager_emails = set(role.user.email for role in user_domain_roles)
+        #             # ---- SEND TO DOMAIN MANAGERS ----
+        #             domain_managers = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
 
-        #             ### Emailing portfolio admin section
-        #             # We nest this as for each domain manager,
-        #             # we also notify the admins of the porfolio the domain manager belongs to
+        #             for email in domain_managers:
+        #                 print(f"Sending email to domain manager: {email}")
+        #                 try:
+        #                     send_templated_email(
+        #                         template,
+        #                         subject_template,
+        #                         to_address=email,
+        #                         context=context,
+        #                     )
+        #                     logger.info(f"Emailed domain manager {email} for domain {domain.name}")
+        #                 except EmailSendingError as e:
+        #                     logger.warning(f"Failed to email domain manager {email} for domain {domain.name}. Reason: {e}")
+        #                     all_emails_sent = False
 
-        #             # Get the domain's associated portfolio (if any)
-        #             portfolio = getattr(domain, "portfolio", None)
+        #             # ---- SEND TO PORTFOLIO ADMINS ----
+        #             user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
+        #             portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list("portfolio", flat=True)
 
-        #             admin_emails = set()
-        #             if portfolio:
-        #                 # Email portfolio admins of those portfolios
-        #                 admin_roles = UserPortfolioPermission.objects.filter(
-        #                     portfolio=portfolio,
-        #                     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        #                 )
-        #                 admin_emails = set(role.user.email for role in admin_roles)
+        #             admin_emails = UserPortfolioPermission.objects.filter(
+        #                 portfolio__in=portfolio_ids,
+        #                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        #             ).values_list("user__email", flat=True).distinct()
 
-        #             # Send one email per domain with domain managers as "to" and admins as "cc"
-        #             try:
-        #                 send_templated_email(
-        #                     template,
-        #                     subject_template,
-        #                     to_address=list(domain_manager_emails),
-        #                     cc_addresses=list(admin_emails),
-        #                     context=context,
-        #                 )
-        #                 logger.info(
-        #                     f"Emailed domain managers {domain_manager_emails} and portfolio admins {admin_emails} for domain {domain.name}"
-        #                 )
-        #             except EmailSendingError:
-        #                 logger.warning(f"Failed to email domain managers and admins for domain {domain.name}")
-        #                 all_emails_sent = False
+        #             for email in admin_emails:
+        #                 print(f"Sending email to portfolio admin: {email}")
+        #                 try:
+        #                     send_templated_email(
+        #                         template,
+        #                         subject_template,
+        #                         to_address=email,
+        #                         context=context,
+        #                     )
+        #                     logger.info(f"Emailed portfolio admin {email} for domain {domain.name}")
+        #                 except EmailSendingError as e:
+        #                     logger.warning(f"Failed to email portfolio admin {email} for domain {domain.name}. Reason: {e}")
+        #                     all_emails_sent = False
 
         if all_emails_sent:
             self.stdout.write(self.style.SUCCESS("All domain expiration emails sent successfully."))
