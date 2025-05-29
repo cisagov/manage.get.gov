@@ -1,0 +1,1 @@
+{{ domain }} may be deleted in {{ days_remaining }} days
