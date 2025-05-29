@@ -8,8 +8,7 @@
     <div class="tablet:grid-col-3 grid-col--sidenav">
       {% include 'domain_request_sidebar.html' %}
     </div>
-    <div class="tablet:grid-col">
-      <main id="main-content" class="grid-container register-form-step">
+    <div class="tablet:grid-col register-form-step" id="main-content">
         <input type="hidden" class="display-none" id="wizard-domain-request-id" value="{{domain_request_id}}"/>
         {% if steps.current == steps.first %}
           {% if portfolio %}
@@ -142,8 +141,6 @@
         </form>
 
 {% block after_form_content %}{% endblock %}
-
-      </main>
     </div> 
   </div>
 </div>
