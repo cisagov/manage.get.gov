@@ -1,0 +1,30 @@
+{% extends 'portfolio_base.html' %}
+
+{% block title %} Your organizations | {% endblock title %}
+{% load static url_helpers %}
+
+{# Disable the redirect  #}
+{% block header %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
+{% endblock %}
+
+{% block portfolio_content %}
+<main id="main-content">
+    <div id="toggleable-alert" class="usa-alert usa-alert--slim margin-bottom-2 display-none">
+        <div class="usa-alert__body">
+            <p class="usa-alert__text ">
+            <!-- alert message will be conditionally populated by javascript -->
+            </p>
+        </div>
+    </div>
+    <h1>Your organizations</h1>
+
+    Orgs list
+
+    <p>
+        Don’t see your organization here? If you believe you should have access to an organization, 
+        contact us at <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+    </p>
+
+</main>
+{% endblock %}

@@ -1177,3 +1177,12 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send portfolio email invitation.")
+
+
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioOrganizationsView(DetailView, View):
+    template_name = "portfolio_organizations.html"
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html")
