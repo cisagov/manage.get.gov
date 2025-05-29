@@ -2,44 +2,42 @@
 {% load static field_helpers%}
 
 {% block title %}DNS name servers | {{ domain.name }} | {% endblock %}
-
-{% block domain_content %}
-
-  {# this is right after the messages block in the parent template. #}
-
-  {% if formset.initial|length >= formset.max_num %}
-    <div class="usa-alert usa-alert--do-not-reset usa-alert--info usa-alert--slim margin-bottom-2" role="alert">
-      <div class="usa-alert__body">
-        <p class="usa-alert__text">
-          You’ve reached the maximum amount of allowed name server records (13).
-        </p>
-      </div>
-    </div>
-  {% endif %}
-  
   {% block breadcrumb %}
-  {% if portfolio %}
-  <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>DNS name servers</span>
-      </li>
-    </ol>
-  </nav>
-  {% endif %}
+    {% if portfolio %}
+    <!-- Navigation breadcrumbs -->
+    <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+      <ol class="usa-breadcrumb__list">
+        <li class="usa-breadcrumb__list-item">
+          <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item">
+          <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item">
+          <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+        </li>
+        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+          <span>DNS name servers</span>
+        </li>
+      </ol>
+    </nav>
+    {% endif %}
   {% endblock breadcrumb %}
 
+  {% block domain_content %}
+
+  {# this is right after the messages block in the parent template. #}
   <!-- Error message -->
+  {% if formset.initial|length >= formset.max_num %}
+  <div class="usa-alert usa-alert--do-not-reset usa-alert--info usa-alert--slim margin-bottom-2" role="alert">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text">
+        You’ve reached the maximum amount of allowed name server records (13).
+      </p>
+    </div>
+  </div>
+{% endif %}
+
   {% for form in formset %}
     {% include "includes/form_errors.html" with form=form %}
   {% endfor %}
