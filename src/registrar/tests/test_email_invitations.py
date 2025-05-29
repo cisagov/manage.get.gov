@@ -85,7 +85,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=mock_user1.email,
+            to_address=[mock_user1.email],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -170,7 +170,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=mock_user1.email,
+            to_address=[mock_user1.email],
             context={
                 "domain": mock_domain1,
                 "requestor_email": mock_requestor_email,
@@ -363,7 +363,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager@example.com",
+            to_address=["manager@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -403,7 +403,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager@example.com",
+            to_address=["manager@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -466,7 +466,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager1@example.com",
+            to_address=["manager1@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -566,7 +566,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
         result = send_portfolio_admin_addition_emails(self.email, self.requestor, self.portfolio)
 
         mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
-        mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
+        mock_send_admin_emails.assert_called_once_with(self.email, ["requestor@example.com"], self.portfolio)
         self.assertTrue(result)
 
     @less_console_noise_decorator
@@ -591,7 +591,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
 
         self.assertFalse(result)
         mock_get_requestor_email.assert_called_once_with(self.requestor, portfolio=self.portfolio)
-        mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
+        mock_send_admin_emails.assert_called_once_with(self.email, ["requestor@example.com"], self.portfolio)
 
 
 class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
