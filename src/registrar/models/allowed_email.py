@@ -21,8 +21,6 @@ class AllowedEmail(TimeStampedModel):
     def is_allowed_email(cls, email_or_emails):
         """Given an email, check if this email exists within our AllowEmail whitelist"""
 
-        # if not email:
-        #     return False
         if not email_or_emails:
             return False
 

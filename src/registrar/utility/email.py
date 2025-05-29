@@ -23,10 +23,22 @@ class EmailSendingError(RuntimeError):
     pass
 
 
+def _flatten_to_address_list(to_address):
+    to_address_list = []
+    for item in to_address:
+        # If it comes in as a list, "flatten" it
+        if isinstance(item, list):
+            to_address_list.extend(item)
+        # Else if not a list, just add it to the list
+        else:
+            to_address_list.append(item)
+    return to_address_list
+
+
 def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_address: str = "",
+    to_address: list[str] = [],
     bcc_address: str = "",
     context={},
     attachment_file=None,
@@ -35,7 +47,9 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_address and bcc_address currently only support single addresses.
+    to_address is a list and can contain many addresses.
+
+    bcc_address currently only support single addresses.
 
     cc_addresses is a list and can contain many addresses. Emails not in the
     whitelist (if applicable) will be filtered out before sending.
@@ -51,6 +65,13 @@ def send_templated_email(  # noqa
 
     if context is None:
         context = {}
+
+    # If passing in single email, it's wrapped into a list
+    # Else if it's list or nested list, "flatten" it
+    if isinstance(to_address, str):
+        to_address = [to_address]
+    elif isinstance(to_address, list):
+        to_address = _flatten_to_address_list(to_address)
 
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)
@@ -106,7 +127,7 @@ def send_templated_email(  # noqa
 
     destination = {}
     if to_address:
-        destination["ToAddresses"] = [to_address]
+        destination["ToAddresses"] = to_address
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
     if cc_addresses:
@@ -226,7 +247,7 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
     msg["From"] = sender
-    msg["To"] = recipient
+    msg["To"] = ", ".join(recipient)
 
     # Add the text part
     text_part = MIMEText(body, "plain")
@@ -240,5 +261,6 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
     attachment_part.add_header("Content-Disposition", f'attachment; filename="{current_filename}"')
     msg.attach(attachment_part)
 
-    response = ses_client.send_raw_email(Source=sender, Destinations=[recipient], RawMessage={"Data": msg.as_string()})
+    response = ses_client.send_raw_email(Source=sender, Destinations=recipient, RawMessage={"Data": msg.as_string()})
+
     return response
