@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import Q
 import re
 from .utility.time_stamped_model import TimeStampedModel
-from registrar.utility.email import _flatten_to_address_list
+from registrar.utility.email import _flatten_email_list
 
 
 class AllowedEmail(TimeStampedModel):
@@ -20,7 +20,6 @@ class AllowedEmail(TimeStampedModel):
 
     @classmethod
     def is_allowed_email(cls, email_or_emails):
-        # def is_allowed_email(cls, email):
         """Given an email, check if this email exists within our AllowEmail whitelist"""
 
         if not email_or_emails:
@@ -29,7 +28,7 @@ class AllowedEmail(TimeStampedModel):
         if isinstance(email_or_emails, str):
             emails = [email_or_emails]
         elif isinstance(email_or_emails, list):
-            emails = _flatten_to_address_list(email_or_emails)
+            emails = _flatten_email_list(email_or_emails)
         else:
             raise TypeError("Input must be a string or a list of strings")
 
@@ -42,8 +41,6 @@ class AllowedEmail(TimeStampedModel):
                 local, domain = email.split("@")
             except ValueError:
                 return False
-            # Split the email into a local part and a domain part
-            # local, domain = email.split("@")
 
             # If the email exists within the whitelist, then do nothing else.
             email_exists = cls.objects.filter(email__iexact=email).exists()

@@ -23,16 +23,16 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def _flatten_to_address_list(to_address):
-    to_address_list = []
+def _flatten_email_list(to_address):
+    email_list = []
     for item in to_address:
         # If it comes in as a list, "flatten" it
         if isinstance(item, list):
-            to_address_list.extend(item)
+            email_list.extend(item)
         # Else if not a list, just add it to the list
         else:
-            to_address_list.append(item)
-    return to_address_list
+            email_list.append(item)
+    return email_list
 
 
 def send_templated_email(  # noqa
@@ -71,7 +71,7 @@ def send_templated_email(  # noqa
     if isinstance(to_address, str):
         to_address = [to_address]
     elif isinstance(to_address, list):
-        to_address = _flatten_to_address_list(to_address)
+        to_address = _flatten_email_list(to_address)
 
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)

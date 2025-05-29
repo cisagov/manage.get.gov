@@ -374,7 +374,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             manager = role.user
             context["recipient"] = manager
             try:
-                send_templated_email(template, subject_template, to_address=manager.email, context=context)
+                send_templated_email(template, subject_template, to_address=[manager.email], context=context)
             except EmailSendingError:
                 logger.warning(
                     "Could not send notification email to %s for domain %s",
