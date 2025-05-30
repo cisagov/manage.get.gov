@@ -1,0 +1,1 @@
+{{domain}} expires in {{ days_remaining }} days
