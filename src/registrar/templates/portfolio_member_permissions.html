@@ -11,11 +11,6 @@
 {% block portfolio_content %}
 
 <div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-  <!-- Form messages -->
-  {% include "includes/form_errors.html" with form=form %}
-  {% block messages %}
-    {% include "includes/form_messages.html" %}
-  {% endblock messages%}
   
   <!-- Navigation breadcrumbs -->
   {% url 'members' as url %}
@@ -37,6 +32,13 @@
       </li>
   </ol>
   </nav>
+
+  <!-- Form messages -->
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
+  {% include "includes/form_errors.html" with form=form %}
+
 
   <!-- Page header -->
   <h1>Member access and permissions</h1>

@@ -2,7 +2,6 @@
 {% load static url_helpers %}
 {% load custom_filters %}
 
-{% block domain_content %}
   {% block breadcrumb %}
   {% if portfolio %}
   <!-- Navigation breadcrumbs -->
@@ -19,6 +18,7 @@
   {% endif %}
   {% endblock breadcrumb %}
 
+{% block domain_content %}
   {{ block.super }}
   <div class="margin-top-2 tablet:grid-col-10">
     <h2 class="string-wrap margin-top-2">{{ domain.name }}</h2>

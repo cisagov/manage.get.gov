@@ -3,7 +3,6 @@
 
 {% block title %}DNSSEC | {{ domain.name }} | {% endblock %}
 
-{% block domain_content %}
 
   {% block breadcrumb %}
   {% if portfolio %}
@@ -26,6 +25,8 @@
   </nav>
   {% endif %}
   {% endblock breadcrumb %}
+  
+  {% block domain_content %}
 
   <h1 id="domain-dnssec">DNSSEC</h1>
 

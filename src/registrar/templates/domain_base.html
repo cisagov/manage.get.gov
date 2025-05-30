@@ -21,7 +21,13 @@
       {% endif %}
     </div>
 
-    <div class="tablet:grid-col" id="main-content">
+      <main id="main-content" class="grid-container tablet:grid-col">
+
+        <!-- Navigation breadcrumbs -->
+        {% block breadcrumb %}
+        {% endblock breadcrumb %}
+
+        <!-- Alert messages -->
       {% if not domain.domain_info %}
         <div class="usa-alert usa-alert--error margin-bottom-2">
           <div class="usa-alert__body">
@@ -62,7 +68,7 @@
 
         {% endblock %}  {# domain_content #}
       {% endif %}
-    </div>
+      </main>
   </div>
 </div>
 {% endblock %}  {# content #}
