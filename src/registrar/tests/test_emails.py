@@ -1,16 +1,25 @@
 """Test our email templates and sending."""
 
-from unittest.mock import MagicMock
+from unittest.mock import patch, MagicMock
 
 from django.test import TestCase, override_settings
+from django.core.management import call_command
+from django.utils import timezone
+
 from waffle.testutils import override_flag
 from registrar.utility import email
 from registrar.utility.email import send_templated_email
+
 from .common import completed_domain_request
-from registrar.models import AllowedEmail, User
+from registrar.models import AllowedEmail, User, Domain, User, DomainInformation
+from registrar.models.portfolio import Portfolio
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 from api.tests.common import less_console_noise_decorator
-from datetime import datetime
+from datetime import datetime, date, timedelta
+
 import boto3_mocking  # type: ignore
 
 
@@ -460,3 +469,233 @@ class TestAllowedEmail(TestCase):
 
         # Assert that an email wasn't sent
         self.assertFalse(self.mock_client.send_email.called)
+
+
+class SendExpirationEmailsTests(TestCase):
+    def setUp(self):
+        # Hard set the date
+        self.fixed_today = date(2025, 5, 29)
+        # Create the users
+        self.manager = User.objects.create(email="manager@example.com", username="manageruser")
+        self.admin = User.objects.create(email="admin@example.com", username="adminuser")
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_ready_domain_expiring_soon(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is expiring soon in READY state
+        2. Getting the right template
+        3. Sending the correct context to the right people
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Set up domain and portfolio and domain manager and admin permissions
+        domain_ready = Domain.objects.create(
+            name="readyexpiringsoon.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today + timedelta(days=30),
+        )
+        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_ready, portfolio=portfolio, creator=self.manager)
+
+        UserDomainRole.objects.create(user=self.manager, domain=domain_ready, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_expiring_soon_domains_notification")
+
+        expected_context = {
+            "domain": domain_ready,
+            "days_remaining": 30,
+            "expiration_date": self.fixed_today + timedelta(days=30),
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/ready_and_expiring_soon.txt",
+            "emails/ready_and_expiring_soon_subject.txt",
+            to_address=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_dns_domain_expiring_soon(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is expiring soon in DNS NEEDED state
+        2. Getting the right template
+        3. Sending the correct context to the right people (domain manager, org admin)
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_dns = Domain.objects.create(
+            name="dnsexpiringsoon.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=self.fixed_today + timedelta(days=7),
+        )
+        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, creator=self.manager)
+
+        UserDomainRole.objects.create(user=self.manager, domain=domain_dns, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_expiring_soon_domains_notification")
+
+        expected_context = {
+            "domain": domain_dns,
+            "days_remaining": 7,
+            "expiration_date": self.fixed_today + timedelta(days=7),
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/dns_needed_or_unknown_expiring_soon.txt",
+            "emails/dns_needed_or_unknown_expiring_soon_subject.txt",
+            to_address=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_unknown_domain_expiring_soon(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is expiring soon in UNKNOWN state
+        2. Getting the right template
+        3. Sending the correct context to the right people (domain manager, org admin)
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_unknown = Domain.objects.create(
+            name="unknownexpiringsoon.gov",
+            state=Domain.State.UNKNOWN,
+            expiration_date=self.fixed_today + timedelta(days=7),
+        )
+        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, creator=self.manager)
+
+        UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_expiring_soon_domains_notification")
+
+        expected_context = {
+            "domain": domain_unknown,
+            "days_remaining": 7,
+            "expiration_date": self.fixed_today + timedelta(days=7),
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/dns_needed_or_unknown_expiring_soon.txt",
+            "emails/dns_needed_or_unknown_expiring_soon_subject.txt",
+            to_address=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_no_emails_for_unrelated_domain_states(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send if it is expiring soon
+        but NOT in ready/unknown/dns needed state
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Domain is ONHOLD but still expiring soon
+        unrelated_domain = Domain.objects.create(
+            name="pendingdomain.gov",
+            state=Domain.State.ON_HOLD,
+            expiration_date=self.fixed_today + timedelta(days=30),
+        )
+        call_command("send_expiring_soon_domains_notification")
+
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_domains_expiring_later_do_not_trigger_email(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send as it's more than in the 30/7/1 days
+        (domain is expiring soon in 60 days but we dont send a notification)
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Create a domain expiring 60 days from fixed_today (more than 30/7/1 days)
+        Domain.objects.create(
+            name="laterexpiring.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today + timedelta(days=60),
+        )
+
+        call_command("send_expiring_soon_domains_notification")
+
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_expired_domains_do_not_trigger_email(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send bc domain is already expired
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Create an expired domain (expired yesterday)
+        expired_domain = Domain.objects.create(
+            name="expireddomain.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today - timedelta(days=1),
+        )
+
+        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expired Domains Portfolio")
+
+        DomainInformation.objects.create(
+            domain=expired_domain,
+            portfolio=portfolio,
+            creator=self.manager,
+        )
+
+        UserDomainRole.objects.create(user=self.manager, domain=expired_domain, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_expiring_soon_domains_notification")
+
+        mock_send_email.assert_not_called()
