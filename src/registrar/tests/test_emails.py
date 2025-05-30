@@ -11,7 +11,7 @@ from registrar.utility import email
 from registrar.utility.email import send_templated_email
 
 from .common import completed_domain_request
-from registrar.models import AllowedEmail, User, Domain, User, DomainInformation
+from registrar.models import AllowedEmail, Domain, User, DomainInformation
 from registrar.models.portfolio import Portfolio
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -631,7 +631,7 @@ class SendExpirationEmailsTests(TestCase):
         mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
 
         # Domain is ONHOLD but still expiring soon
-        unrelated_domain = Domain.objects.create(
+        _ = Domain.objects.create(
             name="pendingdomain.gov",
             state=Domain.State.ON_HOLD,
             expiration_date=self.fixed_today + timedelta(days=30),
