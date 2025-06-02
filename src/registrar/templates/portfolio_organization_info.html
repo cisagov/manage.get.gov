@@ -52,7 +52,6 @@
                 {% for admin in portfolio_admins %}
                 <li>
                     <p class="margin-bottom-0">{{admin.first_name}} {{admin.last_name}}</p>
-                    {% if admin.title %} <p class="margin-top-0 margin-bottom-0">{{admin.title}}</p>{% endif %}
                     <p class="margin-top-0">{{admin.email}}</p>
                 </li>    
                 {% endfor %}
