@@ -890,13 +890,43 @@ class PortfolioNoDomainRequestsView(View):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationView(DetailView, FormMixin):
+class PortfolioOrganizationView(DetailView):
+    """
+    View to handle displaying and updating overview of portfolio's information.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_organization.html"
+    context_object_name = "portfolio"
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        context = super().get_context_data(**kwargs)
+        portfolio = self.request.session.get("portfolio")
+        context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        return context
+
+    def get_object(self, queryset=None):
+        """Get the portfolio object based on the session."""
+        portfolio = self.request.session.get("portfolio")
+        if portfolio is None:
+            raise Http404("No organization found for this user")
+        return portfolio
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioOrganizationInfoView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
 
     model = Portfolio
-    template_name = "portfolio_organization.html"
+    template_name = "portfolio_organization_info.html"
     form_class = portfolioForms.PortfolioOrgAddressForm
     context_object_name = "portfolio"
 
