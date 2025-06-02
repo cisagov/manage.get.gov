@@ -198,7 +198,7 @@ class UserFixture:
             "username": "10a6537c-5f99-4fc5-8370-3921899ed401",
             "first_name": "Abe-Analyst",
             "last_name": "Alam-Analyst",
-            "email": "abe.alam2+1@gmail.com",
+            "email": "abraham.alam+1@ecstech.com",
         },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
