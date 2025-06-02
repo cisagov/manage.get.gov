@@ -186,10 +186,10 @@ class UserFixture:
             "title": "Farmer",
         },
         {
-            "username": "9fa3f7c5-bc4c-43d4-a892-7e49759773d8",
+            "username": "0f784268-a481-445e-9e37-ea2be43ce318",
             "first_name": "Daisy",
-            "last_name": "Gutierrez",
-            "email": "daisyguti56@gmail.com",
+            "last_name": "Guti",
+            "email": "dgutierrez@guydo.com",
             "title": "Lima",
         },
     ]
