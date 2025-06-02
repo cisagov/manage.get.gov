@@ -20,14 +20,14 @@
     </div>
 
     {% for user_portfolio_permission in user_portfolio_permissions %}
-    <div class="grid-row">
+    <div class="grid-row margin-bottom-1">
         <button
             class="usa-button usa-button--unstyled"
             type="button"
         >
-            <div class="usa-card__container">
+            <div class="usa-card__container margin-left-0">
                 <div class="usa-card__header">
-                    <h4 class="usa-card__heading">{{user_portfolio_permission.portfolio}}</h4>
+                    <h2 class="usa-card__heading">{{user_portfolio_permission.portfolio}}</h2>
                 </div>
             </div>
         </button>
