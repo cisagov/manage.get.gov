@@ -23,22 +23,32 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def _flatten_email_list(to_address):
+def _normalize_and_flatten_email_list(email_or_emails):
+    """
+    Normalizes a single email string + flattens nested structures
+    """
+
+    # If passing in single email, it's wrapped into a list
+    if isinstance(email_or_emails, str):
+        return [email_or_emails]
+
     email_list = []
-    for item in to_address:
-        # If it comes in as a list, "flatten" it
+
+    for item in email_or_emails:
+        # If it comes in as a list, "flatten" it recursively
         if isinstance(item, list):
-            email_list.extend(item)
+            email_list.extend(_normalize_and_flatten_email_list(item))
         # Else if not a list, just add it to the list
         else:
             email_list.append(item)
+
     return email_list
 
 
 def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_address: list[str] = [],
+    to_addresses: list[str] = [],
     bcc_address: str = "",
     context={},
     attachment_file=None,
@@ -47,9 +57,9 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_address is a list and can contain many addresses.
+    to_addresses is a list and can contain many addresses.
 
-    bcc_address currently only support single addresses.
+    bcc_address currently only supports a single address.
 
     cc_addresses is a list and can contain many addresses. Emails not in the
     whitelist (if applicable) will be filtered out before sending.
@@ -66,12 +76,7 @@ def send_templated_email(  # noqa
     if context is None:
         context = {}
 
-    # If passing in single email, it's wrapped into a list
-    # Else if it's list or nested list, "flatten" it
-    if isinstance(to_address, str):
-        to_address = [to_address]
-    elif isinstance(to_address, list):
-        to_address = _flatten_email_list(to_address)
+    to_addresses = _normalize_and_flatten_email_list(to_addresses)
 
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)
@@ -92,9 +97,9 @@ def send_templated_email(  # noqa
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
-        _can_send_email(to_address, bcc_address)
+        _can_send_email(to_addresses, bcc_address)
 
-        # if we're not in prod, we need to check the whitelist for CC'ed addresses
+        # if we're not in prod, we need to check the allow list for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
 
         if blocked_cc_addresses:
@@ -126,8 +131,8 @@ def send_templated_email(  # noqa
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {}
-    if to_address:
-        destination["ToAddresses"] = to_address
+    if to_addresses:
+        destination["ToAddresses"] = to_addresses
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
     if cc_addresses:
@@ -155,7 +160,7 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses)
+            logger.info("Email sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
@@ -165,10 +170,10 @@ def send_templated_email(  # noqa
                 config=settings.BOTO_CONFIG,
             )
             send_email_with_attachment(
-                settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
+                settings.DEFAULT_FROM_EMAIL, to_addresses, subject, email_body, attachment_file, ses_client
             )
             logger.info(
-                "Email with attachment sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses
+                "Email with attachment sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses
             )
 
     except Exception as exc:
