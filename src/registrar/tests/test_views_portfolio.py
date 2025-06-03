@@ -327,7 +327,9 @@ class TestPortfolio(WebTest):
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, '<p class="margin-bottom-05 text-semibold font-body-md">Organization name</p>')
+            self.assertContains(
+                response, '<p class="margin-bottom-05 text-semibold font-body-md">Organization name</p>'
+            )
             self.assertNotContains(response, '<p class="margin-top-0 margin-bottom-0">City</p>')
             self.assertNotContains(response, '<p class="margin-top-0 margin-bottom-0">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
