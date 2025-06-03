@@ -195,7 +195,7 @@ class UserFixture:
 
     STAFF = [
         {
-            "username": "10a6537c-5f99-4fc5-8370-3921899ed401",
+            "username": "acfdf02c-2438-4e66-b219-73104b2e3153",
             "first_name": "Abe-Analyst",
             "last_name": "Alam-Analyst",
             "email": "abraham.alam+1@ecstech.com",
