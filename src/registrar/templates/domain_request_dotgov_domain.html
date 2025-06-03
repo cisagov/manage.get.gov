@@ -3,11 +3,11 @@
 
 {% block form_instructions %}
   <p>
-    Before requesting a .gov domain, please make sure it meets 
+    Before requesting a .gov domain, please make sure it meets the
     {% if requires_feb_questions %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">the naming requirements for executive branch agencies</a>. Your domain name must:
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">naming requirements for executive branch agencies</a>. Your domain name must:
     {% else %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">the naming requirements</a>. Your domain name must:
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">naming requirements</a>. Your domain name must:
     {% endif %}
     <ul class="usa-list">
       <li>Be available </li>
@@ -119,7 +119,7 @@
       <p id="dotgov-domain-naming-requirements" class="margin-top-05">
         OMB will review each request against the domain 
         <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">
-          naming requirements for executive branch agencies.</a> Agency submissions are expected to meet each requirement.
+          naming requirements for executive branch agencies</a>. Agency submissions are expected to meet each requirement.
       </p>
       <p class="usa-label margin-top-0 margin-bottom-0">
         <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>

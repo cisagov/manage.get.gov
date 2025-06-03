@@ -248,7 +248,6 @@ class UserFixture:
             "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair@gmail.com",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
