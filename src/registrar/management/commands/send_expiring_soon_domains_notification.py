@@ -112,7 +112,7 @@ class Command(BaseCommand):
                     send_templated_email(
                         template,
                         subject_template,
-                        to_address=domain_manager_emails,
+                        to_addresses=domain_manager_emails,
                         cc_addresses=portfolio_admin_emails,
                         context=context,
                     )
@@ -178,7 +178,7 @@ class Command(BaseCommand):
                         send_templated_email(
                             template,
                             subject_template,
-                            to_address=domain_manager_emails,
+                            to_addresses=domain_manager_emails,
                             cc_addresses=portfolio_admin_emails,
                             context=context,
                         )

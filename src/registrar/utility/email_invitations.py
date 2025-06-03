@@ -88,7 +88,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
         send_templated_email(
             "emails/domain_invitation.txt",
             "emails/domain_invitation_subject.txt",
-            to_address=email,
+            to_addresses=email,
             context={
                 "domains": domains,
                 "requestor_email": requestor_email,
@@ -164,7 +164,7 @@ def _send_domain_invitation_update_emails_to_domain_managers(
             send_templated_email(
                 "emails/domain_manager_notification.txt",
                 "emails/domain_manager_notification_subject.txt",
-                to_address=[user.email],
+                to_addresses=[user.email],
                 context={
                     "domain": domain,
                     "requestor_email": requestor_email,
@@ -212,7 +212,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
             send_templated_email(
                 "emails/domain_manager_deleted_notification.txt",
                 "emails/domain_manager_deleted_notification_subject.txt",
-                to_address=[user.email],
+                to_addresses=[user.email],
                 context={
                     "domain": domain,
                     "removed_by": removed_by_user,
@@ -257,7 +257,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         send_templated_email(
             "emails/portfolio_invitation.txt",
             "emails/portfolio_invitation_subject.txt",
-            to_address=[email],
+            to_addresses=[email],
             context={
                 "portfolio": portfolio,
                 "requestor_email": requestor_email,
@@ -309,7 +309,7 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
             send_templated_email(
                 "emails/portfolio_org_update_notification.txt",
                 "emails/portfolio_org_update_notification_subject.txt",
-                to_address=user.email,
+                to_addresses=user.email,
                 context={
                     "requested_user": user,
                     "portfolio": portfolio,
@@ -353,7 +353,7 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
         send_templated_email(
             "emails/portfolio_update.txt",
             "emails/portfolio_update_subject.txt",
-            to_address=[permissions.user.email],
+            to_addresses=[permissions.user.email],
             context={
                 "requested_user": permissions.user,
                 "portfolio": permissions.portfolio,
@@ -396,7 +396,7 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
         send_templated_email(
             "emails/portfolio_removal.txt",
             "emails/portfolio_removal_subject.txt",
-            to_address=[permissions.user.email],
+            to_addresses=[permissions.user.email],
             context={
                 "requested_user": permissions.user,
                 "portfolio": permissions.portfolio,
@@ -437,7 +437,7 @@ def send_portfolio_invitation_remove_email(requestor, invitation: PortfolioInvit
         send_templated_email(
             "emails/portfolio_removal.txt",
             "emails/portfolio_removal_subject.txt",
-            to_address=[invitation.email],
+            to_addresses=[invitation.email],
             context={
                 "requested_user": None,
                 "portfolio": invitation.portfolio,
@@ -488,7 +488,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
             send_templated_email(
                 "emails/portfolio_admin_addition_notification.txt",
                 "emails/portfolio_admin_addition_notification_subject.txt",
-                to_address=[user.email],
+                to_addresses=[user.email],
                 context={
                     "portfolio": portfolio,
                     "requestor_email": requestor_email,
@@ -541,7 +541,7 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
             send_templated_email(
                 "emails/portfolio_admin_removal_notification.txt",
                 "emails/portfolio_admin_removal_notification_subject.txt",
-                to_address=[user.email],
+                to_addresses=[user.email],
                 context={
                     "portfolio": portfolio,
                     "requestor_email": requestor_email,
