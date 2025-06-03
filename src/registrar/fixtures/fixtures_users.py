@@ -23,6 +23,12 @@ class UserFixture:
 
     ADMINS = [
         {
+            "username": "3e8613e2-e1f8-404d-a692-e5dc077828b2",
+            "first_name": "Abe",
+            "last_name": "Alam",
+            "email": "abraham.alam@ecstech.com",
+        },
+        {
             "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
             "first_name": "Aditi",
             "last_name": "Green",
@@ -188,6 +194,12 @@ class UserFixture:
     ]
 
     STAFF = [
+        {
+            "username": "acfdf02c-2438-4e66-b219-73104b2e3153",
+            "first_name": "Abe-Analyst",
+            "last_name": "Alam-Analyst",
+            "email": "abraham.alam+1@ecstech.com",
+        },
         {
             "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
             "first_name": "Aditi-Analyst",
