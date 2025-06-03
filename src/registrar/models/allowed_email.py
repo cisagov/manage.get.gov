@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import Q
 import re
 from .utility.time_stamped_model import TimeStampedModel
-from registrar.utility.email import _normalize_and_flatten_email_list
+from registrar.utility.email import _flatten_to_address
 
 
 class AllowedEmail(TimeStampedModel):
@@ -28,7 +28,7 @@ class AllowedEmail(TimeStampedModel):
         if isinstance(email_or_emails, str):
             emails = [email_or_emails]
         elif isinstance(email_or_emails, list):
-            emails = _normalize_and_flatten_email_list(email_or_emails)
+            emails = _flatten_to_address(email_or_emails)
         else:
             raise TypeError("Input must be a string or a list of strings")
 
