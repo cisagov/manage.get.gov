@@ -327,11 +327,9 @@ class TestPortfolio(WebTest):
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
-            # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
-            # The read only label for city will be a h4
-            self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
-            self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            self.assertContains(response, '<p class="margin-bottom-05 text-semibold font-body-md">Organization name</p>')
+            self.assertNotContains(response, '<p class="margin-top-0 margin-bottom-0">City</p>')
+            self.assertNotContains(response, '<p class="margin-top-0 margin-bottom-0">Los Angeles</p>')
             self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
