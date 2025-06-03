@@ -65,7 +65,7 @@
             {% include "includes/required_fields.html" %}
             <form class="usa-form usa-form--large desktop:margin-top-4" method="post" novalidate>
                 {% csrf_token %}
-                <h3 class="margin-bottom-05">Organization name</h3>
+                <p class="margin-bottom-05 text-semibold font-body-md">Organization name</p>
                 <p class="margin-top-0">
                     {{ portfolio.federal_agency }}
                 </p>
@@ -81,26 +81,25 @@
                 </button>
             </form>
             {% else %}
-                <h3 class="margin-bottom-05">Organization name</h3>
-                <p class="margin-top-0">
+                <p class="margin-top-0 margin-bottom-0">
                     {{ portfolio.federal_agency }}
                 </p>
-
-                <h3 class="margin-bottom-05">Organization address</h3>
                 {% if form.address_line1.value is not None %}
-                    {% include "includes/input_read_only.html" with field=form.address_line1 %}
+                <p class="margin-top-0 margin-bottom-0">{{ form.address_line1.value }}</p>
                 {% endif %}
                 {% if form.address_line2.value is not None %}
-                    {% include "includes/input_read_only.html" with field=form.address_line2 %}
+                <p class="margin-top-0 margin-bottom-0">{{ form.address_line2.value }}</p>
                 {% endif %}
-                {% if form.city.value is not None %}
-                    {% include "includes/input_read_only.html" with field=form.city %}
-                {% endif %}
-                {% if form.state_territory.value is not None %}
-                    {% include "includes/input_read_only.html" with field=form.state_territory %}
-                {% endif %}
+                <p class="margin-top-0 margin-bottom-0">
+                    {% if form.city.value is not None %}
+                    <span>{{ form.city.value }},</span>
+                    {% endif %}
+                    {% if form.state_territory.value is not None %}
+                     <span>{{ form.state_territory.value }}</span>
+                    {% endif %}
+                </p>
                 {% if form.zipcode.value is not None %}
-                    {% include "includes/input_read_only.html" with field=form.zipcode %}
+                <p class="margin-top-0 margin-bottom-0">{{ form.zipcode.value }}</p>
                 {% endif %}
             {% endif %}
         </div>
