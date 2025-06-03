@@ -164,9 +164,14 @@ urlpatterns = [
         name="organization",
     ),
     path(
-        "senior-official/",
+        "organization/organization-info",
+        views.PortfolioOrganizationInfoView.as_view(),
+        name="organization-info",
+    ),
+    path(
+        "organization/senior-official",
         views.PortfolioSeniorOfficialView.as_view(),
-        name="senior-official",
+        name="organization-senior-official",
     ),
     path(
         "admin/analytics/export_data_type/",

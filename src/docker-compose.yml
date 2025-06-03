@@ -1,5 +1,6 @@
 services:
   app:
+    platform: linux/amd64
     build: .
     depends_on:
       - db
@@ -74,6 +75,7 @@ services:
       python manage.py runserver 0.0.0.0:8080"
 
   db:
+    platform: linux/amd64
     image: postgres:latest
     environment:
       - POSTGRES_DB=app
@@ -83,6 +85,7 @@ services:
       - "5432:5432"
 
   node:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: node.Dockerfile
@@ -96,6 +99,7 @@ services:
     command: ./run_node_watch.sh
 
   pa11y:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: node.Dockerfile

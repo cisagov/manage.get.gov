@@ -21,16 +21,10 @@ Visit the running application at [http://localhost:8080](http://localhost:8080).
 
 ### Troubleshooting 
 
+#### Line endings and manage.py
 * If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). If not, you may not be able to run manage.py. 
 * Unix based operating systems (like macOS or Linux) handle line separators [differently than Windows does](https://superuser.com/questions/374028/how-are-n-and-r-handled-differently-on-linux-and-windows). This can break bash scripts in particular. In the case of manage.py, it uses *#!/usr/bin/env python* to access the Python executable. Since the script is still thinking in terms of unix line seperators, it may look for the executable *python\r* rather than *python* (since Windows cannot read the carriage return on its own) - thus leading to the error `usr/bin/env: 'python\r' no such file or directory` 
 * If you'd rather not change this globally, add a `.gitattributes` file in the project root with `* text eol=lf` as the text content, and [refresh the repo](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings)
-* If you are using a Mac with a M1 chip, and see this error `The chromium binary is not available for arm64.` or an error involving `puppeteer`, try adding this line below into your `.bashrc` or `.zshrc`. 
-
-```
-export DOCKER_DEFAULT_PLATFORM=linux/amd64
-```
-
-When completed, don't forget to rerun `docker-compose up`! 
 
 ## Branch Conventions
 
@@ -84,7 +78,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
 
  To get access to /admin on every non-production sandbox and to use /admin in local development, do the following:
 
-1. Login via login.gov
+1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/) via identity sandbox login.gov
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that your UUID is not authorized (it shows a very long string, this is your UUID). Copy that UUID for use in 4.
 4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
@@ -109,7 +103,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
 ### Adding an analyst-level user to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
 
-1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
+1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/) via identity sandbox login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
 4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Engineers will handle the remaining steps for designers, stop here.
