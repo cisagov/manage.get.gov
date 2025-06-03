@@ -47,7 +47,7 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_address is a list and can contain many addresses.
+    to_addresses is a list and can contain many addresses.
 
     bcc_address currently only support single address.
 
@@ -126,7 +126,7 @@ def send_templated_email(  # noqa
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {}
-    if to_address:
+    if to_addresses:
         destination["ToAddresses"] = to_addresses
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
@@ -155,7 +155,7 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to [%s], bcc [%s], cc %s", es, bcc_address, sendable_cc_addresses)
+            logger.info("Email sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",

@@ -7,7 +7,7 @@ from registrar.utility.email import _flatten_to_address
 
 class AllowedEmail(TimeStampedModel):
     """
-    AllowedEmail is a whitelist for email addresses that we can send to
+    AllowedEmail is a allow list for email addresses that we can send to
     in non-production environments.
     """
 
@@ -20,7 +20,7 @@ class AllowedEmail(TimeStampedModel):
 
     @classmethod
     def is_allowed_email(cls, email_or_emails):
-        """Given an email, check if this email exists within our AllowEmail whitelist"""
+        """Given an email, check if this email exists within our AllowEmail allow list"""
 
         if not email_or_emails:
             return False
@@ -42,7 +42,7 @@ class AllowedEmail(TimeStampedModel):
             except ValueError:
                 return False
 
-            # If the email exists within the whitelist, then do nothing else.
+            # If the email exists within the allow list, then do nothing else.
             email_exists = cls.objects.filter(email__iexact=email).exists()
             if email_exists:
                 return True
