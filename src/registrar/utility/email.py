@@ -23,26 +23,16 @@ class EmailSendingError(RuntimeError):
     pass
 
 
-def _normalize_and_flatten_email_list(email_or_emails):
-    """
-    Normalizes a single email string + flattens nested structures
-    """
-
-    # If passing in single email, it's wrapped into a list
-    if isinstance(email_or_emails, str):
-        return [email_or_emails]
-
-    email_list = []
-
-    for item in email_or_emails:
-        # If it comes in as a list, "flatten" it recursively
+def _flatten_to_address(to_addresses):
+    to_addresses_list = []
+    for item in to_addresses:
+        # If it comes in as a list, "flatten" it
         if isinstance(item, list):
-            email_list.extend(_normalize_and_flatten_email_list(item))
+            to_addresses_list.extend(item)
         # Else if not a list, just add it to the list
         else:
-            email_list.append(item)
-
-    return email_list
+            to_addresses_list.append(item)
+    return to_addresses_list
 
 
 def send_templated_email(  # noqa
@@ -57,9 +47,9 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_addresses is a list and can contain many addresses.
+    to_address is a list and can contain many addresses.
 
-    bcc_address currently only supports a single address.
+    bcc_address currently only support single address.
 
     cc_addresses is a list and can contain many addresses. Emails not in the
     whitelist (if applicable) will be filtered out before sending.
@@ -76,7 +66,12 @@ def send_templated_email(  # noqa
     if context is None:
         context = {}
 
-    to_addresses = _normalize_and_flatten_email_list(to_addresses)
+    # If passing in single email, it's wrapped into a list
+    # Else if it's list or nested list, "flatten" it
+    if isinstance(to_addresses, str):
+        to_addresses = [to_addresses]
+    elif isinstance(to_addresses, list):
+        to_addresses = _flatten_to_address(to_addresses)
 
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)
@@ -99,7 +94,7 @@ def send_templated_email(  # noqa
         # Does nothing otherwise.
         _can_send_email(to_addresses, bcc_address)
 
-        # if we're not in prod, we need to check the allow list for CC'ed addresses
+        # if we're not in prod, we need to check the whitelist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
 
         if blocked_cc_addresses:
@@ -125,13 +120,13 @@ def send_templated_email(  # noqa
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
-        logger.info(f"Connected to SES client! Template name: {template_name} to {to_address}")
+        logger.info(f"Connected to SES client! Template name: {template_name} to {to_addresses}")
     except Exception as exc:
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {}
-    if to_addresses:
+    if to_address:
         destination["ToAddresses"] = to_addresses
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
@@ -160,7 +155,7 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses)
+            logger.info("Email sent to [%s], bcc [%s], cc %s", es, bcc_address, sendable_cc_addresses)
         else:
             ses_client = boto3.client(
                 "ses",
