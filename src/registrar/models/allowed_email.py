@@ -2,7 +2,6 @@ from django.db import models
 from django.db.models import Q
 import re
 from .utility.time_stamped_model import TimeStampedModel
-from registrar.utility.email import _normalize_and_flatten_email_list
 
 
 class AllowedEmail(TimeStampedModel):
@@ -25,13 +24,8 @@ class AllowedEmail(TimeStampedModel):
         if not email:
             return False
 
-        if not isinstance(email, str):
-            return False
-        try:
-            # Split the email into a local part and a domain part
-            local, domain = email.split("@")
-        except ValueError:
-            return False
+        # Split the email into a local part and a domain part
+        local, domain = email.split("@")
 
         # If the email exists within the allow list, then do nothing else.
         email_exists = cls.objects.filter(email__iexact=email).exists()
