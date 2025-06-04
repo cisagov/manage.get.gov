@@ -98,7 +98,7 @@ def send_templated_email(  # noqa
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
-        _can_send_email(to_addresses, bcc_address)
+        _can_send_email(sendable_to_addresses, bcc_address)
 
         # if we're not in prod, we need to check the allowlist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
