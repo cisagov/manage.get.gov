@@ -101,9 +101,12 @@ def send_templated_email(  # noqa
 
         # if we're not in prod, we need to check the whitelist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
+        sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
 
         if blocked_cc_addresses:
             logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
+        if blocked_to_addresses:
+            logger.warning("Some CC'ed addresses were removed: %s.", blocked_to_addresses)
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -125,14 +128,14 @@ def send_templated_email(  # noqa
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
-        logger.info(f"Connected to SES client! Template name: {template_name} to {to_addresses}")
+        logger.info(f"Connected to SES client! Template name: {template_name} to {sendable_to_addresses}")
     except Exception as exc:
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {}
     if to_addresses:
-        destination["ToAddresses"] = to_addresses
+        destination["ToAddresses"] = sendable_to_addresses
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
     if cc_addresses:
@@ -160,7 +163,9 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses)
+            logger.info(
+                "Email sent to [%s], bcc [%s], cc %s", sendable_to_addresses, bcc_address, sendable_cc_addresses
+            )
         else:
             ses_client = boto3.client(
                 "ses",
@@ -170,10 +175,13 @@ def send_templated_email(  # noqa
                 config=settings.BOTO_CONFIG,
             )
             send_email_with_attachment(
-                settings.DEFAULT_FROM_EMAIL, to_addresses, subject, email_body, attachment_file, ses_client
+                settings.DEFAULT_FROM_EMAIL, sendable_to_addresses, subject, email_body, attachment_file, ses_client
             )
             logger.info(
-                "Email with attachment sent to [%s], bcc [%s], cc %s", to_addresses, bcc_address, sendable_cc_addresses
+                "Email with attachment sent to [%s], bcc [%s], cc %s",
+                sendable_to_addresses,
+                bcc_address,
+                sendable_cc_addresses,
             )
 
     except Exception as exc:
