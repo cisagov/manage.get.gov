@@ -172,8 +172,8 @@ class CheckPortfolioMiddleware:
         # portfolio and another for switching portfolio; for now, select first
         # Set portfolio to first portfolio if one is not set
         single_portfolio = not flag_is_active(request, "multiple_portfolios")
-        portfolio_isnull = not request.session["portfolio"]
-        if single_portfolio or portfolio_isnull:
+        portfolio_not_in_session = not request.session.get("portfolio")
+        if single_portfolio or portfolio_not_in_session:
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 

@@ -1180,8 +1180,10 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationsView(DetailView, View):
+class PortfolioOrganizationsView(View):
     template_name = "portfolio_organizations.html"
+    base_view_name = "your-portfolios"
+    pk_url_kwarg = "portfolio_pk"
 
     def get(self, request):
         """Add additional context data to the template."""
@@ -1195,3 +1197,12 @@ class PortfolioOrganizationsView(DetailView, View):
         context["user_portfolio_permissions"] = user_portfolio_permissions
 
         return context
+
+    def post(self, request):
+        """
+        Handles updating active portfolio in session.
+        """
+        request.session["portfolio"] = portfolio
+
+        logger.info("Successfully set active portfolio to ", portfolio)
+        return HttpResponseRedirect(reverse("domains"))
