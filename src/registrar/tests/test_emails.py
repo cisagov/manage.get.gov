@@ -522,7 +522,7 @@ class SendExpirationEmailsTests(TestCase):
         mock_send_email.assert_any_call(
             "emails/ready_and_expiring_soon.txt",
             "emails/ready_and_expiring_soon_subject.txt",
-            to_address=["manager@example.com"],
+            to_addresses=["manager@example.com"],
             cc_addresses=["admin@example.com"],
             context=expected_context,
         )
@@ -569,7 +569,7 @@ class SendExpirationEmailsTests(TestCase):
         mock_send_email.assert_any_call(
             "emails/dns_needed_or_unknown_expiring_soon.txt",
             "emails/dns_needed_or_unknown_expiring_soon_subject.txt",
-            to_address=["manager@example.com"],
+            to_addresses=["manager@example.com"],
             cc_addresses=["admin@example.com"],
             context=expected_context,
         )
@@ -616,7 +616,7 @@ class SendExpirationEmailsTests(TestCase):
         mock_send_email.assert_any_call(
             "emails/dns_needed_or_unknown_expiring_soon.txt",
             "emails/dns_needed_or_unknown_expiring_soon_subject.txt",
-            to_address=["manager@example.com"],
+            to_addresses=["manager@example.com"],
             cc_addresses=["admin@example.com"],
             context=expected_context,
         )

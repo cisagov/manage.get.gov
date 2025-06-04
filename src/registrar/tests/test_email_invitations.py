@@ -85,7 +85,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=[mock_user1.email],
+            to_addresses=[mock_user1.email],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -1158,7 +1158,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_deleted_notification.txt",
             "emails/domain_manager_deleted_notification_subject.txt",
-            to_address=[self.manager_user1.email],
+            to_addresses=[self.manager_user1.email],
             context={
                 "domain": self.domain,
                 "removed_by": self.manager_user1,
