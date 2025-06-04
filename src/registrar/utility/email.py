@@ -48,7 +48,7 @@ def _normalize_and_flatten_email_list(email_or_emails):
 def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_addresses: list[str] = [],
+    to_addresses: list[str] | str,
     bcc_address: str = "",
     context={},
     attachment_file=None,
@@ -202,8 +202,6 @@ def _can_send_email(to_addresses, bcc_address):
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         message = "Could not send email. The email '{}' does not exist within the allowlist."
-        # if to_addresses and not AllowedEmail.is_allowed_email(to_addresses):
-        #     raise EmailSendingError(message.format(to_addresses))
         for email in to_addresses:
             if not AllowedEmail.is_allowed_email(email):
                 raise EmailSendingError(message.format(to_addresses))
