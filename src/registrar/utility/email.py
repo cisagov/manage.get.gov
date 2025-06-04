@@ -206,7 +206,7 @@ def _can_send_email(to_addresses, bcc_address):
         #     raise EmailSendingError(message.format(to_addresses))
         for email in to_addresses:
             if not AllowedEmail.is_allowed_email(email):
-                raise EmailSendingError(f"Email '{email}' is not in the allow list.")
+                raise EmailSendingError(message.format(to_addresses))
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
