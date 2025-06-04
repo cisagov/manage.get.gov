@@ -289,7 +289,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @classmethod
     def is_not_deleted(cls, domain: str) -> bool:
-        """Check if the domain is NOT DELETED"""
+        """Check if the domain is NOT DELETED."""
         domain_name = domain.lower()
 
         try:
