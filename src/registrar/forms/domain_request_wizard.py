@@ -446,7 +446,7 @@ class SeniorOfficialForm(RegistrarForm):
         error_messages={"required": ("Enter the last name / family name of your senior official.")},
     )
     title = forms.CharField(
-        label="Title or role in your organization",
+        label="Title or role",
         error_messages={
             "required": (
                 "Enter the title or role your senior official has in your"
@@ -664,7 +664,7 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter the last name / family name of this contact."},
     )
     title = forms.CharField(
-        label="Title or role in your organization",
+        label="Title or role",
         error_messages={
             "required": (
                 "Enter the title or role in your organization of this contact (e.g., Chief Information Officer)."
