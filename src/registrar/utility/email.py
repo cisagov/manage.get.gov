@@ -62,7 +62,7 @@ def send_templated_email(  # noqa
     bcc_address currently only support single address.
 
     cc_addresses is a list and can contain many addresses. Emails not in the
-    whitelist (if applicable) will be filtered out before sending.
+    allow list (if applicable) will be filtered out before sending.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
@@ -198,12 +198,15 @@ def _can_send_email(to_addresses, bcc_address):
         message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
         raise EmailSendingError(message)
     else:
-        # Raise an email sending error if these doesn't exist within our whitelist.
+        # Raise an email sending error if these doesn't exist within our allowlist.
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
-        message = "Could not send email. The email '{}' does not exist within the whitelist."
-        if to_addresses and not AllowedEmail.is_allowed_email(to_addresses):
-            raise EmailSendingError(message.format(to_addresses))
+        message = "Could not send email. The email '{}' does not exist within the allowlist."
+        # if to_addresses and not AllowedEmail.is_allowed_email(to_addresses):
+        #     raise EmailSendingError(message.format(to_addresses))
+        for email in to_addresses:
+            if not AllowedEmail.is_allowed_email(email):
+                raise EmailSendingError(f"Email '{email}' is not in the allow list.")
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
