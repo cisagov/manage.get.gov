@@ -90,8 +90,9 @@ def send_templated_email(  # noqa
 
     context["manage_url"] = manage_url
 
-    # by default assume we can send to all addresses (prod has no whitelist)
+    # by default assume we can send to all addresses (prod has no allowlist)
     sendable_cc_addresses = cc_addresses
+    sendable_to_addresses = to_addresses
 
     if not settings.IS_PRODUCTION:  # type: ignore
         # Split into a function: C901 'send_templated_email' is too complex.
@@ -99,7 +100,7 @@ def send_templated_email(  # noqa
         # Does nothing otherwise.
         _can_send_email(to_addresses, bcc_address)
 
-        # if we're not in prod, we need to check the whitelist for CC'ed addresses
+        # if we're not in prod, we need to check the allowlist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
         sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
 
