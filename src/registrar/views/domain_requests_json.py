@@ -131,10 +131,20 @@ def _serialize_domain_request(request, domain_request, user):
         DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
+    
+    # Statuses that should only allow viewing (not managing)
+    view_only_statuses = [
+        DomainRequest.DomainRequestStatus.REJECTED,
+    ]
 
     # No portfolio action_label
     if domain_request.creator == user:
-        action_label = "Edit" if domain_request.status in editable_statuses else "Manage"
+        if domain_request.status in editable_statuses:
+            action_label = "Edit"
+        elif domain_request.status in view_only_statuses:
+            action_label = "View"
+        else:
+            action_label = "Manage"
     else:
         action_label = "View"
 
@@ -148,7 +158,12 @@ def _serialize_domain_request(request, domain_request, user):
             domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
         ) and domain_request.creator == user
         if user.has_edit_request_portfolio_permission(portfolio) and domain_request.creator == user:
-            action_label = "Edit" if domain_request.status in editable_statuses else "Manage"
+            if domain_request.status in editable_statuses:
+                action_label = "Edit"
+            elif domain_request.status in view_only_statuses:
+                action_label = "View"
+            else:
+                action_label = "Manage"
         else:
             action_label = "View"
 
@@ -156,7 +171,9 @@ def _serialize_domain_request(request, domain_request, user):
     action_url_map = {
         "Edit": reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.id}),
         "Manage": reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.id}),
-        "View": reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.id}),
+        "View": reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.id}),
+        # Commment ^ and Uncomment the below to expose the view-only URL bug
+        # "View": reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.id}),
     }
 
     svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}
