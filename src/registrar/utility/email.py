@@ -135,7 +135,7 @@ def send_templated_email(  # noqa
 
     destination = {}
     if to_addresses:
-        destination["ToAddresses"] = sendable_to_addresses
+        destination["ToAddresses"] = [sendable_to_addresses]
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
     if cc_addresses:
