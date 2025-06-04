@@ -453,11 +453,11 @@ class TestAllowedEmail(TestCase):
     @boto3_mocking.patching
     @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
-    def test_email_whitelist(self):
-        """Tests the email whitelist is enabled elsewhere"""
+    def test_email_allowlist(self):
+        """Tests the email allowlist is enabled elsewhere"""
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             expected_message = "Could not send email. "
-            "The email 'doesnotexist@igorville.com' does not exist within the whitelist."
+            "The email 'doesnotexist@igorville.com' does not exist within the allow list."
             with self.assertRaisesRegex(email.EmailSendingError, expected_message):
                 send_templated_email(
                     "test content",
