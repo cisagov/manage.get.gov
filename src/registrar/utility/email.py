@@ -98,16 +98,17 @@ def send_templated_email(  # noqa
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
+        sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
+        if blocked_to_addresses:
+            logger.warning("Some to addresses were removed: %s.", blocked_to_addresses)
+
         _can_send_email(sendable_to_addresses, bcc_address)
 
         # if we're not in prod, we need to check the allowlist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
-        sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
 
         if blocked_cc_addresses:
             logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
-        if blocked_to_addresses:
-            logger.warning("Some CC'ed addresses were removed: %s.", blocked_to_addresses)
 
     template = get_template(template_name)
     email_body = template.render(context=context)
@@ -202,9 +203,9 @@ def _can_send_email(to_addresses, bcc_address):
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         message = "Could not send email. The email '{}' does not exist within the allowlist."
-        for email in to_addresses:
-            if not AllowedEmail.is_allowed_email(email):
-                raise EmailSendingError(message.format(to_addresses))
+
+        if len(to_addresses) == 0:
+              raise EmailSendingError("Could not send email. There are 0 sendable to_addresses.")
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
