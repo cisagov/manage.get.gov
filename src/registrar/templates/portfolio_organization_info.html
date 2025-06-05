@@ -67,7 +67,11 @@
                 {% csrf_token %}
                 <p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>
                 <p class="margin-top-0">
+                    {% if portfolio.organization_name %}
                     {{ portfolio.organization_name }}
+                    {% else %}
+                    {{ portfolio.organization_name }}
+                    {% endif %}
                 </p>
                 {% input_with_errors form.address_line1 %}
                 {% input_with_errors form.address_line2 %}
@@ -81,7 +85,13 @@
                 </button>
             </form>
             {% else %}
-                <p class="margin-bottom-0">{{ portfolio.organization_name }}</p>
+                <p class="margin-bottom-0">
+                    {% if portfolio.organization_name %}
+                    {{ portfolio.organization_name }}
+                    {% else %}
+                    {{ portfolio.organization_name }}
+                    {% endif %}
+                </p>
                 {% if form.address_line1.value is not None %}
                 <p class="margin-top-0 margin-bottom-0">{{ form.address_line1.value }}</p>
                 {% endif %}
