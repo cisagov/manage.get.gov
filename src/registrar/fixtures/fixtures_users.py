@@ -191,6 +191,13 @@ class UserFixture:
             "email": "kim+dotgov@truss.works",
             "title": "Farmer",
         },
+        {
+            "username": "0f784268-a481-445e-9e37-ea2be43ce318",
+            "first_name": "Daisy",
+            "last_name": "Gutierrez",
+            "email": "dgutierrez@guydo.com",
+            "title": "Lima",
+        },
     ]
 
     STAFF = [
@@ -321,6 +328,12 @@ class UserFixture:
             "first_name": "Kim-Analyst",
             "last_name": "Allen-Analyst",
             "email": "kim+a@truss.works",
+        },
+        {
+            "username": "acb8e287-9b45-4993-8f76-12648b417b75",
+            "first_name": "Daisy-Analyst",
+            "last_name": "Gutierrez-Analyst",
+            "email": "daisy.gutierrez-ctr@ecstech.com",
         },
     ]
 
