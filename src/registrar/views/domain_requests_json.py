@@ -171,9 +171,7 @@ def _serialize_domain_request(request, domain_request, user):
     action_url_map = {
         "Edit": reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.id}),
         "Manage": reverse("domain-request-status", kwargs={"domain_request_pk": domain_request.id}),
-        # Change to domain-request-status-viewonly below once perms are fixed
-
-        "View": reverse("domain-request-status-viewonly-temporary-fix", kwargs={"domain_request_pk": domain_request.id}),
+        "View": reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": domain_request.id}),
     }
 
     svg_icon_map = {"Edit": "edit", "Manage": "settings", "View": "visibility"}
