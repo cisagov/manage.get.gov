@@ -270,7 +270,12 @@ urlpatterns = [
         views.DomainRequestStatus.as_view(),
         name="domain-request-status",
     ),
-    path(
+    path( #remove when perms are fixed for /viewonly below
+        "domain-request/<int:domain_request_pk>",
+        views.PortfolioDomainRequestStatusViewOnly.as_view(),
+        name="domain-request-status-viewonly-temporary-fix",
+    ),
+    path( #add /viewonly/ back in once the permissions are fixed
         "domain-request/viewonly/<int:domain_request_pk>",
         views.PortfolioDomainRequestStatusViewOnly.as_view(),
         name="domain-request-status-viewonly",
