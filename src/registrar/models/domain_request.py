@@ -1355,7 +1355,7 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_requesting_entity(self) -> bool:
         """Unlocks the requesting entity step. Used for the RequestingEntity page.
-        Returns true if requesting_entity_is_suborganization() and requesting_entity_is_portfolio().
+        Returns true if requesting_entity_is_suborganization() or requesting_entity_is_portfolio().
         Returns False otherwise.
         """
         if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():

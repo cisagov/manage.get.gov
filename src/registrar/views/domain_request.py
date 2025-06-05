@@ -115,7 +115,7 @@ class DomainRequestWizard(TemplateView):
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
+            self.domain_request.current_websites.exists() or self.domain_request.senior_official is not None
         ),
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
