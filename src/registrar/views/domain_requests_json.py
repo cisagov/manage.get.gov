@@ -131,7 +131,7 @@ def _serialize_domain_request(request, domain_request, user):
         DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         DomainRequest.DomainRequestStatus.WITHDRAWN,
     ]
-    
+
     # Statuses that should only allow viewing (not managing)
     view_only_statuses = [
         DomainRequest.DomainRequestStatus.REJECTED,

@@ -199,15 +199,21 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
             # Check action_url
             if self.domain_requests[i].status == DomainRequest.DomainRequestStatus.REJECTED:
-                action_url_expected = reverse("domain-request-status-viewonly-temporary-fix", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "domain-request-status-viewonly", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
             elif self.domain_requests[i].status in [
                 DomainRequest.DomainRequestStatus.STARTED,
                 DomainRequest.DomainRequestStatus.ACTION_NEEDED,
                 DomainRequest.DomainRequestStatus.WITHDRAWN,
             ]:
-                action_url_expected = reverse("edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
             else:
-                action_url_expected = reverse("domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
             self.assertEqual(action_url_expected, action_urls[i])
 
             # Check action_label
@@ -225,7 +231,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
             # Check svg_icon
             if self.domain_requests[i].status == DomainRequest.DomainRequestStatus.REJECTED:
-                svg_icon_expected = "visibility" 
+                svg_icon_expected = "visibility"
             elif self.domain_requests[i].status in [
                 DomainRequest.DomainRequestStatus.STARTED,
                 DomainRequest.DomainRequestStatus.ACTION_NEEDED,
