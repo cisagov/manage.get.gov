@@ -327,12 +327,8 @@ class TestPortfolio(WebTest):
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
-            self.assertContains(
-                response, '<h2>Organization admins</h2>'
-            )
-            self.assertContains(
-                response, '<h2>Organization name and address</h2>'
-            )
+            self.assertContains(response, "<h2>Organization admins</h2>")
+            self.assertContains(response, "<h2>Organization name and address</h2>")
             self.assertContains(
                 response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
             )
@@ -355,11 +351,12 @@ class TestPortfolio(WebTest):
 
         with override_flag("organization_feature", active=True):
             org_info_response = self.app.get(reverse("organization-info"))
+            print(org_info_response)
             # We don't use the label "Organization name" in the view-only view
             self.assertNotContains(
-            org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-        )
-        self.assertContains(org_info_response, '<p class="margin-bottom-0">Hotel California</p>')
+                org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+            )
+        self.assertContains(org_info_response, "<address>Hotel California</address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_include_breadcrumb(self):
