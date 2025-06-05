@@ -121,14 +121,14 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
 class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
     interagency_initiative_details = forms.CharField(
         label="interagency_initiative_details",
-        widget=forms.Textarea(attrs={"aria-label": "Name the agencies that will be involved in this initiative."}),
+        widget=forms.Textarea(attrs={"aria-label": "Provide details on the nature of the interagency initiative."}),
         validators=[
             MaxLengthValidator(
                 2000,
                 message="Response must be less than 2000 characters.",
             )
         ],
-        error_messages={"required": "Name the agencies that will be involved in this initiative."},
+        error_messages={"required": "Provide details on the nature of the interagency initiative."},
     )
 
 
