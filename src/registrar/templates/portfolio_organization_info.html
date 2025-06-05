@@ -49,8 +49,7 @@
             </p>
             {% endif %}
             <h2>Organization admins</h2>
-            
-            <ul class="usa-list usa-list--unstyled margin-top-0 margin-bottom-0">
+            <ul class="usa-list usa-list--unstyled margin-top-2 margin-bottom-0">
             {% for admin in portfolio_admins %}
                 <li>
                     <p class="margin-bottom-0">{{admin.first_name}} {{admin.last_name}}</p>
@@ -58,7 +57,7 @@
                 </li>    
             {% endfor %}
             </ul>
-
+            
             <h2>Organization name and address</h2>
             
             {% if has_edit_portfolio_permission %}
