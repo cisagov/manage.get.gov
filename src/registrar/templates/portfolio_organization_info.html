@@ -85,30 +85,9 @@
                 </button>
             </form>
             {% else %}
-                <p class="margin-bottom-0">
-                    {% if portfolio.organization_name %}
-                    {{ portfolio.organization_name }}
-                    {% else %}
-                    {{ portfolio.organization_name }}
-                    {% endif %}
-                </p>
-                {% if form.address_line1.value is not None %}
-                <p class="margin-top-0 margin-bottom-0">{{ form.address_line1.value }}</p>
-                {% endif %}
-                {% if form.address_line2.value is not None %}
-                <p class="margin-top-0 margin-bottom-0">{{ form.address_line2.value }}</p>
-                {% endif %}
-                <p class="margin-top-0 margin-bottom-0">
-                    {% if form.city.value is not None %}
-                    <span>{{ form.city.value }},</span>
-                    {% endif %}
-                    {% if form.state_territory.value is not None %}
-                     <span>{{ form.state_territory.value }}</span>
-                    {% endif %}
-                </p>
-                {% if form.zipcode.value is not None %}
-                <p class="margin-top-0 margin-bottom-0">{{ form.zipcode.value }}</p>
-                {% endif %}
+            <div class="margin-top-2">
+            {% include "includes/organization_address.html" with organization=portfolio %}
+            </div>
             {% endif %}
         </div>
     </div>
