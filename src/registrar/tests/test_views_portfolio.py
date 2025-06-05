@@ -3456,7 +3456,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Verify successful submission by checking we're on the next page
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
@@ -3513,7 +3513,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name__isnull=True, sub_organization=self.suborganization
         ).exists()
@@ -3549,7 +3549,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name__isnull=True,
             sub_organization__isnull=True,
@@ -3584,7 +3584,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name=self.portfolio.organization_name,
         ).exists()
