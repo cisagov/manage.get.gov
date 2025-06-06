@@ -667,7 +667,7 @@ class OtherContactsForm(RegistrarForm):
         label="Title or role",
         error_messages={
             "required": (
-                "Enter the title or role in your organization of this contact (e.g., Chief Information Officer)."
+                "Enter the title or role of this contact in your organization (e.g., Chief Information Officer)."
             )
         },
     )
