@@ -994,7 +994,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
 
     def get_success_url(self):
         """Redirect to the overview page for the portfolio."""
-        return reverse("organization")
+        return reverse("organization-info")
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
@@ -1065,7 +1065,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
 
     def get_success_url(self):
         """Redirect to the overview page for the portfolio."""
-        return reverse("senior-official")
+        return reverse("organization-senior-official")
 
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
