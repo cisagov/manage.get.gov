@@ -386,7 +386,7 @@ urlpatterns = [
     path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
     path(
         "set-active-portfolio/<int:portfolio_pk>", 
-        views.PortfolioOrganizationsView.as_view(http_method_names=['post']), 
+        views.PortfolioOrganizationsView.set_portfolio_in_session, 
         name="set-active-portfolio"
     ),
 ]

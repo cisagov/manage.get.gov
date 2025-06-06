@@ -26,8 +26,7 @@
             <a
                 class="usa-button usa-button--unstyled"
                 type="submit"
-                href=""
-                onclick="document.getElementById('set-portfolio-form').submit();return false;"
+                href="{% url 'set-active-portfolio' portfolio_pk=user_portfolio_permission.portfolio_id %}"
             >
                 <div class="usa-card__container margin-left-0">
                     <div class="usa-card__header">

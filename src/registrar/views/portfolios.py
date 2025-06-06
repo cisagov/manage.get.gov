@@ -1180,9 +1180,9 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationsView(View):
+class PortfolioOrganizationsView(DetailView, View):
     template_name = "portfolio_organizations.html"
-    base_view_name = "your-portfolios"
+    context_object_name = "portfolio"
     pk_url_kwarg = "portfolio_pk"
 
     def get(self, request):
@@ -1198,11 +1198,24 @@ class PortfolioOrganizationsView(View):
 
         return context
 
-    def post(self, request):
+    def set_portfolio_in_session(self, request, portfolio_pk):
         """
         Handles updating active portfolio in session.
         """
+        portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
         request.session["portfolio"] = portfolio
 
         logger.info("Successfully set active portfolio to ", portfolio)
-        return HttpResponseRedirect(reverse("domains"))
+        # return HttpResponseRedirect(reverse("domains"))
+        return self._handle_success_response(request, portfolio)
+    
+    def _handle_success_response(self, request, portfolio):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You set your active portfolio to {portfolio}."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        messages.success(request, success_message)
+        return redirect(reverse("domains"))
+        
