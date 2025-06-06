@@ -6,7 +6,7 @@ from .utility.time_stamped_model import TimeStampedModel
 
 class AllowedEmail(TimeStampedModel):
     """
-    AllowedEmail is a whitelist for email addresses that we can send to
+    AllowedEmail is an allow list for email addresses that we can send to
     in non-production environments.
     """
 
@@ -19,7 +19,7 @@ class AllowedEmail(TimeStampedModel):
 
     @classmethod
     def is_allowed_email(cls, email):
-        """Given an email, check if this email exists within our AllowEmail whitelist"""
+        """Given an email, check if this email exists within our AllowEmail allow list"""
 
         if not email:
             return False
@@ -27,7 +27,7 @@ class AllowedEmail(TimeStampedModel):
         # Split the email into a local part and a domain part
         local, domain = email.split("@")
 
-        # If the email exists within the whitelist, then do nothing else.
+        # If the email exists within the allow list, then do nothing else.
         email_exists = cls.objects.filter(email__iexact=email).exists()
         if email_exists:
             return True
