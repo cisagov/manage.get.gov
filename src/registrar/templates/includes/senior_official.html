@@ -39,15 +39,15 @@
     </p>
     <div class="desktop:margin-top-4">
         {% if form.full_name.value is not None %}
-            {% include "includes/input_read_only.html" with field=form.full_name %}
+        <p class="margin-top-0 margin-bottom-0">{{ form.full_name.value }}</p>
         {% endif %}
 
         {% if form.title.value is not None %}
-            {% include "includes/input_read_only.html" with field=form.title %}
+        <p class="margin-top-0 margin-bottom-0">{{ form.title.value }}</p>
         {% endif %}
 
         {% if form.email.value is not None %}
-            {% include "includes/input_read_only.html" with field=form.email %}
+        <p class="margin-top-0 margin-bottom-0">{{ form.email.value }}</p>
         {% endif %}
     </div>
 {% endif %}
