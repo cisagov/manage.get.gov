@@ -102,7 +102,7 @@ def send_templated_email(  # noqa
 
         sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
         if blocked_to_addresses:
-            logger.warning("Some CC'ed addresses were removed: %s.", blocked_to_addresses)
+            logger.warning("Some TO addresses were removed: %s.", blocked_to_addresses)
 
         # if we're not in prod, we need to check the allowlist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
@@ -202,8 +202,11 @@ def _can_send_email(to_addresses, bcc_address):
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         message = "Could not send email. The email '{}' does not exist within the allowlist."
-        if len(to_addresses) == 0:
-            raise EmailSendingError("Could not send email. There are 0 sendable to_addresses.")
+        for email in to_addresses:
+            if not AllowedEmail.is_allowed_email(email):
+                raise EmailSendingError(message.format(to_addresses))
+            # if len(to_addresses) == 0:
+            #     raise EmailSendingError("Could not send email. There are 0 sendable to_addresses.")
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
