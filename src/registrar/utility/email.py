@@ -76,7 +76,7 @@ def send_templated_email(  # noqa
     if context is None:
         context = {}
 
-    to_addresses: list[str] = _normalize_and_flatten_email_list(to_addresses)
+    to_addresses = _normalize_and_flatten_email_list(to_addresses)
 
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)
@@ -212,7 +212,7 @@ def _can_send_email(to_addresses, bcc_address):
             raise EmailSendingError(message.format(bcc_address))
 
 
-def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
+def get_sendable_addresses(addresses: list[str] | str) -> tuple[list[str], list[str]]:
     """Checks whether a list of addresses can be sent to.
 
     Returns: a lists of all provided addresses that are ok to send to and a list of addresses that were blocked.
