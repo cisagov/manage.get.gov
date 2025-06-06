@@ -83,7 +83,6 @@ class DomainRequestWizard(TemplateView):
     # Titles for the portfolio context
     PORTFOLIO_TITLES = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
-        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
         PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
@@ -134,9 +133,6 @@ class DomainRequestWizard(TemplateView):
 
     PORTFOLIO_UNLOCKING_STEPS = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
-        PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.from_model("unlock_requesting_entity", False)
-        ),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         PortfolioDomainRequestStep.PURPOSE: lambda self: self.domain_request.purpose is not None,
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: lambda self: self.domain_request.anything_else is not None,
@@ -615,8 +611,6 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
     forms = [
-        feb.WorkingWithEOPYesNoForm,
-        feb.EOPContactForm,
         feb.FEBAnythingElseYesNoForm,
         forms.PortfolioAnythingElseForm,
     ]
@@ -631,37 +625,29 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
         Validates the forms for portfolio additional details.
 
         Expected order of forms_list:
-            0: WorkingWithEOPYesNoForm
-            1: EOPContactForm
-            2: FEBAnythingElseYesNoForm
-            3: PortfolioAnythingElseForm
+            0: FEBAnythingElseYesNoForm
+            1: PortfolioAnythingElseForm
         """
+        feb_anything_else_yes_no_form = forms[0]
+        portfolio_anything_else_form = forms[1]
+
         if not self.requires_feb_questions():
-            for i in range(3):
+            for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return forms[3].is_valid()
-        eop_forms_valid = True
-        if not forms[0].is_valid():
-            # If the user isn't working with EOP, don't validate the EOP contact form
-            forms[1].mark_form_for_deletion()
-            eop_forms_valid = False
-        if forms[0].cleaned_data.get("working_with_eop"):
-            eop_forms_valid = forms[1].is_valid()
-        else:
-            forms[1].mark_form_for_deletion()
+            return feb_anything_else_yes_no_form.is_valid()
         anything_else_forms_valid = True
-        if not forms[2].is_valid():
-            forms[3].mark_form_for_deletion()
+        if not portfolio_anything_else_form.is_valid():
+            feb_anything_else_yes_no_form.mark_form_for_deletion()
             anything_else_forms_valid = False
-        if forms[2].cleaned_data.get("has_anything_else_text"):
-            forms[3].fields["anything_else"].required = True
-            forms[3].fields["anything_else"].error_messages[
+        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
+            feb_anything_else_yes_no_form.fields["anything_else"].required = True
+            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
                 "required"
             ] = "Please provide additional details you'd like us to know. \
                 If you have nothing to add, select 'No'."
-            anything_else_forms_valid = forms[3].is_valid()
-        return eop_forms_valid and anything_else_forms_valid
+            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
+        return anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -957,14 +943,9 @@ class Requirements(DomainRequestWizard):
         # Pass the is_federal context to the form
         for form in forms_list:
             if isinstance(form, forms.RequirementsForm):
-                if self.requires_feb_questions():
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain."  # noqa: E501
-                    )
-                else:
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
-                    )
+                form.fields["is_policy_acknowledged"].label = (
+                    "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
+                )
 
         return forms_list
 
