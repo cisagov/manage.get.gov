@@ -91,8 +91,7 @@ class Command(BaseCommand):
 
                 context = {
                     "domain": domain,
-                    # Remove "0 if send_all else" after testing
-                    "days_remaining": 0 if send_all else days_remaining,
+                    "days_remaining": days_remaining,
                     "expiration_date": domain.expiration_date,
                 }
 
@@ -134,7 +133,7 @@ class Command(BaseCommand):
                     logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
                     all_emails_sent = False
 
-            if all_emails_sent:
-                self.stdout.write(self.style.SUCCESS("All domain expiration emails sent successfully."))
-            else:
-                self.stderr.write(self.style.ERROR("Some domain expiration emails failed to send."))
+        if all_emails_sent:
+            self.stdout.write(self.style.SUCCESS("All domain expiration emails sent successfully."))
+        else:
+            self.stderr.write(self.style.ERROR("Some domain expiration emails failed to send."))
