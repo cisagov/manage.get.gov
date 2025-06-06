@@ -48,7 +48,7 @@ class UserProfileForm(forms.ModelForm):
         self.fields["first_name"].label = "First name / given name"
         self.fields["middle_name"].label = "Middle name (optional)"
         self.fields["last_name"].label = "Last name / family name"
-        self.fields["title"].label = "Title or role in your organization"
+        self.fields["title"].label = "Title or role"
         self.fields["email"].label = "Organization email"
 
         # Set custom error messages
@@ -91,7 +91,7 @@ class FinishSetupProfileForm(UserProfileForm):
 
         # Set custom form label for email
         self.fields["email"].label = "Organization email"
-        self.fields["title"].label = "Title or role in your organization"
+        self.fields["title"].label = "Title or role"
 
         # Define the "full_name" value
         full_name = None
