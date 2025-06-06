@@ -2845,8 +2845,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "cisa_representative_first_name",
                     "cisa_representative_last_name",
                     "cisa_representative_email",
-                    "eop_stakeholder_first_name",
-                    "eop_stakeholder_last_name",
                 ]
             },
         ),
@@ -3065,8 +3063,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "feb_purpose_choice",
             "time_frame_details",
             "interagency_initiative_details",
-            "eop_stakeholder_first_name",
-            "eop_stakeholder_last_name",
         ]
 
         org_fields = [
