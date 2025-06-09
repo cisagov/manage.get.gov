@@ -152,6 +152,21 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
     def test_get_domain_requests_json_authenticated(self):
         """Test that domain requests are returned properly for an authenticated user."""
+        deletable_statuses = [
+            DomainRequest.DomainRequestStatus.STARTED,
+            DomainRequest.DomainRequestStatus.WITHDRAWN,
+        ]
+        
+        editable_statuses = [
+            DomainRequest.DomainRequestStatus.STARTED,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.WITHDRAWN,
+        ]
+        
+        view_only_statuses = [
+            DomainRequest.DomainRequestStatus.REJECTED,
+        ]
+
         response = self.app.get(reverse("get_domain_requests_json"))
         self.assertEqual(response.status_code, 200)
         data = response.json
@@ -191,55 +206,25 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             self.assertEqual(self.domain_requests[i].id, ids[i])
 
             # Check is_deletable
-            is_deletable_expected = self.domain_requests[i].status in [
-                DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.WITHDRAWN,
-            ]
+            is_deletable_expected = self.domain_requests[i].status in deletable_statuses
             self.assertEqual(is_deletable_expected, is_deletables[i])
 
             # Check action_url
-            if self.domain_requests[i].status == DomainRequest.DomainRequestStatus.REJECTED:
-                action_url_expected = reverse(
-                    "domain-request-status-viewonly", kwargs={"domain_request_pk": self.domain_requests[i].id}
-                )
-            elif self.domain_requests[i].status in [
-                DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-                DomainRequest.DomainRequestStatus.WITHDRAWN,
-            ]:
-                action_url_expected = reverse(
-                    "edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id}
-                )
-            else:
-                action_url_expected = reverse(
-                    "domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id}
-                )
-            self.assertEqual(action_url_expected, action_urls[i])
-
-            # Check action_label
-            if self.domain_requests[i].status == DomainRequest.DomainRequestStatus.REJECTED:
+            if self.domain_requests[i].status in view_only_statuses:
+                action_url_expected = reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": self.domain_requests[i].id})
                 action_label_expected = "View"
-            elif self.domain_requests[i].status in [
-                DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-                DomainRequest.DomainRequestStatus.WITHDRAWN,
-            ]:
-                action_label_expected = "Edit"
-            else:
-                action_label_expected = "Manage"
-            self.assertEqual(action_label_expected, action_labels[i])
-
-            # Check svg_icon
-            if self.domain_requests[i].status == DomainRequest.DomainRequestStatus.REJECTED:
                 svg_icon_expected = "visibility"
-            elif self.domain_requests[i].status in [
-                DomainRequest.DomainRequestStatus.STARTED,
-                DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-                DomainRequest.DomainRequestStatus.WITHDRAWN,
-            ]:
+            elif self.domain_requests[i].status in editable_statuses:
+                action_url_expected = reverse("edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_label_expected = "Edit"
                 svg_icon_expected = "edit"
             else:
+                action_url_expected = reverse("domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_label_expected = "Manage"
                 svg_icon_expected = "settings"
+                
+            self.assertEqual(action_url_expected, action_urls[i])
+            self.assertEqual(action_label_expected, action_labels[i])
             self.assertEqual(svg_icon_expected, svg_icons[i])
 
     def test_get_domain_requests_json_search(self):
