@@ -156,13 +156,13 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.WITHDRAWN,
         ]
-        
+
         editable_statuses = [
             DomainRequest.DomainRequestStatus.STARTED,
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             DomainRequest.DomainRequestStatus.WITHDRAWN,
         ]
-        
+
         view_only_statuses = [
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
@@ -211,18 +211,24 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
             # Check action_url
             if self.domain_requests[i].status in view_only_statuses:
-                action_url_expected = reverse("domain-request-status-viewonly", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "domain-request-status-viewonly", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
                 action_label_expected = "View"
                 svg_icon_expected = "visibility"
             elif self.domain_requests[i].status in editable_statuses:
-                action_url_expected = reverse("edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "edit-domain-request", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
                 action_label_expected = "Edit"
                 svg_icon_expected = "edit"
             else:
-                action_url_expected = reverse("domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id})
+                action_url_expected = reverse(
+                    "domain-request-status", kwargs={"domain_request_pk": self.domain_requests[i].id}
+                )
                 action_label_expected = "Manage"
                 svg_icon_expected = "settings"
-                
+
             self.assertEqual(action_url_expected, action_urls[i])
             self.assertEqual(action_label_expected, action_labels[i])
             self.assertEqual(svg_icon_expected, svg_icons[i])
