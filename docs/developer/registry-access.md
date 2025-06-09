@@ -104,13 +104,15 @@ response = registry._client.transport.receive()
 
 This is helpful for debugging situations where epplib is not correctly or fully parsing the XML returned from the registry.
 
-### Adding in a expiring soon domain
-The below scenario is if you are NOT in org model mode (`organization_feature` waffle flag is off).
+### Adding in an expiring soon or expired domain
+
+Expiration dates created by fixtures in sandboxes are not accurate (it resets to the expiration date to a year from 'today').
+In order to view an expiring or expired domain, we need to pull a record from staging and use it on the desired sandbox. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to add a domain from staging sandbox into another sandbox and how to 
 
 1. Go to the `staging` sandbox and to `/admin`
-2. Go to Domains and find a domain that is actually expired by sorting the Expiration Date column
+2. Go to Domains and find a domain that is actually expired or expiring soon by sorting the Expiration Date column
 3. Click into the domain to check the expiration date
-4. Click into Manage Domain to double check the expiration date as well
+4. Click into Manage Domain to double check the expiration date as well (this expiration date is the source of truth)
 5. Now hold onto that domain name, and save it for the command below
 
 6. In a terminal, run these commands:
@@ -118,16 +120,14 @@ The below scenario is if you are NOT in org model mode (`organization_feature` w
 cf ssh getgov-<your-intials>
 /tmp/lifecycle/shell
 ./manage.py shell
-from registrar.models import Domain, DomainInvitation
-from registrar.models import User
-user = User.objects.filter(first_name="<your-first-name>")
+from registrar.models import Domain
 domain = Domain.objects.get_or_create(name="<that-domain-here>")
 ```
 
-7. Go back to `/admin` and create Domain Information for that domain you just added in via the terminal 
+7. Go back to `/admin` in your sandbox and create Domain Information for that domain you just added in via the terminal (specifically add a portfolio for org model)
 8. Go to Domain to find it 
 9. Click Manage Domain
 10. Add yourself as domain manager
 11. Go to the Registrar page and you should now see the expiring domain
 
-If you want to be in the org model mode, turn the `organization_feature` waffle flag on, and add that domain via Django Admin to a portfolio to be able to view it.
+To view the domain in the org model, it must be associated with a portfolio and viewed from within that portfolio. If the domain is not already part of a portfolio, in Django Admin, go to Domains, find the domain, and update the "Requested by - Portfolio" field to a portfolio of your choice.
