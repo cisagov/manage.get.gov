@@ -935,6 +935,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         context = super().get_context_data(**kwargs)
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        context["portfolio_admins"] = portfolio.portfolio_admin_users
         return context
 
     def get_object(self, queryset=None):
