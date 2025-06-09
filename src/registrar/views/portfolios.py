@@ -993,7 +993,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
-        """Redirect to the overview page for the portfolio."""
+        """Redirect to the portfolio's overview page."""
         return reverse("organization")
 
 
