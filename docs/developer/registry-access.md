@@ -104,10 +104,10 @@ response = registry._client.transport.receive()
 
 This is helpful for debugging situations where epplib is not correctly or fully parsing the XML returned from the registry.
 
-### Adding in an expiring soon or expired domain
+### Adding in an 'expiring soon' or 'expired' domain
 
 Expiration dates created by fixtures in sandboxes are not accurate (it resets to the expiration date to a year from 'today').
-In order to view an expiring or expired domain, we need to pull a record from staging and use it on the desired sandbox. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to add a domain from staging sandbox into another sandbox and how to 
+In order to view an expiring or expired domain, we need to pull a record from staging and use it on the desired sandbox. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to add a domain from staging sandbox into another sandbox and how to be able to view the domain. As a domain manager you will be able to view the renewal form.
 
 1. Go to the `staging` sandbox and to `/admin`
 2. Go to Domains and find a domain that is actually expired or expiring soon by sorting the Expiration Date column
