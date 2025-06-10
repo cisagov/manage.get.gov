@@ -23,17 +23,17 @@ class UserFixture:
 
     ADMINS = [
         {
+            "username": "1f8f8556-99d3-4b87-abbc-2fc204d89787",
+            "first_name": "Aditi",
+            "last_name": "Green",
+            "title": "Engineer",
+            "email": "aditi.green@ecstech.com",
+        },
+        {
             "username": "3e8613e2-e1f8-404d-a692-e5dc077828b2",
             "first_name": "Abe",
             "last_name": "Alam",
             "email": "abraham.alam@ecstech.com",
-        },
-        {
-            "username": "aad084c3-66cc-4632-80eb-41cdf5c5bcbf",
-            "first_name": "Aditi",
-            "last_name": "Green",
-            "email": "aditidevelops+01@gmail.com",
-            "title": "Positive vibes",
         },
         {
             "username": "be17c826-e200-4999-9389-2ded48c43691",
@@ -191,20 +191,28 @@ class UserFixture:
             "email": "kim+dotgov@truss.works",
             "title": "Farmer",
         },
+        {
+            "username": "0f784268-a481-445e-9e37-ea2be43ce318",
+            "first_name": "Daisy",
+            "last_name": "Gutierrez",
+            "email": "dgutierrez@guydo.com",
+            "title": "Lima",
+        },
     ]
 
     STAFF = [
+        {
+            "username": "32275d92-eff2-4df4-9b90-4963056c850",
+            "first_name": "Aditi",
+            "last_name": "Green",
+            "title": "Aditi-Analyst",
+            "email": "aditi.green01@ecstech.com",
+        },
         {
             "username": "acfdf02c-2438-4e66-b219-73104b2e3153",
             "first_name": "Abe-Analyst",
             "last_name": "Alam-Analyst",
             "email": "abraham.alam+1@ecstech.com",
-        },
-        {
-            "username": "ffec5987-aa84-411b-a05a-a7ee5cbcde54",
-            "first_name": "Aditi-Analyst",
-            "last_name": "Green-Analyst",
-            "email": "aditidevelops+02@gmail.com",
         },
         {
             "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
@@ -321,6 +329,12 @@ class UserFixture:
             "first_name": "Kim-Analyst",
             "last_name": "Allen-Analyst",
             "email": "kim+a@truss.works",
+        },
+        {
+            "username": "acb8e287-9b45-4993-8f76-12648b417b75",
+            "first_name": "Daisy-Analyst",
+            "last_name": "Gutierrez-Analyst",
+            "email": "daisy.gutierrez-ctr@ecstech.com",
         },
     ]
 

@@ -935,6 +935,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         context = super().get_context_data(**kwargs)
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        context["portfolio_admins"] = portfolio.portfolio_admin_users
         return context
 
     def get_object(self, queryset=None):
@@ -992,8 +993,8 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
-        """Redirect to the overview page for the portfolio."""
-        return reverse("organization")
+        """Redirect to the org info page for the portfolio."""
+        return reverse("organization-info")
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
@@ -1064,7 +1065,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
 
     def get_success_url(self):
         """Redirect to the overview page for the portfolio."""
-        return reverse("senior-official")
+        return reverse("organization-senior-official")
 
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
