@@ -445,7 +445,6 @@ class SeniorOfficialForm(RegistrarForm):
         label="Last name / family name",
         error_messages={"required": ("Enter the last name / family name of your senior official.")},
     )
-    
     title = forms.CharField(
         label="Title or role",
         error_messages={
