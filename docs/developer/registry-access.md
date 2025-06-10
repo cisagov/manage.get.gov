@@ -106,8 +106,11 @@ This is helpful for debugging situations where epplib is not correctly or fully 
 
 ### Adding in an 'expiring soon' or 'expired' domain
 
+#### Overview
 Expiration dates created by fixtures in sandboxes are not accurate (it resets to the expiration date to a year from 'today').
 In order to view an expiring or expired domain, we need to pull a record from staging and use it on the desired sandbox. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to add a domain from staging sandbox into another sandbox and how to be able to view the domain. As a domain manager you will be able to view the renewal form.
+
+#### Find an expired or expiring domain record
 
 1. Go to the `staging` sandbox and to `/admin`
 2. Go to Domains and find a domain that is actually expired or expiring soon by sorting the Expiration Date column
@@ -115,19 +118,20 @@ In order to view an expiring or expired domain, we need to pull a record from st
 4. Click into Manage Domain to double check the expiration date as well (this expiration date is the source of truth)
 5. Now hold onto that domain name, and save it for the command below
 
+#### Duplicate the domain into your sandbox environment of choice and assign to manager and portfolio
+
 6. In a terminal, run these commands:
 ```
-cf ssh getgov-<your-intials>
+cf ssh getgov-<environment-name>
 /tmp/lifecycle/shell
 ./manage.py shell
 from registrar.models import Domain
 domain = Domain.objects.get_or_create(name="<that-domain-here>")
 ```
 
-7. Go back to `/admin` in your sandbox and create Domain Information for that domain you just added in via the terminal (specifically add a portfolio for org model)
-8. Go to Domain to find it 
-9. Click Manage Domain
-10. Add yourself as domain manager
-11. Go to the Registrar page and you should now see the expiring domain
+7. From `/admin` in your sandbox environment, locate the Domain record page of the domain you just created. In Domain Information, add a "creator" and "portfolio" for the org model. Note: To view the domain in the org model, it must be associated with a portfolio and viewed from within that portfolio. 
+9. Click Manage Domain which will take you to the app
+10. In the Domain Managers section, add yourself as domain manager (Alternatively, you can assign yourself as a Domain Manager in `/admin`. Go to the User domain roles model, click the "Add user domain role +" button, and then add yourself to the domain as a manager.)
+11. You should now be able to access your expiring domain in the registrar.
 
-To view the domain in the org model, it must be associated with a portfolio and viewed from within that portfolio. If the domain is not already part of a portfolio, in Django Admin, go to Domains, find the domain, and update the "Requested by - Portfolio" field to a portfolio of your choice.
+
