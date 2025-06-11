@@ -4800,7 +4800,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def suborganizations(self, obj: models.Portfolio):
         """Returns a list of links for each related suborg"""
-        queryset = obj.get_suborganizations()
+        queryset = obj.get_suborganizations().order_by('name')
         return get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
