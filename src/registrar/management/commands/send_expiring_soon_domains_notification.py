@@ -27,6 +27,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """
+        How to run it in dry run mode:
+        ./manage.py send_expiring_soon_domains_notification --dryrun
+        """
         dryrun = options.get("dryrun", False)
 
         all_emails_sent = True
