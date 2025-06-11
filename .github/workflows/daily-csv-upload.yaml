@@ -39,4 +39,4 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_REPORT_ENV }}
           cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV }} --command 'python manage.py email_current_metadata_report' --name metadata"
-          
+
