@@ -403,7 +403,7 @@ class DomainInformationAdminForm(forms.ModelForm):
                 DomainInformation._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
             ),
             "sub_organization": AutocompleteSelectWithPlaceholder(
-                DomainInformation._meta.get_field("sub_organization"),
+                DomainInformation._meta.get_field("sub_organization").order_by("name"),
                 admin.site,
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
