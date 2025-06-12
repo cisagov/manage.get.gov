@@ -411,7 +411,7 @@ class DomainInformationAdminForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["sub_organization"].queryset = models.Suborganization.objects.order_by("name")
+        self.fields["sub_organization"].queryset = Suborganization.objects.order_by("name")
 
 
 class DomainInformationInlineForm(forms.ModelForm):
