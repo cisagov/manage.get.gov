@@ -2039,7 +2039,7 @@ class DomainInformationResource(resources.ModelResource):
 
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Customize domain information admin class."""
-    ordering = ['suborganization']
+    ordering = ['sub_organization']
 
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
