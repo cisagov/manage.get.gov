@@ -27,7 +27,7 @@ from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
+from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation, Suborganization
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -403,11 +403,15 @@ class DomainInformationAdminForm(forms.ModelForm):
                 DomainInformation._meta.get_field("portfolio"), admin.site, attrs={"data-placeholder": "---------"}
             ),
             "sub_organization": AutocompleteSelectWithPlaceholder(
-                DomainInformation._meta.get_field("sub_organization").order_by("name"),
+                DomainInformation._meta.get_field("sub_organization"),
                 admin.site,
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["sub_organization"].queryset = models.Suborganization.objects.order_by("name")
 
 
 class DomainInformationInlineForm(forms.ModelForm):
