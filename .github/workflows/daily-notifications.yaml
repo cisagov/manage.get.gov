@@ -20,5 +20,5 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_NOTIFICATIONS }}
-          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIOS }} --command 'python manage.py send_expiring_soon_domains_notification' --name expiringnotif"
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS }} --command 'python manage.py send_expiring_soon_domains_notification' --name expiringnotif"
 
