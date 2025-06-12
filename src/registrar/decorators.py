@@ -396,6 +396,7 @@ def _is_staff_managing_domain(request, **kwargs):
     # and it is in a valid status
     return True
 
+
 def _has_domain_requests_view_all(user, request, domain_request_pk):
     """
     Determines if the user has view-all permission for domain requests.
@@ -408,15 +409,14 @@ def _has_domain_requests_view_all(user, request, domain_request_pk):
     # Portfolio-based access
     if user.is_org_user(request) and portfolio:
         has_perm = user.has_view_all_domain_requests_portfolio_permission(portfolio)
-        exists   = _domain_request_exists_under_portfolio(portfolio, domain_request_pk)
+        exists = _domain_request_exists_under_portfolio(portfolio, domain_request_pk)
         logger.debug(f"Portfolio check → perm={has_perm}, exists={exists}")
         return has_perm and exists
 
     # No PK means “free” view
     if not domain_request_pk:
         logger.warning(
-            "_has_domain_requests_view_all: missing domain_request_pk; "
-            "assuming view-all is allowed in this context."
+            "_has_domain_requests_view_all: missing domain_request_pk; " "assuming view-all is allowed in this context."
         )
         return True
 
@@ -428,9 +428,7 @@ def _has_domain_requests_view_all(user, request, domain_request_pk):
         return False
 
     can_view = _can_view_non_portfolio(user, dr)
-    logger.debug(
-        f"Non-portfolio check for user={user}, pk={domain_request_pk} → {can_view}"
-    )
+    logger.debug(f"Non-portfolio check for user={user}, pk={domain_request_pk} → {can_view}")
     return can_view
 
 
