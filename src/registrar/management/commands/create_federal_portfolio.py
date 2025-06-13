@@ -12,7 +12,6 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import count_capitals, normalize_string
 from django.db.models import F, Q
-from itertools import groupby
 
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
