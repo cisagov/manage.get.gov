@@ -12,6 +12,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import count_capitals, normalize_string
 from django.db.models import F, Q
+from itertools import groupby
 
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
@@ -206,7 +207,10 @@ class Command(BaseCommand):
         # == Handle domains and requests == #
         for portfolio_org_name, portfolio in portfolios_to_use_dict.items():
             federal_agency = agencies_dict.get(portfolio_org_name)
-            suborgs = portfolio.portfolio_suborganizations.in_bulk(field_name="name")
+            # suborgs = portfolio.portfolio_suborganizations.in_bulk(field_name="name")
+            suborgs = {}
+            for suborg in portfolio.portfolio_suborganizations.all():
+                suborgs[suborg.name] = suborg
 
             if parse_domains:
                 updated_domains = self.update_domains(portfolio, federal_agency, suborgs, debug)
