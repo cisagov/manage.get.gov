@@ -1,11 +1,14 @@
 import logging
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
-from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, grant_access
+from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, IS_PORTFOLIO_MEMBER, grant_access
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
 from registrar.utility.constants import BranchChoices
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -152,3 +155,16 @@ def get_rejection_email_for_user_json(request):
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
     email = get_rejection_reason_default_email(domain_request, reason)
     return JsonResponse({"email": email}, status=200)
+
+@grant_access(IS_PORTFOLIO_MEMBER, IS_FULL_ACCESS)
+def set_portfolio_in_session(request, portfolio_pk):
+    """
+    Handles updating active portfolio in session.
+    """
+    portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
+    request.session["portfolio"] = portfolio
+
+    logger.info("Successfully set active portfolio to ", portfolio)
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": success_message}, status=200)
+    return redirect(reverse("domains"))
