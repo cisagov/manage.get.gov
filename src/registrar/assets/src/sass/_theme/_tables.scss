@@ -55,34 +55,34 @@ th {
     word-break: break-word;
   }
 
-  @include at-media(mobile-lg) {
+  // @include at-media(mobile-lg) {
 
-    margin-top: units(1);
+  margin-top: units(1);
 
-    tr {
-      border: none;
-    }
+  tr {
+    border: none;
+  }
 
-    tr:not(.hide-td-borders):not(:last-child) td,
-    tr:not(.hide-td-borders):not(:last-child) th {
-      border-bottom: 1px solid color('base-lighter');
-    }
+  tr:not(.hide-td-borders):not(:last-child) td,
+  tr:not(.hide-td-borders):not(:last-child) th {
+    border-bottom: 1px solid color('base-lighter');
+  }
 
-    thead th,
-    thead th[aria-sort] {
-      color: color('primary-darker');
-      border-bottom: 2px solid color('base-light');
-    }
+  thead th,
+  thead th[aria-sort] {
+    color: color('primary-darker');
+    border-bottom: 2px solid color('base-light');
+  }
 
-    tbody tr:last-of-type {
-      td, th {
-        border-bottom: 0;
-      }
-    }
-
+  tbody tr:last-of-type {
     td, th {
-      padding: units(2) units(4) units(2) 0;
+      border-bottom: 0;
     }
+  }
+
+  td, th {
+    padding: units(2) units(4) units(2) 0;
+  }
 
     // Hack fix to the overly specific selector above that broke utility class usefulness
     .padding-right-105 {
