@@ -55,7 +55,7 @@ th {
     word-break: break-word;
   }
 
-  @include at-media(mobile-lg) {
+  // @include at-media(mobile-lg) {
 
     margin-top: units(1);
 
@@ -92,7 +92,7 @@ th {
     thead tr:first-child th:first-child {
       border-top: none;
     }
-  }
+  // }
 
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
