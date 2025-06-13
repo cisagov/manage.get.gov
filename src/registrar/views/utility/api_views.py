@@ -156,7 +156,7 @@ def get_rejection_email_for_user_json(request):
     email = get_rejection_reason_default_email(domain_request, reason)
     return JsonResponse({"email": email}, status=200)
 
-@grant_access(IS_PORTFOLIO_MEMBER, IS_FULL_ACCESS)
+@grant_access(IS_PORTFOLIO_MEMBER)
 def set_portfolio_in_session(request, portfolio_pk):
     """
     Handles updating active portfolio in session.
@@ -164,7 +164,7 @@ def set_portfolio_in_session(request, portfolio_pk):
     portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
     request.session["portfolio"] = portfolio
 
-    logger.info("Successfully set active portfolio to ", portfolio)
+    logger.info("Set active portfolio to ", portfolio.organization_name)
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"success": success_message}, status=200)
     return redirect(reverse("domains"))
