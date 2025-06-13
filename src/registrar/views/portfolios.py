@@ -1178,3 +1178,45 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send portfolio email invitation.")
+
+
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioOrganizationsView(DetailView, View):
+    template_name = "portfolio_organizations.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+    
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user)
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+
+        return context
+
+    # def set_portfolio_in_session(self, request, portfolio_pk):
+    #     """
+    #     Handles updating active portfolio in session.
+    #     """
+    #     portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
+    #     request.session["portfolio"] = portfolio
+
+    #     logger.info("Successfully set active portfolio to ", portfolio)
+    #     # return HttpResponseRedirect(reverse("domains"))
+    #     return self._handle_success_response(request, portfolio)
+    
+    # def _handle_success_response(self, request, portfolio):
+    #     """
+    #     Return a success response (JSON or redirect with messages).
+    #     """
+    #     success_message = f"You set your active portfolio to {portfolio}."
+    #     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+    #         return JsonResponse({"success": success_message}, status=200)
+    #     messages.success(request, success_message)
+    #     return redirect(reverse("domains"))
+        
