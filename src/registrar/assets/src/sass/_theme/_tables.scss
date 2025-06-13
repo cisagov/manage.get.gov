@@ -55,6 +55,12 @@ th {
     word-break: break-word;
   }
 
+  /* 
+  Commenting out this line (and the closing curly brace) is a quick 
+  fix to correct styling on members table for the gray lines above 
+  and below "Expand" in the mobile view. Other CSS may overwrite 
+  this styling. To be evaluated at a later time (this is low priority).
+  */
   // @include at-media(mobile-lg) {
 
     margin-top: units(1);
