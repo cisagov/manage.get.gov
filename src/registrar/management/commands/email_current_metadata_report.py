@@ -81,7 +81,7 @@ class Command(BaseCommand):
         send_templated_email(
             template_name="emails/metadata_body.txt",
             subject_template_name="emails/metadata_subject.txt",
-            to_address=email_to,
+            to_addresses=email_to,
             context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
             attachment_file=encrypted_zip_in_bytes,
         )
