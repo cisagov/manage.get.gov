@@ -21,7 +21,7 @@
                 <p class="margin-y-0">{{domain_request.portfolio.city}}, {{domain_request.portfolio.state_territory}}</p>
             {% endif %}
         {% else %}
-            {% with value="<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+            {% with value="<span class='text-bold text-error-dark'>Incomplete</span>"|safe %}
                 {% include "includes/summary_item.html" with title=title editable=is_editable edit_link=domain_request_url %}
             {% endwith %}
         {% endif %}
@@ -29,7 +29,7 @@
     {% endif %}
 
     {% if step == Step.DOTGOV_DOMAIN %}
-        {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe%}
+        {% with title=form_titles|get_item:step value=domain_request.requested_domain.name|default:"<span class='text-bold text-error-dark'>Incomplete</span>"|safe%}
             {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
         {% endwith %}
 
@@ -44,7 +44,7 @@
         {% if requires_feb_questions %}
             <h4 class="margin-bottom-0">Meets naming requirements</h4>
             {% if domain_request.feb_naming_requirements is None %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+                <p class="margin-y-0"><span class='text-bold text-error-dark'>Incomplete</span></p>
             {% elif domain_request.feb_naming_requirements %}
                 <p class="margin-y-0">Yes</p>
             {% else %}
@@ -64,11 +64,11 @@
                 <p class="margin-y-0">{{purpose_label}}</p>
                 <p class="margin-y-0">{{domain_request.purpose}}</p>
             {% else %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+                <p class="margin-y-0"><span class='text-bold text-error-dark'>Incomplete</span></p>
             {% endif %}
             <h4 class="margin-bottom-0">Interagency initiative</h4>
             {% if domain_request.is_interagency_initiative is None %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+                <p class="margin-y-0"><span class='text-bold text-error-dark'>Incomplete</span></p>
             {% elif domain_request.is_interagency_initiative %}
                 <p class="margin-y-0">{{domain_request.interagency_initiative_details}}</p>
             {% else %}
@@ -76,14 +76,14 @@
             {% endif %}
             <h4 class="margin-bottom-0">Target time frame</h4>
             {% if domain_request.has_timeframe is None %}
-                <p class="margin-y-0"><span class='text-bold text-secondary-dark'>Incomplete</span></p>
+                <p class="margin-y-0"><span class='text-bold text-error-dark'>Incomplete</span></p>
             {% elif domain_request.has_timeframe %}
                 <p class="margin-y-0">{{domain_request.time_frame_details}}</p>
             {% else %}
                 <p class="margin-y-0">No</p>
             {% endif %}
         {% else %}
-            {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-secondary-dark'>Incomplete</span>"|safe %}
+            {% with title=form_titles|get_item:step value=domain_request.purpose|default:"<span class='text-bold text-error-dark'>Incomplete</span>"|safe %}
                 {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
             {% endwith %}
         {% endif %}
