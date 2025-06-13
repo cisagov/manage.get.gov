@@ -10,7 +10,7 @@ class Suborganization(TimeStampedModel):
     """
 
     name = models.CharField(
-        unique=True,
+        unique=False,
         max_length=1000,
         verbose_name="Suborganization",
     )
