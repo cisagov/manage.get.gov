@@ -27,7 +27,7 @@ from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation, Suborganization
+from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -409,10 +409,6 @@ class DomainInformationAdminForm(forms.ModelForm):
             ),
         }
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["sub_organization"].queryset = Suborganization.objects.order_by("name")
-
 
 class DomainInformationInlineForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
@@ -2043,7 +2039,6 @@ class DomainInformationResource(resources.ModelResource):
 
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Customize domain information admin class."""
-    ordering = ['sub_organization']
 
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
@@ -4805,7 +4800,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def suborganizations(self, obj: models.Portfolio):
         """Returns a list of links for each related suborg"""
-        queryset = obj.get_suborganizations().order_by('name')
+        queryset = obj.get_suborganizations()
         return get_field_links_as_list(queryset, "suborganization")
 
     suborganizations.short_description = "Suborganizations"  # type: ignore
