@@ -18,6 +18,7 @@ class Suborganization(TimeStampedModel):
         "registrar.Portfolio",
         on_delete=models.PROTECT,
         related_name="portfolio_suborganizations",
+        unique=True,
     )
 
     city = models.CharField(

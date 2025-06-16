@@ -4173,6 +4173,13 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
+    
+    def test_can_have_dup_suborganizatons(self):
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+        suborganizations=Suborganization.object.filter(name="Sub1")
+        self.assertEqual(suborganizations.count(), 2)
+
 
     @less_console_noise_decorator
     def test_domains_display(self):
@@ -4324,6 +4331,13 @@ class TestPortfolioAdmin(TestCase):
         self.admin.save_model(request, portfolio, form=None, change=True)
         self.assertIsNone(portfolio.senior_official)
         self.assertEqual(portfolio.federal_agency.agency, "Non-Federal Agency")
+    
+    @less_console_noise_decorator
+    def test_duplicate_portfolio(self):
+        dup_portfolio = Portfolio.objects.create(organization_name="Test portfolio", creator=self.admin)
+        portfolios = Portfolio.objects.filter(organization_name="Test portfolio")
+        self.assertEqual(portfolios.count(),1)
+
 
         # Cleanup
         senior_official.delete()
