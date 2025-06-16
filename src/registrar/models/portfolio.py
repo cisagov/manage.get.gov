@@ -36,7 +36,6 @@ class Portfolio(TimeStampedModel):
     organization_name = models.CharField(
         null=True,
         blank=True,
-        unique=True,
     )
 
     organization_type = models.CharField(
