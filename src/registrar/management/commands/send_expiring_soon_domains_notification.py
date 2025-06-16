@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--dryrun",
+            "--dry-run",
             action="store_true",
             help="Print emails that would be sent without actually sending them",
         )
@@ -29,9 +29,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         How to run it in dry run mode:
-        ./manage.py send_expiring_soon_domains_notification --dryrun
+        ./manage.py send_expiring_soon_domains_notification --dry-run
         """
-        dryrun = options.get("dryrun", False)
+        dryrun = options.get("dry_run", False)
 
         all_emails_sent = True
         today = timezone.now().date()

@@ -38,7 +38,7 @@ def _normalize_and_flatten_email_list(email_or_emails):
         # If it comes in as a list, "flatten" it recursively
         if isinstance(item, list):
             email_list.extend(_normalize_and_flatten_email_list(item))
-        # Else if not a list, just add it to the list
+        # Else add into list if it's a string, otherwise do nothing
         else:
             email_list.append(item)
 
@@ -202,9 +202,11 @@ def _can_send_email(to_addresses, bcc_address):
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         message = "Could not send email. The email '{}' does not exist within the allowlist."
-        for email in to_addresses:
-            if not AllowedEmail.is_allowed_email(email):
-                raise EmailSendingError(message.format(to_addresses))
+        if not to_addresses:
+            raise EmailSendingError(message.format(to_addresses))
+        # for email in to_addresses:
+        #     if not AllowedEmail.is_allowed_email(email):
+        #         raise EmailSendingError(message.format(to_addresses))
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
