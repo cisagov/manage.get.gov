@@ -408,7 +408,7 @@ class DomainInformationAdminForm(forms.ModelForm):
                 attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
             ),
         }
-    
+
 
 class DomainInformationInlineForm(forms.ModelForm):
     """This form utilizes the custom widget for its class's ManyToMany UIs."""
