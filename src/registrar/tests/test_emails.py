@@ -460,11 +460,11 @@ class TestAllowedEmail(TestCase):
             "The email 'doesnotexist@igorville.com' does not exist within the allow list."
             with self.assertRaisesRegex(email.EmailSendingError, expected_message):
                 send_templated_email(
-                    template_name="emails/metadata_body.txt",
-                    subject_template_name="emails/metadata_subject.txt",
-                    to_addresses="doesnotexist@igorville.com",
-                    bcc_address=None,
+                    "test content",
+                    "test subject",
+                    "doesnotexist@igorville.com",
                     context={"domain_request": self},
+                    bcc_address=None,
                 )
 
         # Assert that an email wasn't sent

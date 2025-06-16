@@ -202,11 +202,13 @@ def _can_send_email(to_addresses, bcc_address):
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
         message = "Could not send email. The email '{}' does not exist within the allowlist."
+
         if not to_addresses:
             raise EmailSendingError(message.format(to_addresses))
-        # for email in to_addresses:
-        #     if not AllowedEmail.is_allowed_email(email):
-        #         raise EmailSendingError(message.format(to_addresses))
+
+        for email in to_addresses:
+            if not AllowedEmail.is_allowed_email(email):
+                raise EmailSendingError(message.format(to_addresses))
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
