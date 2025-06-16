@@ -176,7 +176,7 @@ class DomainSuborganizationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         portfolio = self.instance.portfolio if self.instance else None
-        self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio)
+        self.fields["sub_organization"].queryset = Suborganization.objects.filter(portfolio=portfolio).order_by("name")
 
 
 class BaseNameserverFormset(forms.BaseFormSet):

@@ -254,8 +254,7 @@ class DomainRequestFixture:
     def _get_random_sub_organization(cls, request):
         try:
             # Filter Suborganizations by the request's portfolio
-            portfolio_suborganizations = Suborganization.objects.filter(portfolio=request.portfolio).order_by('name')
-            # is this it?
+            portfolio_suborganizations = Suborganization.objects.filter(portfolio=request.portfolio)
 
             # Select a suborg that's defined in the fixtures
             suborganization_names = [suborg["name"] for suborg in SuborganizationFixture.SUBORGS]
