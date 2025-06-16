@@ -17,19 +17,26 @@ on:
           - staging
           - development
           - backup
-          - ky
-          - es
-          - nl
-          - rh
-          - za
-          - gd
-          - rb
-          - ko
+          - meoward
+          - bob
+          - hotgov
+          - litterbox
+          - aa
           - ab
-          - rjm
-          - kma
+          - ad
+          - ag
+          - cb
           - dg
           - el
+          - es
+          - gd
+          - kma
+          - ko
+          - ky
+          - nl
+          - rb
+          - rh
+          - rjm    
 
 jobs:
   createcachetable:
