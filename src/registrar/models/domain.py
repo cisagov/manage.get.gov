@@ -1571,7 +1571,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 return domainInfoResponse
             except RegistryError as e:
                 count += 1
-
                 if already_tried_to_create:
                     logger.error("Already tried to create")
                     logger.error(e)
@@ -1588,6 +1587,52 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
 
+    def _get_domain_in_registry(self):
+        """Try to fetch info from the registry about this domain."""
+        try:
+            req = commands.InfoDomain(name=self.name)
+            domainInfoResponse = registry.send(req, cleaned=True)
+            return domainInfoResponse
+        except RegistryError as e:
+            if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                logger.error("Domain does not exist in registry")
+                logger.error(e)
+                logger.error(e.code)
+            else:
+                logger.error(e)
+                logger.error(e.code)
+                raise e
+                    
+
+    def _create_domain_in_registry(self):
+        """Create domain in registry."""
+        exitEarly = False
+        try_count = 0
+        while not exitEarly and try_count < 3:
+            try:
+                logger.info("_create_domain() -> Switching to dns_needed from unknown")
+                # avoid infinite loop
+                exitEarly = True
+                domainInfoResponse = self.dns_needed_from_unknown()
+                self.save()
+                return domainInfoResponse
+            except RegistryError as e:
+                try_count += 1
+                if e.code == ErrorCode.OBJECT_EXISTS:
+                    logger.error("Domain already exists in registry")
+                    logger.error(e)
+                    logger.error(e.code)
+                    exitEarly = True
+                elif try_count == 1:
+                    logger.error("Failed to create domain in registry, trying again")
+                    logger.error(e)
+                    logger.error(e.code)
+                else:
+                    logger.error("Already tried to create domain in registry")
+                    logger.error(e)
+                    logger.error(e.code)
+                    raise e
+                
     def addRegistrant(self):
         """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
@@ -1608,7 +1653,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
 
         try:
-            registry.send(req, cleaned=True)
+           return registry.send(req, cleaned=True)
 
         except RegistryError as err:
             if err.code != ErrorCode.OBJECT_EXISTS:
