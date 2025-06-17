@@ -34,7 +34,7 @@ class Suborganization(TimeStampedModel):
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["name", "portfolio"], name="unique_name_portfolio")]
+        constraints = [models.UniqueConstraint(fields=["portfolio", "name"], name="unique_portfolio_name")]
 
     def __str__(self) -> str:
         return f"{self.name}"
