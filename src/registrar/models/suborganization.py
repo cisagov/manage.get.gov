@@ -33,5 +33,8 @@ class Suborganization(TimeStampedModel):
         verbose_name="state, territory, or military post",
     )
 
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["name", "portfolio"], name="unique_name_portfolio")]
+
     def __str__(self) -> str:
         return f"{self.name}"
