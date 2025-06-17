@@ -4126,15 +4126,16 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return obj.domain_info.state_territory if obj.domain_info else None
 
     def dnssecdata(self, obj):
-        return "No" if obj.state == Domain.State.UNKNOWN or obj.dnssecdata else "Yes"
-        # return "Yes" if obj.dnssecdata else "No"
+        # return "No" if obj.state == Domain.State.UNKNOWN or obj.dnssecdata else "Yes"
+        return "Yes" if obj.dnssecdata else "No"
 
     dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
 
     # Custom method to display formatted nameservers
     def nameservers(self, obj):
         # If the domain is in UNKNOWN state, it is not in the registry and we should not trigger creating one (which namservers indirectly does)
-        if obj.state == Domain.State.UNKNOWN or obj.nameservers:
+        # if obj.state == Domain.State.UNKNOWN or obj.nameservers:
+        if not obj.nameservers:
             return "No nameservers"
 
         formatted_nameservers = []

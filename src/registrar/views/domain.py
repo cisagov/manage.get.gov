@@ -101,6 +101,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         set session to self for downstream functions to
         update session cache
         """
+
         self.session = request.session
         # domain:private_key is the session key to use for
         # caching the domain in the session
@@ -111,6 +112,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             self.object = cached_domain
         else:
             self.object = self.get_object()
+
         self._update_session_with_domain()
 
     def _update_session_with_domain(self):
@@ -387,6 +389,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
     """Domain detail overview page."""
+    print("🥲🥲🥲🥲 in Domain View (domain overview)")
 
     template_name = "domain_detail.html"
 
@@ -437,7 +440,16 @@ class DomainView(DomainBaseView):
         override get_domain for this view so that domain overview
         always resets the cache for the domain object
         """
+        print("🥒🥒🥒🥒 in _get_domain in Domain View")
+         # check if domain in registry already exists or needs to be created (is UNKNOWN). Create it if it does not.
+        object = self.get_object()
+        print("💕 {}".format((self.get_object().state)))
+        if object.state == Domain.State.UNKNOWN:
+            print("😍 in unknown if")
+            object._create_domain_in_registry()
+            object.save()
         self.session = request.session
+        print("😎😎😎😎 {}".format(vars(self.session)))
         self.object = self.get_object()
         self._update_session_with_domain()
 

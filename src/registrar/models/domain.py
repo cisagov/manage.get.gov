@@ -1590,8 +1590,10 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_domain_in_registry(self):
         """Try to fetch info from the registry about this domain."""
         try:
+            print("❤️ in _get_domain_in_registry")
             req = commands.InfoDomain(name=self.name)
             domainInfoResponse = registry.send(req, cleaned=True)
+            logger.info("Retrieved domain from registry")
             return domainInfoResponse
         except RegistryError as e:
             if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
@@ -1615,6 +1617,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 exitEarly = True
                 domainInfoResponse = self.dns_needed_from_unknown()
                 self.save()
+                logger.info("Created domain in registry")
                 return domainInfoResponse
             except RegistryError as e:
                 try_count += 1
@@ -2105,7 +2108,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
-            data_response = self._get_or_create_domain_in_registry() #TODO: create a "get_domain" function so that it doesn't also get created
+            data_response = self._get_domain_in_registry()
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
@@ -2121,7 +2124,10 @@ class Domain(TimeStampedModel, DomainHelper):
             self._cache = cleaned
 
         except RegistryError as e:
-            logger.error(e)
+            if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
+                self.cache = {}
+            else:
+                logger.error(e)
     
 
     def _extract_data_from_response(self, data_response):
