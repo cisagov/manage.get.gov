@@ -10,26 +10,27 @@ on:
         description: Which environment should we load data for?
         type: 'choice'
         options:
-          - ab
           - backup
-          - el
+          - meoward
+          - bob
+          - hotgov
+          - litterbox
+          - aa
+          - ab
+          - ad
+          - ag
           - cb
-          - kma
+          - dg
+          - el
           - es
           - gd
+          - kma
           - ko
           - ky
           - nl
           - rb
           - rh
-          - rjm
-          - meoward
-          - bob
-          - hotgov
-          - litterbox
-          - ad
-          - ag
-          - dg
+          - rjm       
 
 jobs:
   load-fixtures:
