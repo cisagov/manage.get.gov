@@ -206,9 +206,17 @@ def _can_send_email(to_addresses, bcc_address):
         if not to_addresses:
             raise EmailSendingError(message.format(to_addresses))
 
+        # Collect all the allowed emails
+        allowed_email_count = 0
+
         for email in to_addresses:
-            if not AllowedEmail.is_allowed_email(email):
-                logger.info("The email %s is not allowed to be sent out", email)
+            if AllowedEmail.is_allowed_email(email):
+                allowed_email_count += 1
+
+        # IF none are allowed, then block sending email and send error
+        # ELSE this can send bc there are allowed emails
+        if allowed_email_count == 0:
+            raise EmailSendingError(message.format(to_addresses))
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
