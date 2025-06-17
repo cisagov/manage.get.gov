@@ -309,7 +309,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_edit_access(self):
-        """Test that user with a portfolio can access the portfolio organization page, read only"""
+        """Test that user with a portfolio can access the portfolio organization page, edit access"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
@@ -327,12 +327,35 @@ class TestPortfolio(WebTest):
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
-            # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
-            # The read only label for city will be a h4
-            self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
-            self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            self.assertContains(response, "<h2>Organization admins</h2>")
+            self.assertContains(response, "<h2>Organization name and address</h2>")
+            self.assertContains(
+                response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+            )
+            self.assertNotContains(response, "<address>")
             self.assertContains(response, 'for="id_city"')
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_detail_pages_shows_read_only(self):
+        """Test that breadcrumb menus display on portfolio detail pages"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            ],
+        )
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            org_info_response = self.app.get(reverse("organization-info"))
+            # We don't use the label "Organization name" in the view-only view
+            self.assertNotContains(
+                org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+            )
+        self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_include_breadcrumb(self):
@@ -491,8 +514,7 @@ class TestPortfolio(WebTest):
             self.portfolio.save()
             page = self.app.get(reverse("organization-info"))
             # Org name in Sidenav, main nav, webpage title, and breadcrumb
-            self.assertContains(page, "Hotel California", count=4)
-            self.assertContains(page, "Non-Federal Agency")
+            self.assertContains(page, "Hotel California", count=5)
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
