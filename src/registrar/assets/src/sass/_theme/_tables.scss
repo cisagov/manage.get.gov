@@ -69,6 +69,11 @@ th {
       border: none;
     }
 
+    tr:not(.hide-td-borders):not(:last-child) td,
+    tr:not(.hide-td-borders):not(:last-child) th {
+      border-bottom: 1px solid color('base-lighter');
+    }
+
     thead th,
     thead th[aria-sort] {
       color: color('primary-darker');
