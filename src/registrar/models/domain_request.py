@@ -1025,7 +1025,7 @@ class DomainRequest(TimeStampedModel):
             send_templated_email(
                 email_template,
                 email_template_subject,
-                recipient.email,
+                [recipient.email],
                 context=context,
                 bcc_address=bcc_address,
                 cc_addresses=cc_addresses,
