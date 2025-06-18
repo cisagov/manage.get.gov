@@ -69,8 +69,7 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders):not(:last-child) td,
-    tr:not(.hide-td-borders):not(:last-child) th {
+    tr:not(.hide-td-borders):not(:last-child) td {
       border-bottom: 1px solid color('base-lighter');
     }
 
