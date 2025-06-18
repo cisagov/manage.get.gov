@@ -4163,16 +4163,21 @@ class TestPortfolioAdmin(TestCase):
         expected_date = self.portfolio.created_at.strftime("%b %d, %Y")
         self.assertEqual(created_on, expected_date)
 
+    # Ensuring alphabetical display of Suborgs
     @less_console_noise_decorator
     def test_suborganizations_display(self):
         """Tests the custom suborg field which displays all related suborgs"""
-        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
         Suborganization.objects.create(name="Sub2", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub5", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub3", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub4", portfolio=self.portfolio)
 
         suborganizations = self.admin.suborganizations(self.portfolio)
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
+        self.assertEqual([s.name for s in suborganizations], ["Sub1","Sub2","Sub3","Sub4","Sub5"])
 
     @less_console_noise_decorator
     def test_domains_display(self):
