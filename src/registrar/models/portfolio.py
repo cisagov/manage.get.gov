@@ -55,7 +55,8 @@ class Portfolio(TimeStampedModel):
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
         unique=True,
-        default=FederalAgency.get_non_federal_agency,
+        null=True,
+        default=None
     )
 
     senior_official = models.ForeignKey(
@@ -133,6 +134,9 @@ class Portfolio(TimeStampedModel):
             and self.federal_agency.agency
         ):
             self.organization_name = self.federal_agency.agency
+        
+        if(self.federal_type is null):
+            self.federal_type = FederalAgency.get_non_federal_agency
 
         super().save(*args, **kwargs)
 
