@@ -55,13 +55,7 @@ th {
     word-break: break-word;
   }
 
-  /* 
-  Commenting out this line (and the closing curly brace) is a quick 
-  fix to correct styling on members table for the gray lines above 
-  and below "Expand" in the mobile view. Other CSS may overwrite 
-  this styling. To be evaluated at a later time (this is low priority).
-  */
-  // @include at-media(mobile-lg) {
+  @include at-media(mobile-lg) {
 
     margin-top: units(1);
 
@@ -69,7 +63,8 @@ th {
       border: none;
     }
 
-    tr:not(.hide-td-borders):not(:last-child) td {
+    tr:not(.hide-td-borders):not(:last-child) td,
+    tr:not(.hide-td-borders):not(:last-child) th {
       border-bottom: 1px solid color('base-lighter');
     }
 
@@ -97,7 +92,13 @@ th {
     thead tr:first-child th:first-child {
       border-top: none;
     }
-  // }
+  }
+
+  @include at-media(mobile-sm) {
+    tr:not(.hide-td-borders):not(:last-child) th {
+      border-bottom: 1px solid color('base-lighter');
+    }
+  }
 
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
