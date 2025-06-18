@@ -54,7 +54,7 @@ class Portfolio(TimeStampedModel):
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
-        unique=False,
+        unique=True,
         default=FederalAgency.get_non_federal_agency,
     )
 
