@@ -92,11 +92,6 @@ th {
   }
 }
 
-@include at-media(mobile-sm) {
-  tr:not(.hide-td-borders):not(:last-child) th {
-    border-bottom: 1px solid color('base-lighter');
-  }
-
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
   th[data-sortable][aria-sort=descending] {
