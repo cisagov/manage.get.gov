@@ -22,7 +22,7 @@ export class DomainsTable extends BaseTable {
     const actionUrl = domain.action_url;
     const suborganization = domain.domain_info__sub_organization ? domain.domain_info__sub_organization : '⎯';
 
-    const row = document.createElement('tr');
+    const row = document.createElement('tr class="hide-td-borders"');
 
     let markupForSuborganizationRow = '';
 
