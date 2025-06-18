@@ -73,7 +73,7 @@ class Command(BaseCommand):
         self.domain_request_changes = self.ChangeTracker(model_class=DomainRequest)
         self.user_portfolio_perm_changes = self.ChangeTracker(model_class=UserPortfolioPermission)
         self.portfolio_invitation_changes = self.ChangeTracker(model_class=PortfolioInvitation)
-        
+
         # Add dry run support
         self.dry_run = False
         self.match_report = defaultdict(list)
@@ -315,18 +315,14 @@ class Command(BaseCommand):
         # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
         agencies = FederalAgency.objects.filter(agency__isnull=False, **federal_agency_filter).distinct()
-        
+
         if not agencies.exists():
             logger.error("No agencies found!")
             return
 
         # Get all organization names from requests and domains
-        all_request_org_names = list(DomainRequest.objects.values_list(
-            'organization_name', flat=True
-        ).distinct())
-        all_domain_org_names = list(DomainInformation.objects.values_list(
-            'organization_name', flat=True
-        ).distinct())
+        all_request_org_names = list(DomainRequest.objects.values_list("organization_name", flat=True).distinct())
+        all_domain_org_names = list(DomainInformation.objects.values_list("organization_name", flat=True).distinct())
 
         # Test fuzzy matching for each agency
         for agency in agencies:
@@ -337,57 +333,71 @@ class Command(BaseCommand):
             request_matches = self._get_fuzzy_organization_matches(
                 agency.agency,
                 [normalize_string(name) for name in all_request_org_names if name],
-                threshold=self.fuzzy_threshold
+                threshold=self.fuzzy_threshold,
             )
-            
-            # Test domain matches  
+
+            # Test domain matches
             domain_matches = self._get_fuzzy_organization_matches(
                 agency.agency,
                 [normalize_string(name) for name in all_domain_org_names if name],
-                threshold=self.fuzzy_threshold
+                threshold=self.fuzzy_threshold,
             )
 
             # Results
-            logger.info(f"{TerminalColors.OKGREEN}Request organization matches ({len(request_matches)}):{TerminalColors.ENDC}")
+            logger.info(
+                f"{TerminalColors.OKGREEN}Request organization matches ({len(request_matches)}):{TerminalColors.ENDC}"
+            )
             for match in sorted(request_matches)[:10]:  # Show top 10
                 count = DomainRequest.objects.filter(organization_name__iexact=match).count()
                 logger.info(f"  • {match} ({count} requests)")
-            
+
             if len(request_matches) > 10:
                 logger.info(f"  ... and {len(request_matches) - 10} more")
 
-            logger.info(f"\n{TerminalColors.OKGREEN}Domain organization matches ({len(domain_matches)}):{TerminalColors.ENDC}")
+            logger.info(
+                f"\n{TerminalColors.OKGREEN}Domain organization matches ({len(domain_matches)}):{TerminalColors.ENDC}"
+            )
             for match in sorted(domain_matches)[:10]:  # Show top 10
                 count = DomainInformation.objects.filter(organization_name__iexact=match).count()
                 logger.info(f"  • {match} ({count} domains)")
-                
+
             if len(domain_matches) > 10:
                 logger.info(f"  ... and {len(domain_matches) - 10} more")
 
             # Show potential new matches (those not directly related to the agency)
-            current_requests = DomainRequest.objects.filter(federal_agency=agency).values_list(
-                'organization_name', flat=True
-            ).distinct()
-            current_domains = DomainInformation.objects.filter(federal_agency=agency).values_list(
-                'organization_name', flat=True  
-            ).distinct()
+            current_requests = (
+                DomainRequest.objects.filter(federal_agency=agency)
+                .values_list("organization_name", flat=True)
+                .distinct()
+            )
+            current_domains = (
+                DomainInformation.objects.filter(federal_agency=agency)
+                .values_list("organization_name", flat=True)
+                .distinct()
+            )
 
             new_request_matches = request_matches - set([normalize_string(name) for name in current_requests if name])
             new_domain_matches = domain_matches - set([normalize_string(name) for name in current_domains if name])
 
             if new_request_matches:
-                logger.info(f"\n{TerminalColors.YELLOW}NEW request matches found ({len(new_request_matches)}):{TerminalColors.ENDC}")
+                logger.info(
+                    f"\n{TerminalColors.YELLOW}NEW request matches found ({len(new_request_matches)}):{TerminalColors.ENDC}"
+                )
                 for match in sorted(new_request_matches)[:5]:
                     count = DomainRequest.objects.filter(organization_name__iexact=match).count()
                     logger.info(f"  • {match} ({count} requests)")
 
             if new_domain_matches:
-                logger.info(f"\n{TerminalColors.YELLOW}NEW domain matches found ({len(new_domain_matches)}):{TerminalColors.ENDC}")
+                logger.info(
+                    f"\n{TerminalColors.YELLOW}NEW domain matches found ({len(new_domain_matches)}):{TerminalColors.ENDC}"
+                )
                 for match in sorted(new_domain_matches)[:5]:
                     count = DomainInformation.objects.filter(organization_name__iexact=match).count()
                     logger.info(f"  • {match} ({count} domains)")
 
-        logger.info(f"\n{TerminalColors.BOLD}Test completed! Use --dry_run with other flags to see what would change.{TerminalColors.ENDC}")
+        logger.info(
+            f"\n{TerminalColors.BOLD}Test completed! Use --dry_run with other flags to see what would change.{TerminalColors.ENDC}"
+        )
 
     def print_dry_run_summary(self):
         """Print a summary of what would be changed in dry run mode."""
@@ -398,12 +408,12 @@ class Command(BaseCommand):
         logger.info(f"{TerminalColors.ENDC}")
 
         total_changes = (
-            len(self.portfolio_changes.create) +
-            len(self.suborganization_changes.create) +
-            len(self.domain_info_changes.update) +
-            len(self.domain_request_changes.update) +
-            len(self.user_portfolio_perm_changes.create) +
-            len(self.portfolio_invitation_changes.create)
+            len(self.portfolio_changes.create)
+            + len(self.suborganization_changes.create)
+            + len(self.domain_info_changes.update)
+            + len(self.domain_request_changes.update)
+            + len(self.user_portfolio_perm_changes.create)
+            + len(self.portfolio_invitation_changes.create)
         )
 
         logger.info(f"Total records that would be modified: {total_changes}")
@@ -421,17 +431,19 @@ class Command(BaseCommand):
                 for match_info in matches[:5]:  # Shows top 5
                     logger.info(f"  • {match_info}")
 
-        logger.info(f"\n{TerminalColors.BOLD}To apply these changes, run the command without --dry_run{TerminalColors.ENDC}")
+        logger.info(
+            f"\n{TerminalColors.BOLD}To apply these changes, run the command without --dry_run{TerminalColors.ENDC}"
+        )
 
     def _get_fuzzy_organization_matches(self, target_agency_name, candidate_org_names, threshold=85):
         """
         Use RapidFuzz to find organization names that closely match the target agency.
-        
+
         Args:
             target_agency_name: The federal agency name to match against
             candidate_org_names: List of organization names to search through
             threshold: Minimum similarity score (0-100) to consider a match
-            
+
         Returns:
             Set of organization names that match above the threshold
         """
@@ -441,12 +453,12 @@ class Command(BaseCommand):
             # Fallback to basic variants if rapidfuzz is not available
             logger.warning("RapidFuzz not available, falling back to basic matching")
             return self._get_organization_name_variants(target_agency_name)
-        
+
         normalized_target = normalize_string(target_agency_name)
-        
+
         # Use multiple fuzzy matching strategies for comprehensive coverage
         matched_names = set()
-        
+
         # Token sort ratio (handles word order differences)
         # e.g. for "U.S. Department of State" vs "Department of State U.S."
         token_matches = process.extract(
@@ -454,21 +466,17 @@ class Command(BaseCommand):
             candidate_org_names,
             scorer=fuzz.token_sort_ratio,
             score_cutoff=threshold,
-            limit=None  # Get all matches above threshold
+            limit=None,  # Get all matches above threshold
         )
         matched_names.update([match[0] for match in token_matches])
-        
+
         # Token set ratio (handles extra/missing words)
         # e.g. for "Department of State" vs "U.S. Department of State"
         set_matches = process.extract(
-            normalized_target,
-            candidate_org_names,
-            scorer=fuzz.token_set_ratio,
-            score_cutoff=threshold,
-            limit=None
+            normalized_target, candidate_org_names, scorer=fuzz.token_set_ratio, score_cutoff=threshold, limit=None
         )
         matched_names.update([match[0] for match in set_matches])
-        
+
         # Partial ratio (handles substring matches)
         # e.g. for "State Department" matching "Department of State"
         partial_matches = process.extract(
@@ -476,21 +484,24 @@ class Command(BaseCommand):
             candidate_org_names,
             scorer=fuzz.partial_ratio,
             score_cutoff=max(threshold, 90),  # Higher threshold for partial matches
-            limit=None
+            limit=None,
         )
         matched_names.update([match[0] for match in partial_matches])
-        
+
         # Always include exact variants as fallback
         matched_names.update(self._get_organization_name_variants(target_agency_name))
-        
+
         # Store for reporting in dry run mode
         if self.dry_run:
-            self.match_report[target_agency_name].extend([
-                f"{match[0]} (score: {match[1]})" 
-                for match in sorted(token_matches + set_matches + partial_matches, 
-                                  key=lambda x: x[1], reverse=True)[:10]
-            ])
-        
+            self.match_report[target_agency_name].extend(
+                [
+                    f"{match[0]} (score: {match[1]})"
+                    for match in sorted(
+                        token_matches + set_matches + partial_matches, key=lambda x: x[1], reverse=True
+                    )[:10]
+                ]
+            )
+
         return matched_names
 
     def _get_organization_name_variants(self, agency_name):
@@ -498,7 +509,7 @@ class Command(BaseCommand):
         Generate common variants of federal agency names for fallback matching.
         """
         variants = {normalize_string(agency_name)}
-        
+
         # Handle U.S. prefix variations
         if agency_name.startswith("U.S. "):
             variants.add(normalize_string(agency_name[4:]))
@@ -509,7 +520,7 @@ class Command(BaseCommand):
         else:
             variants.add(normalize_string("U.S. " + agency_name))
             variants.add(normalize_string("US " + agency_name))
-        
+
         # Handle "The" prefix and common abbreviations
         base_name = agency_name
         if base_name.startswith("The "):
@@ -517,49 +528,47 @@ class Command(BaseCommand):
             variants.add(normalize_string(base_name))
         else:
             variants.add(normalize_string("The " + base_name))
-        
+
         # Common federal agency abbreviations
         dept_variations = [
             ("Department of", "Dept of", "Dept. of"),
             ("Administration", "Admin"),
             ("Agency", "Agcy"),
         ]
-        
+
         for full, *abbrevs in dept_variations:
             if full in agency_name:
                 for abbrev in abbrevs:
                     variants.add(normalize_string(agency_name.replace(full, abbrev)))
-        
+
         return variants
 
     def _create_organization_matching_filter(self, federal_agency, all_org_names=None):
         """
         Create a Q filter using fuzzy matching for organization names and federal agency relationship.
-        
+
         Args:
             federal_agency: The FederalAgency instance to match
             all_org_names: Optional list of all organization names for fuzzy matching
         """
         # Start with direct federal agency relationship
         base_filter = Q(federal_agency=federal_agency)
-        
+
         # Add fuzzy organization name matching
         if all_org_names:
             # Use fuzzy matching against all candidate organization names
             matched_org_names = self._get_fuzzy_organization_matches(
-                federal_agency.agency, 
-                all_org_names,
-                threshold=self.fuzzy_threshold
+                federal_agency.agency, all_org_names, threshold=self.fuzzy_threshold
             )
         else:
             # Fallback to rule-based variants
             matched_org_names = self._get_organization_name_variants(federal_agency.agency)
-        
+
         # Create Q objects for organization name matching (case-insensitive)
         org_name_filters = Q()
         for name in matched_org_names:
             org_name_filters |= Q(organization_name__iexact=name)
-        
+
         return base_filter | org_name_filters
 
     def create_suborganizations(self, portfolio_dict, agency_dict):
@@ -570,22 +579,25 @@ class Command(BaseCommand):
         agencies = agency_dict.values()
 
         # Get all unique organization names for fuzzy matching
-        all_domain_org_names = list(DomainInformation.objects.filter(
-            organization_name__isnull=False
-        ).values_list('organization_name', flat=True).distinct())
-        
-        all_request_org_names = list(DomainRequest.objects.filter(
-            organization_name__isnull=False
-        ).values_list('organization_name', flat=True).distinct())
-        
+        all_domain_org_names = list(
+            DomainInformation.objects.filter(organization_name__isnull=False)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+
+        all_request_org_names = list(
+            DomainRequest.objects.filter(organization_name__isnull=False)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+
         # Combine and normalize for fuzzy matching
-        all_org_names = list(set([normalize_string(name) for name in 
-                                 all_domain_org_names + all_request_org_names]))
+        all_org_names = list(set([normalize_string(name) for name in all_domain_org_names + all_request_org_names]))
 
         # Create filters for flexible organization name matching
         domain_filters = Q()
         request_filters = Q()
-        
+
         for agency in agencies:
             agency_filter = self._create_organization_matching_filter(agency, all_org_names)
             domain_filters |= agency_filter
@@ -598,7 +610,7 @@ class Command(BaseCommand):
             )
             & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             # Use flexible matching for agency/organization names
-            domain_filters
+            domain_filters,
         )
         requests = DomainRequest.objects.filter(
             # Org name must not be null, and must not be the portfolio name
@@ -607,7 +619,7 @@ class Command(BaseCommand):
             )
             & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             # Use flexible matching for agency/organization names
-            request_filters
+            request_filters,
         )
 
         # First: get all existing suborgs
@@ -660,7 +672,9 @@ class Command(BaseCommand):
                     self.set_suborganization_location(suborg, domains, requests)
                     created_suborgs[norm_org_name] = suborg
                     action_text = "WOULD CREATE" if self.dry_run else "Created"
-                    logger.info(f"{TerminalColors.OKGREEN}{action_text} suborganization '{suborg}'.{TerminalColors.ENDC}")
+                    logger.info(
+                        f"{TerminalColors.OKGREEN}{action_text} suborganization '{suborg}'.{TerminalColors.ENDC}"
+                    )
         return created_suborgs
 
     def set_suborganization_location(self, suborg, domains, requests):
@@ -741,43 +755,41 @@ class Command(BaseCommand):
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
         updated_domains = set()
-        
+
         # Get all domain organization names for fuzzy matching
-        all_domain_org_names = list(DomainInformation.objects.values_list(
-            'organization_name', flat=True
-        ).distinct())
-        
-        # Use fuzzy matching for domains  
+        all_domain_org_names = list(DomainInformation.objects.values_list("organization_name", flat=True).distinct())
+
+        # Use fuzzy matching for domains
         domain_filter = self._create_organization_matching_filter(federal_agency, all_domain_org_names)
         domain_infos = DomainInformation.objects.filter(domain_filter)
-        
+
         if debug or self.dry_run:
             matched_org_names = self._get_fuzzy_organization_matches(
-                federal_agency.agency, 
+                federal_agency.agency,
                 [normalize_string(name) for name in all_domain_org_names if name],
-                threshold=self.fuzzy_threshold
+                threshold=self.fuzzy_threshold,
             )
             logger.info(f"Domain matching for '{federal_agency.agency}' found {len(matched_org_names)} name variants")
             logger.info(f"Processing {domain_infos.count()} domain information records")
-        
+
         for domain_info in domain_infos:
             org_name = normalize_string(domain_info.organization_name, lowercase=False)
-            
+
             # Show what would change in dry run
             if self.dry_run:
                 current_portfolio = domain_info.portfolio
                 current_suborg = domain_info.sub_organization
                 new_suborg = suborgs.get(org_name, None)
-                
+
                 changes = []
                 if current_portfolio != portfolio:
                     changes.append(f"portfolio: {current_portfolio} → {portfolio}")
                 if current_suborg != new_suborg:
                     changes.append(f"sub_organization: {current_suborg} → {new_suborg}")
-                
+
                 if changes:
                     logger.info(f"  WOULD UPDATE domain '{domain_info.domain}': {', '.join(changes)}")
-            
+
             domain_info.portfolio = portfolio
             domain_info.sub_organization = suborgs.get(org_name, None)
             updated_domains.add(domain_info)
@@ -797,7 +809,7 @@ class Command(BaseCommand):
     ):
         """
         Associate portfolio with domain requests for a federal agency using fuzzy matching.
-        Updates all relevant domain request records that match either by federal_agency 
+        Updates all relevant domain request records that match either by federal_agency
         relationship or by organization name fuzzy matching.
         """
         updated_domain_requests = set()
@@ -805,26 +817,28 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        
+
         # Get all request organization names for fuzzy matching
-        all_request_org_names = list(DomainRequest.objects.exclude(
-            status__in=invalid_states
-        ).values_list('organization_name', flat=True).distinct())
-        
+        all_request_org_names = list(
+            DomainRequest.objects.exclude(status__in=invalid_states)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+
         # Use fuzzy matching for domain requests
         request_filter = self._create_organization_matching_filter(federal_agency, all_request_org_names)
         domain_requests = DomainRequest.objects.filter(request_filter).exclude(status__in=invalid_states)
-        
+
         if debug or self.dry_run:
             # Log the fuzzy matching strategy being used
             matched_org_names = self._get_fuzzy_organization_matches(
                 federal_agency.agency,
                 [normalize_string(name) for name in all_request_org_names if name],
-                threshold=self.fuzzy_threshold
+                threshold=self.fuzzy_threshold,
             )
             logger.info(f"Request matching for '{federal_agency.agency}' using {len(matched_org_names)} name variants")
             logger.info(f"Found {domain_requests.count()} domain requests to process")
-            
+
             # Show some example matches for debugging
             sample_matches = list(matched_org_names)[:5]
             if sample_matches:
@@ -835,35 +849,37 @@ class Command(BaseCommand):
         for domain_request in domain_requests:
             if domain_request.status != DomainRequest.DomainRequestStatus.STARTED:
                 org_name = normalize_string(domain_request.organization_name, lowercase=False)
-                
+
                 # Show what would change in dry run
                 if self.dry_run:
                     changes = []
                     if domain_request.portfolio != portfolio:
                         changes.append(f"portfolio: {domain_request.portfolio} → {portfolio}")
-                    
+
                     new_suborg = suborgs.get(org_name, None)
                     if domain_request.sub_organization != new_suborg:
                         changes.append(f"sub_organization: {domain_request.sub_organization} → {new_suborg}")
-                    
+
                     if domain_request.federal_agency != federal_agency:
                         changes.append(f"federal_agency: {domain_request.federal_agency} → {federal_agency}")
-                    
+
                     if changes:
                         logger.info(f"  WOULD UPDATE request '{domain_request}': {', '.join(changes)}")
-                
+
                 domain_request.portfolio = portfolio
                 domain_request.sub_organization = suborgs.get(org_name, None)
-                
+
                 # Update federal_agency if it wasn't already set correctly
                 if domain_request.federal_agency != federal_agency:
                     old_agency = domain_request.federal_agency
                     domain_request.federal_agency = federal_agency
                     if debug or self.dry_run:
                         action_text = "WOULD UPDATE" if self.dry_run else "Updated"
-                        logger.info(f"{action_text} federal_agency for request '{domain_request}' from "
-                                  f"'{old_agency}' to '{federal_agency}'")
-                
+                        logger.info(
+                            f"{action_text} federal_agency for request '{domain_request}' from "
+                            f"'{old_agency}' to '{federal_agency}'"
+                        )
+
                 if domain_request.sub_organization is None:
                     domain_request.requested_suborganization = normalize_string(
                         domain_request.organization_name, lowercase=False
@@ -872,7 +888,9 @@ class Command(BaseCommand):
                     domain_request.suborganization_state_territory = domain_request.state_territory
             else:
                 # Clear the federal agency for started domain requests
-                agency_name = normalize_string(domain_request.federal_agency.agency if domain_request.federal_agency else "")
+                agency_name = normalize_string(
+                    domain_request.federal_agency.agency if domain_request.federal_agency else ""
+                )
                 portfolio_name = normalize_string(portfolio.organization_name)
                 if agency_name == portfolio_name:
                     if self.dry_run:
@@ -890,7 +908,7 @@ class Command(BaseCommand):
 
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
         action_prefix = "WOULD BE " if self.dry_run else ""
-        
+
         self.portfolio_changes.print_script_run_summary(
             no_changes_message=f"||============= No portfolios {action_prefix.lower()}changed. =============||",
             log_header=f"============= PORTFOLIOS {action_prefix}=============",
