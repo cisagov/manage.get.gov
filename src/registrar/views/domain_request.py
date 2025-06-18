@@ -1189,7 +1189,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
 @grant_access(DOMAIN_REQUESTS_VIEW_ALL)
 class DomainRequestStatusViewOnly(DetailView):
     """
-    View-only access for domain requests (both portfolio and regular).
+    View-only access for domain requests both on enterprise-mode portfolios and legacy mode.
 
     This view provides read-only access to domain request details for users who have
     view permissions but not edit permissions.
