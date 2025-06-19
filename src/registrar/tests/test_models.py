@@ -1510,10 +1510,10 @@ class TestUser(TestCase):
         request.session = {"portfolio": self.portfolio}
 
         # Create active requests
-        domain_1, _ = DraftDomain.objects.get_or_create(name="meoward1.gov")
-        domain_2, _ = DraftDomain.objects.get_or_create(name="meoward2.gov")
-        domain_3, _ = DraftDomain.objects.get_or_create(name="meoward3.gov")
-        domain_4, _ = DraftDomain.objects.get_or_create(name="meoward4.gov")
+        domain_1, _ = DraftDomain.objects.get_or_create(name="meowardandpoopy1.gov")
+        domain_2, _ = DraftDomain.objects.get_or_create(name="meowardandpoopy2.gov")
+        domain_3, _ = DraftDomain.objects.get_or_create(name="meowardandpoopy3.gov")
+        domain_4, _ = DraftDomain.objects.get_or_create(name="meowardandpoopy4.gov")
 
         # Create 3 active requests + 1 that isn't
         DomainRequest.objects.create(
