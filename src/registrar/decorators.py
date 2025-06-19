@@ -18,7 +18,7 @@ IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
-DOMAIN_REQUESTS_VIEW_ALL = "domain_requests_view_all"
+HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
@@ -153,8 +153,8 @@ def _user_has_permission(user, request, rules, **kwargs):
             and not _is_portfolio_member(request),
         ),
         (
-            DOMAIN_REQUESTS_VIEW_ALL,
-            lambda: _has_domain_requests_view_all(user, request, kwargs.get("domain_request_pk")),
+            HAS_DOMAIN_REQUESTS_VIEW_ALL,
+            lambda: _can_view_all_domain_requests(user, request, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
@@ -397,14 +397,12 @@ def _is_staff_managing_domain(request, **kwargs):
     return True
 
 
-def _has_domain_requests_view_all(user, request, domain_request_pk):
+def _can_view_all_domain_requests(user, request, domain_request_pk):
     """
     Determines if the user has view-all permission for domain requests.
     This permission allows users to view domain request details without editing.
     Handles both portfolio and non-portfolio domain requests.
     """
-    logger.debug(f"Checking DOMAIN_REQUESTS_VIEW_ALL for user={user} pk={domain_request_pk}")
-
     portfolio = request.session.get("portfolio")
     # Portfolio-based access
     if user.is_org_user(request) and portfolio:
@@ -422,22 +420,21 @@ def _has_domain_requests_view_all(user, request, domain_request_pk):
 
     # Check non-portfolio permissions
     try:
-        dr = DomainRequest.objects.get(pk=domain_request_pk)
+        domain_request = DomainRequest.objects.get(pk=domain_request_pk)
     except DomainRequest.DoesNotExist:
-        logger.warning(f"DomainRequest(pk={domain_request_pk}) not found")
         return False
 
-    can_view = _can_view_non_portfolio(user, dr)
+    can_view = _has_legacy_domain_request_view_access(user, domain_request)
     logger.debug(f"Non-portfolio check for user={user}, pk={domain_request_pk} → {can_view}")
     return can_view
 
 
-def _can_view_non_portfolio(user, domain_request):
+def _has_legacy_domain_request_view_access(user, domain_request):
     """
-    All of the ways a user can view a non-portfolio domain request:
-      Has the analyst_access_permission or
-      Is the creator of the request or
-      Has the full_access_permission
+    All of the ways a user can view a non-portfolio aka only applies to legacy mode domain request:
+    Has the analyst_access_permission or
+    Is the creator of the request or
+    Has the full_access_permission
     """
     if user.has_perm("registrar.analyst_access_permission"):
         logger.debug(f"{user} has analyst_access_permission")

@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
 from registrar.decorators import (
-    DOMAIN_REQUESTS_VIEW_ALL,
+    HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
     IS_DOMAIN_REQUEST_CREATOR,
     grant_access,
@@ -1186,7 +1186,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         return duplicates
 
 
-@grant_access(DOMAIN_REQUESTS_VIEW_ALL)
+@grant_access(HAS_DOMAIN_REQUESTS_VIEW_ALL)
 class DomainRequestStatusViewOnly(DetailView):
     """
     View-only access for domain requests both on enterprise-mode portfolios and legacy mode.
@@ -1194,7 +1194,7 @@ class DomainRequestStatusViewOnly(DetailView):
     This view provides read-only access to domain request details for users who have
     view permissions but not edit permissions.
 
-    Access is granted via DOMAIN_REQUESTS_VIEW_ALL which handles:
+    Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
     - Portfolio members with view-all domain requests permission
     - Non-portfolio users who are creators of the domain request
     - Analysts with appropriate permissions

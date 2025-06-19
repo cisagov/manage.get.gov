@@ -4,7 +4,7 @@ Centralized permissions management for the registrar.
 
 from django.urls import URLResolver, get_resolver, URLPattern
 from registrar.decorators import (
-    DOMAIN_REQUESTS_VIEW_ALL,
+    HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
     IS_STAFF,
     IS_DOMAIN_MANAGER,
@@ -67,7 +67,7 @@ URL_PERMISSIONS = {
     "organization-senior-official": [IS_PORTFOLIO_MEMBER],
     # Domain requests
     "domain-request-status": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
-    "domain-request-status-viewonly": [DOMAIN_REQUESTS_VIEW_ALL],
+    "domain-request-status-viewonly": [HAS_DOMAIN_REQUESTS_VIEW_ALL],
     "domain-request-withdraw-confirmation": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
     "domain-request-withdrawn": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
     "domain-request-delete": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
