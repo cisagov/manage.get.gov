@@ -138,6 +138,8 @@ class Portfolio(TimeStampedModel):
         super().save(*args, **kwargs)
 
     def clean(self):
+
+        # Checks if federal agency already exists in the portfolio table
         if (
             self.federal_agency != FederalAgency.get_non_federal_agency()
             and Portfolio.objects.filter(federal_agency=self.federal_agency).exists()
