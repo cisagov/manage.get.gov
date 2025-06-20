@@ -4164,7 +4164,6 @@ class TestPortfolioAdmin(TestCase):
         expected_date = self.portfolio.created_at.strftime("%b %d, %Y")
         self.assertEqual(created_on, expected_date)
 
-    # Ensuring alphabetical display of Suborgs
     @less_console_noise_decorator
     def test_suborganizations_display(self):
         """Tests the custom suborg field which displays all related suborgs"""
@@ -4179,6 +4178,7 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
 
+        # Ensuring alphabetical display of Suborgs
         soup = BeautifulSoup(suborganizations, "html.parser")
         suborg_names = [li.text for li in soup.find_all("li")] 
         self.assertEqual(suborg_names, ["Sub1","Sub2","Sub3","Sub4","Sub5"])
