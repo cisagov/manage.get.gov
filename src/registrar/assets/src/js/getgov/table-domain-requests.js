@@ -119,7 +119,7 @@ export class DomainRequestsTable extends BaseTable {
       <td data-label="Status">
         ${request.status}
       </td>
-      <td data-label="Action" class="width--action-column" margin-bottom-3>
+      <td data-label="Action" class="width--action-column margin-bottom-3">
         <div class="tablet:display-flex tablet:flex-row">
           <a href="${actionUrl}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">

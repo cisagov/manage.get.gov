@@ -117,7 +117,7 @@ export class MembersTable extends BaseTable {
       <td class="padding-bottom-0" headers="header-last-active row-header-${unique_id}" data-sort-value="${last_active.sort_value}" data-label="Last active">
         ${last_active.display_value}
       </td>
-      <td data-label="Action" class="padding-bottom-0" margin-bottom-3 headers="header-action row-header-${unique_id}" class="width--action-column">
+      <td data-label="Action" class="padding-bottom-0 margin-bottom-3" headers="header-action row-header-${unique_id}" class="width--action-column">
         <div class="tablet:display-flex tablet:flex-row flex-align-center">
           <a href="${member.action_url}" ${customTableOptions.hasAdditionalActions ? "class='margin-right-2'" : ''}>
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
