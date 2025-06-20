@@ -9,6 +9,7 @@ from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
+from bs4 import BeautifulSoup
 from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
@@ -4177,7 +4178,10 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
-        self.assertEqual(list(suborganizations), ["Sub1","Sub2","Sub3","Sub4","Sub5"])
+
+        soup = BeautifulSoup(html, "html.parser")
+        suborg_names = [li.text for li in soup.find_all("li")] 
+        self.assertEqual(suborg_names, ["Sub1","Sub2","Sub3","Sub4","Sub5"])
 
     @less_console_noise_decorator
     def test_domains_display(self):
