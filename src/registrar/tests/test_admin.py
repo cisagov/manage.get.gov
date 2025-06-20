@@ -77,6 +77,7 @@ from django.contrib import messages
 from unittest.mock import ANY, call, patch, Mock
 
 import logging
+import html
 
 logger = logging.getLogger(__name__)
 
