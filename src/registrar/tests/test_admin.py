@@ -4177,7 +4177,7 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
-        self.assertEqual([s.name for s in suborganizations], ["Sub1","Sub2","Sub3","Sub4","Sub5"])
+        self.assertEqual(list(suborganizations), ["Sub1","Sub2","Sub3","Sub4","Sub5"])
 
     @less_console_noise_decorator
     def test_domains_display(self):
