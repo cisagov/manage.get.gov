@@ -72,6 +72,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
+from django.db import IntegrityError, transaction
 
 from unittest.mock import ANY, call, patch, Mock
 
@@ -4174,6 +4175,17 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
 
+    def test_dup_suborganizatons(self):
+        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+        suborganizations = Suborganization.objects.filter(name="Sub1")
+        self.assertEqual(suborganizations.count(), 2)
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+
     @less_console_noise_decorator
     def test_domains_display(self):
         """Tests the custom domains field which displays all related domains"""
@@ -4329,6 +4341,12 @@ class TestPortfolioAdmin(TestCase):
         senior_official.delete()
         federal_agency.delete()
         portfolio.delete()
+
+    @less_console_noise_decorator
+    def test_duplicate_portfolio(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
 
 
 class TestTransferUser(WebTest):

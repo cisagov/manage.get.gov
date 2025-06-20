@@ -10,7 +10,6 @@ class Suborganization(TimeStampedModel):
     """
 
     name = models.CharField(
-        unique=True,
         max_length=1000,
         verbose_name="Suborganization",
     )
@@ -33,6 +32,9 @@ class Suborganization(TimeStampedModel):
         blank=True,
         verbose_name="state, territory, or military post",
     )
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["portfolio", "name"], name="unique_portfolio_name")]
 
     def __str__(self) -> str:
         return f"{self.name}"
