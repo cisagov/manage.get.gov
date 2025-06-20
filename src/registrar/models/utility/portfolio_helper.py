@@ -354,7 +354,7 @@ def validate_portfolio_invitation(portfolio_invitation):
         raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
     if has_portfolio and not portfolio_permissions:
-        raise ValidationError("When portfolio is assigned, portfolio roles or additional permissions are required.")
+        logger.info("When portfolio is assigned, portfolio roles or additional permissions are required.")
 
     # == Validate role permissions. Compares existing permissions to forbidden ones. == #
     roles = portfolio_invitation.roles if portfolio_invitation.roles is not None else []
