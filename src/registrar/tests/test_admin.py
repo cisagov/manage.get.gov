@@ -77,7 +77,6 @@ from django.contrib import messages
 from unittest.mock import ANY, call, patch, Mock
 
 import logging
-import html
 
 logger = logging.getLogger(__name__)
 
@@ -4180,7 +4179,7 @@ class TestPortfolioAdmin(TestCase):
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
 
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(suborganizations, "html.parser")
         suborg_names = [li.text for li in soup.find_all("li")] 
         self.assertEqual(suborg_names, ["Sub1","Sub2","Sub3","Sub4","Sub5"])
 
