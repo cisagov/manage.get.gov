@@ -1198,16 +1198,16 @@ class PortfolioOrganizationsView(DetailView, View):
 
         return context
 
-    # def set_portfolio_in_session(self, request, portfolio_pk):
-    #     """
-    #     Handles updating active portfolio in session.
-    #     """
-    #     portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
-    #     request.session["portfolio"] = portfolio
+    def post(self, request, portfolio_pk):
+        """
+        Handles updating active portfolio in session.
+        """
+        portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
+        request.session["portfolio"] = portfolio
 
-    #     logger.info("Successfully set active portfolio to ", portfolio)
-    #     # return HttpResponseRedirect(reverse("domains"))
-    #     return self._handle_success_response(request, portfolio)
+        logger.info("Successfully set active portfolio to ", portfolio)
+        # return HttpResponseRedirect(reverse("domains"))
+        return self._handle_success_response(request, portfolio)
     
     # def _handle_success_response(self, request, portfolio):
     #     """

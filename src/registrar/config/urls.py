@@ -385,11 +385,11 @@ urlpatterns = [
     path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
     path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
-    path(
-        "set-active-portfolio/<int:user_portfolio_perm_pk>", 
-        set_portfolio_in_session, 
-        name="set-active-portfolio"
-    ),
+    # path(
+    #     "set-active-portfolio/<int:portfolio_pk>", 
+    #     views.PortfolioOrganizationView.as_view(http_method_names=["post"]), 
+    #     name="set-active-portfolio"
+    # ),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
