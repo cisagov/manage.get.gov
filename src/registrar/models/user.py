@@ -277,6 +277,9 @@ class User(AbstractUser):
             return permission.portfolio
         return None
 
+    def get_num_portfolios(self):
+        return self.get_portfolios().count()
+
     def get_portfolios(self):
         return self.portfolio_permissions.all()
 
