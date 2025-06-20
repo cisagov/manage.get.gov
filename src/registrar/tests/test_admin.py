@@ -4180,8 +4180,8 @@ class TestPortfolioAdmin(TestCase):
 
         # Ensuring alphabetical display of Suborgs
         soup = BeautifulSoup(suborganizations, "html.parser")
-        suborg_names = [li.text for li in soup.find_all("li")] 
-        self.assertEqual(suborg_names, ["Sub1","Sub2","Sub3","Sub4","Sub5"])
+        suborg_names = [li.text for li in soup.find_all("li")]
+        self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
     @less_console_noise_decorator
     def test_domains_display(self):
