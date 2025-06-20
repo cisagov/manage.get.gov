@@ -124,7 +124,7 @@ class Command(BaseCommand):
             send_templated_email(
                 "emails/transition_domain_invitation.txt",
                 "emails/transition_domain_invitation_subject.txt",
-                to_address=email_data["email"],
+                to_addresses=email_data["email"],
                 context={
                     "domains": email_data["domains"],
                 },
