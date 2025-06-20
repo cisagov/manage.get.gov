@@ -7,6 +7,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from django.db.models import Q
 
 from .utility.time_stamped_model import TimeStampedModel
+from django.core.exceptions import ValidationError
 
 
 class Portfolio(TimeStampedModel):
@@ -54,9 +55,8 @@ class Portfolio(TimeStampedModel):
     federal_agency = models.ForeignKey(
         "registrar.FederalAgency",
         on_delete=models.PROTECT,
-        unique=True,
-        null=True,
-        default=None
+        unique=False,
+        default=FederalAgency.get_non_federal_agency,
     )
 
     senior_official = models.ForeignKey(
@@ -135,8 +135,9 @@ class Portfolio(TimeStampedModel):
         ):
             self.organization_name = self.federal_agency.agency
         
-        if(self.federal_type is null):
-            self.federal_type = FederalAgency.get_non_federal_agency
+        if(self.federal_agency != FederalAgency.get_non_federal_agency() and Portfolio.objects.filter(federal_agency=self.federal_agency).exists()):
+            raise ValidationError(f'Federal Agency exists')
+           
 
         super().save(*args, **kwargs)
 
