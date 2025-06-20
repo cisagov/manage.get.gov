@@ -142,7 +142,7 @@ class Portfolio(TimeStampedModel):
             self.federal_agency != FederalAgency.get_non_federal_agency()
             and Portfolio.objects.filter(federal_agency=self.federal_agency).exists()
         ):
-            raise ValidationError({"federal_agency": "The federal agency already exists"})
+            raise ValidationError({"federal_agency": "Portfolio with this federal agency already exists"})
 
     @property
     def federal_type(self):
