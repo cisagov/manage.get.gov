@@ -1557,7 +1557,7 @@ class Domain(TimeStampedModel, DomainHelper):
     # ForeignKey on DomainInvitation creates an "invitations" member for
     # all of the invitations that have been sent for this domain
 
-    def _get_or_create_domain(self):
+    def _get_or_create_domain_in_registry(self):
         """Try to fetch info about this domain. Create it if it does not exist."""
         already_tried_to_create = False
         exitEarly = False
@@ -2059,7 +2059,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _fetch_cache(self, fetch_hosts=False, fetch_contacts=False):
         """Contact registry for info about a domain."""
         try:
-            data_response = self._get_or_create_domain()
+            data_response = self._get_or_create_domain_in_registry()
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
             self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
