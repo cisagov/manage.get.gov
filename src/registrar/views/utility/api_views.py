@@ -177,8 +177,10 @@ def set_portfolio_in_session(request, user_portfolio_perm_pk):
     
     portfolio = portfolio_permission.portfolio        
     request.session["portfolio"] = portfolio
+    session_portfolio = request.session["portfolio"]
 
     logger.info(f"Set active portfolio to {portfolio.organization_name}.")
+    logger.info(f"Session portfolio now {session_portfolio}.")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"success": success_message}, status=200)
     return redirect(reverse("domains"))
