@@ -4627,10 +4627,10 @@ class TestDomainAdminState(TestCase):
         self.client.login(username="superuser", password=p)
 
     def test_domain_state_remains_unknown_on_refresh(self):
-        '''
+        """
         Making sure we do NOT do a domain registry lookup or creation
         when we click into the domain in /admin
-        '''
+        """
 
         # 1. Create domain request
         domain_request = completed_domain_request(
