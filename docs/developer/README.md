@@ -382,7 +382,7 @@ Then, copy the variables under the section labled `s3`.
 
 ## Request Flow FSM Diagram
 
-The [.gov Domain Request & Domain Status Digram](https://miro.com/app/board/uXjVMuqbLOk=/?moveToWidget=3458764594819017396&cot=14) visualizes the domain request flow and resulting domain objects.
+The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaenterprise3850/m/cisaenterprise3850/1743613581103/eeff220faf8db79d54624cef49d40f66cf85bfd6) visualizes the domain request flow and resulting domain objects.
 
 
 ## Testing the prototype add DNS record feature (delete this after we are done testing!)
