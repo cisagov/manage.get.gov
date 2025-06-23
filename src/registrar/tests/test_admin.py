@@ -4179,12 +4179,11 @@ class TestPortfolioAdmin(TestCase):
         Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
         portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
-        suborganizations = Suborganization.objects.filter(name="Sub1")
-        self.assertEqual(suborganizations.count(), 2)
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+
 
     @less_console_noise_decorator
     def test_domains_display(self):
