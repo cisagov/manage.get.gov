@@ -22,32 +22,7 @@
         </div>
     
         {% for user_portfolio_permission in user_portfolio_permissions %}
-        <div class="grid-row margin-bottom-1">
-            <form 
-                id="set-session-portfolio-form-{{ forloop.counter }}" 
-                method="post" 
-                action="{% url 'your-portfolios' portfolio_pk=user_portfolio_permission.id %}">
-            </form>
-            <button
-                type="submit"
-                name="set-session-portfolio-button{{ forloop.counter }}"
-                value="{{user_portfolio_permission.portfolio.id}}"
-                
-            >
-
-                <div class="usa-card__container margin-left-0">
-                    <div class="usa-card__header">
-                        <h2 class="usa-card__heading">
-                            {{user_portfolio_permission.portfolio}}
-                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
-                                <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
-                            </svg>
-                        </h2>
-                    </div>
-                </div>
-            <!-- </a> -->
-            </button>
-        </div>
+            {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio %}
         {% endfor %}
         
         <p>

@@ -1,0 +1,23 @@
+<div class="grid-row margin-bottom-1">
+    <form 
+        id="set-session-portfolio-form-{{ forloop.counter }}" 
+        method="post"
+        action="{% url 'set-session-portfolio' portfolio_pk=portfolio.id %}"
+    >
+        {% csrf_token %}
+    <button
+        type="submit"
+        class="usa-card__container margin-left-0"
+        name="set-session-portfolio-button{{ forloop.counter }}"
+        value="{{portfolio.id}}"
+    >
+                <div class="usa-card__header">
+                <h2 class="usa-card__heading">
+                    {{portfolio}}
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                        <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
+                    </svg>
+                </h2>
+            </div>
+    </button>
+</form>

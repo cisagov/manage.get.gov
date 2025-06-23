@@ -196,7 +196,7 @@ class CheckPortfolioMiddleware:
         if multiple_portfolios_flag and user_has_multiple_portfolios:
             if no_set_session_portfolio:
                 print("Redirecting to set portfolio page")
-                self._redirect_to_select_portfolio_page(request)
+                # self._redirect_to_select_portfolio_page(request)
         else:
             # If user doesn't have multiple portfolios, grab first portfolio
             # Handles edge case where multiple_portfolios flag is off but
