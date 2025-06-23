@@ -19,6 +19,14 @@ class Portfolio(TimeStampedModel):
     # Addresses the UnorderedObjectListWarning
     class Meta:
         ordering = ["organization_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization_name"],
+                name="unique_organization_name_case_sensitive",
+                condition=None,
+                case_sensitive=True,
+            )
+        ]
 
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
