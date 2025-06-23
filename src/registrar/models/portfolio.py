@@ -19,14 +19,6 @@ class Portfolio(TimeStampedModel):
     # Addresses the UnorderedObjectListWarning
     class Meta:
         ordering = ["organization_name"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["organization_name"],
-                name="unique_organization_name_case_sensitive",
-                condition=None,
-                case_sensitive=True,
-            )
-        ]
 
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
@@ -153,6 +145,11 @@ class Portfolio(TimeStampedModel):
             and Portfolio.objects.filter(federal_agency=self.federal_agency).exists()
         ):
             raise ValidationError({"federal_agency": "Portfolio with this federal agency already exists"})
+
+        # Checks if organization name already exists in the portfolio table (not case sensitive)
+
+        if Portfolio.objects.filter(organization_name_iexact=self.organization_name).exists():
+            raise ValidationError({"organization_name": "Portfolio with this name already exists"})
 
     @property
     def federal_type(self):
