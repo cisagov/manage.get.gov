@@ -23,10 +23,32 @@ class EmailSendingError(RuntimeError):
     pass
 
 
+def _normalize_and_flatten_email_list(email_or_emails):
+    """
+    Normalizes a single email string + flattens nested structures
+    """
+
+    # If passing in single email, it's wrapped into a list
+    if isinstance(email_or_emails, str):
+        return [email_or_emails]
+
+    email_list = []
+
+    for item in email_or_emails:
+        # If it comes in as a list, "flatten" it recursively
+        if isinstance(item, list):
+            email_list.extend(_normalize_and_flatten_email_list(item))
+        # Else add into list if it's a string, otherwise do nothing
+        else:
+            email_list.append(item)
+
+    return email_list
+
+
 def send_templated_email(  # noqa
     template_name: str,
     subject_template_name: str,
-    to_address: str = "",
+    to_addresses: list[str] | str,
     bcc_address: str = "",
     context={},
     attachment_file=None,
@@ -35,10 +57,12 @@ def send_templated_email(  # noqa
 ):
     """Send an email built from a template.
 
-    to_address and bcc_address currently only support single addresses.
+    to_addresses is a list and can contain many addresses.
+
+    bcc_address currently only support single address.
 
     cc_addresses is a list and can contain many addresses. Emails not in the
-    whitelist (if applicable) will be filtered out before sending.
+    allow list (if applicable) will be filtered out before sending.
 
     template_name and subject_template_name are relative to the same template
     context as Django's HTML templates. context gives additional information
@@ -52,6 +76,8 @@ def send_templated_email(  # noqa
     if context is None:
         context = {}
 
+    to_addresses = _normalize_and_flatten_email_list(to_addresses)
+
     env_base_url = settings.BASE_URL
     # The regular expression is to get both http (localhost) and https (everything else)
     env_name = re.sub(r"^https?://", "", env_base_url).split(".")[0]
@@ -64,18 +90,22 @@ def send_templated_email(  # noqa
 
     context["manage_url"] = manage_url
 
-    # by default assume we can send to all addresses (prod has no whitelist)
+    # by default assume we can send to all addresses (prod has no allowlist)
     sendable_cc_addresses = cc_addresses
+    sendable_to_addresses = to_addresses
 
     if not settings.IS_PRODUCTION:  # type: ignore
         # Split into a function: C901 'send_templated_email' is too complex.
         # Raises an error if we cannot send an email (due to restrictions).
         # Does nothing otherwise.
-        _can_send_email(to_address, bcc_address)
+        _can_send_email(sendable_to_addresses, bcc_address)
 
-        # if we're not in prod, we need to check the whitelist for CC'ed addresses
+        sendable_to_addresses, blocked_to_addresses = get_sendable_addresses(to_addresses)
+        if blocked_to_addresses:
+            logger.warning("Some TO addresses were removed: %s.", blocked_to_addresses)
+
+        # if we're not in prod, we need to check the allowlist for CC'ed addresses
         sendable_cc_addresses, blocked_cc_addresses = get_sendable_addresses(cc_addresses)
-
         if blocked_cc_addresses:
             logger.warning("Some CC'ed addresses were removed: %s.", blocked_cc_addresses)
 
@@ -99,14 +129,14 @@ def send_templated_email(  # noqa
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             config=settings.BOTO_CONFIG,
         )
-        logger.info(f"Connected to SES client! Template name: {template_name} to {to_address}")
+        logger.info(f"Connected to SES client! Template name: {template_name} to {sendable_to_addresses}")
     except Exception as exc:
         logger.debug("E-mail unable to send! Could not access the SES client.")
         raise EmailSendingError("Could not access the SES client.") from exc
 
     destination = {}
-    if to_address:
-        destination["ToAddresses"] = [to_address]
+    if to_addresses:
+        destination["ToAddresses"] = sendable_to_addresses
     if bcc_address:
         destination["BccAddresses"] = [bcc_address]
     if cc_addresses:
@@ -134,7 +164,9 @@ def send_templated_email(  # noqa
                     },
                 },
             )
-            logger.info("Email sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses)
+            logger.info(
+                "Email sent to [%s], bcc [%s], cc %s", sendable_to_addresses, bcc_address, sendable_cc_addresses
+            )
         else:
             ses_client = boto3.client(
                 "ses",
@@ -144,17 +176,20 @@ def send_templated_email(  # noqa
                 config=settings.BOTO_CONFIG,
             )
             send_email_with_attachment(
-                settings.DEFAULT_FROM_EMAIL, to_address, subject, email_body, attachment_file, ses_client
+                settings.DEFAULT_FROM_EMAIL, sendable_to_addresses, subject, email_body, attachment_file, ses_client
             )
             logger.info(
-                "Email with attachment sent to [%s], bcc [%s], cc %s", to_address, bcc_address, sendable_cc_addresses
+                "Email with attachment sent to [%s], bcc [%s], cc %s",
+                sendable_to_addresses,
+                bcc_address,
+                sendable_cc_addresses,
             )
 
     except Exception as exc:
         raise EmailSendingError("Could not send SES email.") from exc
 
 
-def _can_send_email(to_address, bcc_address):
+def _can_send_email(to_addresses, bcc_address):
     """Raises an EmailSendingError if we cannot send an email. Does nothing otherwise."""
 
     # testing below a global waffle flag which will not be associated with a user
@@ -163,18 +198,31 @@ def _can_send_email(to_address, bcc_address):
         message = "Could not send email. Email sending is disabled due to flag 'disable_email_sending'."
         raise EmailSendingError(message)
     else:
-        # Raise an email sending error if these doesn't exist within our whitelist.
+        # Raise an email sending error if these doesn't exist within our allowlist.
         # If these emails don't exist, this function can handle that elsewhere.
         AllowedEmail = apps.get_model("registrar", "AllowedEmail")
-        message = "Could not send email. The email '{}' does not exist within the whitelist."
-        if to_address and not AllowedEmail.is_allowed_email(to_address):
-            raise EmailSendingError(message.format(to_address))
+        message = "Could not send email. The email '{}' does not exist within the allowlist."
+
+        if not to_addresses:
+            raise EmailSendingError(message.format(to_addresses))
+
+        # Collect all the allowed emails
+        allowed_email_count = 0
+
+        for email in to_addresses:
+            if AllowedEmail.is_allowed_email(email):
+                allowed_email_count += 1
+
+        # IF none are allowed, then block sending email and send error
+        # ELSE this can send bc there are allowed emails
+        if allowed_email_count == 0:
+            raise EmailSendingError(message.format(to_addresses))
 
         if bcc_address and not AllowedEmail.is_allowed_email(bcc_address):
             raise EmailSendingError(message.format(bcc_address))
 
 
-def get_sendable_addresses(addresses: list[str]) -> tuple[list[str], list[str]]:
+def get_sendable_addresses(addresses: list[str] | str) -> tuple[list[str], list[str]]:
     """Checks whether a list of addresses can be sent to.
 
     Returns: a lists of all provided addresses that are ok to send to and a list of addresses that were blocked.
@@ -226,7 +274,7 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
     msg["From"] = sender
-    msg["To"] = recipient
+    msg["To"] = ", ".join(recipient)
 
     # Add the text part
     text_part = MIMEText(body, "plain")
@@ -240,5 +288,6 @@ def send_email_with_attachment(sender, recipient, subject, body, attachment_file
     attachment_part.add_header("Content-Disposition", f'attachment; filename="{current_filename}"')
     msg.attach(attachment_part)
 
-    response = ses_client.send_raw_email(Source=sender, Destinations=[recipient], RawMessage={"Data": msg.as_string()})
+    response = ses_client.send_raw_email(Source=sender, Destinations=recipient, RawMessage={"Data": msg.as_string()})
+
     return response
