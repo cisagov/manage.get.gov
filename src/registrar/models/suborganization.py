@@ -10,6 +10,9 @@ class Suborganization(TimeStampedModel):
     Suborganization under an organization (portfolio)
     """
 
+    class Meta:
+        ordering = ["name"]
+
     name = models.CharField(
         max_length=1000,
         verbose_name="Suborganization",

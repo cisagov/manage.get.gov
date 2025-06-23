@@ -1,0 +1,28 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+
+Hi, domain managers. 
+On {{ expiration_date }}, the following domain will expire: {{ domain }}
+----------------------------------------------------------------
+HOW TO RENEW A DOMAIN
+There’s no cost to renew a domain. After renewal, the domain will be registered for another year. 
+
+Any domain manager can complete the process within the .gov registrar <{{ manage_url }}>. 
+{% if portfolio %}
+Organization admins are cc’d on this email for awareness but do not need to take action.
+{% endif %}
+WHAT HAPPENS IF THE DOMAIN EXPIRES?
+When a .gov domain expires, it’s not automatically put on hold or deleted. It continues to resolve online even after its expiration date. Before we delete the domain, we’ll make every effort to contact your organization. We encourage you to renew the domain promptly if you're still using it.
+
+If you no longer need {{ domain }}, reply to this email and let us know that you’d like to delete it.
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}
