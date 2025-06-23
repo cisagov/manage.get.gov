@@ -44,7 +44,7 @@ class Suborganization(TimeStampedModel):
 
     def clean(self):
         if (
-            Suborganization.objects.exclude(self.pk)
+            Suborganization.objects.exclude(pk=self.pk)
             .filter(
                 portfolio=self.portfolio,
                 name__iexact=self.name,
