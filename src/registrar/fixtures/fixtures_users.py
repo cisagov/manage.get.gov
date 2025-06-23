@@ -36,26 +36,6 @@ class UserFixture:
             "email": "abraham.alam@ecstech.com",
         },
         {
-            "username": "be17c826-e200-4999-9389-2ded48c43691",
-            "first_name": "Matthew",
-            "last_name": "Spence",
-            "title": "Hollywood hair",
-        },
-        {
-            "username": "5f283494-31bd-49b5-b024-a7e7cae00848",
-            "first_name": "Rachid",
-            "last_name": "Mrad",
-            "email": "rachid.mrad@associates.cisa.dhs.gov",
-            "title": "Common pirate",
-        },
-        {
-            "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
-            "first_name": "Alysia",
-            "last_name": "Broddrick",
-            "email": "abroddrick@truss.works",
-            "title": "I drink coffee and know things",
-        },
-        {
             "username": "8f8e7293-17f7-4716-889b-1990241cbd39",
             "first_name": "Katherine",
             "last_name": "Osos",
@@ -77,12 +57,6 @@ class UserFixture:
             "title": "Product owner",
         },
         {
-            "username": "30001ee7-0467-4df2-8db2-786e79606060",
-            "first_name": "Zander",
-            "last_name": "Adkinson",
-            "title": "ACME specialist",
-        },
-        {
             "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
             "first_name": "Paul",
             "last_name": "Kuykendall",
@@ -94,13 +68,6 @@ class UserFixture:
             "last_name": "Hsieh",
             "email": "rebecca.hsieh@truss.works",
             "title": "Catlady",
-        },
-        {
-            "username": "fa69c8e8-da83-4798-a4f2-263c9ce93f52",
-            "first_name": "David",
-            "last_name": "Kennedy",
-            "email": "david.kennedy@ecstech.com",
-            "title": "Mean lean coding machine",
         },
         {
             "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
@@ -122,25 +89,11 @@ class UserFixture:
             "title": "Hufflepuff prefect",
         },
         {
-            "username": "ac49d7c1-368a-4e6b-8f1d-60250e20a16f",
-            "first_name": "Vicky",
-            "last_name": "Chin",
-            "email": "szu.chin@associates.cisa.dhs.gov",
-            "title": "Ze whip",
-        },
-        {
             "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
             "first_name": "Christina",
             "last_name": "Burnett",
             "email": "christina.burnett@cisa.dhs.gov",
             "title": "Groovy",
-        },
-        {
-            "username": "76612d84-66b0-4ae9-9870-81e98b9858b6",
-            "first_name": "Anna",
-            "last_name": "Gingle",
-            "email": "annagingle@truss.works",
-            "title": "Sweetwater sailor",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -169,13 +122,6 @@ class UserFixture:
             "last_name": "Abbitt",
             "email": "kaitlin.abbitt@cisa.dhs.gov",
             "title": "Product Manager",
-        },
-        {
-            "username": "5e54fd98-6c11-4cb3-82b6-93ed8be50a61",
-            "first_name": "Gina",
-            "last_name": "Summers",
-            "email": "gina.summers@ecstech.com",
-            "title": "Scrum Master",
         },
         {
             "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
@@ -215,32 +161,10 @@ class UserFixture:
             "email": "abraham.alam+1@ecstech.com",
         },
         {
-            "username": "d6bf296b-fac5-47ff-9c12-f88ccc5c1b99",
-            "first_name": "Matthew-Analyst",
-            "last_name": "Spence-Analyst",
-        },
-        {
-            "username": "319c490d-453b-43d9-bc4d-7d6cd8ff6844",
-            "first_name": "Rachid-Analyst",
-            "last_name": "Mrad-Analyst",
-            "email": "rachid.mrad@gmail.com",
-        },
-        {
-            "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
-            "first_name": "Alysia-Analyst",
-            "last_name": "Alysia-Analyst",
-            "email": "abroddrick+1@truss.works",
-        },
-        {
             "username": "91a9b97c-bd0a-458d-9823-babfde7ebf44",
             "first_name": "Katherine-Analyst",
             "last_name": "Osos-Analyst",
             "email": "kosos+1@truss.works",
-        },
-        {
-            "username": "2cc0cde8-8313-4a50-99d8-5882e71443e8",
-            "first_name": "Zander-Analyst",
-            "last_name": "Adkinson-Analyst",
         },
         {
             "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
@@ -251,12 +175,6 @@ class UserFixture:
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
             "first_name": "Rebecca-Analyst",
             "last_name": "Hsieh-Analyst",
-        },
-        {
-            "username": "5dc6c9a6-61d9-42b4-ba54-4beff28bac3c",
-            "first_name": "David-Analyst",
-            "last_name": "Kennedy-Analyst",
-            "email": "david.kennedy@associates.cisa.dhs.gov",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
@@ -283,22 +201,10 @@ class UserFixture:
             "email": "kristina.yin+1@gsa.gov",
         },
         {
-            "username": "8f42302e-b83a-4c9e-8764-fc19e2cea576",
-            "first_name": "Vickster-Analyst",
-            "last_name": "Chin-Analyst",
-            "email": "szu.chin@ecstech.com",
-        },
-        {
             "username": "22f88aa5-3b54-4b1f-9c57-201fb02ddba7",
             "first_name": "Christina-Analyst",
             "last_name": "Burnett-Analyst",
             "email": "christina.burnett@gwe.cisa.dhs.gov",
-        },
-        {
-            "username": "e1e350b1-cfc1-4753-a6cb-3ae6d912f99c",
-            "first_name": "Anna-Analyst",
-            "last_name": "Gingle-Analyst",
-            "email": "annagingle+analyst@truss.works",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
@@ -339,7 +245,7 @@ class UserFixture:
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
-    ADDITIONAL_ALLOWED_EMAILS: list[str] = ["davekenn4242@gmail.com", "rachid_mrad@hotmail.com"]
+    ADDITIONAL_ALLOWED_EMAILS: list[str] = []
 
     @classmethod
     def load_users(cls, users, group_name, are_superusers=False):
@@ -367,8 +273,13 @@ class UserFixture:
 
         logger.info(f"Users loaded for group {group_name}.")
 
-    def load_allowed_emails(cls, users, additional_emails):
+    def load_allowed_emails(cls, users, additional_emails, delete_existing_allowed_emails):
         """Populates a whitelist of allowed emails (as defined in this list)"""
+
+        if delete_existing_allowed_emails:
+            logger.info("Deleting all allowed emails")
+            AllowedEmail.objects.all().delete()
+
         logger.info(f"Going to load allowed emails for {len(users)} users")
         if additional_emails:
             logger.info(f"Going to load {len(additional_emails)} additional allowed emails")
@@ -448,7 +359,7 @@ class UserFixture:
                     last_name=last_name,
                     username=username,
                     email=email,
-                    title=user_data.get("title", "Peon"),
+                    title=user_data.get("title", "team member"),
                     phone=user_data.get("phone", "2022222222"),
                     is_active=user_data.get("is_active", True),
                     is_staff=True,
@@ -474,7 +385,7 @@ class UserFixture:
         for user in users:
             updated = False
             if not user.title:
-                user.title = "Peon"
+                user.title = "Team member"
                 updated = True
             if not user.phone:
                 user.phone = "2022222222"
@@ -499,10 +410,15 @@ class UserFixture:
             group.user_set.add(*users_not_in_group)
 
     @classmethod
-    def load(cls):
+    def load(cls, delete_existing_allowed_emails=False):
         cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
         cls.load_users(cls.STAFF, "cisa_analysts_group")
 
         # Combine ADMINS and STAFF lists
         all_users = cls.ADMINS + cls.STAFF
-        cls.load_allowed_emails(cls, all_users, additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS)
+        cls.load_allowed_emails(
+            cls,
+            all_users,
+            additional_emails=cls.ADDITIONAL_ALLOWED_EMAILS,
+            delete_existing_allowed_emails=delete_existing_allowed_emails,
+        )
