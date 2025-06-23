@@ -4184,7 +4184,6 @@ class TestPortfolioAdmin(TestCase):
             with transaction.atomic():
                 Suborganization.objects.create(name="Sub1", portfolio=portfolio)
 
-
     @less_console_noise_decorator
     def test_domains_display(self):
         """Tests the custom domains field which displays all related domains"""
