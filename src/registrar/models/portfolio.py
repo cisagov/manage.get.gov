@@ -147,9 +147,7 @@ class Portfolio(TimeStampedModel):
     def clean(self):
 
         # Checks if federal agency already exists in the portfolio table
-        if (
-            Portfolio.objects.filter(federal_agency=self.federal_agency).exists()
-        ):
+        if Portfolio.objects.filter(federal_agency=self.federal_agency).exists():
             raise ValidationError({"federal_agency": "Portfolio with this federal agency already exists"})
 
         # Checks if organization name already exists in the portfolio table (not case sensitive)
