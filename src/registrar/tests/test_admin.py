@@ -9,6 +9,7 @@ from registrar.utility.errors import MissingEmailError
 from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
+from bs4 import BeautifulSoup
 from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
@@ -4166,13 +4167,21 @@ class TestPortfolioAdmin(TestCase):
     @less_console_noise_decorator
     def test_suborganizations_display(self):
         """Tests the custom suborg field which displays all related suborgs"""
-        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
         Suborganization.objects.create(name="Sub2", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub5", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub3", portfolio=self.portfolio)
+        Suborganization.objects.create(name="Sub4", portfolio=self.portfolio)
 
         suborganizations = self.admin.suborganizations(self.portfolio)
         self.assertIn("Sub1", suborganizations)
         self.assertIn("Sub2", suborganizations)
         self.assertIn('<ul class="add-list-reset">', suborganizations)
+
+        # Ensuring alphabetical display of Suborgs
+        soup = BeautifulSoup(suborganizations, "html.parser")
+        suborg_names = [li.text for li in soup.find_all("li")]
+        self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
     @less_console_noise_decorator
     def test_domains_display(self):
