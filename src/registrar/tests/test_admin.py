@@ -73,7 +73,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from unittest.mock import ANY, call, patch, Mock
