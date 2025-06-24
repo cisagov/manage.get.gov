@@ -4184,6 +4184,12 @@ class TestPortfolioAdmin(TestCase):
         suborg_names = [li.text for li in soup.find_all("li")]
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
+    def test_can_have_dup_suborganizatons(self):
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+        suborganizations = Suborganization.object.filter(name="Sub1")
+        self.assertEqual(suborganizations.count(), 2)
+
     @less_console_noise_decorator
     def test_domains_display(self):
         """Tests the custom domains field which displays all related domains"""
