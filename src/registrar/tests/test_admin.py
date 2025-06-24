@@ -4298,7 +4298,7 @@ class TestPortfolioAdmin(TestCase):
 
         # Create a federal portfolio
         portfolio = Portfolio.objects.create(
-            organization_name="Test Federal Org For Senior Official",
+            organization_name="Test Federal Org",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             creator=self.superuser,
         )
