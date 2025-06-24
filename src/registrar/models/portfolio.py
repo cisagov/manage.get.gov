@@ -145,6 +145,7 @@ class Portfolio(TimeStampedModel):
 
         # Checks if organization name already exists in the portfolio table (not case sensitive)
 
+        print(self.organization_name, Portfolio.objects.filter(organization_name_iexact=self.organization_name))
         if Portfolio.objects.exclude(pk=self.pk).filter(organization_name__iexact=self.organization_name).exists():
             raise ValidationError({"organization_name": "Portfolio with this name already exists"})
 
