@@ -194,6 +194,8 @@ class CheckPortfolioMiddleware:
         no_set_session_portfolio = not request.session.get("portfolio")
 
         if multiple_portfolios_flag and user_has_multiple_portfolios:
+            portfolio = request.session.get("portfolio")
+            print("portfolio: ", portfolio)
             if no_set_session_portfolio:
                 print("Redirecting to set portfolio page")
                 # self._redirect_to_select_portfolio_page(request)

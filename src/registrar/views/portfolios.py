@@ -1202,8 +1202,11 @@ class PortfolioOrganizationsView(DetailView, View):
         """
         Handles updating active portfolio in session.
         """
+        print("portfolio pk]: ", portfolio_pk)
+
         portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
         request.session["portfolio"] = portfolio
+        request.session.save()
 
         logger.info("Successfully set active portfolio to ", portfolio)
         # return HttpResponseRedirect(reverse("domains"))
