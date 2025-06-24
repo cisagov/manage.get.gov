@@ -1193,7 +1193,7 @@ class PortfolioOrganizationsView(DetailView, View):
         """Add additional context data to the template."""
         # We can override the base class. This view only needs this item.
         context = {}
-        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user)
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by("portfolio")
         context["user_portfolio_permissions"] = user_portfolio_permissions
 
         return context
