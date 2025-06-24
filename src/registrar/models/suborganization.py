@@ -50,3 +50,6 @@ class Suborganization(TimeStampedModel):
             .exists()
         ):
             raise ValidationError({"name": "Name already exists in Portfolio"})
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)

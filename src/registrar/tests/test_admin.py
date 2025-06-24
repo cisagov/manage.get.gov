@@ -74,6 +74,7 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import IntegrityError, transaction
+from django.core.exceptions import ValidationError
 
 from unittest.mock import ANY, call, patch, Mock
 
@@ -4187,8 +4188,11 @@ class TestPortfolioAdmin(TestCase):
     def test_can_have_dup_suborganizatons(self):
         portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
-        suborganizations = Suborganization.object.filter(name="Sub1")
-        self.assertEqual(suborganizations.count(), 2)
+        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+
+        with self.assertRaises(ValidationError):
+            test_dup = Suborganization(name="sub1", portfolio=portfolio)
+            test_dup.full_clean()
 
     @less_console_noise_decorator
     def test_domains_display(self):
@@ -4294,7 +4298,7 @@ class TestPortfolioAdmin(TestCase):
 
         # Create a federal portfolio
         portfolio = Portfolio.objects.create(
-            organization_name="Test Federal Org",
+            organization_name="Test Federal Org For Senior Official",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             creator=self.superuser,
         )
@@ -4348,9 +4352,10 @@ class TestPortfolioAdmin(TestCase):
 
     @less_console_noise_decorator
     def test_duplicate_portfolio(self):
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             with transaction.atomic():
-                Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+                portfolio_dup = Portfolio(organization_name="Test portfolio", creator=self.superuser)
+                portfolio_dup.full_clean()
 
 
 class TestTransferUser(WebTest):
