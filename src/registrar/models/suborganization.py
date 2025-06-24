@@ -37,15 +37,6 @@ class Suborganization(TimeStampedModel):
         verbose_name="state, territory, or military post",
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["portfolio", "name"],
-                condition=~models.Q(state="deleted"),
-                name="unique_portfolio_name_except_delete",
-            ),
-        ]
-
     def __str__(self) -> str:
         return f"{self.name}"
 
