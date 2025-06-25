@@ -383,7 +383,7 @@ class TestPortfolioInvitations(TestCase):
             invitation.clean()
 
         self.assertIn(
-            "When portfolio is assigned, portfolio roles or additional permissions are required.",
+            "User didn't provide both a valid email address and a level of access for the member",
             "".join(cleaned_msg.output),
         )
 
