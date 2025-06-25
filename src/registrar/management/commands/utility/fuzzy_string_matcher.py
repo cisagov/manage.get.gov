@@ -14,6 +14,7 @@ to suit specific use cases, and supports detailed match reporting.
 It also supports batch processing of multiple target strings against a pool of candidates.
 This utility is designed to be flexible and extensible for various fuzzy matching needs.
 """
+
 import logging
 from typing import Set, List, Dict, Optional, Callable, Tuple
 from dataclasses import dataclass, field

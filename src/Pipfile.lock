@@ -846,10 +846,10 @@
         },
         "phonenumberslite": {
             "hashes": [
-                "sha256:4520413b78961165ee427afcd3ab93449c347aaf27b7c2a109258d14dfabdf21",
-                "sha256:60756f4c0a6057820c7e39dbd589038aebab61d6f336369ada8c6a01bf38cae9"
+                "sha256:bb2944a5cd6477597214bf09613b65cda1bf6e454e298fa7426fe8ba318471d9",
+                "sha256:c2840efd67bca0e515570b615ab8de551167bb5989f065d2e1f1131991618ecc"
             ],
-            "version": "==9.0.7"
+            "version": "==9.0.8"
         },
         "psycopg2-binary": {
             "hashes": [
