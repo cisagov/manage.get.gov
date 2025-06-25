@@ -185,8 +185,8 @@ class GenericFuzzyMatcher:
     DEFAULT_STRATEGIES = [
         MatchingStrategy(fuzz.token_sort_ratio, 85, "token_sort"),
         MatchingStrategy(fuzz.token_set_ratio, 85, "token_set"),
-        MatchingStrategy(fuzz.partial_ratio, 90, "partial"),  # Higher threshold for partial
-        MatchingStrategy(fuzz.ratio, 95, "exact"),  # Very high threshold for exact matches
+        MatchingStrategy(fuzz.partial_ratio, 90, "partial"),
+        MatchingStrategy(fuzz.ratio, 90, "exact"),
     ]
 
     def __init__(
@@ -226,6 +226,9 @@ class GenericFuzzyMatcher:
         Returns:
             MatchResult containing matched strings and optional details
         """
+        if not target_string or not candidate_strings:
+            return MatchResult(matched_strings=set())
+
         normalized_target = normalize_string(target_string)
         matched_strings = set()
         all_match_details = []
@@ -234,24 +237,51 @@ class GenericFuzzyMatcher:
         # Get target variants if variant generator is provided
         target_variants = {normalized_target}
         if include_variants and self.variant_generator:
-            target_variants.update(self.variant_generator.generate_variants(target_string))
+            generated_variants = self.variant_generator.generate_variants(target_string)
+            target_variants.update(generated_variants)
             variants_used = target_variants.copy()
 
-        # Test each target variant against candidates
+        # Try exact string matching
+        normalized_candidates = [normalize_string(candidate) for candidate in candidate_strings]
+        for i, normalized_candidate in enumerate(normalized_candidates):
+            if normalized_candidate in target_variants:
+                matched_strings.add(candidate_strings[i])
+                if report_details:
+                    all_match_details.append((candidate_strings[i], 100.0, "exact_string_match"))
+
+        # Try fuzzy matching strategies
         for target_variant in target_variants:
             for strategy in self.strategies:
-                matches = process.extract(
-                    target_variant,
-                    candidate_strings,
-                    scorer=strategy.scorer,
-                    score_cutoff=strategy.threshold,
-                    limit=None,
-                )
+                try:
+                    # Use the strategy's threshold if specified, otherwise use global threshold
+                    threshold = strategy.threshold if hasattr(strategy, 'threshold') else self.global_threshold
+                    
+                    matches = process.extract(
+                        target_variant,
+                        candidate_strings,
+                        scorer=strategy.scorer,
+                        score_cutoff=threshold,
+                        limit=None,
+                    )
 
-                for match_string, score, _ in matches:
-                    matched_strings.add(match_string)
-                    if report_details:
-                        all_match_details.append((match_string, score, strategy.name))
+                    for match_string, score, _ in matches:
+                        # Only add if not already found by exact matching
+                        if match_string not in matched_strings:
+                            matched_strings.add(match_string)
+                            
+                        if report_details:
+                            # Avoid duplicate details for the same match
+                            existing_detail = next(
+                                (detail for detail in all_match_details 
+                                 if detail[0] == match_string and detail[2] == strategy.name), 
+                                None
+                            )
+                            if not existing_detail:
+                                all_match_details.append((match_string, score, strategy.name))
+
+                except Exception as e:
+                    logger.warning(f"Error in fuzzy matching with strategy {strategy.name}: {e}")
+                    continue
 
         return MatchResult(
             matched_strings=matched_strings,
@@ -343,18 +373,26 @@ class FuzzyMatchingTestRunner:
 # Factory functions for common use cases
 def create_federal_agency_matcher(threshold: int = 85) -> GenericFuzzyMatcher:
     """Create a fuzzy matcher optimized for federal agency names."""
-    return GenericFuzzyMatcher(variant_generator=FederalAgencyVariantGenerator(), global_threshold=threshold)
+    # Use default strategies but override their thresholds
+    return GenericFuzzyMatcher(
+        variant_generator=FederalAgencyVariantGenerator(),
+        global_threshold=threshold
+    )
 
 
 def create_person_name_matcher(threshold: int = 90) -> GenericFuzzyMatcher:
-    """Create a fuzzy matcher optimized for person names."""
+    """Create a fuzzy matcher optimized for person names.
+        Excluding partial_ratio from default strategies as it may not be suitable for names.
+    """
     strategies = [
         MatchingStrategy(fuzz.token_sort_ratio, threshold, "token_sort"),
-        MatchingStrategy(fuzz.token_set_ratio, threshold - 5, "token_set"),
-        MatchingStrategy(fuzz.ratio, threshold + 5, "exact"),
+        MatchingStrategy(fuzz.token_set_ratio, threshold, "token_set"),
+        MatchingStrategy(fuzz.ratio, threshold, "exact"),
     ]
     return GenericFuzzyMatcher(
-        strategies=strategies, variant_generator=PersonNameVariantGenerator(), global_threshold=threshold
+        strategies=strategies, 
+        variant_generator=PersonNameVariantGenerator(), 
+        global_threshold=threshold
     )
 
 
