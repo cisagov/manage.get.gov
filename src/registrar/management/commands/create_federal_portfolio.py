@@ -1,22 +1,4 @@
-"""
-Generic fuzzy string matching utility for any string comparison needs
-
-This util provides fuzzy string matching. It handles common variations
-in naming conventions, such as:
-- Abbreviations (e.g. "Department of" vs "Dept of")
-- Punctuation (e.g. "U.S." vs "US")
-- Word order (e.g. "John Smith" vs "Smith, John")
-- Case insensitivity
-- Common misspellings and typos
-- Variants for person names and federal agency names
-It can be configured with different matching strategies and thresholds
-to suit specific use cases, and supports detailed match reporting.
-It also supports batch processing of multiple target strings against a pool of candidates.
-This utility is designed to be flexible and extensible for various fuzzy matching needs.
-"""
-
 """Loads files from /tmp into our sandboxes"""
-
 import argparse
 import logging
 from django.core.management import BaseCommand, CommandError
@@ -194,7 +176,7 @@ class Command(BaseCommand):
         skip_existing_portfolios = options.get("skip_existing_portfolios")
         dry_run = options.get("dry_run")
         debug = options.get("debug")
-        fuzzy_threshold = options.get("fuzzy_threshold", 85) 
+        fuzzy_threshold = options.get("fuzzy_threshold", 85)
         self.dry_run = dry_run
 
         # Parse script params
@@ -346,22 +328,26 @@ class Command(BaseCommand):
         action_prefix = "WOULD BE " if self.dry_run else ""
 
         self.portfolio_changes.print_script_run_summary(
-            no_changes_message=f"||============= No portfolios {action_prefix.lower()}changed. =============||",
+            no_changes_message=(f"||============= No portfolios {action_prefix.lower()}changed. =============||"),
             log_header=f"============= PORTFOLIOS {action_prefix}=============",
-            skipped_header=f"----- SOME PORTFOLIOS {action_prefix}WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
+            skipped_header=(
+                f"----- SOME PORTFOLIOS {action_prefix}WERENT CREATED " f"(BUT OTHER RECORDS ARE STILL PROCESSED) -----"
+            ),
             detailed_prompt_title=(
-                f"PORTFOLIOS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                f"PORTFOLIOS: Do you wish to see the full list of "
+                f"{action_prefix.lower()}failed, skipped and updated records?"
             ),
             display_as_str=True,
             debug=debug,
         )
 
         self.suborganization_changes.print_script_run_summary(
-            no_changes_message=f"||============= No suborganizations {action_prefix.lower()}changed. =============||",
+            no_changes_message=(f"||============= No suborganizations {action_prefix.lower()}changed. =============||"),
             log_header=f"============= SUBORGANIZATIONS {action_prefix}=============",
-            skipped_header=f"----- SUBORGANIZATIONS {action_prefix}SKIPPED (SAME NAME AS PORTFOLIO NAME) -----",
+            skipped_header=(f"----- SUBORGANIZATIONS {action_prefix}SKIPPED (SAME NAME AS PORTFOLIO NAME) -----"),
             detailed_prompt_title=(
-                f"SUBORGANIZATIONS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                f"SUBORGANIZATIONS: Do you wish to see the full list of "
+                f"{action_prefix.lower()}failed, skipped and updated records?"
             ),
             display_as_str=True,
             debug=debug,
@@ -369,10 +355,11 @@ class Command(BaseCommand):
 
         if parse_domains:
             self.domain_info_changes.print_script_run_summary(
-                no_changes_message=f"||============= No domains {action_prefix.lower()}changed. =============||",
+                no_changes_message=(f"||============= No domains {action_prefix.lower()}changed. =============||"),
                 log_header=f"============= DOMAINS {action_prefix}=============",
                 detailed_prompt_title=(
-                    f"DOMAINS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                    f"DOMAINS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
@@ -380,10 +367,13 @@ class Command(BaseCommand):
 
         if parse_requests:
             self.domain_request_changes.print_script_run_summary(
-                no_changes_message=f"||============= No domain requests {action_prefix.lower()}changed. =============||",
+                no_changes_message=(
+                    f"||============= No domain requests {action_prefix.lower()}changed. =============||"
+                ),
                 log_header=f"============= DOMAIN REQUESTS {action_prefix}=============",
                 detailed_prompt_title=(
-                    f"DOMAIN REQUESTS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                    f"DOMAIN REQUESTS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
@@ -391,22 +381,26 @@ class Command(BaseCommand):
 
         if parse_managers:
             self.user_portfolio_perm_changes.print_script_run_summary(
-                no_changes_message=f"||============= No managers {action_prefix.lower()}changed. =============||",
+                no_changes_message=(f"||============= No managers {action_prefix.lower()}changed. =============||"),
                 log_header=f"============= MANAGERS {action_prefix}=============",
                 skipped_header=f"----- MANAGERS {action_prefix}SKIPPED (ALREADY EXISTED) -----",
                 detailed_prompt_title=(
-                    f"MANAGERS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                    f"MANAGERS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
             )
 
             self.portfolio_invitation_changes.print_script_run_summary(
-                no_changes_message=f"||============= No manager invitations {action_prefix.lower()}changed. =============||",
+                no_changes_message=(
+                    f"||============= No manager invitations {action_prefix.lower()}changed. =============||"
+                ),
                 log_header=f"============= MANAGER INVITATIONS {action_prefix}=============",
                 skipped_header=f"----- INVITATIONS {action_prefix}SKIPPED (ALREADY EXISTED) -----",
                 detailed_prompt_title=(
-                    f"MANAGER INVITATIONS: Do you wish to see the full list of {action_prefix.lower()}failed, skipped and updated records?"
+                    f"MANAGER INVITATIONS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
@@ -449,7 +443,6 @@ class Command(BaseCommand):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
         created_suborgs = {}
 
-        portfolios = portfolio_dict.values()
         agencies = agency_dict.values()
 
         # Get all organization names for matching
@@ -664,13 +657,7 @@ class Command(BaseCommand):
 
         return updated_domains
 
-    def update_requests(
-        self,
-        portfolio,
-        federal_agency,
-        suborgs,
-        debug,
-    ):
+    def update_requests(self, portfolio, federal_agency, suborgs, debug):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
@@ -680,6 +667,7 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
+
         # Get all request organization names for fuzzy matching
         all_request_org_names = list(
             DomainRequest.objects.exclude(status__in=invalid_states)
@@ -688,16 +676,6 @@ class Command(BaseCommand):
         )
 
         # Use fuzzy matching to find domain requests that belong to this agency
-        # This creates a filter that matches requests in two ways:
-        # 1. Direct relationship: requests already linked to this federal agency
-        # 2. Fuzzy name matching: requests with organization names that are similar
-        #    to this agency's name (handles abbreviations, variations, etc.)
-        #
-        # For example, if federal_agency is "Department of Defense", this will find:
-        # - Requests already linked to DoD (direct relationship)
-        # - Requests with org names like "DoD", "Defense Dept", "US Dept of Defense" (fuzzy matching)
-        # - This helps capture requests that should belong to this agency but weren't
-        #   properly linked due to name variations
         request_filter = self._create_fuzzy_organization_filter(
             federal_agency, [normalize_string(name) for name in all_request_org_names if name]
         )
@@ -706,46 +684,12 @@ class Command(BaseCommand):
         if debug:
             logger.info(f"Fuzzy matching found {domain_requests.count()} domain requests for '{federal_agency.agency}'")
 
-        # Add portfolio, sub_org, requested_suborg, suborg_city, and suborg_state_territory.
-        # For started domain requests, set the federal agency to None if not on a portfolio.
+        # Process each domain request
         for domain_request in domain_requests:
             if domain_request.status != DomainRequest.DomainRequestStatus.STARTED:
-                org_name = normalize_string(domain_request.organization_name, lowercase=False)
-                new_suborg = suborgs.get(org_name, None)
-
-                # ADD DRY RUN CHANGE TRACKING:
-                changes = []
-                if domain_request.portfolio != portfolio:
-                    changes.append(f"portfolio: {domain_request.portfolio} → {portfolio}")
-                if domain_request.sub_organization != new_suborg:
-                    changes.append(f"sub_organization: {domain_request.sub_organization} → {new_suborg}")
-                if domain_request.federal_agency != federal_agency:
-                    changes.append(f"federal_agency: {domain_request.federal_agency} → {federal_agency}")
-
-                # Log changes in dry run mode
-                self._log_changes(f"request '{domain_request}'", changes)
-
-                # Apply changes
-                domain_request.portfolio = portfolio
-                domain_request.sub_organization = new_suborg
-
-                if domain_request.sub_organization is None:
-                    domain_request.requested_suborganization = normalize_string(
-                        domain_request.organization_name, lowercase=False
-                    )
-                    domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
-                    domain_request.suborganization_state_territory = domain_request.state_territory
+                self._update_active_request(domain_request, portfolio, suborgs)
             else:
-                # Clear the federal agency for started domain requests
-                agency_name = normalize_string(domain_request.federal_agency.agency)
-                portfolio_name = normalize_string(portfolio.organization_name)
-                if agency_name == portfolio_name:
-                    if self.dry_run:
-                        logger.info(f"WOULD SET federal agency on started domain request '{domain_request}' to None.")
-                    else:
-                        domain_request.federal_agency = None
-                        logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
-
+                self._handle_started_request(domain_request, portfolio)
             updated_domain_requests.add(domain_request)
 
         if not updated_domain_requests and debug:
@@ -753,6 +697,47 @@ class Command(BaseCommand):
             logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
 
         return updated_domain_requests
+
+    def _update_active_request(self, domain_request, portfolio, suborgs):
+        """Update an active (non-started) domain request."""
+        org_name = normalize_string(domain_request.organization_name, lowercase=False)
+        new_suborg = suborgs.get(org_name, None)
+
+        # Track changes for dry run
+        changes = []
+        if domain_request.portfolio != portfolio:
+            changes.append(f"portfolio: {domain_request.portfolio} → {portfolio}")
+        if domain_request.sub_organization != new_suborg:
+            changes.append(f"sub_organization: {domain_request.sub_organization} → {new_suborg}")
+
+        # Log changes in dry run mode
+        self._log_changes(f"request '{domain_request}'", changes)
+
+        # Apply changes
+        domain_request.portfolio = portfolio
+        domain_request.sub_organization = new_suborg
+
+        if domain_request.sub_organization is None:
+            domain_request.requested_suborganization = normalize_string(
+                domain_request.organization_name, lowercase=False
+            )
+            domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
+            domain_request.suborganization_state_territory = domain_request.state_territory
+
+    def _handle_started_request(self, domain_request, portfolio):
+        """Handle started domain requests by clearing federal agency if needed."""
+        if not domain_request.federal_agency:
+            return
+
+        agency_name = normalize_string(domain_request.federal_agency.agency)
+        portfolio_name = normalize_string(portfolio.organization_name)
+
+        if agency_name == portfolio_name:
+            if self.dry_run:
+                logger.info(f"WOULD SET federal agency on started domain request '{domain_request}' to None.")
+            else:
+                domain_request.federal_agency = None
+                logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
 
     def create_user_portfolio_permissions(self, domains):
         user_domain_roles = UserDomainRole.objects.select_related(
