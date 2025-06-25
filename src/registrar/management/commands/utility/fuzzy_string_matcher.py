@@ -248,7 +248,7 @@ class GenericFuzzyMatcher:
                     limit=None,
                 )
 
-                for match_string, score in matches:
+                for match_string, score, _ in matches:
                     matched_strings.add(match_string)
                     if report_details:
                         all_match_details.append((match_string, score, strategy.name))
