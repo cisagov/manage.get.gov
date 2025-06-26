@@ -4183,14 +4183,14 @@ class TestPortfolioAdmin(TestCase):
         suborg_names = [li.text for li in soup.find_all("li")]
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
-    def test_cannot_have_dup_suborganizatons_with_same_portfolio(self):
+    def test_cannot_have_dup_suborganizations_with_same_portfolio(self):
         portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Suborganization.objects.create(name="Sub1", portfolio=portfolio)
 
-    def test_can_have_dup_suborganizatons_with_diff_portfolio(self):
+    def test_can_have_dup_suborganizations_with_diff_portfolio(self):
         portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
