@@ -51,8 +51,7 @@ error messages, if necessary.
     </p>
   {% endif %} 
 
-  {% if field.errors %}
-  <div class="field-error-box" style="border-left: 4px solid blue; padding-left: 1rem; margin-top: 0.5rem;">  
+  {% if field.errors %}  
     <div id="{{ widget.attrs.id }}__error-message">
       {% for error in field.errors %}
         <div class="usa-error-message display-flex{% if inline_error_class %} {{ inline_error_class }}{% endif %}" role="alert">
