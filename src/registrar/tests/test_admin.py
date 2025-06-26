@@ -73,9 +73,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from django.db import transaction
-from django.core.exceptions import ValidationError
-
+from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
 
 import logging
@@ -4185,14 +4183,19 @@ class TestPortfolioAdmin(TestCase):
         suborg_names = [li.text for li in soup.find_all("li")]
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
-    def test_can_have_dup_suborganizatons(self):
+    def test_cannot_have_dup_suborganizatons_with_same_portfolio(self):
         portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
-        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Suborganization.objects.create(name="Sub1", portfolio=portfolio)
 
-        with self.assertRaises(ValidationError):
-            test_dup = Suborganization(name="sub1", portfolio=portfolio)
-            test_dup.full_clean()
+    def test_can_have_dup_suborganizatons_with_diff_portfolio(self):
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
+        Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
+        num_of_subs = Suborganization.objects.filter(name="Sub1").count()
+        self.assertEqual(num_of_subs, 2)
 
     @less_console_noise_decorator
     def test_domains_display(self):
@@ -4352,10 +4355,9 @@ class TestPortfolioAdmin(TestCase):
 
     @less_console_noise_decorator
     def test_duplicate_portfolio(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                portfolio_dup = Portfolio(organization_name="Test portfolio", creator=self.superuser)
-                portfolio_dup.full_clean()
+                Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
 
 
 class TestTransferUser(WebTest):
