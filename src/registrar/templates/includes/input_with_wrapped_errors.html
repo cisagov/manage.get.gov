@@ -1,0 +1,110 @@
+{% comment %}
+Template include for form fields with classes and their corresponding
+error messages, if necessary.
+{% endcomment %}
+{% load static field_helpers url_helpers %}
+{% load custom_filters %}
+
+{% load widget_tweaks %}
+
+{% if widget.attrs.maxlength or field.widget_type == 'textarea' %}
+  {% if not widget.attrs.hide_character_count %}
+    <div class="usa-character-count">
+  {% endif %}
+{% endif %}
+
+{% if field.use_fieldset %}
+  <fieldset
+    id="{{ widget.attrs.id }}__fieldset"
+    class="usa-fieldset usa-form-group{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
+{% elif field.widget_type == 'checkbox' %}
+  <div
+    class="usa-checkbox{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
+{% else %}
+  <div
+    class="usa-form-group{% if group_classes %} {{ group_classes }}{% endif %}"
+  >
+{% endif %}
+
+  {% if not field.widget_type == "checkbox" %}
+    {% if toggleable_label %}
+      {% include "includes/toggleable_label.html" with bold_label=True %}
+    {% else %}
+      {% include "django/forms/label.html" %}
+    {% endif %}
+  {% endif %}
+
+  {% if sublabel_text %}
+    <p id="{{ widget.attrs.id }}__sublabel" class="{% if use_small_sublabel_text %}font-body-xs {% endif %}text-base margin-top-2px margin-bottom-1">
+      {# If the link_text appears more than once, the first instance will be a link and the other instances will be ignored #}
+      {% if link_text and link_text in sublabel_text %}
+        {% with link_index=sublabel_text|find_index:link_text %}
+          {{ sublabel_text|slice:link_index }}
+          {# HTML will convert a new line into a space, resulting with a space before the fullstop in case link_text is at the end of sublabel_text, hence the unfortunate line below #}
+          <a {% if external_link %}rel="noopener noreferrer" class="usa-link usa-link--external" {% endif %}{% if target_blank == "true" %}target="_blank" {% endif %}href="{{ link_href }}">{{ link_text }}</a>{% with sublabel_part_after=sublabel_text|slice_after:link_text %}{{ sublabel_part_after }}{% endwith %}
+        {% endwith %}
+      {% else %}
+        {{ sublabel_text }}
+      {% endif %}
+    </p>
+  {% endif %} 
+
+  {% if field.errors %}
+  <div class="field-error-box" style="border-left:4px solid blue; padding-left: 1rem; margin-top: 0.5rem;">  
+    <div id="{{ widget.attrs.id }}__error-message">
+      {% for error in field.errors %}
+        <div class="usa-error-message display-flex{% if inline_error_class %} {{ inline_error_class }}{% endif %}" role="alert">
+          <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error">
+            <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
+          </svg>
+          <span class="margin-left-05 flex-1">{{ error }}</span>
+        </div>
+      {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if append_gov %}
+    <div class="display-flex flex-align-center">
+  {% endif %}
+
+  {% if toggleable_input %}
+    {% include "includes/toggleable_input.html" %}
+  {% endif %}
+
+  {# this is the input field, itself #}
+  {% with aria_label=aria_label %}
+      {% include widget.template_name %}
+  {% endwith %}
+  
+  
+
+  {% if append_gov %}
+      <span class="padding-top-05 padding-left-2px">.gov </span>
+    </div>
+  {% endif %}
+
+  {% if field.widget_type == "checkbox" %}
+    {% include "django/forms/label.html" %}
+  {% endif %}
+
+{% if field.use_fieldset %}
+  </fieldset>
+{% else %}
+  </div>
+{% endif %}
+
+{% if field.widget_type == 'textarea' or widget.attrs.maxlength %}
+    {% if not widget.attrs.hide_character_count %}
+        <span
+          id="{{ widget.attrs.id }}__message"
+          class="usa-character-count__message"
+          aria-live="polite"
+        >
+          You can enter up to {{ widget.attrs.maxlength }} characters
+        </span>
+      </div>
+    {% endif %}
+{% endif %}
