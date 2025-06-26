@@ -254,7 +254,15 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
-        return True
+        if not cls.string_could_be_domain(domain):
+            logger.warning("Not a valid domain: %s" % str(domain))
+            # throw invalid domain error so that it can be caught in
+            # validate_and_handle_errors in domain_helper
+            raise errors.InvalidDomainError()
+
+        domain_name = domain.lower()
+        req = commands.CheckDomain([domain_name])
+        return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
