@@ -65,6 +65,8 @@ URL_PERMISSIONS = {
     "organization": [IS_PORTFOLIO_MEMBER],
     "organization-info": [IS_PORTFOLIO_MEMBER],
     "organization-senior-official": [IS_PORTFOLIO_MEMBER],
+    "your-portfolios": [IS_PORTFOLIO_MEMBER],
+    "set-active-portfolio": [IS_PORTFOLIO_MEMBER],
     # Domain requests
     "domain-request-status": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_CREATOR],
     "domain-request-status-viewonly": [HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL],
