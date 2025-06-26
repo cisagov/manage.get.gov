@@ -192,7 +192,7 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     return context
 
-@register.inclusion_tag("includes/input_with_wrapped_rrors.html", takes_context=True)
+@register.inclusion_tag("includes/input_with_wrapped_errors.html", takes_context=True)
 def input_with_wrapped_errors(context, field=None):  # noqa: C901
     """Make an input field along with error handling.
 
