@@ -14,9 +14,9 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
-
+from contextvars import ContextVar
 logger = logging.getLogger(__name__)
-
+user_context = ContextVar('user_context', default=None)
 
 class NoCacheMiddleware:
     """
@@ -245,8 +245,12 @@ class RequestLoggingMiddleware:
 
             # Get request path
             request_path = request.path
+            user_info = f"User: {user_email} | IP: {remote_ip}"
 
-            # Log user information
-            logger.info(f"Router log | User: {user_email} | IP: {remote_ip} | Path: {request_path}")
+            user_context.set(user_info)
+
+            if request is not None:
+                logger.info(f"Router log | User: {user_email} | IP: {remote_ip} | Path: {request_path}")
+            
 
         return response
