@@ -9,14 +9,12 @@
 
 {% block form_fields %}
 
-    <fieldset class="usa-fieldset">
-      <!-- Toggle -->
-      {% with add_class="usa-radio__input--tile" add_legend_class="margin-top-0" add_legend_heading="Are you working with a CISA regional representative on your domain request?" %}
-        {% input_with_errors forms.0.has_cisa_representative %}
-      {% endwith %}
-      {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-    </fieldset>
-
+    <!-- Toggle -->
+    {% with add_class="usa-radio__input--tile" add_legend_class="margin-top-0" add_legend_heading="Are you working with a CISA regional representative on your domain request?" %}
+      {% input_with_errors forms.0.has_cisa_representative %}
+    {% endwith %}
+    {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
+    
     <div id="cisa-representative" class="cisa-representative-form margin-top-3">
         {% input_with_errors forms.1.cisa_representative_first_name %}
         {% input_with_errors forms.1.cisa_representative_last_name %}
