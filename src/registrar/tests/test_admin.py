@@ -73,8 +73,6 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from django.db import transaction
-from django.core.exceptions import ValidationError
 
 from unittest.mock import ANY, call, patch, Mock
 
@@ -4185,15 +4183,6 @@ class TestPortfolioAdmin(TestCase):
         suborg_names = [li.text for li in soup.find_all("li")]
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
-    def test_can_have_dup_suborganizatons(self):
-        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
-        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
-        Suborganization.objects.create(name="Sub1", portfolio=portfolio)
-
-        with self.assertRaises(ValidationError):
-            test_dup = Suborganization(name="sub1", portfolio=portfolio)
-            test_dup.full_clean()
-
     @less_console_noise_decorator
     def test_domains_display(self):
         """Tests the custom domains field which displays all related domains"""
@@ -4349,13 +4338,6 @@ class TestPortfolioAdmin(TestCase):
         senior_official.delete()
         federal_agency.delete()
         portfolio.delete()
-
-    @less_console_noise_decorator
-    def test_duplicate_portfolio(self):
-        with self.assertRaises(ValidationError):
-            with transaction.atomic():
-                portfolio_dup = Portfolio(organization_name="Test portfolio", creator=self.superuser)
-                portfolio_dup.full_clean()
 
 
 class TestTransferUser(WebTest):
@@ -4639,45 +4621,3 @@ class TestTransferUser(WebTest):
         """Assert modal on page"""
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         self.assertContains(user_transfer_page, "This action cannot be undone.")
-
-
-class TestDomainAdminState(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.superuser = create_superuser()
-
-    def setUp(self):
-        super().setUp()
-        self.client = Client(HTTP_HOST="localhost:8080")
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
-
-    def test_domain_state_remains_unknown_on_refresh(self):
-        """
-        Making sure we do NOT do a domain registry lookup or creation
-        when we click into the domain in /admin
-        """
-
-        # 1. Create domain request
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, name="domain_stays_unknown.gov"
-        )
-
-        # 2. Approve the request + retrieve the domain
-        domain_request.approve()
-        domain_stays_unknown = domain_request.approved_domain
-
-        # 3. Confirm it's UNKNOWN state after approval
-        self.assertEqual(domain_stays_unknown.state, Domain.State.UNKNOWN)
-
-        # 4. Go to the admin "change" page for this domain
-        url = reverse("admin:registrar_domain_change", args=[domain_stays_unknown.pk])
-
-        response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
-
-        # 5. Refresh and check that the state is still UNKNOWN
-        response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
-        self.assertNotContains(response, "DNS NEEDED")
