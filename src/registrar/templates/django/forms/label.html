@@ -15,7 +15,6 @@
     {% endif %}
   {% endif %}
 
-  <div class="field-error-box">
   {% if widget.attrs.required %}
 
     {% if field.widget_type == 'radioselect' %}
@@ -26,5 +25,4 @@
       <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
     {% endif %}
   {% endif %}
-  </div>
 </{{ label_tag }}>
