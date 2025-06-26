@@ -11,6 +11,9 @@ class Suborganization(TimeStampedModel):
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["name", "portfolio"], name="unique_name_portfolio")
+        ]
 
     name = models.CharField(
         unique=True,
