@@ -11,7 +11,7 @@
 
     <!-- Toggle -->
     {% with add_class="usa-radio__input--tile" add_legend_class="margin-top-0" add_legend_heading="Are you working with a CISA regional representative on your domain request?" %}
-      {% input_with_wrapped_errors forms.0.has_cisa_representative %}
+      {% input_with_errors forms.0.has_cisa_representative %}
     {% endwith %}
     {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
 
@@ -22,13 +22,11 @@
         {# forms.1 is a form for inputting the e-mail of a cisa representative #}
     </div>
 
-    <fieldset class="usa-fieldset margin-top-2">
-        <!-- Toggle -->
-        {% with add_class="usa-radio__input--tile" add_legend_heading="Is there anything else you’d like us to know about your domain request?" %}
-          {% input_with_errors forms.2.has_anything_else_text %}
-        {% endwith %}
-        {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-    </fieldset>
+    <!-- Toggle -->
+    {% with add_class="usa-radio__input--tile" add_legend_heading="Is there anything else you’d like us to know about your domain request?" %}
+        {% input_with_errors forms.2.has_anything_else_text %}
+    {% endwith %}
+    {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
   
     <div class="margin-top-3" id="anything-else">
         <p>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
