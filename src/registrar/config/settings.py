@@ -536,6 +536,10 @@ LOGGING = {
         "json": {
             "()": JsonFormatter,
         },
+        'with_user':{
+            'format': '%(asctime)s User: {user_context} {levelname} {message}',
+            'style': '{'
+        }
     },
     # define where log messages will be sent
     # each logger can have one or more handlers
@@ -567,6 +571,10 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
+        "console":{
+            "class": 'logging.StreamHandler',
+            'formatter': 'with_user',
+        }
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
