@@ -10,8 +10,7 @@
 {% block form_fields %}
 
     <!-- Toggle -->
-    <h2>Are you working with a CISA regional representative on your domain request?</h2>
-    {% with add_class="usa-radio__input--tile" add_legend_class="margin-top-0" %}
+    {% with add_class="usa-radio__input--tile" add_legend_class="margin-top-0" add_legend_heading="Are you working with a CISA regional representative on your domain request?" %}
       {% input_with_errors forms.0.has_cisa_representative %}
     {% endwith %}
     {# forms.0 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
@@ -24,8 +23,7 @@
     </div>
 
     <!-- Toggle -->
-    <h2>Is there anything else you’d like us to know about your domain request?</h2>
-    {% with add_class="usa-radio__input--tile" %}
+    {% with add_class="usa-radio__input--tile" add_legend_heading="Is there anything else you’d like us to know about your domain request?" %}
         {% input_with_errors forms.2.has_anything_else_text %}
     {% endwith %}
     {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
