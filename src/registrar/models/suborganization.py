@@ -2,7 +2,6 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
-from django.core.exceptions import ValidationError
 
 
 class Suborganization(TimeStampedModel):
@@ -14,6 +13,7 @@ class Suborganization(TimeStampedModel):
         ordering = ["name"]
 
     name = models.CharField(
+        unique=True,
         max_length=1000,
         verbose_name="Suborganization",
     )
@@ -39,17 +39,3 @@ class Suborganization(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.name}"
-
-    def clean(self):
-        if (
-            Suborganization.objects.exclude(pk=self.pk)
-            .filter(
-                portfolio=self.portfolio,
-                name__iexact=self.name,
-            )
-            .exists()
-        ):
-            raise ValidationError({"name": "Name already exists in Portfolio"})
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)

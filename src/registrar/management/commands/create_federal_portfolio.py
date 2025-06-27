@@ -14,6 +14,7 @@ from registrar.models.utility.generic_helper import count_capitals, normalize_st
 from django.db.models import F, Q
 
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.management.commands.utility.fuzzy_string_matcher import create_federal_agency_matcher
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,34 @@ class Command(BaseCommand):
         self.domain_request_changes = self.ChangeTracker(model_class=DomainRequest)
         self.user_portfolio_perm_changes = self.ChangeTracker(model_class=UserPortfolioPermission)
         self.portfolio_invitation_changes = self.ChangeTracker(model_class=PortfolioInvitation)
+        self.fuzzy_matcher = None
+        self.fuzzy_threshold = 85
+        self.dry_run = False
+
+    def _create_fuzzy_organization_filter(self, federal_agency, all_org_names=None):
+        """
+        Create a Q filter that includes both direct federal agency matches
+        and fuzzy organization name matches.
+        """
+        # Direct federal agency relationship (existing logic)
+        base_filter = Q(federal_agency=federal_agency)
+
+        # Fuzzy organization name matching
+        if all_org_names and self.fuzzy_matcher:
+            # The fuzzy matcher returns a MatchResult object, not a set
+            match_result = self.fuzzy_matcher.find_matches(federal_agency.agency, all_org_names)
+
+            # Extract the matched_strings from the MatchResult
+            matched_org_names = match_result.matched_strings
+
+            # Create Q objects for organization name matching
+            org_name_filters = Q()
+            for name in matched_org_names:
+                org_name_filters |= Q(organization_name__iexact=name)
+
+            return base_filter | org_name_filters
+
+        return base_filter
 
     def add_arguments(self, parser):
         """Add command line arguments to create federal portfolios.
@@ -88,6 +117,8 @@ class Command(BaseCommand):
 
         Optional:
             --skip_existing_portfolios: Does not perform substeps on a portfolio if it already exists.
+            --dry_run: Show what would be changed without making any database modifications
+            --fuzzy_threshold: Similarity threshold for fuzzy matching (default: 85)
             --debug: Increases log verbosity
         """
         group = parser.add_mutually_exclusive_group(required=True)
@@ -118,7 +149,18 @@ class Command(BaseCommand):
         parser.add_argument(
             "--skip_existing_portfolios",
             action=argparse.BooleanOptionalAction,
-            help="Only parses newly created portfolios, skippubg existing ones.",
+            help="Only parses newly created portfolios, skipping existing ones.",
+        )
+        parser.add_argument(
+            "--dry_run",
+            action=argparse.BooleanOptionalAction,
+            help="Show what would be changed without making any database modifications.",
+        )
+        parser.add_argument(
+            "--fuzzy_threshold",
+            type=int,
+            default=85,
+            help="Similarity threshold for fuzzy matching (0-100, default: 85).",
         )
         parser.add_argument(
             "--debug",
@@ -133,13 +175,25 @@ class Command(BaseCommand):
         parse_domains = options.get("parse_domains")
         parse_managers = options.get("parse_managers")
         skip_existing_portfolios = options.get("skip_existing_portfolios")
+        dry_run = options.get("dry_run")
         debug = options.get("debug")
+        fuzzy_threshold = options.get("fuzzy_threshold", 85)
+        self.dry_run = dry_run
 
         # Parse script params
         if not (parse_requests or parse_domains or parse_managers):
             raise CommandError(
                 "You must specify at least one of --parse_requests, --parse_domains, or --parse_managers."
             )
+
+        # Show dry run
+        if dry_run:
+            logger.info(f"{TerminalColors.BOLD}{TerminalColors.OKBLUE}")
+            logger.info("=" * 60)
+            logger.info("                    DRY RUN MODE")
+            logger.info("          NO DATABASE CHANGES WILL BE MADE")
+            logger.info("=" * 60)
+            logger.info(f"{TerminalColors.ENDC}")
 
         # Get agencies
         federal_agency_filter = {"agency__iexact": agency_name} if agency_name else {"federal_type": branch}
@@ -153,6 +207,8 @@ class Command(BaseCommand):
                 )
             else:
                 raise CommandError(f"Cannot find '{branch}' federal agencies in our database.")
+
+        self.fuzzy_matcher = create_federal_agency_matcher(threshold=fuzzy_threshold)
 
         # Store all portfolios and agencies in a dict to avoid extra db calls
         existing_portfolios = Portfolio.objects.filter(
@@ -181,19 +237,25 @@ class Command(BaseCommand):
                     senior_official=federal_agency.so_federal_agency.first(),
                 )
                 self.portfolio_changes.create.append(portfolio)
-                logger.info(f"{TerminalColors.OKGREEN}Created portfolio '{portfolio}'.{TerminalColors.ENDC}")
+                self._log_action("CREATE", f"portfolio '{portfolio}'")
             elif skip_existing_portfolios:
                 message = f"Portfolio '{portfolio}' already exists. Skipped."
                 logger.info(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
                 self.portfolio_changes.skip.append(portfolio)
 
         # Create portfolios
-        self.portfolio_changes.bulk_create()
+        if not self.dry_run:
+            self.portfolio_changes.bulk_create()
 
-        # After create, get the list of all portfolios to use
-        portfolios_to_use = set(self.portfolio_changes.create)
-        if not skip_existing_portfolios:
-            portfolios_to_use.update(set(existing_portfolios))
+        if self.dry_run:
+            portfolios_to_use = list(self.portfolio_changes.create)
+            if not skip_existing_portfolios:
+                portfolios_to_use.extend(list(existing_portfolios))
+        else:
+            # After create, get the list of all portfolios to use
+            portfolios_to_use = set(self.portfolio_changes.create)
+            if not skip_existing_portfolios:
+                portfolios_to_use.update(set(existing_portfolios))
 
         portfolios_to_use_dict = {normalize_string(p.organization_name): p for p in portfolios_to_use}
 
@@ -201,14 +263,32 @@ class Command(BaseCommand):
         created_suborgs = self.create_suborganizations(portfolios_to_use_dict, agencies_dict)
         if created_suborgs:
             self.suborganization_changes.create.extend(created_suborgs.values())
-            self.suborganization_changes.bulk_create()
+            if not self.dry_run:
+                self.suborganization_changes.bulk_create()
 
         # == Handle domains and requests == #
         for portfolio_org_name, portfolio in portfolios_to_use_dict.items():
             federal_agency = agencies_dict.get(portfolio_org_name)
+
             suborgs = {}
-            for suborg in portfolio.portfolio_suborganizations.all():
-                suborgs[suborg.name] = suborg
+
+            if self.dry_run:
+                if created_suborgs:
+                    for suborg in created_suborgs.values():
+                        if suborg.portfolio == portfolio:
+                            suborgs[normalize_string(suborg.name)] = suborg
+            else:
+                # For normal execution, first add any just-created suborganizations
+                if created_suborgs:
+                    for suborg in created_suborgs.values():
+                        if suborg.portfolio == portfolio:
+                            suborgs[normalize_string(suborg.name)] = suborg
+
+                # Then add any existing suborganizations that weren't just created
+                for suborg in portfolio.portfolio_suborganizations.all():
+                    normalized_name = normalize_string(suborg.name)
+                    if normalized_name not in suborgs:  # Don't overwrite just-created ones
+                        suborgs[normalized_name] = suborg
 
             if parse_domains:
                 updated_domains = self.update_domains(portfolio, federal_agency, suborgs, debug)
@@ -219,30 +299,31 @@ class Command(BaseCommand):
                 self.domain_request_changes.update.extend(updated_domain_requests)
 
         # Update DomainInformation
-        try:
-            self.domain_info_changes.bulk_update(["portfolio", "sub_organization"])
-        except Exception as err:
-            logger.error(f"{TerminalColors.FAIL}Could not bulk update domain infos.{TerminalColors.ENDC}")
-            logger.error(err, exc_info=True)
+        if not self.dry_run:
+            try:
+                self.domain_info_changes.bulk_update(["portfolio", "sub_organization"])
+            except Exception as err:
+                logger.error(f"{TerminalColors.FAIL}Could not bulk update domain infos.{TerminalColors.ENDC}")
+                logger.error(err, exc_info=True)
 
-        # Update DomainRequest
-        try:
-            self.domain_request_changes.bulk_update(
-                [
-                    "portfolio",
-                    "sub_organization",
-                    "requested_suborganization",
-                    "suborganization_city",
-                    "suborganization_state_territory",
-                    "federal_agency",
-                ]
-            )
-        except Exception as err:
-            logger.error(f"{TerminalColors.FAIL}Could not bulk update domain requests.{TerminalColors.ENDC}")
-            logger.error(err, exc_info=True)
+            # Update DomainRequest
+            try:
+                self.domain_request_changes.bulk_update(
+                    [
+                        "portfolio",
+                        "sub_organization",
+                        "requested_suborganization",
+                        "suborganization_city",
+                        "suborganization_state_territory",
+                        "federal_agency",
+                    ]
+                )
+            except Exception as err:
+                logger.error(f"{TerminalColors.FAIL}Could not bulk update domain requests.{TerminalColors.ENDC}")
+                logger.error(err, exc_info=True)
 
         # == Handle managers (no bulk_create) == #
-        if parse_managers:
+        if parse_managers and not self.dry_run:
             domain_infos = DomainInformation.objects.filter(portfolio__in=portfolios_to_use)
             domains = Domain.objects.filter(domain_info__in=domain_infos)
 
@@ -256,22 +337,29 @@ class Command(BaseCommand):
         self.print_final_run_summary(parse_domains, parse_requests, parse_managers, debug)
 
     def print_final_run_summary(self, parse_domains, parse_requests, parse_managers, debug):
+        action_prefix = "WOULD BE " if self.dry_run else ""
+
         self.portfolio_changes.print_script_run_summary(
-            no_changes_message="||============= No portfolios changed. =============||",
-            log_header="============= PORTFOLIOS =============",
-            skipped_header="----- SOME PORTFOLIOS WERENT CREATED (BUT OTHER RECORDS ARE STILL PROCESSED) -----",
+            no_changes_message=(f"||============= No portfolios {action_prefix.lower()}changed. =============||"),
+            log_header=f"============= PORTFOLIOS {action_prefix}=============",
+            skipped_header=(
+                f"----- SOME PORTFOLIOS {action_prefix}WERENT CREATED " f"(BUT OTHER RECORDS ARE STILL PROCESSED) -----"
+            ),
             detailed_prompt_title=(
-                "PORTFOLIOS: Do you wish to see the full list of failed, skipped and updated records?"
+                f"PORTFOLIOS: Do you wish to see the full list of "
+                f"{action_prefix.lower()}failed, skipped and updated records?"
             ),
             display_as_str=True,
             debug=debug,
         )
+
         self.suborganization_changes.print_script_run_summary(
-            no_changes_message="||============= No suborganizations changed. =============||",
-            log_header="============= SUBORGANIZATIONS =============",
-            skipped_header="----- SUBORGANIZATIONS SKIPPED (SAME NAME AS PORTFOLIO NAME) -----",
+            no_changes_message=(f"||============= No suborganizations {action_prefix.lower()}changed. =============||"),
+            log_header=f"============= SUBORGANIZATIONS {action_prefix}=============",
+            skipped_header=(f"----- SUBORGANIZATIONS {action_prefix}SKIPPED (SAME NAME AS PORTFOLIO NAME) -----"),
             detailed_prompt_title=(
-                "SUBORGANIZATIONS: Do you wish to see the full list of failed, skipped and updated records?"
+                f"SUBORGANIZATIONS: Do you wish to see the full list of "
+                f"{action_prefix.lower()}failed, skipped and updated records?"
             ),
             display_as_str=True,
             debug=debug,
@@ -279,10 +367,11 @@ class Command(BaseCommand):
 
         if parse_domains:
             self.domain_info_changes.print_script_run_summary(
-                no_changes_message="||============= No domains changed. =============||",
-                log_header="============= DOMAINS =============",
+                no_changes_message=(f"||============= No domains {action_prefix.lower()}changed. =============||"),
+                log_header=f"============= DOMAINS {action_prefix}=============",
                 detailed_prompt_title=(
-                    "DOMAINS: Do you wish to see the full list of failed, skipped and updated records?"
+                    f"DOMAINS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
@@ -290,10 +379,13 @@ class Command(BaseCommand):
 
         if parse_requests:
             self.domain_request_changes.print_script_run_summary(
-                no_changes_message="||============= No domain requests changed. =============||",
-                log_header="============= DOMAIN REQUESTS =============",
+                no_changes_message=(
+                    f"||============= No domain requests {action_prefix.lower()}changed. =============||"
+                ),
+                log_header=f"============= DOMAIN REQUESTS {action_prefix}=============",
                 detailed_prompt_title=(
-                    "DOMAIN REQUESTS: Do you wish to see the full list of failed, skipped and updated records?"
+                    f"DOMAIN REQUESTS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
@@ -301,50 +393,102 @@ class Command(BaseCommand):
 
         if parse_managers:
             self.user_portfolio_perm_changes.print_script_run_summary(
-                no_changes_message="||============= No managers changed. =============||",
-                log_header="============= MANAGERS =============",
-                skipped_header="----- MANAGERS SKIPPED (ALREADY EXISTED) -----",
+                no_changes_message=(f"||============= No managers {action_prefix.lower()}changed. =============||"),
+                log_header=f"============= MANAGERS {action_prefix}=============",
+                skipped_header=f"----- MANAGERS {action_prefix}SKIPPED (ALREADY EXISTED) -----",
                 detailed_prompt_title=(
-                    "MANAGERS: Do you wish to see the full list of failed, skipped and updated records?"
+                    f"MANAGERS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
             )
+
             self.portfolio_invitation_changes.print_script_run_summary(
-                no_changes_message="||============= No manager invitations changed. =============||",
-                log_header="============= MANAGER INVITATIONS =============",
-                skipped_header="----- INVITATIONS SKIPPED (ALREADY EXISTED) -----",
+                no_changes_message=(
+                    f"||============= No manager invitations {action_prefix.lower()}changed. =============||"
+                ),
+                log_header=f"============= MANAGER INVITATIONS {action_prefix}=============",
+                skipped_header=f"----- INVITATIONS {action_prefix}SKIPPED (ALREADY EXISTED) -----",
                 detailed_prompt_title=(
-                    "MANAGER INVITATIONS: Do you wish to see the full list of failed, skipped and updated records?"
+                    f"MANAGER INVITATIONS: Do you wish to see the full list of "
+                    f"{action_prefix.lower()}failed, skipped and updated records?"
                 ),
                 display_as_str=True,
                 debug=debug,
             )
+
+        # Add dry run summary at the end
+        if self.dry_run:
+            self._print_dry_run_summary()
+
+    def _print_dry_run_summary(self):
+        """Print a summary of what would be changed in dry run mode."""
+        logger.info(f"\n{TerminalColors.BOLD}{TerminalColors.OKBLUE}")
+        logger.info("=" * 60)
+        logger.info("                  DRY RUN SUMMARY")
+        logger.info("=" * 60)
+        logger.info(f"{TerminalColors.ENDC}")
+
+        total_changes = (
+            len(self.portfolio_changes.create)
+            + len(self.suborganization_changes.create)
+            + len(self.domain_info_changes.update)
+            + len(self.domain_request_changes.update)
+            + len(self.user_portfolio_perm_changes.create)
+            + len(self.portfolio_invitation_changes.create)
+        )
+
+        logger.info(f"Total records that would be modified: {total_changes}")
+        logger.info(f"  • Portfolios created: {len(self.portfolio_changes.create)}")
+        logger.info(f"  • Suborganizations created: {len(self.suborganization_changes.create)}")
+        logger.info(f"  • Domain infos updated: {len(self.domain_info_changes.update)}")
+        logger.info(f"  • Domain requests updated: {len(self.domain_request_changes.update)}")
+        logger.info(f"  • User permissions created: {len(self.user_portfolio_perm_changes.create)}")
+        logger.info(f"  • Portfolio invitations created: {len(self.portfolio_invitation_changes.create)}")
+
+        logger.info(
+            f"\n{TerminalColors.BOLD}To apply these changes, run the command without --dry_run{TerminalColors.ENDC}"
+        )
 
     def create_suborganizations(self, portfolio_dict, agency_dict):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
         created_suborgs = {}
 
-        portfolios = portfolio_dict.values()
         agencies = agency_dict.values()
+
+        # Get all organization names for matching
+        all_domain_org_names = list(
+            DomainInformation.objects.filter(organization_name__isnull=False)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+        all_request_org_names = list(
+            DomainRequest.objects.filter(organization_name__isnull=False)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+
+        # Combine and normalize for matching
+        all_org_names = [normalize_string(name) for name in all_domain_org_names + all_request_org_names]
+        domain_filters = Q()
+        request_filters = Q()
+
+        for agency in agencies:
+            agency_filter = self._create_fuzzy_organization_filter(agency, all_org_names)
+            domain_filters |= agency_filter
+            request_filters |= agency_filter
 
         domains = DomainInformation.objects.filter(
             # Org name must not be null, and must not be the portfolio name
-            Q(
-                organization_name__isnull=False,
-            )
-            & ~Q(organization_name__iexact=F("portfolio__organization_name")),
-            # Only get relevant data to the agency/portfolio we are targeting
-            Q(federal_agency__in=agencies) | Q(portfolio__in=portfolios),
+            Q(organization_name__isnull=False) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
+            domain_filters,
         )
         requests = DomainRequest.objects.filter(
             # Org name must not be null, and must not be the portfolio name
-            Q(
-                organization_name__isnull=False,
-            )
-            & ~Q(organization_name__iexact=F("portfolio__organization_name")),
+            Q(organization_name__isnull=False) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             # Only get relevant data to the agency/portfolio we are targeting
-            Q(federal_agency__in=agencies) | Q(portfolio__in=portfolios),
+            request_filters,
         )
 
         # First: get all existing suborgs
@@ -396,6 +540,7 @@ class Command(BaseCommand):
                     suborg = Suborganization(name=new_suborg_name, portfolio=portfolio)
                     self.set_suborganization_location(suborg, domains, requests)
                     created_suborgs[norm_org_name] = suborg
+                    self._log_action("CREATE", f"suborganization '{suborg}'")
         return created_suborgs
 
     def set_suborganization_location(self, suborg, domains, requests):
@@ -476,11 +621,46 @@ class Command(BaseCommand):
         Returns a queryset of DomainInformation objects, or None if nothing changed.
         """
         updated_domains = set()
-        domain_infos = federal_agency.domaininformation_set.all()
+        # Get all domain organization names
+        all_domain_org_names = list(DomainInformation.objects.values_list("organization_name", flat=True).distinct())
+        # Use fuzzy matching to find domain information records that belong to this agency
+        # This creates a filter that matches domains in two ways:
+        # 1. Direct relationship: domains already linked to this federal agency
+        # 2. Fuzzy name matching: domains with organization names that are similar
+        #    to this agency's name (handles abbreviations, variations, etc.)
+        #
+        # e.g., if federal_agency is "Department of Defense", this will find:
+        # - Domains already linked to DoD (direct relationship)
+        # - Domains with org names like "DoD", "Defense Dept", "US Dept of Defense" (fuzzy matching)
+        # - This helps capture domains that should belong to this agency but weren't
+        #   properly linked due to name variations in the organization_name field
+        domain_filter = self._create_fuzzy_organization_filter(
+            federal_agency, [normalize_string(name) for name in all_domain_org_names if name]
+        )
+        domain_infos = DomainInformation.objects.filter(domain_filter)
+
+        if debug:
+            logger.info(
+                f"Fuzzy matching found {domain_infos.count()} domain information records for '{federal_agency.agency}'"
+            )
+
         for domain_info in domain_infos:
-            org_name = normalize_string(domain_info.organization_name, lowercase=False)
+            org_name = normalize_string(domain_info.organization_name)
+            new_suborg = suborgs.get(org_name, None)
+
+            # ADD DRY RUN CHANGE TRACKING:
+            changes = []
+            if domain_info.portfolio != portfolio:
+                changes.append(f"portfolio: {domain_info.portfolio} → {portfolio}")
+            if domain_info.sub_organization != new_suborg:
+                changes.append(f"sub_organization: {domain_info.sub_organization} → {new_suborg}")
+
+            # Log changes in dry run mode
+            self._log_changes(f"domain '{domain_info.domain}'", changes)
+
+            # Apply changes (these will still be tracked but not saved in dry run)
             domain_info.portfolio = portfolio
-            domain_info.sub_organization = suborgs.get(org_name, None)
+            domain_info.sub_organization = new_suborg
             updated_domains.add(domain_info)
 
         if not updated_domains and debug:
@@ -489,13 +669,7 @@ class Command(BaseCommand):
 
         return updated_domains
 
-    def update_requests(
-        self,
-        portfolio,
-        federal_agency,
-        suborgs,
-        debug,
-    ):
+    def update_requests(self, portfolio, federal_agency, suborgs, debug):
         """
         Associate portfolio with domain requests for a federal agency.
         Updates all relevant domain request records.
@@ -505,28 +679,29 @@ class Command(BaseCommand):
             DomainRequest.DomainRequestStatus.INELIGIBLE,
             DomainRequest.DomainRequestStatus.REJECTED,
         ]
-        domain_requests = federal_agency.domainrequest_set.exclude(status__in=invalid_states)
 
-        # Add portfolio, sub_org, requested_suborg, suborg_city, and suborg_state_territory.
-        # For started domain requests, set the federal agency to None if not on a portfolio.
+        # Get all request organization names for fuzzy matching
+        all_request_org_names = list(
+            DomainRequest.objects.exclude(status__in=invalid_states)
+            .values_list("organization_name", flat=True)
+            .distinct()
+        )
+
+        # Use fuzzy matching to find domain requests that belong to this agency
+        request_filter = self._create_fuzzy_organization_filter(
+            federal_agency, [normalize_string(name) for name in all_request_org_names if name]
+        )
+        domain_requests = DomainRequest.objects.filter(request_filter).exclude(status__in=invalid_states)
+
+        if debug:
+            logger.info(f"Fuzzy matching found {domain_requests.count()} domain requests for '{federal_agency.agency}'")
+
+        # Process each domain request
         for domain_request in domain_requests:
             if domain_request.status != DomainRequest.DomainRequestStatus.STARTED:
-                org_name = normalize_string(domain_request.organization_name, lowercase=False)
-                domain_request.portfolio = portfolio
-                domain_request.sub_organization = suborgs.get(org_name, None)
-                if domain_request.sub_organization is None:
-                    domain_request.requested_suborganization = normalize_string(
-                        domain_request.organization_name, lowercase=False
-                    )
-                    domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
-                    domain_request.suborganization_state_territory = domain_request.state_territory
+                self._update_active_request(domain_request, portfolio, suborgs)
             else:
-                # Clear the federal agency for started domain requests
-                agency_name = normalize_string(domain_request.federal_agency.agency)
-                portfolio_name = normalize_string(portfolio.organization_name)
-                if agency_name == portfolio_name:
-                    domain_request.federal_agency = None
-                    logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
+                self._handle_started_request(domain_request, portfolio)
             updated_domain_requests.add(domain_request)
 
         if not updated_domain_requests and debug:
@@ -534,6 +709,47 @@ class Command(BaseCommand):
             logger.warning(f"{TerminalColors.YELLOW}{message}{TerminalColors.ENDC}")
 
         return updated_domain_requests
+
+    def _update_active_request(self, domain_request, portfolio, suborgs):
+        """Update an active (non-started) domain request."""
+        org_name = normalize_string(domain_request.organization_name)
+        new_suborg = suborgs.get(org_name, None)
+
+        # Track changes for dry run
+        changes = []
+        if domain_request.portfolio != portfolio:
+            changes.append(f"portfolio: {domain_request.portfolio} → {portfolio}")
+        if domain_request.sub_organization != new_suborg:
+            changes.append(f"sub_organization: {domain_request.sub_organization} → {new_suborg}")
+
+        # Log changes in dry run mode
+        self._log_changes(f"request '{domain_request}'", changes)
+
+        # Apply changes
+        domain_request.portfolio = portfolio
+        domain_request.sub_organization = new_suborg
+
+        if domain_request.sub_organization is None:
+            domain_request.requested_suborganization = normalize_string(
+                domain_request.organization_name, lowercase=False
+            )
+            domain_request.suborganization_city = normalize_string(domain_request.city, lowercase=False)
+            domain_request.suborganization_state_territory = domain_request.state_territory
+
+    def _handle_started_request(self, domain_request, portfolio):
+        """Handle started domain requests by clearing federal agency if needed."""
+        if not domain_request.federal_agency:
+            return
+
+        agency_name = normalize_string(domain_request.federal_agency.agency)
+        portfolio_name = normalize_string(portfolio.organization_name)
+
+        if agency_name == portfolio_name:
+            if self.dry_run:
+                logger.info(f"WOULD SET federal agency on started domain request '{domain_request}' to None.")
+            else:
+                domain_request.federal_agency = None
+                logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
 
     def create_user_portfolio_permissions(self, domains):
         user_domain_roles = UserDomainRole.objects.select_related(
@@ -571,3 +787,28 @@ class Command(BaseCommand):
                 self.portfolio_invitation_changes.create.append(invitation)
             else:
                 self.portfolio_invitation_changes.skip.append(invitation)
+
+    def _log_action(self, action_type, obj, message=None):
+        """
+        Log an action that would be performed, with dry run support.
+
+        Args:
+            action_type: Type of action ('CREATE', 'UPDATE', 'DELETE')
+            obj: Object being acted upon
+            message: Optional custom message
+        """
+        action_text = f"WOULD {action_type}" if self.dry_run else action_type.title()
+        obj_repr = message or str(obj)
+
+        color = TerminalColors.OKGREEN
+        if action_type == "UPDATE":
+            color = TerminalColors.YELLOW
+        elif action_type == "DELETE":
+            color = TerminalColors.FAIL
+
+        logger.info(f"{color}{action_text} {obj_repr}{TerminalColors.ENDC}")
+
+    def _log_changes(self, obj, changes):
+        """Log what changes would be made to an object in dry run mode."""
+        if self.dry_run and changes:
+            logger.info(f"  WOULD UPDATE {obj}: {', '.join(changes)}")
