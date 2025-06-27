@@ -11,8 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            sql="ALTER TABLE registrar_suborganization DROP CONSTRAINT " \
-            "registrar_suborganization_name_key"
+            sql="ALTER TABLE registrar_suborganization DROP CONSTRAINT " "registrar_suborganization_name_key"
         ),
         migrations.AlterField(
             model_name="portfolio",
