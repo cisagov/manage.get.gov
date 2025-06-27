@@ -12,6 +12,7 @@ class Suborganization(TimeStampedModel):
 
     class Meta:
         ordering = ["name"]
+        constraints = [models.UniqueConstraint(fields=["name", "portfolio"], name="unique_name_portfolio")]
 
     name = models.CharField(
         max_length=1000,
@@ -49,7 +50,7 @@ class Suborganization(TimeStampedModel):
             )
             .exists()
         ):
-            raise ValidationError({"name": "Name already exists in Portfolio"})
+            raise ValidationError({"name": "Suborganization name already exists in Portfolio"})
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
