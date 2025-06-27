@@ -4,6 +4,7 @@
 >
   {% if legend_heading %}
     <h2 class="{{ legend_classes }}">{{ legend_heading }} </h2>
+  {% elif suppress_label %}
   {% else %}
     {% if span_for_text %}
       <span>{{ field.label }}</span>
