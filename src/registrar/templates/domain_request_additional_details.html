@@ -25,7 +25,8 @@
     </div>
 
     <!-- Toggle -->
-    {% with add_class="usa-radio__input--tile" add_legend_heading="Is there anything else you’d like us to know about your domain request?" %}
+    <h2>Is there anything else you’d like us to know about your domain request?</h2>
+    {% with add_class="usa-radio__input--tile" suppress_label=True %}
         {% input_with_errors forms.2.has_anything_else_text %}
     {% endwith %}
     {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
