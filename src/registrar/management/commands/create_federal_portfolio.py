@@ -1,4 +1,23 @@
-"""Loads files from /tmp into our sandboxes"""
+"""
+This command creates and organizes federal agency portfolios by:
+
+1. Creates a Portfolio record for the specified agencies
+2. Uses fuzzy string matching to find domain requests and domain information records
+   that belong to the agency (handles name variations like "Department of State" vs "State Dept" vs "DOS")
+3. Automatically creates Suborganization records from the different sub-units/departments found within
+   the discovered domains/requests (e.g., "IT Department", "Communications Office")
+4. Associates / Links domains and requests to their proper portfolio and suborganization hierarchy
+
+Usage Examples:
+ # Create portfolio for specific agency
+ ./manage.py create_federal_portfolio --agency_name "Department of State" --parse_requests --parse_domains
+
+ # Create portfolios for entire branch
+ ./manage.py create_federal_portfolio --branch "executive" --parse_requests --parse_domains
+
+ # Dry run to see what would change
+ ./manage.py create_federal_portfolio --agency_name "Department of Defense" --parse_requests --dry_run
+"""
 
 import argparse
 import logging
@@ -262,7 +281,8 @@ class Command(BaseCommand):
         # == Handle suborganizations == #
         created_suborgs = self.create_suborganizations(portfolios_to_use_dict, agencies_dict)
         if created_suborgs:
-            self.suborganization_changes.create.extend(created_suborgs.values())
+            suborg_objects = list(created_suborgs.values())
+            self.suborganization_changes.create.extend(suborg_objects)
             if not self.dry_run:
                 self.suborganization_changes.bulk_create()
 
@@ -273,14 +293,15 @@ class Command(BaseCommand):
             suborgs = {}
 
             if self.dry_run:
+                # In dry run, use the created_suborgs that haven't been saved yet
                 if created_suborgs:
-                    for suborg in created_suborgs.values():
+                    for composite_key, suborg in created_suborgs.items():
                         if suborg.portfolio == portfolio:
                             suborgs[normalize_string(suborg.name)] = suborg
             else:
                 # For normal execution, first add any just-created suborganizations
                 if created_suborgs:
-                    for suborg in created_suborgs.values():
+                    for composite_key, suborg in created_suborgs.items():
                         if suborg.portfolio == portfolio:
                             suborgs[normalize_string(suborg.name)] = suborg
 
@@ -491,15 +512,7 @@ class Command(BaseCommand):
             request_filters,
         )
 
-        # First: get all existing suborgs
-        # NOTE: .all() is a heavy query, but unavoidable as we need to check for duplicate names.
-        # This is not quite as heavy as just using a for loop and .get_or_create, but worth noting.
-        # Change this if you can find a way to avoid doing this.
-        # This won't scale great for 10k+ records.
-        existing_suborgs = Suborganization.objects.all()
-        suborg_dict = {normalize_string(org.name): org for org in existing_suborgs}
-
-        # Second: Group domains and requests by normalized organization name.
+        # Group domains and requests by normalized organization name.
         domains_dict = {}
         requests_dict = {}
         for domain in domains:
@@ -510,10 +523,16 @@ class Command(BaseCommand):
             normalized_name = normalize_string(request.organization_name)
             requests_dict.setdefault(normalized_name, []).append(request)
 
-        # Third: Parse through each group of domains that have the same organization names,
+        # Parse through each group of domains that have the same organization names,
         # then create *one* suborg record from it.
         # Normalize all suborg names so we don't add duplicate data unintentionally.
+        # Check for existing suborgs per portfolio
         for portfolio_name, portfolio in portfolio_dict.items():
+            portfolio_suborg_dict = {}
+            if portfolio.pk:
+                existing_suborgs_for_portfolio = portfolio.portfolio_suborganizations.all()
+                portfolio_suborg_dict = {normalize_string(org.name): org for org in existing_suborgs_for_portfolio}
+
             # For a given agency, find all domains that list suborg info for it.
             for norm_org_name, domains in domains_dict.items():
                 # Don't add the record if the suborg name would equal the portfolio name
@@ -534,13 +553,30 @@ class Command(BaseCommand):
                     )
                     new_suborg_name = normalize_string(best_record.organization_name, lowercase=False)
 
-                # If the suborg already exists, don't add it again.
-                if norm_org_name not in suborg_dict and norm_org_name not in created_suborgs:
+                # Check if suborg exists within this specific portfolio
+                # and in the current batch being created for this portfolio
+                portfolio_created_suborgs = {}
+                for comp_key, suborg in created_suborgs.items():
+                    if suborg.portfolio == portfolio:
+                        if ":" in comp_key:
+                            norm_name = comp_key.split(":", 1)[1]
+                            portfolio_created_suborgs[norm_name] = suborg
+
+                if norm_org_name not in portfolio_suborg_dict and norm_org_name not in portfolio_created_suborgs:
                     requests = requests_dict.get(norm_org_name)
                     suborg = Suborganization(name=new_suborg_name, portfolio=portfolio)
                     self.set_suborganization_location(suborg, domains, requests)
-                    created_suborgs[norm_org_name] = suborg
-                    self._log_action("CREATE", f"suborganization '{suborg}'")
+                    portfolio_identifier = portfolio.pk if portfolio.pk else id(portfolio)
+                    composite_key = f"{portfolio_identifier}:{norm_org_name}"
+                    created_suborgs[composite_key] = suborg
+                    self._log_action("CREATE", f"suborganization '{suborg}' for portfolio '{portfolio}'")
+                else:
+                    existing_suborg = portfolio_suborg_dict.get(norm_org_name)
+                    if existing_suborg:
+                        self._log_action(
+                            "SKIP", f"suborganization '{existing_suborg}' already exists in portfolio '{portfolio}'"
+                        )
+
         return created_suborgs
 
     def set_suborganization_location(self, suborg, domains, requests):
