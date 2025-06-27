@@ -39,3 +39,17 @@ class Suborganization(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.name}"
+
+    def clean(self):
+        if (
+            Suborganization.objects.exclude(pk=self.pk)
+            .filter(
+                portfolio=self.portfolio,
+                name__iexact=self.name,
+            )
+            .exists()
+        ):
+            raise ValidationError({"name": "Suborganization name already exists in Portfolio"})
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
