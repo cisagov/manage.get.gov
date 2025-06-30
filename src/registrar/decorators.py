@@ -403,20 +403,15 @@ def _can_view_all_domain_requests(user, request, domain_request_pk):
     This permission allows users to view domain request details without editing.
     Handles both portfolio and non-portfolio domain requests.
     """
+    if not domain_request_pk:
+        return False
+
     portfolio = request.session.get("portfolio")
     # Portfolio-based access
     if user.is_org_user(request) and portfolio:
         has_perm = user.has_view_all_domain_requests_portfolio_permission(portfolio)
         exists = _domain_request_exists_under_portfolio(portfolio, domain_request_pk)
-        logger.debug(f"Portfolio check → perm={has_perm}, exists={exists}")
         return has_perm and exists
-
-    # No PK means “free” view
-    if not domain_request_pk:
-        logger.warning(
-            "_has_domain_requests_view_all: missing domain_request_pk; " "assuming view-all is allowed in this context."
-        )
-        return True
 
     # Check non-portfolio permissions
     try:
@@ -425,7 +420,6 @@ def _can_view_all_domain_requests(user, request, domain_request_pk):
         return False
 
     can_view = _has_legacy_domain_request_view_access(user, domain_request)
-    logger.debug(f"Non-portfolio check for user={user}, pk={domain_request_pk} → {can_view}")
     return can_view
 
 
@@ -437,15 +431,12 @@ def _has_legacy_domain_request_view_access(user, domain_request):
     Has the full_access_permission
     """
     if user.has_perm("registrar.analyst_access_permission"):
-        logger.debug(f"{user} has analyst_access_permission")
         return True
 
     if domain_request.creator == user:
-        logger.debug(f"{user} is creator of DomainRequest(pk={domain_request.pk})")
         return True
 
     if user.has_perm("registrar.full_access_permission"):
-        logger.debug(f"{user} has full_access_permission")
         return True
 
     return False
