@@ -1002,7 +1002,6 @@ class Review(DomainRequestWizard):
             return
 
         try:
-            # context = {"domain_request": self.domain_request, "date": date.today()}
             purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
             # requires_feb_questions and purpose_label used to pass into portfolio_domain_request_summary template
             context = {
