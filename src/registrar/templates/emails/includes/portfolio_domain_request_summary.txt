@@ -4,6 +4,7 @@ Requesting entity: {# if blockmakes a newline #}
 {{ domain_request|display_requesting_entity }}
 .gov domain:
 {{ domain_request.requested_domain.name }}
+[ TEST. REMOVE LINE WHEN FINISHED ] Requires FEB: {{ requires_feb_questions }}
 {% if requires_feb_questions %}
     Meets naming requirements
     {% if domain_request.feb_naming_requirements %}

@@ -1003,9 +1003,6 @@ class DomainRequest(TimeStampedModel):
                 has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
                 is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
-                logger.info(f"{recipient} has_organization_feature_flag: {has_organization_feature_flag}")
-                logger.info(f"{recipient} is org user: {is_org_user}")
-                logger.info(f"request requires feb questions: {requires_feb_questions}")
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
                     "domain_request": self,
