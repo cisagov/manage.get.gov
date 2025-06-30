@@ -7,8 +7,7 @@ Requesting entity: {# if blockmakes a newline #}
 {{ domain_request.requested_domain.name }}
 {% if requires_feb_questions %}
 Meets naming requirements:
-{% if domain_request.feb_naming_requirements %}Yes{% else %}No. {{ domain_request.feb_naming_requirements_details }}{% endif %}{% endif %} 
-{% if domain_request.alternative_domains.all %}
+{% if domain_request.feb_naming_requirements %}Yes{% else %}No. {{ domain_request.feb_naming_requirements_details }}{% endif %}{% endif %}{% if domain_request.alternative_domains.all %}
 Alternative domains:
 {% for site in domain_request.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}{% endfor %}{% endif %}
 
@@ -20,11 +19,9 @@ Interagency initiative:
 
 Target time frame:
 {% if domain_request.has_target_time_frame %}{{ domain_request.time_frame_details }}{% else %}No{% endif %}
-{% else %}{{ domain_request.purpose }}{% endif %}
-{% if domain_request.anything_else %}
+{% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
 Additional details:
-{{ domain_request.anything_else }}{% endif %}
-{% if recipient %}
+{{ domain_request.anything_else }}{% endif %}{% if recipient %}
 Your contact information:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
 {% endif %}
