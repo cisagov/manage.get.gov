@@ -632,6 +632,11 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+            "registrar": {
+            "handlers": ["user_info"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
     # root logger catches anything, unless
     # defined by a more specific logger
