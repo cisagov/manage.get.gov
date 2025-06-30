@@ -14,8 +14,8 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
-from .thread_locals import set_user, set_ip
-import logger
+from .thread_locals import set_user_email, set_ip
+logger = logging.getLogger(__name__)
 
 
 class NoCacheMiddleware:
@@ -253,10 +253,10 @@ class RequestLoggingMiddleware:
 
 class UserInfoLoggingMiddleware:
     def __init__(self, get_response):
-        self.get_response(get_response)
+        self.get_response = get_response
 
     def __call__(self, request):
         remote_ip = request.META.get("REMOTE_ADDR", "Unknown IP")
-        set_user(request.user)
         set_ip(remote_ip)
+        set_user_email(request.user)
         return self.get_response(request)

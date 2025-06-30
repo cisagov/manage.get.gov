@@ -205,7 +205,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Our own router logs that included user info to speed up log tracing time on stable
     "registrar.registrar_middleware.RequestLoggingMiddleware",
-    "registrar.registrar_middleware.UserInfoLoggingMiddlewarea",
+    "registrar.registrar_middleware.UserInfoLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -571,8 +571,8 @@ LOGGING = {
         },
         "user_info": {
             "class": "logging.StreamHandler",
-            "filters": ["with_user"],
             "formatter": "user_format",
+                "filters": ["with_user"],
         },
         # No file logger is configured,
         # because containerized apps
@@ -584,7 +584,7 @@ LOGGING = {
             "callback": lambda record: record.levelno < logging.ERROR,
         },
         "with_user": {
-            "()": "registrar.registrar_middleware.UserInfoLoggingMiddleware",
+            "()": "registrar.logging.UserFilter",
         },
     },
     # define loggers: these are "sinks" into which
@@ -628,7 +628,7 @@ LOGGING = {
         },
         # Our app!
         "registrar": {
-            "handlers": ["django_handlers", "user_info"],
+            "handlers": [*django_handlers, "user_info"],
             "level": "DEBUG",
             "propagate": False,
         },
