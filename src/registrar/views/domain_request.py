@@ -1002,14 +1002,24 @@ class Review(DomainRequestWizard):
             return
 
         try:
-            context = {"domain_request": self.domain_request, "date": date.today()}
+            # context = {"domain_request": self.domain_request, "date": date.today()}
+            recipient_email = "erin.song@gsa.gov"
+            purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
+            context = {
+                "domain_request": self.domain_request,
+                "date": date.today(),
+                "recipient": recipient,
+                "requires_feb_questions": True,
+                "purpose_label": purpose_label,
+            }
+
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
                 "erin.song@gsa.gov",
                 context=context,
             )
-            logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
+            logger.info(f"A submission confirmation email was sent to {recipient_email}")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
