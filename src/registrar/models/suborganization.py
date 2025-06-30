@@ -2,6 +2,7 @@ from django.db import models
 
 from registrar.models.domain_request import DomainRequest
 from .utility.time_stamped_model import TimeStampedModel
+from django.core.exceptions import ValidationError
 
 
 class Suborganization(TimeStampedModel):
