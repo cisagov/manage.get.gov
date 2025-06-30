@@ -205,6 +205,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Our own router logs that included user info to speed up log tracing time on stable
     "registrar.registrar_middleware.RequestLoggingMiddleware",
+    "registrar.registrar_middleware.UserInfoLoggingMiddlewarea",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -536,10 +537,7 @@ LOGGING = {
         "json": {
             "()": JsonFormatter,
         },
-        'with_user':{
-            'format': '%(asctime)s User: {user_context} {levelname} {message}',
-            'style': '{'
-        }
+        "user_format": {"format": "[ %(email)s | %(ip)s | %(asctime)s %(levelname)s %(message)s]"},
     },
     # define where log messages will be sent
     # each logger can have one or more handlers
@@ -571,10 +569,11 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
-        "console":{
-            "class": 'logging.StreamHandler',
-            'formatter': 'with_user',
-        }
+        "user_info": {
+            "class": "logging.StreamHandler",
+            "filters": ["with_user"],
+            "formatter": "user_format",
+        },
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
@@ -583,7 +582,10 @@ LOGGING = {
         "below_error": {
             "()": "django.utils.log.CallbackFilter",
             "callback": lambda record: record.levelno < logging.ERROR,
-        }
+        },
+        "with_user": {
+            "()": "registrar.registrar_middleware.UserInfoLoggingMiddleware",
+        },
     },
     # define loggers: these are "sinks" into which
     # messages are sent for processing
@@ -626,7 +628,7 @@ LOGGING = {
         },
         # Our app!
         "registrar": {
-            "handlers": django_handlers,
+            "handlers": ["django_handlers", "user_info"],
             "level": "DEBUG",
             "propagate": False,
         },
