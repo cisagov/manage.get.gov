@@ -19,6 +19,38 @@
                     <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                 </li>
                 <li class="usa-nav__secondary-item">
+                    <button 
+                        class="usa-accordion__button usa-nav__link" 
+                        onclick="toggleNavDropdown()"
+                    >
+                    <span class="ellipsis usa-nav__username">{{ user.email }}</span>
+                    </button>
+                    <ul id="extended-nav-section-one" class="usa-nav__submenu">
+                        <li class="usa-nav__submenu-item">
+                            {% url 'user-profile' as user_profile_url %}
+                            {% url 'finish-user-profile-setup' as finish_setup_url %}
+                            <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                Your profile
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- <div class="nav-dropdown" id="profile-dropdown">
+                        <button 
+                            class="usa-button dropdown-button" 
+                            onclick="toggleNavDropdown()"
+                        >
+                            Dropdown
+                        </button>
+                        <div class="dropdown-content" id="profile-dropdown-contents">
+                            {% url 'user-profile' as user_profile_url %}
+                            {% url 'finish-user-profile-setup' as finish_setup_url %}
+                            <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                Your profile
+                            </a>
+                        </div>
+                    </div> -->
+                </li>
+                <li class="usa-nav__secondary-item">
                     {% url 'user-profile' as user_profile_url %}
                     {% url 'finish-user-profile-setup' as finish_setup_url %}
                     <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
