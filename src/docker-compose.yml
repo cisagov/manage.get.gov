@@ -74,10 +74,10 @@ services:
       python manage.py createcachetable &&
       python manage.py load &&
       if [ \"$DEBUG_MODE\" = \"true\" ]; then
-        echo 'Starting on debug mode... Your app is now ready for debugging.';
+        echo 'Starting in debug mode... Your app is now ready for debugging.';
         python -m debugpy --listen 0.0.0.0:5678 --wait-for-client manage.py runserver 0.0.0.0:8080;
       else
-        echo 'Starting on non-debug mode...';
+        echo 'Starting in non-debug mode...';
         python manage.py runserver 0.0.0.0:8080;
       fi"
 
