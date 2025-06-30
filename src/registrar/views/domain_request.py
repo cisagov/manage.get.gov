@@ -1005,10 +1005,11 @@ class Review(DomainRequestWizard):
             # context = {"domain_request": self.domain_request, "date": date.today()}
             recipient_email = "erin.song@gsa.gov"
             purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
+            # requires_feb_questions and purpose_label used to pass into portfolio_domain_request_summary template
             context = {
                 "domain_request": self.domain_request,
                 "date": date.today(),
-                "recipient": recipient,
+                "recipient": recipient_email,
                 "requires_feb_questions": True,
                 "purpose_label": purpose_label,
             }
