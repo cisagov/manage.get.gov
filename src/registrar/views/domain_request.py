@@ -1003,7 +1003,6 @@ class Review(DomainRequestWizard):
 
         try:
             # context = {"domain_request": self.domain_request, "date": date.today()}
-            recipient_email = "erin.song@gsa.gov"
             purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
             # requires_feb_questions and purpose_label used to pass into portfolio_domain_request_summary template
             context = {
@@ -1016,7 +1015,7 @@ class Review(DomainRequestWizard):
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
-                recipient_email,
+                "ombdotgov@omb.eop.gov",
                 context=context,
             )
             logger.info(f"A submission confirmation email was sent to {recipient_email}")
