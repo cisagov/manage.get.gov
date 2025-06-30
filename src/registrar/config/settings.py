@@ -572,7 +572,7 @@ LOGGING = {
         "user_info": {
             "class": "logging.StreamHandler",
             "formatter": "user_format",
-                "filters": ["with_user"],
+            "filters": ["with_user"],
         },
         # No file logger is configured,
         # because containerized apps
@@ -632,7 +632,7 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
-            "registrar": {
+        "registrar": {
             "handlers": ["user_info"],
             "level": "INFO",
             "propagate": False,

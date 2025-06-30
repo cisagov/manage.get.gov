@@ -17,5 +17,3 @@ def set_ip(ip):
 
 def get_ip():
     return getattr(_user_storage, "ip", None)
-
-

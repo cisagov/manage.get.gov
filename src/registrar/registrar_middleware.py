@@ -15,6 +15,7 @@ from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
 from .thread_locals import set_user_email, set_ip
+
 logger = logging.getLogger(__name__)
 
 
