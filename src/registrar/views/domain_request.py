@@ -1009,7 +1009,6 @@ class Review(DomainRequestWizard):
             context = {
                 "domain_request": self.domain_request,
                 "date": date.today(),
-                "recipient": recipient_email,
                 "requires_feb_questions": True,
                 "purpose_label": purpose_label,
             }
@@ -1017,7 +1016,7 @@ class Review(DomainRequestWizard):
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
-                "erin.song@gsa.gov",
+                recipient_email,
                 context=context,
             )
             logger.info(f"A submission confirmation email was sent to {recipient_email}")
