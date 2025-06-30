@@ -1018,7 +1018,7 @@ class Review(DomainRequestWizard):
                 "ombdotgov@omb.eop.gov",
                 context=context,
             )
-            logger.info(f"A submission confirmation email was sent to {recipient_email}")
+            logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
         except EmailSendingError:
             logger.warning("Failed to send confirmation email", exc_info=True)
 
