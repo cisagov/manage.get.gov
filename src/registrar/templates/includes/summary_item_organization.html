@@ -36,103 +36,10 @@
         {% include "includes/member_permissions_summary.html" with permissions=value %}
     {% elif domain_mgmt %}
         {% include "includes/member_domain_management.html" with domain_count=value %}
-      {% elif address %}
+    {% elif address %}
+        <h4 class="margin-bottom-0">Organization Name and Address</h4>
         {% include "includes/organization_address.html" with organization=value %}
-      {% elif contact %}
-        {% if list %}
-          {% if value|length == 1 %}
-            {% include "includes/contact.html" with contact=value|first %}
-          {% else %}
-            {% if value %}
-              <dl class="usa-list usa-list--unstyled margin-top-0">
-                {% for item in value %}
-                  <dt>
-                  
-                 <h4 class="
-             margin-bottom-05
-             padding-right-1">
-                      Contact {{forloop.counter}}
-                  </h4>
-                </dt>
-                  <dd>
-                    {% include "includes/contact.html" with contact=item %}
-                  </dd>
-                {% endfor %}
-                </dl>
-            {% elif custom_text_for_value_none %}
-              <p>
-                {{ custom_text_for_value_none }}
-              </p>
-            {% else %}
-              <p>
-                  None
-              </p>
-            {% endif %}
-          {% endif %}
-        {% else %}
-          {% include "includes/contact.html" with contact=value %}
-        {% endif %}
-      {% elif list %}
-        {% if value|length == 1 %}
-            {% if users %}
-              <p class="margin-top-0">{{ value.0.user.email }} </p>
-            {% elif domains %}
-              {{ value.0.0 }}
-              {% if value.0.1 %}
-                ({% spaceless %}
-                {% for addr in value.0.1 %}
-                  {{addr}}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-                {% endspaceless %})
-              {% endif %}
-            {% else %}
-              <p class="margin-top-0 margin-bottom-0">{{ value | first }} </p>
-            {% endif %}
-        {% else %}
-          <ul class="usa-list usa-list--unstyled margin-top-0">
-            {% for item in value %}
-            {% if users %}
-              <li>{{ item.user.email }}</li>
-            {% elif domains %}
-              <li>
-                {{ item.0 }}
-                {% if item.1 %}
-                  ({% spaceless %}
-                  {% for addr in item.1 %}
-                    {{addr}}{% if not forloop.last %}, {% endif %}
-                  {% endfor %}
-                  {% endspaceless %})
-                {% endif %}
-              </li>
-            {% else %}
-              <li>{{ item }}</li>
-            {% endif %}
-            {% empty %}
-             <li>None</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      {% elif domain_permissions %}
-        {% if value.permissions.all %}
-          {% if value.permissions|length == 1 %}
-            <p class="margin-top-0">{{ value.permissions.0.user.email }} </p>
-          {% else %}
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-            {% for item in value.permissions.all %}
-              <li>{{ item.user.email }}</li>
-            {% endfor %}
-            </ul>
-          {% endif %}
-        {% endif %}
-        {% if value.active_invitations.all %}
-          <h4 class="margin-bottom-05">Invited domain managers</h4>
-          <ul class="usa-list usa-list--unstyled margin-top-0">
-          {% for item in value.active_invitations.all %}
-            <li>{{ item.email }}</li>
-          {% endfor %}
-          </ul>
-        {% endif %}
-      {% else %}
+    {% else %}
         {% if custom_text_for_value_none %}
           <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
         {% endif %}
