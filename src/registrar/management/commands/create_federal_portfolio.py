@@ -35,7 +35,6 @@ from django.db.models import F, Q
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.management.commands.utility.fuzzy_string_matcher import create_federal_agency_matcher
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -476,22 +475,63 @@ class Command(BaseCommand):
         """Create Suborganizations tied to the given portfolio based on DomainInformation objects"""
         created_suborgs = {}
 
+        # Get filtered domains and requests
+        domains_dict, requests_dict = self._get_filtered_domains_and_requests(agency_dict)
+
+        # Process each portfolio
+        for portfolio_name, portfolio in portfolio_dict.items():
+            existing_suborgs = self._get_existing_suborgs_for_portfolio(portfolio)
+            portfolio_created_suborgs = self._get_portfolio_created_suborgs(created_suborgs, portfolio)
+
+            # Create suborganizations for this portfolio
+            self._create_suborgs_for_portfolio(
+                portfolio_name,
+                portfolio,
+                domains_dict,
+                requests_dict,
+                existing_suborgs,
+                portfolio_created_suborgs,
+                created_suborgs,
+            )
+
+        return created_suborgs
+
+    def _get_filtered_domains_and_requests(self, agency_dict):
+        """Get domains and requests filtered by agencies, grouped by normalized organization name."""
         agencies = agency_dict.values()
 
         # Get all organization names for matching
-        all_domain_org_names = list(
+        all_org_names = self._get_all_organization_names()
+
+        # Build filters for domains and requests
+        domain_filters, request_filters = self._build_agency_filters(agencies, all_org_names)
+
+        # Get filtered querysets
+        domains = self._get_filtered_domains(domain_filters)
+        requests = self._get_filtered_requests(request_filters)
+
+        # Group by normalized organization name
+        domains_dict = self._group_by_normalized_org_name(domains, "organization_name")
+        requests_dict = self._group_by_normalized_org_name(requests, "organization_name")
+
+        return domains_dict, requests_dict
+
+    def _get_all_organization_names(self):
+        """Get all unique organization names from domains and requests."""
+        domain_names = list(
             DomainInformation.objects.filter(organization_name__isnull=False)
             .values_list("organization_name", flat=True)
             .distinct()
         )
-        all_request_org_names = list(
+        request_names = list(
             DomainRequest.objects.filter(organization_name__isnull=False)
             .values_list("organization_name", flat=True)
             .distinct()
         )
+        return [normalize_string(name) for name in domain_names + request_names]
 
-        # Combine and normalize for matching
-        all_org_names = [normalize_string(name) for name in all_domain_org_names + all_request_org_names]
+    def _build_agency_filters(self, agencies, all_org_names):
+        """Build Q filters for domains and requests based on agencies."""
         domain_filters = Q()
         request_filters = Q()
 
@@ -500,84 +540,113 @@ class Command(BaseCommand):
             domain_filters |= agency_filter
             request_filters |= agency_filter
 
-        domains = DomainInformation.objects.filter(
-            # Org name must not be null, and must not be the portfolio name
+        return domain_filters, request_filters
+
+    def _get_filtered_domains(self, domain_filters):
+        """Get filtered domain information objects."""
+        return DomainInformation.objects.filter(
             Q(organization_name__isnull=False) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
             domain_filters,
         )
-        requests = DomainRequest.objects.filter(
-            # Org name must not be null, and must not be the portfolio name
+
+    def _get_filtered_requests(self, request_filters):
+        """Get filtered domain request objects."""
+        return DomainRequest.objects.filter(
             Q(organization_name__isnull=False) & ~Q(organization_name__iexact=F("portfolio__organization_name")),
-            # Only get relevant data to the agency/portfolio we are targeting
             request_filters,
         )
 
-        # Group domains and requests by normalized organization name.
-        domains_dict = {}
-        requests_dict = {}
-        for domain in domains:
-            normalized_name = normalize_string(domain.organization_name)
-            domains_dict.setdefault(normalized_name, []).append(domain)
+    def _group_by_normalized_org_name(self, queryset, org_name_field):
+        """Group queryset objects by normalized organization name."""
+        grouped_dict = {}
+        for obj in queryset:
+            org_name = getattr(obj, org_name_field)
+            normalized_name = normalize_string(org_name)
+            grouped_dict.setdefault(normalized_name, []).append(obj)
+        return grouped_dict
 
-        for request in requests:
-            normalized_name = normalize_string(request.organization_name)
-            requests_dict.setdefault(normalized_name, []).append(request)
+    def _get_existing_suborgs_for_portfolio(self, portfolio):
+        """Get existing suborganizations for a portfolio."""
+        if not portfolio.pk:
+            return {}
 
-        # Parse through each group of domains that have the same organization names,
-        # then create *one* suborg record from it.
-        # Normalize all suborg names so we don't add duplicate data unintentionally.
-        # Check for existing suborgs per portfolio
-        for portfolio_name, portfolio in portfolio_dict.items():
-            portfolio_suborg_dict = {}
-            if portfolio.pk:
-                existing_suborgs_for_portfolio = portfolio.portfolio_suborganizations.all()
-                portfolio_suborg_dict = {normalize_string(org.name): org for org in existing_suborgs_for_portfolio}
+        existing_suborgs = portfolio.portfolio_suborganizations.all()
+        return {normalize_string(org.name): org for org in existing_suborgs}
 
-            # For a given agency, find all domains that list suborg info for it.
-            for norm_org_name, domains in domains_dict.items():
-                # Don't add the record if the suborg name would equal the portfolio name
-                if norm_org_name == portfolio_name:
-                    continue
+    def _get_portfolio_created_suborgs(self, created_suborgs, portfolio):
+        """Get suborganizations created in this batch for the given portfolio."""
+        portfolio_created_suborgs = {}
+        for comp_key, suborg in created_suborgs.items():
+            if suborg.portfolio == portfolio and ":" in comp_key:
+                norm_name = comp_key.split(":", 1)[1]
+                portfolio_created_suborgs[norm_name] = suborg
+        return portfolio_created_suborgs
 
-                new_suborg_name = None
-                if len(domains) == 1:
-                    new_suborg_name = normalize_string(domains[0].organization_name, lowercase=False)
-                elif len(domains) > 1:
-                    # Pick the best record for a suborg name (fewest spaces, most leading capitals)
-                    best_record = max(
-                        domains,
-                        key=lambda rank: (
-                            -domain.organization_name.count(" "),
-                            count_capitals(domain.organization_name, leading_only=True),
-                        ),
-                    )
-                    new_suborg_name = normalize_string(best_record.organization_name, lowercase=False)
+    def _create_suborgs_for_portfolio(
+        self,
+        portfolio_name,
+        portfolio,
+        domains_dict,
+        requests_dict,
+        existing_suborgs,
+        portfolio_created_suborgs,
+        created_suborgs,
+    ):
+        """Create suborganizations for a specific portfolio."""
+        for norm_org_name, domains in domains_dict.items():
+            # Skip if suborg name would equal portfolio name
+            if norm_org_name == portfolio_name:
+                continue
 
-                # Check if suborg exists within this specific portfolio
-                # and in the current batch being created for this portfolio
-                portfolio_created_suborgs = {}
-                for comp_key, suborg in created_suborgs.items():
-                    if suborg.portfolio == portfolio:
-                        if ":" in comp_key:
-                            norm_name = comp_key.split(":", 1)[1]
-                            portfolio_created_suborgs[norm_name] = suborg
+            # Skip if suborg already exists
+            if self._suborg_already_exists(norm_org_name, existing_suborgs, portfolio_created_suborgs):
+                continue
 
-                if norm_org_name not in portfolio_suborg_dict and norm_org_name not in portfolio_created_suborgs:
-                    requests = requests_dict.get(norm_org_name)
-                    suborg = Suborganization(name=new_suborg_name, portfolio=portfolio)
-                    self.set_suborganization_location(suborg, domains, requests)
-                    portfolio_identifier = portfolio.pk if portfolio.pk else id(portfolio)
-                    composite_key = f"{portfolio_identifier}:{norm_org_name}"
-                    created_suborgs[composite_key] = suborg
-                    self._log_action("CREATE", f"suborganization '{suborg}' for portfolio '{portfolio}'")
-                else:
-                    existing_suborg = portfolio_suborg_dict.get(norm_org_name)
-                    if existing_suborg:
-                        self._log_action(
-                            "SKIP", f"suborganization '{existing_suborg}' already exists in portfolio '{portfolio}'"
-                        )
+            # Create new suborganization
+            suborg = self._create_new_suborganization(norm_org_name, domains, requests_dict, portfolio)
 
-        return created_suborgs
+            # Add to created suborgs with composite key
+            portfolio_identifier = portfolio.pk if portfolio.pk else id(portfolio)
+            composite_key = f"{portfolio_identifier}:{norm_org_name}"
+            created_suborgs[composite_key] = suborg
+
+            self._log_action("CREATE", f"suborganization '{suborg}' for portfolio '{portfolio}'")
+
+    def _suborg_already_exists(self, norm_org_name, existing_suborgs, portfolio_created_suborgs):
+        """Check if suborganization already exists in portfolio."""
+        if norm_org_name in existing_suborgs:
+            existing_suborg = existing_suborgs[norm_org_name]
+            self._log_action(
+                "SKIP", f"suborganization '{existing_suborg}' already exists in portfolio '{existing_suborg.portfolio}'"
+            )
+            return True
+
+        return norm_org_name in portfolio_created_suborgs
+
+    def _create_new_suborganization(self, norm_org_name, domains, requests_dict, portfolio):
+        """Create a new suborganization object."""
+        suborg_name = self._determine_best_suborg_name(domains)
+        requests = requests_dict.get(norm_org_name)
+
+        suborg = Suborganization(name=suborg_name, portfolio=portfolio)
+        self.set_suborganization_location(suborg, domains, requests)
+
+        return suborg
+
+    def _determine_best_suborg_name(self, domains):
+        """Determine the best name for a suborganization from domain records."""
+        if len(domains) == 1:
+            return normalize_string(domains[0].organization_name, lowercase=False)
+
+        # Pick the best record (fewest spaces, most leading capitals)
+        best_record = max(
+            domains,
+            key=lambda domain: (
+                -domain.organization_name.count(" "),
+                count_capitals(domain.organization_name, leading_only=True),
+            ),
+        )
+        return normalize_string(best_record.organization_name, lowercase=False)
 
     def set_suborganization_location(self, suborg, domains, requests):
         """Updates a single suborganization's location data if valid.
