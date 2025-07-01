@@ -16,26 +16,18 @@ on:
           - stable
           - staging
           - development
+          - product
           - aa
           - el
           - ad
-          - ag
           - litterbox
           - hotgov
-          - cb
           - bob
           - meoward
           - backup
-          - ky
           - es
           - nl
           - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
           - kma
           - dg
 

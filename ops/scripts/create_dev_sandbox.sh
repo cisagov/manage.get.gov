@@ -120,9 +120,21 @@ sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/deploy-manual.yaml
 
-sed -i '' '/${{startsWith(github.head_ref, / {a\
-        || startsWith(github.head_ref, '"'$1'"')
-}' .github/workflows/deploy-sandbox.yaml
+sed -i '' "/startsWith(github.head_ref, \'backup/ {a\\
+        || startsWith(github.head_ref, '"$1"')
+}" .github/workflows/deploy-sandbox.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/createcachetable.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/delete-and-recreate-db.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/load-fixtures.yaml
 
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account
@@ -135,7 +147,7 @@ then
     exit 1
 fi
 
-cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.username, .password]|@tsv' | 
+cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' |
 
 while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
