@@ -486,7 +486,7 @@ def send_portfolio_invitation_remove_email(requestor, invitation: PortfolioInvit
             "Failed to send portfolio invitation removal email:\n"
             f"  Subject: portfolio_removal_subject.txt\n"
             f"  To: {invitation.email}\n"
-            f"  Portfolio: {invitation.portfolio.organization_name}",
+            f"  Portfolio: {invitation.portfolio.organization_name}\n"
             f"  Error: {err}",
             exc_info=True,
         )
