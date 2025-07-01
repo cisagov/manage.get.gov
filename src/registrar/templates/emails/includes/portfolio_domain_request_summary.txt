@@ -12,7 +12,8 @@ Alternative domains:
 {% for site in domain_request.alternative_domains.all %}{% spaceless %}{{ site.website }}{% endspaceless %}{% endfor %}{% endif %}
 
 Purpose of your domain:
-{% if requires_feb_questions %}{{ purpose_label }}. {{ domain_request.purpose }}
+{% if requires_feb_questions %}{{ purpose_label }}
+{{ domain_request.purpose }}
 
 Interagency initiative:
 {% if domain_request.is_interagency_initiative %}{{ domain_request.interagency_initiative_details }}{% else %}No{% endif %}
