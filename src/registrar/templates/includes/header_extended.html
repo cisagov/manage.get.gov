@@ -13,18 +13,26 @@
             <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
         </button>
         <div class="usa-nav__secondary">
-            <div class="usa-nav__secondary-links">
+            <ul class="usa-nav__secondary-links">
                 {% if user.is_authenticated %}
-                <div class="usa-nav__secondary-item">
-                    <button 
-                        class="usa-accordion__button usa-nav__link" 
-                        id="user-profile-menu"
-                        aria-controls="user-profile-submenu"
-                        aria-expanded="true"
-                        onclick="toggleNavDropdown()"
-                    >
-                    <span class="ellipsis usa-nav__username">{{ user.email }}</span>
-                    </button>
+                <li class="usa-nav__secondary-item">
+                    <div class="usa-accordion">
+                        <div class="usa-accordion__heading">
+                            <button
+                            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+                            id="user-profile-menu"
+                            aria-controls="user-profile-submenu"
+                            aria-expanded="false"
+                            aria-label="user-profile-menu"
+                            >
+                                <span class="ellipsis usa-nav__username">{{ user.email }}</span>
+                                <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
+                                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
                     <div id="user-profile-submenu" class="usa-nav__submenu">
                         <div class="usa-nav__submenu-item">
                             {% url 'user-profile' as user_profile_url %}
@@ -34,29 +42,14 @@
                             </a>
                         </div>
                     </div>
-                    <!-- <div class="nav-dropdown" id="profile-dropdown">
-                        <button 
-                            class="usa-button dropdown-button" 
-                            onclick="toggleNavDropdown()"
-                        >
-                            Dropdown
-                        </button>
-                        <div class="dropdown-content" id="profile-dropdown-contents">
-                            {% url 'user-profile' as user_profile_url %}
-                            {% url 'finish-user-profile-setup' as finish_setup_url %}
-                            <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
-                                Your profile
-                            </a>
-                        </div>
-                    </div> -->
-                </div>
-                <div class="usa-nav__secondary-item">
+                </li> 
+                <li class="usa-nav__secondary-item">
                     <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
                     {% else %}
                     <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
                     {% endif %}
-                </div>
-            </div>
+                </li>
+            </ul>
         </div>
         <ul class="usa-nav__primary usa-accordion">
             <li class="usa-nav__primary-item">

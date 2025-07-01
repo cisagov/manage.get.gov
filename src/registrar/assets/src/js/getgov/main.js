@@ -66,4 +66,4 @@ initAddNewMemberPageListeners();
 initButtonLinks();
 
 // Init secondary nav menu dropdown listeners
-initializeNavMenuEventListener("user-profile-menu", "user-profile-submenu")
+// initializeNavMenuEventListener("user-profile-menu", "user-profile-submenu")

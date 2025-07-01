@@ -134,3 +134,13 @@
 .usa-nav-container--widescreen  {
     max-width: $widescreen-max-width !important;
 }
+
+// Remove USWDS default accordion button add/remove icons
+.navmenu-dropdown-button {
+    &.usa-accordion-button[aria-expanded="false"] {
+        background-image: var(--icon-chevron-up);
+    }
+    &.usa-accordion-button[aria-expanded="true"] {
+        background-image: var(--icon-chevron-down);
+    }
+}
