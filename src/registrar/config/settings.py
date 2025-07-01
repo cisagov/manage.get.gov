@@ -520,7 +520,7 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
-            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "format": "%(email)s | %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -537,7 +537,6 @@ LOGGING = {
         "json": {
             "()": JsonFormatter,
         },
-        "user_format": {"format": "[ %(email)s | %(ip)s | %(asctime)s %(levelname)s %(message)s]"},
     },
     # define where log messages will be sent
     # each logger can have one or more handlers
@@ -546,6 +545,7 @@ LOGGING = {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["with_user"],
         },
         # Special handlers for split logging case
         "split_console": {
@@ -568,11 +568,6 @@ LOGGING = {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "json",
-        },
-        "user_info": {
-            "class": "logging.StreamHandler",
-            "formatter": "user_format",
-            "filters": ["with_user"],
         },
         # No file logger is configured,
         # because containerized apps
@@ -628,8 +623,8 @@ LOGGING = {
         },
         # Our app!
         "registrar": {
-            "handlers": [*django_handlers, "user_info"],
-            "level": "INFO",
+            "handlers": django_handlers,
+            "level": "DEBUG",
             "propagate": False,
         },
     },
