@@ -9,7 +9,7 @@ from django.core.management import BaseCommand
 from django.conf import settings
 from registrar.utility import csv_export
 from io import StringIO
-from ...utility.email import send_templated_email
+from ...utility.email import send_templated_email, EmailSendingError
 
 
 logger = logging.getLogger(__name__)
@@ -78,13 +78,22 @@ class Command(BaseCommand):
         encrypted_zip_in_bytes = self.get_encrypted_zip(zip_filename, reports, password)
 
         # Send the metadata file that is zipped
-        send_templated_email(
-            template_name="emails/metadata_body.txt",
-            subject_template_name="emails/metadata_subject.txt",
-            to_addresses=email_to,
-            context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
-            attachment_file=encrypted_zip_in_bytes,
-        )
+        try:
+            send_templated_email(
+                template_name="emails/metadata_body.txt",
+                subject_template_name="emails/metadata_subject.txt",
+                to_addresses=email_to,
+                context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
+                attachment_file=encrypted_zip_in_bytes,
+            )
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send metadata email:\n"
+                f"  Subject: metadata_subject.txt\n"
+                f"  To: {email_to}\n"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
     def get_encrypted_zip(self, zip_filename, reports, password):
         """Helper function for encrypting the attachment file"""

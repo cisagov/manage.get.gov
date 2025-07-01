@@ -97,9 +97,17 @@ class Command(BaseCommand):
                             context=context,
                         )
                         logger.info(f"Sent email for domain {domain.name} to managers and CC’d org admins")
-                except EmailSendingError as e:
+                except EmailSendingError as err:
                     if not dryrun:
-                        logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
+                        logger.error(
+                            "Failed to send expiring soon email(s):\n"
+                            f"  Subject: {subject_template}\n"
+                            f"  To: {', '.join(domain_manager_emails)}\n"
+                            f"  CC: {', '.join(portfolio_admin_emails)}\n"
+                            f"  Domain: {domain.name}\n"
+                            f"  Error: {err}",
+                            exc_info=True,
+                        )
                         all_emails_sent = False
 
         if all_emails_sent:

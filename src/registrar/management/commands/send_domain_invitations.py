@@ -136,9 +136,12 @@ class Command(BaseCommand):
             )
         except EmailSendingError as err:
             logger.error(
-                f"email did not send successfully to {email_data['email']} "
-                f"for {[domain for domain in email_data['domains']]}"
-                f": {err}"
+                "Failed to send transition domain invitation email:\n"
+                f"  Subject: {email_data['subject']}\n"
+                f"  To: {email_data['email']}\n"
+                f"  Domains: {', '.join(email_data['domains'])}\n"
+                f"  Error: {err}",
+                exc_info=True,
             )
             # if email failed to send, set error in domains_with_errors for each
             # domain in the email so that transition domain email_sent is not set
