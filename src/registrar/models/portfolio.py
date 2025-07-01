@@ -9,6 +9,10 @@ from django.db.models import Q
 from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Portfolio(TimeStampedModel):
     """
@@ -138,7 +142,7 @@ class Portfolio(TimeStampedModel):
         super().save(*args, **kwargs)
 
     def clean(self):
-
+        logger.info("submitted new portfolio")
         # Checks if federal agency already exists in the portfolio table
         if (
             self.federal_agency != FederalAgency.get_non_federal_agency()

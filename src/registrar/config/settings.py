@@ -524,7 +524,7 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
-            "format": "%(email)s | %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "format": "email: %(email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {

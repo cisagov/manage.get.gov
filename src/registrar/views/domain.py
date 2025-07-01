@@ -75,6 +75,7 @@ from ..utility.email_invitations import (
 )
 from django import forms
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -1209,6 +1210,7 @@ class DomainUsersView(DomainBaseView):
 
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
+        logger.info("inside the domain users view")
         context = super().get_context_data(**kwargs)
 
         # Get portfolio from session (if set)
@@ -1417,6 +1419,7 @@ class DomainDeleteUserView(DeleteView):
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""
+        logger.info("deleted domain")
         domain_id = self.kwargs.get("domain_pk")
         user_id = self.kwargs.get("user_pk")
         return UserDomainRole.objects.get(domain=domain_id, user=user_id)

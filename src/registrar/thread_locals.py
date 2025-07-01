@@ -7,8 +7,8 @@ def set_user_email(user):
     _user_storage.user_email = user.email if user.is_authenticated else "Anonymous"
 
 
-def get_user():
-    return getattr(_user_storage, "user", None)
+def get_user_email():
+    return getattr(_user_storage, "user_email", None)
 
 
 def set_ip(ip):
