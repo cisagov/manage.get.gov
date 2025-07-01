@@ -4,7 +4,7 @@ _user_storage = threading.local()
 
 
 def set_user_email(user):
-    _user_storage.user_email = user.email
+    _user_storage.user_email = user.email if user.is_authenticated else "Anonymous"
 
 
 def get_user():
