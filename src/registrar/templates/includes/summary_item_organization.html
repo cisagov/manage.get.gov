@@ -37,7 +37,7 @@
     {% elif domain_mgmt %}
         {% include "includes/member_domain_management.html" with domain_count=value %}
     {% elif address %}
-        <h4 class="margin-bottom-0">Organization Name and Address</h4>
+        <h4 class="margin-bottom-2">Organization Name and Address</h4>
         {% include "includes/organization_address.html" with organization=value %}
     {% else %}
         {% if custom_text_for_value_none %}
