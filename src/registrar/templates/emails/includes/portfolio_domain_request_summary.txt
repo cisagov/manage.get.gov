@@ -21,7 +21,8 @@ Target time frame:
 {% if domain_request.has_target_time_frame %}{{ domain_request.time_frame_details }}{% else %}No{% endif %}
 {% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
 Additional details:
-{{ domain_request.anything_else }}{% endif %}{% if recipient %}
+{{ domain_request.anything_else }}{% endif %}
+{% if recipient %}
 Your contact information:
 {% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
 {% endif %}
