@@ -495,7 +495,11 @@ class JsonServerFormatter(ServerFormatter):
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
 
-        log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
+        log_entry = {
+            "server_time": record.server_time,
+            "level": record.levelname,
+            "message": formatted_record,
+        }
         return json.dumps(log_entry)
 
 
@@ -528,7 +532,7 @@ LOGGING = {
         },
         "django.server": {
             "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {message}",
+            "format": "%(emails)s | %(ip)s | [{server_time}] {message}",
             "style": "{",
         },
         "json.server": {
@@ -552,7 +556,7 @@ LOGGING = {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            "filters": ["below_error"],
+            "filters": ["below_error", "with_user"],
         },
         "split_json": {
             "level": "ERROR",
