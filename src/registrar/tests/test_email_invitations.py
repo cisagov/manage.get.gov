@@ -940,7 +940,6 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         permissions.user.email = "user@example.com"
         permissions.portfolio.organization_name = "Test Portfolio"
 
-        # mock_get_requestor_email.return_value = "requestor@example.com"
         mock_get_requestor_email.return_value = MagicMock(name="mock.email")
 
         # Call function
