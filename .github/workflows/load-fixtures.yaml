@@ -11,26 +11,19 @@ on:
         type: 'choice'
         options:
           - backup
+          - product
           - meoward
           - bob
           - hotgov
           - litterbox
           - aa
-          - ab
           - ad
-          - ag
-          - cb
           - dg
           - el
           - es
-          - gd
           - kma
-          - ko
-          - ky
           - nl
-          - rb
           - rh
-          - rjm       
 
 jobs:
   load-fixtures:
