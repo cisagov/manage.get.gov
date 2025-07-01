@@ -629,11 +629,6 @@ LOGGING = {
         # Our app!
         "registrar": {
             "handlers": [*django_handlers, "user_info"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "registrar": {
-            "handlers": ["user_info"],
             "level": "INFO",
             "propagate": False,
         },
