@@ -259,6 +259,7 @@ class UserInfoLoggingMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         remote_ip = request.META.get("REMOTE_ADDR", "Unknown IP")
+        user_email = request.user.email if request.user.is_authenticated else "Anonymous"
         set_ip(remote_ip)
-        set_user_email(request.user)
+        set_user_email(user_email)
         return response
