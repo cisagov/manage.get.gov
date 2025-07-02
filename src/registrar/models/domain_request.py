@@ -975,7 +975,7 @@ class DomainRequest(TimeStampedModel):
 
         context: dict -> The context sent to the template
 
-        send_email: bool -> Used to bypass the  function, in the event
+        send_email: bool -> Used to bypass the send_templated_email function, in the event
         we just want to log that an email would have been sent, rather than actually sending one.
 
         wrap_email: bool -> Wraps emails using `wrap_text_and_preserve_paragraphs` if any given
@@ -1039,7 +1039,7 @@ class DomainRequest(TimeStampedModel):
                 f"  Subject: {email_template_subject}\n"
                 f"  To: {recipient.email}\n"
                 f"  CC: {', '.join(cc_addresses)}\n"
-                f"  BCC: {bcc_address}",
+                f"  BCC: {bcc_address}"
                 f"  Error: {err}",
                 exc_info=True,
             )

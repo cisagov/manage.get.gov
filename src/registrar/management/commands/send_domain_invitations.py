@@ -137,7 +137,7 @@ class Command(BaseCommand):
         except EmailSendingError as err:
             logger.error(
                 "Failed to send transition domain invitation email:\n"
-                f"  Subject: {email_data['subject']}\n"
+                f"  Subject: transition_domain_invitation_subject.txt\n"
                 f"  To: {email_data['email']}\n"
                 f"  Domains: {', '.join(email_data['domains'])}\n"
                 f"  Error: {err}",

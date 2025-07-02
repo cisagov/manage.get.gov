@@ -46,9 +46,11 @@ class Command(BaseCommand):
 
         logger.info("Generating report...")
         try:
-            self.email_current_metadata_report(zip_filename, email_to)
+            success = self.email_current_metadata_report(zip_filename, email_to)
+            if not success:
+                # TODO - #1317: Notify operations when auto report generation fails
+                raise EmailSendingError("Report was generated but failed to send via email.")
         except Exception as err:
-            # TODO - #1317: Notify operations when auto report generation fails
             raise err
         else:
             logger.info(f"Success! Created {zip_filename} and successfully sent out an email!")
@@ -86,6 +88,7 @@ class Command(BaseCommand):
                 context={"current_date_str": datetime.now().strftime("%Y-%m-%d")},
                 attachment_file=encrypted_zip_in_bytes,
             )
+            return True
         except EmailSendingError as err:
             logger.error(
                 "Failed to send metadata email:\n"
@@ -94,6 +97,7 @@ class Command(BaseCommand):
                 f"  Error: {err}",
                 exc_info=True,
             )
+            return False
 
     def get_encrypted_zip(self, zip_filename, reports, password):
         """Helper function for encrypting the attachment file"""
