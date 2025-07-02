@@ -75,7 +75,6 @@ from ..utility.email_invitations import (
 )
 from django import forms
 
-
 logger = logging.getLogger(__name__)
 
 

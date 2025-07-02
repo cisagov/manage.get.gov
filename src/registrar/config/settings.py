@@ -532,8 +532,13 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+        },
+        "user_verbose": {
             "()": UserFormatter,
-            "format": "email: %(user_email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "format": "email: %(user_email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] \
+                %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -551,13 +556,13 @@ LOGGING = {
             "()": JsonFormatter,
         },
     },
-    # define where log messages will be sentse
+    # define where log messages will be sent
     # each logger can have one or more handlers
     "handlers": {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "user_verbose",
         },
         # Special handlers for split logging case
         "split_console": {
