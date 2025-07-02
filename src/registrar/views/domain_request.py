@@ -10,8 +10,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
 from registrar.decorators import (
+    HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-    HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
     IS_DOMAIN_REQUEST_CREATOR,
     grant_access,
 )
@@ -1200,9 +1200,20 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         return duplicates
 
 
-# region Portfolio views
-@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL)
-class PortfolioDomainRequestStatusViewOnly(DetailView):
+@grant_access(HAS_DOMAIN_REQUESTS_VIEW_ALL)
+class DomainRequestStatusViewOnly(DetailView):
+    """
+    View-only access for domain requests both on enterprise-mode portfolios and legacy mode.
+
+    This view provides read-only access to domain request details for users who have
+    view permissions but not edit permissions.
+
+    Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
+    - Portfolio members with view-all domain requests permission
+    - Non-portfolio users who are creators of the domain request
+    - Analysts with appropriate permissions
+    """
+
     template_name = "portfolio_domain_request_status_viewonly.html"
     model = DomainRequest
     pk_url_kwarg = "domain_request_pk"
@@ -1210,16 +1221,35 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Create a temp wizard object to grab the step list
-        wizard = PortfolioDomainRequestWizard()
-        wizard.request = self.request
-        context["Step"] = PortfolioDomainRequestStep.__members__
-        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
-        context["form_titles"] = wizard.titles
-        context["requires_feb_questions"] = self.object.is_feb() and flag_is_active_for_user(
+        domain_request = self.object
+
+        # Determine if this is a portfolio request or if user is org user
+        is_portfolio = domain_request.portfolio is not None or self.request.user.is_org_user(self.request)
+
+        if is_portfolio:
+            # Create a temp wizard object to grab the step list
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
+        else:
+            # For non-portfolio requests
+            wizard = DomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = Step.__members__
+            context["steps"] = request_step_list(wizard, Step)
+            context["form_titles"] = wizard.titles
+
+        # Common context
+        context["requires_feb_questions"] = domain_request.is_feb() and flag_is_active_for_user(
             self.request.user, "organization_feature"
         )
-        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.object.feb_purpose_choice)
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
+        context["view_only_mode"] = True
+        context["is_portfolio"] = is_portfolio
+        context["portfolio"] = self.request.session.get("portfolio")
+
         return context
 
 
