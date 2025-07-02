@@ -1,19 +1,16 @@
 import threading
 
-_user_storage = threading.local()
+_user_local = threading.local()
 
 
-def set_user_email(user):
-    _user_storage.user_email = user.email if user.is_authenticated else "Anonymous"
+def set_log_user(user_email, ip):
+    _user_local.user_email = user_email
+    _user_local.ip = ip
 
 
-def get_user_email():
-    return getattr(_user_storage, "user_email", None)
+def get_log_user_email():
+    return getattr(_user_local, "user_email", "None")
 
 
-def set_ip(ip):
-    _user_storage.ip = ip
-
-
-def get_ip():
-    return getattr(_user_storage, "ip", None)
+def get_log_ip():
+    return getattr(_user_local, "ip", "Anonymous")

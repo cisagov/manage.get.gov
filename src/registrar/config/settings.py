@@ -27,6 +27,7 @@ import json
 import logging
 import traceback
 from django.utils.log import ServerFormatter
+from ..thread_locals import get_log_user_email, get_log_ip
 
 # # #                          ###
 #      Setup code goes here      #
@@ -503,6 +504,13 @@ class JsonServerFormatter(ServerFormatter):
         return json.dumps(log_entry)
 
 
+class UserFormatter(logging.Formatter):
+    def format(self, record):
+        record.user_email = get_log_user_email()
+        record.ip = get_log_ip()
+        return super().format(record)
+
+
 # If we're running locally we don't want json formatting
 if "localhost" in env_base_url:
     django_handlers = ["console"]
@@ -524,7 +532,8 @@ LOGGING = {
     # each handler has its choice of format
     "formatters": {
         "verbose": {
-            "format": "email: %(email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "()": UserFormatter,
+            "format": "email: %(user_email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
@@ -542,21 +551,20 @@ LOGGING = {
             "()": JsonFormatter,
         },
     },
-    # define where log messages will be sent
+    # define where log messages will be sentse
     # each logger can have one or more handlers
     "handlers": {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            "filters": ["with_user"],
         },
         # Special handlers for split logging case
         "split_console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            "filters": ["below_error", "with_user"],
+            "filters": ["below_error"],
         },
         "split_json": {
             "level": "ERROR",
@@ -581,9 +589,6 @@ LOGGING = {
         "below_error": {
             "()": "django.utils.log.CallbackFilter",
             "callback": lambda record: record.levelno < logging.ERROR,
-        },
-        "with_user": {
-            "()": "registrar.logging.UserFilter",
         },
     },
     # define loggers: these are "sinks" into which
