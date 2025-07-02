@@ -269,15 +269,9 @@ class Command(BaseCommand):
         # == Handle domains and requests == #
         for portfolio_org_name, portfolio in portfolios_to_use_dict.items():
             federal_agency = agencies_dict.get(portfolio_org_name)
-
-            if self.dry_run:
-                suborgs = {}
-                if created_suborgs:
-                    for suborg in created_suborgs.values():
-                        if suborg.portfolio == portfolio:
-                            suborgs[normalize_string(suborg.name)] = suborg
-            else:
-                suborgs = portfolio.portfolio_suborganizations.in_bulk(field_name="name")
+            suborgs = {}
+            for suborg in portfolio.portfolio_suborganizations.all():
+                suborgs[suborg.name] = suborg
 
             if parse_domains:
                 updated_domains = self.update_domains(portfolio, federal_agency, suborgs, debug)

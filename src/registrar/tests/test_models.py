@@ -379,12 +379,13 @@ class TestPortfolioInvitations(TestCase):
 
         # Test validation fails when portfolio present but no permissions
         invitation = PortfolioInvitation(email="test@example.com", roles=None, portfolio=self.portfolio)
-        with self.assertRaises(ValidationError) as err:
+        with self.assertLogs("registrar.models.utility.portfolio_helper", level="INFO") as cleaned_msg:
             invitation.clean()
-            self.assertEqual(
-                str(err.exception),
-                "When portfolio is assigned, portfolio roles or additional permissions are required.",
-            )
+
+        self.assertIn(
+            "User didn't provide both a valid email address and a level of access for the member",
+            "".join(cleaned_msg.output),
+        )
 
         # Test validation fails with forbidden permissions
         forbidden_member_roles = UserPortfolioPermission.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(
