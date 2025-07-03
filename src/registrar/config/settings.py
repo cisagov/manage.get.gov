@@ -27,7 +27,7 @@ import json
 import logging
 import traceback
 from django.utils.log import ServerFormatter
-from ..thread_locals import get_log_user_email, get_log_ip
+from ..thread_locals import get_log_user_email, get_log_ip, get_request_path
 
 # # #                          ###
 #      Setup code goes here      #
@@ -204,8 +204,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
-    # Our own router logs that included user info to speed up log tracing time on stable
-    "registrar.registrar_middleware.RequestLoggingMiddleware",
+    # Add User Info to Console logs
     "registrar.registrar_middleware.UserInfoLoggingMiddleware",
 ]
 
@@ -508,7 +507,18 @@ class UserFormatter(logging.Formatter):
     def format(self, record):
         record.user_email = get_log_user_email()
         record.ip = get_log_ip()
-        return super().format(record)
+        record.request_path = get_request_path()
+        parts = []
+        if record.user_email:
+            parts.append(f"user: {record.user_email}")
+        if record.ip:
+            parts.append(f"ip: {record.ip}")
+        if record.request_path:
+            parts.append(f"request_path: {record.request_path}")
+
+        prefix = " | ".join(parts)
+        msg = super().format(record)
+        return f"{prefix} | {msg}" if prefix else msg
 
 
 # If we're running locally we don't want json formatting
@@ -537,8 +547,7 @@ LOGGING = {
         },
         "user_verbose": {
             "()": UserFormatter,
-            "format": "email: %(user_email)s | ip: %(ip)s | [%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] \
-                %(message)s",
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
         "simple": {
