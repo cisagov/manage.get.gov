@@ -243,4 +243,6 @@ class UserInfoLoggingMiddleware:
 
         # set thread locals
         set_log_user(user_email, remote_ip, request_path)
+         # Log user information
+        logger.info(f"Router log | User: {user_email} | IP: {remote_ip} | Path: {request_path}")
         return self.get_response(request)
