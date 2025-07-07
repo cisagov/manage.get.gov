@@ -205,7 +205,7 @@ MIDDLEWARE = [
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
-    "registrar.registrar_middleware.UserInfoLoggingMiddleware",
+    "registrar.registrar_middleware.RegisterLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -506,7 +506,7 @@ class JsonServerFormatter(ServerFormatter):
 class UserFormatter(logging.Formatter):
     def format(self, record):
         record.user_email = get_log_user_email()
-        record.ip = "00000000"
+        record.ip = get_log_ip()
         record.request_path = get_request_path()
         parts = []
         if record.user_email:

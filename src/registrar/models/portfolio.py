@@ -9,10 +9,6 @@ from django.db.models import Q
 from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 class Portfolio(TimeStampedModel):
     """
