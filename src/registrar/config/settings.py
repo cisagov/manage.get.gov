@@ -506,7 +506,7 @@ class JsonServerFormatter(ServerFormatter):
 class UserFormatter(logging.Formatter):
     def format(self, record):
         record.user_email = get_log_user_email()
-        record.ip = get_log_ip()
+        record.ip = "00000000"
         record.request_path = get_request_path()
         parts = []
         if record.user_email:
@@ -577,7 +577,7 @@ LOGGING = {
         "split_console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "user_verbose",
             "filters": ["below_error"],
         },
         "split_json": {
