@@ -510,9 +510,7 @@ class JsonServerFormatter(ServerFormatter):
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
 
-        log_entry = {
-            "server_time": record.server_time,
-            "level": record.levelname,
+        log_entry = {"server_time": record.server_time,"level": record.levelname,
             "message": formatted_record,
         }
         return json.dumps(log_entry)
@@ -595,7 +593,7 @@ LOGGING = {
         "below_error": {
             "()": "django.utils.log.CallbackFilter",
             "callback": lambda record: record.levelno < logging.ERROR,
-        },
+        }
     },
     # define loggers: these are "sinks" into which
     # messages are sent for processing
