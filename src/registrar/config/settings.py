@@ -471,13 +471,27 @@ class JsonFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
+    def user_prepend(self):
+        user_email = get_log_user_email()
+        ip = get_log_ip()
+        request_path = get_request_path()
+        parts = []
+        if user_email:
+            parts.append(f"user: {user_email}")
+        if ip:
+            parts.append(f"ip: {ip}")
+        if request_path:
+            parts.append(f"request_path: {request_path}")
+
+        return " | ".join(parts)
+
     def format(self, record):
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": record.getMessage(),
+            "message": f"{self.user_prepend()} {record.getMessage()}",
         }
         # Capture exception info if it exists
         if record.exc_info:
@@ -501,24 +515,6 @@ class JsonServerFormatter(ServerFormatter):
             "message": formatted_record,
         }
         return json.dumps(log_entry)
-
-
-class UserFormatter(logging.Formatter):
-    def format(self, record):
-        record.user_email = get_log_user_email()
-        record.ip = get_log_ip()
-        record.request_path = get_request_path()
-        parts = []
-        if record.user_email:
-            parts.append(f"user: {record.user_email}")
-        if record.ip:
-            parts.append(f"ip: {record.ip}")
-        if record.request_path:
-            parts.append(f"request_path: {record.request_path}")
-
-        prefix = " | ".join(parts)
-        msg = super().format(record)
-        return f"{prefix} | {msg}" if prefix else msg
 
 
 # If we're running locally we don't want json formatting
@@ -545,17 +541,12 @@ LOGGING = {
             "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
-        "user_verbose": {
-            "()": UserFormatter,
-            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
-            "datefmt": "%d/%b/%Y %H:%M:%S",
-        },
         "simple": {
             "format": "%(levelname)s %(message)s",
         },
         "django.server": {
             "()": "django.utils.log.ServerFormatter",
-            "format": "%(emails)s | %(ip)s | [{server_time}] {message}",
+            "format": "[{server_time}] {message}",
             "style": "{",
         },
         "json.server": {
@@ -571,13 +562,13 @@ LOGGING = {
         "console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "user_verbose",
+            "formatter": "verbose",
         },
         # Special handlers for split logging case
         "split_console": {
             "level": env_log_level,
             "class": "logging.StreamHandler",
-            "formatter": "user_verbose",
+            "formatter": "verbose",
             "filters": ["below_error"],
         },
         "split_json": {
