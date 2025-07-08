@@ -225,7 +225,7 @@ class RestrictAccessMiddleware:
         return self.get_response(request)
 
 
-class RegisterLoggingMiddleware:
+class RequestLoggingMiddleware:
     """
     Middleware to log user email, remote address, and request path to prepend to logs.
     """

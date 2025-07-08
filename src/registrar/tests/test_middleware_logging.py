@@ -1,8 +1,6 @@
 from django.test import TestCase
 from registrar.config.settings import UserFormatter
 from django.urls import reverse
-from django.contrib.auth.models import AnonymousUser
-from unittest.mock import patch
 
 import io
 import logging
@@ -10,10 +8,12 @@ import logging
 from django.contrib.auth import get_user_model
 from ..thread_locals import _user_local
 
+
 def clear_threadlocal():
     for attr in ["ip", "user_email", "request_path"]:
         if hasattr(_user_local, attr):
             delattr(_user_local, attr)
+
 
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
@@ -31,8 +31,7 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.logger.removeHandler(self.handler)
         clear_threadlocal()
         self.handler.close()
-    
-    
+
     def test_no_user_info(self):
         self.client.get(reverse("domains"))
 
@@ -43,7 +42,6 @@ class RegisterLoggingMiddlewareTest(TestCase):
         output = self.stream.getvalue()
 
         self.assertNotIn("user", output)
-    
 
     def test_middleware_sets_user_email(self):
         user = get_user_model().objects.create_user(
@@ -63,4 +61,3 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.client.logout()
         self.assertIn(user.email, log_output)
         self.assertIn("Testing middleware", log_output)
-    

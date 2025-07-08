@@ -205,7 +205,7 @@ MIDDLEWARE = [
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
-    "registrar.registrar_middleware.RegisterLoggingMiddleware",
+    "registrar.registrar_middleware.RequestLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
