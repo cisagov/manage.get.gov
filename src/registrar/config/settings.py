@@ -27,7 +27,7 @@ import json
 import logging
 import traceback
 from django.utils.log import ServerFormatter
-from ..thread_locals import get_log_user_email, get_log_ip, get_request_path
+from ..logging_context import get_user_log_context
 
 # # #                          ###
 #      Setup code goes here      #
@@ -472,9 +472,10 @@ class JsonFormatter(logging.Formatter):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
     def user_prepend(self):
-        user_email = get_log_user_email()
-        ip = get_log_ip()
-        request_path = get_request_path()
+        context = get_user_log_context()
+        user_email = context["user_email"]
+        ip = context["ip_address"]
+        request_path = context["request_path"]
         parts = []
         if user_email:
             parts.append(f"user: {user_email}")

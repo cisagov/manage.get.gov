@@ -14,7 +14,7 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
-from .thread_locals import set_log_user
+from .logging_context import set_user_log_context
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ class RequestLoggingMiddleware:
         request_path = request.path
 
         # set thread locals
-        set_log_user(user_email, remote_ip, request_path)
+        set_user_log_context(user_email, remote_ip, request_path)
         # Log user information
         logger.info("Router log")
         return self.get_response(request)
