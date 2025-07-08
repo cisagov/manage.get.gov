@@ -1,6 +1,35 @@
+@use "sass:map";
 @use "uswds-core" as *;
 @use "cisa_colors" as *;
 @use "base" as *;
+
+$-add-icon: (
+  "name": "add",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2),
+);
+
+$-remove-icon: (
+  "name": "remove",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2),
+);
+
+$-expand-more-icon: (
+  "name": "expand_more",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2.5),
+);
+
+$-expand-less-icon: (
+  "name": "expand_less",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2.5),
+);
 
 // Define some styles for the .gov header/logo
 .usa-logo button {
@@ -136,11 +165,119 @@
 }
 
 // Remove USWDS default accordion button add/remove icons
-.navmenu-dropdown-button {
-    &.usa-accordion-button[aria-expanded="false"] {
-        background-image: var(--icon-chevron-up);
+.usa-nav__secondary-menu {
+    // .usa-accordion__button,
+    // .usa-accordion__button:hover,
+    // .usa-accordion__button:focus {
+    //     background-color: pink;
+    // }
+
+    span {
+        @include place-icon($-add-icon, "after");
     }
-    &.usa-accordion-button[aria-expanded="true"] {
-        background-image: var(--icon-chevron-down);
+
+    button,
+    .usa-accordion__button {
+        background-color: slateblue;
+        position: relative; // Anchor spans chevron pseudo element
+        font-weight: font-weight("normal");
+        line-height: line-height($theme-navigation-font-family, 2);
+        padding: units(1.5) units(2);
+        text-decoration: none;
+        width: 100%;
+
+        // Remove icon set from usa-accordion.
+        // Also removed in _usa-banner.scss.
+        &[aria-expanded],
+        &[aria-expanded]:hover {
+            background-image: none;
+
+            @media (forced-colors: active) {
+                &::before {
+                content: none;
+                }
+            }
+        }
+
+        &[aria-expanded] {
+            span {
+              &::after {
+                position: absolute;
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+              }
+            }
+        }
+
+        &[aria-expanded="false"] {
+            span {
+              @include place-icon($-add-icon, "after");
+      
+            //   &::after:hover {
+            //     background-color: buttonText;
+            //   }
+            }
+
+            &::after:hover {
+                background-color: olive;
+              }
+            
+            @include at-media($theme-header-min-width) {
+                span {
+                    @include place-icon($-expand-more-icon, "after");
+    
+                    &::after {
+                        right: units(1.5);
+                    }
+                }
+            }
+
+            &:hover {
+                @include at-media($theme-header-min-width) {
+                    span::after {
+                        background-color: color(blue-warm-70v);
+        
+                        @media (forced-colors: active) {
+                        background-color: olive;
+                        }
+                    }
+                }
+            }
+        }
+
+        &[aria-expanded="true"] {
+            span {
+                @include place-icon($-remove-icon, "after");
+        
+                &::after {
+                  position: absolute;
+                  right: 0;
+        
+                  @media (forced-colors: active) {
+                    background-color: olive;
+                  }
+                }
+            }
+
+            @include at-media($theme-header-min-width) {
+                background-image: none;
+                background-color: color("primary-darker");
+                color: color("white");
+
+                @include at-media($theme-header-min-width) {
+                    span {
+                        @include place-icon($-expand-less-icon, "after");
+                        &::after {
+                            right: units(1.5);
+                            background-color: white;
+                            @media (forced-colors: active) {
+                              background-color: olive;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

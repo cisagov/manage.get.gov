@@ -17,7 +17,7 @@
                 {% if user.is_authenticated %}
                 <li class="usa-nav__secondary-item">
                     <div class="usa-accordion">
-                        <div class="usa-accordion__heading">
+                        <div class="usa-accordion__heading usa-nav__secondary-menu">
                             <button
                             class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
                             id="user-profile-menu"
@@ -26,20 +26,16 @@
                             aria-label="user-profile-menu"
                             >
                                 <span class="ellipsis usa-nav__username">{{ user.email }}</span>
-                                <svg class="usa-icon top-2px" aria-hidden="true" focusable="false" role="img" width="24">
-                                    <use xlink:href="/public/img/sprite.svg#expand_more"></use>
-                                </svg>
                             </button>
                         </div>
-                    </div>
-
-                    <div id="user-profile-submenu" class="usa-nav__submenu">
-                        <div class="usa-nav__submenu-item">
-                            {% url 'user-profile' as user_profile_url %}
-                            {% url 'finish-user-profile-setup' as finish_setup_url %}
-                            <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
-                                Your profile
-                            </a>
+                        <div id="user-profile-submenu" class="usa-nav__submenu">
+                            <div class="usa-nav__submenu-item">
+                                {% url 'user-profile' as user_profile_url %}
+                                {% url 'finish-user-profile-setup' as finish_setup_url %}
+                                <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                    Your profile
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </li> 
