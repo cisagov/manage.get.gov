@@ -378,7 +378,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
             except EmailSendingError as err:
                 logger.error(
                     "Failed to send notification email:\n"
-                    f"  Subject: {subject_template}\n"
+                    f"  Subject template: {subject_template}\n"
                     f"  To: {manager.email}\n"
                     f"  Domain: {domain.name}\n"
                     f"  Error: {err}",

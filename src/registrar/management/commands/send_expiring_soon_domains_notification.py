@@ -101,7 +101,7 @@ class Command(BaseCommand):
                     if not dryrun:
                         logger.error(
                             "Failed to send expiring soon email(s):\n"
-                            f"  Subject: {subject_template}\n"
+                            f"  Subject template: {subject_template}\n"
                             f"  To: {', '.join(domain_manager_emails)}\n"
                             f"  CC: {', '.join(portfolio_admin_emails)}\n"
                             f"  Domain: {domain.name}\n"

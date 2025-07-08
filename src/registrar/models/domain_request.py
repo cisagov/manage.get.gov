@@ -1036,7 +1036,7 @@ class DomainRequest(TimeStampedModel):
             logger.error(
                 "Failed to send status update to creator email:\n"
                 f"  Type: {new_status}\n"
-                f"  Subject: {email_template_subject}\n"
+                f"  Subject template: {email_template_subject}\n"
                 f"  To: {recipient.email}\n"
                 f"  CC: {', '.join(cc_addresses)}\n"
                 f"  BCC: {bcc_address}"

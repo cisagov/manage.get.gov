@@ -949,7 +949,7 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         expected_message = (
             "Failed to send organization member update notification email:\n"
             f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
-            f"  Subject: portfolio_update_subject.txt\n"
+            f"  Subject template: portfolio_update_subject.txt\n"
             f"  To: {permissions.user.email}\n"
             f"  Portfolio: {permissions.portfolio}\n"
             f"  Error: Email failed"
@@ -1026,7 +1026,7 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         expected_message = (
             "Failed to send portfolio member removal email:\n"
             f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
-            f"  Subject: portfolio_removal_subject.txt\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
             f"  To: {permissions.user.email}\n"
             f"  Portfolio: {permissions.portfolio}\n"
             f"  Error: Email failed"
@@ -1102,7 +1102,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         # Assertions
         mock_logger.error.assert_called_once_with(
             "Failed to send portfolio invitation removal email:\n"
-            f"  Subject: portfolio_removal_subject.txt\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
             f"  To: {invitation.email}\n"
             f"  Portfolio: {invitation.portfolio.organization_name}\n"
             f"  Error: Email failed",

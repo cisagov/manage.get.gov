@@ -101,7 +101,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
         logger.error(
             "Failed to send domain invitation email:\n"
             f"  Requestor Email: {requestor_email}\n"
-            f"  Subject: domain_invitation_subject.txt\n"
+            f"  Subject template: domain_invitation_subject.txt\n"
             f"  To: {email}\n"
             f"  Domains: {domain_names}\n"
             f"  Error: {err}",
@@ -240,7 +240,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
                 "Failed to send domain manager deleted notification email:\n"
                 f"  User that did the removing: {removed_by_user}\n"
                 f"  Domain manager removed: {manager_removed_email}\n"
-                f"  Subject: domain_manager_deleted_notification_subject.txt\n"
+                f"  Subject template: domain_manager_deleted_notification_subject.txt\n"
                 f"  To: {user.email}\n"
                 f"  Domain: {domain.name}\n"
                 f"  Error: {err}",
@@ -287,7 +287,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         logger.error(
             "Failed to send portfolio invitation email:\n"
             f"  Requestor Email: {requestor_email}\n"
-            f"  Subject: portfolio_invitation_subject.txt\n"
+            f"  Subject template: portfolio_invitation_subject.txt\n"
             f"  To: {email}\n"
             f"  Portfolio: {portfolio}\n"
             f"  Error: {err}",
@@ -351,7 +351,7 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
             logger.error(
                 "Failed to send portfolio org update notification email:\n"
                 f"  Requested User: {user}\n"
-                f"  Subject: portfolio_org_update_notification_subject.txt\n"
+                f"  Subject template: portfolio_org_update_notification_subject.txt\n"
                 f"  To: {user.email}\n"
                 f"  Portfolio: {portfolio}\n"
                 f"  Error: {err}",
@@ -397,7 +397,7 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
         logger.error(
             "Failed to send organization member update notification email:\n"
             f"  Requestor Email: {requestor_email}\n"
-            f"  Subject: portfolio_update_subject.txt\n"
+            f"  Subject template: portfolio_update_subject.txt\n"
             f"  To: {permissions.user.email}\n"
             f"  Portfolio: {permissions.portfolio}\n"
             f"  Error: {err}",
@@ -441,7 +441,7 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
         logger.error(
             "Failed to send portfolio member removal email:\n"
             f"  Requestor Email: {requestor_email}\n"
-            f"  Subject: portfolio_removal_subject.txt\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
             f"  To: {permissions.user.email}\n"
             f"  Portfolio: {permissions.portfolio}\n"
             f"  Error: {err}",
@@ -484,7 +484,7 @@ def send_portfolio_invitation_remove_email(requestor, invitation: PortfolioInvit
     except EmailSendingError as err:
         logger.error(
             "Failed to send portfolio invitation removal email:\n"
-            f"  Subject: portfolio_removal_subject.txt\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
             f"  To: {invitation.email}\n"
             f"  Portfolio: {invitation.portfolio.organization_name}\n"
             f"  Error: {err}",
@@ -540,7 +540,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
             logger.error(
                 "Failed to send portfolio admin addition notification email:\n"
                 f"  Requestor Email: {requestor_email}\n"
-                f"  Subject: portfolio_admin_addition_notification_subject.txt\n"
+                f"  Subject template: portfolio_admin_addition_notification_subject.txt\n"
                 f"  To: {user.email}\n"
                 f"  Portfolio: {portfolio}\n"
                 f"  Portfolio Admin: {user}\n"
@@ -597,7 +597,7 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
             logger.error(
                 "Failed to send portfolio admin removal notification email:\n"
                 f"  Requestor Email: {requestor_email}\n"
-                f"  Subject: portfolio_admin_removal_notification_subject.txt\n"
+                f"  Subject template: portfolio_admin_removal_notification_subject.txt\n"
                 f"  To: {user.email}\n"
                 f"  Portfolio: {portfolio.organization_name}\n"
                 f"  Error: {err}",
