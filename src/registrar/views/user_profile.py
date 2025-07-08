@@ -47,7 +47,7 @@ class UserProfileView(DetailView, FormMixin):
 
         return self.render_to_response(context)
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):  # type: ignore
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
