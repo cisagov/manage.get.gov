@@ -67,12 +67,19 @@ services:
     tty: true
     ports:
       - "8080:8080"
+      - "5678:5678"  # debugger port
     # command: "python"
     command: >
       bash -c " python manage.py migrate &&
       python manage.py createcachetable &&
       python manage.py load &&
-      python manage.py runserver 0.0.0.0:8080"
+      if [ \"$DEBUG_MODE\" = \"true\" ]; then
+        echo 'Starting in debug mode... Your app is now ready for debugging.';
+        python -m debugpy --listen 0.0.0.0:5678 --wait-for-client manage.py runserver 0.0.0.0:8080;
+      else
+        echo 'Starting in non-debug mode...';
+        python manage.py runserver 0.0.0.0:8080;
+      fi"
 
   db:
     platform: linux/amd64

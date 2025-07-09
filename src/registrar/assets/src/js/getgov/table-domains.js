@@ -57,7 +57,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td data-label="Action" class="width--action-column">
+      <td data-label="Action" class="width--action-column margin-bottom-3">
         <div class="tablet:display-flex tablet:flex-row flex-align-center margin-right-2">
           <a href="${actionUrl}">
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
