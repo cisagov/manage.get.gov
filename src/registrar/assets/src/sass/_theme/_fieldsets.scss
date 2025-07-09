@@ -5,10 +5,6 @@ fieldset {
     padding: units(3);
 }
 
-fieldset:not(:first-child) {
+fieldset:not(:first-of-type) {
     margin-top: units(2);
-}
-
-fieldset .margin-top-4-fieldset{
-    margin-top: units(4) !important;
 }
