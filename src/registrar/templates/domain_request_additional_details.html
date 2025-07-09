@@ -10,8 +10,10 @@
 {% block form_fields %}
 
     <!-- Toggle -->
-    <h2>Are you working with a CISA regional representative on your domain request?</h2>
-    <p>.gov is managed by the Cybersecurity and Infrastructure Security Agency. CISA has <a href="https://www.cisa.gov/about/regions" target="_blank">10 regions</a> that some organizations choose to work with. Regional representatives use titles like protective security advisors, cyber security advisors, or election security advisors.</p>
+    <div id="cisa-representative-heading">
+      <h2>Are you working with a CISA regional representative on your domain request?</h2>
+      <p>.gov is managed by the Cybersecurity and Infrastructure Security Agency. CISA has <a href="https://www.cisa.gov/about/regions" target="_blank">10 regions</a> that some organizations choose to work with. Regional representatives use titles like protective security advisors, cyber security advisors, or election security advisors.</p>
+    </div>
     {% with add_class="usa-radio__input--tile" suppress_label=True add_legend_class="margin-top-0" %}
       {% input_with_errors forms.0.has_cisa_representative %}
     {% endwith %}
@@ -25,12 +27,13 @@
     </div>
 
     <!-- Toggle -->
-    <h2>Is there anything else you’d like us to know about your domain request?</h2>
-    {% with add_class="usa-radio__input--tile" suppress_label=True %}
-        {% input_with_errors forms.2.has_anything_else_text %}
-    {% endwith %}
-    {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
-  
+    <div id="anything-else-heading">
+      <h2>Is there anything else you’d like us to know about your domain request?</h2>
+      {% with add_class="usa-radio__input--tile" suppress_label=True %}
+          {% input_with_errors forms.2.has_anything_else_text %}
+      {% endwith %}
+      {# forms.2 is a small yes/no form that toggles the visibility of "cisa representative" formset #} 
+    </div>
     <div class="margin-top-3" id="anything-else">
         <p>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
         {% with attr_maxlength=2000 add_label_class="usa-sr-only" add_legend_class="usa-sr-only" add_legend_heading="Is there anything else you’d like us to know about your domain request?" add_aria_label="Provide details below. You can enter up to 2000 characters" %}
