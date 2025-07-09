@@ -8,3 +8,7 @@ fieldset {
 fieldset:not(:first-child) {
     margin-top: units(2);
 }
+
+fieldset .margin-top-4{
+    margin-top: units(4) !important;
+}
