@@ -178,7 +178,9 @@ $-expand-less-icon: (
 
     button,
     .usa-accordion__button {
-        background-color: slateblue;
+        $button-vertical-offset: 53%; // XXX: Magic number
+
+        background-color: green;
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
         line-height: line-height($theme-navigation-font-family, 2);
@@ -214,22 +216,22 @@ $-expand-less-icon: (
             span {
               @include place-icon($-add-icon, "after");
       
-            //   &::after:hover {
-            //     background-color: buttonText;
-            //   }
+              &::after:hover {
+                background-color: color('primary-lighter');
+              }
             }
 
             &::after:hover {
-                background-color: olive;
+                background-color: color('primary-lighter');
               }
             
             @include at-media($theme-header-min-width) {
                 span {
                     @include place-icon($-expand-more-icon, "after");
     
-                    &::after {
-                        right: units(1.5);
-                    }
+                    // &::after {
+                    //     right: units(1.5);
+                    // }
                 }
             }
 
@@ -239,7 +241,7 @@ $-expand-less-icon: (
                         background-color: color(blue-warm-70v);
         
                         @media (forced-colors: active) {
-                        background-color: olive;
+                        background-color: color('primary-lighter');
                         }
                     }
                 }
@@ -255,7 +257,7 @@ $-expand-less-icon: (
                   right: 0;
         
                   @media (forced-colors: active) {
-                    background-color: olive;
+                    background-color: white;
                   }
                 }
             }
@@ -263,13 +265,13 @@ $-expand-less-icon: (
             @include at-media($theme-header-min-width) {
                 background-image: none;
                 background-color: color("primary-darker");
-                color: color("white");
+                color: white;
 
                 @include at-media($theme-header-min-width) {
                     span {
                         @include place-icon($-expand-less-icon, "after");
                         &::after {
-                            right: units(1.5);
+                            // right: units(1.5);
                             background-color: white;
                             @media (forced-colors: active) {
                               background-color: olive;
