@@ -222,6 +222,7 @@ def is_domain_request_subpage(path):
         "domain-request-withdraw-confirmation",
         "domain-request-withdrawn",
         "domain-request-delete",
+        "domain-request"
     ]
 
     # The domain request wizard pages don't have a defined path,
@@ -252,7 +253,7 @@ def is_members_subpage(path):
     """Checks if the given page is a subpage of members.
     Takes a path name, like '/organization/'."""
     # Since our pages aren't unified under a common path, we need this approach for now.
-    url_names = ["members", "member", "member-permissions", "invitedmember", "invitedmember-permissions"]
+    url_names = ["members", "member", "member-permissions", "invitedmember", "invitedmember-permissions", "member-domains"]
     return get_url_name(path) in url_names
 
 
