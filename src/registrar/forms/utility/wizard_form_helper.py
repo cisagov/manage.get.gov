@@ -269,7 +269,7 @@ class BaseYesNoForm(RegistrarForm):
             coerce=lambda x: x.lower() == "true" if x is not None else None,
             choices=self.form_choices,
             initial=self.get_initial_value(),
-            widget=forms.RadioSelect(attrs={'aria-label': self.aria_label, 'aria-labelledby': self.aria_labelledby}),
+            widget=forms.RadioSelect(attrs={"aria-label": self.aria_label, "aria-labelledby": self.aria_labelledby}),
             error_messages={
                 "required": self.required_error_message,
             },
