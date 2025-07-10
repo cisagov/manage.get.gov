@@ -1,7 +1,9 @@
 {% load static url_helpers %}
 
-{% if portfolio_first_section %} <section  class="summary-item margin-top-2">
-{% else %} <section class="summary-item margin-top-3">
+{% if portfolio_first_section %} 
+<section  class="summary-item margin-top-2">
+{% else %} 
+<section class="summary-item margin-top-3">
 {% endif %}
   <hr class="" aria-hidden="true" />
   <div class="display-flex flex-justify">
@@ -20,120 +22,137 @@
     {% else %} 
       </h3>
     {% endif %}
-      {% if sub_header_text %}
-        <h4 class="margin-bottom-0">{{ sub_header_text }}</h4>
+    
+    {# To display default styling for sub-header text and organization information in organization overview #}
+    {% if sub_header_text %}
+      <h4 class="margin-bottom-0">{{ sub_header_text }}</h4>  
+      {% if sub_header_text == "Organization Admins" %}  
+        <ul class="usa-list">
+          {% for admin in portfolio_admins %}
+            <li>{{ admin.get_full_name|default:admin.username }}</li>
+          {% empty %}
+            <li>No admins assigned.</li>
+          {% endfor %}
+        </ul>
+        <h4 class="margin-bottom-2">Organization Name and Address</h4>
       {% endif %}
-      {% if permissions %}
-        {% include "includes/member_permissions_summary.html" with permissions=value %}
-      {% elif domain_mgmt %}
-        {% include "includes/member_domain_management.html" with domain_count=value %}
-      {% elif address %}
-        {% include "includes/organization_address.html" with organization=value %}
-      {% elif contact %}
-        {% if list %}
-          {% if value|length == 1 %}
-            {% include "includes/contact.html" with contact=value|first %}
+    {% endif %}
+    
+    {% if permissions %}
+      {% include "includes/member_permissions_summary.html" with permissions=value %}
+    
+    {% elif domain_mgmt %}
+      {% include "includes/member_domain_management.html" with domain_count=value %}
+    
+    {% elif address %}
+      {% include "includes/organization_address.html" with organization=value %}
+    
+    {% elif contact %}
+      {% if list %}
+        {% if value|length == 1 %}
+          {% include "includes/contact.html" with contact=value|first %}
+        {% else %}
+          {% if value %}
+            <dl class="usa-list usa-list--unstyled margin-top-0">
+              {% for item in value %}
+              <dt>
+                <h4 class="margin-bottom-05 padding-right-1">
+                    Contact {{forloop.counter}}
+                </h4>
+              </dt>
+              <dd>
+                {% include "includes/contact.html" with contact=item %}
+              </dd>
+              {% endfor %}
+            </dl>
+          {% elif custom_text_for_value_none %}
+            <p>
+              {{ custom_text_for_value_none }}
+            </p>
           {% else %}
-            {% if value %}
-              <dl class="usa-list usa-list--unstyled margin-top-0">
-                {% for item in value %}
-                  <dt>
-                  
-                 <h4 class="
-             margin-bottom-05
-             padding-right-1">
-                      Contact {{forloop.counter}}
-                  </h4>
-                </dt>
-                  <dd>
-                    {% include "includes/contact.html" with contact=item %}
-                  </dd>
-                {% endfor %}
-                </dl>
-            {% elif custom_text_for_value_none %}
-              <p>
-                {{ custom_text_for_value_none }}
-              </p>
-            {% else %}
-              <p>
-                  None
-              </p>
-            {% endif %}
+            <p>
+                None
+            </p>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        {% include "includes/contact.html" with contact=value %}
+      {% endif %}
+    
+    {% elif list %}
+      {% if value|length == 1 %}
+        {% if users %}
+          <p class="margin-top-0">{{ value.0.user.email }} </p>
+        {% elif domains %}
+          {{ value.0.0 }}
+          {% if value.0.1 %}
+            ({% spaceless %}
+            {% for addr in value.0.1 %}
+              {{addr}}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+            {% endspaceless %})
           {% endif %}
         {% else %}
-          {% include "includes/contact.html" with contact=value %}
+          <p class="margin-top-0 margin-bottom-0">{{ value | first }} </p>
         {% endif %}
-      {% elif list %}
-        {% if value|length == 1 %}
-            {% if users %}
-              <p class="margin-top-0">{{ value.0.user.email }} </p>
-            {% elif domains %}
-              {{ value.0.0 }}
-              {% if value.0.1 %}
+      {% else %}
+        <ul class="usa-list usa-list--unstyled margin-top-0">
+          {% for item in value %}
+          {% if users %}
+            <li>{{ item.user.email }}</li>
+          {% elif domains %}
+            <li>
+              {{ item.0 }}
+              {% if item.1 %}
                 ({% spaceless %}
-                {% for addr in value.0.1 %}
+                {% for addr in item.1 %}
                   {{addr}}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
                 {% endspaceless %})
               {% endif %}
-            {% else %}
-              <p class="margin-top-0 margin-bottom-0">{{ value | first }} </p>
-            {% endif %}
+            </li>
+          {% else %}
+            <li>{{ item }}</li>
+          {% endif %}
+          {% empty %}
+            <li>None</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    
+    {% elif domain_permissions %}
+      {% if value.permissions.all %}
+        {% if value.permissions|length == 1 %}
+          <p class="margin-top-0">{{ value.permissions.0.user.email }} </p>
         {% else %}
           <ul class="usa-list usa-list--unstyled margin-top-0">
-            {% for item in value %}
-            {% if users %}
-              <li>{{ item.user.email }}</li>
-            {% elif domains %}
-              <li>
-                {{ item.0 }}
-                {% if item.1 %}
-                  ({% spaceless %}
-                  {% for addr in item.1 %}
-                    {{addr}}{% if not forloop.last %}, {% endif %}
-                  {% endfor %}
-                  {% endspaceless %})
-                {% endif %}
-              </li>
-            {% else %}
-              <li>{{ item }}</li>
-            {% endif %}
-            {% empty %}
-             <li>None</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      {% elif domain_permissions %}
-        {% if value.permissions.all %}
-          {% if value.permissions|length == 1 %}
-            <p class="margin-top-0">{{ value.permissions.0.user.email }} </p>
-          {% else %}
-            <ul class="usa-list usa-list--unstyled margin-top-0">
-            {% for item in value.permissions.all %}
-              <li>{{ item.user.email }}</li>
-            {% endfor %}
-            </ul>
-          {% endif %}
-        {% endif %}
-        {% if value.active_invitations.all %}
-          <h4 class="margin-bottom-05">Invited domain managers</h4>
-          <ul class="usa-list usa-list--unstyled margin-top-0">
-          {% for item in value.active_invitations.all %}
-            <li>{{ item.email }}</li>
+          {% for item in value.permissions.all %}
+            <li>{{ item.user.email }}</li>
           {% endfor %}
           </ul>
         {% endif %}
-      {% else %}
-        {% if custom_text_for_value_none %}
-          <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
-        {% endif %}
-        {% if value %}
-          {{ value }}
-        {% endif %}
-        {% if not value %}
-          None
-        {% endif %}
       {% endif %}
+      
+      {% if value.active_invitations.all %}
+        <h4 class="margin-bottom-05">Invited domain managers</h4>
+        <ul class="usa-list usa-list--unstyled margin-top-0">
+        {% for item in value.active_invitations.all %}
+          <li>{{ item.email }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    
+    {% else %}
+      {% if custom_text_for_value_none %}
+        <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
+      {% endif %}
+      {% if value %}
+        {{ value }}
+      {% endif %}
+      {% if not value %}
+        None
+      {% endif %}
+    {% endif %}
     </div>
 
     {% comment %}We have conditions where an edit_link is set but editable can be true or false{% endcomment %}
@@ -159,6 +178,5 @@
         </div>
       {% endif %}
     {% endif %}
-
- </div>
+  </div>
 </section>
