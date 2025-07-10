@@ -144,32 +144,6 @@ class FederalAgencyVariantGenerator(StringVariantGenerator):
 
         return variants
 
-
-class PersonNameVariantGenerator(StringVariantGenerator):
-    """Generates variants for person names."""
-
-    def generate_variants(self, person_name: str) -> Set[str]:
-        """Generate person name variants."""
-        variants = {normalize_string(person_name)}
-
-        # Split name into parts
-        name_parts = person_name.split()
-        if len(name_parts) >= 2:
-            # First Last, Last First, etc.
-            first_name = name_parts[0]
-            last_name = name_parts[-1]
-
-            variants.add(normalize_string(f"{last_name}, {first_name}"))
-            variants.add(normalize_string(f"{first_name[0]}. {last_name}"))
-
-            if len(name_parts) >= 3:
-                middle_parts = name_parts[1:-1]
-                for middle in middle_parts:
-                    variants.add(normalize_string(f"{first_name} {middle[0]}. {last_name}"))
-
-        return variants
-
-
 class GenericFuzzyMatcher:
     """
     Generic fuzzy string matcher that can be configured for different use cases.
