@@ -174,13 +174,15 @@ $-expand-less-icon: (
 
     span {
         @include place-icon($-add-icon, "after");
+        font-weight: font-weight('bold');
+        color: color('primary-lighter');
     }
 
     button,
     .usa-accordion__button {
         $button-vertical-offset: 53%; // XXX: Magic number
 
-        background-color: green;
+        background-color: pink;
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
         line-height: line-height($theme-navigation-font-family, 2);
@@ -196,7 +198,7 @@ $-expand-less-icon: (
 
             @media (forced-colors: active) {
                 &::before {
-                content: none;
+                    content: none;
                 }
             }
         }
@@ -229,19 +231,19 @@ $-expand-less-icon: (
                 span {
                     @include place-icon($-expand-more-icon, "after");
     
-                    // &::after {
-                    //     right: units(1.5);
-                    // }
+                    &::after {
+                        background-color: color('primary-lighter');
+                    }
                 }
             }
 
             &:hover {
                 @include at-media($theme-header-min-width) {
                     span::after {
-                        background-color: color(blue-warm-70v);
+                        background-color: color('primary-lighter');
         
                         @media (forced-colors: active) {
-                        background-color: color('primary-lighter');
+                            background-color: color('primary-lighter');
                         }
                     }
                 }
@@ -274,7 +276,7 @@ $-expand-less-icon: (
                             // right: units(1.5);
                             background-color: white;
                             @media (forced-colors: active) {
-                              background-color: olive;
+                              background-color: white;
                             }
                         }
                     }
