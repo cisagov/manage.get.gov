@@ -144,6 +144,7 @@ class FederalAgencyVariantGenerator(StringVariantGenerator):
 
         return variants
 
+
 class GenericFuzzyMatcher:
     """
     Generic fuzzy string matcher that can be configured for different use cases.
