@@ -369,30 +369,24 @@ WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 # Note: If needed, we can embed chart.js instead of using the CDN
 # Content-Security-Policy configuration for django-csp 4.0+ New format required
 CONTENT_SECURITY_POLICY = {
-    'DIRECTIVES': {
-        'connect-src': [
+    "DIRECTIVES": {
+        "connect-src": [
             "'self'",
-            'https://www.google-analytics.com/',
-            'https://www.ssa.gov/accessibility/andi/andi.js'
+            "https://www.google-analytics.com/",
+            "https://www.ssa.gov/accessibility/andi/andi.js",
         ],
-        'default-src': ("'self'",),
-        'form-action': ("'self'",),
-        'frame-ancestors': ("'self'",),
-        'img-src': [
+        "default-src": ("'self'",),
+        "form-action": ("'self'",),
+        "frame-ancestors": ("'self'",),
+        "img-src": ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"],
+        "script-src-elem": [
             "'self'",
-            'https://www.ssa.gov/accessibility/andi/icons/'
+            "https://www.googletagmanager.com/",
+            "https://cdn.jsdelivr.net/npm/chart.js",
+            "https://www.ssa.gov",
+            "https://ajax.googleapis.com",
         ],
-        'script-src-elem': [
-            "'self'",
-            'https://www.googletagmanager.com/',
-            'https://cdn.jsdelivr.net/npm/chart.js',
-            'https://www.ssa.gov',
-            'https://ajax.googleapis.com'
-        ],
-        'style-src': [
-            "'self'",
-            'https://www.ssa.gov/accessibility/andi/andi.css'
-        ]
+        "style-src": ["'self'", "https://www.ssa.gov/accessibility/andi/andi.css"],
     }
 }
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
