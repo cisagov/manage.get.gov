@@ -1018,8 +1018,14 @@ class Review(DomainRequestWizard):
                 context=context,
             )
             logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
-        except EmailSendingError:
-            logger.warning("Failed to send confirmation email", exc_info=True)
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send OMB submission confirmation email:\n"
+                f"  Subject template: omb_submission_confirmation_subject.txt\n"
+                f"  To: ombdotgov@omb.eop.gov\n"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
 
 class Finished(DomainRequestWizard):
