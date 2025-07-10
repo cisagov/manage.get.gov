@@ -1032,8 +1032,17 @@ class DomainRequest(TimeStampedModel):
                 wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {recipient.email}")
-        except EmailSendingError:
-            logger.warning("Failed to send confirmation email", exc_info=True)
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send status update to creator email:\n"
+                f"  Type: {new_status}\n"
+                f"  Subject template: {email_template_subject}\n"
+                f"  To: {recipient.email}\n"
+                f"  CC: {', '.join(cc_addresses)}\n"
+                f"  BCC: {bcc_address}"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
     def investigator_exists_and_is_staff(self):
         """Checks if the current investigator is in a valid state for a state transition"""

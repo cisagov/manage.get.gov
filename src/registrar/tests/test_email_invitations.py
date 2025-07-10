@@ -940,18 +940,22 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         permissions.user.email = "user@example.com"
         permissions.portfolio.organization_name = "Test Portfolio"
 
-        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_get_requestor_email.return_value = MagicMock(name="mock.email")
 
         # Call function
         result = send_portfolio_member_permission_update_email(requestor, permissions)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member update notification to %s for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
-            exc_info=True,
+        expected_message = (
+            "Failed to send organization member update notification email:\n"
+            f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
+            f"  Subject template: portfolio_update_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: Email failed"
         )
+
+        mock_logger.error.assert_called_once_with(expected_message, exc_info=True)
         self.assertFalse(result)
 
     @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=Exception("Unexpected error"))
@@ -1013,18 +1017,22 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         permissions.user.email = "user@example.com"
         permissions.portfolio.organization_name = "Test Portfolio"
 
-        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_get_requestor_email.return_value = MagicMock(name="mock.email")
 
         # Call function
         result = send_portfolio_member_permission_remove_email(requestor, permissions)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member removal notification to %s for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
-            exc_info=True,
+        expected_message = (
+            "Failed to send portfolio member removal email:\n"
+            f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: Email failed"
         )
+
+        mock_logger.error.assert_called_once_with(expected_message, exc_info=True)
         self.assertFalse(result)
 
     @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=Exception("Unexpected error"))
@@ -1092,10 +1100,12 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         result = send_portfolio_invitation_remove_email(requestor, invitation)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member removal notification to %s for portfolio: %s",
-            invitation.email,
-            invitation.portfolio.organization_name,
+        mock_logger.error.assert_called_once_with(
+            "Failed to send portfolio invitation removal email:\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {invitation.email}\n"
+            f"  Portfolio: {invitation.portfolio.organization_name}\n"
+            f"  Error: Email failed",
             exc_info=True,
         )
         self.assertFalse(result)
