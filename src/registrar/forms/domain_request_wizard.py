@@ -871,6 +871,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
 
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
+    aria_labelledby = "cisa-representative-heading"
 
 
 class AnythingElseForm(BaseDeletableRegistrarForm):
@@ -919,6 +920,7 @@ class AnythingElseYesNoForm(BaseYesNoForm):
     # Note that these can be set as functions/init if you need more fine-grained control.
     form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
+    aria_labelledby = "anything-else-heading"
 
 
 class RequirementsForm(RegistrarForm):
