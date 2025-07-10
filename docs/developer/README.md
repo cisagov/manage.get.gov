@@ -280,7 +280,7 @@ security rules. The scan runs as part of our CI setup (see
 type
 
 ```shell
-docker-compose run owasp
+docker compose run owasp
 ```
 
 ## Images, stylesheets, and JavaScript
