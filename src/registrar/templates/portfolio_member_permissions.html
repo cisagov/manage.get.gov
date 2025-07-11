@@ -28,7 +28,7 @@
           <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Member access and permissions</span>
+        <span>Member roles and permissions</span>
       </li>
   </ol>
   </nav>
@@ -41,7 +41,7 @@
 
 
   <!-- Page header -->
-  <h1>Member access and permissions</h1>
+  <h1>Member roles and permissions</h1>
 
   {% include "includes/required_fields.html" with remove_margin_top=True %}
 
@@ -81,7 +81,7 @@
   <!-- Member access radio buttons (Toggles other sections) -->
   <fieldset class="usa-fieldset">
     <legend>
-      <h2 class="margin-top-0">Member access</h2>
+      <h2 class="margin-top-0">Member roles</h2>
     </legend>
     
     {% if member and member.id == request.user.id and is_only_admin %}
@@ -90,14 +90,14 @@
         <p class="usa-alert__text ">
           You're the only admin for this organization.
           Organizations must have at least one admin.
-          To remove yourself or change your member access,
+          To remove yourself or change your member role,
           you'll need to add another admin.
         </p>
       </div>
     </div>
     {% endif %}
 
-    <em>Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+    <em>Select the role for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
 
     {% with group_classes="margin-top-0" add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
       {% input_with_errors form.role %}
@@ -140,7 +140,7 @@
       id="modal-member-permissions-edit-self"
       data-force-action
     >
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member access?" modal_description="You’ve selected basic access, which means you’ll no longer be able to manage member permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my access" %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your member role?" modal_description="You’ve selected the basic role, which means you’ll no longer be able to manage member permissions. This action cannot be undone." modal_button_id="member-permissions-edit-self" modal_button_text="Yes, change my role" %}
     </div>
   {% endif %}
 {% endblock portfolio_content%}
