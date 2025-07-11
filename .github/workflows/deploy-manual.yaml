@@ -13,28 +13,25 @@ on:
         type: 'choice'
         options:
           - aa
-          - ab
+          - acadia
           - ad
-          - ag
           - backup
           - bob
-          - cb
           - dg
           - el
           - es
-          - gd
+          - glacier
           - hotgov
           - kma
-          - ko
-          - ky
           - litterbox
           - meoward
           - nl
+          - olympic
+          - potato
           - product
-          - rb
           - rh
-          - rjm
-          - za
+          - yellowstone
+          - zion
 
       # GitHub Actions has no "good" way yet to dynamically input branches
       branch:
