@@ -33,7 +33,7 @@ class TransitionDomain(TimeStampedModel):
         null=False,
         blank=True,
         default=StatusChoices.READY,
-        choices=StatusChoices.choices,
+        choices=StatusChoices.choices,  # type: ignore[misc]
         verbose_name="status",
         help_text="domain status during the transfer",
     )
