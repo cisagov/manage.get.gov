@@ -37,7 +37,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     EDIT_MEMBERS = "edit_members", "Manager"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
-    EDIT_REQUESTS = "edit_requests", "Creator"
+    EDIT_REQUESTS = "edit_requests", "Requester"
 
     VIEW_PORTFOLIO = "view_portfolio", "Viewer"
     EDIT_PORTFOLIO = "edit_portfolio", "Manager"
