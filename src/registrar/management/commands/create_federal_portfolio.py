@@ -287,27 +287,7 @@ class Command(BaseCommand):
         # == Handle domains and requests == #
         for portfolio_org_name, portfolio in portfolios_to_use_dict.items():
             federal_agency = agencies_dict.get(portfolio_org_name)
-
-            suborgs = {}
-
-            if self.dry_run:
-                # In dry run, use the created_suborgs that haven't been saved yet
-                if created_suborgs:
-                    for composite_key, suborg in created_suborgs.items():
-                        if suborg.portfolio == portfolio:
-                            suborgs[normalize_string(suborg.name)] = suborg
-            else:
-                # For normal execution, first add any just-created suborganizations
-                if created_suborgs:
-                    for composite_key, suborg in created_suborgs.items():
-                        if suborg.portfolio == portfolio:
-                            suborgs[normalize_string(suborg.name)] = suborg
-
-                # Then add any existing suborganizations that weren't just created
-                for suborg in portfolio.portfolio_suborganizations.all():
-                    normalized_name = normalize_string(suborg.name)
-                    if normalized_name not in suborgs:  # Don't overwrite just-created ones
-                        suborgs[normalized_name] = suborg
+            suborgs = self._get_suborgs_for_portfolio(portfolio, created_suborgs)
 
             if parse_domains:
                 updated_domains = self.update_domains(portfolio, federal_agency, suborgs, debug)
@@ -916,3 +896,22 @@ class Command(BaseCommand):
         """Log what changes would be made to an object in dry run mode."""
         if self.dry_run and changes:
             logger.info(f"  WOULD UPDATE {obj}: {', '.join(changes)}")
+    
+    def _get_suborgs_for_portfolio(self, portfolio, created_suborgs):
+        """Get all suborganizations for a portfolio"""
+        suborgs = {}
+        
+        # Always add just-created suborganizations
+        if created_suborgs:
+            for composite_key, suborg in created_suborgs.items():
+                if suborg.portfolio == portfolio:
+                    suborgs[normalize_string(suborg.name)] = suborg
+        
+        # In normal execution, also add existing suborganizations from the database
+        if not self.dry_run:
+            for suborg in portfolio.portfolio_suborganizations.all():
+                normalized_name = normalize_string(suborg.name)
+                if normalized_name not in suborgs:  # Don't overwrite just-created ones
+                    suborgs[normalized_name] = suborg
+        
+        return suborgs
