@@ -13,7 +13,6 @@ Any domain manager can complete the process within the .gov registrar <{{ manage
 Organization admins are cc’d on this email for awareness but do not need to take action.
 {% endif %}
 
-
 WHAT HAPPENS IF THE DOMAIN EXPIRES?
 When a .gov domain expires, it’s not automatically put on hold or deleted. It continues to resolve online even after its expiration date. Before we delete the domain, we’ll make every effort to contact your organization. We encourage you to renew the domain promptly if you're still using it.
 
