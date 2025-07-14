@@ -164,7 +164,12 @@ $-expand-less-icon: (
     max-width: $widescreen-max-width !important;
 }
 
-// Remove USWDS default accordion button add/remove icons
+.usa-nav__secondary-item .usa-nav-link-text {
+    position: absolute;
+    top: 29%; // magic number with USWDS's magic number
+}
+
+// Dropdown menus on secondary nav
 .usa-nav__secondary-menu {
     // .usa-accordion__button,
     // .usa-accordion__button:hover,
@@ -182,13 +187,15 @@ $-expand-less-icon: (
     .usa-accordion__button {
         $button-vertical-offset: 53%; // XXX: Magic number
 
-        background-color: pink;
+        background-color: green;
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
+        font-size: 1rem;
         line-height: line-height($theme-navigation-font-family, 2);
         padding: units(1.5) units(2);
         text-decoration: none;
         width: 100%;
+        border-radius: 0;
 
         // Remove icon set from usa-accordion.
         // Also removed in _usa-banner.scss.
