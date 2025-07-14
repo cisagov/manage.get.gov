@@ -211,7 +211,11 @@ class TestPortfolio(WebTest):
         so = SeniorOfficial.objects.create(
             first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
         )
+
         portfolio_admin = User.objects.create_user(username="adminuser", email="admin@example.com")
+        UserPortfolioPermission.objects.create(
+            user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
 
         self.portfolio.portfolio_admin_users.add(portfolio_admin)
         self.portfolio.senior_official = so
@@ -230,7 +234,7 @@ class TestPortfolio(WebTest):
             self.assertContains(response, "Los Angeles")
             self.assertContains(response, "spacedivision@igorville.com")
             # Organization overview page includes portfolio admin
-            self.assertContains(response, "admin@example.com") 
+            self.assertContains(response, "admin@example.com")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
