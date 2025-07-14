@@ -217,7 +217,6 @@ class TestPortfolio(WebTest):
             user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
-        self.portfolio.portfolio_admin_users.add(portfolio_admin)
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
