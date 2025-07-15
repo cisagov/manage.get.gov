@@ -222,7 +222,13 @@ def is_domain_request_subpage(path):
         "domain-request-withdraw-confirmation",
         "domain-request-withdrawn",
         "domain-request-delete",
-        "domain-request"
+        "domain-request",
+        "portfolio_requesting_entity",
+        "dotgov_domain",
+        "purpose",
+        "additional_details",
+        "requirements",
+         "review"
     ]
 
     # The domain request wizard pages don't have a defined path,
