@@ -164,20 +164,51 @@ $-expand-less-icon: (
     max-width: $widescreen-max-width !important;
 }
 
-.usa-nav__secondary-item .usa-nav-link-text {
+.usa-nav__secondary-item  {
     @include at-media($theme-header-min-width) {
-        position: absolute;
-        top: 29%; // magic number with USWDS's magic number
+        .usa-nav-link-text {
+            position: absolute;
+            top: 12%; // magic number with USWDS's magic number
+        }
+
+        a {
+            @include u-padding-y(1);
+        }
     }
 }
 
 // Dropdown menus on secondary nav
 .usa-nav__secondary-menu {
-    // .usa-accordion__button,
-    // .usa-accordion__button:hover,
-    // .usa-accordion__button:focus {
-    //     background-color: pink;
-    // }
+    // Until the $theme-header-width,
+    // use the usa-nav-list styles for the slide-in nav
+    @include at-media-max($theme-header-min-width) {
+        @include nav-list("nav");
+    
+        a {
+            @include u-padding-y(1.5);
+        }
+    }
+
+    // At $theme-header-width and wider...
+    @include at-media($theme-header-min-width) {
+        display: flex;
+        align-items: stretch;
+    }
+
+    // all nav items in the nav
+    .usa-nav__secondary-item {
+        a {
+            text-decoration: none;
+        }
+    }
+
+    > button,
+    > a {
+        @include at-media($theme-header-min-width) {
+        height: 100%;
+        }
+    }
+    
     @include at-media($theme-header-min-width) {
         span {
             @include place-icon($-add-icon, "after");
@@ -186,11 +217,19 @@ $-expand-less-icon: (
         }
     }
 
+    a {
+        @include at-media($theme-header-min-width) {
+            @include u-padding-y(1);
+        }
+    }
+
     button,
     .usa-accordion__button {
         $button-vertical-offset: 53%; // XXX: Magic number
 
-        background-color: pink;
+        // @include button-unstyled;
+        background-color: transparent;
+        color: var(--close-button-bg);
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
         font-size: 1rem;
