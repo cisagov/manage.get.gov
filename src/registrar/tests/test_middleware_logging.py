@@ -45,17 +45,17 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.logger.info("Testing middleware")
         self.handler.flush()
         log_output = self.stream.getvalue()
-    
+
         self.assertIn("test_middleware@gmail.com", log_output)
 
     @override_settings(IS_PRODUCTION=True)
     def test_no_user_info(self):
         self.client.get(reverse("organization-info"))
-        
+
         self.logger.info("Anonymous Test")
 
         self.handler.flush()
 
         log_output = self.stream.getvalue()
-   
+
         self.assertIn("user: Anonymous", log_output)

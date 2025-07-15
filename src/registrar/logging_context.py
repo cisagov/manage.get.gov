@@ -13,6 +13,7 @@ def set_user_log_context(user_email=None, ip_address=None, request_path=None):
     if request_path is not None:
         request_path_var.set(request_path)
 
+
 def get_user_log_context():
     return {
         "user_email": user_email_var.get(),
