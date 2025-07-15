@@ -187,7 +187,7 @@ $-expand-less-icon: (
     .usa-accordion__button {
         $button-vertical-offset: 53%; // XXX: Magic number
 
-        background-color: green;
+        background-color: pink;
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
         font-size: 1rem;
@@ -207,6 +207,14 @@ $-expand-less-icon: (
                 &::before {
                     content: none;
                 }
+            }
+        }
+
+        span {
+            @include at-media($theme-header-min-width) {
+              display: inline-block;
+              margin-right: 0;
+              padding-right: units(2);
             }
         }
 
@@ -240,6 +248,7 @@ $-expand-less-icon: (
     
                     &::after {
                         background-color: color('primary-lighter');
+                        right: units(1.5);
                     }
                 }
             }
@@ -280,7 +289,7 @@ $-expand-less-icon: (
                     span {
                         @include place-icon($-expand-less-icon, "after");
                         &::after {
-                            // right: units(1.5);
+                            right: units(1.5);
                             background-color: white;
                             @media (forced-colors: active) {
                               background-color: white;
