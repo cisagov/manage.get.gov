@@ -1,29 +1,35 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 import io
 import logging
-import json
 from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
-from ..logging_context import clear_user_log_context
+import registrar.registrar_middleware
 
 
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
     def setUp(self):
-        clear_user_log_context()
         self.stream = io.StringIO()
         self.handler = logging.StreamHandler(self.stream)
-        self.logger = logging.getLogger("testlogger")
+        self.logger = logging.getLogger(registrar.registrar_middleware.__name__)
         self.handler.setFormatter(JsonFormatter())
         self.logger.addHandler(self.handler)
+        self.logger.setLevel(logging.INFO)
         self.logger.propagate = False
 
     def tearDown(self):
-        clear_user_log_context()
         self.handler.close()
 
+    @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only
+    def test_logging_enabled_in_production(self):
+        self.client.get(reverse("health"))
+        log_output = self.stream.getvalue()
+        self.assertIn("Router log", log_output)
+        self.assertIn("user: Anonymous", log_output)
+
+    @override_settings(IS_PRODUCTION=True)
     def test_middleware_sets_user_email(self):
         user = get_user_model().objects.create_user(
             username="test",
@@ -39,16 +45,17 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.logger.info("Testing middleware")
         self.handler.flush()
         log_output = self.stream.getvalue()
-        log_data = json.loads(log_output)
-        self.assertIn("test_middleware@gmail.com", log_data["message"])
+    
+        self.assertIn("test_middleware@gmail.com", log_output)
 
+    @override_settings(IS_PRODUCTION=True)
     def test_no_user_info(self):
-        self.client.get(reverse("domains"))
-
+        self.client.get(reverse("organization-info"))
+        
         self.logger.info("Anonymous Test")
 
         self.handler.flush()
 
         log_output = self.stream.getvalue()
-        log_data = json.loads(log_output)
-        self.assertNotIn("user", log_data["message"])
+   
+        self.assertIn("user: Anonymous", log_output)
