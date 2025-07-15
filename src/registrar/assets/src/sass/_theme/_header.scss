@@ -175,6 +175,13 @@ $-expand-less-icon: (
             @include u-padding-y(1);
         }
     }
+
+    @include at-media-max($theme-header-min-width) {
+        @include nav-list("nav");
+        a {
+          @include u-padding-y(1.5);
+        }
+    }
 }
 
 // Dropdown menus on secondary nav
