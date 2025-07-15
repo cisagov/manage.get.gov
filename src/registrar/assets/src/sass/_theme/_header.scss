@@ -209,6 +209,21 @@ $-expand-less-icon: (
         }
     }
 
+    // ...and their direct links
+    > a {
+        @include at-media($theme-header-min-width) {
+            line-height: line-height($theme-navigation-font-family, 1);
+            padding: units(2);            
+            align-items: center;
+            display: flex;
+            font-weight: font-weight("bold");
+  
+            // &:hover {
+            //     color: color("primary");
+            // }
+        }
+    }
+
     > button,
     > a {
         @include at-media($theme-header-min-width) {
@@ -245,6 +260,10 @@ $-expand-less-icon: (
         text-decoration: none;
         width: 100%;
         border-radius: 0;
+
+        @include at-media-max($theme-header-min-width) {
+            justify-content: flex-start;
+        }
 
         // Remove icon set from usa-accordion.
         // Also removed in _usa-banner.scss.
