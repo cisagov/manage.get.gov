@@ -165,8 +165,10 @@ $-expand-less-icon: (
 }
 
 .usa-nav__secondary-item .usa-nav-link-text {
-    position: absolute;
-    top: 29%; // magic number with USWDS's magic number
+    @include at-media($theme-header-min-width) {
+        position: absolute;
+        top: 29%; // magic number with USWDS's magic number
+    }
 }
 
 // Dropdown menus on secondary nav
@@ -176,11 +178,12 @@ $-expand-less-icon: (
     // .usa-accordion__button:focus {
     //     background-color: pink;
     // }
-
-    span {
-        @include place-icon($-add-icon, "after");
-        font-weight: font-weight('bold');
-        color: color('primary-lighter');
+    @include at-media($theme-header-min-width) {
+        span {
+            @include place-icon($-add-icon, "after");
+            font-weight: font-weight('bold');
+            color: color('primary-lighter');
+        }
     }
 
     button,
