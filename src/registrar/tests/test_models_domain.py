@@ -6,7 +6,7 @@ This file tests the various ways in which the registrar interacts with the regis
 
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch, call, ANY
 from datetime import datetime, date, timedelta
 from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
@@ -479,6 +479,138 @@ class TestDomainCreation(MockEppLib):
 
             self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
             self.assertEqual(domain.is_active(), False)
+
+    # def test_accessing_domain_properties_creates_domain_in_registry(self):
+    #     """
+    #     Scenario: A registrant checks the status of a newly approved domain
+    #         Given that no domain object exists in the registry
+    #         When a property is accessed
+    #         Then Domain sends `commands.CreateDomain` to the registry
+    #         And `domain.state` is set to `DNS_NEEDED`
+    #         And `domain.is_active()` returns False
+    #     """
+    #     with less_console_noise():
+    #         domain = Domain.objects.create(name="beef-tongue.gov")
+
+    #         # Create a registrant contact with everything needed
+    #         PublicContact.objects.create(
+    #             domain=domain,
+    #             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+    #             registry_id="CONTACT-123",
+    #             email="registrant@example.com",
+    #             name="Beef Tongue LLC",
+    #             voice="+1.5551234567",
+    #         )
+    #         print("***** State before triggering:", domain.state)
+
+    #         # trigger getter
+    #         _ = domain.statuses
+    #         print("***** State after triggering:", domain.state)
+
+    #         # contacts = PublicContact.objects.filter(domain=domain,
+    #         # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
+
+    #         Host.objects.create(name="ns1.beef-tongue.gov", domain=domain)
+    #         print("\n=== SEND CALLS ===")
+    #         for call_ in self.mockedSendFunction.mock_calls:
+    #             print(call_)
+    #         print("=== END SEND CALLS ===\n")
+    #         # Called in _fetch_cache
+    #         self.mockedSendFunction.assert_has_calls(
+    #             [
+    #                 call(
+    #                     commands.CreateContact(
+    #                         id="CONTACT-123",
+    #                         postal_info=ANY,
+    #                         email="registrant@example.com",
+    #                         voice="+1.5551234567",
+    #                         fax=None,
+    #                         auth_info=ANY,
+    #                         disclose=ANY,
+    #                         vat=None,
+    #                         ident=None,
+    #                         notify_email=None,
+    #                     ),
+    #                     cleaned=True,
+    #                 ),
+    #                 call(
+    #                     commands.CreateDomain(
+    #                         name="beef-tongue.gov",
+    #                         registrant="CONTACT-123",
+    #                         period=None,
+    #                         unit="y",
+    #                         nsset=None,
+    #                         keyset=None,
+    #                         admins=[],
+    #                         auth_info=None,
+    #                     ),
+    #                     cleaned=True,
+    #                 ),
+    #                 call(
+    #                     commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
+    #                     cleaned=True,
+    #                 ),
+    #             ],
+    #             any_order=True,
+    #         )
+
+    #         self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
+    #         self.assertEqual(domain.is_active(), False)
+
+    # def test_accessing_domain_properties_creates_domain_in_registry(self):
+    #     """
+    #     Scenario: A registrant checks the status of a newly approved domain
+    #         Given that no domain object exists in the registry
+    #         When a property is accessed
+    #         Then Domain sends `commands.CreateDomain` to the registry
+    #         And `domain.state` is set to `DNS_NEEDED`
+    #         And `domain.is_active()` returns False
+    #     """
+    #     with less_console_noise():
+    #         domain = Domain.objects.create(name="beef-tongue.gov")
+
+    #         # Ensure a registrant contact exists with a registry_id
+    #         PublicContact.objects.create(
+    #             domain=domain,
+    #             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+    #             registry_id="CONTACT-123",
+    #             email="registrant@example.com",
+    #             name="Beef Tongue LLC",
+    #             voice="+1.5551234567",
+    #         )
+
+    #         Host.objects.create(name="ns1.beef-tongue.gov", domain=domain)
+
+    #         # Trigger lazy-loading or registration
+    #         _ = domain.statuses
+
+    #         self.mockedSendFunction.assert_has_calls(
+    #             [
+    #                 call(
+    #                     commands.CreateContact(
+    #                         id="CONTACT-123",
+    #                         postal_info=ANY,
+    #                         email="registrant@example.com",
+    #                         voice="+1.5551234567",
+    #                         fax=None,
+    #                         auth_info=ANY,
+    #                         disclose=ANY,
+    #                         vat=None,
+    #                         ident=None,
+    #                         notify_email=None,
+    #                     ),
+    #                     cleaned=True,
+    #                 ),
+    #                 call(
+    #                     commands.InfoDomain(name="beef-tongue.gov", auth_info=None),
+    #                     cleaned=True,
+    #                 ),
+    #             ],
+    #             any_order=True,
+    #         )
+
+    #         self.assertEqual(domain.state, Domain.State.DNS_NEEDED)
+    #         self.assertEqual(domain.is_active(), False)
 
     @skip("assertion broken with mock addition")
     def test_empty_domain_creation(self):
@@ -2905,6 +3037,7 @@ class TestAnalystDelete(MockEppLib):
         )
 
     def tearDown(self):
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
@@ -3109,6 +3242,68 @@ class TestAnalystDelete(MockEppLib):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
+    def test_delete_related_objects_cleans_database(self):
+        """
+        Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
+        should remove DNSSEC data, HostIP, Host, and non‑registrant contacts from the database
+        """
+        # Mocks DNSSEC data in memory to then delete later
+        with patch.object(Domain, "dnssecdata", new_callable=MagicMock) as mock_dnssec:
+            mock_dnssec.return_value = self.dnssecExtensionWithDsData
+
+            # 1. Create domain in db and mark it as deleted
+            domain, _ = Domain.objects.get_or_create(name="cleanup.gov", state=Domain.State.DELETED)
+
+            # 2. Check if we have DNSSEC data
+            self.assertIsNotNone(domain.dnssecdata)
+
+            # 3. Create host and a HostIP
+            host = Host.objects.create(name="ns1.cleanup.gov", domain=domain)
+            HostIP.objects.get_or_create(host=host, address="192.0.2.1")
+
+            # 4. Create non‑registrant admin/tech/security contacts
+            PublicContact.objects.create(
+                domain=domain,
+                contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+                registry_id="admin-id",
+                email="admin@cleanup.gov",
+            )
+            PublicContact.objects.create(
+                domain=domain,
+                contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
+                registry_id="tech-id",
+                email="tech@cleanup.gov",
+            )
+            PublicContact.objects.create(
+                domain=domain,
+                contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                registry_id="security-id",
+                email="sec@cleanup.gov",
+            )
+
+            # Double check they all exist before cleaning up
+            self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
+            self.assertTrue(Host.objects.filter(domain=domain).exists())
+            self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
+            self.assertTrue(
+                PublicContact.objects.filter(domain=domain)
+                .filter(contact_type__in=["admin", "tech", "security"])
+                .exists()
+            )
+
+            # 5. Call the clean up method
+            domain._delete_related_objects_from_db()
+
+            # 6. Assert hostIP, host, non-registrant contacts and dnssec data are cleared
+            self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
+            self.assertFalse(Host.objects.filter(domain=domain).exists())
+            self.assertFalse(
+                PublicContact.objects.filter(domain=domain)
+                .filter(contact_type__in=["admin", "tech", "security"])
+                .exists(),
+            )
+            self.assertIsNone(domain.dnssecdata)
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):

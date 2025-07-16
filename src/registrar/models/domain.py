@@ -1122,75 +1122,10 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
 
         self._delete_nameservers_and_hosts()
-        # try:
-        #     # set hosts to empty list so nameservers are deleted
-        #     (
-        #         deleted_values,
-        #         updated_values,
-        #         new_values,
-        #         oldNameservers,
-        #     ) = self.getNameserverChanges(hosts=[])
-
-        #     # update the hosts
-        #     _ = self._update_host_values(
-        #         updated_values, oldNameservers
-        #     )  # returns nothing, just need to be run and errors
-        #     addToDomainList, _ = self.createNewHostList(new_values)
-        #     deleteHostList, _ = self.createDeleteHostList(deleted_values)
-        #     responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
-        # except RegistryError as e:
-        #     logger.error(f"Error trying to delete hosts from domain {self}: {e}")
-        #     raise e
-        # # if unable to update domain raise error and stop
-        # if responseCode != ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY:
-        #     raise NameserverError(code=nsErrorCodes.BAD_DATA)
-
-        # logger.info("Finished removing nameservers from domain")
-
-        # # addAndRemoveHostsFromDomain removes the hosts from the domain object,
-        # # but we still need to delete the object themselves
-        # self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
-        # logger.info("Finished _delete_hosts_if_not_used inside _delete_domain()")
 
         self._delete_nonregistrant_contacts()
 
-        # # delete the non-registrant contacts
-        # logger.debug("Deleting non-registrant contacts for %s", self.name)
-        # contacts = PublicContact.objects.filter(domain=self)
-        # logger.info(f"retrieved contacts for domain: {contacts}")
-
-        # for contact in contacts:
-        #     try:
-        #         if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
-        #             logger.info(f"Deleting contact: {contact}")
-        #             try:
-        #                 self._update_domain_with_contact(contact, rem=True)
-        #             except Exception as e:
-        #                 logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
-        #             request = commands.DeleteContact(contact.registry_id)
-        #             registry.send(request, cleaned=True)
-        #             logger.info(f"sent DeleteContact for {contact}")
-        #     except RegistryError as e:
-        #         logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
-
-        # logger.info(f"Finished deleting contacts for {self.name}")
-
         self._delete_dnssecdata()
-
-        # # delete ds data if it exists
-        # if self.dnssecdata:
-        #     logger.debug("Deleting ds data for %s", self.name)
-        #     try:
-        #         # set and unset client hold to be able to change ds data
-        #         logger.info("removing client hold")
-        #         self._remove_client_hold()
-        #         self.dnssecdata = None
-        #         logger.info("placing client hold")
-        #         self._place_client_hold()
-        #     except RegistryError as e:
-        #         logger.error("Error deleting ds data for %s: %s", self.name, e)
-        #         e.note = "Error deleting ds data for %s" % self.name
-        #         raise e
 
         # check if the domain can be deleted
         if not self._domain_can_be_deleted():
@@ -1273,11 +1208,11 @@ class Domain(TimeStampedModel, DomainHelper):
     def _delete_related_objects_from_db(self):
         """
         Deletes related DNSSEC data, Host/HostIP records, and non-registrant contacts
-        for this domain from the database now that it's been deleted from EPP
+        for this domain from the database after it's been deleted from EPP
         """
 
         # ----------------------------------
-        logger.info("!!!! Deleting DNSSEC")
+        logger.info("Deleting DNSSEC")
         try:
             if self.dnssecdata:
                 self.dnssecdata.delete()
@@ -1288,7 +1223,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error deleting DNSSEC data for domain %s: %s", self.name, str(e))
 
         # ----------------------------------
-        logger.info("!!!! Deleting HOSTIP + HOST")
+        logger.info("Deleting HOSTIP + HOST")
         try:
             HostIP.objects.filter(host__domain=self).delete()
             Host.objects.filter(domain=self).delete()
@@ -1297,7 +1232,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error deleting Host or HostIP objects for domain %s: %s", self.name, str(e))
 
         # ----------------------------------
-        logger.info("!!!! Deleting CONTACTS")
+        logger.info("Deleting CONTACTS")
         try:
             non_registrant_contacts = PublicContact.objects.filter(
                 domain=self, contact_type__in=["admin", "tech", "security"]
