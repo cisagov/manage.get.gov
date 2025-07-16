@@ -17,7 +17,7 @@ If you no longer need {{ domain }}, simply let the domain expire.
 
 
 THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
 
 ----------------------------------------------------------------
 
