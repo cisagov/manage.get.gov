@@ -89,7 +89,8 @@ class Command(BaseCommand):
                         rendered_body = render_to_string(template, context)
 
                         logger.info(
-                            f"[DRYRUN] Would send email for domain {domain.name}\n"
+                            f"[DRYRUN]\n"
+                            f"Would send email for domain {domain.name}\n"
                             f"TO: {domain_manager_emails}\n"
                             f"CC: {portfolio_admin_emails}\n"
                             f"Subject: {rendered_subject}\n"
