@@ -234,6 +234,7 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        response = self.get_response(request)
         # Only log in production (stable)
         if getattr(settings, "IS_PRODUCTION", False):
             # Get user email (if authenticated), else "Anonymous"
@@ -247,4 +248,4 @@ class RequestLoggingMiddleware:
             set_user_log_context(user_email, remote_ip, request_path)
             # Log user information
             logger.info("Router log")
-            return self.get_response(request)
+        return response
