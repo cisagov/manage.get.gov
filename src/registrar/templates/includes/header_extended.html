@@ -40,11 +40,13 @@
                     </div>
                 </li> 
                 <li class="usa-nav__secondary-item">
-                    <a class="usa-nav-link usa-nav-link-text" href="{% url 'logout' %}">Sign out</a>
-                    {% else %}
-                    <a class="usa-nav-link usa-nav-link-text" href="{% url 'login' %}">Sign in</a>
-                    {% endif %}
+                    <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
                 </li>
+                {% else %}
+                <li class="usa-nav__secondary-item">
+                    <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
         <ul class="usa-nav__primary usa-accordion">

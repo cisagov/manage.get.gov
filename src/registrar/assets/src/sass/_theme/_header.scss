@@ -164,11 +164,15 @@ $-expand-less-icon: (
     max-width: $widescreen-max-width !important;
 }
 
+// .usa-nav__secondary-links {
+//     justify-content: flex-end
+// }
+
 .usa-nav__secondary-item  {
     @include at-media($theme-header-min-width) {
         .usa-nav-link-text {
             position: absolute;
-            top: 12%; // magic number with USWDS's magic number
+            // top: 12%; // magic number with USWDS's magic number
         }
 
         a {
