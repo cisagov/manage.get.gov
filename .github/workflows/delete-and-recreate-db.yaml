@@ -12,6 +12,7 @@ on:
         description: Which environment should we flush and re-load data for?
         options:
           - el
+          - aa
           - ad
           - litterbox
           - hotgov
