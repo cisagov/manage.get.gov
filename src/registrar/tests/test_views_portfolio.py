@@ -4783,7 +4783,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the change modal is on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Yes, change my access")
+        self.assertContains(response, "Yes, change my role")
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"member_pk": admin_permission.id}),
@@ -4814,7 +4814,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the info alert is present on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "To remove yourself or change your member access")
+        self.assertContains(response, "To remove yourself or change your member role")
 
         # Then, verify that the right form error is shown
         response = self.client.post(
