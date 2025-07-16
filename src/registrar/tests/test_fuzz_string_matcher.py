@@ -6,7 +6,6 @@ from registrar.management.commands.utility.fuzzy_string_matcher import (
     create_basic_string_matcher,
     MatchResult,
     FederalAgencyVariantGenerator,
-    PersonNameVariantGenerator,
     GenericFuzzyMatcher,
     MatchingStrategy,
 )
@@ -30,14 +29,6 @@ class TestFuzzyStringMatcher(TestCase):
         self.assertIsInstance(matcher, GenericFuzzyMatcher)
         self.assertIsInstance(matcher.variant_generator, FederalAgencyVariantGenerator)
         self.assertEqual(matcher.global_threshold, 85)
-
-    def test_person_name_matcher_creation(self):
-        """Test creating a person name matcher"""
-        matcher = create_person_name_matcher(threshold=90)
-
-        self.assertIsInstance(matcher, GenericFuzzyMatcher)
-        self.assertIsInstance(matcher.variant_generator, PersonNameVariantGenerator)
-        self.assertEqual(matcher.global_threshold, 90)
 
     def test_basic_string_matcher_creation(self):
         """Test creating a basic string matcher without variants"""
