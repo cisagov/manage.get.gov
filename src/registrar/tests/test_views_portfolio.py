@@ -1158,7 +1158,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
 
@@ -1275,7 +1275,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, portfolio_invitation.email)
         self.assertContains(response, "Admin")
         self.assertContains(response, "Viewer")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
         # Assert buttons and links within the page are correct
