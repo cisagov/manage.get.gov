@@ -167,7 +167,7 @@ def get_domain_requests_display(roles, permissions):
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
     if UserPortfolioPermissionChoices.EDIT_REQUESTS in all_permissions:
-        return "Creator"
+        return "Requester"
     elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
         return "Viewer"
     else:
