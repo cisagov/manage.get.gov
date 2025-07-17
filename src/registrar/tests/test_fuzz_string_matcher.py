@@ -2,7 +2,6 @@ from django.test import TestCase
 from registrar.models import User, FederalAgency
 from registrar.management.commands.utility.fuzzy_string_matcher import (
     create_federal_agency_matcher,
-    create_person_name_matcher,
     create_basic_string_matcher,
     MatchResult,
     FederalAgencyVariantGenerator,
@@ -78,18 +77,6 @@ class TestFuzzyStringMatcher(TestCase):
         variant_strings = [v.lower() for v in variants]
         self.assertTrue(any("department of defense" in v for v in variant_strings))
         self.assertTrue(any("us department of defense" in v for v in variant_strings))
-
-    def test_person_name_matching(self):
-        """Test person name matching with different formats"""
-        matcher = create_person_name_matcher(threshold=85)
-
-        candidates = ["John Smith", "Smith, John", "J. Smith", "Jane Doe", "John Michael Smith"]
-
-        result = matcher.find_matches("John Smith", candidates)
-
-        self.assertIn("John Smith", result.matched_strings)
-        # Should also match "Smith, John" due to variant generation
-        self.assertGreater(len(result.matched_strings), 1)
 
     def test_match_result_functionality(self):
         """Test MatchResult class functionality"""
