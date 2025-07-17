@@ -8,7 +8,7 @@ in naming conventions, such as:
 - Word order (e.g. "John Smith" vs "Smith, John")
 - Case insensitivity
 - Common misspellings and typos
-- Variants for person names and federal agency names
+- Variants for federal agency names
 It can be configured with different matching strategies and thresholds
 to suit specific use cases, and supports detailed match reporting.
 It also supports batch processing of multiple target strings against a pool of candidates.
@@ -402,21 +402,6 @@ def create_federal_agency_matcher(threshold: int = 85) -> GenericFuzzyMatcher:
     """Create a fuzzy matcher optimized for federal agency names."""
     # Use default strategies but override their thresholds
     return GenericFuzzyMatcher(variant_generator=FederalAgencyVariantGenerator(), global_threshold=threshold)
-
-
-def create_person_name_matcher(threshold: int = 90) -> GenericFuzzyMatcher:
-    """Create a fuzzy matcher optimized for person names.
-    Excluding partial_ratio from default strategies as it may not be suitable for names.
-    """
-    strategies = [
-        MatchingStrategy(fuzz.token_sort_ratio, threshold, "token_sort"),
-        MatchingStrategy(fuzz.token_set_ratio, threshold, "token_set"),
-        MatchingStrategy(fuzz.ratio, threshold, "exact"),
-    ]
-    return GenericFuzzyMatcher(
-        strategies=strategies, variant_generator=PersonNameVariantGenerator(), global_threshold=threshold
-    )
-
 
 def create_basic_string_matcher(threshold: int = 85) -> GenericFuzzyMatcher:
     """Create a basic fuzzy matcher without variant generation."""
