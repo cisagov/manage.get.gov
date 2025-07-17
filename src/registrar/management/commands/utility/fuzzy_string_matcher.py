@@ -403,6 +403,7 @@ def create_federal_agency_matcher(threshold: int = 85) -> GenericFuzzyMatcher:
     # Use default strategies but override their thresholds
     return GenericFuzzyMatcher(variant_generator=FederalAgencyVariantGenerator(), global_threshold=threshold)
 
+
 def create_basic_string_matcher(threshold: int = 85) -> GenericFuzzyMatcher:
     """Create a basic fuzzy matcher without variant generation."""
     return GenericFuzzyMatcher(global_threshold=threshold)
