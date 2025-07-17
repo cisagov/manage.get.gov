@@ -164,9 +164,9 @@ $-expand-less-icon: (
     max-width: $widescreen-max-width !important;
 }
 
-// .usa-nav__secondary-links {
-//     justify-content: flex-end
-// }
+.usa-nav__secondary-links {
+    line-height: line-height($theme-navigation-font-family, 2);
+}
 
 .usa-nav__secondary-item  {
     @include at-media($theme-header-min-width) {
@@ -177,7 +177,8 @@ $-expand-less-icon: (
         }
 
         a {
-            @include u-padding-y(1.7);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
         }
 
         // Increase padding of secondary links to match button padding
@@ -203,6 +204,7 @@ $-expand-less-icon: (
     
         a {
             @include u-padding-y(1.5);
+            line-height: line-height($theme-navigation-font-family, 2);
         }
     }
 
@@ -222,7 +224,7 @@ $-expand-less-icon: (
     // ...and their direct links
     > a {
         @include at-media($theme-header-min-width) {
-            line-height: line-height($theme-navigation-font-family, 1);
+            line-height: line-height($theme-navigation-font-family, 2) !important;
             padding: units(2);            
             align-items: center;
             display: flex;
