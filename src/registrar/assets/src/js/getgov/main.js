@@ -18,7 +18,6 @@ import { initDomainDNSSEC } from './domain-dnssec.js';
 import { initFormErrorHandling } from './form-errors.js';
 import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
-import { initializeNavMenuEventListener } from './nav-menu-dropdown.js';
 
 initDomainValidators();
 
@@ -64,6 +63,3 @@ initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
 
 initButtonLinks();
-
-// Init secondary nav menu dropdown listeners
-// initializeNavMenuEventListener("user-profile-menu", "user-profile-submenu")
