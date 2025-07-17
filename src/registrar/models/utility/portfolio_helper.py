@@ -354,7 +354,7 @@ def validate_portfolio_invitation(portfolio_invitation):
         raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
     if has_portfolio and not portfolio_permissions:
-        logger.info("User didn't provide both a valid email address and a level of access for the member.")
+        logger.info("User didn't provide both a valid email address and a role for the member.")
 
     # == Validate role permissions. Compares existing permissions to forbidden ones. == #
     roles = portfolio_invitation.roles if portfolio_invitation.roles is not None else []
