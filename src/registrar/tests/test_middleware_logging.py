@@ -6,6 +6,7 @@ from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
 
+
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
