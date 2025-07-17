@@ -166,6 +166,11 @@ $-expand-less-icon: (
 
 .usa-nav__secondary-links {
     line-height: line-height($theme-navigation-font-family, 2);
+
+    // Remove column gap to account for padding in secondary nav buttons
+    @include at-media($theme-header-min-width) {
+        column-gap: 0;
+    }
 }
 
 .usa-nav__secondary-item  {
