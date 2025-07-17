@@ -6,7 +6,6 @@ from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
 
-
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
@@ -23,14 +22,14 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.handler.close()
 
     @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only
-    def test_logging_enabled_in_production(self):
+    def test_logging_with_anonymous_user(self):
         self.client.get(reverse("health"))
         log_output = self.stream.getvalue()
         self.assertIn("Router log", log_output)
         self.assertIn("user: Anonymous", log_output)
 
     @override_settings(IS_PRODUCTION=True)
-    def test_middleware_sets_user_email(self):
+    def test_logging_with_nonanonymous_user(self):
         user = get_user_model().objects.create_user(
             username="test",
             first_name="test",
@@ -45,17 +44,6 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.logger.info("Testing middleware")
         self.handler.flush()
         log_output = self.stream.getvalue()
-
+        self.client.logout()
+        self.client.session.flush()
         self.assertIn("test_middleware@gmail.com", log_output)
-
-    @override_settings(IS_PRODUCTION=True)
-    def test_no_user_info(self):
-        self.client.get(reverse("organization-info"))
-
-        self.logger.info("Anonymous Test")
-
-        self.handler.flush()
-
-        log_output = self.stream.getvalue()
-
-        self.assertIn("user: Anonymous", log_output)
