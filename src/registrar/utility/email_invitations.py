@@ -98,6 +98,15 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
         )
     except EmailSendingError as err:
         domain_names = ", ".join([domain.name for domain in domains])
+        logger.error(
+            "Failed to send domain invitation email:\n"
+            f"  Requestor Email: {requestor_email}\n"
+            f"  Subject template: domain_invitation_subject.txt\n"
+            f"  To: {email}\n"
+            f"  Domains: {domain_names}\n"
+            f"  Error: {err}",
+            exc_info=True,
+        )
         raise EmailSendingError(f"Could not send email invitation to {email} for domains: {domain_names}") from err
 
 
@@ -173,9 +182,15 @@ def _send_domain_invitation_update_emails_to_domain_managers(
                     "date": date.today(),
                 },
             )
-        except EmailSendingError:
-            logger.warning(
-                f"Could not send email manager notification to {user.email} for domain: {domain.name}", exc_info=True
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send domain manager update notification email:\n"
+                f"  Requestor Email: {requestor_email}\n"
+                f"  Subject: domain_manager_notification_subject.txt\n"
+                f"  To: {user.email}\n"
+                f"  Domain: {domain.name}\n"
+                f"  Error: {err}",
+                exc_info=True,
             )
             all_emails_sent = False
     return all_emails_sent
@@ -220,11 +235,15 @@ def send_domain_manager_removal_emails_to_domain_managers(
                     "date": date.today(),
                 },
             )
-        except EmailSendingError:
-            logger.warning(
-                "Could not send notification email to %s for domain %s",
-                user.email,
-                domain.name,
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send domain manager deleted notification email:\n"
+                f"  User that did the removing: {removed_by_user}\n"
+                f"  Domain manager removed: {manager_removed_email}\n"
+                f"  Subject template: domain_manager_deleted_notification_subject.txt\n"
+                f"  To: {user.email}\n"
+                f"  Domain: {domain.name}\n"
+                f"  Error: {err}",
                 exc_info=True,
             )
             all_emails_sent = False
@@ -265,6 +284,15 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
             },
         )
     except EmailSendingError as err:
+        logger.error(
+            "Failed to send portfolio invitation email:\n"
+            f"  Requestor Email: {requestor_email}\n"
+            f"  Subject template: portfolio_invitation_subject.txt\n"
+            f"  To: {email}\n"
+            f"  Portfolio: {portfolio}\n"
+            f"  Error: {err}",
+            exc_info=True,
+        )
         raise EmailSendingError(
             f"Could not sent email invitation to {email} for portfolio {portfolio}. Portfolio invitation not saved."
         ) from err
@@ -319,11 +347,14 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
                     "updated_info": updated_page,
                 },
             )
-        except EmailSendingError:
-            logger.warning(
-                "Could not send email organization admin notification to %s " "for portfolio: %s",
-                user.email,
-                portfolio,
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send portfolio org update notification email:\n"
+                f"  Requested User: {user}\n"
+                f"  Subject template: portfolio_org_update_notification_subject.txt\n"
+                f"  To: {user.email}\n"
+                f"  Portfolio: {portfolio}\n"
+                f"  Error: {err}",
                 exc_info=True,
             )
             all_emails_sent = False
@@ -362,11 +393,14 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
                 "date": date.today(),
             },
         )
-    except EmailSendingError:
-        logger.warning(
-            "Could not send email organization member update notification to %s " "for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send organization member update notification email:\n"
+            f"  Requestor Email: {requestor_email}\n"
+            f"  Subject template: portfolio_update_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: {err}",
             exc_info=True,
         )
         return False
@@ -403,11 +437,14 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
                 "requestor_email": requestor_email,
             },
         )
-    except EmailSendingError:
-        logger.warning(
-            "Could not send email organization member removal notification to %s " "for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send portfolio member removal email:\n"
+            f"  Requestor Email: {requestor_email}\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: {err}",
             exc_info=True,
         )
         return False
@@ -444,11 +481,13 @@ def send_portfolio_invitation_remove_email(requestor, invitation: PortfolioInvit
                 "requestor_email": requestor_email,
             },
         )
-    except EmailSendingError:
-        logger.warning(
-            "Could not send email organization member removal notification to %s " "for portfolio: %s",
-            invitation.email,
-            invitation.portfolio.organization_name,
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send portfolio invitation removal email:\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {invitation.email}\n"
+            f"  Portfolio: {invitation.portfolio.organization_name}\n"
+            f"  Error: {err}",
             exc_info=True,
         )
         return False
@@ -497,11 +536,15 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
                     "date": date.today(),
                 },
             )
-        except EmailSendingError:
-            logger.warning(
-                "Could not send email organization admin notification to %s " "for portfolio: %s",
-                user.email,
-                portfolio.organization_name,
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send portfolio admin addition notification email:\n"
+                f"  Requestor Email: {requestor_email}\n"
+                f"  Subject template: portfolio_admin_addition_notification_subject.txt\n"
+                f"  To: {user.email}\n"
+                f"  Portfolio: {portfolio}\n"
+                f"  Portfolio Admin: {user}\n"
+                f"  Error: {err}",
                 exc_info=True,
             )
             all_emails_sent = False
@@ -550,11 +593,14 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
                     "date": date.today(),
                 },
             )
-        except EmailSendingError:
-            logger.warning(
-                "Could not send email organization admin notification to %s " "for portfolio: %s",
-                user.email,
-                portfolio.organization_name,
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send portfolio admin removal notification email:\n"
+                f"  Requestor Email: {requestor_email}\n"
+                f"  Subject template: portfolio_admin_removal_notification_subject.txt\n"
+                f"  To: {user.email}\n"
+                f"  Portfolio: {portfolio.organization_name}\n"
+                f"  Error: {err}",
                 exc_info=True,
             )
             all_emails_sent = False
