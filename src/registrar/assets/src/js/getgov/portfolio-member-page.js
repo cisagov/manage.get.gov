@@ -171,8 +171,8 @@ export function initAddNewMemberPageListeners() {
       };
       // Determine the access text based on the selected value
       let accessText = selectedAccess 
-        ? accessLevelMapping[selectedAccess.value] || "Unknown access level" 
-        : "No access level selected";
+        ? accessLevelMapping[selectedAccess.value] || "Unknown role" 
+        : "No role selected";
       // Update the modal with the appropriate member access level text
       document.getElementById('modalAccessLevel').textContent = accessText;
 
