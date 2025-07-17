@@ -226,7 +226,7 @@ def is_domain_request_subpage(path):
         "portfolio_requesting_entity",
         "dotgov_domain",
         "purpose",
-        "additional_details",
+        "portfolio_additional_details",
         "requirements",
         "review",
     ]
