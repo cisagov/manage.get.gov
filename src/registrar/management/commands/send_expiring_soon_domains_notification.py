@@ -9,6 +9,7 @@ from django.utils import timezone
 from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
 from registrar.utility.email import send_templated_email, EmailSendingError
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +85,16 @@ class Command(BaseCommand):
 
                 try:
                     if dryrun:
+                        rendered_subject = render_to_string(subject_template, context).strip()
+                        rendered_body = render_to_string(template, context)
+
                         logger.info(
-                            f"[DRYRUN] Would send email for domain {domain.name} where "
-                            f"TO: {domain_manager_emails} || CC: {portfolio_admin_emails}"
+                            f"[DRYRUN]\n"
+                            f"Would send email for domain {domain.name}\n"
+                            f"TO: {domain_manager_emails}\n"
+                            f"CC: {portfolio_admin_emails}\n"
+                            f"Subject: {rendered_subject}\n"
+                            f"Body:\n{rendered_body}"
                         )
                     else:
                         send_templated_email(
