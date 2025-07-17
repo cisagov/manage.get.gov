@@ -28,7 +28,7 @@
           <a href="{{ url2 }}" class="usa-breadcrumb__link"><span>Manage member</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Member roles and permissions</span>
+        <span>Member role and permissions</span>
       </li>
   </ol>
   </nav>
@@ -41,7 +41,7 @@
 
 
   <!-- Page header -->
-  <h1>Member roles and permissions</h1>
+  <h1>Member role and permissions</h1>
 
   {% include "includes/required_fields.html" with remove_margin_top=True %}
 
@@ -81,7 +81,7 @@
   <!-- Member access radio buttons (Toggles other sections) -->
   <fieldset class="usa-fieldset">
     <legend>
-      <h2 class="margin-top-0">Member roles</h2>
+      <h2 class="margin-top-0">Member role</h2>
     </legend>
     
     {% if member and member.id == request.user.id and is_only_admin %}
