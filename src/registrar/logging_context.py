@@ -21,7 +21,6 @@ def get_user_log_context():
         "request_path": request_path_var.get(None),
     }
 
-
 def clear_user_log_context():
     user_email_var.set(None)
     ip_address_var.set(None)
