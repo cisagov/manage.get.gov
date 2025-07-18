@@ -6,7 +6,7 @@ This file tests the various ways in which the registrar interacts with the regis
 
 from django.test import TestCase
 from django.db.utils import IntegrityError
-from unittest.mock import MagicMock, patch, call, ANY
+from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
 from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
