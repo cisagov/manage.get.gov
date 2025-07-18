@@ -3,8 +3,8 @@ run-name: Run notifications
 
 on:
   schedule:
-    # Runs every day at 5:30 AM UTC.
-    - cron: "30 5 * * *"
+    # Runs every day at 14:00 UTC/7:00AM PT/10:00AM ET
+    - cron: "0 14 * * *"
 
 jobs:
   run-notifications:
