@@ -238,6 +238,16 @@ class BaseYesNoForm(RegistrarForm):
     # message.
     required_error_message = "This question is required."
 
+    # We need to add aria_labels in the backend for this particular
+    # widget instead of the frontend.  While for most other inputs
+    # you could normally utilize {% with ..} statements, but for
+    # the TypedChoiceField this will not populate the aria_labels.
+    # This is because TypedChoiceField doesn't expose attributes
+    # as readily as other widgets (we are also utilizing RadioSelect
+    # with it, so it further complicates the DOM).
+    aria_label = ""
+    aria_labelledby = ""
+
     # Default form choice mapping. Default is suitable for most cases.
     # Override for more complex scenarios.
     form_choices = ((True, "Yes"), (False, "No"))
@@ -259,7 +269,7 @@ class BaseYesNoForm(RegistrarForm):
             coerce=lambda x: x.lower() == "true" if x is not None else None,
             choices=self.form_choices,
             initial=self.get_initial_value(),
-            widget=forms.RadioSelect,
+            widget=forms.RadioSelect(attrs={"aria-label": self.aria_label, "aria-labelledby": self.aria_labelledby}),
             error_messages={
                 "required": self.required_error_message,
             },
