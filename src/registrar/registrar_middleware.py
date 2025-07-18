@@ -235,7 +235,7 @@ class RequestLoggingMiddleware:
 
     def __call__(self, request):
         # Only log in production (stable)
-        if getattr(settings, "IS_PRODUCTION", False):
+        if True:
             # Get user email (if authenticated), else None
             user_email = request.user.email if request.user.is_authenticated else None
             # Get remote IP address or IPv6 address
