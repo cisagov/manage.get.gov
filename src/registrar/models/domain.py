@@ -14,7 +14,6 @@ from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
 from registrar.utility import errors
-from django.core.exceptions import ObjectDoesNotExist
 from registrar.utility.errors import (
     ActionNotAllowed,
     NameserverError,
