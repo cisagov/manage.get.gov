@@ -170,6 +170,20 @@ $-expand-less-icon: (
     // Remove column gap to account for padding in secondary nav buttons
     @include at-media($theme-header-min-width) {
         column-gap: 0;
+
+        // li:not(:last-of-type) {
+        //     ::after {
+        //         content: "";
+        //         background: color("base-lighter");
+        //         height: 50%;
+        //         border-right: 1px solid color("base-lighter");
+        //     }
+        // }
+        li + li {
+            &::marker {
+                content: "|";
+            }
+        }
     }
 }
 
@@ -186,10 +200,20 @@ $-expand-less-icon: (
             padding-bottom: 0.75rem;
         }
 
-        // Increase padding of secondary links to match button padding
+        // Override USWDS defaults
         & + .usa-nav__secondary-item {
-            padding-left: units(2) !important; // Override USWDS defaults
+            // Increase padding of secondary links to match button padding
+            padding-left: units(2) !important; 
+            // Replace USWDS default border to accommodate button heights
+            border-left: 0 !important;
         }
+
+        // ::after {
+        //     content: "";
+        //     background: color("base-lighter");
+        //     height: 50%;
+        //     border-right: 1px solid color("base-lighter");
+        // }
     }
 
     @include at-media-max($theme-header-min-width) {
