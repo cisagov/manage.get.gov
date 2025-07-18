@@ -14,6 +14,7 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
+from .logging_context import set_user_log_context
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +227,7 @@ class RestrictAccessMiddleware:
 
 class RequestLoggingMiddleware:
     """
-    Middleware to log user email, remote address, and request path.
+    Middleware to log user email, remote address, and request path to prepend to logs.
     """
 
     def __init__(self, get_response):
@@ -234,19 +235,17 @@ class RequestLoggingMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-
         # Only log in production (stable)
         if getattr(settings, "IS_PRODUCTION", False):
-            # Get user email (if authenticated), else "Anonymous"
-            user_email = request.user.email if request.user.is_authenticated else "Anonymous"
-
+            # Get user email (if authenticated), else None
+            user_email = request.user.email if request.user.is_authenticated else None
             # Get remote IP address
-            remote_ip = request.META.get("REMOTE_ADDR", "Unknown IP")
-
+            remote_ip = request.META.get("REMOTE_ADDR")
             # Get request path
             request_path = request.path
 
+            # set thread locals
+            set_user_log_context(user_email, remote_ip, request_path)
             # Log user information
-            logger.info(f"Router log | User: {user_email} | IP: {remote_ip} | Path: {request_path}")
-
+            logger.info("Router log")
         return response
