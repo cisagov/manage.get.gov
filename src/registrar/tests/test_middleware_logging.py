@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
 from ..logging_context import clear_user_log_context
 
-
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
@@ -24,7 +23,7 @@ class RegisterLoggingMiddlewareTest(TestCase):
     def tearDown(self):
         clear_user_log_context()
         self.handler.close()
-
+    
     @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only
     def test_logging_with_anonymous_user(self):
         self.client.get(reverse("health"))
