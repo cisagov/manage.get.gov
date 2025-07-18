@@ -236,9 +236,10 @@ class RequestLoggingMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         # Only log in production (stable)
-        if getattr(settings, "IS_PRODUCTION", False):
-            # Get user email (if authenticated), else None
-            user_email = request.user.email if request.user.is_authenticated else None
+        # if getattr(settings, "IS_PRODUCTION", False):
+        if True:
+            # Get user email (if authenticated), else "Anonymous"
+            user_email = request.user.email if request.user.is_authenticated else "Anonymous"
             # Get remote IP address
             remote_ip = request.META.get("REMOTE_ADDR")
             # Get request path
