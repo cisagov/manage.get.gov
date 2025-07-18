@@ -406,7 +406,7 @@ export class MembersTable extends BaseTable {
     // 3. Request access
     let requestValue = "No access";
     if (member_permissions.includes(UserPortfolioPermissionChoices.EDIT_REQUESTS)) {
-      requestValue = "Creator";
+      requestValue = "Requester";
     } else if (member_permissions.includes(UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)) {
       requestValue = "Viewer";
     }
@@ -425,11 +425,11 @@ export class MembersTable extends BaseTable {
     };
     const permissionsHTML = `
     <div class="desktop:grid-col-8">
-      <h4 id="member-access--heading-${unique_id}" class="font-body-xs margin-y-0">
-        Member access and permissions
+      <h4 id="member-role--heading-${unique_id}" class="font-body-xs margin-y-0">
+        Member role and permissions
       </h4>
-      <section aria-labelledby="member-access--heading-${unique_id}" tabindex="0">
-        ${createPermissionItem("Member access", memberAccessValue)}
+      <section aria-labelledby="member-role--heading-${unique_id}" tabindex="0">
+        ${createPermissionItem("Member role", memberAccessValue)}
         ${createPermissionItem("Domains", domainValue)}
         ${createPermissionItem("Domain requests", requestValue)}
         ${createPermissionItem("Members", memberValue)}
