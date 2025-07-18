@@ -5,12 +5,14 @@ import logging
 from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
+from ..logging_context import clear_user_log_context
 
 
 class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
     def setUp(self):
+        clear_user_log_context()
         self.stream = io.StringIO()
         self.handler = logging.StreamHandler(self.stream)
         self.logger = logging.getLogger(registrar.registrar_middleware.__name__)
@@ -20,6 +22,7 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.logger.propagate = False
 
     def tearDown(self):
+        clear_user_log_context()
         self.handler.close()
 
     @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only

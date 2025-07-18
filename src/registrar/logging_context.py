@@ -16,7 +16,13 @@ def set_user_log_context(user_email=None, ip_address=None, request_path=None):
 
 def get_user_log_context():
     return {
-        "user_email": user_email_var.get(),
-        "ip_address": ip_address_var.get(),
-        "request_path": request_path_var.get(),
+        "user_email": user_email_var.get(None) or "Anonymous",
+        "ip_address": ip_address_var.get(None) or "Unknown IP",
+        "request_path": request_path_var.get(None),
     }
+
+
+def clear_user_log_context():
+    user_email_var.set(None)
+    ip_address_var.set(None)
+    request_path_var.set(None)
