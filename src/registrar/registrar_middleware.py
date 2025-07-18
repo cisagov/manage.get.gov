@@ -247,4 +247,4 @@ class RequestLoggingMiddleware:
         set_user_log_context(user_email, remote_ip, request_path)
         # Log user information
         logger.info("Router log")
-  
+        return response
