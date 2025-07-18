@@ -505,7 +505,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
+        choices=DomainInformation.StateTerritoryChoices.choices,  # type: ignore[misc]
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
@@ -606,7 +606,7 @@ class DomainOrgNameAddressForm(forms.ModelForm):
             except field.queryset.model.DoesNotExist:
                 pass  # Handle the case where the object does not exist
 
-        elif hasattr(new_value, "id"):
+        elif hasattr(new_value, "id") and new_value is not None:
             # If new_value is a model instance, compare by ID.
             new_value = new_value.id
 

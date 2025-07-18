@@ -88,7 +88,7 @@ class DomainInformation(TimeStampedModel):
     # ##### data fields from the initial form #####
     generic_org_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoices.choices,
+        choices=OrganizationChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
         help_text="Type of organization",
@@ -155,7 +155,7 @@ class DomainInformation(TimeStampedModel):
     )
     state_territory = models.CharField(
         max_length=2,
-        choices=StateTerritoryChoices.choices,
+        choices=StateTerritoryChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
         verbose_name="state, territory, or military post",

@@ -42,7 +42,7 @@ class Portfolio(TimeStampedModel):
 
     organization_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoices.choices,
+        choices=OrganizationChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
     )
@@ -88,7 +88,7 @@ class Portfolio(TimeStampedModel):
     # (imports enums from domain_request.py)
     state_territory = models.CharField(
         max_length=2,
-        choices=StateTerritoryChoices.choices,
+        choices=StateTerritoryChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
         verbose_name="state, territory, or military post",
