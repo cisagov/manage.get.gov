@@ -171,6 +171,7 @@ $-expand-less-icon: (
     @include at-media($theme-header-min-width) {
         column-gap: 0;
 
+        // Add divider between secondary nav items
         li + li {
             &::marker {
                 content: "|";
