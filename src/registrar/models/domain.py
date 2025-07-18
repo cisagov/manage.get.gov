@@ -14,7 +14,7 @@ from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
 from registrar.utility.enums import DefaultEmail
 from registrar.utility import errors
-
+from django.core.exceptions import ObjectDoesNotExist
 from registrar.utility.errors import (
     ActionNotAllowed,
     NameserverError,
@@ -1207,22 +1207,10 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _delete_related_objects_from_db(self):
         """
-        Deletes related DNSSEC data, Host/HostIP records, and non-registrant contacts
+        Deletes related Host/HostIP records, and non-registrant contacts
         for this domain from the database after it's been deleted from EPP
+        FYI there's no DNSSEC data stored in the DB
         """
-
-        # ----------------------------------
-        logger.info("Deleting DNSSEC")
-        try:
-            if self.dnssecdata:
-                self.dnssecdata.delete()
-                self.dnssecdata = None
-                self.save(update_fields=["dnssecdata"])
-                logger.info("Deleted: DNSSEC data for domain %s", self.name)
-        except Exception as e:
-            logger.error("Error deleting DNSSEC data for domain %s: %s", self.name, str(e))
-
-        # ----------------------------------
         logger.info("Deleting HOSTIP + HOST")
         try:
             HostIP.objects.filter(host__domain=self).delete()
@@ -1231,7 +1219,6 @@ class Domain(TimeStampedModel, DomainHelper):
         except Exception as e:
             logger.error("Error deleting Host or HostIP objects for domain %s: %s", self.name, str(e))
 
-        # ----------------------------------
         logger.info("Deleting CONTACTS")
         try:
             non_registrant_contacts = PublicContact.objects.filter(
