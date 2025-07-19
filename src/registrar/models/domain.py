@@ -1126,12 +1126,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_dnssecdata()
 
-        # check if the domain can be deleted
+        # Check if the domain can be deleted
         if not self._domain_can_be_deleted():
             note = "Domain has associated objects that prevent deletion."
             raise RegistryError(code=ErrorCode.COMMAND_FAILED, note=note)
 
-        # delete the domain
+        # Delete the domain
         request = commands.DeleteDomain(name=self.name)
         try:
             registry.send(request, cleaned=True)
