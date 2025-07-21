@@ -224,7 +224,6 @@ class User(AbstractUser):
     def has_view_members_portfolio_permission(self, portfolio):
         if not portfolio:
             return False
-        # END
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
 
     def has_edit_members_portfolio_permission(self, portfolio):
