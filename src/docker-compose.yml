@@ -125,6 +125,7 @@ services:
 
   owasp:
     image: ghcr.io/zaproxy/zaproxy:stable
+    user: "root"
     command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
     volumes:
       - .:/zap/wrk/
