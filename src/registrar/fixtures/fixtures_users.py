@@ -144,6 +144,12 @@ class UserFixture:
             "email": "dgutierrez@guydo.com",
             "title": "Lima",
         },
+        {
+            "username": "fb3671a7-4513-49d7-9723-4c41ed23f608",
+            "first_name": "Tara",
+            "last_name": "Kolden",
+            "email": "tara.kolden@contractors.truss.works",
+        },
     ]
 
     STAFF = [
@@ -240,6 +246,12 @@ class UserFixture:
             "first_name": "Daisy-Analyst",
             "last_name": "Gutierrez-Analyst",
             "email": "daisy.gutierrez-ctr@ecstech.com",
+        },
+        {
+            "username": "fa2ea396-0ec1-46e3-a296-a37670996f17",
+            "first_name": "Tara-Analyst",
+            "last_name": "Kolden-Analyst",
+            "email": "tara.kolden+1@contractors.truss.works",
         },
     ]
 
