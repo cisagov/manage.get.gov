@@ -150,6 +150,7 @@ $-expand-less-icon: (
                 color: color('primary-lighter');
                 font-size: 16px;
             }
+            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
@@ -269,7 +270,9 @@ $-expand-less-icon: (
 
     button,
     .usa-accordion__button {
-        $button-vertical-offset: 53%; // XXX: Magic number
+        // $button-vertical-offset: 53%; // XXX: Magic number
+        $button-vertical-offset: 30%; // XXX: Magic number
+
 
         // @include button-unstyled;
         background-color: transparent;
@@ -277,7 +280,7 @@ $-expand-less-icon: (
         position: relative; // Anchor spans chevron pseudo element
         font-weight: font-weight("normal");
         font-size: 1rem;
-        line-height: line-height($theme-navigation-font-family, 2);
+        line-height: 1.2;
         margin-right: 0;
         padding: units(1.5) units(2);
         text-decoration: none;
