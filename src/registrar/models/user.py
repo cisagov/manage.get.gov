@@ -422,9 +422,8 @@ class User(AbstractUser):
         self.check_portfolio_invitations_on_login()
 
     def is_org_user(self, request):
-        has_organization_feature_flag = flag_is_active(request, "organization_feature")
         portfolio = request.session.get("portfolio")
-        return has_organization_feature_flag and self.has_view_portfolio_permission(portfolio)
+        return self.has_view_portfolio_permission(portfolio)
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
