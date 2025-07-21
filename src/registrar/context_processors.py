@@ -65,8 +65,6 @@ def portfolio_permissions(request):
         "has_edit_members_portfolio_permission": False,
         "portfolio": None,
         "is_portfolio_user": False,
-        "has_organization_requests_flag": False,
-        "has_organization_members_flag": False,
         "is_portfolio_admin": False,
     }
     try:
@@ -82,8 +80,6 @@ def portfolio_permissions(request):
                 "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
                 "portfolio": portfolio,
                 "is_portfolio_user": True,
-                "has_organization_requests_flag": request.user.has_organization_requests_flag(),
-                "has_organization_members_flag": request.user.has_organization_members_flag(),
                 "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
             }
         return portfolio_context
