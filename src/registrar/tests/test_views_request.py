@@ -2549,7 +2549,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertNotContains(dotgov_page, "medicare.gov")
 
     # @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_FEB_questions(self):
         """
         Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
@@ -2942,8 +2941,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_missing_edit_permissions(self):
         """Tests that a portfolio user without edit request permissions cannot edit or add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -2965,8 +2962,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm.delete()
         portfolio.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_with_edit_permissions(self):
         """Tests that a portfolio user with edit request permissions can edit and add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -3080,7 +3075,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(response, "Withdrawn")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_withdraw_portfolio_redirects_correctly(self):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -3357,8 +3351,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_wizard_steps_portfolio(self):
         """
         Tests the behavior of the domain request wizard for portfolios.
@@ -3445,8 +3437,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency.delete()
         domain_request.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_enabled(self):
         """Tests unlock_organization_contact when agency exists in a portfolio"""
@@ -3462,8 +3452,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertFalse(domain_request.unlock_organization_contact())
 
-    @override_flag("organization_feature", active=False)
-    @override_flag("organization_requests", active=False)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
         """Tests unlock_organization_contact when organization flags are disabled"""
@@ -3496,7 +3484,6 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         self.federal_agency.delete()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_viewonly_displays_correct_fields(self):
         """Tests that the viewonly page displays different fields"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")

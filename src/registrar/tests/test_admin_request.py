@@ -112,7 +112,6 @@ class TestDomainRequestAdmin(MockEppLib):
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
 
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     def test_omb_analyst_view(self):
         """Ensure OMB analysts can view domain request list."""
@@ -177,7 +176,6 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertContains(response, "Save")
         self.assertNotContains(response, ">Delete<")
 
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     def test_clean_validates_duplicate_suborganization(self):
         """Tests that clean() prevents duplicate suborganization names within the same portfolio"""
@@ -208,7 +206,6 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.clean()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_clean_validates_partial_suborganization_fields(self):
         """Tests that clean() enforces all-or-nothing rule for suborganization fields"""
         portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)

@@ -288,7 +288,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         for expected_value, actual_value in zip(expected_domain_values, requested_domains):
             self.assertEqual(expected_value, actual_value)
 
-    @override_flag("organization_feature", active=True)
     def test_get_domain_requests_json_with_portfolio_view_all_requests(self):
         """Test that an authenticated user gets the list of 3 requests for portfolio. The 3 requests
         are the requests that are associated with the portfolio."""
@@ -363,7 +362,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 )
                 self.assertEqual("settings", svg_icons[i])
 
-    @override_flag("organization_feature", active=True)
     def test_get_domain_requests_json_with_portfolio_edit_requests(self):
         """Test that an authenticated user gets the list of 2 requests for portfolio. The 2 requests
         are the requests that are associated with the portfolio and owned by self.user."""
@@ -500,8 +498,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             data = response.json
             self.assertEqual(len(data["domain_requests"]), 0)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_status_filter(self):
         """Test that status filtering works properly"""
         # Test a single status
@@ -516,8 +512,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         data = response.json
         self.assertEqual(len(data["domain_requests"]), 0)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_combined_filtering_and_sorting(self):
         """Test that combining filters and sorting works properly"""
         user_perm, _ = UserPortfolioPermission.objects.get_or_create(

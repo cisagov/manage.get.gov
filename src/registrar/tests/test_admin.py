@@ -354,7 +354,6 @@ class TestDomainInvitationAdmin(WebTest):
             self.assertContains(response, retrieved_html, count=1)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -422,7 +421,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.first().user, user)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=False)
+    _feature", active=False)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -483,7 +482,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -548,7 +546,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -606,7 +603,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
@@ -661,7 +657,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -730,7 +725,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -796,7 +790,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -857,7 +850,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=False)
+    _feature", active=False)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -910,7 +903,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -964,7 +956,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -1024,7 +1015,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
@@ -1078,7 +1068,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -1145,7 +1134,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -2972,7 +2960,6 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
-    @override_flag("organization_feature", active=True)
     def test_get_fieldsets_cisa_analyst_organization(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
@@ -3005,7 +2992,6 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             self.assertEqual(fieldsets, expected_fieldsets)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
         """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
 

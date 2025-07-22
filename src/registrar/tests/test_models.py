@@ -1223,7 +1223,7 @@ class TestUser(TestCase):
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
     @patch("registrar.models.User._has_portfolio_permission")
-    @override_flag("organization_requests", active=True)
+    _requests", active=True)
     def test_has_any_requests_portfolio_permission(self, mock_has_permission):
         mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
 
@@ -1395,7 +1395,7 @@ class TestUser(TestCase):
         self.assertFalse(self.user.has_contact_info())
 
     @less_console_noise_decorator
-    @override_flag("organization_requests", active=True)
+    _requests", active=True)
     def test_has_portfolio_permission(self):
         """
         0. Returns False when user does not have a permission

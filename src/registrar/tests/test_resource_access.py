@@ -192,8 +192,6 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
         session["portfolio"] = self.portfolio
         session.save()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_domain_request_view_same_portfolio(self):
         """Test that user can access domain requests in their portfolio."""
@@ -213,8 +211,6 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
         )
         self.assertEqual(response.status_code, 200)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_domain_request_view_different_portfolio(self):
         """Test that user cannot access domain request not in their portfolio."""
@@ -223,8 +219,6 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
         )
         self.assertEqual(response.status_code, 403)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_domain_request_viewonly_same_portfolio(self):
         """Test that user can access view-only domain request in their portfolio."""
@@ -233,8 +227,6 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
         )
         self.assertEqual(response.status_code, 200)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_domain_request_viewonly_different_portfolio(self):
         """Test that user cannot access view-only domain request not in their portfolio."""
@@ -288,14 +280,12 @@ class TestPortfolioDomainViewAccess(MockDbForIndividualTests):
         session["portfolio"] = self.portfolio
         session.save()
 
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     def test_domain_view_same_portfolio(self):
         """Test that user can access domain in their portfolio."""
         response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.pk}))
         self.assertEqual(response.status_code, 200)
 
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     def test_domain_view_different_portfolio(self):
         """Test that user cannot access domain not in their portfolio."""
@@ -338,16 +328,12 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
         session["portfolio"] = self.portfolio
         session.save()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_view_same_portfolio(self):
         """Test that user can access member in their portfolio."""
         response = self.client.get(reverse("member", kwargs={"member_pk": self.member_permission.pk}))
         self.assertEqual(response.status_code, 200)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_view_different_portfolio(self):
         """Test that user cannot access member not in their portfolio."""
