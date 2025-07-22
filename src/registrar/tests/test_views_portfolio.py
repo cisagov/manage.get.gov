@@ -393,7 +393,6 @@ class TestPortfolio(WebTest):
         self.assertContains(response, 'href="/organization/"')
 
     @less_console_noise_decorator
-    _requests", active=True)
     def test_accessible_pages_when_user_does_not_have_permission(self):
         """Tests which pages are accessible when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)

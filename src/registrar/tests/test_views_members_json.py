@@ -10,7 +10,6 @@ from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from waffle.testutils import override_flag
 from registrar.tests.common import MockEppLib, create_test_user
 from django_webtest import WebTest  # type: ignore
 

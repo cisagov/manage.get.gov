@@ -7,7 +7,6 @@ from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_date
 from api.tests.common import less_console_noise_decorator
-from waffle.testutils import override_flag
 from datetime import datetime, timedelta
 
 

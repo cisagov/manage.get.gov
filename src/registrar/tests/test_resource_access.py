@@ -1,6 +1,5 @@
 from django.test import Client
 from django.urls import reverse
-from waffle.testutils import override_flag
 
 from registrar.tests.common import (
     MockDbForIndividualTests,

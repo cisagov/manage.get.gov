@@ -421,7 +421,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.first().user, user)
 
     @less_console_noise_decorator
-    _feature", active=False)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
