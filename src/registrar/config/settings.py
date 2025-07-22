@@ -191,8 +191,6 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     # add `user` (the currently-logged-in user) to incoming HttpRequest objects
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    # Add User Info to Console logs
-    "registrar.registrar_middleware.RequestLoggingMiddleware",
     # Require login for every single request by default
     "login_required.middleware.LoginRequiredMiddleware",
     # provide framework for displaying messages to the user, see documentation
@@ -207,6 +205,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
+    # Add User Info to Console logs
+    "registrar.registrar_middleware.RequestLoggingMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
