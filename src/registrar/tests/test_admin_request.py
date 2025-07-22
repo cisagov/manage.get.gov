@@ -3,7 +3,6 @@ from django.forms import ValidationError
 from django.utils import timezone
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.constants import BranchChoices
-from waffle.testutils import override_flag
 import re
 from django.test import RequestFactory, Client, TestCase, override_settings
 from django.contrib.admin.sites import AdminSite

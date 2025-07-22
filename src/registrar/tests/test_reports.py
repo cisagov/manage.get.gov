@@ -48,7 +48,6 @@ from .common import (
     get_time_aware_date,
     GenericTestHelper,
 )
-from waffle.testutils import override_flag
 
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION

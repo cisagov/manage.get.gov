@@ -3436,7 +3436,6 @@ class TestRequestingEntity(WebTest):
         ).exists()
         self.assertTrue(created_domain_request_exists)
 
-
     @less_console_noise_decorator
     def test_requesting_entity_page_organization_submission(self):
         """Tests submitting an organization on the requesting org form"""
