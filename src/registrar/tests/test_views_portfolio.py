@@ -443,7 +443,6 @@ class TestPortfolio(WebTest):
             self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
-    _requests", active=True)
     def test_accessible_pages_when_user_does_not_have_role(self):
         """Test that admin / memmber roles are associated with the right access"""
         self.app.set_user(self.user.username)

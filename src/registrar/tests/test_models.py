@@ -1394,7 +1394,6 @@ class TestUser(TestCase):
         self.assertFalse(self.user.has_contact_info())
 
     @less_console_noise_decorator
-    _requests", active=True)
     def test_has_portfolio_permission(self):
         """
         0. Returns False when user does not have a permission
