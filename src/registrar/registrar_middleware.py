@@ -237,7 +237,11 @@ class RequestLoggingMiddleware:
         # Get user email (if authenticated), else None
         user_email = request.user.email if request.user.is_authenticated else None
         # Get remote IP address
-        remote_ip = request.META.get("REMOTE_ADDR")
+        forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if forwarded_for:
+            remote_ip = forwarded_for.split(",")[0].split()
+        else:
+            remote_ip = request.META.get("REMOTE_ADDR")
         # Get request path
         request_path = request.path
 
