@@ -495,7 +495,7 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": f"{self.user_prepend()} {record.getMessage()}",
+            "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
         # Capture exception info if it exists
         if record.exc_info:
