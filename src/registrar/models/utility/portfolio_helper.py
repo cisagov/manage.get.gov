@@ -37,7 +37,7 @@ class UserPortfolioPermissionChoices(models.TextChoices):
     EDIT_MEMBERS = "edit_members", "Manager"
 
     VIEW_ALL_REQUESTS = "view_all_requests", "Viewer"
-    EDIT_REQUESTS = "edit_requests", "Creator"
+    EDIT_REQUESTS = "edit_requests", "Requester"
 
     VIEW_PORTFOLIO = "view_portfolio", "Viewer"
     EDIT_PORTFOLIO = "edit_portfolio", "Manager"
@@ -167,7 +167,7 @@ def get_domain_requests_display(roles, permissions):
     UserPortfolioPermission = apps.get_model("registrar.UserPortfolioPermission")
     all_permissions = UserPortfolioPermission.get_portfolio_permissions(roles, permissions)
     if UserPortfolioPermissionChoices.EDIT_REQUESTS in all_permissions:
-        return "Creator"
+        return "Requester"
     elif UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS in all_permissions:
         return "Viewer"
     else:
@@ -354,7 +354,7 @@ def validate_portfolio_invitation(portfolio_invitation):
         raise ValidationError("When portfolio roles or additional permissions are assigned, portfolio is required.")
 
     if has_portfolio and not portfolio_permissions:
-        logger.info("User didn't provide both a valid email address and a level of access for the member.")
+        logger.info("User didn't provide both a valid email address and a role for the member.")
 
     # == Validate role permissions. Compares existing permissions to forbidden ones. == #
     roles = portfolio_invitation.roles if portfolio_invitation.roles is not None else []
