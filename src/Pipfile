@@ -35,6 +35,7 @@ django-admin-multiple-choice-list-filter = "*"
 django-import-export = "*"
 django-waffle = "*"
 cryptography = "*"
+rapidfuzz = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

@@ -46,7 +46,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
+        choices=DomainInformation.StateTerritoryChoices.choices,  # type: ignore[misc]
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
