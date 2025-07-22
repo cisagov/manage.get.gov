@@ -212,6 +212,13 @@ class TestPortfolio(WebTest):
             first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
         )
 
+        portfolio_admin = User.objects.create_user(
+            username="adminuser", first_name="Galileo", last_name="Galilei", email="admin@example.com"
+        )
+        UserPortfolioPermission.objects.create(
+            user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
@@ -227,6 +234,8 @@ class TestPortfolio(WebTest):
             # Organization overview page includes organization info and senior official details
             self.assertContains(response, "Los Angeles")
             self.assertContains(response, "spacedivision@igorville.com")
+            # Organization overview page includes portfolio admin
+            self.assertContains(response, "Galileo")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
@@ -1158,7 +1167,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
 
@@ -1275,7 +1284,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, portfolio_invitation.email)
         self.assertContains(response, "Admin")
         self.assertContains(response, "Viewer")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
         # Assert buttons and links within the page are correct
@@ -4783,7 +4792,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the change modal is on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Yes, change my access")
+        self.assertContains(response, "Yes, change my role")
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"member_pk": admin_permission.id}),
@@ -4814,7 +4823,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the info alert is present on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "To remove yourself or change your member access")
+        self.assertContains(response, "To remove yourself or change your member role")
 
         # Then, verify that the right form error is shown
         response = self.client.post(

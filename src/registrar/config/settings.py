@@ -163,6 +163,7 @@ INSTALLED_APPS = [
     "import_export",
     # Waffle feature flags
     "waffle",
+    "csp",
 ]
 
 # Middleware are routines for processing web requests.
@@ -179,6 +180,8 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
+    # django-csp: enable use of Content-Security-Policy header
+    "csp.middleware.CSPMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
@@ -194,8 +197,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     # provide clickjacking protection via the X-Frame-Options header
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # django-csp: enable use of Content-Security-Policy header
-    "csp.middleware.CSPMiddleware",
     # django-auditlog: obtain the request User for use in logging
     "auditlog.middleware.AuditlogMiddleware",
     # Used for waffle feature flags
@@ -361,33 +362,35 @@ WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 
 # Content-Security-Policy configuration
 # this can be restrictive because we have few external scripts
-allowed_sources = ("'self'",)
-CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but the following do not and should be
 # explicitly set
-CSP_FRAME_ANCESTORS = allowed_sources
-CSP_FORM_ACTION = allowed_sources
-
 # Google analytics requires that we relax our otherwise
 # strict CSP by allowing scripts to run from their domain
 # and inline with a nonce, as well as allowing connections back to their domain.
 # Note: If needed, we can embed chart.js instead of using the CDN
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = [
-    "'self'",
-    "https://www.ssa.gov/accessibility/andi/andi.css",
-]
-CSP_SCRIPT_SRC_ELEM = [
-    "'self'",
-    "https://www.googletagmanager.com/",
-    "https://cdn.jsdelivr.net/npm/chart.js",
-    "https://www.ssa.gov",
-    "https://ajax.googleapis.com",
-]
-CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
+# Content-Security-Policy configuration for django-csp 4.0+ New format required
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "connect-src": [
+            "'self'",
+            "https://www.google-analytics.com/",
+            "https://www.ssa.gov/accessibility/andi/andi.js",
+        ],
+        "default-src": ("'self'",),
+        "form-action": ("'self'",),
+        "frame-ancestors": ("'self'",),
+        "img-src": ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"],
+        "script-src-elem": [
+            "'self'",
+            "https://www.googletagmanager.com/",
+            "https://cdn.jsdelivr.net/npm/chart.js",
+            "https://www.ssa.gov",
+            "https://ajax.googleapis.com",
+        ],
+        "style-src": ["'self'", "https://www.ssa.gov/accessibility/andi/andi.css"],
+    }
+}
 CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
-CSP_IMG_SRC = ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"]
-
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
@@ -791,26 +794,24 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-acadia.app.cloud.gov",
+    "getgov-glacier.app.cloud.gov",
+    "getgov-olympic.app.cloud.gov",
+    "getgov-yellowstone.app.cloud.gov",
+    "getgov-zion.app.cloud.gov",
+    "getgov-potato.app.cloud.gov",
+    "getgov-product.app.cloud.gov",
     "getgov-aa.app.cloud.gov",
     "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
-    "getgov-ag.app.cloud.gov",
     "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
-    "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
-    "getgov-ky.app.cloud.gov",
     "getgov-es.app.cloud.gov",
     "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
-    "getgov-za.app.cloud.gov",
-    "getgov-gd.app.cloud.gov",
-    "getgov-rb.app.cloud.gov",
-    "getgov-ko.app.cloud.gov",
-    "getgov-ab.app.cloud.gov",
-    "getgov-rjm.app.cloud.gov",
     "getgov-kma.app.cloud.gov",
     "getgov-dg.app.cloud.gov",
     "manage.get.gov",

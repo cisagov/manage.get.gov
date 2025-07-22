@@ -1,22 +1,23 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-
 Hi, domain managers.  
+
 On {{ expiration_date }}, the following domain will expire: {{ domain }}
+
 ----------------------------------------------------------------
+
 DOMAIN AT RISK FOR DELETION 
 Currently, {{ domain }} doesn’t have name servers listed in the .gov registrar. If the domain expires without name servers, it will be deleted. To prevent deletion, you must renew this domain before {{ expiration_date }}.
 
 HOW TO RENEW A DOMAIN
 There’s no cost to renew a domain. After renewal, the domain will be registered for another year. 
 
-Any domain manager can complete the process within the .gov registrar  <{{ manage_url }}>. 
-{% if portfolio %}
-Organization admins are cc’d on this email for awareness but do not need to take action.
-{% endif %}
+Any domain manager can complete the process within the .gov registrar <{{ manage_url }}>. {% if portfolio %} Organization admins are cc’d on this email for awareness but do not need to take action.{% endif %}
+
 If you no longer need {{ domain }}, simply let the domain expire.
 
+
 THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for requesting a .gov domain.
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
 
 ----------------------------------------------------------------
 
