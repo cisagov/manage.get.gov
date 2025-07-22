@@ -2507,45 +2507,63 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         title = "federal type"
         parameter_name = "converted_federal_types"
 
-        def lookups(self, request, model_admin):
-            # Annotate the queryset for efficient filtering
-            queryset = (
-                DomainRequest.objects.annotate(
-                    converted_federal_type=Case(
-                        When(
-                            portfolio__isnull=False,
-                            portfolio__federal_agency__federal_type__isnull=False,
-                            then="portfolio__federal_agency__federal_type",
-                        ),
-                        When(
-                            portfolio__isnull=True,
-                            federal_agency__federal_type__isnull=False,
-                            then="federal_agency__federal_type",
-                        ),
-                        default=Value(""),
-                        output_field=CharField(),
-                    )
-                )
-                .values_list("converted_federal_type", flat=True)
-                .distinct()
-            )
+        """
+        Previously may have failed on the lines of 
+        then="portfolio__federal_agency__federal_type",
+        then="federal_agency__federal_type",
 
-            # Filter out empty values and return sorted unique entries
-            return sorted(
-                [
-                    (federal_type, BranchChoices.get_branch_label(federal_type))
-                    for federal_type in queryset
-                    if federal_type
-                ]
-            )
+        bc it uses a string for the file versus using a Field expression F
+        or literally value but could lead to incorrect SQL or silent failures maybe
+        """
+        # def lookups(self, request, model_admin):
+        #     queryset = (
+        #         DomainRequest.objects.annotate(
+        #             converted_federal_type=Case(
+        #                 # If you already have federal_type, use it
+        #                 When(federal_type__isnull=False, then=F("federal_type")),
+        #                 # If it doesn't have federal_type but you have portfolio ->
+        #                 # federal_agency -> federal_type, use that
+        #                 When(
+        #                     portfolio__federal_agency__federal_type__isnull=False,
+        #                     then=F("portfolio__federal_agency__federal_type"),
+        #                 ),
+        #                 # If neither of above is avail, and there's top
+        #                 # level federal_agency -> federal_type use that
+        #                 When(
+        #                     federal_agency__federal_type__isnull=False,
+        #                     then=F("federal_agency__federal_type"),
+        #                 ),
+        #                 # Otherwise if none apply, just use empty string
+        #                 default=Value(""),
+        #                 output_field=CharField(),
+        #             )
+        #         )
+        #         .values_list("converted_federal_type", flat=True)
+        #         .distinct()
+        #     )
 
-        def queryset(self, request, queryset):
-            if self.value():
-                return queryset.filter(
-                    Q(portfolio__federal_agency__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_agency__federal_type=self.value())
-                )
-            return queryset
+        #     return sorted(
+        #         [
+        #             (federal_type, BranchChoices.get_branch_label(federal_type))
+        #             for federal_type in queryset
+        #             if federal_type
+        #         ]
+        #     )
+
+        """
+        Filtering row that match the selected federal_type in any of these places
+        * federal_type on the domain request, portfolio->federal_agency->federal_type
+        or federal_agency-> federal_type
+        """
+
+        # def queryset(self, request, queryset):
+        #     if self.value():
+        #         return queryset.filter(
+        #             Q(federal_type=self.value())
+        #             | Q(portfolio__federal_agency__federal_type=self.value())
+        #             | Q(federal_agency__federal_type=self.value())
+        #         )
+        #     return queryset
 
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
@@ -3931,20 +3949,30 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            # Annotate the queryset for efficient filtering
             queryset = (
                 Domain.objects.annotate(
                     converted_federal_type=Case(
+                        # If domain_info has federal_type use that
+                        When(
+                            domain_info__federal_type__isnull=False,
+                            then=F("domain_info__federal_type"),
+                        ),
+                        # If it's in a portfolio and that portfolio has an agency
+                        # with federal_type use it
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=False,
                             then=F("domain_info__portfolio__federal_agency__federal_type"),
                         ),
+                        # Fall back
+                        # If no portfolio and direct federal_type ismissing
+                        # but there is a federal_agency with a type, use that instead
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=True,
-                            domain_info__federal_type__isnull=False,
-                            then="domain_info__federal_agency__federal_type",
+                            domain_info__federal_type__isnull=True,
+                            domain_info__federal_agency__federal_type__isnull=False,
+                            then=F("domain_info__federal_agency__federal_type"),
                         ),
                         default=Value(""),
                         output_field=CharField(),
@@ -3954,22 +3982,115 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 .distinct()
             )
 
-            # Filter out empty values and return sorted unique entries
-            return sorted(
-                [
-                    (federal_type, BranchChoices.get_branch_label(federal_type))
-                    for federal_type in queryset
-                    if federal_type
-                ]
-            )
+            return sorted([(ftype, BranchChoices.get_branch_label(ftype)) for ftype in queryset if ftype])
 
         def queryset(self, request, queryset):
-            if self.value():
+            val = self.value()
+            if val:
                 return queryset.filter(
-                    Q(domain_info__portfolio__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+                    Q(domain_info__federal_type__iexact=val)
+                    | Q(domain_info__federal_agency__federal_type__iexact=val)
+                    | Q(domain_info__portfolio__federal_agency__federal_type__iexact=val)
                 )
             return queryset
+
+        """
+        “If the direct federal_type is not null, then use the agency's federal type?” which doesnt make sense bc 
+        if federal_type exists, we should just use it (as we already did in branch 1).
+
+        This should have been checking federal_type__isnull=True, like the uncommented version.
+
+        also then is a string and you want to use an F 
+
+        then="domain_info__federal_agency__federal_type" is just a string. Django’s Case(..., then=...) expects an F(...) expression to work correctly.       
+        """
+
+        # def lookups(self, request, model_admin):
+        #     # Annotate with fallback logic: portfolio agency > direct agency
+        #     queryset = (
+        #         Domain.objects.annotate(
+        #             portfolio_federal_type=F("domain_info__portfolio__federal_agency__federal_type"),
+        #             domain_info_federal_agency_type=F("domain_info__federal_agency__federal_type"),
+        #             domain_info_federal_type=F("domain_info__federal_type"),
+        #         )
+        #         .values_list(
+        #             "portfolio_federal_type",
+        #             "domain_info_federal_agency_type",
+        #             "domain_info_federal_type",
+        #         )
+        #         .distinct()
+        #     )
+
+        #     # Flatten and unique all federal types found, ignoring empty/None
+        #     all_federal_types = set()
+        #     for types_tuple in queryset:
+        #         for t in types_tuple:
+        #             if t:
+        #                 all_federal_types.add(t)
+
+        #     return sorted(
+        #         [
+        #             (federal_type, BranchChoices.get_branch_label(federal_type))
+        #             for federal_type in all_federal_types
+        #         ]
+        #     )
+
+        # def queryset(self, request, queryset):
+        #     val = self.value()
+        #     if val:
+        #         return queryset.filter(
+        #             Q(domain_info__federal_type__iexact=val)
+        #             | Q(domain_info__federal_agency__federal_type__iexact=val)
+        #             | Q(domain_info__portfolio__federal_agency__federal_type__iexact=val)
+        #         )
+        #     return queryset
+
+        # --
+
+        # def lookups(self, request, model_admin):
+        #     # Annotate the queryset for efficient filtering
+        #     queryset = (
+        #         Domain.objects.annotate(
+        #             converted_federal_type=Case(
+        #                 When(
+        #                     domain_info__federal_type__isnull=False,
+        #                     then=F("domain_info__federal_type"),
+        #                 ),
+        #                 When(
+        #                     domain_info__isnull=False,
+        #                     domain_info__portfolio__isnull=False,
+        #                     then=F("domain_info__portfolio__federal_agency__federal_type"),
+        #                 ),
+        #                 When(
+        #                     domain_info__isnull=False,
+        #                     domain_info__portfolio__isnull=True,
+        #                     domain_info__federal_type__isnull=False,
+        #                     then="domain_info__federal_agency__federal_type",
+        #                 ),
+        #                 default=Value(""),
+        #                 output_field=CharField(),
+        #             )
+        #         )
+        #         .values_list("converted_federal_type", flat=True)
+        #         .distinct()
+        #     )
+
+        # Filter out empty values and return sorted unique entries
+        # return sorted(
+        #     [
+        #         (federal_type, BranchChoices.get_branch_label(federal_type))
+        #         for federal_type in queryset
+        #         if federal_type
+        #     ]
+        # )
+
+        # def queryset(self, request, queryset):
+        #     if self.value():
+        #         return queryset.filter(
+        #             Q(domain_info__portfolio__federal_type=self.value())
+        #             | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+        #         )
+        #     return queryset
 
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(

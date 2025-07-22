@@ -398,6 +398,15 @@ class DomainInformation(TimeStampedModel):
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
 
+        # Explicitly copy federal_agency from DomainRequest (if present)
+        if hasattr(domain_request, "federal_agency") and domain_request.federal_agency is not None:
+            domain_info.federal_agency = domain_request.federal_agency
+
+        # # *** NEW ADDITION ***
+        # # Explicitly copy federal_type from DomainRequest (if present)
+        # if hasattr(domain_info, "federal_type") and getattr(domain_request, "federal_type", None):
+        #     domain_info.federal_type = domain_request.federal_type
+
         # Add the domain_request and domain fields
         domain_info.domain_request = domain_request
         if domain:
