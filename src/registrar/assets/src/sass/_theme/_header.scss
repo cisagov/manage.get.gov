@@ -93,6 +93,12 @@ $-expand-less-icon: (
             transform: translateY(-50%);
         }
     }
+
+    button {
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-left: 0;
+    }
 }
 
 .usa-header--extended {
@@ -269,11 +275,8 @@ $-expand-less-icon: (
 
     button,
     .usa-accordion__button {
-        // $button-vertical-offset: 53%; // XXX: Magic number
-        $button-vertical-offset: 30%; // XXX: Magic number
+        $button-vertical-offset: 53%; // XXX: Magic number
 
-
-        // @include button-unstyled;
         background-color: transparent;
         color: var(--close-button-bg);
         position: relative; // Anchor spans chevron pseudo element
