@@ -15,7 +15,7 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
+from registrar.utility.waffle import flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
