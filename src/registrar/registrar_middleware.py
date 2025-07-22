@@ -233,16 +233,16 @@ class RequestLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-    def __call__(self, request):       
+    def __call__(self, request):
         # Get user email (if authenticated), else None
         user_email = request.user.email if request.user.is_authenticated else None
-            # Get remote IP address
+        # Get remote IP address
         remote_ip = request.META.get("REMOTE_ADDR")
-            # Get request path
+        # Get request path
         request_path = request.path
 
-            # set thread locals
+        # set thread locals
         set_user_log_context(user_email, remote_ip, request_path)
-            # Log user information
+        # Log user information
         logger.info("Router log")
         return self.get_response(request)
