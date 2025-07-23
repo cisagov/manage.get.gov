@@ -3214,32 +3214,30 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.assertContains(next_page, "Previous step")
         self.assertContains(next_page, "#arrow_back")
 
-        # Test with portfolio flag
-        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
-            portfolio = Portfolio.objects.create(
-                creator=self.user,
-                organization_name="test portfolio",
-            )
-            permission = UserPortfolioPermission.objects.create(
-                user=self.user,
-                portfolio=portfolio,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
-            )
-            domain_request.portfolio = portfolio
-            domain_request.save()
-            domain_request.refresh_from_db()
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="test portfolio",
+        )
+        permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+        domain_request.portfolio = portfolio
+        domain_request.save()
+        domain_request.refresh_from_db()
 
-            # Check portfolio-specific breadcrumb
-            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # Check portfolio-specific breadcrumb
+        portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-            self.assertContains(portfolio_page, "Domain requests")
-            domain_request.portfolio = None
-            domain_request.save()
-            # Clean up portfolio
-            permission.delete()
-            portfolio.delete()
+        self.assertContains(portfolio_page, "Domain requests")
+        domain_request.portfolio = None
+        domain_request.save()
+        # Clean up portfolio
+        permission.delete()
+        portfolio.delete()
 
         # Clean up
         domain_request.delete()

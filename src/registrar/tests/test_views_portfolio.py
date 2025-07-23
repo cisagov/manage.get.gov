@@ -364,12 +364,11 @@ class TestPortfolio(WebTest):
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # Breadcrumb appears on organization info page
-            org_info_response = self.app.get(reverse("organization-info"))
-            self._assert_has_organization_breadcrumb(org_info_response)
-            so_response = self.app.get(reverse("organization-senior-official"))
-            self._assert_has_organization_breadcrumb(so_response)
+        # Breadcrumb appears on organization info page
+        org_info_response = self.app.get(reverse("organization-info"))
+        self._assert_has_organization_breadcrumb(org_info_response)
+        so_response = self.app.get(reverse("organization-senior-official"))
+        self._assert_has_organization_breadcrumb(so_response)
 
     def _assert_has_organization_breadcrumb(self, response):
         self.assertContains(response, '<ol class="usa-breadcrumb__list">')
@@ -636,7 +635,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
-        with override_flag("organization_feature", active=True), override_flag("multiple_portfolios", active=True):
+        with override_flag("multiple_portfolios", active=True):
             response = self.client.get(reverse("home"))
             # Ensure that middleware processes the session
             session_middleware = SessionMiddleware(lambda request: None)
@@ -1298,48 +1297,26 @@ class TestPortfolio(WebTest):
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
 
-        with override_flag("organization_feature", active=True):
-            # Initial request to set the portfolio in session
-            response = self.client.get(reverse("home"), follow=True)
+        # Initial request to set the portfolio in session
+        response = self.client.get(reverse("home"), follow=True)
 
-            portfolio = self.client.session.get("portfolio")
-            self.assertEqual(portfolio.organization_name, "Hotel California")
-            self.assertContains(response, "Hotel California")
+        portfolio = self.client.session.get("portfolio")
+        self.assertEqual(portfolio.organization_name, "Hotel California")
+        self.assertContains(response, "Hotel California")
 
-            # Modify the portfolio
-            self.portfolio.organization_name = "Updated Hotel California"
-            self.portfolio.save()
+        # Modify the portfolio
+        self.portfolio.organization_name = "Updated Hotel California"
+        self.portfolio.save()
 
-            # Make another request
-            response = self.client.get(reverse("home"), follow=True)
+        # Make another request
+        response = self.client.get(reverse("home"), follow=True)
 
-            # Check if the updated portfolio name is in the response
-            self.assertContains(response, "Updated Hotel California")
+        # Check if the updated portfolio name is in the response
+        self.assertContains(response, "Updated Hotel California")
 
-            # Verify that the session contains the updated portfolio
-            portfolio = self.client.session.get("portfolio")
-            self.assertEqual(portfolio.organization_name, "Updated Hotel California")
-
-    @less_console_noise_decorator
-    def test_portfolio_cache_updates_when_flag_disabled_while_logged_in(self):
-        """Test that the portfolio in session is set to None when the organization_feature flag is disabled"""
-        self.client.force_login(self.user)
-        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
-
-        with override_flag("organization_feature", active=True):
-            # Initial request to set the portfolio in session
-            response = self.client.get(reverse("home"), follow=True)
-            portfolio = self.client.session.get("portfolio")
-            self.assertEqual(portfolio.organization_name, "Hotel California")
-            self.assertContains(response, "Hotel California")
-
-        # Disable the organization_feature flag
-        with override_flag("organization_feature", active=False):
-            # Make another request
-            response = self.client.get(reverse("home"))
-            self.assertIsNone(self.client.session.get("portfolio"))
-            self.assertNotContains(response, "Hotel California")
+        # Verify that the session contains the updated portfolio
+        portfolio = self.client.session.get("portfolio")
+        self.assertEqual(portfolio.organization_name, "Updated Hotel California")
 
     @less_console_noise_decorator
     def test_org_user_can_delete_own_domain_request_with_permission(self):
