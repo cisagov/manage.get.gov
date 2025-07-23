@@ -3,7 +3,6 @@
 {% load custom_filters %}
 
   {% block breadcrumb %}
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
@@ -15,7 +14,6 @@
       </li>
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
 
 {% block domain_content %}

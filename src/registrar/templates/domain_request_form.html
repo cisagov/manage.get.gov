@@ -10,7 +10,6 @@
     </div>
     <div class="tablet:grid-col register-form-step" id="main-content">
         <input type="hidden" class="display-none" id="wizard-domain-request-id" value="{{domain_request_id}}"/>
-        {% if steps.current == steps.first %}
           {% if portfolio %}
             {% url 'domain-requests' as url_2 %}
           {% else %}
@@ -21,26 +20,19 @@
               <li class="usa-breadcrumb__list-item">
                 <a href="{{ url_2 }}" class="usa-breadcrumb__link">
                   <span>
-                    {% if portfolio%}Domain requests{%else%}Manage your domains{% endif%}
+                    {% if portfolio%}Domain requests{%else%}Home{% endif%}
                   </span>
                 </a>
               </li>
               <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
                 {% if requested_domain__name %}
-                <span>{{ requested_domain__name }}</span>
+                <span>{% if not portfolio %} Domain Request: {% endif %} {{ requested_domain__name }}</span>
                 {% else %}
                 <span>New domain request</span>
                 {% endif %}
               </li>
             </ol>
           </nav>
-        {% elif steps.prev %}
-        <a href="{% namespaced_url 'domain-request' steps.prev domain_request_pk=domain_request_id  %}" class="breadcrumb__back">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-            <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
-          </svg><span class="margin-left-05">Previous step</span>
-        </a>
-        {% endif %}
 
 {% block form_messages %}
           {% include "includes/form_messages.html" %}
