@@ -1255,7 +1255,12 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store invitations with an admin flag
         invitations = []
 
-        for domain_invitation in self.object.invitations.all():
+        for domain_invitation in self.object.invitations.filter(
+            status__in=[
+                DomainInvitation.DomainInvitationStatus.INVITED,
+                DomainInvitation.DomainInvitationStatus.CANCELED
+            ]
+        ):
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
@@ -1273,10 +1278,7 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation
-            # if the status is not canceled
-            if domain_invitation.status != "canceled":
-                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+            invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
