@@ -9,7 +9,6 @@ from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
-from waffle.testutils import override_flag
 
 from registrar.models import (
     DomainRequest,

@@ -780,16 +780,6 @@ class TestDomainManagers(TestDomainOverview):
         super().tearDown()
 
     @less_console_noise_decorator
-    def test_domain_managers(self):
-        response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
-        self.assertContains(response, "Domain managers")
-        self.assertContains(response, "Add a domain manager")
-        # assert that the non-portfolio view contains Role column and doesn't contain Admin
-        self.assertContains(response, "Role</th>")
-        self.assertNotContains(response, "Admin")
-        self.assertContains(response, "This domain has only one manager. Consider adding another manager")
-
-    @less_console_noise_decorator
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Domain managers")

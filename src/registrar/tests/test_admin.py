@@ -421,66 +421,6 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.first().user, user)
 
     @less_console_noise_decorator
-    @patch("registrar.admin.send_domain_invitation_email")
-    @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_organization_feature_off(
-        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
-    ):
-        """Test saving a domain invitation when the user exists and organization_feature flag is off.
-
-        Should send out a domain invitation.
-        Should not send a out portfolio invitation.
-        Should trigger success message for the domain invitation.
-        Should retrieve the domain invitation.
-        Should not create a portfolio invitation."""
-
-        user = User.objects.create_user(email="test@example.com", username="username")
-
-        # Create a domain invitation instance
-        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
-
-        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
-
-        # Create a request object
-        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
-        request.user = self.superuser
-
-        admin_instance.save_model(request, invitation, form=None, change=False)
-
-        # Assert sends appropriate emails - domain but not portfolio
-        mock_send_domain_email.assert_called_once_with(
-            email="test@example.com",
-            requestor=self.superuser,
-            domains=self.domain,
-            is_member_of_different_org=None,
-            requested_user=user,
-        )
-        mock_send_portfolio_email.assert_not_called()
-
-        # Assert correct invite was created
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(PortfolioInvitation.objects.count(), 0)
-
-        # Assert success message
-        mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the domain: example.com"
-        )
-
-        # Assert the domain invitation was saved
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
-        self.assertEqual(PortfolioInvitation.objects.count(), 0)
-
-        # Assert the domain invitation was retrieved
-        domain_invitation = DomainInvitation.objects.get(email=user.email, domain=self.domain)
-
-        self.assertEqual(domain_invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
-        self.assertEqual(UserDomainRole.objects.count(), 1)
-        self.assertEqual(UserDomainRole.objects.first().user, user)
-        self.assertEqual(UserPortfolioPermission.objects.count(), 0)
-
-    @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
