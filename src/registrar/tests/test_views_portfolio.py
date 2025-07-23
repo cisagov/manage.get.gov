@@ -431,7 +431,6 @@ class TestPortfolio(WebTest):
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
 
-
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
             self.assertContains(org_page, self.portfolio.organization_name)
@@ -473,7 +472,7 @@ class TestPortfolio(WebTest):
             portfolio_page = self.app.get(reverse("home")).follow()
 
             self.assertContains(portfolio_page, self.portfolio.organization_name)
-            # self.assertContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
             self.assertContains(portfolio_page, reverse("domains"))
