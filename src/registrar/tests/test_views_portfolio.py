@@ -735,31 +735,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "--widescreen")
 
     @less_console_noise_decorator
-    def test_organization_requests_waffle_flag_off_hides_nav_link_and_restricts_permission(self):
-        """Setting the organization_requests waffle off hides the nav link and restricts access to the requests page"""
-        self.app.set_user(self.user.username)
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            ],
-        )
-
-        home = self.app.get(reverse("home")).follow()
-
-        self.assertContains(home, "Hotel California")
-        self.assertNotContains(home, "Domain requests")
-
-        domain_requests = self.app.get(reverse("domain-requests"), expect_errors=True)
-        self.assertEqual(domain_requests.status_code, 403)
-
-    @less_console_noise_decorator
-    def test_organization_requests_waffle_flag_on_shows_nav_link_and_allows_permission(self):
+    def test_user_in_portfolio_shows_nav_link_and_allows_permission(self):
         """Setting the organization_requests waffle on shows the nav link and allows access to the requests page"""
         self.app.set_user(self.user.username)
 
@@ -778,49 +754,10 @@ class TestPortfolio(WebTest):
 
         self.assertContains(home, "Hotel California")
         self.assertContains(home, "Domain requests")
+        self.assertContains(home, "Members")
 
         domain_requests = self.app.get(reverse("domain-requests"))
         self.assertEqual(domain_requests.status_code, 200)
-
-    @less_console_noise_decorator
-    def test_organization_members_waffle_flag_off_hides_nav_link(self):
-        """Setting the organization_members waffle off hides the nav link"""
-        self.app.set_user(self.user.username)
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            ],
-        )
-
-        home = self.app.get(reverse("home")).follow()
-
-        self.assertContains(home, "Hotel California")
-        self.assertNotContains(home, "Members")
-
-    @less_console_noise_decorator
-    def test_organization_members_waffle_flag_on_shows_nav_link(self):
-        """Setting the organization_members waffle on shows the nav link"""
-        self.app.set_user(self.user.username)
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            ],
-        )
-
-        home = self.app.get(reverse("home")).follow()
-
-        self.assertContains(home, "Hotel California")
-        self.assertContains(home, "Members")
 
     @less_console_noise_decorator
     def test_cannot_view_members_table(self):
