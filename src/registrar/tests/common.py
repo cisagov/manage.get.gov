@@ -1048,6 +1048,23 @@ def create_test_user():
     )
     return user
 
+def create_test_user_not_in_portfolio():
+    username = "test_user_not_in_portfolio"
+    first_name = "First"
+    last_name = "Last"
+    email = "not_in_portfolio@example.com"
+    phone = "1234567890"
+    title = "tester not in portfolio"
+    user = get_user_model().objects.create(
+        username=username,
+        first_name = first_name,
+        last_name=last_name, 
+        email=email,
+        phone=phone,
+        title=title,
+    )
+    return user
+
 
 def create_ready_domain():
     domain, _ = Domain.objects.get_or_create(name="city.gov", state=Domain.State.READY)

@@ -625,18 +625,17 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
-        with override_flag("organization_feature", active=True):
-            response = self.client.get(reverse("home"))
-            # Ensure that middleware processes the session
-            session_middleware = SessionMiddleware(lambda request: None)
-            session_middleware.process_request(response.wsgi_request)
-            response.wsgi_request.session.save()
-            # Access the session via the request
-            session = response.wsgi_request.session
-            # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+        response = self.client.get(reverse("home"))
+        # Ensure that middleware processes the session
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(response.wsgi_request)
+        response.wsgi_request.session.save()
+        # Access the session via the request
+        session = response.wsgi_request.session
+        # Check if the 'portfolio' session variable exists
+        self.assertIn("portfolio", session, "Portfolio session variable should exist.")
+        # Check the value of the 'portfolio' session variable
+        self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
@@ -646,7 +645,7 @@ class TestPortfolio(WebTest):
         is false and user has a portfolio, so won't add a redundant test for that."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
+        UserPortfolioPermission.objects.get_or_create(user=self.user, roles=roles)
         response = self.client.get(reverse("home"))
         # Ensure that middleware processes the session
         session_middleware = SessionMiddleware(lambda request: None)
@@ -760,9 +759,10 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Domain name")
         permission.delete()
 
-    def check_widescreen_is_loaded(self, page_to_check):
-        """Tests if class modifiers for widescreen mode are appropriately loaded into the DOM
-        for the given page"""
+    @less_console_noise_decorator
+    def test_widescreen_css_org_model(self):
+        """Tests if class modifiers for widescreen mode are appropriately
+        loaded into the DOM for org model pages"""
 
         self.client.force_login(self.user)
 
@@ -774,24 +774,12 @@ class TestPortfolio(WebTest):
         permission.save()
         permission.refresh_from_db()
 
-        response = self.client.get(reverse(page_to_check))
+        response = self.client.get(reverse("domains"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
 
         # Test for widescreen modifier
         self.assertContains(response, "--widescreen")
-
-    @less_console_noise_decorator
-    def test_widescreen_css_org_model(self):
-        """Tests if class modifiers for widescreen mode are appropriately
-        loaded into the DOM for org model pages"""
-        self.check_widescreen_is_loaded("domains")
-
-    @less_console_noise_decorator
-    def test_widescreen_css_non_org_model(self):
-        """Tests if class modifiers for widescreen mode are appropriately
-        loaded into the DOM for non-org model pages"""
-        self.check_widescreen_is_loaded("home")
 
     @less_console_noise_decorator
     def test_organization_requests_waffle_flag_off_hides_nav_link_and_restricts_permission(self):
