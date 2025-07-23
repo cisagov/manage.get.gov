@@ -3954,8 +3954,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                             # Check for if no portfolio, if there is then use portfolio
                             domain_info__portfolio__isnull=True,
                             # Check if federal_type is missing - if has don't replace
-                            # VVV Leave comment in the PR VVV
-                            # Previously was False - if it's filled out we why do we need to replace it again?
                             domain_info__federal_type__isnull=True,
                             # Make sure agency has a federal_type as fallback
                             domain_info__federal_agency__federal_type__isnull=False,
