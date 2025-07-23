@@ -364,13 +364,6 @@ class DomainInformation(TimeStampedModel):
         existing_domain_info = cls._short_circuit_if_exists(domain_request)
         if existing_domain_info:
             return existing_domain_info
-        # existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
-        # if existing_domain_info:
-        #     logger.info(
-        #         f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
-        #         "This record already exists. No values updated!"
-        #     )
-        #     return existing_domain_info
 
         # Get the fields that exist on both DomainRequest and DomainInformation
         common_fields = DomainHelper.get_common_fields(DomainRequest, DomainInformation)
@@ -382,26 +375,6 @@ class DomainInformation(TimeStampedModel):
         da_dict, da_many_to_many_dict = cls._get_da_and_m2m_dicts(
             domain_request, common_fields, info_many_to_many_fields
         )
-
-        # # Create a dictionary with only the common fields, and create a DomainInformation from it
-        # da_dict = {}
-        # da_many_to_many_dict = {}
-        # for field in common_fields:
-        #     # If the field isn't many_to_many, populate the da_dict.
-        #     # If it is, populate da_many_to_many_dict as we need to save this later.
-        #     if hasattr(domain_request, field):
-        #         if field not in info_many_to_many_fields:
-        #             da_dict[field] = getattr(domain_request, field)
-        #         else:
-        #             da_many_to_many_dict[field] = getattr(domain_request, field).all()
-
-        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
-        # da_dict should not have "id" under any circumstances.
-        # If it does have it, then this indicates that common_fields is overzealous in the data
-        # that it is returning. Try looking in DomainHelper.get_common_fields.
-        # if "id" in da_dict:
-        #     logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
-        #     da_dict.pop("id", None)
 
         # Create a placeholder DomainInformation object
         domain_info = DomainInformation(**da_dict)
