@@ -51,3 +51,8 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.client.logout()
         self.client.session.flush()
         self.assertIn("test_middleware@gmail.com", log_output)
+
+    def test_logging_disabled_in_non_production(self):
+        self.client.get(reverse("health"))
+        log_output = self.stream.getvalue()
+        self.assertNotIn("Router log", log_output)

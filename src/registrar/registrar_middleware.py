@@ -234,18 +234,21 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
         # Only log in production (stable)
         if getattr(settings, "IS_PRODUCTION", False):
             # Get user email (if authenticated), else None
             user_email = request.user.email if request.user.is_authenticated else None
-            # Get remote IP address
-            remote_ip = request.META.get("REMOTE_ADDR")
+            # Get remote IP address or IPv6 address
+            forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            if forwarded_for:
+                remote_ip = forwarded_for.split(",")[0]
+            else:
+                remote_ip = request.META.get("REMOTE_ADDR")
             # Get request path
             request_path = request.path
 
-            # set thread locals
+            # set user log info
             set_user_log_context(user_email, remote_ip, request_path)
             # Log user information
             logger.info("Router log")
-        return response
+        return self.get_response(request)
