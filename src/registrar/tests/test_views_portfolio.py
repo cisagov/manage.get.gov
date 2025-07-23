@@ -159,12 +159,11 @@ class TestPortfolio(WebTest):
         UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=[]
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            response = self.app.get(reverse("domains"), status=403)
-            # Assert the response is a 403 Forbidden
-            self.assertEqual(response.status_code, 403)
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        response = self.app.get(reverse("domains"), status=403)
+        # Assert the response is a 403 Forbidden
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_domain_requests_page_403_when_user_not_have_permission(self):
@@ -173,12 +172,11 @@ class TestPortfolio(WebTest):
         UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=[]
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            response = self.app.get(reverse("domain-requests"), status=403)
-            # Assert the response is a 403 Forbidden
-            self.assertEqual(response.status_code, 403)
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        response = self.app.get(reverse("domain-requests"), status=403)
+        # Assert the response is a 403 Forbidden
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_403_when_user_not_have_permission(self):
@@ -187,12 +185,11 @@ class TestPortfolio(WebTest):
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=[]
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            response = self.app.get(reverse("organization"), status=403)
-            # Assert the response is a 403 Forbidden
-            self.assertEqual(response.status_code, 403)
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        response = self.app.get(reverse("organization"), status=403)
+        # Assert the response is a 403 Forbidden
+        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_includes_org_info_and_senior_official(self):
@@ -223,18 +220,17 @@ class TestPortfolio(WebTest):
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # User can access organization info form via organization overview page
-            response = self.app.get(reverse("organization"))
-            self.assertEqual(response.status_code, 200)
-            # Organization overview page includes organization name
-            self.assertContains(response, "<h1>Organization overview</h1>")
-            self.assertContains(response, "Hotel California</h2>")
-            # Organization overview page includes organization info and senior official details
-            self.assertContains(response, "Los Angeles")
-            self.assertContains(response, "spacedivision@igorville.com")
-            # Organization overview page includes portfolio admin
-            self.assertContains(response, "Galileo")
+        # User can access organization info form via organization overview page
+        response = self.app.get(reverse("organization"))
+        self.assertEqual(response.status_code, 200)
+        # Organization overview page includes organization name
+        self.assertContains(response, "<h1>Organization overview</h1>")
+        self.assertContains(response, "Hotel California</h2>")
+        # Organization overview page includes organization info and senior official details
+        self.assertContains(response, "Los Angeles")
+        self.assertContains(response, "spacedivision@igorville.com")
+        # Organization overview page includes portfolio admin
+        self.assertContains(response, "Galileo")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
@@ -251,14 +247,13 @@ class TestPortfolio(WebTest):
         )
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # User can access organization info form via organization overview page
-            response = self.app.get(reverse("organization"))
-            # The overview page includes button to edit organization
-            org_info_url = reverse("organization-info")
-            org_senior_official_url = reverse("organization-senior-official")
-            self.assertContains(response, f'href="{org_info_url}"')
-            self.assertContains(response, f'href="{org_senior_official_url}"')
+        # User can access organization info form via organization overview page
+        response = self.app.get(reverse("organization"))
+        # The overview page includes button to edit organization
+        org_info_url = reverse("organization-info")
+        org_senior_official_url = reverse("organization-senior-official")
+        self.assertContains(response, f'href="{org_info_url}"')
+        self.assertContains(response, f'href="{org_senior_official_url}"')
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_section_viewonly_icon(self):
@@ -271,12 +266,11 @@ class TestPortfolio(WebTest):
         )
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # User can access view-only form via organization overview page
-            org_overview_response = self.app.get(reverse("organization"))
-            # Viewonly icons for org info and senior official (which is always viewonly)
-            # visibility is html id of view only icon
-            self.assertContains(org_overview_response, "visibility", count=2)
+        # User can access view-only form via organization overview page
+        org_overview_response = self.app.get(reverse("organization"))
+        # Viewonly icons for org info and senior official (which is always viewonly)
+        # visibility is html id of view only icon
+        self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_section_edit_icon(self):
@@ -289,12 +283,11 @@ class TestPortfolio(WebTest):
         )
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # User can access view-only form via organization overview page
-            org_overview_response = self.app.get(reverse("organization"))
-            # Viewonly icons for org info and senior official (which is always viewonly)
-            # visibility is html id of view only icon
-            self.assertContains(org_overview_response, "visibility", count=2)
+        # User can access view-only form via organization overview page
+        org_overview_response = self.app.get(reverse("organization"))
+        # Viewonly icons for org info and senior official (which is always viewonly)
+        # visibility is html id of view only icon
+        self.assertContains(org_overview_response, "visibility", count=2)
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_read_only(self):
@@ -309,11 +302,10 @@ class TestPortfolio(WebTest):
             ],
         )
         self.portfolio.save()
-        with override_flag("organization_feature", active=True):
-            # User can access view-only form via organization overview page
-            org_overview_response = self.app.get(reverse("organization"))
-            # Edit icons for org info (senior official is always viewonly)
-            self.assertContains(org_overview_response, "Edit")
+        # User can access view-only form via organization overview page
+        org_overview_response = self.app.get(reverse("organization"))
+        # Edit icons for org info (senior official is always viewonly)
+        self.assertContains(org_overview_response, "Edit")
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_edit_access(self):
@@ -330,18 +322,15 @@ class TestPortfolio(WebTest):
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            # User can access editable form via organization info page
-            response = self.app.get(reverse("organization-info"))
-            # Assert the response is a 200
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "<h2>Organization admins</h2>")
-            self.assertContains(response, "<h2>Organization name and address</h2>")
-            self.assertContains(
-                response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-            )
-            self.assertNotContains(response, "<address>")
-            self.assertContains(response, 'for="id_city"')
+        # User can access editable form via organization info page
+        response = self.app.get(reverse("organization-info"))
+        # Assert the response is a 200
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<h2>Organization admins</h2>")
+        self.assertContains(response, "<h2>Organization name and address</h2>")
+        self.assertContains(response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>')
+        self.assertNotContains(response, "<address>")
+        self.assertContains(response, 'for="id_city"')
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_shows_read_only(self):
@@ -357,12 +346,11 @@ class TestPortfolio(WebTest):
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.save()
 
-        with override_flag("organization_feature", active=True):
-            org_info_response = self.app.get(reverse("organization-info"))
-            # We don't use the label "Organization name" in the view-only view
-            self.assertNotContains(
-                org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-            )
+        org_info_response = self.app.get(reverse("organization-info"))
+        # We don't use the label "Organization name" in the view-only view
+        self.assertNotContains(
+            org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+        )
         self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
@@ -404,43 +392,42 @@ class TestPortfolio(WebTest):
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, reverse("domains"))
-            self.assertContains(portfolio_page, reverse("domain-requests"))
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, reverse("domains"))
+        self.assertContains(portfolio_page, reverse("domain-requests"))
 
-            # removing non-basic portfolio perms, which should remove domains
-            # and domain requests from nav
-            portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
-            portfolio_permission.save()
-            portfolio_permission.refresh_from_db()
+        # removing non-basic portfolio perms, which should remove domains
+        # and domain requests from nav
+        portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
-            # Members should be redirected to the readonly domains page
-            portfolio_page = self.app.get(reverse("home")).follow()
+        # Members should be redirected to the readonly domains page
+        portfolio_page = self.app.get(reverse("home")).follow()
 
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
+        self.assertNotContains(portfolio_page, reverse("domains"))
+        self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
-            # The organization page should still be accessible
-            org_page = self.app.get(reverse("organization"))
-            self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization overview</h1>")
+        # The organization page should still be accessible
+        org_page = self.app.get(reverse("organization"))
+        self.assertContains(org_page, self.portfolio.organization_name)
+        self.assertContains(org_page, "<h1>Organization overview</h1>")
 
-            # Both domain pages should not be accessible
-            domain_page = self.app.get(reverse("domains"), expect_errors=True)
-            self.assertEquals(domain_page.status_code, 403)
-            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-            self.assertEquals(domain_request_page.status_code, 403)
+        # Both domain pages should not be accessible
+        domain_page = self.app.get(reverse("domains"), expect_errors=True)
+        self.assertEquals(domain_page.status_code, 403)
+        domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+        self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_accessible_pages_when_user_does_not_have_role(self):
@@ -450,58 +437,56 @@ class TestPortfolio(WebTest):
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, roles=roles
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, reverse("domains"))
-            self.assertContains(portfolio_page, reverse("domain-requests"))
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, reverse("domains"))
+        self.assertContains(portfolio_page, reverse("domain-requests"))
 
-            # removing non-basic portfolio role, which should remove domains
-            # and domain requests from nav
-            portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-            portfolio_permission.save()
-            portfolio_permission.refresh_from_db()
+        # removing non-basic portfolio role, which should remove domains
+        # and domain requests from nav
+        portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        portfolio_permission.save()
+        portfolio_permission.refresh_from_db()
 
-            # Members should be redirected to the readonly domains page
-            portfolio_page = self.app.get(reverse("home")).follow()
+        # Members should be redirected to the readonly domains page
+        portfolio_page = self.app.get(reverse("home")).follow()
 
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
+        self.assertNotContains(portfolio_page, reverse("domains"))
+        self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
-            # The organization page should still be accessible
-            org_page = self.app.get(reverse("organization"))
-            self.assertContains(org_page, self.portfolio.organization_name)
-            self.assertContains(org_page, "<h1>Organization overview</h1>")
+        # The organization page should still be accessible
+        org_page = self.app.get(reverse("organization"))
+        self.assertContains(org_page, self.portfolio.organization_name)
+        self.assertContains(org_page, "<h1>Organization overview</h1>")
 
-            # Both domain pages should not be accessible
-            domain_page = self.app.get(reverse("domains"), expect_errors=True)
-            self.assertEquals(domain_page.status_code, 403)
-            domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-            self.assertEquals(domain_request_page.status_code, 403)
+        # Both domain pages should not be accessible
+        domain_page = self.app.get(reverse("domains"), expect_errors=True)
+        self.assertEquals(domain_page.status_code, 403)
+        domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
+        self.assertEquals(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_org_name(self):
         """Can load portfolio's org name page."""
-        with override_flag("organization_feature", active=True):
-            self.app.set_user(self.user.username)
-            portfolio_additional_permissions = [
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
-            page = self.app.get(reverse("organization-info"))
-            self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
+        self.app.set_user(self.user.username)
+        portfolio_additional_permissions = [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ]
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
+        page = self.app.get(reverse("organization-info"))
+        self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
     def test_portfolio_org_info_includes_name_and_address(self):
