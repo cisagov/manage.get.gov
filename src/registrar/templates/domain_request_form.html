@@ -86,6 +86,14 @@
 
 {% block form_buttons %}
           <div class="stepnav">
+            {% if steps.prev %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="back"
+              class="usa-button  usa-button--outline"
+            >Back</button>
+            {% endif %}
             {% if steps.next %}
             <button
               type="submit"
@@ -103,7 +111,7 @@
             {% else %}
             <a
               href="#toggle-submit-domain-request"
-              class="usa-button usa-button--big dotgov-button--green"
+              class="usa-button usa-button dotgov-button--green"
               aria-controls="toggle-submit-domain-request"
               data-open-modal
               >Submit your domain request</a

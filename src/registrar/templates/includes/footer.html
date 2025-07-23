@@ -26,18 +26,31 @@
           >
             <address class="usa-footer__address maxw-none">
               <div class="usa-footer__contact-info grid-row grid-gap-md">
-                {% if show_manage_your_domains %}
+                {% if portfolio %}
                 <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'home' %}">Manage your domains</a>
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'domains' %}">Domains</a>
+                </div>
+                <span class=""> | </span>
+                <div class="grid-col-auto">
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'domain-requests' %}">Domain Requests</a>
+                </div>
+                <span class=""> | </span>
+                <div class="grid-col-auto">
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'members' %}">Members</a>
+                </div>
+                <span class=""> | </span>
+                <div class="grid-col-auto">
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'organization' %}">Organization</a>
+                </div>
+                {% else %}
+                <div class="grid-col-auto">
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'home' %}">Home</a>
                 </div>
                 <span class=""> | </span>
                 {% endif %}
-                <div class="grid-col-auto">
-                   <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'help/' %}">Help </a>
-                </div>
                 <span class=""> | </span>
                 <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact/' %}">Contact us</a>
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'user-profile' %}">Your Profile</a>
                 </div>
               </div>
             </address>
