@@ -94,23 +94,21 @@ class TestPortfolio(WebTest):
         self.user.portfolio = self.portfolio
         self.user.save()
         self.user.refresh_from_db()
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home"))
-            # Assert that we're on the right page
-            self.assertNotContains(portfolio_page, self.portfolio.organization_name)
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home"))
+        # Assert that we're on the right page
+        self.assertNotContains(portfolio_page, self.portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_portfolio(self):
         """Test that user with no assigned portfolio is not redirected when attempting to access home"""
         self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home"))
-            # Assert that we're on the right page
-            self.assertNotContains(portfolio_page, self.portfolio.organization_name)
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home"))
+        # Assert that we're on the right page
+        self.assertNotContains(portfolio_page, self.portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_no_domains_page(self):
@@ -121,14 +119,13 @@ class TestPortfolio(WebTest):
             portfolio=self.portfolio,
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, "You aren’t managing any domains")
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
 
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_domains_page(self):
@@ -143,14 +140,13 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             ],
         )
-        with override_flag("organization_feature", active=True):
-            # This will redirect the user to the portfolio page.
-            # Follow implicity checks if our redirect is working.
-            portfolio_page = self.app.get(reverse("home")).follow()
-            # Assert that we're on the right page
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
 
     @less_console_noise_decorator
     def test_portfolio_domains_page_403_when_user_not_have_permission(self):
