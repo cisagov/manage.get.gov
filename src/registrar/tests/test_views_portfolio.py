@@ -506,120 +506,116 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     def test_portfolio_org_info_includes_name_and_address(self):
         """Org name and address appears on the org info page."""
-        with override_flag("organization_feature", active=True):
-            self.app.set_user(self.user.username)
-            portfolio_additional_permissions = [
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
+        self.app.set_user(self.user.username)
+        portfolio_additional_permissions = [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ]
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
 
-            self.portfolio.organization_name = "Hotel California"
-            self.portfolio.save()
-            page = self.app.get(reverse("organization-info"))
-            # Org name in Sidenav, main nav, webpage title, and breadcrumb
-            self.assertContains(page, "Hotel California", count=5)
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.save()
+        page = self.app.get(reverse("organization-info"))
+        # Org name in Sidenav, main nav, webpage title, and breadcrumb
+        self.assertContains(page, "Hotel California", count=5)
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
         """Organization form will not redirect on invalid formsets."""
-        with override_flag("organization_feature", active=True):
-            self.app.set_user(self.user.username)
-            portfolio_additional_permissions = [
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
+        self.app.set_user(self.user.username)
+        portfolio_additional_permissions = [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ]
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
 
-            self.portfolio.address_line1 = "1600 Penn Ave"
-            self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization-info"))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.portfolio.address_line1 = "1600 Penn Ave"
+        self.portfolio.save()
+        portfolio_org_name_page = self.app.get(reverse("organization-info"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-            portfolio_org_name_page.form["city"] = "London"
+        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page.form["city"] = "London"
 
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            success_result_page = portfolio_org_name_page.form.submit()
-            # Form will not validate with missing required field (zipcode)
-            self.assertEqual(success_result_page.status_code, 200)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result_page = portfolio_org_name_page.form.submit()
+        # Form will not validate with missing required field (zipcode)
+        self.assertEqual(success_result_page.status_code, 200)
 
-            self.assertContains(success_result_page, "6 Downing st")
-            self.assertContains(success_result_page, "London")
+        self.assertContains(success_result_page, "6 Downing st")
+        self.assertContains(success_result_page, "London")
 
     @less_console_noise_decorator
     def test_org_form_valid_update(self):
         """Organization form will redirect on valid formsets."""
-        with override_flag("organization_feature", active=True):
-            self.app.set_user(self.user.username)
-            portfolio_additional_permissions = [
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
+        self.app.set_user(self.user.username)
+        portfolio_additional_permissions = [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ]
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
 
-            self.portfolio.address_line1 = "1600 Penn Ave"
-            self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization-info"))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.portfolio.address_line1 = "1600 Penn Ave"
+        self.portfolio.save()
+        portfolio_org_name_page = self.app.get(reverse("organization-info"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-            # Form validates and redirects with all required fields
-            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-            portfolio_org_name_page.form["city"] = "London"
-            portfolio_org_name_page.form["zipcode"] = "11111"
+        # Form validates and redirects with all required fields
+        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page.form["city"] = "London"
+        portfolio_org_name_page.form["zipcode"] = "11111"
 
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            success_result_page = portfolio_org_name_page.form.submit()
-            self.assertEqual(success_result_page.status_code, 302)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result_page = portfolio_org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 302)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_portfolio_update_emails_to_portfolio_admins")
     def test_org_update_sends_admin_email(self, mock_send_organization_update_email):
         """Updating organization information emails organization admin."""
-        with override_flag("organization_feature", active=True):
-            self.app.set_user(self.user.username)
-            self.admin, _ = User.objects.get_or_create(
-                email="mayor@igorville.com", first_name="Hello", last_name="World"
-            )
+        self.app.set_user(self.user.username)
+        self.admin, _ = User.objects.get_or_create(
+            email="mayor@igorville.com", first_name="Hello", last_name="World"
+        )
 
-            portfolio_additional_permissions = [
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
-            ]
-            portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
-            )
-            portfolio_permission_admin, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.admin,
-                portfolio=self.portfolio,
-                additional_permissions=portfolio_additional_permissions,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            )
+        portfolio_additional_permissions = [
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
+        ]
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+        )
+        portfolio_permission_admin, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.admin,
+            portfolio=self.portfolio,
+            additional_permissions=portfolio_additional_permissions,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
 
-            self.portfolio.address_line1 = "1600 Penn Ave"
-            self.portfolio.save()
-            portfolio_org_name_page = self.app.get(reverse("organization-info"))
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-            portfolio_org_name_page.form["city"] = "London"
-            portfolio_org_name_page.form["zipcode"] = "11111"
+        self.portfolio.address_line1 = "1600 Penn Ave"
+        self.portfolio.save()
+        portfolio_org_name_page = self.app.get(reverse("organization-info"))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page.form["city"] = "London"
+        portfolio_org_name_page.form["zipcode"] = "11111"
 
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            success_result_page = portfolio_org_name_page.form.submit()
-            self.assertEqual(success_result_page.status_code, 302)
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        success_result_page = portfolio_org_name_page.form.submit()
+        self.assertEqual(success_result_page.status_code, 302)
 
-            # Verify that the notification emails were sent to domain manager
-            mock_send_organization_update_email.assert_called_once()
+        # Verify that the notification emails were sent to domain manager
+        mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
-    def test_portfolio_in_session_when_organization_feature_active(self):
+    def test_portfolio_in_session(self):
         """When organization_feature flag is true and user has a portfolio,
         the portfolio should be set in session."""
         self.client.force_login(self.user)
@@ -638,14 +634,10 @@ class TestPortfolio(WebTest):
         self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
-    def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
-        """When organization_feature flag is false and user has a portfolio,
-        the portfolio should be set to None in session.
-        This test also satisfies the condition when multiple_portfolios flag
-        is false and user has a portfolio, so won't add a redundant test for that."""
+    def test_portfolio_in_session_is_none_and_no_portfolio(self):
+        """When organization_feature flag is true and user does not have a portfolio,
+        the portfolio should be set to None in session."""
         self.client.force_login(self.user)
-        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        UserPortfolioPermission.objects.get_or_create(user=self.user, roles=roles)
         response = self.client.get(reverse("home"))
         # Ensure that middleware processes the session
         session_middleware = SessionMiddleware(lambda request: None)
@@ -657,24 +649,6 @@ class TestPortfolio(WebTest):
         self.assertIn("portfolio", session, "Portfolio session variable should exist.")
         # Check the value of the 'portfolio' session variable
         self.assertIsNone(session["portfolio"])
-
-    @less_console_noise_decorator
-    def test_portfolio_in_session_is_none_when_organization_feature_active_and_no_portfolio(self):
-        """When organization_feature flag is true and user does not have a portfolio,
-        the portfolio should be set to None in session."""
-        self.client.force_login(self.user)
-        with override_flag("organization_feature", active=True):
-            response = self.client.get(reverse("home"))
-            # Ensure that middleware processes the session
-            session_middleware = SessionMiddleware(lambda request: None)
-            session_middleware.process_request(response.wsgi_request)
-            response.wsgi_request.session.save()
-            # Access the session via the request
-            session = response.wsgi_request.session
-            # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertIsNone(session["portfolio"])
 
     @less_console_noise_decorator
     def test_portfolio_in_session_when_multiple_portfolios_active(self):
