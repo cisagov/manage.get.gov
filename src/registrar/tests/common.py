@@ -1048,6 +1048,7 @@ def create_test_user():
     )
     return user
 
+
 def create_test_user_not_in_portfolio():
     username = "test_user_not_in_portfolio"
     first_name = "First"
@@ -1057,8 +1058,8 @@ def create_test_user_not_in_portfolio():
     title = "tester not in portfolio"
     user = get_user_model().objects.create(
         username=username,
-        first_name = first_name,
-        last_name=last_name, 
+        first_name=first_name,
+        last_name=last_name,
         email=email,
         phone=phone,
         title=title,

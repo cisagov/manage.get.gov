@@ -581,9 +581,7 @@ class TestPortfolio(WebTest):
     def test_org_update_sends_admin_email(self, mock_send_organization_update_email):
         """Updating organization information emails organization admin."""
         self.app.set_user(self.user.username)
-        self.admin, _ = User.objects.get_or_create(
-            email="mayor@igorville.com", first_name="Hello", last_name="World"
-        )
+        self.admin, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
 
         portfolio_additional_permissions = [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
