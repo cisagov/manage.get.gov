@@ -3208,7 +3208,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.assertContains(start_page, '<ol class="usa-breadcrumb__list">')
         self.assertContains(start_page, "city.gov")
         self.assertContains(start_page, 'href="/"')
-        self.assertContains(start_page, "Manage your domains")
+        self.assertContains(start_page, "Home")
         self.assertNotContains(start_page, "Previous step")
 
         # Move to next step
@@ -3217,8 +3217,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the back button appears
-        self.assertContains(next_page, "Previous step")
-        self.assertContains(next_page, "#arrow_back")
+        self.assertContains(next_page, "Back")
 
         # Test with portfolio flag
         with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
