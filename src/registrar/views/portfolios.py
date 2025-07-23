@@ -13,6 +13,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
+    IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
 from registrar.forms import portfolio as portfolioForms
@@ -1219,7 +1220,7 @@ class PortfolioOrganizationsView(DetailView, FormMixin):
     #     return redirect(reverse("domains"))
 
 
-@grant_access(IS_PORTFOLIO_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
     model=UserPortfolioPermission
     template_name = "portfolio_organization_select.html"

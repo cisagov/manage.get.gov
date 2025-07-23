@@ -19,6 +19,7 @@ IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
+IS_MULTIPLE_PORTFOLIOS_MEMBER = "is_multiple_portfolios_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
 HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
@@ -125,6 +126,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
+        (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
             lambda: user.is_org_user(request)
