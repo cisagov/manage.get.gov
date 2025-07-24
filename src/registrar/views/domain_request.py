@@ -183,7 +183,7 @@ class DomainRequestWizard(TemplateView):
     def requires_feb_questions(self) -> bool:
         portfolio = self.request.session.get("portfolio")
         if portfolio:
-            return self.domain_request.is_feb() 
+            return self.domain_request.is_feb()
         return False
 
     @property

@@ -332,7 +332,7 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if (not info or info.portfolio):
+                    if not info or info.portfolio:
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
