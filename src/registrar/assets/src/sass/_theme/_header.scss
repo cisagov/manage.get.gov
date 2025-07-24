@@ -151,9 +151,17 @@ $-expand-less-icon: (
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
-                font-weight: font-weight('bold');
-                color: color('primary-lighter');
+                font-weight: bold;
                 font-size: 16px;
+                color: color('white');
+            }
+            // Submenu nav links have normal font weight 
+            .usa-nav__submenu-item {
+                .usa-nav-link,
+                .usa-nav-link:hover,
+                .usa-nav-link:active {
+                    font-weight: normal;
+                }
             }
             transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
@@ -262,7 +270,7 @@ $-expand-less-icon: (
         span {
             @include place-icon($-add-icon, "after");
             font-weight: font-weight('bold');
-            color: color('primary-lighter');
+            color: color('white');
         }
     }
 
@@ -337,12 +345,12 @@ $-expand-less-icon: (
               @include place-icon($-add-icon, "after");
       
               &::after:hover {
-                background-color: color('primary-lighter');
+                background-color: color('white');
               }
             }
 
             &::after:hover {
-                background-color: color('primary-lighter');
+                background-color: color('white');
             }
             
             @include at-media($theme-header-min-width) {
@@ -350,7 +358,7 @@ $-expand-less-icon: (
                     @include place-icon($-expand-more-icon, "after");
     
                     &::after {
-                        background-color: color('primary-lighter');
+                        background-color: color('white');
                         right: units(1.5);
                     }
                 }
@@ -359,10 +367,10 @@ $-expand-less-icon: (
             &:hover {
                 @include at-media($theme-header-min-width) {
                     span::after {
-                        background-color: color('primary-lighter');
+                        background-color: color('white');
         
                         @media (forced-colors: active) {
-                            background-color: color('primary-lighter');
+                            background-color: color('white');
                         }
                     }
                 }
