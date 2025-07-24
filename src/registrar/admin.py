@@ -3068,14 +3068,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "suborganization_state_territory",
         ]
 
-        org_flag = flag_is_active_for_user(request.user, "organization_requests")
         # Hide FEB fields for non-FEB requests
         if not (obj and obj.portfolio and obj.is_feb()):
             excluded_fields.update(feb_fields)
 
         # Hide certain portfolio and suborg fields behind the organization requests flag
         # if it is not enabled
-        if not org_flag:
+        if not request.session.get("portfolio"):
             excluded_fields.update(org_fields)
             excluded_fields.update(feb_fields)
 

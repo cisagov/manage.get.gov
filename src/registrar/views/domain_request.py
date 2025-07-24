@@ -21,7 +21,6 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
@@ -182,7 +181,10 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            return self.domain_request.is_feb() 
+        return False
 
     @property
     def prefix(self):
@@ -1242,9 +1244,7 @@ class DomainRequestStatusViewOnly(DetailView):
             context["form_titles"] = wizard.titles
 
         # Common context
-        context["requires_feb_questions"] = domain_request.is_feb() and flag_is_active_for_user(
-            self.request.user, "organization_feature"
-        )
+        context["requires_feb_questions"] = domain_request.is_feb()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
