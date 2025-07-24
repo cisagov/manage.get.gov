@@ -746,6 +746,7 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
                 UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
                 UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 

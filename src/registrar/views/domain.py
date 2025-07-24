@@ -1323,8 +1323,7 @@ class DomainAddUserView(DomainFormBaseView):
             #   create portfolio invitation
             #   create message to view
             if (
-                flag_is_active_for_user(requestor, "organization_feature")
-                and not flag_is_active_for_user(requestor, "multiple_portfolios")
+                not flag_is_active_for_user(requestor, "multiple_portfolios")
                 and domain_org is not None
                 and requestor_can_update_portfolio
                 and not member_of_this_org
