@@ -2508,19 +2508,21 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            # Annotate the queryset for efficient filtering
             queryset = (
                 DomainRequest.objects.annotate(
                     converted_federal_type=Case(
+                        # If record already has federal_type, use it
+                        When(federal_type__isnull=False, then=F("federal_type")),
+                        # If no direct federal_type, but
+                        # portfolio->federal_agency->federal_type exists, use that
                         When(
-                            portfolio__isnull=False,
                             portfolio__federal_agency__federal_type__isnull=False,
-                            then="portfolio__federal_agency__federal_type",
+                            then=F("portfolio__federal_agency__federal_type"),
                         ),
+                        # Otherwise if we have federal_agency->federal_type, use that
                         When(
-                            portfolio__isnull=True,
                             federal_agency__federal_type__isnull=False,
-                            then="federal_agency__federal_type",
+                            then=F("federal_agency__federal_type"),
                         ),
                         default=Value(""),
                         output_field=CharField(),
@@ -2530,7 +2532,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 .distinct()
             )
 
-            # Filter out empty values and return sorted unique entries
             return sorted(
                 [
                     (federal_type, BranchChoices.get_branch_label(federal_type))
@@ -2542,8 +2543,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_agency__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_agency__federal_type=self.value())
+                    Q(federal_type=self.value())
+                    | Q(portfolio__federal_agency__federal_type=self.value())
+                    | Q(federal_agency__federal_type=self.value())
                 )
             return queryset
 
