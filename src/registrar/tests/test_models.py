@@ -2040,11 +2040,6 @@ class TestDomainRequestIncomplete(TestCase):
         self.wizard.request = Mock(user=self.user, session={})
         self.wizard.kwargs = {"domain_request_pk": self.domain_request.id}
 
-        # We use both of these flags in the test. In the normal app these are generated normally.
-        # The alternative syntax is adding the decorator to each test.
-        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
-        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
-
     def tearDown(self):
         super().tearDown()
         DomainRequest.objects.all().delete()

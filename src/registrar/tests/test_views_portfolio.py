@@ -594,8 +594,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_in_session(self):
-        """When organization_feature flag is true and user has a portfolio,
-        the portfolio should be set in session."""
+        """When the user has a portfolio, the portfolio should be set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -613,8 +612,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_and_no_portfolio(self):
-        """When organization_feature flag is true and user does not have a portfolio,
-        the portfolio should be set to None in session."""
+        """When user does not have a portfolio, the portfolio should be set to None in session."""
         self.client.force_login(self.user)
         response = self.client.get(reverse("home"))
         # Ensure that middleware processes the session
