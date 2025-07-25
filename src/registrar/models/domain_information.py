@@ -372,7 +372,7 @@ class DomainInformation(TimeStampedModel):
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
         # Extract dictionaries for normal and many-to-many fields
-        da_dict, da_many_to_many_dict = cls._get_da_and_m2m_dicts(
+        da_dict, da_many_to_many_dict = cls._get_da_and_many_to_many_dicts(
             domain_request, common_fields, info_many_to_many_fields
         )
 
@@ -409,7 +409,7 @@ class DomainInformation(TimeStampedModel):
         return existing_domain_info
 
     @classmethod
-    def _get_da_and_m2m_dicts(cls, domain_request, common_fields, info_many_to_many_fields):
+    def _get_da_and_many_to_many_dicts(cls, domain_request, common_fields, info_many_to_many_fields):
         # Create a dictionary with only the common fields, and create a DomainInformation from it
         da_dict = {}
         da_many_to_many_dict = {}
@@ -434,7 +434,7 @@ class DomainInformation(TimeStampedModel):
 
     @classmethod
     def _copy_federal_agency_explicit_fields(cls, domain_request, domain_info):
-        # Explicitly copy federal_agency from DomainRequest (if present)
+        """Explicitly copy federal_agency from DomainRequest (if present)"""
         if hasattr(domain_request, "federal_agency") and domain_request.federal_agency is not None:
             domain_info.federal_agency = domain_request.federal_agency
 

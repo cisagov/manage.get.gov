@@ -2508,18 +2508,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
+            """
+            1. Search for existing federal type
+            2. Then search for federal type from associated portfolio
+            3. Then search for federal type from associated federal agency
+            """
             queryset = (
                 DomainRequest.objects.annotate(
                     converted_federal_type=Case(
-                        # If record already has federal_type, use it
                         When(federal_type__isnull=False, then=F("federal_type")),
-                        # If no direct federal_type, but
-                        # portfolio->federal_agency->federal_type exists, use that
                         When(
                             portfolio__federal_agency__federal_type__isnull=False,
                             then=F("portfolio__federal_agency__federal_type"),
                         ),
-                        # Otherwise if we have federal_agency->federal_type, use that
                         When(
                             federal_agency__federal_type__isnull=False,
                             then=F("federal_agency__federal_type"),
@@ -3933,33 +3934,35 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
+            """
+            1. Search for existing federal type
+            2. Then search for federal type from associated portfolio
+            3. Then search for federal type from associated federal agency, where:
+                A. Make sure there's domain_info, if none do nothing
+                B. Check for if no portfolio, if there is then use portfolio
+                C. Check if federal_type is missing - if has don't replace
+                D. Make sure agency has a federal_type as fallback
+                E. Otherwise assign federal_type from agency
+            """
             queryset = (
                 Domain.objects.annotate(
                     converted_federal_type=Case(
-                        # If domain_info has federal_type
                         When(
                             domain_info__federal_type__isnull=False,
                             then=F("domain_info__federal_type"),
                         ),
-                        # If it's in a portfolio and that portfolio
-                        # has an agency with federal_type
+                        #
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=False,
                             then=F("domain_info__portfolio__federal_agency__federal_type"),
                         ),
-                        # Only if we dont have a federal_type directly AND there's no portfolio
-                        # and the agency DOES have a type then use the agency's federal_type
+                        #
                         When(
-                            # Make sure there's domain_info, if none do nothing
                             domain_info__isnull=False,
-                            # Check for if no portfolio, if there is then use portfolio
                             domain_info__portfolio__isnull=True,
-                            # Check if federal_type is missing - if has don't replace
                             domain_info__federal_type__isnull=True,
-                            # Make sure agency has a federal_type as fallback
                             domain_info__federal_agency__federal_type__isnull=False,
-                            # Otherwise use this as back up and pull federal_type from agency
                             then=F("domain_info__federal_agency__federal_type"),
                         ),
                         default=Value(""),
@@ -3979,17 +3982,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             )
 
         def queryset(self, request, queryset):
-            # Selected filter, ie exec for Executive
+            """
+            1. Does domain's direct federal_type match what was selected
+            2. If not, check domains federal agency if it has a federal_type that matches
+            3. If not, check domain’s portfolio's (if present) link to agency that has
+            federal_type
+            """
             val = self.value()
             if val:
                 return queryset.filter(
-                    # Does domain's direct federal_type match what was selected
                     Q(domain_info__federal_type__iexact=val)
-                    # If no, check domains federal agency
-                    # if it has a federal_type that matches
                     | Q(domain_info__federal_agency__federal_type__iexact=val)
-                    # If no check domain’s portfolio's (if present) link
-                    # to an agency that has the federal_type
                     | Q(domain_info__portfolio__federal_agency__federal_type__iexact=val)
                 )
             return queryset
