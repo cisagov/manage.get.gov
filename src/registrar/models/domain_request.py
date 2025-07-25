@@ -15,7 +15,7 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
+from registrar.utility.waffle import flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -1000,8 +1000,7 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
-                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
-                is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
+                is_org_user = recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
