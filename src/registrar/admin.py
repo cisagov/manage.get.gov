@@ -3951,13 +3951,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                             domain_info__federal_type__isnull=False,
                             then=F("domain_info__federal_type"),
                         ),
-                        #
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=False,
                             then=F("domain_info__portfolio__federal_agency__federal_type"),
                         ),
-                        #
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=True,

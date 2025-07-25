@@ -348,7 +348,7 @@ class DomainInformation(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @classmethod
-    def create_from_da(cls, domain_request: DomainRequest, domain=None):
+    def create_from_dr(cls, domain_request: DomainRequest, domain=None):
         """Takes in a DomainRequest and converts it into DomainInformation"""
 
         # Throw an error if we get None - we can't create something from nothing
@@ -372,12 +372,12 @@ class DomainInformation(TimeStampedModel):
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
         # Extract dictionaries for normal and many-to-many fields
-        da_dict, da_many_to_many_dict = cls._get_da_and_many_to_many_dicts(
+        dr_dict, dr_many_to_many_dict = cls._get_dr_and_many_to_many_dicts(
             domain_request, common_fields, info_many_to_many_fields
         )
 
         # Create a placeholder DomainInformation object
-        domain_info = DomainInformation(**da_dict)
+        domain_info = DomainInformation(**dr_dict)
 
         # Explicitly copy over extra fields (currently only federal agency)
         # that aren't covered in the common fields
@@ -393,7 +393,7 @@ class DomainInformation(TimeStampedModel):
         # This bundles them all together, and then saves it in a single call.
         with transaction.atomic():
             domain_info.save()
-            for field, value in da_many_to_many_dict.items():
+            for field, value in dr_many_to_many_dict.items():
                 getattr(domain_info, field).set(value)
 
         return domain_info
@@ -403,34 +403,34 @@ class DomainInformation(TimeStampedModel):
         existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
         if existing_domain_info:
             logger.info(
-                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
+                f"create_from_dr() -> Shortcircuting create on {existing_domain_info}. "
                 "This record already exists. No values updated!"
             )
         return existing_domain_info
 
     @classmethod
-    def _get_da_and_many_to_many_dicts(cls, domain_request, common_fields, info_many_to_many_fields):
+    def _get_dr_and_many_to_many_dicts(cls, domain_request, common_fields, info_many_to_many_fields):
         # Create a dictionary with only the common fields, and create a DomainInformation from it
-        da_dict = {}
-        da_many_to_many_dict = {}
+        dr_dict = {}
+        dr_many_to_many_dict = {}
         for field in common_fields:
-            # If the field isn't many_to_many, populate the da_dict.
-            # If it is, populate da_many_to_many_dict as we need to save this later.
+            # If the field isn't many_to_many, populate the dr_dict.
+            # If it is, populate dr_many_to_many_dict as we need to save this later.
             if hasattr(domain_request, field):
                 if field not in info_many_to_many_fields:
-                    da_dict[field] = getattr(domain_request, field)
+                    dr_dict[field] = getattr(domain_request, field)
                 else:
-                    da_many_to_many_dict[field] = getattr(domain_request, field).all()
+                    dr_many_to_many_dict[field] = getattr(domain_request, field).all()
 
         # This will not happen in normal code flow, but having some redundancy doesn't hurt.
         # da_dict should not have "id" under any circumstances.
         # If it does have it, then this indicates that common_fields is overzealous in the data
         # that it is returning. Try looking in DomainHelper.get_common_fields.
-        if "id" in da_dict:
-            logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
-            da_dict.pop("id", None)
+        if "id" in dr_dict:
+            logger.warning("create_from_dr() -> Found attribute 'id' when trying to create")
+            dr_dict.pop("id", None)
 
-        return da_dict, da_many_to_many_dict
+        return dr_dict, dr_many_to_many_dict
 
     @classmethod
     def _copy_federal_agency_explicit_fields(cls, domain_request, domain_info):

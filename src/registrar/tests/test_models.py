@@ -1811,7 +1811,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
         )
 
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
 
     @less_console_noise_decorator
@@ -1824,7 +1824,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
         )
 
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
         self.assertEqual(domain_information.is_election_board, None)
 
@@ -1837,7 +1837,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=False,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.is_election_board = True
         domain_information.save()
 
@@ -1863,7 +1863,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=None,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.is_election_board = True
         domain_information.save()
 
@@ -1887,7 +1887,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=True,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
 
         domain_information.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_information.save()
@@ -1903,7 +1903,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
             is_election_board=True,
         )
-        domain_information_tribal = DomainInformation.create_from_da(domain_request_tribal)
+        domain_information_tribal = DomainInformation.create_from_dr(domain_request_tribal)
         self.assertEqual(
             domain_information_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
         )
@@ -1930,7 +1930,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=False,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.save()
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
         self.assertEqual(domain_information.is_election_board, False)
@@ -1945,7 +1945,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
             organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
         )
-        domain_information_election = DomainInformation.create_from_da(domain_request_election)
+        domain_information_election = DomainInformation.create_from_dr(domain_request_election)
 
         self.assertEqual(
             domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
