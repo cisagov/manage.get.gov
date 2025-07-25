@@ -1,48 +1,58 @@
-from django.test import TestCase, RequestFactory, override_settings
-from unittest.mock import patch, MagicMock
-from django.contrib.auth.models import AnonymousUser, User
+from django.test import TestCase, override_settings
+from django.urls import reverse
+import io
+import logging
+from registrar.config.settings import JsonFormatter
+from django.contrib.auth import get_user_model
+import registrar.registrar_middleware
+from ..logging_context import clear_user_log_context
 
-from registrar.registrar_middleware import RequestLoggingMiddleware
 
-
-class RequestLoggingMiddlewareTest(TestCase):
+class RegisterLoggingMiddlewareTest(TestCase):
     """Test 'our' middleware logging."""
 
     def setUp(self):
-        self.factory = RequestFactory()
-        self.get_response_mock = MagicMock()
-        self.middleware = RequestLoggingMiddleware(self.get_response_mock)
+        clear_user_log_context()
+        self.stream = io.StringIO()
+        self.handler = logging.StreamHandler(self.stream)
+        self.logger = logging.getLogger(registrar.registrar_middleware.__name__)
+        self.handler.setFormatter(JsonFormatter())
+        self.logger.addHandler(self.handler)
+        self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False
+
+    def tearDown(self):
+        clear_user_log_context()
+        self.handler.close()
 
     @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only
-    @patch("logging.Logger.info")
-    def test_logging_enabled_in_production(self, mock_logger):
-        """Test that logging occurs when IS_PRODUCTION is True"""
-        request = self.factory.get("/test-path", **{"REMOTE_ADDR": "Unknown IP"})  # Override IP
-        request.user = User(username="testuser", email="testuser@example.com")
+    def test_logging_with_anonymous_user(self):
+        self.client.get(reverse("health"))
+        log_output = self.stream.getvalue()
+        self.assertIn("Router log", log_output)
+        self.assertIn("user: Anonymous", log_output)
 
-        self.middleware(request)  # Call middleware
-
-        mock_logger.assert_called_once_with(
-            "Router log | User: testuser@example.com | IP: Unknown IP | Path: /test-path"
+    @override_settings(IS_PRODUCTION=True)
+    def test_logging_with_nonanonymous_user(self):
+        user = get_user_model().objects.create_user(
+            username="test",
+            first_name="test",
+            email="test_middleware@gmail.com",
+            phone="8002224444",
         )
+        self.client.force_login(user)
+        self.client.get(reverse("domains"))
 
-    @patch("logging.Logger.info")
-    def test_logging_disabled_in_non_production(self, mock_logger):
-        """Test that logging does not occur when IS_PRODUCTION is False"""
-        request = self.factory.get("/test-path")
-        request.user = User(username="testuser", email="testuser@example.com")
+        # adding log info to test
 
-        self.middleware(request)  # Call middleware
+        self.logger.info("Testing middleware")
+        self.handler.flush()
+        log_output = self.stream.getvalue()
+        self.client.logout()
+        self.client.session.flush()
+        self.assertIn("test_middleware@gmail.com", log_output)
 
-        mock_logger.assert_not_called()  # Ensure no logs are generated
-
-    @override_settings(IS_PRODUCTION=True)  # Scopes change to this test only
-    @patch("logging.Logger.info")
-    def test_logging_anonymous_user(self, mock_logger):
-        """Test logging for an anonymous user"""
-        request = self.factory.get("/anonymous-path", **{"REMOTE_ADDR": "Unknown IP"})  # Override IP
-        request.user = AnonymousUser()  # Simulate an anonymous user
-
-        self.middleware(request)  # Call middleware
-
-        mock_logger.assert_called_once_with("Router log | User: Anonymous | IP: Unknown IP | Path: /anonymous-path")
+    def test_logging_disabled_in_non_production(self):
+        self.client.get(reverse("health"))
+        log_output = self.stream.getvalue()
+        self.assertNotIn("Router log", log_output)
