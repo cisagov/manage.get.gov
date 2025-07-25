@@ -1180,7 +1180,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             messages.warning(self.request, "Could not send portfolio email invitation.")
 
 
-@grant_access(IS_PORTFOLIO_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationsView(DetailView, FormMixin):
     model=UserPortfolioPermission
     template_name = "portfolio_organizations.html"

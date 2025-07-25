@@ -136,15 +136,14 @@ class CheckPortfolioMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.home = reverse("home")
-        self.portfolio_setup_page = reverse("your-portfolios")
+        # self.portfolio_setup_page = reverse("your-portfolios")
         self.profile_setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
 
         self.excluded_pages = [
-            self.portfolio_setup_page,
+            # self.portfolio_setup_page,
             self.profile_page,
-            self.portfolio_setup_page,
             self.logout_page,
             "/admin",
             # These are here as there is a bug with this middleware that breaks djangos built in debug console.
