@@ -33,6 +33,7 @@ from registrar.views.utility.api_views import (
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
     get_rejection_email_for_user_json,
+    set_portfolio_in_session
 )
 
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
@@ -383,6 +384,12 @@ urlpatterns = [
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
     path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
+    path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
+    path(
+        "set-session-portfolio/<int:portfolio_pk>", 
+        views.PortfolioOrganizationSelectView.as_view(), 
+        name="set-session-portfolio"
+    ),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

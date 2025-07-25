@@ -13,6 +13,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
+    IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
 from registrar.forms import portfolio as portfolioForms
@@ -1179,3 +1180,77 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send portfolio email invitation.")
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationsView(DetailView, FormMixin):
+    model=UserPortfolioPermission
+    template_name = "portfolio_organizations.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+    
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by("portfolio")
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.object = self.get_object()
+        self.form = self.get_form()
+        print("form: ", self.form)
+    
+    # def _handle_success_response(self, request, portfolio):
+    #     """
+    #     Return a success response (JSON or redirect with messages).
+    #     """
+    #     success_message = f"You set your active portfolio to {portfolio}."
+    #     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+    #         return JsonResponse({"success": success_message}, status=200)
+    #     messages.success(request, success_message)
+    #     return redirect(reverse("domains"))
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationSelectView(DetailView, FormMixin):
+    model=UserPortfolioPermission
+    template_name = "portfolio_organization_select.html"
+    context_object_name = "portfolio"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+    pk_url_kwarg = "portfolio_pk"
+
+    def post(self, request, portfolio_pk):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.form = self.get_form()
+
+        portfolio_name = self.form['set_session_portfolio_button'].value()
+        print("portfolio: ", portfolio_name)
+
+        portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
+        request.session["portfolio"] = portfolio
+        print("Successfully set active portfolio to ", portfolio)
+        # return HttpResponseRedirect(reverse("domains"))
+        return self._handle_success_response(request, portfolio)
+    
+    def _handle_success_response(self, request, portfolio):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You set your active portfolio to {portfolio}."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        messages.success(request, success_message)
+        return redirect(reverse("domains"))
