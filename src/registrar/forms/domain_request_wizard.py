@@ -287,6 +287,11 @@ class OrganizationFederalForm(RegistrarForm):
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
 
+    def to_database(self, domain_request):
+        federal_type = self.cleaned_data.get("federal_type")
+        domain_request.federal_type = federal_type
+        domain_request.save(update_fields=["federal_type"])
+
 
 class OrganizationElectionForm(RegistrarForm):
     is_election_board = forms.NullBooleanField(
