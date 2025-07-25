@@ -3,8 +3,7 @@
 
 <footer class="usa-footer">
     <div class="usa-footer__secondary-section">
-      <div class="grid-container grid-container--widescreen">
-        <div class="grid-row grid-gap">
+        <div class="display-flex top-footer-section">
           <div
             class="
               usa-footer__logo
@@ -25,7 +24,7 @@
                       mobile-lg:grid-col-6 flex-align-self-center"
           >
             <address class="usa-footer__address maxw-none">
-              <div class="usa-footer__contact-info grid-row grid-gap-md">
+              <div class="usa-footer__contact-info grid-row grid-gap-lg">
                 {% if portfolio %}
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'domains' %}">Domains</a>
@@ -46,25 +45,22 @@
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'home' %}">Home</a>
                 </div>
-                <span class=""> | </span>
                 {% endif %}
-                <span class=""> | </span>
+                 <span class="">|</span>
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'user-profile' %}">Your Profile</a>
                 </div>
               </div>
             </address>
           </div>
-        </div>
       </div>
-    </div>
   </footer>
   <div class="usa-identifier">
     <section
-      class="usa-identifier__section usa-identifier__section--masthead"
+      class="usa-identifier__section usa-identifier__section--masthead
       aria-label="Agency identifier"
     >
-      <div class="usa-identifier__container usa-identifier__container--widescreen padding-x--widescreen">
+      <div class="display-flex">
         <div class="usa-identifier__logos">
           <a rel="noopener noreferrer" target="_blank" href="https://www.cisa.gov" class="usa-identifier__logo"
             ><img
@@ -79,44 +75,82 @@
           class="usa-identifier__identity"
           aria-label="Agency description"
         >
-          <p class="usa-identifier__identity-domain">get.gov</p>
+          <p class="usa-identifier__identity-domain">get.gov
           <p class="usa-identifier__identity-disclaimer">
             An official website of the <a rel="noopener noreferrer" target="_blank" href="https://www.cisa.gov" class="usa-link">Cybersecurity and Infrastructure Security Agency</a>
-          </p>
+          
         </section>
       </div>
     </section>
-    <nav
-      class="usa-identifier__section usa-identifier__section--required-links"
-      aria-label="Important links"
-    >
-      <div class="usa-identifier__container usa-identifier__container--widescreen padding-x--widescreen">
-        <ul class="usa-identifier__required-links-list">
-          <li class="usa-identifier__required-links-item">
-        <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'about/' %}"
-              class="usa-identifier__required-link usa-link">About .gov</a>
+    <section  class="usa-identifier__section" aria-label="Agency description">
+        <div class="grid-col-12">
+        <div class="grid-row grid-gap">
+          <div class="tablet:grid-col-3">
+            <ul class="usa-list usa-list--unstyled">
+              <h4 class="usa-footer__heading">About</h4>
+            <li>  
+              
+           <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'about/' %}"
+                          class="usa-identifier__required-link usa-link">About .gov</a>
+              
+            </li>
+          <li class="">
+            
+            <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'privacy-policy/' %}" class="usa-identifier__required-link usa-link">Privacy policy</a>
+            
+          </li>
+          <li class="">
+    <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'vulnerability-disclosure-policy/' %}" class="usa-identifier__required-link usa-link"
+              >Vulnerability disclosure policy</a>
+            
+              </ul>
+          </div>
+           <div class="tablet:grid-col-3">
+              <ul class="usa-list usa-list--unstyled">
+                <h4 class="usa-footer__heading">Resources</h4>
+              <li class="usa-identifier__required-links-item"> 
+             
+              
           </li>
           <li class="usa-identifier__required-links-item">
-            <a rel="noopener noreferrer" target="_blank"
+            
+               <a rel="noopener noreferrer" target="_blank"
               href="https://github.com/cisagov/getgov"
               class="usa-identifier__required-link usa-link usa-link--external"
               >.gov on Github</a
             >
+            
+    
           </li>
           <li class="usa-identifier__required-links-item">
- <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'privacy-policy/' %}" class="usa-identifier__required-link usa-link">Privacy policy</a>
+            
+               <a rel="noopener noreferrer" target="_blank" href="https://www.dhs.gov/accessibility" class="usa-identifier__required-link usa-link usa-link--external"
+              >Accessibility</a>
+            
+          </li>
+            </ul>
+         </div>
+        <div class="tablet:grid-col-3">
+           <ul class="usa-list usa-list--unstyled">
+            <h4 class="usa-footer__heading">Support</h4>
+              <li class="usa-identifier__required-links-item">
+                
+                  <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'help/' %}"
+              class="usa-identifier__required-link usa-link">Help</a>
+                
           </li>
           <li class="usa-identifier__required-links-item">
-            <a rel="noopener noreferrer" target="_blank" href="https://www.dhs.gov/accessibility" class="usa-identifier__required-link usa-link usa-link--external"
-              >Accessibility statement</a
-            >
+            
+         <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'contact/' %}"
+              class="usa-identifier__required-link usa-link">Contact us</a>
+            
           </li>
-          <li class="usa-identifier__required-links-item">
-            <a rel="noopener noreferrer" target="_blank" href="{% public_site_url 'vulnerability-disclosure-policy/' %}" class="usa-identifier__required-link usa-link"
-              >Vulnerability disclosure policy</a>
-          </li>
-          <li class="usa-identifier__required-links-item">
-            <a rel="noopener noreferrer" target="_blank" href="https://www.cisa.gov/cisa-no-fear-act-reporting" class="usa-identifier__required-link usa-link"
+         </div>
+          <div class="tablet:grid-col-3">
+           <ul class="usa-list usa-list--unstyled">
+            <h4 class="usa-footer__heading">Legal</h4>
+            <li>
+              <a rel="noopener noreferrer" target="_blank" href="https://www.cisa.gov/cisa-no-fear-act-reporting" class="usa-identifier__required-link usa-link"
               >No FEAR Act data</a
             >
           </li>
@@ -125,17 +159,21 @@
               >FOIA requests</a
             >
           </li>
-        </ul>
+                
+  
+            </ul>
+         </div>
+        </div>
       </div>
-    </nav>
+    </section>
     <section
       class="usa-identifier__section usa-identifier__section--usagov"
       aria-label="U.S. government information and services"
     >
-      <div class="usa-identifier__container usa-identifier__container--widescreen padding-x--widescreen">
         <div class="usa-identifier__usagov-description">
           Looking for U.S. government information and services?
         </div>
         <a rel="noopener noreferrer" target="_blank" href="https://www.usa.gov/" class="usa-link usa-link--external">Visit USA.gov</a>
-      </div>
+
     </section>
+  </div>

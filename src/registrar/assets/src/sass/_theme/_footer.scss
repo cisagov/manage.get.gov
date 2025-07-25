@@ -1,0 +1,29 @@
+@use "uswds-core" as *;
+
+.usa-list--unstyled h4.usa-footer__heading {
+  color: color('base-lighter');
+  margin-top: units(.5);
+  margin-bottom: units(2);
+}
+
+.usa-identifier__section li a{
+  display:block;
+  margin-bottom: units(1);
+}
+
+.top-footer-section, .usa-identifier__section{
+    margin: units(2);
+}
+
+.top-footer-section{
+  padding-left: units(1);
+  padding-top: units(1);
+}
+
+.usa-identifier__section{
+   padding: units(2);
+}
+
+.usa-footer__address a, .usa-identifier p{
+  font-size: 1.25rem;
+}
