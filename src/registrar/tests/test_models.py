@@ -3,7 +3,6 @@ from django.test import TestCase
 from unittest.mock import patch
 from unittest.mock import Mock
 from django.test import RequestFactory
-from waffle.models import get_waffle_flag_model
 from registrar.views.domain_request import DomainRequestWizard
 from registrar.models import (
     Contact,

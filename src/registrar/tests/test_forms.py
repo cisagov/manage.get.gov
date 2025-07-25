@@ -25,7 +25,6 @@ from registrar.forms.portfolio import (
     PortfolioMemberForm,
     PortfolioNewMemberForm,
 )
-from waffle.models import get_waffle_flag_model
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
