@@ -1258,7 +1258,7 @@ class DomainUsersView(DomainBaseView):
         for domain_invitation in self.object.invitations.filter(
             status__in=[
                 DomainInvitation.DomainInvitationStatus.INVITED,
-                DomainInvitation.DomainInvitationStatus.CANCELED
+                DomainInvitation.DomainInvitationStatus.CANCELED,
             ]
         ):
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
