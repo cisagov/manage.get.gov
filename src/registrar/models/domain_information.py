@@ -355,7 +355,7 @@ class DomainInformation(TimeStampedModel):
         if domain_request is None:
             raise ValueError("The provided DomainRequest is None")
 
-        # Throw an error if the da doesn't have an id
+        # Throw an error if the dr doesn't have an id
         if not hasattr(domain_request, "id"):
             raise ValueError("The provided DomainRequest has no id")
 
@@ -423,7 +423,7 @@ class DomainInformation(TimeStampedModel):
                     dr_many_to_many_dict[field] = getattr(domain_request, field).all()
 
         # This will not happen in normal code flow, but having some redundancy doesn't hurt.
-        # da_dict should not have "id" under any circumstances.
+        # dr_dict should not have "id" under any circumstances.
         # If it does have it, then this indicates that common_fields is overzealous in the data
         # that it is returning. Try looking in DomainHelper.get_common_fields.
         if "id" in dr_dict:
