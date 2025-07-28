@@ -46,7 +46,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
+        choices=DomainInformation.StateTerritoryChoices.choices,  # type: ignore[misc]
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
@@ -124,13 +124,13 @@ class BasePortfolioMemberForm(forms.ModelForm):
     role = forms.ChoiceField(
         choices=[
             # Uses .value because the choice has a different label (on /admin)
-            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin access"),
-            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access"),
+            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin"),
+            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic"),
         ],
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Select the level of access you would like to grant this member.",
+            "required": "Select the role you would like to grant this member.",
         },
     )
 
@@ -425,9 +425,9 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
                 raise forms.ValidationError(
                     {
                         "role": forms.ValidationError(
-                            "You can't change your member access because you're "
+                            "You can't change your member role because you're "
                             "the only admin for this organization. "
-                            "To change your access, you'll need to add another admin."
+                            "To change your role, you'll need to add another admin."
                         )
                     }
                 )
