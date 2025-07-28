@@ -18,7 +18,6 @@
                     {% if user.is_authenticated %}
                     <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                 </li>
-
                 <li class="usa-nav__secondary-item">
                     {% url 'user-profile' as user_profile_url %}
                     {% url 'finish-user-profile-setup' as finish_setup_url %}
