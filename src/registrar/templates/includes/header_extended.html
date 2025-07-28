@@ -19,13 +19,13 @@
                     <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                 </li>
 
-                <!-- <li class="usa-nav__secondary-item">
+                <li class="usa-nav__secondary-item">
                     {% url 'user-profile' as user_profile_url %}
                     {% url 'finish-user-profile-setup' as finish_setup_url %}
                     <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
                         Your profile
                     </a>
-                </li> -->
+                </li>
                 <li class="usa-nav__secondary-item">
                     <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
                     {% else %}
