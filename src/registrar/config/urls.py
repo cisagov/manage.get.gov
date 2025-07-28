@@ -272,7 +272,7 @@ urlpatterns = [
     ),
     path(
         "domain-request/viewonly/<int:domain_request_pk>",
-        views.PortfolioDomainRequestStatusViewOnly.as_view(),
+        views.DomainRequestStatusViewOnly.as_view(),
         name="domain-request-status-viewonly",
     ),
     path(

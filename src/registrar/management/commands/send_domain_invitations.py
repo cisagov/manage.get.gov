@@ -124,7 +124,7 @@ class Command(BaseCommand):
             send_templated_email(
                 "emails/transition_domain_invitation.txt",
                 "emails/transition_domain_invitation_subject.txt",
-                to_address=email_data["email"],
+                to_addresses=email_data["email"],
                 context={
                     "domains": email_data["domains"],
                 },
@@ -136,9 +136,12 @@ class Command(BaseCommand):
             )
         except EmailSendingError as err:
             logger.error(
-                f"email did not send successfully to {email_data['email']} "
-                f"for {[domain for domain in email_data['domains']]}"
-                f": {err}"
+                "Failed to send transition domain invitation email:\n"
+                f"  Subjec template: transition_domain_invitation_subject.txt\n"
+                f"  To: {email_data['email']}\n"
+                f"  Domains: {', '.join(email_data['domains'])}\n"
+                f"  Error: {err}",
+                exc_info=True,
             )
             # if email failed to send, set error in domains_with_errors for each
             # domain in the email so that transition domain email_sent is not set

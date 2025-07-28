@@ -212,6 +212,13 @@ class TestPortfolio(WebTest):
             first_name="Saturn", last_name="Enceladus", title="Planet/Moon", email="spacedivision@igorville.com"
         )
 
+        portfolio_admin = User.objects.create_user(
+            username="adminuser", first_name="Galileo", last_name="Galilei", email="admin@example.com"
+        )
+        UserPortfolioPermission.objects.create(
+            user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
@@ -227,6 +234,8 @@ class TestPortfolio(WebTest):
             # Organization overview page includes organization info and senior official details
             self.assertContains(response, "Los Angeles")
             self.assertContains(response, "spacedivision@igorville.com")
+            # Organization overview page includes portfolio admin
+            self.assertContains(response, "Galileo")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
@@ -309,7 +318,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_portfolio_organization_info_page_edit_access(self):
-        """Test that user with a portfolio can access the portfolio organization page, read only"""
+        """Test that user with a portfolio can access the portfolio organization page, edit access"""
         self.app.set_user(self.user.username)
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
@@ -327,12 +336,35 @@ class TestPortfolio(WebTest):
             response = self.app.get(reverse("organization-info"))
             # Assert the response is a 200
             self.assertEqual(response.status_code, 200)
-            # The label for Federal agency will always be a h4
-            self.assertContains(response, '<h4 class="margin-bottom-05">Organization name</h4>')
-            # The read only label for city will be a h4
-            self.assertNotContains(response, '<h4 class="margin-bottom-05">City</h4>')
-            self.assertNotContains(response, '<p class="margin-top-0">Los Angeles</p>')
+            self.assertContains(response, "<h2>Organization admins</h2>")
+            self.assertContains(response, "<h2>Organization name and address</h2>")
+            self.assertContains(
+                response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+            )
+            self.assertNotContains(response, "<address>")
             self.assertContains(response, 'for="id_city"')
+
+    @less_console_noise_decorator
+    def test_portfolio_organization_detail_pages_shows_read_only(self):
+        """Test that breadcrumb menus display on portfolio detail pages"""
+        self.app.set_user(self.user.username)
+        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            ],
+        )
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.save()
+
+        with override_flag("organization_feature", active=True):
+            org_info_response = self.app.get(reverse("organization-info"))
+            # We don't use the label "Organization name" in the view-only view
+            self.assertNotContains(
+                org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
+            )
+        self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_include_breadcrumb(self):
@@ -491,8 +523,7 @@ class TestPortfolio(WebTest):
             self.portfolio.save()
             page = self.app.get(reverse("organization-info"))
             # Org name in Sidenav, main nav, webpage title, and breadcrumb
-            self.assertContains(page, "Hotel California", count=4)
-            self.assertContains(page, "Non-Federal Agency")
+            self.assertContains(page, "Hotel California", count=5)
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
@@ -1136,7 +1167,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
         self.assertContains(response, "Admin")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
 
@@ -1253,7 +1284,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, portfolio_invitation.email)
         self.assertContains(response, "Admin")
         self.assertContains(response, "Viewer")
-        self.assertContains(response, "Creator")
+        self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
         # Assert buttons and links within the page are correct
@@ -3456,7 +3487,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Verify successful submission by checking we're on the next page
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
 
     @override_flag("organization_feature", active=True)
     @override_flag("organization_requests", active=True)
@@ -3513,7 +3544,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name__isnull=True, sub_organization=self.suborganization
         ).exists()
@@ -3549,7 +3580,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name__isnull=True,
             sub_organization__isnull=True,
@@ -3584,7 +3615,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Ensure that the post occurred successfully by checking that we're on the following page.
-        self.assertContains(response, "Current websites")
+        self.assertContains(response, ".gov domain")
         created_domain_request_exists = DomainRequest.objects.filter(
             organization_name=self.portfolio.organization_name,
         ).exists()
@@ -4761,7 +4792,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the change modal is on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Yes, change my access")
+        self.assertContains(response, "Yes, change my role")
 
         response = self.client.post(
             reverse("member-permissions", kwargs={"member_pk": admin_permission.id}),
@@ -4792,7 +4823,7 @@ class TestPortfolioMemberEditView(WebTest):
         # First, verify that the info alert is present on the page
         response = self.client.get(reverse("member-permissions", kwargs={"member_pk": admin_permission.id}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "To remove yourself or change your member access")
+        self.assertContains(response, "To remove yourself or change your member role")
 
         # Then, verify that the right form error is shown
         response = self.client.post(

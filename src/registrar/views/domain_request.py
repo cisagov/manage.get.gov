@@ -10,8 +10,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
 from registrar.decorators import (
+    HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-    HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
     IS_DOMAIN_REQUEST_CREATOR,
     grant_access,
 )
@@ -83,7 +83,6 @@ class DomainRequestWizard(TemplateView):
     # Titles for the portfolio context
     PORTFOLIO_TITLES = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
-        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
         PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
@@ -116,7 +115,7 @@ class DomainRequestWizard(TemplateView):
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
+            self.domain_request.current_websites.exists() or self.domain_request.senior_official is not None
         ),
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
@@ -134,9 +133,6 @@ class DomainRequestWizard(TemplateView):
 
     PORTFOLIO_UNLOCKING_STEPS = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
-        PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
-        ),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         PortfolioDomainRequestStep.PURPOSE: lambda self: self.domain_request.purpose is not None,
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: lambda self: self.domain_request.anything_else is not None,
@@ -615,8 +611,6 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
     forms = [
-        feb.WorkingWithEOPYesNoForm,
-        feb.EOPContactForm,
         feb.FEBAnythingElseYesNoForm,
         forms.PortfolioAnythingElseForm,
     ]
@@ -631,37 +625,29 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
         Validates the forms for portfolio additional details.
 
         Expected order of forms_list:
-            0: WorkingWithEOPYesNoForm
-            1: EOPContactForm
-            2: FEBAnythingElseYesNoForm
-            3: PortfolioAnythingElseForm
+            0: FEBAnythingElseYesNoForm
+            1: PortfolioAnythingElseForm
         """
+        feb_anything_else_yes_no_form = forms[0]
+        portfolio_anything_else_form = forms[1]
+
         if not self.requires_feb_questions():
-            for i in range(3):
+            for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return forms[3].is_valid()
-        eop_forms_valid = True
-        if not forms[0].is_valid():
-            # If the user isn't working with EOP, don't validate the EOP contact form
-            forms[1].mark_form_for_deletion()
-            eop_forms_valid = False
-        if forms[0].cleaned_data.get("working_with_eop"):
-            eop_forms_valid = forms[1].is_valid()
-        else:
-            forms[1].mark_form_for_deletion()
+            return feb_anything_else_yes_no_form.is_valid()
         anything_else_forms_valid = True
-        if not forms[2].is_valid():
-            forms[3].mark_form_for_deletion()
+        if not portfolio_anything_else_form.is_valid():
+            feb_anything_else_yes_no_form.mark_form_for_deletion()
             anything_else_forms_valid = False
-        if forms[2].cleaned_data.get("has_anything_else_text"):
-            forms[3].fields["anything_else"].required = True
-            forms[3].fields["anything_else"].error_messages[
+        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
+            feb_anything_else_yes_no_form.fields["anything_else"].required = True
+            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
                 "required"
             ] = "Please provide additional details you'd like us to know. \
                 If you have nothing to add, select 'No'."
-            anything_else_forms_valid = forms[3].is_valid()
-        return eop_forms_valid and anything_else_forms_valid
+            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
+        return anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -957,14 +943,9 @@ class Requirements(DomainRequestWizard):
         # Pass the is_federal context to the form
         for form in forms_list:
             if isinstance(form, forms.RequirementsForm):
-                if self.requires_feb_questions():
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain."  # noqa: E501
-                    )
-                else:
-                    form.fields["is_policy_acknowledged"].label = (
-                        "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
-                    )
+                form.fields["is_policy_acknowledged"].label = (
+                    "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
+                )
 
         return forms_list
 
@@ -1021,7 +1002,15 @@ class Review(DomainRequestWizard):
             return
 
         try:
-            context = {"domain_request": self.domain_request, "date": date.today()}
+            purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
+            # requires_feb_questions and purpose_label used to pass into portfolio_domain_request_summary template
+            context = {
+                "domain_request": self.domain_request,
+                "date": date.today(),
+                "requires_feb_questions": True,
+                "purpose_label": purpose_label,
+            }
+
             send_templated_email(
                 "emails/omb_submission_confirmation.txt",
                 "emails/omb_submission_confirmation_subject.txt",
@@ -1029,8 +1018,14 @@ class Review(DomainRequestWizard):
                 context=context,
             )
             logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
-        except EmailSendingError:
-            logger.warning("Failed to send confirmation email", exc_info=True)
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send OMB submission confirmation email:\n"
+                f"  Subject template: omb_submission_confirmation_subject.txt\n"
+                f"  To: ombdotgov@omb.eop.gov\n"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
 
 class Finished(DomainRequestWizard):
@@ -1205,9 +1200,20 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         return duplicates
 
 
-# region Portfolio views
-@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL)
-class PortfolioDomainRequestStatusViewOnly(DetailView):
+@grant_access(HAS_DOMAIN_REQUESTS_VIEW_ALL)
+class DomainRequestStatusViewOnly(DetailView):
+    """
+    View-only access for domain requests both on enterprise-mode portfolios and legacy mode.
+
+    This view provides read-only access to domain request details for users who have
+    view permissions but not edit permissions.
+
+    Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
+    - Portfolio members with view-all domain requests permission
+    - Non-portfolio users who are creators of the domain request
+    - Analysts with appropriate permissions
+    """
+
     template_name = "portfolio_domain_request_status_viewonly.html"
     model = DomainRequest
     pk_url_kwarg = "domain_request_pk"
@@ -1215,16 +1221,35 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Create a temp wizard object to grab the step list
-        wizard = PortfolioDomainRequestWizard()
-        wizard.request = self.request
-        context["Step"] = PortfolioDomainRequestStep.__members__
-        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
-        context["form_titles"] = wizard.titles
-        context["requires_feb_questions"] = self.object.is_feb() and flag_is_active_for_user(
+        domain_request = self.object
+
+        # Determine if this is a portfolio request or if user is org user
+        is_portfolio = domain_request.portfolio is not None or self.request.user.is_org_user(self.request)
+
+        if is_portfolio:
+            # Create a temp wizard object to grab the step list
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
+        else:
+            # For non-portfolio requests
+            wizard = DomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = Step.__members__
+            context["steps"] = request_step_list(wizard, Step)
+            context["form_titles"] = wizard.titles
+
+        # Common context
+        context["requires_feb_questions"] = domain_request.is_feb() and flag_is_active_for_user(
             self.request.user, "organization_feature"
         )
-        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(self.object.feb_purpose_choice)
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
+        context["view_only_mode"] = True
+        context["is_portfolio"] = is_portfolio
+        context["portfolio"] = self.request.session.get("portfolio")
+
         return context
 
 

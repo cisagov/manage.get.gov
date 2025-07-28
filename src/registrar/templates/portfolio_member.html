@@ -9,11 +9,6 @@ Organization member
 
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-  <!-- Form messages -->
-  {% include "includes/form_errors.html" with form=form %}
-  {% block messages %}
-    {% include "includes/form_messages.html" %}
-  {% endblock messages%}
 
   {% url 'members' as url %}
   <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
@@ -27,6 +22,11 @@ Organization member
   </ol>
   </nav>
   
+  <!-- Form messages -->
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
+  {% include "includes/form_errors.html" with form=form %}
 
   <h1 class="margin-bottom-3">Manage member</h1>
 
@@ -104,15 +104,15 @@ Organization member
         <p class="usa-alert__text ">
           You're the only admin for this organization.
           Organizations must have at least one admin.
-          To remove yourself or change your member access,
+          To remove yourself or change your member role,
           you'll need to add another admin.
         </p>
       </div>
     </div>
     {% endif %}
-    {% include "includes/summary_item.html" with title='Member access and permissions' permissions=True value=portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+    {% include "includes/summary_item.html" with title='Member role and permissions' permissions=True value=portfolio_permission edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% elif portfolio_invitation %}
-    {% include "includes/summary_item.html" with title='Member access and permissions' permissions=True value=portfolio_invitation edit_link=edit_url editable=has_edit_members_portfolio_permission %}
+    {% include "includes/summary_item.html" with title='Member role and permissions' permissions=True value=portfolio_invitation edit_link=edit_url editable=has_edit_members_portfolio_permission %}
   {% endif %}
 
   {% comment %}view_button is passed below as true in all cases. This is because editable logic will trump view_button logic; ie. if editable is true, view_button will never be looked at{% endcomment %}

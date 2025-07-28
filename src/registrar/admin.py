@@ -2508,19 +2508,22 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            # Annotate the queryset for efficient filtering
+            """
+            1. Search for existing federal type
+            2. Then search for federal type from associated portfolio
+            3. Then search for federal type from associated federal agency
+            """
             queryset = (
                 DomainRequest.objects.annotate(
                     converted_federal_type=Case(
+                        When(federal_type__isnull=False, then=F("federal_type")),
                         When(
-                            portfolio__isnull=False,
                             portfolio__federal_agency__federal_type__isnull=False,
-                            then="portfolio__federal_agency__federal_type",
+                            then=F("portfolio__federal_agency__federal_type"),
                         ),
                         When(
-                            portfolio__isnull=True,
                             federal_agency__federal_type__isnull=False,
-                            then="federal_agency__federal_type",
+                            then=F("federal_agency__federal_type"),
                         ),
                         default=Value(""),
                         output_field=CharField(),
@@ -2530,7 +2533,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 .distinct()
             )
 
-            # Filter out empty values and return sorted unique entries
             return sorted(
                 [
                     (federal_type, BranchChoices.get_branch_label(federal_type))
@@ -2542,8 +2544,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         def queryset(self, request, queryset):
             if self.value():
                 return queryset.filter(
-                    Q(portfolio__federal_agency__federal_type=self.value())
-                    | Q(portfolio__isnull=True, federal_agency__federal_type=self.value())
+                    Q(federal_type=self.value())
+                    | Q(portfolio__federal_agency__federal_type=self.value())
+                    | Q(federal_agency__federal_type=self.value())
                 )
             return queryset
 
@@ -2845,8 +2848,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "cisa_representative_first_name",
                     "cisa_representative_last_name",
                     "cisa_representative_email",
-                    "eop_stakeholder_first_name",
-                    "eop_stakeholder_last_name",
                 ]
             },
         ),
@@ -3065,8 +3066,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "feb_purpose_choice",
             "time_frame_details",
             "interagency_initiative_details",
-            "eop_stakeholder_first_name",
-            "eop_stakeholder_last_name",
         ]
 
         org_fields = [
@@ -3935,10 +3934,23 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         parameter_name = "converted_federal_types"
 
         def lookups(self, request, model_admin):
-            # Annotate the queryset for efficient filtering
+            """
+            1. Search for existing federal type
+            2. Then search for federal type from associated portfolio
+            3. Then search for federal type from associated federal agency, where:
+                A. Make sure there's domain_info, if none do nothing
+                B. Check for if no portfolio, if there is then use portfolio
+                C. Check if federal_type is missing - if has don't replace
+                D. Make sure agency has a federal_type as fallback
+                E. Otherwise assign federal_type from agency
+            """
             queryset = (
                 Domain.objects.annotate(
                     converted_federal_type=Case(
+                        When(
+                            domain_info__federal_type__isnull=False,
+                            then=F("domain_info__federal_type"),
+                        ),
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=False,
@@ -3947,8 +3959,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=True,
-                            domain_info__federal_type__isnull=False,
-                            then="domain_info__federal_agency__federal_type",
+                            domain_info__federal_type__isnull=True,
+                            domain_info__federal_agency__federal_type__isnull=False,
+                            then=F("domain_info__federal_agency__federal_type"),
                         ),
                         default=Value(""),
                         output_field=CharField(),
@@ -3958,7 +3971,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 .distinct()
             )
 
-            # Filter out empty values and return sorted unique entries
             return sorted(
                 [
                     (federal_type, BranchChoices.get_branch_label(federal_type))
@@ -3968,10 +3980,18 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             )
 
         def queryset(self, request, queryset):
-            if self.value():
+            """
+            1. Does domain's direct federal_type match what was selected
+            2. If not, check domains federal agency if it has a federal_type that matches
+            3. If not, check domain’s portfolio's (if present) link to agency that has
+            federal_type
+            """
+            val = self.value()
+            if val:
                 return queryset.filter(
-                    Q(domain_info__portfolio__federal_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__federal_agency__federal_type=self.value())
+                    Q(domain_info__federal_type__iexact=val)
+                    | Q(domain_info__federal_agency__federal_type__iexact=val)
+                    | Q(domain_info__portfolio__federal_agency__federal_type__iexact=val)
                 )
             return queryset
 
@@ -4130,13 +4150,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return obj.domain_info.state_territory if obj.domain_info else None
 
     def dnssecdata(self, obj):
-        return "Yes" if obj.dnssecdata else "No"
+        return "No" if obj.state == Domain.State.UNKNOWN or not obj.dnssecdata else "Yes"
 
     dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
 
     # Custom method to display formatted nameservers
     def nameservers(self, obj):
-        if not obj.nameservers:
+        if obj.state == Domain.State.UNKNOWN or not obj.nameservers:
             return "No nameservers"
 
         formatted_nameservers = []

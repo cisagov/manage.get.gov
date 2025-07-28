@@ -50,3 +50,9 @@ h4, .h4 {
 .font-body-1 {
   font-size: size('body', 1);
 }
+
+h2, .h2 {
+  + p {
+    margin-top: units(.5);
+  }
+}

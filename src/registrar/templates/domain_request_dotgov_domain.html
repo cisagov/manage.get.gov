@@ -3,11 +3,11 @@
 
 {% block form_instructions %}
   <p>
-    Before requesting a .gov domain, please make sure it meets 
+    Before requesting a .gov domain, please make sure it meets the
     {% if requires_feb_questions %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">our naming requirements for executive branch agencies</a>. Your domain name must:
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">naming requirements for executive branch agencies</a>. Your domain name must:
     {% else %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">our naming requirements</a>. Your domain name must:
+      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">naming requirements</a>. Your domain name must:
     {% endif %}
     <ul class="usa-list">
       <li>Be available </li>
@@ -23,8 +23,7 @@
   <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
   {% endif %}
 
-  <p>Note that <strong>only federal agencies can request generic terms</strong> like
-  vote.gov.</p>
+  <p>Read about  <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/requirements/">activities that are prohibited on .gov domains</a>.</p>
   {% if not portfolio %}
   <h2 class="margin-top-3">Domain examples for your type of organization</h2>
   <div class="domain_example">
@@ -43,13 +42,13 @@
 
   {{ forms.0.management_form }}
 
-  <fieldset class="usa-fieldset margin-top-2">
+  <fieldset class="usa-fieldset margin-top-4">
     <legend>
       <h2>What .gov domain do you want?</h2>
     </legend>
     <p id="domain_instructions" class="margin-top-05">
-      After you enter your domain, we’ll make sure it’s available and that it meets some of our naming requirements. 
-      If your domain passes these initial checks, we’ll verify that it meets all our requirements after you complete the rest of this form.
+      After you enter your domain, we’ll make sure it’s available and that it meets some of the naming requirements. 
+      If your domain passes these initial checks, we’ll verify that it meets all the requirements after you complete the rest of this form.
     </p>
     {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
       {# attr_validate / validate="domain" invokes code in getgov.min.js #}
@@ -120,7 +119,7 @@
       <p id="dotgov-domain-naming-requirements" class="margin-top-05">
         OMB will review each request against the domain 
         <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">
-          naming requirements for executive branch agencies.</a> Agency submissions are expected to meet each requirement.
+          naming requirements for executive branch agencies</a>. Agency submissions are expected to meet each requirement.
       </p>
       <p class="usa-label margin-top-0 margin-bottom-0">
         <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
@@ -132,7 +131,7 @@
       {# Conditional Details Field – only shown when the executive naming requirements radio is "False" #}
       <div id="domain-naming-requirements-details-container" class="conditional-panel" style="display: none;">
         <p class="margin-bottom-3 margin-top-3">
-          <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+          <em>Provide details on why your submission does not meet each domain naming requirement. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
         </p>
         {% with add_label_class="usa-sr-only" attr_required="required" maxlength="2000" %}
           {% input_with_errors forms.3.feb_naming_requirements_details %}

@@ -92,7 +92,7 @@ def get_suborganization_list_json(request):
         return JsonResponse({"error": "Portfolio not found"}, status=404)
 
     # Add suborganizations related to this portfolio
-    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
+    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name").order_by("name")
     results = [{"id": sub["id"], "text": sub["name"]} for sub in suborganizations]
     return JsonResponse({"results": results, "pagination": {"more": False}})
 

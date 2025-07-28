@@ -2594,20 +2594,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requesting_entity_result = requesting_entity_form.submit()
 
-        # ---- CURRENT SITES PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_page = requesting_entity_result.follow()
-        current_sites_form = current_sites_page.forms[0]
-        current_sites_form["current_sites-0-website"] = "www.treasury.com"
-
-        # test saving the page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_sites_result = current_sites_form.submit()
-
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page = current_sites_result.follow()
+        dotgov_page = requesting_entity_result.follow()
 
         # separate out these tests for readability
         self.feb_dotgov_domain_tests(dotgov_page)
@@ -2645,9 +2634,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.feb_additional_details_page_tests(additional_details_page)
 
         additional_details_form = additional_details_page.forms[0]
-        additional_details_form["portfolio_additional_details-working_with_eop"] = "True"
-        additional_details_form["portfolio_additional_details-first_name"] = "TesterFirstName"
-        additional_details_form["portfolio_additional_details-last_name"] = "TesterLastName"
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2669,6 +2655,13 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.feb_review_page_tests(review_page)
 
     def feb_purpose_page_tests(self, purpose_page):
+        # Check for the 21st Century IDEA Act links
+        self.assertContains(purpose_page, "https://digital.gov/resources/delivering-digital-first-public-experience/")
+        self.assertContains(
+            purpose_page,
+            "https://whitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
+        )
+
         self.assertContains(purpose_page, "What is the purpose of your requested domain?")
 
         # Make sure the purpose selector form is present
@@ -2700,7 +2693,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "Does this submission meet each domain naming requirement?")
 
         # Check for label of second FEB form
-        self.assertContains(dotgov_page, "Provide details below")
+        self.assertContains(dotgov_page, "Provide details")
 
         # Check that the yes/no form was included
         self.assertContains(dotgov_page, "feb_naming_requirements")
@@ -2709,36 +2702,18 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "feb_naming_requirements_details")
 
     def feb_additional_details_page_tests(self, additional_details_page):
-        test_text = "Are you working with someone in the Executive Office of the President (EOP) on this request?"
-        self.assertContains(additional_details_page, test_text)
-
-        # Make sure the EOP form is present
-        self.assertContains(additional_details_page, "working_with_eop")
-
-        # Make sure the EOP contact form is present
-        self.assertContains(additional_details_page, "eop-contact-container")
-        self.assertContains(additional_details_page, "additional_details-first_name")
-        self.assertContains(additional_details_page, "additional_details-last_name")
 
         # Make sure the additional details form is present
         self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
         self.assertContains(additional_details_page, "additional_details-anything_else")
 
     def feb_requirements_page_tests(self, requirements_page):
-        # Check for the 21st Century IDEA Act links
-        self.assertContains(
-            requirements_page, "https://digital.gov/resources/delivering-digital-first-public-experience-act/"
-        )
-        self.assertContains(
-            requirements_page,
-            "https://bidenwhitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
-        )
 
         # Check for the policy acknowledgement form
         self.assertContains(requirements_page, "is_policy_acknowledged")
         self.assertContains(
             requirements_page,
-            "I read and understand the guidance outlined in the DOTGOV Act for operating a .gov domain.",
+            "I read and agree to the requirements for operating a .gov domain.",
         )
 
     def feb_review_page_tests(self, review_page):
@@ -2748,7 +2723,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "Because this is a test")
         # Purpose
         self.assertContains(review_page, "Purpose")
-        self.assertContains(review_page, "Used as a redirect for an existing website")
+        self.assertContains(review_page, "Used as a redirect for an existing or new website")
         self.assertContains(review_page, "testPurpose123")
         # Target time frame
         self.assertContains(review_page, "Target time frame")
@@ -2756,9 +2731,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Interagency initiative
         self.assertContains(review_page, "Interagency initiative")
         self.assertContains(review_page, "FakeInteragencyInitiative")
-        # EOP contact
-        self.assertContains(review_page, "EOP contact")
-        self.assertContains(review_page, "TesterFirstName TesterLastName")
 
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
@@ -3435,7 +3407,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # Follow the redirect manually
             try:
                 detail_page = response.follow()
-
                 self.wizard.get_context_data()
             except Exception as err:
                 # Handle any potential errors while following the redirect
@@ -3448,13 +3419,13 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, portfolio.organization_name)
 
             # We should only see one unlocked step
-            self.assertContains(detail_page, "#check_circle", count=4)
+            self.assertContains(detail_page, "#check_circle", count=3)
 
             # One pages should still be locked (additional details)
             self.assertContains(detail_page, "#lock", 1)
 
             # The current option should be selected
-            self.assertContains(detail_page, "usa-current", count=2)
+            self.assertContains(detail_page, "usa-current", count=3)
 
             # We default to the requesting entity page
             expected_url = reverse(
