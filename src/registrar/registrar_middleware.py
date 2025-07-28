@@ -160,7 +160,7 @@ class CheckPortfolioMiddleware:
 
         if not request.user.is_authenticated:
             return None
-    
+
         # if multiple portfolios are allowed for this user
         if flag_is_active(request, "organization_feature"):
             self.set_portfolio_in_session(request)
@@ -193,7 +193,6 @@ class CheckPortfolioMiddleware:
         no_set_session_portfolio = not request.session.get("portfolio")
 
         if multiple_portfolios_flag and user_has_multiple_portfolios:
-            portfolio = request.session.get("portfolio")
             if no_set_session_portfolio:
                 print("Redirecting to set portfolio page")
                 # self._redirect_to_select_portfolio_page(request)

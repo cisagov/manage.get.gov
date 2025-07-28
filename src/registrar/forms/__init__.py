@@ -12,8 +12,4 @@ from .domain import (
     DomainSuborganizationForm,
     DomainRenewalForm,
 )
-from .portfolio import (
-    PortfolioOrgAddressForm,
-    PortfolioMemberForm,
-    PortfolioOrganizationSelectForm
-)
+from .portfolio import PortfolioOrgAddressForm, PortfolioMemberForm, PortfolioOrganizationSelectForm

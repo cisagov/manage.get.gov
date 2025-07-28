@@ -500,6 +500,7 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             if override_error and "__all__" in self._errors:
                 del self._errors["__all__"]
 
+
 class PortfolioOrganizationSelectForm(forms.Form):
     """
     Form to update active session portfolio.
