@@ -8,7 +8,7 @@
             class="
               usa-footer__logo
               grid-row
-              mobile-lg:grid-col-6 mobile-lg:grid-gap-2
+             mobile-lg:grid-col-6 mobile-lg:grid-gap-2
             "
           >
             <div class="mobile-lg:grid-col-auto">
@@ -24,7 +24,7 @@
                       mobile-lg:grid-col-6 flex-align-self-center"
           >
             <address class="usa-footer__address maxw-none">
-              <div class="usa-footer__contact-info grid-row grid-gap-lg">
+              <div class="usa-footer__contact-info grid-row grid-gap-md">
                 {% if portfolio %}
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'domains' %}">Domains</a>
@@ -68,7 +68,7 @@
               src="{% static 'img/CISA_logo.png' %}"
               alt="CISA logo"
               role="img"
-              width="56px"
+              width="px"
           /></a>
         </div>
         <section
@@ -149,16 +149,18 @@
           <div class="tablet:grid-col-3">
            <ul class="usa-list usa-list--unstyled">
             <h4 class="usa-footer__heading">Legal</h4>
+
+              <li class="usa-identifier__required-links-item">
+            <a rel="noopener noreferrer" target="_blank" href="https://www.dhs.gov/freedom-information-act-foia" class="usa-identifier__required-link usa-link usa-link--external"
+              >FOIA requests</a
+            >
+          </li>
             <li>
               <a rel="noopener noreferrer" target="_blank" href="https://www.cisa.gov/cisa-no-fear-act-reporting" class="usa-identifier__required-link usa-link"
               >No FEAR Act data</a
             >
           </li>
-          <li class="usa-identifier__required-links-item">
-            <a rel="noopener noreferrer" target="_blank" href="https://www.dhs.gov/freedom-information-act-foia" class="usa-identifier__required-link usa-link usa-link--external"
-              >FOIA requests</a
-            >
-          </li>
+
                 
   
             </ul>
