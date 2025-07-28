@@ -3396,7 +3396,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # Follow the redirect manually
             try:
                 detail_page = response.follow()
-
                 self.wizard.get_context_data()
             except Exception as err:
                 # Handle any potential errors while following the redirect
@@ -3415,7 +3414,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, "#lock", 1)
 
             # The current option should be selected
-            self.assertContains(detail_page, "usa-current", count=2)
+            self.assertContains(detail_page, "usa-current", count=3)
 
             # We default to the requesting entity page
             expected_url = reverse(

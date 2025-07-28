@@ -2905,6 +2905,7 @@ class TestAnalystDelete(MockEppLib):
         )
 
     def tearDown(self):
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
@@ -3109,6 +3110,57 @@ class TestAnalystDelete(MockEppLib):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
+    def test_delete_related_objects_cleans_database(self):
+        """
+        Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
+        should remove HostIP, Host, and non‑registrant contacts from the database
+        """
+
+        # 1. Create domain in db and mark it as deleted
+        domain, _ = Domain.objects.get_or_create(name="cleanup.gov", state=Domain.State.DELETED)
+
+        # 2. Create host and a HostIP
+        host = Host.objects.create(name="ns1.cleanup.gov", domain=domain)
+        HostIP.objects.get_or_create(host=host, address="192.0.2.1")
+
+        # 3. Create non‑registrant admin/tech/security contacts
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            registry_id="admin-id",
+            email="admin@cleanup.gov",
+        )
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
+            registry_id="tech-id",
+            email="tech@cleanup.gov",
+        )
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+            registry_id="security-id",
+            email="sec@cleanup.gov",
+        )
+
+        # Double check they all exist before cleaning up
+        self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
+        self.assertTrue(Host.objects.filter(domain=domain).exists())
+        self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
+        self.assertTrue(
+            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists()
+        )
+
+        # 4. Call the clean up method
+        domain._delete_related_objects_from_db()
+
+        # 5. Assert hostIP, host, non-registrant contacts  are cleared from DB
+        self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
+        self.assertFalse(Host.objects.filter(domain=domain).exists())
+        self.assertFalse(
+            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists(),
+        )
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):

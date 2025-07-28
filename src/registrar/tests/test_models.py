@@ -382,7 +382,7 @@ class TestPortfolioInvitations(TestCase):
             invitation.clean()
 
         self.assertIn(
-            "User didn't provide both a valid email address and a level of access for the member",
+            "User didn't provide both a valid email address and a role for the member",
             "".join(cleaned_msg.output),
         )
 
