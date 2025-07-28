@@ -1,8 +1,8 @@
 import logging
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
-from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, IS_PORTFOLIO_MEMBER, grant_access
-from registrar.models import FederalAgency, SeniorOfficial, DomainRequest, UserPortfolioPermission
+from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, grant_access
+from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
 from registrar.utility.constants import BranchChoices
