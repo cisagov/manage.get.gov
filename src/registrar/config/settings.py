@@ -27,6 +27,7 @@ import json
 import logging
 import traceback
 from django.utils.log import ServerFormatter
+from ..logging_context import get_user_log_context
 
 # # #                          ###
 #      Setup code goes here      #
@@ -204,7 +205,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
-    # Our own router logs that included user info to speed up log tracing time on stable
+    # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
 ]
 
@@ -473,13 +474,28 @@ class JsonFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
+    def user_prepend(self):
+        context = get_user_log_context()
+        user_email = context["user_email"]
+        ip = context["ip_address"]
+        request_path = context["request_path"]
+        parts = []
+        if user_email:
+            parts.append(f"user: {user_email}")
+        if ip:
+            parts.append(f"ip: {ip}")
+        if request_path:
+            parts.append(f"request_path: {request_path}")
+
+        return " | ".join(parts)
+
     def format(self, record):
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": record.getMessage(),
+            "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
         # Capture exception info if it exists
         if record.exc_info:
@@ -497,7 +513,11 @@ class JsonServerFormatter(ServerFormatter):
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
 
-        log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
+        log_entry = {
+            "server_time": record.server_time,
+            "level": record.levelname,
+            "message": formatted_record,
+        }
         return json.dumps(log_entry)
 
 

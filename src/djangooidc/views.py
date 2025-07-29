@@ -14,6 +14,7 @@ from djangooidc.oidc import Client
 from djangooidc import exceptions as o_e
 from registrar.models import User
 from registrar.views.utility.error_views import custom_500_error_view, custom_401_error_view
+from registrar.logging_context import set_user_log_context
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,10 @@ def login_callback(request):
                 user.save()
 
             login(request, user)
+            email = user.email
+            ip = request.META.get("REMOTE_ADDR", "Unknown IP")
+            request_path = request.path
+            set_user_log_context(email, ip, request_path)
             logger.info("Successfully logged in user %s" % user)
 
             # Clear the flag if the exception is not caught
