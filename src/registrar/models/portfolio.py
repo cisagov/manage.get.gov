@@ -208,9 +208,4 @@ class Portfolio(TimeStampedModel):
     def get_suborganizations(self):
         """Returns all suborganizations associated with this portfolio"""
         return self.portfolio_suborganizations.all().order_by("name")
-
-    @property
-    def organization_type_display(self):
-        if self.organization_type:
-            return DomainRequest.OrganizationChoices(self.organization_type).label
-        return ""
+    
