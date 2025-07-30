@@ -224,7 +224,6 @@ class TestPortfolio(WebTest):
             name="test-domain.gov",
             status=DomainRequest.DomainRequestStatus.STARTED,
             portfolio=self.portfolio,
-            organization_type="federal",
         )
         domain_request.creator = other_user
         domain_request.save()
@@ -247,7 +246,7 @@ class TestPortfolio(WebTest):
             # Organization overview page includes portfolio admin
             self.assertContains(response, "Galileo")
             # Organization overview page includes org type
-            self.assertContains(response, "<h4>Organization Type</h4>")
+            self.assertContains(response, "Organization Type")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):

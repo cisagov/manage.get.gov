@@ -19,7 +19,6 @@ from registrar.forms import portfolio as portfolioForms
 from registrar.models import (
     Domain,
     DomainInvitation,
-    DomainRequest,
     Portfolio,
     PortfolioInvitation,
     User,
