@@ -219,19 +219,10 @@ class TestPortfolio(WebTest):
             user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
-        other_user = User.objects.create(username="other_user")
-        domain_request = completed_domain_request(
-            name="test-domain.gov",
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            portfolio=self.portfolio,
-        )
-        domain_request.creator = other_user
-        domain_request.organization_type = "federal"
-        domain_request.save()
-
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
+        self.portfolio.organization_type = "federal"
         self.portfolio.save()
 
         with override_flag("organization_feature", active=True):
