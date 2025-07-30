@@ -19,6 +19,7 @@ from registrar.forms import portfolio as portfolioForms
 from registrar.models import (
     Domain,
     DomainInvitation,
+    DomainRequest,
     Portfolio,
     PortfolioInvitation,
     User,
@@ -905,6 +906,7 @@ class PortfolioOrganizationView(DetailView):
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.organization_type_display
         return context
 
     def get_object(self, queryset=None):
@@ -937,6 +939,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.organization_type_display
         return context
 
     def get_object(self, queryset=None):
