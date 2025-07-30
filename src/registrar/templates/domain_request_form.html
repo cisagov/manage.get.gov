@@ -10,15 +10,15 @@
     </div>
     <div class="tablet:grid-col register-form-step" id="main-content">
         <input type="hidden" class="display-none" id="wizard-domain-request-id" value="{{domain_request_id}}"/>
-          {% if portfolio %}
-            {% url 'domain-requests' as url_2 %}
+         {% if portfolio %}
+            {% url 'domain-requests' as url%}
           {% else %}
-            {% url 'home' as url_2 %}
+            {% url 'home' as url %}
           {% endif %}
           <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
             <ol class="usa-breadcrumb__list">
               <li class="usa-breadcrumb__list-item">
-                <a href="{{ url_2 }}" class="usa-breadcrumb__link">
+               <a href="{{ url }}" class="usa-breadcrumb__link">
                   <span>
                     {% if portfolio%}Domain requests{%else%}Home{% endif%}
                   </span>

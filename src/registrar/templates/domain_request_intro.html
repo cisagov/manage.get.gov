@@ -7,15 +7,10 @@
 <main id="main-content" class="grid-container grid-container--widescreen">
     <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
       <div class="grid-col desktop:grid-offset-2 desktop:grid-col-8">
-          {% if portfolio %}
-            {% url 'domain-requests' as url_2 %}
-          {% else %}
-            {% url 'home' as url_2 %}
-          {% endif %}
           <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
             <ol class="usa-breadcrumb__list">
               <li class="usa-breadcrumb__list-item">
-                <a href="{{ url_2 }}" class="usa-breadcrumb__link">
+                <a href="{% url 'home' %}"  class="usa-breadcrumb__link">
                   <span>
                     {% if portfolio%}Domain requests{%else%}Home{% endif%}
                   </span>
