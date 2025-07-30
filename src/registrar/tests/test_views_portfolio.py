@@ -219,6 +219,16 @@ class TestPortfolio(WebTest):
             user=portfolio_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
+        other_user = User.objects.create(username="other_user")
+        domain_request = completed_domain_request(
+            name="test-domain.gov",
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            portfolio=self.portfolio,
+            organization_type="federal",
+        )
+        domain_request.creator = other_user
+        domain_request.save()
+
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
@@ -236,6 +246,8 @@ class TestPortfolio(WebTest):
             self.assertContains(response, "spacedivision@igorville.com")
             # Organization overview page includes portfolio admin
             self.assertContains(response, "Galileo")
+            # Organization overview page includes org type
+            self.assertContains(response, "<h4>Organization Type</h4>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
