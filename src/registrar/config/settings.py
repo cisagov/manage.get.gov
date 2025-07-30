@@ -28,6 +28,8 @@ import logging
 import traceback
 from django.utils.log import ServerFormatter
 
+from csp.constants import NONCE, SELF
+
 # # #                          ###
 #      Setup code goes here      #
 # # #                          ###
@@ -371,25 +373,26 @@ WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "connect-src": [
-            "'self'",
+            SELF,
             "https://www.google-analytics.com/",
             "https://www.ssa.gov/accessibility/andi/andi.js",
         ],
-        "default-src": ("'self'",),
-        "form-action": ("'self'",),
-        "frame-ancestors": ("'self'",),
-        "img-src": ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"],
+        "default-src": (SELF,),
+        "form-action": (SELF,),
+        "frame-ancestors": (SELF,),
+        "img-src": [SELF, "https://www.ssa.gov/accessibility/andi/icons/"],
         "script-src-elem": [
-            "'self'",
+            SELF,
+            NONCE,
             "https://www.googletagmanager.com/",
             "https://cdn.jsdelivr.net/npm/chart.js",
             "https://www.ssa.gov",
             "https://ajax.googleapis.com",
         ],
-        "style-src": ["'self'", "https://www.ssa.gov/accessibility/andi/andi.css"],
+        "style-src": [SELF, NONCE, "https://www.ssa.gov/accessibility/andi/andi.css"],
     }
 }
-CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
+
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
