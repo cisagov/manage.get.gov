@@ -1239,12 +1239,6 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         """Prevent user from calling this view directly."""
         return JsonResponse({"error": "You cannot access this page directly"}, status=404)
 
-    # def get_object(self, queryset=None):
-    #     """Get the user portfolio object based on their permission."""
-    #     portfolio_id = self.kwargs.get("portfolio_pk")
-    #     user = self.request.user
-    #     return UserPortfolioPermission.objects.get(portfolio=portfolio_id, user=user)
-
     def post(self, request, portfolio_pk):
         """
         Handles updating active portfolio in session.
