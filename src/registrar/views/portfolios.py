@@ -5,7 +5,6 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.views.generic import DetailView
 from django.contrib import messages
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
@@ -13,6 +12,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
+    IS_SELECTED_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
@@ -41,7 +41,7 @@ from registrar.utility.email_invitations import (
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
-from django.views.generic import View
+from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
 
@@ -891,7 +891,7 @@ class PortfolioNoDomainRequestsView(View):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationView(DetailView):
+class PortfolioOrganizationView(ListView):
     """
     View to handle displaying and updating overview of portfolio's information.
     """
@@ -1223,13 +1223,27 @@ class PortfolioOrganizationsView(DetailView, FormMixin):
     #     return redirect(reverse("domains"))
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, IS_SELECTED_PORTFOLIO_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
     model = UserPortfolioPermission
     template_name = "portfolio_organization_select.html"
     context_object_name = "portfolio"
     form_class = portfolioForms.PortfolioOrganizationSelectForm
     pk_url_kwarg = "portfolio_pk"
+
+    # def get(self, request):
+    #     """Add additional context data to the template."""
+    #     return render(request, "portfolio_organization_select.html", context=self.get_context_data())
+
+    def get(self):
+        """Prevent user from calling this view directly."""
+        return JsonResponse({"error": "You cannot access this page directly"}, status=404)
+
+    # def get_object(self, queryset=None):
+    #     """Get the user portfolio object based on their permission."""
+    #     portfolio_id = self.kwargs.get("portfolio_pk")
+    #     user = self.request.user
+    #     return UserPortfolioPermission.objects.get(portfolio=portfolio_id, user=user)
 
     def post(self, request, portfolio_pk):
         """
@@ -1239,8 +1253,18 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
 
         portfolio_name = self.form["set_session_portfolio_button"].value()
         print("portfolio: ", portfolio_name)
+        portfolio = Portfolio.objects.get(organization_name=portfolio_name)
 
-        portfolio = get_object_or_404(Portfolio, pk=portfolio_pk)
+        # Verify user has permissions to access selected portfolio
+        portfolio_permission = UserPortfolioPermission.objects.filter(
+            portfolio=portfolio, user=request.user
+            ).first()
+        if not portfolio_permission:
+            return JsonResponse({"error": "Invalid user portfolio permission"}, status=404)
+        if portfolio_permission.user != request.user:
+            return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
+
+        portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
         request.session["portfolio"] = portfolio
         print("Successfully set active portfolio to ", portfolio)
         # return HttpResponseRedirect(reverse("domains"))
