@@ -9,7 +9,6 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
-from waffle.testutils import override_flag
 
 
 class GetRequestsJsonTest(TestWithUser, WebTest):
