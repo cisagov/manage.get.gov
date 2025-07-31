@@ -1222,7 +1222,7 @@ class DomainRequest(TimeStampedModel):
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
+        DomainInformation.create_from_dr(domain_request=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -1339,7 +1339,7 @@ class DomainRequest(TimeStampedModel):
     def is_requesting_new_suborganization(self) -> bool:
         """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
-        Used for the RequestingEntity page and on DomainInformation.create_from_da().
+        Used for the RequestingEntity page and on DomainInformation.create_from_dr().
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.
