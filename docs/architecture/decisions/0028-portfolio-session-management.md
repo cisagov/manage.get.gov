@@ -76,7 +76,4 @@ This method may also possibly make it more straightforward to implement the orga
 There is a chance the URL we use to switch session portfolios may also be manually accessed by the user directly on their browser. 
 
 ## Decision
-We will set session in the [VIEW OR MODEL]
-
-## Consequences
 We will implement allowing users to manage the portfolio session by submitting a form (Option 1) that passes in the organization name. Because portfolios are expected to have unique organization names, we can use these values to manage session without exposing the portfolio’s id on the frontend. 
