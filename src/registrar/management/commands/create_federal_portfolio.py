@@ -32,7 +32,7 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.generic_helper import count_capitals, normalize_string
 from django.db.models import F, Q
 
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 from registrar.management.commands.utility.fuzzy_string_matcher import create_federal_agency_matcher
 
 logger = logging.getLogger(__name__)
@@ -322,9 +322,21 @@ class Command(BaseCommand):
                 logger.error(err, exc_info=True)
 
         # == Handle managers (no bulk_create) == #
-        if parse_managers and not self.dry_run:
-            domain_infos = DomainInformation.objects.filter(portfolio__in=portfolios_to_use)
-            domains = Domain.objects.filter(domain_info__in=domain_infos)
+        if parse_managers:
+            if self.dry_run:
+                # In dry run mode, we can't filter by portfolios_to_use since they're not saved
+                # So we need to get domains from the domain_infos that were identified for updates
+                domains = []
+                for domain_info in self.domain_info_changes.update:
+                    try:
+                        domain = Domain.objects.get(domain_info=domain_info)
+                        domains.append(domain)
+                    except Domain.DoesNotExist:
+                        continue
+                logger.info(f"Found {len(domains)} domains for manager processing in dry run mode")
+            else:
+                domain_infos = DomainInformation.objects.filter(portfolio__in=portfolios_to_use)
+                domains = Domain.objects.filter(domain_info__in=domain_infos)
 
             # Create UserPortfolioPermission
             self.create_user_portfolio_permissions(domains)
@@ -836,20 +848,169 @@ class Command(BaseCommand):
                 logger.info(f"Set federal agency on started domain request '{domain_request}' to None.")
 
     def create_user_portfolio_permissions(self, domains):
+        """
+        Ensures domain managers retain their VIEW_MANAGED_DOMAINS permission
+        when portfolios are created or updated.
+
+        Args:
+            domains: List of Domain objects that belong to portfolios being processed
+        """
+        if not domains:
+            logger.info("No domains found for portfolio permission processing")
+            return
+
+        logger.info(f"Processing {len(domains)} domains for user portfolio permissions")
         user_domain_roles = UserDomainRole.objects.select_related(
             "user", "domain", "domain__domain_info", "domain__domain_info__portfolio"
         ).filter(domain__in=domains, domain__domain_info__portfolio__isnull=False, role=UserDomainRole.Roles.MANAGER)
+
+        if not user_domain_roles.exists():
+            logger.info("No domain managers found for the provided domains")
+            return
+
+        logger.info(f"Found {user_domain_roles.count()} domain manager roles to process")
+
         for user_domain_role in user_domain_roles:
-            user = user_domain_role.user
-            permission, created = UserPortfolioPermission.objects.get_or_create(
-                portfolio=user_domain_role.domain.domain_info.portfolio,
-                user=user,
-                defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+            self._process_manager_role(user_domain_role)
+
+    def _process_manager_role(self, user_domain_role):
+        """Process a single domain manager role to ensure portfolio access."""
+        user = user_domain_role.user
+        domain = user_domain_role.domain
+        domain_name = domain.name
+
+        if self.dry_run:
+            portfolio = self._find_new_portfolio_for_domain(domain)
+        else:
+            portfolio = domain.domain_info.portfolio
+
+        if not portfolio:
+            logger.warning(f"Could not determine portfolio for domain {domain_name}")
+            return
+
+        logger.info(
+            f"Ensuring portfolio access for domain manager {user.email} "
+            f"(manages {domain_name}) in portfolio '{portfolio}'"
+        )
+
+        # Ensure this domain manager has portfolio permissions
+        self._ensure_manager_portfolio_permission(user, portfolio)
+
+    def _find_new_portfolio_for_domain(self, domain):
+        """Find which portfolio a domain will be assigned to in dry run mode."""
+        for domain_info in self.domain_info_changes.update:
+            if domain_info.domain == domain:
+                return domain_info.portfolio
+
+        return self._find_portfolio_for_domain(domain)
+
+    def _find_portfolio_for_domain(self, domain):
+        """Find which portfolio a domain belongs to using fuzzy matching."""
+        if not domain.domain_info or not domain.domain_info.organization_name:
+            return None
+
+        domain_org_name = domain.domain_info.organization_name
+        portfolios_to_process = list(self.portfolio_changes.create) + list(self.portfolio_changes.skip)
+
+        for portfolio in portfolios_to_process:
+            if portfolio.federal_agency:
+                domain_filter = self._create_fuzzy_organization_filter(
+                    portfolio.federal_agency, [normalize_string(domain_org_name)]
+                )
+
+                if DomainInformation.objects.filter(id=domain.domain_info.id).filter(domain_filter).exists():
+                    return portfolio
+
+        return None
+
+    def _ensure_manager_portfolio_permission(self, user, portfolio):
+        """Ensure a domain manager has the correct portfolio permissions."""
+        defaults = {
+            "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            "additional_permissions": [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS],
+        }
+
+        if self.dry_run:
+            self._handle_dry_run_permission(user, portfolio, defaults)
+        else:
+            self._handle_live_permission(user, portfolio, defaults)
+
+    def _handle_dry_run_permission(self, user, portfolio, defaults):
+        """Handle permission processing in dry run mode."""
+        try:
+            existing_permission = UserPortfolioPermission.objects.get(portfolio=portfolio, user=user)
+
+            current_roles = existing_permission.roles or []
+            current_perms = existing_permission.additional_permissions or []
+
+            needs_update = (
+                UserPortfolioRoleChoices.ORGANIZATION_MEMBER in current_roles
+                and UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS not in current_perms
             )
-            if created:
-                self.user_portfolio_perm_changes.create.append(permission)
+
+            if needs_update:
+                new_perms = current_perms + [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
+                changes = [f"additional_permissions: {current_perms} → {new_perms}"]
+                self._log_changes(f"portfolio access for domain manager {user.email} in '{portfolio}'", changes)
+                mock_permission = self._create_mock_permission(user, portfolio, current_roles, new_perms)
+                self.user_portfolio_perm_changes.update.append(mock_permission)
             else:
-                self.user_portfolio_perm_changes.skip.append(permission)
+                self._log_action(
+                    "SKIP", f"portfolio access for domain manager {user.email} in '{portfolio}' (already has access)"
+                )
+                mock_permission = self._create_mock_permission(user, portfolio, current_roles, current_perms)
+                self.user_portfolio_perm_changes.skip.append(mock_permission)
+
+        except UserPortfolioPermission.DoesNotExist:
+            self._log_action("CREATE", f"portfolio access for domain manager {user.email} in '{portfolio}'")
+            mock_permission = self._create_mock_permission(
+                user, portfolio, defaults["roles"], defaults["additional_permissions"]
+            )
+            self.user_portfolio_perm_changes.create.append(mock_permission)
+
+    def _handle_live_permission(self, user, portfolio, defaults):
+        """Handle permission processing in live mode."""
+        permission, created = UserPortfolioPermission.objects.get_or_create(
+            portfolio=portfolio, user=user, defaults=defaults
+        )
+
+        if created:
+            self._log_action("CREATE", f"portfolio access for domain manager {user.email} in '{portfolio}'")
+            self.user_portfolio_perm_changes.create.append(permission)
+        elif UserPortfolioRoleChoices.ORGANIZATION_MEMBER in (
+            permission.roles or []
+        ) and UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS not in (permission.additional_permissions or []):
+
+            additional_perms = (permission.additional_permissions or []).copy()
+            additional_perms.append(UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
+            permission.additional_permissions = additional_perms
+            permission.save()
+
+            self._log_action(
+                "UPDATE",
+                f"portfolio access for domain manager {user.email} in '{portfolio}' - added VIEW_MANAGED_DOMAINS",
+            )
+            self.user_portfolio_perm_changes.update.append(permission)
+        else:
+            self._log_action(
+                "SKIP", f"portfolio access for domain manager {user.email} in '{portfolio}' (already has access)"
+            )
+            self.user_portfolio_perm_changes.skip.append(permission)
+
+    def _create_mock_permission(self, user, portfolio, roles, additional_permissions):
+        """Create a mock permission object for dry run tracking."""
+
+        class MockPermission:
+            def __init__(self, user, portfolio, roles, additional_permissions):
+                self.user = user
+                self.portfolio = portfolio
+                self.roles = roles
+                self.additional_permissions = additional_permissions
+
+            def __str__(self):
+                return f"UserPortfolioPermission for {self.user.email} in {self.portfolio}"
+
+        return MockPermission(user, portfolio, roles, additional_permissions)
 
     def create_portfolio_invitations(self, domains):
         domain_invitations = DomainInvitation.objects.select_related(
@@ -877,18 +1038,24 @@ class Command(BaseCommand):
         Log an action that would be performed, with dry run support.
 
         Args:
-            action_type: Type of action ('CREATE', 'UPDATE', 'DELETE')
+            action_type: Type of action ('CREATE', 'UPDATE', 'DELETE', 'SKIP')
             obj: Object being acted upon
             message: Optional custom message
         """
         action_text = f"WOULD {action_type}" if self.dry_run else action_type.title()
         obj_repr = message or str(obj)
 
-        color = TerminalColors.OKGREEN
-        if action_type == "UPDATE":
+        # Changing colors based on action type
+        if action_type == "CREATE":
+            color = TerminalColors.OKGREEN
+        elif action_type == "UPDATE":
             color = TerminalColors.YELLOW
+        elif action_type == "SKIP":
+            color = TerminalColors.OKBLUE  # Blue for informational skips
         elif action_type == "DELETE":
             color = TerminalColors.FAIL
+        else:
+            color = TerminalColors.ENDC
 
         logger.info(f"{color}{action_text} {obj_repr}{TerminalColors.ENDC}")
 
