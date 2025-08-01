@@ -305,7 +305,7 @@ class PortfolioMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
+            messages.success(self.request, "The member role and permission changes have been saved.")
             return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
         else:
             return render(
@@ -641,7 +641,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
+            messages.success(self.request, "The member role and permission changes have been saved.")
             return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
@@ -904,6 +904,7 @@ class PortfolioOrganizationView(DetailView):
         context = super().get_context_data(**kwargs)
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        context["portfolio_admins"] = portfolio.portfolio_admin_users
         return context
 
     def get_object(self, queryset=None):

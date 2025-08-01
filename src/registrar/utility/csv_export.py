@@ -486,7 +486,7 @@ class MemberExport(BaseExport):
         """
         return [
             "Email",
-            "Member access",
+            "Member role",
             "Invited by",
             "Joined date",
             "Last active",
@@ -510,7 +510,7 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Member access": get_role_display(roles),
+            "Member role": get_role_display(roles),
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),

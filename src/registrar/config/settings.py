@@ -27,6 +27,9 @@ import json
 import logging
 import traceback
 from django.utils.log import ServerFormatter
+from ..logging_context import get_user_log_context
+
+from csp.constants import NONCE, SELF
 
 # # #                          ###
 #      Setup code goes here      #
@@ -162,6 +165,7 @@ INSTALLED_APPS = [
     "import_export",
     # Waffle feature flags
     "waffle",
+    "csp",
 ]
 
 # Middleware are routines for processing web requests.
@@ -178,6 +182,8 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
+    # django-csp: enable use of Content-Security-Policy header
+    "csp.middleware.CSPMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
@@ -193,8 +199,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     # provide clickjacking protection via the X-Frame-Options header
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # django-csp: enable use of Content-Security-Policy header
-    "csp.middleware.CSPMiddleware",
     # django-auditlog: obtain the request User for use in logging
     "auditlog.middleware.AuditlogMiddleware",
     # Used for waffle feature flags
@@ -203,7 +207,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.CheckPortfolioMiddleware",
     # Restrict access using Opt-Out approach
     "registrar.registrar_middleware.RestrictAccessMiddleware",
-    # Our own router logs that included user info to speed up log tracing time on stable
+    # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
 ]
 
@@ -360,32 +364,35 @@ WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 
 # Content-Security-Policy configuration
 # this can be restrictive because we have few external scripts
-allowed_sources = ("'self'",)
-CSP_DEFAULT_SRC = allowed_sources
 # Most things fall back to default-src, but the following do not and should be
 # explicitly set
-CSP_FRAME_ANCESTORS = allowed_sources
-CSP_FORM_ACTION = allowed_sources
-
 # Google analytics requires that we relax our otherwise
 # strict CSP by allowing scripts to run from their domain
 # and inline with a nonce, as well as allowing connections back to their domain.
 # Note: If needed, we can embed chart.js instead of using the CDN
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = [
-    "'self'",
-    "https://www.ssa.gov/accessibility/andi/andi.css",
-]
-CSP_SCRIPT_SRC_ELEM = [
-    "'self'",
-    "https://www.googletagmanager.com/",
-    "https://cdn.jsdelivr.net/npm/chart.js",
-    "https://www.ssa.gov",
-    "https://ajax.googleapis.com",
-]
-CSP_CONNECT_SRC = ["'self'", "https://www.google-analytics.com/", "https://www.ssa.gov/accessibility/andi/andi.js"]
-CSP_INCLUDE_NONCE_IN = ["script-src-elem", "style-src"]
-CSP_IMG_SRC = ["'self'", "https://www.ssa.gov/accessibility/andi/icons/"]
+# Content-Security-Policy configuration for django-csp 4.0+ New format required
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "connect-src": [
+            SELF,
+            "https://www.google-analytics.com/",
+            "https://www.ssa.gov/accessibility/andi/andi.js",
+        ],
+        "default-src": (SELF,),
+        "form-action": (SELF,),
+        "frame-ancestors": (SELF,),
+        "img-src": [SELF, "https://www.ssa.gov/accessibility/andi/icons/"],
+        "script-src-elem": [
+            SELF,
+            NONCE,
+            "https://www.googletagmanager.com/",
+            "https://cdn.jsdelivr.net/npm/chart.js",
+            "https://www.ssa.gov",
+            "https://ajax.googleapis.com",
+        ],
+        "style-src": [SELF, NONCE, "https://www.ssa.gov/accessibility/andi/andi.css"],
+    }
+}
 
 # Cross-Origin Resource Sharing (CORS) configuration
 # Sets clients that allow access control to manage.get.gov
@@ -470,13 +477,28 @@ class JsonFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
+    def user_prepend(self):
+        context = get_user_log_context()
+        user_email = context["user_email"]
+        ip = context["ip_address"]
+        request_path = context["request_path"]
+        parts = []
+        if user_email:
+            parts.append(f"user: {user_email}")
+        if ip:
+            parts.append(f"ip: {ip}")
+        if request_path:
+            parts.append(f"request_path: {request_path}")
+
+        return " | ".join(parts)
+
     def format(self, record):
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": record.getMessage(),
+            "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
         # Capture exception info if it exists
         if record.exc_info:
@@ -494,7 +516,11 @@ class JsonServerFormatter(ServerFormatter):
         if not hasattr(record, "server_time"):
             record.server_time = self.formatTime(record, self.datefmt)
 
-        log_entry = {"server_time": record.server_time, "level": record.levelname, "message": formatted_record}
+        log_entry = {
+            "server_time": record.server_time,
+            "level": record.levelname,
+            "message": formatted_record,
+        }
         return json.dumps(log_entry)
 
 
@@ -771,26 +797,24 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-acadia.app.cloud.gov",
+    "getgov-glacier.app.cloud.gov",
+    "getgov-olympic.app.cloud.gov",
+    "getgov-yellowstone.app.cloud.gov",
+    "getgov-zion.app.cloud.gov",
+    "getgov-potato.app.cloud.gov",
+    "getgov-product.app.cloud.gov",
     "getgov-aa.app.cloud.gov",
     "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
-    "getgov-ag.app.cloud.gov",
     "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
-    "getgov-cb.app.cloud.gov",
     "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
-    "getgov-ky.app.cloud.gov",
     "getgov-es.app.cloud.gov",
     "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
-    "getgov-za.app.cloud.gov",
-    "getgov-gd.app.cloud.gov",
-    "getgov-rb.app.cloud.gov",
-    "getgov-ko.app.cloud.gov",
-    "getgov-ab.app.cloud.gov",
-    "getgov-rjm.app.cloud.gov",
     "getgov-kma.app.cloud.gov",
     "getgov-dg.app.cloud.gov",
     "manage.get.gov",
