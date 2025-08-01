@@ -122,7 +122,7 @@ INSTALLED_APPS = [
     # otherwise Django would find the default template
     # provided by django.contrib.admin first and use
     # that instead of our custom templates.
-    "registrar",
+    "registrar.apps.RegistrarConfig",
     # Django automatic admin interface reads metadata
     # from database models to provide a quick, model-centric
     # interface where trusted users can manage content
