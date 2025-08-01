@@ -2,7 +2,7 @@
     <form 
         id="set-session-portfolio-form-{{ forloop.counter }}" 
         method="post"
-        action="{% url 'set-session-portfolio' portfolio.id %}"
+        action="{% url 'set-session-portfolio' %}"
     >
         {% csrf_token %}
         <button

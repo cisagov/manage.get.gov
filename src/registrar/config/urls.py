@@ -385,7 +385,7 @@ urlpatterns = [
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
     path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
     path(
-        "set-session-portfolio/<int:portfolio_pk>",
+        "set-session-portfolio/",
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
     ),

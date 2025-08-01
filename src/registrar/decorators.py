@@ -20,7 +20,6 @@ IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
-IS_SELECTED_PORTFOLIO_MEMBER = "is_selected_portfolio_member"
 IS_MULTIPLE_PORTFOLIOS_MEMBER = "is_multiple_portfolios_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
@@ -127,7 +126,6 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
-        (IS_SELECTED_PORTFOLIO_MEMBER, lambda: _is_selected_portfolio_member(request, kwargs.get("portfolio_pk"))),
         (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -316,14 +314,6 @@ def _is_portfolio_member(request):
     """Checks to see if the user in the request is a member of the
     portfolio in the request's session."""
     return request.user.is_org_user(request)
-
-
-def _is_selected_portfolio_member(request, portfolio_pk):
-    """
-    Determines whether a user in the request is a member of the portfolio
-    in the URL kwargs
-    """
-    return request.user.has_view_portfolio_permission(portfolio_pk)
 
 
 def _is_staff_managing_domain(request, **kwargs):

@@ -12,7 +12,6 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
-    IS_SELECTED_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
@@ -1223,7 +1222,7 @@ class PortfolioOrganizationsView(DetailView, FormMixin):
     #     return redirect(reverse("domains"))
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, IS_SELECTED_PORTFOLIO_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
     model = UserPortfolioPermission
     template_name = "portfolio_organization_select.html"
@@ -1231,15 +1230,15 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
     form_class = portfolioForms.PortfolioOrganizationSelectForm
     pk_url_kwarg = "portfolio_pk"
 
-    # def get(self, request):
-    #     """Add additional context data to the template."""
-    #     return render(request, "portfolio_organization_select.html", context=self.get_context_data())
-
-    def get(self):
-        """Prevent user from calling this view directly."""
+    def get(self, request):
+        """
+        Prevent user from calling this view directly.
+        View already requires a form to change session and verifies user has permission
+        to call this on passed portfolio, but added for additional protections.
+        """
         return JsonResponse({"error": "You cannot access this page directly"}, status=404)
 
-    def post(self, request, portfolio_pk):
+    def post(self, request):
         """
         Handles updating active portfolio in session.
         """
