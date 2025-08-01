@@ -921,7 +921,7 @@ class PortfolioOrganizationView(DetailView):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationInfoView(ListView, FormMixin):
+class PortfolioOrganizationInfoView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
@@ -1182,7 +1182,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
-class PortfolioOrganizationsView(DetailView, FormMixin):
+class PortfolioOrganizationsView(ListView, FormMixin):
     model = UserPortfolioPermission
     template_name = "portfolio_organizations.html"
     context_object_name = "portfolio"
