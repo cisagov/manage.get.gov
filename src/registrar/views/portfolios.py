@@ -890,7 +890,7 @@ class PortfolioNoDomainRequestsView(View):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationView(ListView):
+class PortfolioOrganizationView(DetailView):
     """
     View to handle displaying and updating overview of portfolio's information.
     """
@@ -921,7 +921,7 @@ class PortfolioOrganizationView(ListView):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationInfoView(DetailView, FormMixin):
+class PortfolioOrganizationInfoView(ListView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
@@ -1257,8 +1257,7 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
 
         portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
         request.session["portfolio"] = portfolio
-        print("Successfully set active portfolio to ", portfolio)
-        # return HttpResponseRedirect(reverse("domains"))
+        logger.info("Successfully set active portfolio to ", portfolio)
         return self._handle_success_response(request, portfolio)
 
     def _handle_success_response(self, request, portfolio):
