@@ -740,7 +740,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b %-d, %Y")
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
