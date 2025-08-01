@@ -1,0 +1,48 @@
+@use "uswds-core" as *;
+
+
+//section styling 
+
+.usa-identifier__identity-disclaimer, .usa-identifier__identity-domain{
+  font-size:1.06rem;
+}
+
+.top-footer-section{
+   padding:  units(2.5) units(4);
+}
+
+.usa-identifier__section{
+  padding-top: units(2);
+  padding-right: units(4);
+  padding-left: units(4);
+}
+
+.usa-identifier__section ul{
+  margin-right: units(1)
+}
+
+
+.usa-identifier__section--usagov {
+  font-size: 1rem;
+  padding-top: 1.5rem;
+}
+
+//  list styling
+.usa-identifier__section li a{
+  display:block;
+  margin-bottom: units(1);
+  font-size: 14.88px;
+  color: #F0F0F0;
+}
+
+.usa-identifier__section li h4{
+  color: #FFFFFF;
+}
+
+
+.usa-list--unstyled h4.usa-footer__heading {
+  color: #FFFFFF;
+  margin-top: units(.5);
+  margin-bottom: units(2);
+  font-size: 14.88px;
+}

@@ -891,7 +891,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
         # We need to assert that logo is not clickable and links to manage your domain are not present
         # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
         # instance and lowercase in the other.
-        self.assertContains(save_page, "anage your domains", count=2)
+        self.assertContains(save_page, "anage your domains", count=1)
         self.assertNotContains(save_page, "Before you can manage your domains, we need you to add contact information")
         # Assert that modal does not appear on subsequent submits
         self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
