@@ -507,5 +507,5 @@ class PortfolioOrganizationSelectForm(forms.Form):
     """
 
     set_session_portfolio_button = forms.CharField()
-        # Verify user has access to selected portfolio
-        # portfolio_permission = UserPortfolioPermission.objects.filter(id=user_portfolio_perm_pk).first()
+    # Verify user has access to selected portfolio
+    # portfolio_permission = UserPortfolioPermission.objects.filter(id=user_portfolio_perm_pk).first()

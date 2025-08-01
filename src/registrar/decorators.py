@@ -127,9 +127,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
-        (IS_SELECTED_PORTFOLIO_MEMBER, 
-         lambda: _is_selected_portfolio_member(request, kwargs.get("portfolio_pk"))
-        ),
+        (IS_SELECTED_PORTFOLIO_MEMBER, lambda: _is_selected_portfolio_member(request, kwargs.get("portfolio_pk"))),
         (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -318,6 +316,7 @@ def _is_portfolio_member(request):
     """Checks to see if the user in the request is a member of the
     portfolio in the request's session."""
     return request.user.is_org_user(request)
+
 
 def _is_selected_portfolio_member(request, portfolio_pk):
     """
