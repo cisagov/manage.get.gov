@@ -74,10 +74,10 @@ services:
       python manage.py createcachetable &&
       python manage.py load &&
       if [ \"$DEBUG_MODE\" = \"true\" ]; then
-        echo 'Starting with debugpy...';
+        echo 'Starting in debug mode... Your app is now ready for debugging.';
         python -m debugpy --listen 0.0.0.0:5678 --wait-for-client manage.py runserver 0.0.0.0:8080;
       else
-        echo 'Starting normally...';
+        echo 'Starting in non-debug mode...';
         python manage.py runserver 0.0.0.0:8080;
       fi"
 
@@ -125,6 +125,7 @@ services:
 
   owasp:
     image: ghcr.io/zaproxy/zaproxy:stable
+    user: "root"
     command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
     volumes:
       - .:/zap/wrk/

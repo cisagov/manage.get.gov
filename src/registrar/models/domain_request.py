@@ -1032,8 +1032,17 @@ class DomainRequest(TimeStampedModel):
                 wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {recipient.email}")
-        except EmailSendingError:
-            logger.warning("Failed to send confirmation email", exc_info=True)
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send status update to creator email:\n"
+                f"  Type: {new_status}\n"
+                f"  Subject template: {email_template_subject}\n"
+                f"  To: {recipient.email}\n"
+                f"  CC: {', '.join(cc_addresses)}\n"
+                f"  BCC: {bcc_address}"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
     def investigator_exists_and_is_staff(self):
         """Checks if the current investigator is in a valid state for a state transition"""
@@ -1214,7 +1223,7 @@ class DomainRequest(TimeStampedModel):
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
+        DomainInformation.create_from_dr(domain_request=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -1331,7 +1340,7 @@ class DomainRequest(TimeStampedModel):
     def is_requesting_new_suborganization(self) -> bool:
         """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
-        Used for the RequestingEntity page and on DomainInformation.create_from_da().
+        Used for the RequestingEntity page and on DomainInformation.create_from_dr().
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.

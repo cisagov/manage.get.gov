@@ -9,6 +9,7 @@ from django.utils import timezone
 from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
 from registrar.utility.email import send_templated_email, EmailSendingError
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +85,16 @@ class Command(BaseCommand):
 
                 try:
                     if dryrun:
+                        rendered_subject = render_to_string(subject_template, context).strip()
+                        rendered_body = render_to_string(template, context)
+
                         logger.info(
-                            f"[DRYRUN] Would send email for domain {domain.name} where "
-                            f"TO: {domain_manager_emails} || CC: {portfolio_admin_emails}"
+                            f"[DRYRUN]\n"
+                            f"Would send email for domain {domain.name}\n"
+                            f"TO: {domain_manager_emails}\n"
+                            f"CC: {portfolio_admin_emails}\n"
+                            f"Subject: {rendered_subject}\n"
+                            f"Body:\n{rendered_body}"
                         )
                     else:
                         send_templated_email(
@@ -97,9 +105,17 @@ class Command(BaseCommand):
                             context=context,
                         )
                         logger.info(f"Sent email for domain {domain.name} to managers and CC’d org admins")
-                except EmailSendingError as e:
+                except EmailSendingError as err:
                     if not dryrun:
-                        logger.warning(f"Failed to send email for domain {domain.name}. Reason: {e}")
+                        logger.error(
+                            "Failed to send expiring soon email(s):\n"
+                            f"  Subject template: {subject_template}\n"
+                            f"  To: {', '.join(domain_manager_emails)}\n"
+                            f"  CC: {', '.join(portfolio_admin_emails)}\n"
+                            f"  Domain: {domain.name}\n"
+                            f"  Error: {err}",
+                            exc_info=True,
+                        )
                         all_emails_sent = False
 
         if all_emails_sent:

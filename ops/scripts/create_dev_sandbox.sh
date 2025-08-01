@@ -56,7 +56,7 @@ cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
 echo "Creating new cloud.gov DB for $1. This usually takes about 5 minutes..."
 cf create-service aws-rds micro-psql getgov-$1-database
 
-until cf service getgov-$1-database | grep -q 'The service instance status is succeeded'
+until cf service getgov-$1-database | grep -q 'Finished creating database resources'
 do
   echo "Database not up yet, waiting..."
   sleep 30
@@ -120,9 +120,21 @@ sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/deploy-manual.yaml
 
-sed -i '' '/${{startsWith(github.head_ref, / {a\
-        || startsWith(github.head_ref, '"'$1'"')
-}' .github/workflows/deploy-sandbox.yaml
+sed -i '' "/startsWith(github.head_ref, \'backup/ {a\\
+        || startsWith(github.head_ref, '"$1"')
+}" .github/workflows/deploy-sandbox.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/createcachetable.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/delete-and-recreate-db.yaml
+
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/load-fixtures.yaml
 
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account
@@ -135,7 +147,7 @@ then
     exit 1
 fi
 
-cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.username, .password]|@tsv' | 
+cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' |
 
 while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username

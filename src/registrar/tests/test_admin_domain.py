@@ -516,6 +516,23 @@ class TestDomainAdminAsStaff(MockEppLib):
             )
         self.assertEqual(domain.state, Domain.State.DELETED)
 
+    def test_has_correct_filters_staff_view(self):
+        """Ensure DomainAdmin has the correct filters configured."""
+        with less_console_noise():
+            request = self.factory.get("/")
+            request.user = self.superuser
+
+            filters = self.admin.get_list_filter(request)
+
+            expected_filters = [
+                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.FederalTypeFilter,
+                DomainAdmin.ElectionOfficeFilter,
+                "state",
+            ]
+
+            self.assertEqual(filters, expected_filters)
+
 
 class TestDomainInformationInline(MockEppLib):
     """Test DomainAdmin class, specifically the DomainInformationInline class, as staff user.
@@ -1027,7 +1044,7 @@ class TestDomainAdminWithClient(TestCase):
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
         # for our actual domain_request
-        self.assertContains(response, "Federal", count=57)
+        self.assertContains(response, "Federal", count=58)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
@@ -1040,6 +1057,23 @@ class TestDomainAdminWithClient(TestCase):
         response = self.client.get("/admin/registrar/domain/")
         self.assertContains(response, ">Export<")
         self.assertNotContains(response, ">Import<")
+
+    def test_has_correct_filters_client_view(self):
+        """Ensure DomainAdmin has the correct filters configured"""
+        with less_console_noise():
+            request = self.factory.get("/")
+            request.user = self.superuser
+
+            filters = self.admin.get_list_filter(request)
+
+            expected_filters = [
+                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.FederalTypeFilter,
+                DomainAdmin.ElectionOfficeFilter,
+                "state",
+            ]
+
+            self.assertEqual(filters, expected_filters)
 
 
 class TestDomainAdminWebTest(MockEppLib, WebTest):

@@ -2,6 +2,34 @@
 @use "cisa_colors" as *;
 @use "base" as *;
 
+$-add-icon: (
+  "name": "add",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2),
+);
+
+$-remove-icon: (
+  "name": "remove",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2),
+);
+
+$-expand-more-icon: (
+  "name": "expand_more",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2.5),
+);
+
+$-expand-less-icon: (
+  "name": "expand_less",
+  "svg-height": 24,
+  "svg-width": 24,
+  "height": units(2.5),
+);
+
 // Define some styles for the .gov header/logo
 .usa-logo button {
     color: #{$dhs-dark-gray-85};
@@ -65,6 +93,13 @@
             transform: translateY(-50%);
         }
     }
+
+    button {
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-left: 0;
+        color: #{$dhs-blue};
+    }
 }
 
 .usa-header--extended {
@@ -117,10 +152,19 @@
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
-                font-weight: font-weight('bold');
-                color: color('primary-lighter');
+                font-weight: bold;
                 font-size: 16px;
+                color: color('white');
             }
+            // Submenu nav links have normal font weight 
+            .usa-nav__submenu-item {
+                .usa-nav-link,
+                .usa-nav-link:hover,
+                .usa-nav-link:active {
+                    font-weight: normal;
+                }
+            }
+            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
@@ -133,4 +177,239 @@
 .usa-navbar--widescreen,
 .usa-nav-container--widescreen  {
     max-width: $widescreen-max-width !important;
+}
+
+.usa-nav__secondary-links {
+    line-height: line-height($theme-navigation-font-family, 2);
+
+    // Remove column gap to account for padding in secondary nav buttons
+    @include at-media($theme-header-min-width) {
+        column-gap: 0;
+
+        // Add divider between secondary nav items
+        li + li {
+            &::marker {
+                content: "|";
+            }
+        }
+    }
+}
+
+.usa-nav__secondary-item  {
+    @include at-media($theme-header-min-width) {
+        .usa-nav-link-text {
+            vertical-align: middle;
+        }
+
+        a {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+
+        // Override USWDS defaults
+        & + .usa-nav__secondary-item {
+            // Increase padding of secondary links to match button padding
+            padding-left: units(2) !important; 
+            // Replace USWDS default border to accommodate button heights
+            border-left: 0 !important;
+        }
+    }
+
+    @include at-media-max($theme-header-min-width) {
+        @include nav-list("nav");
+        a {
+          @include u-padding-y(1.5);
+        }
+    }
+}
+
+// Dropdown menus on secondary nav
+.usa-nav__secondary-menu {
+    // Until the $theme-header-width,
+    // use the usa-nav-list styles for the slide-in nav
+    @include at-media-max($theme-header-min-width) {
+        @include nav-list("nav");
+    
+        a {
+            @include u-padding-y(1.5);
+            line-height: line-height($theme-navigation-font-family, 2);
+        }
+    }
+
+    // At $theme-header-width and wider...
+    @include at-media($theme-header-min-width) {
+        display: flex;
+        align-items: stretch;
+    }
+
+    // all nav items in the nav
+    .usa-nav__secondary-item {
+        a {
+            text-decoration: none;
+        }
+    }
+
+    // ...and their direct links
+    > a {
+        @include at-media($theme-header-min-width) {
+            line-height: line-height($theme-navigation-font-family, 2) !important;
+            padding: units(2);            
+            align-items: center;
+            display: flex;
+            font-weight: font-weight("bold");
+        }
+    }
+
+    > button,
+    > a {
+            @include at-media($theme-header-min-width) {
+            height: 100%;
+        }
+    }
+    
+    @include at-media($theme-header-min-width) {
+        span {
+            @include place-icon($-add-icon, "after");
+            font-weight: font-weight('bold');
+            color: color('white');
+        }
+    }
+
+    a {
+        @include at-media($theme-header-min-width) {
+            @include u-padding-y(1.5);
+            line-height: 1.1;
+        }
+    }
+
+    button,
+    .usa-accordion__button {
+        $button-vertical-offset: 53%; // XXX: Magic number
+
+        background-color: transparent;
+        color: var(--close-button-bg);
+        position: relative; // Anchor spans chevron pseudo element
+        font-weight: font-weight("normal");
+        font-size: 1rem;
+        line-height: 1.2;
+        margin-right: 0;
+        padding: units(1.5) units(2);
+        text-decoration: none;
+        width: 100%;
+        border-radius: 0;
+
+        @include at-media-max($theme-header-min-width) {
+            justify-content: flex-start;
+            &:hover {
+                background-color: var(--border-color);
+                color: #{$theme-color-primary};
+            }
+            a {
+                @include u-padding-y(1.5);
+            }
+        }
+
+        // Remove icon set from usa-accordion.
+        // Also removed in _usa-banner.scss.
+        &[aria-expanded],
+        &[aria-expanded]:hover {
+            background-image: none;
+
+            @media (forced-colors: active) {
+                &::before {
+                    content: none;
+                }
+            }
+        }
+
+        span {
+            @include at-media($theme-header-min-width) {
+              display: inline-block;
+              margin-right: 0;
+              padding-right: units(2);
+            }
+        }
+
+        &[aria-expanded] {
+            span {
+              &::after {
+                position: absolute;
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+              }
+            }
+        }
+
+        &[aria-expanded="false"] {
+            span {
+              @include place-icon($-add-icon, "after");
+      
+              &::after:hover {
+                background-color: color('white');
+              }
+            }
+
+            &::after:hover {
+                background-color: color('white');
+            }
+            
+            @include at-media($theme-header-min-width) {
+                span {
+                    @include place-icon($-expand-more-icon, "after");
+    
+                    &::after {
+                        background-color: color('white');
+                        right: units(1.5);
+                    }
+                }
+            }
+
+            &:hover {
+                @include at-media($theme-header-min-width) {
+                    span::after {
+                        background-color: color('white');
+        
+                        @media (forced-colors: active) {
+                            background-color: color('white');
+                        }
+                    }
+                }
+            }
+        }
+
+        &[aria-expanded="true"] {
+            span {
+                @include place-icon($-remove-icon, "after");
+        
+                &::after {
+                  position: absolute;
+                  right: 0;
+        
+                  @media (forced-colors: active) {
+                    background-color: white;
+                  }
+                }
+            }
+
+            @include at-media($theme-header-min-width) {
+                background-image: none;
+                background-color: color("primary-darker");
+                color: white;
+
+                @include at-media($theme-header-min-width) {
+                    span {
+                        @include place-icon($-expand-less-icon, "after");
+                        &::after {
+                            right: units(1.5);
+                            background-color: white;
+                            @media (forced-colors: active) {
+                                background-color: white;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

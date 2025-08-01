@@ -88,7 +88,7 @@ class DomainInformation(TimeStampedModel):
     # ##### data fields from the initial form #####
     generic_org_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoices.choices,
+        choices=OrganizationChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
         help_text="Type of organization",
@@ -155,7 +155,7 @@ class DomainInformation(TimeStampedModel):
     )
     state_territory = models.CharField(
         max_length=2,
-        choices=StateTerritoryChoices.choices,
+        choices=StateTerritoryChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
         verbose_name="state, territory, or military post",
@@ -348,25 +348,21 @@ class DomainInformation(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @classmethod
-    def create_from_da(cls, domain_request: DomainRequest, domain=None):
+    def create_from_dr(cls, domain_request: DomainRequest, domain=None):
         """Takes in a DomainRequest and converts it into DomainInformation"""
 
         # Throw an error if we get None - we can't create something from nothing
         if domain_request is None:
             raise ValueError("The provided DomainRequest is None")
 
-        # Throw an error if the da doesn't have an id
+        # Throw an error if the dr doesn't have an id
         if not hasattr(domain_request, "id"):
             raise ValueError("The provided DomainRequest has no id")
 
         # check if we have a record that corresponds with the domain
         # domain_request, if so short circuit the create
-        existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
+        existing_domain_info = cls._short_circuit_if_exists(domain_request)
         if existing_domain_info:
-            logger.info(
-                f"create_from_da() -> Shortcircuting create on {existing_domain_info}. "
-                "This record already exists. No values updated!"
-            )
             return existing_domain_info
 
         # Get the fields that exist on both DomainRequest and DomainInformation
@@ -375,28 +371,17 @@ class DomainInformation(TimeStampedModel):
         # Get a list of all many_to_many relations on DomainInformation (needs to be saved differently)
         info_many_to_many_fields = DomainInformation._get_many_to_many_fields()
 
-        # Create a dictionary with only the common fields, and create a DomainInformation from it
-        da_dict = {}
-        da_many_to_many_dict = {}
-        for field in common_fields:
-            # If the field isn't many_to_many, populate the da_dict.
-            # If it is, populate da_many_to_many_dict as we need to save this later.
-            if hasattr(domain_request, field):
-                if field not in info_many_to_many_fields:
-                    da_dict[field] = getattr(domain_request, field)
-                else:
-                    da_many_to_many_dict[field] = getattr(domain_request, field).all()
-
-        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
-        # da_dict should not have "id" under any circumstances.
-        # If it does have it, then this indicates that common_fields is overzealous in the data
-        # that it is returning. Try looking in DomainHelper.get_common_fields.
-        if "id" in da_dict:
-            logger.warning("create_from_da() -> Found attribute 'id' when trying to create")
-            da_dict.pop("id", None)
+        # Extract dictionaries for normal and many-to-many fields
+        dr_dict, dr_many_to_many_dict = cls._get_dr_and_many_to_many_dicts(
+            domain_request, common_fields, info_many_to_many_fields
+        )
 
         # Create a placeholder DomainInformation object
-        domain_info = DomainInformation(**da_dict)
+        domain_info = DomainInformation(**dr_dict)
+
+        # Explicitly copy over extra fields (currently only federal agency)
+        # that aren't covered in the common fields
+        cls._copy_federal_agency_explicit_fields(domain_request, domain_info)
 
         # Add the domain_request and domain fields
         domain_info.domain_request = domain_request
@@ -408,10 +393,50 @@ class DomainInformation(TimeStampedModel):
         # This bundles them all together, and then saves it in a single call.
         with transaction.atomic():
             domain_info.save()
-            for field, value in da_many_to_many_dict.items():
+            for field, value in dr_many_to_many_dict.items():
                 getattr(domain_info, field).set(value)
 
         return domain_info
+
+    @classmethod
+    def _short_circuit_if_exists(cls, domain_request):
+        existing_domain_info = cls.objects.filter(domain_request__id=domain_request.id).first()
+        if existing_domain_info:
+            logger.info(
+                f"create_from_dr() -> Shortcircuting create on {existing_domain_info}. "
+                "This record already exists. No values updated!"
+            )
+        return existing_domain_info
+
+    @classmethod
+    def _get_dr_and_many_to_many_dicts(cls, domain_request, common_fields, info_many_to_many_fields):
+        # Create a dictionary with only the common fields, and create a DomainInformation from it
+        dr_dict = {}
+        dr_many_to_many_dict = {}
+        for field in common_fields:
+            # If the field isn't many_to_many, populate the dr_dict.
+            # If it is, populate dr_many_to_many_dict as we need to save this later.
+            if hasattr(domain_request, field):
+                if field not in info_many_to_many_fields:
+                    dr_dict[field] = getattr(domain_request, field)
+                else:
+                    dr_many_to_many_dict[field] = getattr(domain_request, field).all()
+
+        # This will not happen in normal code flow, but having some redundancy doesn't hurt.
+        # dr_dict should not have "id" under any circumstances.
+        # If it does have it, then this indicates that common_fields is overzealous in the data
+        # that it is returning. Try looking in DomainHelper.get_common_fields.
+        if "id" in dr_dict:
+            logger.warning("create_from_dr() -> Found attribute 'id' when trying to create")
+            dr_dict.pop("id", None)
+
+        return dr_dict, dr_many_to_many_dict
+
+    @classmethod
+    def _copy_federal_agency_explicit_fields(cls, domain_request, domain_info):
+        """Explicitly copy federal_agency from DomainRequest (if present)"""
+        if hasattr(domain_request, "federal_agency") and domain_request.federal_agency is not None:
+            domain_info.federal_agency = domain_request.federal_agency
 
     @staticmethod
     def _get_many_to_many_fields():

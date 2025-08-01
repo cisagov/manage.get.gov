@@ -15,7 +15,7 @@
         <span id="portfolio-js-value" data-portfolio="{{ portfolio.id }}"></span>
         {% endif %}
         <!-- ---------- SEARCH ---------- -->
-        {% with label_text=portfolio|yesno:"Search by domain name or creator,Search by domain name"  item_name="domain-requests" aria_label_text="Domain requests search component"%}
+        {% with label_text=portfolio|yesno:"Search by domain name or requester,Search by domain name"  item_name="domain-requests" aria_label_text="Domain requests search component"%}
             {% include "includes/search.html" %}
         {% endwith %}
     </div>
