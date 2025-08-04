@@ -9,7 +9,7 @@ from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user  # type: ignore
+from .common import MockEppLib, create_user, month_long_to_ap_style  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -740,7 +740,10 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%b. %-d, %Y")
+            expiration_month = datetime.today().month
+            is_abbreviated_ap_style_month = expiration_month in month_long_to_ap_style[expiration_month]
+            ap_date_format = f"{"%b" if is_abbreviated_ap_style_month else "%B"} %d, %Y"
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime(ap_date_format)
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
