@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 month_long_to_ap_style = {
     "January": "Jan.",
     "February": "Feb.",
-    "August": "Au.",
+    "August": "Aug.",
     "September": "Sept.",
     "October": "Oct.",
     "November": "Nov.",
