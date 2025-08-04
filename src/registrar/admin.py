@@ -1168,12 +1168,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            if request.user.get_first_portfolio():
+            if request.user.is_org_user(request):
                 # show analyst_fieldsets for analysts
                 return self.analyst_fieldsets
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_fieldsets_no_portfolio
+            return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -1187,7 +1185,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            return self.analyst_readonly_fields
+            if request.user.is_org_user(request):
+                return self.analyst_readonly_fields
+            return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
@@ -1866,7 +1866,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
             try:
                 if (
-                    not flag_is_active(request, "multiple_portfolios")
+                    request.user.is_org_user(request)
+                    and not flag_is_active(request, "multiple_portfolios")
                     and domain_org is not None
                     and not member_of_this_org
                     and not member_of_a_different_org
@@ -3075,9 +3076,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if not (obj and obj.portfolio and obj.is_feb()):
             excluded_fields.update(feb_fields)
 
-        # Hide certain portfolio and suborg fields behind the organization requests flag
-        # if it is not enabled
-        if not request.session.get("portfolio"):
+        # Hide certain portfolio and suborg fields for users that are not in a portfolio
+        if not request.user.is_org_user(request):
             excluded_fields.update(org_fields)
             excluded_fields.update(feb_fields)
 

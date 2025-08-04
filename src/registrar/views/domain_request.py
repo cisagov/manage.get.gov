@@ -963,6 +963,7 @@ class Review(DomainRequestWizard):
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
+        context["request"] = self.request
         context["requires_feb_questions"] = self.requires_feb_questions()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
             self.domain_request.feb_purpose_choice
