@@ -50,6 +50,7 @@ from api.tests.common import less_console_noise_decorator
 
 logger = logging.getLogger(__name__)
 
+
 def get_ap_style_month(month):
     AP_STYLE_MONTH = {
         "January": "Jan.",
@@ -58,9 +59,10 @@ def get_ap_style_month(month):
         "September": "Sept.",
         "October": "Oct.",
         "November": "Nov.",
-        "December": "Dec."
+        "December": "Dec.",
     }
-    return AP_STYLE_MONTH(month)
+    return AP_STYLE_MONTH[month]
+
 
 # def get_ap_style_month(month):
 #     """Format month in AP style format."""
