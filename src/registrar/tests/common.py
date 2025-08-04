@@ -64,29 +64,6 @@ def get_ap_style_month(month):
     return AP_STYLE_MONTH[month]
 
 
-# def get_ap_style_month(month):
-#     """Format month in AP style format."""
-#     fully_named_months = [
-#         "March",
-#         "April",
-#         "May",
-#         "June",
-#         "July",
-#     ]
-#     ap_month_dict = {
-#         "January": "Jan.",
-#         "February": "Feb.",
-#         "August": "Aug.",
-#         "September": "Sept.",
-#         "October": "Oct.",
-#         "November": "Nov.",
-#         "December": "Dec."
-#     }
-#     if month in fully_named_months:
-#         return month
-#     return ap_month_dict(month)
-
-
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}
