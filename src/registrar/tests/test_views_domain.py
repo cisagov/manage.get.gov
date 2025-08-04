@@ -741,7 +741,8 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
 
             # Check for the updated expiration
             expiration_month = datetime.today().strftime("%B")
-            ap_month = AP_STYLE_MONTH[expiration_month] if get_ap_style_month(expiration_month) else expiration_month
+            # Format month to AP style if necessary
+            ap_month = get_ap_style_month(expiration_month) or expiration_month
             ap_date_format = f"{ap_month} %-d, %Y"
             formatted_new_expiration_date = self.expiration_date_one_year_out().strftime(ap_date_format)
             redirect_response = self.client.get(
