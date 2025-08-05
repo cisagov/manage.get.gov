@@ -154,9 +154,9 @@ class TestDomainInvitationAdmin(WebTest):
         self.fed_agency = FederalAgency.objects.create(
             agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
-        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", requester=self.superuser)
         self.domain_info = DomainInformation.objects.create(
-            domain=self.domain, portfolio=self.portfolio, creator=self.superuser
+            domain=self.domain, portfolio=self.portfolio, requester=self.superuser
         )
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -1264,7 +1264,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.superuser = create_superuser()
         self.testuser = create_test_user()
         self.omb_analyst = create_omb_analyst_user()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1350,7 +1350,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.omb_analyst = create_omb_analyst_user()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1811,7 +1811,7 @@ class PortfolioPermissionsFormTest(TestCase):
     def setUp(self):
         # Create a mock portfolio for testing
         self.user = create_test_user()
-        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.user)
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", requester=self.user)
 
     def tearDown(self):
         UserPortfolioPermission.objects.all().delete()
@@ -2069,9 +2069,9 @@ class TestDomainInformationAdmin(TestCase):
         self.fed_agency = FederalAgency.objects.create(
             agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
-        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", requester=self.superuser)
         self.domain_info = DomainInformation.objects.create(
-            domain=self.feddomain, portfolio=self.portfolio, creator=self.superuser
+            domain=self.feddomain, portfolio=self.portfolio, requester=self.superuser
         )
 
     def tearDown(self):
@@ -2317,14 +2317,14 @@ class TestDomainInformationAdmin(TestCase):
     def test_analyst_cant_access_domain_information(self):
         """Ensures that analysts can't directly access the DomainInformation page through /admin"""
         # Create fake creator
-        _creator = User.objects.create(
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
@@ -2354,7 +2354,7 @@ class TestDomainInformationAdmin(TestCase):
         """Tests if the contact fields have the detail table which displays title, email, and phone"""
 
         # Create fake creator
-        _creator = User.objects.create(
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
@@ -2364,7 +2364,7 @@ class TestDomainInformationAdmin(TestCase):
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
@@ -2425,7 +2425,7 @@ class TestDomainInformationAdmin(TestCase):
         # cleanup this test
         domain_info.delete()
         domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
@@ -3135,7 +3135,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     @less_console_noise_decorator
     def test_user_can_see_related_portfolios(self):
         """Tests if a user can see the portfolios they are associated with on the user page"""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", creator=self.superuser)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", requester=self.superuser)
         permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -3221,7 +3221,7 @@ class AuditedAdminTest(TestCase):
                 # and this test does not accurately reflect that.
                 # DomainRequest.senior_official.field,
                 # DomainRequest.investigator.field,
-                DomainRequest.creator.field,
+                DomainRequest.requester.field,
                 DomainRequest.requested_domain.field,
             ]
 
@@ -3279,7 +3279,7 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainInformation.senior_official.field,
-                # DomainInformation.creator.field,
+                # DomainInformation.requester.field,
                 (DomainInformation.domain.field, ["name"]),
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
             ]
@@ -4028,13 +4028,13 @@ class TestPortfolioAdmin(TestCase):
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", requester=self.superuser)
         self.feb_agency = FederalAgency.objects.create(
             agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
         self.feb_portfolio = Portfolio.objects.create(
             organization_name="Test FEB portfolio",
-            creator=self.superuser,
+            requester=self.superuser,
             federal_agency=self.feb_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
@@ -4184,14 +4184,14 @@ class TestPortfolioAdmin(TestCase):
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
     def test_cannot_have_dup_suborganizations_with_same_portfolio(self):
-        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", requester=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Suborganization.objects.create(name="Sub1", portfolio=portfolio)
 
     def test_can_have_dup_suborganizations_with_diff_portfolio(self):
-        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", requester=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
         num_of_subs = Suborganization.objects.filter(name="Sub1").count()
@@ -4303,7 +4303,7 @@ class TestPortfolioAdmin(TestCase):
         portfolio = Portfolio.objects.create(
             organization_name="Test Federal Org",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=self.superuser,
+            requester=self.superuser,
         )
 
         readonly_fields = self.admin.get_readonly_fields(request, portfolio)
@@ -4334,7 +4334,7 @@ class TestPortfolioAdmin(TestCase):
         portfolio = Portfolio.objects.create(
             organization_name="Test Federal Org",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=self.superuser,
+            requester=self.superuser,
         )
 
         # Test that the federal org gets senior official from agency when federal
@@ -4357,7 +4357,7 @@ class TestPortfolioAdmin(TestCase):
     def test_duplicate_portfolio(self):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+                Portfolio.objects.create(organization_name="Test portfolio", requester=self.superuser)
 
 
 class TestTransferUser(WebTest):
@@ -4409,11 +4409,11 @@ class TestTransferUser(WebTest):
         )
         domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
         domain_request.save()
-        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", creator=self.user2)
+        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user2, portfolio=portfolio2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4441,7 +4441,7 @@ class TestTransferUser(WebTest):
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles(self):
         """Assert that a portfolio user role gets transferred"""
-        portfolio = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         user_portfolio_permission = UserPortfolioPermission.objects.create(
             user=self.user2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4459,7 +4459,7 @@ class TestTransferUser(WebTest):
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles_no_error_when_duplicates(self):
         """Assert that duplicate portfolio user roles do not throw errors"""
-        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4488,7 +4488,7 @@ class TestTransferUser(WebTest):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
 
-        self.assertEquals(domain_request.creator, self.user2)
+        self.assertEquals(domain_request.requester, self.user2)
         self.assertEquals(domain_request.investigator, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
@@ -4497,15 +4497,15 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_request.refresh_from_db()
 
-        self.assertEquals(domain_request.creator, self.user1)
+        self.assertEquals(domain_request.requester, self.user1)
         self.assertEquals(domain_request.investigator, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_information_creator(self):
         """Assert that domain fields get transferred"""
-        domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user2)
+        domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user2)
 
-        self.assertEquals(domain_information.creator, self.user2)
+        self.assertEquals(domain_information.requester, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4513,7 +4513,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_information.refresh_from_db()
 
-        self.assertEquals(domain_information.creator, self.user1)
+        self.assertEquals(domain_information.requester, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role(self):
