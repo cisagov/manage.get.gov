@@ -428,7 +428,7 @@ class Command(BaseCommand):
         new_domain_info_data = {
             "domain": domain,
             "organization_name": transition_domain.organization_name,
-            "creator": default_creator,
+            "requester": default_creator,
             "senior_official": contact,
         }
 
