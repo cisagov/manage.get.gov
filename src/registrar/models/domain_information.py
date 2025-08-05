@@ -49,7 +49,7 @@ class DomainInformation(TimeStampedModel):
     )
 
     # This is the domain request user who created this domain request.
-    creator = models.ForeignKey(
+    requester = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="information_created",
@@ -275,7 +275,7 @@ class DomainInformation(TimeStampedModel):
             if self.domain and self.domain.name:
                 return self.domain.name
             else:
-                return f"domain info set up and created by {self.creator}"
+                return f"domain info set up and created by {self.requester}"
         except Exception:
             return ""
 
