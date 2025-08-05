@@ -153,7 +153,7 @@ def get_domain_requests_display(roles, permissions):
     """
     Determines the display name for a user's domain request permissions.
 
-    - If the user has the EDIT_REQUESTS permission, return "Creator".
+    - If the user has the EDIT_REQUESTS permission, return "Requester".
     - If the user has the VIEW_ALL_REQUESTS permission, return "Viewer".
     - Otherwise, return "No access".
 
