@@ -203,16 +203,16 @@ class DomainRequestWizard(TemplateView):
 
         # For linter. The else block should never be hit, but if it does,
         # there may be a UI consideration. That will need to be handled in another ticket.
-        creator = None
+        requester = None
         if self.request.user is not None and isinstance(self.request.user, User):
-            creator = self.request.user
+            requester = self.request.user
         else:
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
             try:
                 self._domain_request = DomainRequest.objects.get(
-                    creator=creator,
+                    requester=requester,
                     pk=self.kwargs.get("domain_request_pk"),
                 )
                 return self._domain_request
@@ -223,7 +223,7 @@ class DomainRequestWizard(TemplateView):
         if self.request.user.is_org_user(self.request):
             portfolio = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
-                creator=self.request.user,
+                requester=self.request.user,
                 portfolio=portfolio,
             )
             # Question for reviewers: we should probably be doing this right?
@@ -231,7 +231,7 @@ class DomainRequestWizard(TemplateView):
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
-            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+            self._domain_request = DomainRequest.objects.create(requester=self.request.user)
         return self._domain_request
 
     @property
@@ -406,7 +406,7 @@ class DomainRequestWizard(TemplateView):
     def approved_domain_requests_exist(self):
         """Checks if user is creator of domain requests with DomainRequestStatus.APPROVED status"""
         approved_domain_request_count = DomainRequest.objects.filter(
-            creator=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
+            requester=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
         ).count()
         return approved_domain_request_count > 0
 
@@ -428,7 +428,7 @@ class DomainRequestWizard(TemplateView):
             DomainRequest.DomainRequestStatus.IN_REVIEW,
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         ]
-        return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
+        return DomainRequest.objects.filter(requester=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data.
