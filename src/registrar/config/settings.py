@@ -520,7 +520,6 @@ class JsonServerFormatter(ServerFormatter):
         }
         return json.dumps(log_entry)
 
-
 # If we're running locally we don't want json formatting
 if "localhost" in env_base_url:
     django_handlers = ["console"]
