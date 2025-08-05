@@ -318,11 +318,11 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request. Will receive email updates"),
+            ("requester", "Person who submitted the domain request. Will receive email updates"),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
-            ("alternative_domains", "Other domain names the creator provided for consideration"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
+            ("alternative_domains", "Other domain names the requester provided for consideration"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
             ("Urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
@@ -616,8 +616,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "13",
             (
-                "creator__first_name",
-                "creator__last_name",
+                "requester__first_name",
+                "requester__last_name",
             ),
         )
 
@@ -625,8 +625,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "-13",
             (
-                "-creator__first_name",
-                "-creator__last_name",
+                "-requester__first_name",
+                "-requester__last_name",
             ),
         )
 
