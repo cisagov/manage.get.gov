@@ -211,7 +211,7 @@ class DomainInformation(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Required if creator does not list other employees",
+        help_text="Required if requester does not list other employees",
     )
 
     anything_else = models.TextField(
