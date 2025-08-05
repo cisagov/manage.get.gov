@@ -1245,7 +1245,6 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         self.form = self.get_form()
 
         portfolio_name = self.form["set_session_portfolio_button"].value()
-        print("portfolio: ", portfolio_name)
         portfolio = Portfolio.objects.get(organization_name=portfolio_name)
 
         # Verify user has permissions to access selected portfolio

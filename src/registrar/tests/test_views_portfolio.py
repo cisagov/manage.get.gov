@@ -5120,3 +5120,74 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         # Assert that addition and removal emails are not sent
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
+
+
+class TestPortfolioSelectOrganizationView(WebTest):
+    """Tests for the select organization page"""
+    def setUp(self):
+        super().setUp()
+        self.user = create_user()
+        # Create Portfolio
+        self.portfolio_1 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 1")
+        self.portfolio_2 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 2")
+        self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
+
+        # Assign user as a member of both portfolios
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio_2,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("multiple_portfolios", active=True)
+    def test_select_portfolio_page_is_accessible(self):
+        """Tests that users with multiple portfolios can access select portfolio page."""
+        response = self.client.get(reverse("your-portfolios"))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio_1.organization_name)
+        self.assertContains(response, self.portfolio_2.organization_name)
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("multiple_portfolios", active=True)
+    def test_select_portfolio_page_updates_session_portfolio(self):
+        """Tests that select organization page updates portfolio in session."""
+        select_portfolio_page = self.app.get(reverse("your-portfolios"))
+
+        # Simulate clicking on portfolio button for portfolio 2
+        self.assertContains(select_portfolio_page, self.portfolio_2.organization_name)
+        self.assertContains(select_portfolio_page, self.portfolio_2.organization_name)
+        # redirect_portfolio_2 = select_portfolio_page.click("Test Portfolio 2")
+
+        # webtest is not able to properly parse the form from nameservers_page, so manually
+        # inputting form data
+        form_data = {
+            # "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
+            "set_session_portfolio_button": self.portfolio_2.organization_name
+        }
+        print("select portfolio page: ", select_portfolio_page)
+
+        # result = self.app.post(reverse("set-session-portfolio"), form_data)

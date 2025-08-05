@@ -193,15 +193,17 @@ class CheckPortfolioMiddleware:
         user_has_multiple_portfolios = request.user.get_num_portfolios() > 1
         no_set_session_portfolio = not request.session.get("portfolio")
 
-        if multiple_portfolios_flag and user_has_multiple_portfolios:
-            if no_set_session_portfolio:
-                print("Redirecting to set portfolio page")
+        request.session["portfolio"] = request.user.get_first_portfolio()
+
+        # if multiple_portfolios_flag and user_has_multiple_portfolios:
+            # if no_set_session_portfolio:
+                # print("Redirecting to set portfolio page")
                 # self._redirect_to_select_portfolio_page(request)
-        else:
+        # else:
             # If user doesn't have multiple portfolios, grab first portfolio
             # Handles edge case where multiple_portfolios flag is off but
             # User has multiple user portfolio permissions from previous sessions.
-            request.session["portfolio"] = request.user.get_first_portfolio()
+            # request.session["portfolio"] = request.user.get_first_portfolio()
 
     def _redirect_to_select_portfolio_page(self, request):
         # Don't redirect on excluded pages (such as the setup page itself)
