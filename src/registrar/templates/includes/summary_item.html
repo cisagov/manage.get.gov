@@ -35,6 +35,11 @@
           {% endfor %}
         </ul>
         <h4 class="margin-bottom-2">Organization Name and Address</h4>
+        {% include "includes/organization_address.html" with organization=value %}
+        {% if organization_type %}
+          <h4>Organization Type</h4>
+          {{ organization_type }}
+        {% endif %}
       {% endif %}
     {% endif %}
     
@@ -142,6 +147,9 @@
         </ul>
       {% endif %}
     
+    <!-- this is just to prevent the portfolio from appearing on Org Overview page -->
+    {% elif sub_header_text == "Organization Admins" %}
+
     {% else %}
       {% if custom_text_for_value_none %}
         <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
