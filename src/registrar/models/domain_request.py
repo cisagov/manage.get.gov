@@ -565,7 +565,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
-        help_text="Other domain names the creator provided for consideration",
+        help_text="Other domain names the requester provided for consideration",
     )
 
     other_contacts = models.ManyToManyField(
@@ -578,7 +578,7 @@ class DomainRequest(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Required if creator does not list other employees",
+        help_text="Required if requester does not list other employees",
     )
 
     anything_else = models.TextField(
@@ -987,7 +987,7 @@ class DomainRequest(TimeStampedModel):
         recipient = self.creator
         if recipient is None or recipient.email is None:
             logger.warning(
-                f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f"Cannot send {new_status} email, no requester email address for domain request with pk: {self.pk}."
                 f" Name: {self.requested_domain.name}"
                 if self.requested_domain
                 else ""
@@ -1034,7 +1034,7 @@ class DomainRequest(TimeStampedModel):
             logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError as err:
             logger.error(
-                "Failed to send status update to creator email:\n"
+                "Failed to send status update to requester email:\n"
                 f"  Type: {new_status}\n"
                 f"  Subject template: {email_template_subject}\n"
                 f"  To: {recipient.email}\n"
