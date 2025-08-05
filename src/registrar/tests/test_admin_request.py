@@ -2038,7 +2038,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "requested_suborganization",
             "suborganization_city",
             "suborganization_state_territory",
-            "creator",
+            "requester",
             "investigator",
             "generic_org_type",
             "is_election_board",
@@ -2106,7 +2106,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "status_history",
                 "federal_agency",
-                "creator",
+                "requester",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
@@ -2174,7 +2174,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "status_history",
                 "federal_agency",
-                "creator",
+                "requester",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
@@ -2248,7 +2248,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_error.assert_called_once_with(
                     request,
-                    "This action is not permitted for domain requests with a restricted creator.",
+                    "This action is not permitted for domain requests with a restricted requester.",
                 )
 
             # Assert that the status has not changed
@@ -2272,7 +2272,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_warning.assert_called_once_with(
                     request,
-                    "Cannot edit a domain request with a restricted creator.",
+                    "Cannot edit a domain request with a restricted requester.",
                 )
 
     @less_console_noise_decorator
