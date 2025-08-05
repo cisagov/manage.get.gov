@@ -26,6 +26,8 @@ from registrar.utility.email_invitations import (
 
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.errors import MissingEmailError
+from django.test import TestCase
+from registrar.models import DomainInvitation
 
 
 class DomainInvitationEmail(unittest.TestCase):
@@ -1329,3 +1331,60 @@ class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
             context=ANY,
         )
         self.assertTrue(result)
+
+
+class TestDomainInvitationCleanupSignal(TestCase):
+    """Integration tests for the signal that cleans up retrieved invitations when UserDomainRole is deleted."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.user = User.objects.create_user(email="test@example.com", username="testuser")
+        self.domain = Domain.objects.create(name="test.gov")
+
+    def test_retrieved_invitation_cleaned_up_when_role_deleted(self):
+        """Test that retrieved invitations are deleted when UserDomainRole is deleted."""
+        # Create and retrieve an invitation
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Verify setup
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        # Delete the role (this should trigger the new signal)
+        role.delete()
+
+        # Verify the invitation was cleaned up
+        self.assertFalse(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+    def test_bug_fix_can_re_add_user_after_removal(self):
+        """Test the complete flow that reproduces and verifies the fix for ticket #3678."""
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Remove the user (simulating admin removing domain manager)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        role.delete()
+
+        self.assertFalse(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        # Create another invitation
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Verify setup
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
