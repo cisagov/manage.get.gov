@@ -51,6 +51,19 @@ from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
+def get_ap_style_month(month):
+    AP_STYLE_MONTH = {
+        "January": "Jan.",
+        "February": "Feb.",
+        "August": "Aug.",
+        "September": "Sept.",
+        "October": "Oct.",
+        "November": "Nov.",
+        "December": "Dec.",
+    }
+    return AP_STYLE_MONTH[month]
+
+
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}

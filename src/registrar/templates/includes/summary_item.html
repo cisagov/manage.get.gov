@@ -26,7 +26,7 @@
     {# To display default styling for sub-header text and organization information in organization overview #}
     {% if sub_header_text %}
       <h4 class="margin-bottom-0">{{ sub_header_text }}</h4>  
-      {% if sub_header_text == "Organization Admins" %}  
+      {% if sub_header_text == "Organization admins" %}  
         <ul class="usa-list">
           {% for admin in portfolio_admins %}
             <li>{{ admin.get_full_name|default:admin.username }}</li>
