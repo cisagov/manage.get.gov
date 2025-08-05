@@ -2273,9 +2273,9 @@ class TestDomainInformationAdmin(TestCase):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request"),
+            ("requester", "Person who submitted the domain request"),
             ("domain_request", "Request associated with this domain"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
             ("urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
@@ -2450,7 +2450,7 @@ class TestDomainInformationAdmin(TestCase):
                 "other_contacts",
                 "is_election_board",
                 "federal_agency",
-                "creator",
+                "requester",
                 "type_of_work",
                 "more_organization_information",
                 "domain",
@@ -2481,11 +2481,11 @@ class TestDomainInformationAdmin(TestCase):
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
                 "4",
-                ("creator__first_name", "creator__last_name"),
+                ("requester__first_name", "requester__last_name"),
             )
 
             # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
+            self.test_helper.assert_table_sorted("-4", ("-requester__first_name", "-requester__last_name"))
 
 
 class TestUserDomainRoleAdmin(WebTest):
