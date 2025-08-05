@@ -479,7 +479,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not domain_request.creator.is_restricted() and "status" in self.fields:
+            if not domain_request.requester.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
 
     def get_custom_field_transitions(self, instance, field):
@@ -1197,7 +1197,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         """Add user's related domains and requests to context"""
         obj = self.get_object(request, object_id)
 
-        domain_requests = DomainRequest.objects.filter(creator=obj).exclude(
+        domain_requests = DomainRequest.objects.filter(requester=obj).exclude(
             Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
         )
         sort_by = request.GET.get("sort_by", "requested_domain__name")
@@ -3113,7 +3113,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # If the user is restricted or we're saving an invalid model,
         # forbid this action.
-        if not obj or obj.creator.status == models.User.RESTRICTED:
+        if not obj or obj.requester.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
@@ -3167,7 +3167,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         so we should display that information using this function.
 
         """
-        recipient = obj.creator
+        recipient = obj.requester
 
         # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
@@ -3301,7 +3301,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         readonly_fields = list(self.readonly_fields)
 
         # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -3321,7 +3321,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
     def display_restricted_warning(self, request, obj):
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        if obj and obj.requester.status == models.User.RESTRICTED:
             messages.warning(
                 request,
                 "Cannot edit a domain request with a restricted requester.",
@@ -4903,7 +4903,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         readonly_fields = list(self.readonly_fields)
 
         # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -4965,7 +4965,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if hasattr(obj, "requester") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
+            obj.requester = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
