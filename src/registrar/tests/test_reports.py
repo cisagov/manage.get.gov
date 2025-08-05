@@ -741,11 +741,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Requested suborg",
             "Suborg city",
             "Suborg state/territory",
-            "Creator first name",
-            "Creator last name",
-            "Creator email",
-            "Creator approved domains count",
-            "Creator active requests count",
+            "Requester first name",
+            "Requester last name",
+            "Requester email",
+            "Requester approved domains count",
+            "Requester active requests count",
             "Alternative domains",
             "SO first name",
             "SO last name",
@@ -772,8 +772,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 # Header
                 "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
                 "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
-                "Suborg state/territory,Creator first name,Creator last name,Creator email,"
-                "Creator approved domains count,Creator active requests count,Alternative domains,SO first name,"
+                "Suborg state/territory,Requester first name,Requester last name,Requester email,"
+                "Requester approved domains count,Requester active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
