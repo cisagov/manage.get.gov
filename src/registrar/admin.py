@@ -4682,7 +4682,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["requester", "created_on", "notes"]}),
+        (None, {"fields": ["creator", "created_on", "notes"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4716,7 +4716,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # This is the fieldset display when adding a new model
     add_fieldsets = [
-        (None, {"fields": ["requester", "notes"]}),
+        (None, {"fields": ["creator", "notes"]}),
         ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
@@ -4736,7 +4736,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    list_display = ("organization_name", "organization_type", "federal_type", "requester")
+    list_display = ("organization_name", "organization_type", "federal_type", "creator")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
@@ -4751,7 +4751,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "suborganizations",
         "display_admins",
         "display_members",
-        "requester",
+        "creator",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
     ]
@@ -4882,7 +4882,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
-        "requester",
+        "creator",
         "federal_agency",
         "senior_official",
     ]
@@ -4903,7 +4903,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         readonly_fields = list(self.readonly_fields)
 
         # Check if the creator is restricted
-        if obj and obj.requester.status == models.User.RESTRICTED:
+        if obj and obj.creator.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -4962,10 +4962,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj: Portfolio, form, change):
-        if hasattr(obj, "requester") is False:
+        if hasattr(obj, "creator") is False:
             # ---- update creator ----
             # Set the creator field to the current admin user
-            obj.requester = request.user if request.user.is_authenticated else None  # type: ignore
+            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
