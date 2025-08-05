@@ -376,7 +376,7 @@ class DomainRequest(TimeStampedModel):
     )
 
     # This is the domain request user who created this domain request.
-    creator = models.ForeignKey(
+    requester = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
@@ -895,7 +895,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} domain request created by {self.creator}"
+                return f"{self.status} domain request created by {self.requester}"
         except Exception:
             return ""
 
@@ -984,7 +984,7 @@ class DomainRequest(TimeStampedModel):
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        recipient = self.creator
+        recipient = self.requester
         if recipient is None or recipient.email is None:
             logger.warning(
                 f"Cannot send {new_status} email, no requester email address for domain request with pk: {self.pk}."
@@ -1228,7 +1228,7 @@ class DomainRequest(TimeStampedModel):
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
-            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
+            user=self.requester, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
         if self.status == self.DomainRequestStatus.REJECTED:
@@ -1315,7 +1315,7 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
-        self.creator.restrict_user()
+        self.requester.restrict_user()
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.
