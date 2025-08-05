@@ -3,7 +3,6 @@ import logging
 from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from registrar.models.portfolio import Portfolio
-from registrar.utility.waffle import flag_is_active_anywhere
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
