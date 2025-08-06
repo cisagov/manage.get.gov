@@ -25,7 +25,7 @@ One big form that when selected, passes in the value of the selected button.
 
 **Django view**
 ```
-ef post(self, request, *args, **kwargs):
+def post(self, request, *args, **kwargs):
 """
 Handles updating active portfolio in session.
 """
