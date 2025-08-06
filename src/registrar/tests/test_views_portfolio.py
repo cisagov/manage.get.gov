@@ -5125,6 +5125,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
 
 class TestPortfolioSelectOrganizationView(WebTest):
     """Tests for the select organization page"""
+
     def setUp(self):
         super().setUp()
         self.user = create_user()
@@ -5167,10 +5168,8 @@ class TestPortfolioSelectOrganizationView(WebTest):
         """
         mock_portfolio_button = MagicMock()
         mock_portfolio_button.value.return_value = self.portfolio_2.organization_name
-        form_data = {
-            "set_session_portfolio_button": mock_portfolio_button
-        }
-        return form_data 
+        form_data = {"set_session_portfolio_button": mock_portfolio_button}
+        return form_data
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -5189,7 +5188,7 @@ class TestPortfolioSelectOrganizationView(WebTest):
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_updates_session_portfolio(self):
         """Tests that select organization page updates portfolio in session."""
-        with patch.object(PortfolioOrganizationSelectView, 'get_form', self.custom_portfolio_get_form):
+        with patch.object(PortfolioOrganizationSelectView, "get_form", self.custom_portfolio_get_form):
             self.client.post(reverse("set-session-portfolio"))
 
         # Access the session via the request
