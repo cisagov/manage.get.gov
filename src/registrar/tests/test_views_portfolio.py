@@ -22,11 +22,12 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
+from registrar.views.portfolios import PortfolioOrganizationSelectView
 from .common import MockEppLib, MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
-from django.test import Client
+from django.test import Client, RequestFactory
 import logging
 import json
 
@@ -5127,6 +5128,7 @@ class TestPortfolioSelectOrganizationView(WebTest):
     def setUp(self):
         super().setUp()
         self.user = create_user()
+        self.factory = RequestFactory()
         # Create Portfolio
         self.portfolio_1 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 1")
         self.portfolio_2 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 2")
@@ -5158,6 +5160,18 @@ class TestPortfolioSelectOrganizationView(WebTest):
         Portfolio.objects.all().delete()
         User.objects.all().delete()
 
+    def custom_portfolio_get_form(self):
+        """
+        Webtest is not able to properly parse the form for selecting portfolio, so manually
+        input form data
+        """
+        mock_portfolio_button = MagicMock()
+        mock_portfolio_button.value.return_value = self.portfolio_2.organization_name
+        form_data = {
+            "set_session_portfolio_button": mock_portfolio_button
+        }
+        return form_data 
+
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
@@ -5175,19 +5189,9 @@ class TestPortfolioSelectOrganizationView(WebTest):
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_updates_session_portfolio(self):
         """Tests that select organization page updates portfolio in session."""
-        select_portfolio_page = self.app.get(reverse("your-portfolios"))
+        with patch.object(PortfolioOrganizationSelectView, 'get_form', self.custom_portfolio_get_form):
+            self.client.post(reverse("set-session-portfolio"))
 
-        # Simulate clicking on portfolio button for portfolio 2
-        self.assertContains(select_portfolio_page, self.portfolio_2.organization_name)
-        self.assertContains(select_portfolio_page, self.portfolio_2.organization_name)
-        # redirect_portfolio_2 = select_portfolio_page.click("Test Portfolio 2")
-
-        # webtest is not able to properly parse the form from nameservers_page, so manually
-        # inputting form data
-        form_data = {
-            # "csrfmiddlewaretoken": nameservers_page.form["csrfmiddlewaretoken"].value,
-            "set_session_portfolio_button": self.portfolio_2.organization_name
-        }
-        print("select portfolio page: ", select_portfolio_page)
-
-        # result = self.app.post(reverse("set-session-portfolio"), form_data)
+        # Access the session via the request
+        active_portfolio = self.client.session.get("portfolio")
+        self.assertEqual(active_portfolio, "Test Organization 2")

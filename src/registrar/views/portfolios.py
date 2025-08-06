@@ -1243,7 +1243,6 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         Handles updating active portfolio in session.
         """
         self.form = self.get_form()
-
         portfolio_name = self.form["set_session_portfolio_button"].value()
         portfolio = Portfolio.objects.get(organization_name=portfolio_name)
 
@@ -1256,7 +1255,7 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
 
         portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
         request.session["portfolio"] = portfolio
-        logger.info("Successfully set active portfolio to ", portfolio)
+        logger.info(f"Successfully set active portfolio to {portfolio}")
         return self._handle_success_response(request, portfolio)
 
     def _handle_success_response(self, request, portfolio):

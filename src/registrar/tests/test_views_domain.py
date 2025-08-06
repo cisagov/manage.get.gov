@@ -263,6 +263,7 @@ class TestDomainDetail(TestDomainOverview):
         home_page = self.app.get("/")
         logger.info(f"This is the value of home_page: {home_page}")
         self.assertContains(home_page, "igorville.gov")
+
         # click the "Edit" link
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "igorville.gov")
