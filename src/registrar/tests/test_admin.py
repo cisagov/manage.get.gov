@@ -343,7 +343,7 @@ class TestDomainInvitationAdmin(WebTest):
             # Assert that the filters are added
             self.assertContains(response, "invited", count=5)
             self.assertContains(response, "Invited", count=2)
-            self.assertContains(response, "retrieved", count=3)
+            self.assertContains(response, "retrieved", count=4)
             self.assertContains(response, "Retrieved", count=2)
 
             # Check for the HTML context specificially
@@ -1313,7 +1313,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Assert that the filters are added
         self.assertContains(response, "invited", count=5)
         self.assertContains(response, "Invited", count=2)
-        self.assertContains(response, "retrieved", count=3)
+        self.assertContains(response, "retrieved", count=4)
         self.assertContains(response, "Retrieved", count=2)
 
         # Check for the HTML context specificially

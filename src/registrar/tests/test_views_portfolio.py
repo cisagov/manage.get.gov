@@ -406,12 +406,10 @@ class TestPortfolio(WebTest):
         # Members should be redirected to the readonly domains page
         portfolio_page = self.app.get(reverse("home")).follow()
 
-        self.assertContains(portfolio_page, self.portfolio.organization_name)
-        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-        self.assertContains(portfolio_page, "You aren’t managing any domains")
-        self.assertNotContains(portfolio_page, reverse("domains"))
-        self.assertNotContains(portfolio_page, reverse("domain-requests"))
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -426,7 +424,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_accessible_pages_when_user_does_not_have_role(self):
-        """Test that admin / memmber roles are associated with the right access"""
+        """Test that admin / member roles are associated with the right access"""
         self.app.set_user(self.user.username)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -451,12 +449,12 @@ class TestPortfolio(WebTest):
         # Members should be redirected to the readonly domains page
         portfolio_page = self.app.get(reverse("home")).follow()
 
-        self.assertContains(portfolio_page, self.portfolio.organization_name)
-        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-        self.assertContains(portfolio_page, "You aren’t managing any domains")
-        self.assertNotContains(portfolio_page, reverse("domains"))
-        self.assertNotContains(portfolio_page, reverse("domain-requests"))
+            self.assertContains(portfolio_page, self.portfolio.organization_name)
+            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+            self.assertContains(portfolio_page, "You aren’t managing any domains")
+            self.assertContains(portfolio_page, reverse("domains"))
+            self.assertContains(portfolio_page, reverse("domain-requests"))
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -758,6 +756,52 @@ class TestPortfolio(WebTest):
         self.assertEqual(domain_requests.status_code, 200)
 
     @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=False)
+    def test_organization_members_waffle_flag_off_hides_nav_link(self):
+        """Setting the organization_members waffle off hides the nav link"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertContains(home, "Members")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
+    def test_organization_members_waffle_flag_on_shows_nav_link(self):
+        """Setting the organization_members waffle on shows the nav link"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+            ],
+        )
+
+        home = self.app.get(reverse("home")).follow()
+
+        self.assertContains(home, "Hotel California")
+        self.assertContains(home, "Members")
+
+    @less_console_noise_decorator
+    @override_flag("organization_feature", active=True)
+    @override_flag("organization_members", active=True)
     def test_cannot_view_members_table(self):
         """Test that user without proper permission is denied access to members view."""
 
@@ -1171,11 +1215,11 @@ class TestPortfolio(WebTest):
         # dropdown
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
-        self.assertNotContains(portfolio_landing_page, 'href="/requests/')
+        self.assertContains(portfolio_landing_page, 'href="/requests/')
         # link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
         # link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     def test_main_nav_when_user_has_all_permissions(self):

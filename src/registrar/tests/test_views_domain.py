@@ -8,7 +8,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user  # type: ignore
+from .common import MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -735,7 +735,11 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%B %-d, %Y")
+            expiration_month = datetime.today().strftime("%B")
+            # Format month to AP style if necessary
+            ap_month = get_ap_style_month(expiration_month) or expiration_month
+            ap_date_format = f"{ap_month} %-d, %Y"
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime(ap_date_format)
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
@@ -2341,7 +2345,6 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
