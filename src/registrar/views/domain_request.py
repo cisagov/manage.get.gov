@@ -529,6 +529,8 @@ class DomainRequestWizard(TemplateView):
             context["forms"] = forms
             return render(request, self.template_name, context)
 
+        if button == "back":
+            return self.goto(self.steps.prev)
         # if user opted to save their progress,
         # return them to the page they were already on
         if button == "save":
